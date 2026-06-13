@@ -354,6 +354,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/VaultifyCore/CArgon2";
 				INFOPLIST_KEY_CFBundleDisplayName = Vaultify;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vaultify uses the camera to scan 2FA setup QR codes.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Vaultify uses Face ID to unlock your vault.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -393,6 +394,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/VaultifyCore/CArgon2";
 				INFOPLIST_KEY_CFBundleDisplayName = Vaultify;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vaultify uses the camera to scan 2FA setup QR codes.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Vaultify uses Face ID to unlock your vault.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
