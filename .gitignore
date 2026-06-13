@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode — user-specific state (per-developer, not project)
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Xcode — build output
+build/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods (uncomment if adopted)
+# Pods/
+
+# Carthage (uncomment if adopted)
+# Carthage/Build/
+
+# Fastlane (uncomment if adopted)
+# fastlane/report.xml
+# fastlane/screenshots/**/*.png
