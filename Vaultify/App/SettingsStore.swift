@@ -18,7 +18,7 @@ nonisolated func appLocale(forCode code: String) -> Locale {
 extension LocalizedStringResource {
     /// The same resource pinned to the in-app language, so SwiftUI and
     /// `String(localized:)` resolve it against the user's chosen locale.
-    var inAppLocalized: LocalizedStringResource {
+    nonisolated var inAppLocalized: LocalizedStringResource {
         var copy = self
         copy.locale = appResourceLocale
         return copy

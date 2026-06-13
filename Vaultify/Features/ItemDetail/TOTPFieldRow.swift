@@ -11,7 +11,7 @@ struct TOTPCodeView: View {
         }
     }
 
-    static func format(_ code: String) -> String {
+    nonisolated static func format(_ code: String) -> String {
         guard code.count == 6 else { return code }
         let mid = code.index(code.startIndex, offsetBy: 3)
         return "\(code[..<mid]) \(code[mid...])"

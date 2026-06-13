@@ -20,7 +20,6 @@ nonisolated enum BiometricKeyStore {
             kSecAttrService as String: KeychainStore.service,
             kSecAttrAccount as String: account,
             kSecUseAuthenticationContext as String: context,
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
         ]
         let status = SecItemCopyMatching(query as CFDictionary, nil)
         return status == errSecSuccess || status == errSecInteractionNotAllowed
@@ -54,7 +53,6 @@ nonisolated enum BiometricKeyStore {
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
             kSecUseAuthenticationContext as String: context,
-            kSecUseOperationPrompt as String: reason,
         ]
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
