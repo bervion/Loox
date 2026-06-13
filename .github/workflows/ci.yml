@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags-ignore: ['v*']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile check
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      # Building the app scheme also compiles the embedded AutoFill extension.
+      # No signing needed for a compile check.
+      - name: Build (no codesign)
+        run: |
+          xcodebuild \
+            -project Vaultify.xcodeproj \
+            -scheme Vaultify \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/vaultify-dd" \
+            CODE_SIGNING_ALLOWED=NO \
+            build

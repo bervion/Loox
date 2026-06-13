@@ -28,6 +28,16 @@ DerivedData/
 # Carthage (uncomment if adopted)
 # Carthage/Build/
 
-# Fastlane (uncomment if adopted)
-# fastlane/report.xml
-# fastlane/screenshots/**/*.png
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/
+fastlane/screenshots/**/*.png
+vendor/bundle/
+
+# Secrets — NEVER commit signing/API credentials
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+fastlane/api_key.json

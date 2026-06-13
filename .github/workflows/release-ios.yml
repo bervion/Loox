@@ -1,0 +1,37 @@
+name: Release iOS
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-ios
+  cancel-in-progress: false
+
+jobs:
+  release-ios:
+    name: Build & upload to TestFlight
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version + build come straight from the pbxproj at the tagged commit
+      # (release.sh bumped & committed them before tagging). Printed for the log.
+      - name: Show version
+        run: |
+          V=$(grep -m1 'MARKETING_VERSION = ' Vaultify.xcodeproj/project.pbxproj | sed -E 's/.*= ([^;]+);.*/\1/' | tr -d ' ')
+          B=$(grep -m1 'CURRENT_PROJECT_VERSION = ' Vaultify.xcodeproj/project.pbxproj | sed -E 's/.*= ([0-9]+);.*/\1/')
+          echo "Releasing $V ($B) from ${GITHUB_REF_NAME}"
+
+      - name: Install gems
+        run: bundle install
+
+      - name: Sign & upload to TestFlight
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_AUTH }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: bundle exec fastlane build_and_upload

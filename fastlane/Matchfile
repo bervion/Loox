@@ -1,0 +1,12 @@
+# Private repo holding the encrypted App Store distribution cert + provisioning
+# profiles. Create it first (see docs/deployment-guide.md), then `make match-setup`.
+git_url("https://github.com/bervion/vaultify-ios-certificates.git")
+
+storage_mode("git")
+
+type("appstore")
+
+# Both the app and the AutoFill extension need their own App Store profile.
+app_identifier(["com.bervion.vaultify", "com.bervion.vaultify.autofill"])
+
+team_id("WDNL2F75V7")

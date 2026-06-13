@@ -1,0 +1,3 @@
+app_identifier("com.bervion.vaultify")
+apple_dev_portal_id(ENV["APPLE_DEV_PORTAL_ID"]) if ENV["APPLE_DEV_PORTAL_ID"]
+team_id("WDNL2F75V7")
