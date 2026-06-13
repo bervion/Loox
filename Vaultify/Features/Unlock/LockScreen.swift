@@ -17,7 +17,12 @@ struct LockScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            PolarisIcon(Icons.lockFill, size: 60).foregroundStyle(Color.accentColor)
+            Image("AppLogo")
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
             Text("Vaultify").font(.largeTitle.bold()).padding(.top, 12)
             Text("Enter your master password to unlock")
                 .font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)

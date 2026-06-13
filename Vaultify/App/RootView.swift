@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
     @State private var obscured = false
+    @State private var showSplash = true
 
     private enum Route: Equatable { case onboarding, locked, unlocked }
 
@@ -25,8 +26,17 @@ struct RootView: View {
             if obscured && env.settings.hideInAppSwitcher && route == .unlocked {
                 PrivacyShield().transition(.opacity)
             }
+
+            if showSplash {
+                SplashView().transition(.opacity).zIndex(2)
+            }
         }
         .animation(.smooth(duration: 0.3), value: route)
+        .animation(.easeOut(duration: 0.4), value: showSplash)
+        .task {
+            try? await Task.sleep(for: .milliseconds(750))
+            showSplash = false
+        }
         .onChange(of: env.session.state) { _, newState in
             if newState == .unlocked {
                 env.repository.reload()

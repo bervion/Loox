@@ -45,7 +45,11 @@ let project = Project(
                 "UIApplicationSceneManifest": [
                     "UIApplicationSupportsMultipleScenes": false,
                 ],
-                "UILaunchScreen": [:],
+                "UILaunchScreen": [
+                    "UIColorName": "LaunchBackground",
+                    "UIImageName": "AppLogo",
+                    "UIImageRespectsSafeAreaInsets": true,
+                ],
                 "UISupportedInterfaceOrientations": [
                     "UIInterfaceOrientationPortrait",
                     "UIInterfaceOrientationLandscapeLeft",
