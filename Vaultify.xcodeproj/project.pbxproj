@@ -16,6 +16,11 @@
 			path = Vaultify;
 			sourceTree = "<group>";
 		};
+		AF00000000000000000000C0 /* VaultifyCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VaultifyCore;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -31,6 +36,7 @@
 			isa = PBXGroup;
 			children = (
 				90754F102FDCFF0000D63A09 /* Vaultify */,
+				AF00000000000000000000C0 /* VaultifyCore */,
 				90754F0F2FDCFF0000D63A09 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -58,6 +64,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				90754F102FDCFF0000D63A09 /* Vaultify */,
+				AF00000000000000000000C0 /* VaultifyCore */,
 			);
 			name = Vaultify;
 			productName = Vaultify;
@@ -248,7 +255,7 @@
 				DEVELOPMENT_TEAM = WDNL2F75V7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/Vaultify/Security/CArgon2";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/VaultifyCore/CArgon2";
 				INFOPLIST_KEY_CFBundleDisplayName = Vaultify;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vaultify uses the camera to scan 2FA setup QR codes.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Vaultify uses Face ID to unlock your vault.";
@@ -287,7 +294,7 @@
 				DEVELOPMENT_TEAM = WDNL2F75V7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/Vaultify/Security/CArgon2";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/VaultifyCore/CArgon2";
 				INFOPLIST_KEY_CFBundleDisplayName = Vaultify;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vaultify uses the camera to scan 2FA setup QR codes.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Vaultify uses Face ID to unlock your vault.";
