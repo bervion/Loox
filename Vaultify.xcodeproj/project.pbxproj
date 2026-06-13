@@ -23,14 +23,12 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		AF00000000000000000000B1 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstSubfolder = PlugIns;
 			files = (
 				AF00000000000000000000B2 /* VaultifyAutoFill.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -44,7 +42,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				VaultifyAutoFill.entitlements,
 			);
 			target = AF00000000000000000000A3 /* VaultifyAutoFill */;
 		};
@@ -56,17 +53,17 @@
 			path = Vaultify;
 			sourceTree = "<group>";
 		};
-		AF00000000000000000000C0 /* VaultifyCore */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = VaultifyCore;
-			sourceTree = "<group>";
-		};
 		AF00000000000000000000A2 /* VaultifyAutoFill */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				AF00000000000000000000A0 /* Exceptions for "VaultifyAutoFill" folder in "VaultifyAutoFill" target */,
 			);
 			path = VaultifyAutoFill;
+			sourceTree = "<group>";
+		};
+		AF00000000000000000000C0 /* VaultifyCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VaultifyCore;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -139,8 +136,6 @@
 				AF00000000000000000000A6 /* Resources */,
 			);
 			buildRules = (
-			);
-			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
 				AF00000000000000000000A2 /* VaultifyAutoFill */,
@@ -424,7 +419,7 @@
 			};
 			name = Release;
 		};
-		AF00000000000000000000A8 /* Debug */ = {
+		AF00000000000000000000A8 /* Debug configuration for PBXNativeTarget "VaultifyAutoFill" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = VaultifyAutoFill/VaultifyAutoFill.entitlements;
@@ -454,7 +449,7 @@
 			};
 			name = Debug;
 		};
-		AF00000000000000000000A9 /* Release */ = {
+		AF00000000000000000000A9 /* Release configuration for PBXNativeTarget "VaultifyAutoFill" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = VaultifyAutoFill/VaultifyAutoFill.entitlements;
@@ -506,8 +501,8 @@
 		AF00000000000000000000A7 /* Build configuration list for PBXNativeTarget "VaultifyAutoFill" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AF00000000000000000000A8 /* Debug */,
-				AF00000000000000000000A9 /* Release */,
+				AF00000000000000000000A8 /* Debug configuration for PBXNativeTarget "VaultifyAutoFill" */,
+				AF00000000000000000000A9 /* Release configuration for PBXNativeTarget "VaultifyAutoFill" */,
 			);
 			defaultConfigurationName = Release;
 		};

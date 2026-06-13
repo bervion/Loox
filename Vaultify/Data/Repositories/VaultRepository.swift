@@ -20,6 +20,7 @@ import SwiftData
     func clear() {
         items = []
         trashed = []
+        CredentialIdentityService.clear()
     }
 
     /// Load and decrypt all live records into the in-memory caches.
@@ -36,6 +37,7 @@ import SwiftData
         }
         items = active.sorted { $0.updatedAt > $1.updatedAt }
         trashed = trash.sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
+        CredentialIdentityService.refresh(items: items)
     }
 
     // MARK: CRUD
