@@ -6,9 +6,49 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AF00000000000000000000B2 /* VaultifyAutoFill.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF00000000000000000000A1 /* VaultifyAutoFill.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AF00000000000000000000B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 90754F062FDCFF0000D63A09 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF00000000000000000000A3;
+			remoteInfo = VaultifyAutoFill;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AF00000000000000000000B1 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AF00000000000000000000B2 /* VaultifyAutoFill.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		90754F0E2FDCFF0000D63A09 /* Vaultify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vaultify.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF00000000000000000000A1 /* VaultifyAutoFill.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VaultifyAutoFill.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		AF00000000000000000000A0 /* Exceptions for "VaultifyAutoFill" folder in "VaultifyAutoFill" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				VaultifyAutoFill.entitlements,
+			);
+			target = AF00000000000000000000A3 /* VaultifyAutoFill */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		90754F102FDCFF0000D63A09 /* Vaultify */ = {
@@ -21,10 +61,23 @@
 			path = VaultifyCore;
 			sourceTree = "<group>";
 		};
+		AF00000000000000000000A2 /* VaultifyAutoFill */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AF00000000000000000000A0 /* Exceptions for "VaultifyAutoFill" folder in "VaultifyAutoFill" target */,
+			);
+			path = VaultifyAutoFill;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		90754F0B2FDCFF0000D63A09 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		AF00000000000000000000A5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -37,6 +90,7 @@
 			children = (
 				90754F102FDCFF0000D63A09 /* Vaultify */,
 				AF00000000000000000000C0 /* VaultifyCore */,
+				AF00000000000000000000A2 /* VaultifyAutoFill */,
 				90754F0F2FDCFF0000D63A09 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -45,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				90754F0E2FDCFF0000D63A09 /* Vaultify.app */,
+				AF00000000000000000000A1 /* VaultifyAutoFill.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -59,8 +114,12 @@
 				90754F0A2FDCFF0000D63A09 /* Sources */,
 				90754F0B2FDCFF0000D63A09 /* Frameworks */,
 				90754F0C2FDCFF0000D63A09 /* Resources */,
+				AF00000000000000000000B1 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
+			);
+			dependencies = (
+				AF00000000000000000000B3 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				90754F102FDCFF0000D63A09 /* Vaultify */,
@@ -70,6 +129,27 @@
 			productName = Vaultify;
 			productReference = 90754F0E2FDCFF0000D63A09 /* Vaultify.app */;
 			productType = "com.apple.product-type.application";
+		};
+		AF00000000000000000000A3 /* VaultifyAutoFill */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF00000000000000000000A7 /* Build configuration list for PBXNativeTarget "VaultifyAutoFill" */;
+			buildPhases = (
+				AF00000000000000000000A4 /* Sources */,
+				AF00000000000000000000A5 /* Frameworks */,
+				AF00000000000000000000A6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AF00000000000000000000A2 /* VaultifyAutoFill */,
+				AF00000000000000000000C0 /* VaultifyCore */,
+			);
+			name = VaultifyAutoFill;
+			productName = VaultifyAutoFill;
+			productReference = AF00000000000000000000A1 /* VaultifyAutoFill.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -82,6 +162,9 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					90754F0D2FDCFF0000D63A09 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					AF00000000000000000000A3 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -102,12 +185,18 @@
 			projectRoot = "";
 			targets = (
 				90754F0D2FDCFF0000D63A09 /* Vaultify */,
+				AF00000000000000000000A3 /* VaultifyAutoFill */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		90754F0C2FDCFF0000D63A09 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		AF00000000000000000000A6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -120,7 +209,20 @@
 			files = (
 			);
 		};
+		AF00000000000000000000A4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AF00000000000000000000B3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AF00000000000000000000A3 /* VaultifyAutoFill */;
+			targetProxy = AF00000000000000000000B4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		90754F172FDCFF0100D63A09 /* Debug configuration for PBXProject "Vaultify" */ = {
@@ -322,6 +424,66 @@
 			};
 			name = Release;
 		};
+		AF00000000000000000000A8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VaultifyAutoFill/VaultifyAutoFill.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WDNL2F75V7;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/VaultifyCore/CArgon2";
+				INFOPLIST_FILE = VaultifyAutoFill/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Vaultify;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Vaultify uses Face ID to unlock your vault.";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bervion.vaultify.autofill;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "VaultifyAutoFill/VaultifyAutoFill-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AF00000000000000000000A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VaultifyAutoFill/VaultifyAutoFill.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WDNL2F75V7;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/VaultifyCore/CArgon2";
+				INFOPLIST_FILE = VaultifyAutoFill/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Vaultify;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Vaultify uses Face ID to unlock your vault.";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bervion.vaultify.autofill;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "VaultifyAutoFill/VaultifyAutoFill-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -338,6 +500,14 @@
 			buildConfigurations = (
 				90754F1A2FDCFF0100D63A09 /* Debug configuration for PBXNativeTarget "Vaultify" */,
 				90754F1B2FDCFF0100D63A09 /* Release configuration for PBXNativeTarget "Vaultify" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		AF00000000000000000000A7 /* Build configuration list for PBXNativeTarget "VaultifyAutoFill" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF00000000000000000000A8 /* Debug */,
+				AF00000000000000000000A9 /* Release */,
 			);
 			defaultConfigurationName = Release;
 		};

@@ -40,8 +40,8 @@ unwrap VaultKey → VaultReader decrypts items → return ASPasswordCredential.
 ## Phases
 | # | Phase | Status |
 |---|-------|--------|
-| A1 | Extract `VaultifyCore/` (move shared files, move localization globals, add to app target, fix HEADER_SEARCH_PATHS/bridging). App builds unchanged. | pending |
-| A2 | Add `VaultifyAutoFill` extension target + entitlements + Info.plist + `VaultReader`; password list/provide with master-password unlock. Builds + appears in Settings. | pending |
+| A1 | Extract `VaultifyCore/` (move shared files, move localization globals, add to app target, fix HEADER_SEARCH_PATHS/bridging). App builds unchanged. | ✅ done |
+| A2 | Add `VaultifyAutoFill` extension target + entitlements + Info.plist + `VaultReader`; password list/provide with master-password unlock. Builds + appex embedded. | ✅ done |
 | A3 | App populates `ASCredentialIdentityStore` (domain → login) on unlock/save/delete. | pending |
 | B  | Passkeys: passkey model in Core, registration + assertion (WebAuthn/P-256), passkey identities. | pending |
 
