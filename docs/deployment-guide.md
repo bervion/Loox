@@ -90,7 +90,7 @@ Repo → Settings → Actions → Runners → **New self-hosted runner** (macOS)
 
 - macOS + a recent **stable Xcode** + Command Line Tools (the project is generated to match it — no need to mirror the dev's beta Xcode)
 - **Tuist** (`brew install tuist`) — workflow runs `tuist generate`
-- **Ruby + Bundler** (`gem install bundler`) — workflow runs `bundle install`
+- **Ruby** is provided by the `ruby/setup-ruby` action in CI (the runner's system Ruby 2.6 is too old) — no manual Ruby setup needed on the runner
 - `git`, and access to clone `vaultify-ios-certificates`
 - `claude` CLI is **not** needed on the runner (notes are generated locally during `make release` and committed)
 - Keep the runner online; default label `self-hosted` matches the workflows

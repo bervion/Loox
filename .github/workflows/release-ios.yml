@@ -43,8 +43,14 @@ jobs:
       - name: Generate Xcode project
         run: tuist generate --no-open
 
-      - name: Install gems
-        run: bundle install
+      # Use a managed Ruby — the runner's macOS system Ruby (2.6) is too old for
+      # modern bundler/fastlane. bundler-cache installs the locked gems (and the
+      # bundler version pinned in Gemfile.lock).
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
 
       - name: Sign & upload to TestFlight
         env:
