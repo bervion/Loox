@@ -74,7 +74,7 @@ platform :ios do
     force_manual_signing(EXT_TARGET, EXT_ID)
 
     build_app(
-      project: "Vaultify.xcodeproj",
+      workspace: "Vaultify.xcworkspace",
       scheme: SCHEME,
       configuration: "Release",
       export_method: "app-store",

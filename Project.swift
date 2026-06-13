@@ -1,0 +1,111 @@
+import ProjectDescription
+
+// Single source of truth for the Xcode project. Run `tuist generate` to produce
+// Vaultify.xcodeproj / Vaultify.xcworkspace — both are gitignored and generated
+// per machine, so a beta-Xcode dev and a stable-Xcode CI runner each get a
+// project file their Xcode can open. Version lives here (bumped by release.sh).
+
+let project = Project(
+    name: "Vaultify",
+    options: .options(
+        defaultKnownRegions: ["en", "vi"],
+        developmentRegion: "en"
+    ),
+    settings: .settings(
+        base: [
+            "DEVELOPMENT_TEAM": "WDNL2F75V7",
+            "MARKETING_VERSION": "1.0",
+            "CURRENT_PROJECT_VERSION": "1",
+            "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
+            "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
+            "SWIFT_VERSION": "5.0",
+        ],
+        defaultSettings: .recommended
+    ),
+    targets: [
+        .target(
+            name: "Vaultify",
+            destinations: [.iPhone],
+            product: .app,
+            bundleId: "com.bervion.vaultify",
+            deploymentTargets: .iOS("17.6"),
+            infoPlist: .extendingDefault(with: [
+                "CFBundleDisplayName": "Vaultify",
+                "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+                "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+                "CFBundleLocalizations": ["en", "vi"],
+                "LSApplicationCategoryType": "public.app-category.utilities",
+                "NSCameraUsageDescription": "Vaultify uses the camera to scan 2FA setup QR codes.",
+                "NSFaceIDUsageDescription": "Vaultify uses Face ID to unlock your vault.",
+                "UIApplicationSupportsIndirectInputEvents": true,
+                "UIApplicationSceneManifest": [
+                    "UIApplicationSupportsMultipleScenes": false,
+                ],
+                "UILaunchScreen": [:],
+                "UISupportedInterfaceOrientations": [
+                    "UIInterfaceOrientationPortrait",
+                    "UIInterfaceOrientationLandscapeLeft",
+                    "UIInterfaceOrientationLandscapeRight",
+                ],
+            ]),
+            sources: ["Vaultify/**", "VaultifyCore/**"],
+            resources: [
+                "Vaultify/Assets.xcassets",
+                "Vaultify/Localizable.xcstrings",
+            ],
+            entitlements: "Vaultify/Vaultify.entitlements",
+            dependencies: [
+                .target(name: "VaultifyAutoFill"),
+            ],
+            settings: .settings(base: [
+                "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+                "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+                "CODE_SIGN_STYLE": "Automatic",
+                "ENABLE_PREVIEWS": "YES",
+                "HEADER_SEARCH_PATHS": "$(SRCROOT)/VaultifyCore/CArgon2",
+                "SWIFT_OBJC_BRIDGING_HEADER": "Vaultify/Vaultify-Bridging-Header.h",
+                "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+                "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
+                "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
+                "SWIFT_EMIT_LOC_STRINGS": "YES",
+                "STRING_CATALOG_GENERATE_SYMBOLS": "YES",
+                "TARGETED_DEVICE_FAMILY": "1",
+            ])
+        ),
+        .target(
+            name: "VaultifyAutoFill",
+            destinations: [.iPhone],
+            product: .appExtension,
+            bundleId: "com.bervion.vaultify.autofill",
+            deploymentTargets: .iOS("17.6"),
+            infoPlist: .extendingDefault(with: [
+                "CFBundleDisplayName": "Vaultify",
+                "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+                "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+                "NSFaceIDUsageDescription": "Vaultify uses Face ID to unlock your vault.",
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.authentication-services-credential-provider-ui",
+                    "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).CredentialProviderViewController",
+                    "NSExtensionAttributes": [
+                        "ASCredentialProviderExtensionCapabilities": [
+                            "ProvidesPasswords": true,
+                            "ProvidesPasskeys": true,
+                        ],
+                    ],
+                ],
+            ]),
+            sources: ["VaultifyAutoFill/**", "VaultifyCore/**"],
+            entitlements: "VaultifyAutoFill/VaultifyAutoFill.entitlements",
+            settings: .settings(base: [
+                "CODE_SIGN_STYLE": "Automatic",
+                "HEADER_SEARCH_PATHS": "$(SRCROOT)/VaultifyCore/CArgon2",
+                "SWIFT_OBJC_BRIDGING_HEADER": "VaultifyAutoFill/VaultifyAutoFill-Bridging-Header.h",
+                "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+                "SWIFT_EMIT_LOC_STRINGS": "YES",
+                "TARGETED_DEVICE_FAMILY": "1",
+                "SKIP_INSTALL": "YES",
+                "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks",
+            ])
+        ),
+    ]
+)

@@ -4,13 +4,15 @@
 # Beta:     make beta      (TestFlight, quick)
 # Release:  make release   (auto bump + AI notes + tag → TestFlight)
 # Hotfix:   make hotfix    (patch bump)
+#
+# The Xcode project is generated from Project.swift by Tuist. Run `make gen`
+# (or any build target, which depends on it) after pulling or adding files.
 
-.PHONY: help push release beta hotfix version changelog notes \
+.PHONY: help push release beta hotfix version changelog notes gen \
         match-setup certificates submit-ios check lint
 
-PROJECT := Vaultify.xcodeproj
-SCHEME  := Vaultify
-DD      := /tmp/vaultify-ci-dd
+SCHEME := Vaultify
+DD     := /tmp/vaultify-ci-dd
 
 help:
 	@echo ""
@@ -21,6 +23,7 @@ help:
 	@echo "  make hotfix        Patch release"
 	@echo "  make push          Push main (CI compile check)"
 	@echo "  ─────────────────────────────────────"
+	@echo "  make gen           Generate Xcode project (tuist generate)"
 	@echo "  make version       Show version + build + last tag"
 	@echo "  make changelog     Commits since last tag"
 	@echo "  make notes         Preview AI release notes (no commit)"
@@ -45,15 +48,19 @@ push:
 	git push origin main
 	@echo "✓ Pushed. CI: https://github.com/bervion/Vaultify/actions"
 
+# ── Project generation (Tuist) ──
+gen:
+	tuist generate --no-open
+
 # ── Info ──
 version:
-	@echo "MARKETING_VERSION: $$(grep -m1 'MARKETING_VERSION = ' $(PROJECT)/project.pbxproj | sed -E 's/.*= ([^;]+);.*/\1/' | tr -d ' ')"
-	@echo "BUILD:             $$(grep -m1 'CURRENT_PROJECT_VERSION = ' $(PROJECT)/project.pbxproj | sed -E 's/.*= ([0-9]+);.*/\1/')"
-	@echo "Last tag:          $$(git describe --tags --abbrev=0 2>/dev/null || echo none)"
-	@echo "Commits since tag: $$(git rev-list $$(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~50)..HEAD --count)"
+	@printf 'MARKETING_VERSION: %s\n' "$$(grep -m1 '"MARKETING_VERSION":' Project.swift | sed -E 's/.*: "([^"]+)".*/\1/')"
+	@printf 'BUILD:             %s\n' "$$(grep -m1 '"CURRENT_PROJECT_VERSION":' Project.swift | sed -E 's/.*: "([^"]+)".*/\1/')"
+	@printf 'Last tag:          %s\n' "$$(git describe --tags --abbrev=0 2>/dev/null || echo none)"
+	@printf 'Commits since tag: %s\n' "$$(git rev-list $$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD --count)"
 
 changelog:
-	@LAST=$$(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~20); \
+	@LAST=$$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD); \
 	echo "Changes since $$LAST:"; echo "─────────────────────"; \
 	git log "$$LAST"..HEAD --pretty=format:"  %C(yellow)%h%C(reset) %s" --no-merges
 
@@ -73,8 +80,8 @@ submit-ios:
 	bundle exec fastlane submit
 
 # ── Local quality (compile check of app + embedded AutoFill extension) ──
-check lint:
-	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug \
+check lint: gen
+	xcodebuild -workspace Vaultify.xcworkspace -scheme $(SCHEME) -configuration Debug \
 	  -destination 'generic/platform=iOS Simulator' -derivedDataPath $(DD) \
 	  CODE_SIGNING_ALLOWED=NO build | tail -20
 	@echo "✓ Compile check passed"

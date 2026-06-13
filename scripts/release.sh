@@ -17,7 +17,7 @@
 
 set -e
 
-PBXPROJ="Vaultify.xcodeproj/project.pbxproj"
+MANIFEST="Project.swift"
 CHANGELOG="CHANGELOG.md"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -32,7 +32,7 @@ BRANCH=$(git branch --show-current)
 [ "$BRANCH" = "main" ] || error "Must be on main branch. Currently on: $BRANCH"
 [ -z "$(git diff --cached --name-only)" ] || error "Staged changes found. Commit or unstage first."
 [ -z "$(git diff --name-only)" ] || error "Unstaged changes found. Commit or stash first."
-[ -f "$PBXPROJ" ] || error "Cannot find $PBXPROJ (run from repo root)."
+[ -f "$MANIFEST" ] || error "Cannot find $MANIFEST (run from repo root)."
 git fetch --tags --quiet
 success "Pre-checks passed"
 
@@ -73,7 +73,7 @@ if [ -z "$BUMP_OVERRIDE" ] && [ "$RELEASE_YES" != "1" ] && [ -t 0 ]; then
 fi
 
 # ── Current version from pbxproj ──
-CURRENT_VERSION=$(grep -m1 'MARKETING_VERSION = ' "$PBXPROJ" | sed -E 's/.*MARKETING_VERSION = ([^;]+);.*/\1/' | tr -d ' "')
+CURRENT_VERSION=$(grep -m1 '"MARKETING_VERSION":' "$MANIFEST" | sed -E 's/.*: "([^"]+)".*/\1/')
 IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
 
@@ -85,7 +85,7 @@ case "$BUMP_TYPE" in
 esac
 NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
-CURRENT_BUILD=$(grep -m1 'CURRENT_PROJECT_VERSION = ' "$PBXPROJ" | sed -E 's/.*= ([0-9]+);.*/\1/')
+CURRENT_BUILD=$(grep -m1 '"CURRENT_PROJECT_VERSION":' "$MANIFEST" | sed -E 's/.*: "([0-9]+)".*/\1/')
 NEW_BUILD=$(( CURRENT_BUILD + 1 ))
 log "Version: $CURRENT_VERSION → ${GREEN}$NEW_VERSION${NC}  (build ${CURRENT_BUILD} → ${NEW_BUILD})"
 
@@ -133,10 +133,10 @@ if [ "$RELEASE_YES" != "1" ] && [ -t 0 ]; then
 fi
 
 # ── Bump pbxproj (all configs: app + extension) ──
-log "Bumping $PBXPROJ..."
-sed -i '' -E "s/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = ${NEW_VERSION};/g" "$PBXPROJ"
-sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${NEW_BUILD};/g" "$PBXPROJ"
-success "pbxproj → ${NEW_VERSION} (${NEW_BUILD})"
+log "Bumping $MANIFEST..."
+sed -i '' -E "s/(\"MARKETING_VERSION\": )\"[^\"]*\"/\1\"${NEW_VERSION}\"/" "$MANIFEST"
+sed -i '' -E "s/(\"CURRENT_PROJECT_VERSION\": )\"[0-9]+\"/\1\"${NEW_BUILD}\"/" "$MANIFEST"
+success "Project.swift → ${NEW_VERSION} (${NEW_BUILD})"
 
 # ── Update CHANGELOG.md ──
 if [ -f "$CHANGELOG" ]; then
@@ -150,7 +150,7 @@ success "CHANGELOG.md updated"
 
 # ── Commit + tag + push ──
 log "Committing..."
-git add "$PBXPROJ" "$CHANGELOG" metadata/
+git add "$MANIFEST" "$CHANGELOG" metadata/
 git commit -m "chore(release): v${NEW_VERSION}
 
 $CHANGELOG_ENTRY"

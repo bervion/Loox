@@ -23,6 +23,23 @@ make release  →  bump version + AI notes + tag vX.Y.Z  →  push
 
 ---
 
+## Project generation (Tuist)
+
+The Xcode project is **not committed** — it is generated from `Project.swift` by
+[Tuist](https://tuist.dev). This lets a beta-Xcode dev and a stable-Xcode runner each
+generate a project file their own Xcode can open (no "future project format" error).
+
+- Install once on **dev + runner**: `brew install tuist`
+- After cloning / pulling / adding or removing source files: `make gen` (= `tuist generate`)
+- `Vaultify.xcodeproj` and `Vaultify.xcworkspace` are gitignored — regenerate anytime
+- Version (`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`) lives in `Project.swift`; `make release` bumps it there
+- CI runs `tuist generate` before building, so each runner uses its own Xcode
+
+> Tuist fixes the project **format** mismatch, not SDK/API differences. Don't use APIs
+> newer than the runner's Xcode SDK, or the runner build will fail to compile.
+
+---
+
 ## One-time setup
 
 Do these once. Steps 1–5 are prerequisites; the pipeline cannot upload until they exist.
@@ -71,7 +88,8 @@ needs `repo` scope (read) on `vaultify-ios-certificates`.
 ### 6. Self-hosted runner (you configure)
 Repo → Settings → Actions → Runners → **New self-hosted runner** (macOS). The runner host needs:
 
-- macOS + **Xcode** (matching the project's deployment target) + Command Line Tools
+- macOS + a recent **stable Xcode** + Command Line Tools (the project is generated to match it — no need to mirror the dev's beta Xcode)
+- **Tuist** (`brew install tuist`) — workflow runs `tuist generate`
 - **Ruby + Bundler** (`gem install bundler`) — workflow runs `bundle install`
 - `git`, and access to clone `vaultify-ios-certificates`
 - `claude` CLI is **not** needed on the runner (notes are generated locally during `make release` and committed)

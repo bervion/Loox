@@ -35,12 +35,17 @@ jobs:
           echo "Selected Xcode $newest_ver ($newest)"
           echo "DEVELOPER_DIR=$newest/Contents/Developer" >> "$GITHUB_ENV"
 
+      # The Xcode project is generated from Project.swift, so the runner's own
+      # (stable) Xcode produces a project file it can open — no format mismatch.
+      - name: Generate Xcode project
+        run: tuist generate --no-open
+
       # Building the app scheme also compiles the embedded AutoFill extension.
       # No signing needed for a compile check.
       - name: Build (no codesign)
         run: |
           xcodebuild \
-            -project Vaultify.xcodeproj \
+            -workspace Vaultify.xcworkspace \
             -scheme Vaultify \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \

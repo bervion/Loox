@@ -32,13 +32,16 @@ jobs:
           echo "Selected Xcode $newest_ver ($newest)"
           echo "DEVELOPER_DIR=$newest/Contents/Developer" >> "$GITHUB_ENV"
 
-      # Version + build come straight from the pbxproj at the tagged commit
-      # (release.sh bumped & committed them before tagging). Printed for the log.
+      # Version lives in Project.swift (bumped & committed by release.sh before tag).
       - name: Show version
         run: |
-          V=$(grep -m1 'MARKETING_VERSION = ' Vaultify.xcodeproj/project.pbxproj | sed -E 's/.*= ([^;]+);.*/\1/' | tr -d ' ')
-          B=$(grep -m1 'CURRENT_PROJECT_VERSION = ' Vaultify.xcodeproj/project.pbxproj | sed -E 's/.*= ([0-9]+);.*/\1/')
+          V=$(grep -m1 '"MARKETING_VERSION":' Project.swift | sed -E 's/.*"MARKETING_VERSION": "([^"]+)".*/\1/')
+          B=$(grep -m1 '"CURRENT_PROJECT_VERSION":' Project.swift | sed -E 's/.*"CURRENT_PROJECT_VERSION": "([0-9]+)".*/\1/')
           echo "Releasing $V ($B) from ${GITHUB_REF_NAME}"
+
+      # Generate Vaultify.xcworkspace/.xcodeproj using this runner's Xcode.
+      - name: Generate Xcode project
+        run: tuist generate --no-open
 
       - name: Install gems
         run: bundle install
