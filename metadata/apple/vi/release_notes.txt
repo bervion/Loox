@@ -1,1 +1,1 @@
-Phiên bản đầu tiên. Vaultify lưu mật khẩu và passkey của bạn riêng tư, mã hoá và hoàn toàn trên thiết bị. Mở khoá bằng Face ID và tự động điền thông tin đăng nhập với AutoFill của iOS.
+AutoFill nay hỗ trợ cả mật khẩu và passkey — điền thông tin đăng nhập ngay từ bàn phím hoặc qua Face ID mà không cần mở ứng dụng. Vault bổ sung tệp đính kèm và các trường được bảo vệ riêng. Ứng dụng được xây dựng lại bằng SwiftUI gốc, mang lại trải nghiệm mượt mà hơn. Đã hỗ trợ đầy đủ tiếng Việt.

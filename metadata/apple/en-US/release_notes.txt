@@ -1,1 +1,1 @@
-First release. Vaultify keeps your passwords and passkeys private, encrypted, and fully on your device. Unlock with Face ID and fill credentials anywhere with iOS AutoFill.
+AutoFill now works for both passwords and passkeys — fill credentials directly from the keyboard or via Face ID without opening the app. Vaults support attachments and additional protected fields. The app has been rebuilt with native SwiftUI for a smoother experience. Vietnamese language support is now included.
