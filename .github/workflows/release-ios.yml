@@ -16,6 +16,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The project uses a newer Xcode format (objectVersion 110); select the
+      # highest-versioned Xcode on the runner so xcodebuild/gym can open it.
+      - name: Select newest Xcode
+        run: |
+          newest=""; newest_ver=""
+          for xc in /Applications/Xcode*.app; do
+            [ -d "$xc" ] || continue
+            ver=$("$xc/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | awk 'NR==1{print $2}')
+            [ -n "$ver" ] || continue
+            if [ -z "$newest_ver" ] || [ "$(printf '%s\n%s\n' "$ver" "$newest_ver" | sort -V | tail -1)" = "$ver" ]; then
+              newest="$xc"; newest_ver="$ver"
+            fi
+          done
+          echo "Selected Xcode $newest_ver ($newest)"
+          echo "DEVELOPER_DIR=$newest/Contents/Developer" >> "$GITHUB_ENV"
+
       # Version + build come straight from the pbxproj at the tagged commit
       # (release.sh bumped & committed them before tagging). Printed for the log.
       - name: Show version

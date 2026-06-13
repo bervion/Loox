@@ -18,6 +18,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The project is saved in a newer Xcode format (objectVersion 110), so the
+      # runner must use an Xcode at least as new as the one that created it. Pick
+      # the highest-versioned Xcode installed and expose it via DEVELOPER_DIR.
+      - name: Select newest Xcode
+        run: |
+          newest=""; newest_ver=""
+          for xc in /Applications/Xcode*.app; do
+            [ -d "$xc" ] || continue
+            ver=$("$xc/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | awk 'NR==1{print $2}')
+            [ -n "$ver" ] || continue
+            if [ -z "$newest_ver" ] || [ "$(printf '%s\n%s\n' "$ver" "$newest_ver" | sort -V | tail -1)" = "$ver" ]; then
+              newest="$xc"; newest_ver="$ver"
+            fi
+          done
+          echo "Selected Xcode $newest_ver ($newest)"
+          echo "DEVELOPER_DIR=$newest/Contents/Developer" >> "$GITHUB_ENV"
+
       # Building the app scheme also compiles the embedded AutoFill extension.
       # No signing needed for a compile check.
       - name: Build (no codesign)
