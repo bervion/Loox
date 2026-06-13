@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.1] - 2026-06-14
+
+### Added
+- add app-theme selection step before biometrics
+- app-icon splash, launch screen, and lock-screen logo
+
+### Fixed
+- background-only launch screen to stop square-logo flash
+- evaluate biometrics when enabling unlock so Face ID actually triggers
+
+### Changed
+- Vietnamese for new onboarding strings; mandate localization
+- declare exempt encryption to skip ASC compliance prompt
+
+
 ## [1.1.0] - 2026-06-14
 
 ### Added
