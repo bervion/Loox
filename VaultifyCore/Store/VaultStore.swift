@@ -12,7 +12,7 @@ final class VaultStore {
             ? ModelConfiguration(isStoredInMemoryOnly: true)
             : ModelConfiguration(url: SharedConfig.storeURL)
         do {
-            container = try ModelContainer(for: ItemRecord.self, configurations: configuration)
+            container = try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, configurations: configuration)
         } catch {
             fatalError("Failed to initialise vault store: \(error)")
         }

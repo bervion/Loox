@@ -5,48 +5,116 @@ import UIKit
 /// AutoFill Credential Provider entry point. Hosts a SwiftUI unlock + picker.
 /// The vault is opened only after the user enters their master password
 /// (Argon2id unwrap of the shared key bundle) — the same zero-knowledge model
-/// as the main app. Passkeys are added in a later phase.
+/// as the main app. Provides both passwords and passkeys.
 final class CredentialProviderViewController: ASCredentialProviderViewController {
 
-    /// User tapped an item in our list / a saved credential is requested.
-    override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
-        showInterface(serviceIdentifiers: serviceIdentifiers.map(\.identifier), preferredRecordID: nil)
+    private enum PasskeyPurpose {
+        case assert(relyingParty: String, allowedCredentialIDs: [Data], clientDataHash: Data)
+        case register(identity: ASPasskeyCredentialIdentity, clientDataHash: Data)
     }
 
-    /// iOS asks us to provide a specific credential without showing UI. We always
-    /// require the master password, so request that our UI be shown instead.
+    // MARK: Passwords
+
+    /// User picks from our list / a saved credential is requested.
+    override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
+        host(AutoFillView(serviceIdentifiers: serviceIdentifiers.map(\.identifier),
+                          preferredRecordID: nil,
+                          onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
+                          onCancel: { [weak self] in self?.cancel() }))
+    }
+
+    /// iOS asks us to provide a credential without UI. We always require the
+    /// master password, so request that our UI be shown instead.
     override func provideCredentialWithoutUserInteraction(for credentialRequest: ASCredentialRequest) {
         extensionContext.cancelRequest(
             withError: NSError(domain: ASExtensionErrorDomain,
                                code: ASExtensionError.Code.userInteractionRequired.rawValue))
     }
 
-    /// iOS shows our UI to provide a specific credential (after the no-UI path).
+    /// iOS shows our UI to provide a specific credential (password or passkey).
     override func prepareInterfaceToProvideCredential(for credentialRequest: ASCredentialRequest) {
-        let recordID = (credentialRequest.credentialIdentity as? ASPasswordCredentialIdentity)?.recordIdentifier
-        showInterface(serviceIdentifiers: [], preferredRecordID: recordID)
+        if let passkey = credentialRequest as? ASPasskeyCredentialRequest,
+           let identity = passkey.credentialIdentity as? ASPasskeyCredentialIdentity {
+            showPasskey(.assert(relyingParty: identity.relyingPartyIdentifier,
+                                allowedCredentialIDs: [identity.credentialID],
+                                clientDataHash: passkey.clientDataHash))
+        } else {
+            let recordID = (credentialRequest.credentialIdentity as? ASPasswordCredentialIdentity)?.recordIdentifier
+            host(AutoFillView(serviceIdentifiers: [], preferredRecordID: recordID,
+                              onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
+                              onCancel: { [weak self] in self?.cancel() }))
+        }
     }
 
-    // MARK: - Hosting
+    // MARK: Passkeys
 
-    private func showInterface(serviceIdentifiers: [String], preferredRecordID: String?) {
-        let root = AutoFillView(
-            serviceIdentifiers: serviceIdentifiers,
-            preferredRecordID: preferredRecordID,
-            onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
-            onCancel: { [weak self] in self?.cancel() })
+    /// Passkey registration ceremony (create a new credential).
+    override func prepareInterface(forPasskeyRegistration registrationRequest: ASCredentialRequest) {
+        guard let request = registrationRequest as? ASPasskeyCredentialRequest,
+              let identity = request.credentialIdentity as? ASPasskeyCredentialIdentity else { cancel(); return }
+        showPasskey(.register(identity: identity, clientDataHash: request.clientDataHash))
+    }
 
-        let host = UIHostingController(rootView: root)
-        addChild(host)
-        host.view.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(host.view)
+    /// Passkey assertion invoked from the QuickType bar.
+    override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier],
+                                        requestParameters: ASPasskeyCredentialRequestParameters) {
+        showPasskey(.assert(relyingParty: requestParameters.relyingPartyIdentifier,
+                            allowedCredentialIDs: requestParameters.allowedCredentials,
+                            clientDataHash: requestParameters.clientDataHash))
+    }
+
+    private func showPasskey(_ purpose: PasskeyPurpose) {
+        let prompt: LocalizedStringResource
+        if case .register = purpose { prompt = "Create a passkey" } else { prompt = "Sign in with a passkey" }
+        host(PasskeyActionView(prompt: prompt,
+                               onUnlocked: { [weak self] key in self?.perform(purpose, vaultKey: key) },
+                               onCancel: { [weak self] in self?.cancel() }))
+    }
+
+    private func perform(_ purpose: PasskeyPurpose, vaultKey: [UInt8]) {
+        switch purpose {
+        case let .assert(relyingParty, allowed, clientDataHash):
+            let matches = PasskeyVault.matching(relyingParty: relyingParty, allowedCredentialIDs: allowed, key: vaultKey)
+            guard let passkey = matches.first,
+                  let result = try? WebAuthn.assertion(relyingParty: relyingParty,
+                                                       clientDataHash: clientDataHash,
+                                                       privateKeyRaw: passkey.privateKeyRaw) else {
+                cancel(code: .credentialIdentityNotFound); return
+            }
+            let credential = ASPasskeyAssertionCredential(
+                userHandle: passkey.userHandle, relyingParty: relyingParty,
+                signature: result.signature, clientDataHash: clientDataHash,
+                authenticatorData: result.authenticatorData, credentialID: passkey.credentialID)
+            extensionContext.completeAssertionRequest(using: credential)
+
+        case let .register(identity, clientDataHash):
+            let registration = WebAuthn.register(relyingParty: identity.relyingPartyIdentifier)
+            let secret = PasskeySecret(relyingParty: identity.relyingPartyIdentifier,
+                                       userName: identity.userName, userHandle: identity.userHandle,
+                                       credentialID: registration.credentialID,
+                                       privateKeyRaw: registration.privateKeyRaw, counter: 0, createdAt: .now)
+            try? PasskeyVault.save(secret, key: vaultKey)
+            let credential = ASPasskeyRegistrationCredential(
+                relyingParty: identity.relyingPartyIdentifier, clientDataHash: clientDataHash,
+                credentialID: registration.credentialID, attestationObject: registration.attestationObject)
+            extensionContext.completeRegistrationRequest(using: credential)
+        }
+    }
+
+    // MARK: Hosting & completion
+
+    private func host(_ rootView: some View) {
+        let hosting = UIHostingController(rootView: rootView)
+        addChild(hosting)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hosting.view)
         NSLayoutConstraint.activate([
-            host.view.topAnchor.constraint(equalTo: view.topAnchor),
-            host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            host.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            host.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: view.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            hosting.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
-        host.didMove(toParent: self)
+        hosting.didMove(toParent: self)
     }
 
     private func complete(user: String, password: String) {
@@ -54,9 +122,8 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             withSelectedCredential: ASPasswordCredential(user: user, password: password))
     }
 
-    private func cancel() {
+    private func cancel(code: ASExtensionError.Code = .userCanceled) {
         extensionContext.cancelRequest(
-            withError: NSError(domain: ASExtensionErrorDomain,
-                               code: ASExtensionError.Code.userCanceled.rawValue))
+            withError: NSError(domain: ASExtensionErrorDomain, code: code.rawValue))
     }
 }

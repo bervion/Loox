@@ -42,8 +42,8 @@ unwrap VaultKey → VaultReader decrypts items → return ASPasswordCredential.
 |---|-------|--------|
 | A1 | Extract `VaultifyCore/` (move shared files, move localization globals, add to app target, fix HEADER_SEARCH_PATHS/bridging). App builds unchanged. | ✅ done |
 | A2 | Add `VaultifyAutoFill` extension target + entitlements + Info.plist + `VaultReader`; password list/provide with master-password unlock. Builds + appex embedded. | ✅ done |
-| A3 | App populates `ASCredentialIdentityStore` (domain → login) on unlock/save/delete. | pending |
-| B  | Passkeys: passkey model in Core, registration + assertion (WebAuthn/P-256), passkey identities. | pending |
+| A3 | App populates `ASCredentialIdentityStore` (domain → login) on unlock; clears on lock. | ✅ done |
+| B  | Passkeys: PasskeyRecord/Secret in Core, WebAuthn (CBOR + COSE + ES256), registration + assertion in the extension, ProvidesPasskeys. Compile-verified; needs on-device testing with a real relying party. | ✅ done |
 
 ## Risks
 - pbxproj surgery (new target, synchronized groups, embed phase) — verify each step with `xcodebuild`.
