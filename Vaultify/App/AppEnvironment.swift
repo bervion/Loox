@@ -1,0 +1,38 @@
+import SwiftUI
+
+/// Composition root: owns the long-lived stores/services and wires them
+/// together. Injected into the SwiftUI environment.
+@MainActor @Observable final class AppEnvironment {
+    let settings: SettingsStore
+    let session: VaultSession
+    let store: VaultStore
+    let repository: VaultRepository
+    let clipboard: ClipboardService
+    let cloudSync: CloudSyncService
+    let faviconService: FaviconService
+
+    init() {
+        let settings = SettingsStore()
+        let session = VaultSession(settings: settings)
+        let store = VaultStore()
+        self.settings = settings
+        self.session = session
+        self.store = store
+        self.repository = VaultRepository(store: store, session: session)
+        self.clipboard = ClipboardService(settings: settings)
+        self.cloudSync = CloudSyncService(store: store, settings: settings)
+        self.faviconService = FaviconService()
+    }
+
+    /// Sync with iCloud if enabled, then refresh the decrypted cache.
+    func syncNow() {
+        Task { await cloudSync.sync(reload: { [repository] in repository.reload() }) }
+    }
+
+    /// Wipe all data and key material (Settings → Erase Vault).
+    func eraseEverything() {
+        repository.clear()
+        try? store.eraseAll()
+        session.resetVault()
+    }
+}

@@ -1,0 +1,125 @@
+import SwiftUI
+import UIKit
+
+/// One field in the item-detail card, 1Password-style: tap anywhere to copy
+/// (the row flashes the accent color and shows "Copied"), with a per-field "•••"
+/// menu (Copy / Reveal / Open) and, for passwords, a strength badge.
+struct DetailFieldRow: View {
+    let field: DynamicField
+    @Environment(AppEnvironment.self) private var env
+    @State private var copied = false
+    @State private var revealed = false
+    @State private var showLargeType = false
+
+    private var isSecret: Bool { field.protected || field.kind.isSecret }
+
+    private var copyValue: String {
+        if field.kind == .totp { return TOTPGenerator.code(forStoredValue: field.value) ?? field.value }
+        return field.value
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                fieldLabelText(field.label)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(copied ? Color.white.opacity(0.85) : Color.accentColor)
+                valueView
+            }
+            Spacer(minLength: 8)
+            trailing
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(copied ? Color.accentColor : Color.clear)
+        .foregroundStyle(copied ? .white : .primary)
+        .contentShape(.rect)
+        .onTapGesture { copy() }
+        .animation(.easeOut(duration: 0.18), value: copied)
+        .fullScreenCover(isPresented: $showLargeType) {
+            LargeTypeView(text: copyValue)
+        }
+    }
+
+    @ViewBuilder private var valueView: some View {
+        if copied {
+            Text("Copied").font(.body)
+        } else {
+            switch field.kind {
+            case .totp:
+                TOTPCodeView(secret: field.value)
+            case .url:
+                Text(field.value).font(.body).foregroundStyle(Color.accentColor)
+                    .lineLimit(1).truncationMode(.middle)
+            default:
+                if isSecret && !revealed {
+                    SpoilerText(text: field.value)
+                } else {
+                    Text(field.value)
+                        .font(field.kind.isMonospaced ? .vaultMono() : .body)
+                        .lineLimit(field.kind == .multiline ? nil : 1)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var trailing: some View {
+        HStack(spacing: 10) {
+            if !copied, field.kind == .password, !field.value.isEmpty {
+                strengthBadge
+            }
+            if field.kind == .totp {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    CountdownRing(remaining: TOTPGenerator.secondsRemaining(date: context.date), period: 30)
+                }
+            }
+            menu
+        }
+    }
+
+    private var strengthBadge: some View {
+        let strength = PasswordStrength.evaluate(field.value)
+        return HStack(spacing: 5) {
+            Text(strength.title).font(.subheadline).foregroundStyle(copied ? Color.white.opacity(0.85) : .secondary)
+            Circle().fill(VaultColors.strength(strength)).frame(width: 9, height: 9)
+        }
+    }
+
+    private var menu: some View {
+        Menu {
+            Button { copy() } label: { Label("Copy", image: Icons.copy) }
+            Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
+            if isSecret {
+                Button { withAnimation { revealed.toggle() } } label: {
+                    Label(revealed ? "Conceal" : "Reveal", image: revealed ? Icons.hide : Icons.reveal)
+                }
+            }
+            if field.kind == .url, let url = Self.normalized(field.value) {
+                Button { UIApplication.shared.open(url) } label: { Label("Open Website", image: Icons.globe) }
+            }
+        } label: {
+            PolarisIcon("ic_menu_horizontal", size: 17)
+                .foregroundStyle(copied ? .white : .secondary)
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(copied ? Color.white.opacity(0.22) : Color(.tertiarySystemFill)))
+        }
+    }
+
+    private func copy() {
+        guard !copied, !field.value.isEmpty else { return }
+        env.clipboard.copy(copyValue, label: field.label, sensitive: isSecret || field.kind == .totp)
+        copied = true
+        Task {
+            try? await Task.sleep(for: .seconds(1.2))
+            withAnimation(.easeOut(duration: 0.3)) { copied = false }
+        }
+    }
+
+    static func normalized(_ string: String) -> URL? {
+        let trimmed = string.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.contains("://") ? URL(string: trimmed) : URL(string: "https://\(trimmed)")
+    }
+}

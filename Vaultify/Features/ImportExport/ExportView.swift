@@ -1,0 +1,96 @@
+import SwiftUI
+
+/// Export the vault as a passphrase-encrypted backup (recommended) or plain CSV.
+struct ExportView: View {
+    enum Mode: String, CaseIterable, Identifiable {
+        case encrypted, csv
+        var id: String { rawValue }
+        var title: LocalizedStringResource { self == .encrypted ? "Encrypted" : "CSV (plain)" }
+    }
+
+    @Environment(AppEnvironment.self) private var env
+    @State private var mode: Mode = .encrypted
+    @State private var passphrase = ""
+    @State private var confirm = ""
+    @State private var exportURL: URL?
+    @State private var working = false
+    @State private var error: String?
+
+    private var canExport: Bool {
+        guard !env.repository.items.isEmpty else { return false }
+        if mode == .encrypted { return passphrase.count >= 8 && passphrase == confirm }
+        return true
+    }
+
+    var body: some View {
+        Form {
+            Picker("Format", selection: $mode) {
+                ForEach(Mode.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: mode) { exportURL = nil }
+
+            if mode == .encrypted {
+                Section {
+                    RevealableSecureField(title: "Password", text: $passphrase).listRowInsets(.init())
+                    RevealableSecureField(title: "Confirm", text: $confirm).listRowInsets(.init())
+                } header: {
+                    Text("Backup password")
+                } footer: {
+                    Text("The backup is sealed with Argon2id + AES-256-GCM. You’ll need this password to restore it.")
+                }
+            } else {
+                Section {
+                    Label {
+                        Text("A CSV export is **not encrypted**. Anyone with the file can read every password. Delete it after importing.")
+                    } icon: {
+                        PolarisIcon(Icons.alert).foregroundStyle(VaultColors.strengthWeak)
+                    }
+                }
+            }
+
+            Section {
+                Button { Task { await generate() } } label: {
+                    Text("Create Export").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!canExport || working)
+            }
+
+            if let exportURL {
+                Section {
+                    ShareLink(item: exportURL) {
+                        Label { Text("Share Export") } icon: { PolarisIcon(Icons.share) }
+                    }
+                }
+            }
+
+            if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
+        }
+        .navigationTitle("Export")
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay { if working { ProgressView().controlSize(.large) } }
+    }
+
+    private func generate() async {
+        working = true; error = nil; exportURL = nil
+        do {
+            let items = env.repository.items
+            if mode == .encrypted {
+                let data = try await VaultBackup.exportEncrypted(items, passphrase: passphrase)
+                exportURL = try write(data, name: "vaultify-backup.vaultify")
+            } else {
+                exportURL = try write(Data(VaultBackup.makeCSV(items).utf8), name: "vaultify-export.csv")
+            }
+        } catch {
+            self.error = error.localizedDescription
+        }
+        working = false
+    }
+
+    private func write(_ data: Data, name: String) throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        try data.write(to: url, options: .completeFileProtection)
+        return url
+    }
+}

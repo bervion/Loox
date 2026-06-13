@@ -1,0 +1,121 @@
+import Foundation
+
+/// CSV import/export (1Password / Bitwarden / Chrome layouts) and a portable
+/// passphrase-encrypted backup (Argon2id KEK → AES-256-GCM).
+nonisolated enum VaultBackup {
+    struct PortableItem: Codable { var title: String; var category: String; var fields: [DynamicField] }
+    struct EncryptedBackup: Codable { var version: Int; var salt: Data; var kdf: KdfParams; var sealed: Data }
+
+    // MARK: CSV
+
+    static func parseCSV(_ text: String) -> [VaultItem] {
+        let rows = parseRows(text)
+        guard let header = rows.first else { return [] }
+        let cols = header.map { $0.lowercased().trimmingCharacters(in: .whitespaces) }
+        func index(_ names: [String]) -> Int? { names.lazy.compactMap { cols.firstIndex(of: $0) }.first }
+        let titleIdx = index(["name", "title", "account"])
+        let userIdx = index(["username", "login_username", "user", "email"])
+        let passIdx = index(["password", "login_password", "pass"])
+        let urlIdx = index(["url", "login_uri", "website", "uri"])
+        let noteIdx = index(["notes", "note"])
+        let totpIdx = index(["otpauth", "totp", "one-time password"])
+
+        var items: [VaultItem] = []
+        for row in rows.dropFirst() where row.contains(where: { !$0.isEmpty }) {
+            func value(_ i: Int?) -> String { if let i, i < row.count { return row[i] } else { return "" } }
+            let username = value(userIdx), password = value(passIdx)
+            let url = value(urlIdx), notes = value(noteIdx), totp = value(totpIdx)
+            var fields: [DynamicField] = []
+            if !username.isEmpty { fields.append(DynamicField(label: "Username", kind: .username, value: username)) }
+            if !password.isEmpty { fields.append(DynamicField(label: "Password", kind: .password, value: password, protected: true)) }
+            if !totp.isEmpty { fields.append(DynamicField(label: "One-time Code", kind: .totp, value: totp, protected: true)) }
+            if !url.isEmpty { fields.append(DynamicField(label: "Website", kind: .url, value: url)) }
+            if !notes.isEmpty { fields.append(DynamicField(label: "Notes", kind: .multiline, value: notes)) }
+
+            let rawTitle = value(titleIdx)
+            let title = !rawTitle.isEmpty ? rawTitle : (url.isEmpty ? (username.isEmpty ? "Imported" : username) : url)
+            let category: ItemCategory = (password.isEmpty && !notes.isEmpty && username.isEmpty) ? .note : .login
+            items.append(VaultItem(category: category, title: title, fields: fields))
+        }
+        return items
+    }
+
+    static func makeCSV(_ items: [VaultItem]) -> String {
+        var lines = ["name,username,password,url,notes"]
+        for item in items {
+            let cells = [item.title,
+                         item.usernameField?.value ?? "",
+                         item.passwordField?.value ?? "",
+                         item.urlField?.value ?? "",
+                         item.firstField(of: .multiline)?.value ?? ""]
+            lines.append(cells.map(escape).joined(separator: ","))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    // MARK: Encrypted backup
+
+    static func exportEncrypted(_ items: [VaultItem], passphrase: String) async throws -> Data {
+        let portable = items.map { PortableItem(title: $0.title, category: $0.category.rawValue, fields: $0.fields) }
+        let json = try JSONEncoder().encode(portable)
+        let salt = KeyHierarchy.newSalt()
+        let kdf = KdfParams.standard
+        var kek = try await Task.detached(priority: .userInitiated) {
+            try KeyHierarchy.deriveKEK(passphrase: passphrase, salt: salt, params: kdf)
+        }.value
+        defer { secureZero(&kek) }
+        let sealed = try AESGCM.seal(json, key: kek)
+        return try JSONEncoder().encode(EncryptedBackup(version: 1, salt: Data(salt), kdf: kdf, sealed: sealed))
+    }
+
+    static func importEncrypted(_ data: Data, passphrase: String) async throws -> [VaultItem] {
+        let backup = try JSONDecoder().decode(EncryptedBackup.self, from: data)
+        var kek = try await Task.detached(priority: .userInitiated) {
+            try KeyHierarchy.deriveKEK(passphrase: passphrase, salt: Array(backup.salt), params: backup.kdf)
+        }.value
+        defer { secureZero(&kek) }
+        let json = try AESGCM.open(backup.sealed, key: kek)
+        let portable = try JSONDecoder().decode([PortableItem].self, from: json)
+        return portable.map {
+            VaultItem(category: ItemCategory(rawValue: $0.category) ?? .custom, title: $0.title, fields: $0.fields)
+        }
+    }
+
+    // MARK: CSV helpers
+
+    private static func escape(_ field: String) -> String {
+        guard field.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" }) else { return field }
+        return "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
+    }
+
+    private static func parseRows(_ text: String) -> [[String]] {
+        var rows: [[String]] = []
+        var row: [String] = []
+        var field = ""
+        var inQuotes = false
+        let chars = Array(text)
+        var i = 0
+        while i < chars.count {
+            let c = chars[i]
+            if inQuotes {
+                if c == "\"" {
+                    if i + 1 < chars.count, chars[i + 1] == "\"" { field.append("\""); i += 1 }
+                    else { inQuotes = false }
+                } else { field.append(c) }
+            } else {
+                switch c {
+                case "\"": inQuotes = true
+                case ",": row.append(field); field = ""
+                case "\n", "\r":
+                    if c == "\r", i + 1 < chars.count, chars[i + 1] == "\n" { i += 1 }
+                    row.append(field); field = ""
+                    rows.append(row); row = []
+                default: field.append(c)
+                }
+            }
+            i += 1
+        }
+        if !field.isEmpty || !row.isEmpty { row.append(field); rows.append(row) }
+        return rows
+    }
+}

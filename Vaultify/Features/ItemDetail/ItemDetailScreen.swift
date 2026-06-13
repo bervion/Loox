@@ -1,0 +1,101 @@
+import SwiftUI
+
+/// Read-only item view (1Password-style): favicon/badge header, a rounded card
+/// of tap-to-copy fields, trash, and metadata. Looks the item up live so it
+/// reflects edits.
+struct ItemDetailScreen: View {
+    let itemID: String
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.dismiss) private var dismiss
+    @State private var editing: EditorTarget?
+    @State private var confirmTrash = false
+
+    private var item: VaultItem? { env.repository.items.first { $0.id == itemID } }
+
+    var body: some View {
+        ScrollView {
+            if let item {
+                VStack(spacing: 18) {
+                    header(item)
+                    fieldsCard(item)
+                    trashCard(item)
+                    metadata(item)
+                }
+                .padding(16)
+            } else {
+                ContentUnavailableView {
+                    Label { Text("Item not found") } icon: { PolarisIcon(Icons.alert, size: 44) }
+                }
+                .padding(.top, 80)
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(item?.title ?? "")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let item {
+                ToolbarItem(placement: .topBarTrailing) { Button("Edit") { editing = .edit(item) } }
+            }
+        }
+        .sheet(item: $editing) { ItemEditorScreen(target: $0) }
+        .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
+            Button("Move to Trash", role: .destructive) {
+                if let item { try? env.repository.moveToTrash(item); dismiss() }
+            }
+        }
+    }
+
+    private func header(_ item: VaultItem) -> some View {
+        HStack(spacing: 14) {
+            FaviconView(urlString: item.urlField?.value, category: item.category, size: 60)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.title.isEmpty ? "Untitled" : item.title)
+                    .font(.title2.bold()).lineLimit(2)
+                Text(item.category.title).font(.subheadline).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Button { try? env.repository.toggleFavorite(item) } label: {
+                PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: 24)
+                    .foregroundStyle(item.favorite ? VaultColors.strengthMedium : .secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func fieldsCard(_ item: VaultItem) -> some View {
+        let fields = item.fields.filter { !$0.isEmpty }
+        return VStack(spacing: 0) {
+            ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
+                DetailFieldRow(field: field)
+                if index < fields.count - 1 { Divider().padding(.leading, 16) }
+            }
+        }
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func trashCard(_ item: VaultItem) -> some View {
+        Button(role: .destructive) { confirmTrash = true } label: {
+            HStack(spacing: 12) {
+                PolarisIcon(Icons.trash, size: 20).foregroundStyle(.red)
+                Text("Move to Trash").foregroundStyle(.red)
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func metadata(_ item: VaultItem) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Created \(item.createdAt.formatted(date: .abbreviated, time: .shortened))")
+            Text("Modified \(item.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+        }
+        .font(.caption).foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
+    }
+}
