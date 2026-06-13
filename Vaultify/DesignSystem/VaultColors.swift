@@ -11,6 +11,8 @@ enum VaultColors {
         case .card: return dynamic(light: 0x1A8B5E, dark: 0x34C789)
         case .identity: return dynamic(light: 0x9C6ADE, dark: 0xBD93F9)
         case .sshKey: return dynamic(light: 0x00A0AC, dark: 0x26C9D3)
+        case .recoveryCodes: return dynamic(light: 0xC4571E, dark: 0xF08A4B)
+        case .securityQuestions: return dynamic(light: 0x5B5BD6, dark: 0x9B9BF0)
         case .custom: return dynamic(light: 0x6D7175, dark: 0x9BA1A6)
         }
     }

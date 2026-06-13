@@ -71,7 +71,7 @@ struct TOTPScannerSheet: View {
             onCapture(value)
             dismiss()
         } else {
-            error = String(localized: "That doesn’t look like a 2FA setup code.")
+            error = appString("That doesn’t look like a 2FA setup code.")
         }
     }
 
@@ -82,7 +82,7 @@ struct TOTPScannerSheet: View {
         if let code = Self.decodeQR(from: image) {
             handle(code)
         } else {
-            error = String(localized: "No QR code found in that image.")
+            error = appString("No QR code found in that image.")
         }
     }
 

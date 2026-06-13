@@ -10,6 +10,7 @@ import SwiftUI
     let clipboard: ClipboardService
     let cloudSync: CloudSyncService
     let faviconService: FaviconService
+    let attachmentStore: AttachmentStore
 
     init() {
         let settings = SettingsStore()
@@ -22,6 +23,7 @@ import SwiftUI
         self.clipboard = ClipboardService(settings: settings)
         self.cloudSync = CloudSyncService(store: store, settings: settings)
         self.faviconService = FaviconService()
+        self.attachmentStore = AttachmentStore(session: session)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache.

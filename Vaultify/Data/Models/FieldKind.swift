@@ -57,18 +57,19 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
     }
 
     var title: LocalizedStringResource {
-        switch self {
-        case .text: return "Text"
-        case .username: return "Username"
-        case .password: return "Password"
-        case .totp: return "One-time Code"
-        case .url: return "Website"
-        case .email: return "Email"
-        case .number: return "Number"
-        case .multiline: return "Note"
-        case .monospace: return "Monospace"
-        case .date: return "Date"
-        case .fileRef: return "Attachment"
+        let base: LocalizedStringResource = switch self {
+        case .text: "Text"
+        case .username: "Username"
+        case .password: "Password"
+        case .totp: "One-time Code"
+        case .url: "Website"
+        case .email: "Email"
+        case .number: "Number"
+        case .multiline: "Note"
+        case .monospace: "Monospace"
+        case .date: "Date"
+        case .fileRef: "Attachment"
         }
+        return base.inAppLocalized
     }
 }

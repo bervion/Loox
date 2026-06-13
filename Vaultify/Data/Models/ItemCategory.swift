@@ -8,19 +8,24 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
     case card
     case identity
     case sshKey
+    case recoveryCodes
+    case securityQuestions
     case custom
 
     var id: String { rawValue }
 
     var title: LocalizedStringResource {
-        switch self {
-        case .login: return "Login"
-        case .note: return "Secure Note"
-        case .card: return "Payment Card"
-        case .identity: return "Identity"
-        case .sshKey: return "SSH Key"
-        case .custom: return "Custom"
+        let base: LocalizedStringResource = switch self {
+        case .login: "Login"
+        case .note: "Secure Note"
+        case .card: "Payment Card"
+        case .identity: "Identity"
+        case .sshKey: "SSH Key"
+        case .recoveryCodes: "Recovery Codes"
+        case .securityQuestions: "Security Questions"
+        case .custom: "Custom"
         }
+        return base.inAppLocalized
     }
 
     /// Polaris icon asset backing this category.
@@ -31,6 +36,8 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
         case .card: return "ic_credit_card"
         case .identity: return "ic_identity_card"
         case .sshKey: return "ic_key"
+        case .recoveryCodes: return "ic_refresh"
+        case .securityQuestions: return "ic_question_circle"
         case .custom: return "ic_metafields"
         }
     }
@@ -66,6 +73,15 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
             return [
                 DynamicField(label: "Private Key", kind: .multiline, protected: true),
                 DynamicField(label: "Public Key", kind: .multiline),
+            ]
+        case .recoveryCodes:
+            return [DynamicField(label: "Recovery Codes", kind: .multiline, protected: true)]
+        case .securityQuestions:
+            return [
+                DynamicField(label: "Question 1", kind: .text),
+                DynamicField(label: "Answer 1", kind: .text, protected: true),
+                DynamicField(label: "Question 2", kind: .text),
+                DynamicField(label: "Answer 2", kind: .text, protected: true),
             ]
         case .custom:
             return [DynamicField(label: "Field", kind: .text)]

@@ -5,11 +5,11 @@ enum AuthError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noVault: return String(localized: "No vault found on this device.")
-        case .wrongPassword: return String(localized: "Incorrect master password.")
-        case .locked: return String(localized: "The vault is locked.")
-        case .biometricFailed: return String(localized: "Biometric unlock failed.")
-        case .recoveryFailed: return String(localized: "That recovery key didn’t work.")
+        case .noVault: return appString("No vault found on this device.")
+        case .wrongPassword: return appString("Incorrect master password.")
+        case .locked: return appString("The vault is locked.")
+        case .biometricFailed: return appString("Biometric unlock failed.")
+        case .recoveryFailed: return appString("That recovery key didn’t work.")
         }
     }
 }
@@ -82,7 +82,7 @@ enum AuthError: Error, LocalizedError {
         var keyBytes: [UInt8]
         do {
             keyBytes = try await BiometricKeyStore.retrieve(
-                reason: String(localized: "Unlock your vault"))
+                reason: appString("Unlock your vault"))
         } catch {
             throw AuthError.biometricFailed
         }

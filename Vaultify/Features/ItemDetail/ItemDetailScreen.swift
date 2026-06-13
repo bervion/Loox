@@ -45,6 +45,21 @@ struct ItemDetailScreen: View {
         }
     }
 
+    /// Persist a single field change (e.g. protect / remove protection).
+    private func update(_ field: DynamicField, in item: VaultItem) {
+        guard let index = item.fields.firstIndex(where: { $0.id == field.id }) else { return }
+        var updated = item
+        updated.fields[index] = field
+        try? env.repository.update(updated)
+    }
+
+    /// Remove a field (e.g. a deleted attachment) and persist.
+    private func remove(_ field: DynamicField, in item: VaultItem) {
+        var updated = item
+        updated.fields.removeAll { $0.id == field.id }
+        try? env.repository.update(updated)
+    }
+
     private func header(_ item: VaultItem) -> some View {
         HStack(spacing: 14) {
             FaviconView(urlString: item.urlField?.value, category: item.category, size: 60)
@@ -67,7 +82,9 @@ struct ItemDetailScreen: View {
         let fields = item.fields.filter { !$0.isEmpty }
         return VStack(spacing: 0) {
             ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
-                DetailFieldRow(field: field)
+                DetailFieldRow(field: field,
+                               onChange: { update($0, in: item) },
+                               onRemove: { remove(field, in: item) })
                 if index < fields.count - 1 { Divider().padding(.leading, 16) }
             }
         }

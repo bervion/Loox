@@ -6,10 +6,13 @@ import UIKit
 /// menu (Copy / Reveal / Open) and, for passwords, a strength badge.
 struct DetailFieldRow: View {
     let field: DynamicField
+    var onChange: (DynamicField) -> Void = { _ in }
+    var onRemove: () -> Void = {}
     @Environment(AppEnvironment.self) private var env
     @State private var copied = false
     @State private var revealed = false
     @State private var showLargeType = false
+    @State private var showProtect = false
 
     private var isSecret: Bool { field.protected || field.kind.isSecret }
 
@@ -19,6 +22,16 @@ struct DetailFieldRow: View {
     }
 
     var body: some View {
+        if field.isExtraProtected {
+            ProtectedFieldRow(field: field, onChange: onChange)
+        } else if field.kind == .fileRef {
+            AttachmentFieldRow(field: field, onRemove: onRemove)
+        } else {
+            normalBody
+        }
+    }
+
+    private var normalBody: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
@@ -39,6 +52,9 @@ struct DetailFieldRow: View {
         .animation(.easeOut(duration: 0.18), value: copied)
         .fullScreenCover(isPresented: $showLargeType) {
             LargeTypeView(text: copyValue)
+        }
+        .sheet(isPresented: $showProtect) {
+            ProtectFieldSheet(field: field, onProtected: onChange)
         }
     }
 
@@ -98,6 +114,10 @@ struct DetailFieldRow: View {
             }
             if field.kind == .url, let url = Self.normalized(field.value) {
                 Button { UIApplication.shared.open(url) } label: { Label("Open Website", image: Icons.globe) }
+            }
+            if !field.value.isEmpty {
+                Divider()
+                Button { showProtect = true } label: { Label("Protect…", image: Icons.lock) }
             }
         } label: {
             PolarisIcon("ic_menu_horizontal", size: 17)

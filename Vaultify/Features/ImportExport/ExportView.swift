@@ -5,7 +5,10 @@ struct ExportView: View {
     enum Mode: String, CaseIterable, Identifiable {
         case encrypted, csv
         var id: String { rawValue }
-        var title: LocalizedStringResource { self == .encrypted ? "Encrypted" : "CSV (plain)" }
+        var title: LocalizedStringResource {
+            let base: LocalizedStringResource = self == .encrypted ? "Encrypted" : "CSV (plain)"
+            return base.inAppLocalized
+        }
     }
 
     @Environment(AppEnvironment.self) private var env

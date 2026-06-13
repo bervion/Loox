@@ -25,10 +25,12 @@ User-requested. Build in phases ("làm hết, nhiều lượt").
 ## Phases
 | # | Phase | Status |
 |---|-------|--------|
-| 1 | Crypto foundation (`SecretGuard`, bundle L2 fields, `VaultSession+Level2`, `DynamicField.guard2`) + Settings "Extra Protection" (set/change/unlock Level-2 password) | ⏳ this pass |
-| 1b | Editor: mark a field protected (Level-2 or custom code); Detail: reveal protected field (prompt code / use session L2) | next |
-| 2 | New field types: security question (Q&A), recovery codes (multi-code), richer notes | next |
-| 3 | Attachments: file (image/PDF) + pasted text, encrypted blob storage + viewer/export | next |
+| 1 | Crypto foundation (`SecretGuard`, bundle L2 fields, `VaultSession+Level2`, `DynamicField.guard2`) + Settings "Extra Protection" (set/change/unlock Level-2 password) | ✅ done |
+| 1b | Detail: "Protect…" a field (Level-2 or custom code) + reveal (prompt/session-L2) + Remove Protection; Editor shows protected fields locked. Crypto verified (level2 + custom round-trip PASS). | ✅ done |
+| 2 | New item types: **Recovery Codes** + **Security Questions** (templates, icon, color, VI) | ✅ done |
+| 3 | Attachments: file + photo, per-blob AES-256-GCM in App Group `Attachments/<id>.enc`, QuickLook viewer + share + delete, editor "Add Attachment" entry | ✅ done |
+
+Protection lives in the **detail view** (not the editor): `DetailFieldRow` → "•••" → "Protect…" (`ProtectFieldSheet`) seals the value; a sealed field renders via `ProtectedFieldRow` (locked → tap/menu reveal with `CodePromptSheet`). Editor preserves sealed payloads untouched.
 
 ## Notes
 - Level-2 unlock holds L2SK in memory for the session; cleared on vault lock (extend `VaultSession.lock`).

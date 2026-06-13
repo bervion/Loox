@@ -12,6 +12,7 @@ struct ItemEditorScreen: View {
     @State private var confirmDiscard = false
     @State private var generatingFieldID: String?
     @State private var scanningFieldID: String?
+    @State private var showAttachmentPicker = false
 
     init(target: EditorTarget) {
         self.target = target
@@ -53,7 +54,7 @@ struct ItemEditorScreen: View {
                     .onMove { draft.fields.move(fromOffsets: $0, toOffset: $1) }
 
                     Menu {
-                        ForEach(FieldKind.allCases, id: \.self) { kind in
+                        ForEach(FieldKind.allCases.filter { $0 != .fileRef }, id: \.self) { kind in
                             Button {
                                 draft.fields.append(DynamicField(label: String(localized: kind.title), kind: kind))
                             } label: {
@@ -62,6 +63,10 @@ struct ItemEditorScreen: View {
                         }
                     } label: {
                         Label { Text("Add Field") } icon: { PolarisIcon(Icons.addCircle) }
+                    }
+
+                    Button { showAttachmentPicker = true } label: {
+                        Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
                     }
                 }
             }
@@ -96,7 +101,20 @@ struct ItemEditorScreen: View {
                     }
                 }
             }
+            .sheet(isPresented: $showAttachmentPicker) {
+                AttachmentPickerSheet { data, name, ext in addAttachment(data, name: name, ext: ext) }
+            }
         }
+    }
+
+    /// Seal the picked bytes via `AttachmentStore` and append a `.fileRef` field
+    /// holding the (non-secret) metadata pointer.
+    private func addAttachment(_ data: Data, name: String, ext: String) {
+        guard let meta = try? env.attachmentStore.save(data, name: name, ext: ext) else {
+            Haptics.error(); return
+        }
+        draft.fields.append(DynamicField(label: name, kind: .fileRef, value: meta.encoded()))
+        Haptics.success()
     }
 
     private func save() {

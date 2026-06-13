@@ -6,7 +6,10 @@ struct PasswordGeneratorView: View {
     enum Mode: String, CaseIterable, Identifiable {
         case password, passphrase
         var id: String { rawValue }
-        var title: LocalizedStringResource { self == .password ? "Password" : "Passphrase" }
+        var title: LocalizedStringResource {
+            let base: LocalizedStringResource = self == .password ? "Password" : "Passphrase"
+            return base.inAppLocalized
+        }
     }
 
     @Environment(AppEnvironment.self) private var env

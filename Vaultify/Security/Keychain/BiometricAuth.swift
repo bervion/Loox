@@ -19,7 +19,7 @@ nonisolated enum BiometricAuth {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
         case .opticID: return "Optic ID"
-        default: return String(localized: "Biometrics")
+        default: return appString("Biometrics")
         }
     }
 

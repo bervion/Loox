@@ -101,8 +101,8 @@ private struct FeatureRow: View {
         HStack(alignment: .top, spacing: 14) {
             PolarisIcon(icon, size: 24).foregroundStyle(Color.accentColor).frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+                Text(title.inAppLocalized).font(.headline)
+                Text(detail.inAppLocalized).font(.subheadline).foregroundStyle(.secondary)
             }
         }
     }

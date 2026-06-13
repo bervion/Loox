@@ -1,5 +1,36 @@
 import SwiftUI
 
+/// The locale used to resolve `LocalizedStringResource` titles (field types,
+/// item categories, settings enums) so they follow the in-app Language choice
+/// rather than the device language. `SettingsStore` keeps it current at launch
+/// and whenever the language changes. Read/written on the main actor only.
+nonisolated(unsafe) var appResourceLocale: Locale = .autoupdatingCurrent
+
+/// Map a stored language code ("system" | "en" | "vi") to a `Locale`.
+nonisolated func appLocale(forCode code: String) -> Locale {
+    switch code {
+    case "en": return Locale(identifier: "en")
+    case "vi": return Locale(identifier: "vi")
+    default: return .autoupdatingCurrent
+    }
+}
+
+extension LocalizedStringResource {
+    /// The same resource pinned to the in-app language, so SwiftUI and
+    /// `String(localized:)` resolve it against the user's chosen locale.
+    var inAppLocalized: LocalizedStringResource {
+        var copy = self
+        copy.locale = appResourceLocale
+        return copy
+    }
+}
+
+/// Resolve a literal UI string against the in-app language rather than the
+/// device locale. Use for runtime strings (errors, prompts) built outside SwiftUI.
+nonisolated func appString(_ key: String.LocalizationValue) -> String {
+    String(localized: key, locale: appResourceLocale)
+}
+
 /// App appearance preference.
 nonisolated enum AppearanceMode: String, CaseIterable, Codable, Sendable, Identifiable {
     case system, light, dark
@@ -12,11 +43,12 @@ nonisolated enum AppearanceMode: String, CaseIterable, Codable, Sendable, Identi
         }
     }
     var title: LocalizedStringResource {
-        switch self {
-        case .system: return "System"
-        case .light: return "Light"
-        case .dark: return "Dark"
+        let base: LocalizedStringResource = switch self {
+        case .system: "System"
+        case .light: "Light"
+        case .dark: "Dark"
         }
+        return base.inAppLocalized
     }
 }
 
@@ -30,13 +62,14 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     var id: Int { rawValue }
     var seconds: TimeInterval { TimeInterval(rawValue) }
     var title: LocalizedStringResource {
-        switch self {
-        case .immediate: return "Immediately"
-        case .oneMinute: return "After 1 minute"
-        case .fiveMinutes: return "After 5 minutes"
-        case .fifteenMinutes: return "After 15 minutes"
-        case .oneHour: return "After 1 hour"
+        let base: LocalizedStringResource = switch self {
+        case .immediate: "Immediately"
+        case .oneMinute: "After 1 minute"
+        case .fiveMinutes: "After 5 minutes"
+        case .fifteenMinutes: "After 15 minutes"
+        case .oneHour: "After 1 hour"
         }
+        return base.inAppLocalized
     }
 }
 
@@ -54,7 +87,12 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
     var clipboardClearSeconds: Int { didSet { defaults.set(clipboardClearSeconds, forKey: Key.clipboard) } }
     var hideInAppSwitcher: Bool { didSet { defaults.set(hideInAppSwitcher, forKey: Key.privacyScreen) } }
-    var preferredLanguage: String { didSet { defaults.set(preferredLanguage, forKey: Key.language) } }
+    var preferredLanguage: String {
+        didSet {
+            defaults.set(preferredLanguage, forKey: Key.language)
+            appResourceLocale = appLocale(forCode: preferredLanguage)
+        }
+    }
 
     init() {
         let d = UserDefaults.standard
@@ -69,6 +107,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
+        appResourceLocale = appLocale(forCode: preferredLanguage)
     }
 
     private enum Key {

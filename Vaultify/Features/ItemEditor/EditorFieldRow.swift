@@ -33,6 +33,17 @@ struct EditorFieldRow: View {
     }
 
     @ViewBuilder private var valueEditor: some View {
+        if field.isExtraProtected {
+            HStack(spacing: 6) {
+                PolarisIcon(Icons.lockFill, size: 14).foregroundStyle(.secondary)
+                Text("Protected — manage in the item view").font(.caption).foregroundStyle(.secondary)
+            }
+        } else {
+            kindEditor
+        }
+    }
+
+    @ViewBuilder private var kindEditor: some View {
         switch field.kind {
         case .multiline:
             TextField("Value", text: $field.value, axis: .vertical)
@@ -61,6 +72,16 @@ struct EditorFieldRow: View {
                         PolarisIcon(Icons.camera, size: 18).foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
+                }
+            }
+        case .fileRef:
+            HStack(spacing: 8) {
+                PolarisIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? "ic_attachment", size: 18)
+                    .foregroundStyle(Color.accentColor)
+                Text(AttachmentMeta.decode(field.value)?.name ?? "Attachment").font(.subheadline).lineLimit(1)
+                Spacer()
+                if let meta = AttachmentMeta.decode(field.value) {
+                    Text(meta.sizeText).font(.caption).foregroundStyle(.secondary)
                 }
             }
         default:

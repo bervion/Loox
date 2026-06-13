@@ -9,11 +9,12 @@ nonisolated enum PasswordStrength: Int, Sendable, Comparable, CaseIterable {
     }
 
     var title: LocalizedStringResource {
-        switch self {
-        case .weak: return "Weak"
-        case .medium: return "Fair"
-        case .strong: return "Strong"
+        let base: LocalizedStringResource = switch self {
+        case .weak: "Weak"
+        case .medium: "Fair"
+        case .strong: "Strong"
         }
+        return base.inAppLocalized
     }
 
     /// 0…1 fraction for progress bars.

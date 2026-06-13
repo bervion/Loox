@@ -42,7 +42,7 @@ import CloudKit
     func sync(reload: @escaping () -> Void) async {
         guard settings.iCloudSyncEnabled else { return }
         guard Self.isConfigured else {
-            status = .error(String(localized: "iCloud sync needs the iCloud capability enabled in Xcode."))
+            status = .error(appString("iCloud sync needs the iCloud capability enabled in Xcode."))
             return
         }
         status = .syncing
@@ -53,7 +53,7 @@ import CloudKit
             reload()
             status = .success(.now)
         } catch let error as CKError where error.code == .notAuthenticated {
-            status = .error(String(localized: "Sign in to iCloud to sync."))
+            status = .error(appString("Sign in to iCloud to sync."))
         } catch {
             status = .error(error.localizedDescription)
         }
