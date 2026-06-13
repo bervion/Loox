@@ -45,10 +45,11 @@ let project = Project(
                 "UIApplicationSceneManifest": [
                     "UIApplicationSupportsMultipleScenes": false,
                 ],
+                // Background only — a static launch image can't be rounded and gets
+                // cached by iOS (a square logo flashed before the rounded SplashView).
+                // The logo is shown by SplashView instead.
                 "UILaunchScreen": [
                     "UIColorName": "LaunchBackground",
-                    "UIImageName": "AppLogo",
-                    "UIImageRespectsSafeAreaInsets": true,
                 ],
                 "UISupportedInterfaceOrientations": [
                     "UIInterfaceOrientationPortrait",
