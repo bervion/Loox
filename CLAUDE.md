@@ -49,9 +49,15 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
 
 ## Conventions
 
-- **Localization** (EN/VI, in-app language toggle, `Localizable.xcstrings`):
+- **Localization (MANDATORY)** — the app is multi-language (**EN + VI**) with an in-app
+  language toggle (`Localizable.xcstrings`). **Every screen and feature — old or new — must
+  be fully localized; no hard-coded user-facing text.** When you add or change any UI string,
+  add it to `Localizable.xcstrings` with **both** an English source and a **Vietnamese**
+  translation (a missing VI value is a bug).
   - New `LocalizedStringResource` **titles** must use `.inAppLocalized`.
-  - Runtime strings use `appString()`. No hardcoded user-facing text.
+  - Runtime strings use `appString()`.
+  - SwiftUI `Text("…")` literals are auto-extracted to the catalog on build — still provide
+    the VI translation (Xcode String Catalog editor, or the same JSON structure).
 - **Concurrency**: project builds with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. Mark
   crypto / data types & functions `nonisolated` so the heavy Argon2 KDF runs off-main
   (`nonisolated enum/struct/final class` compiles).
@@ -111,4 +117,5 @@ Documents, read back with `simctl get_app_container <id> data`.
 - ❌ Don't commit the generated project, `Derived/`, or any secret.
 - ❌ Don't add iCloud entitlements to the app target (crash) — use the `VAULTIFY_ICLOUD` flag.
 - ❌ Don't use SF Symbols or Material icons — Polaris SVG only.
+- ❌ Don't ship user-facing text without a Vietnamese translation in `Localizable.xcstrings`.
 - ❌ Don't put the word "build" in bash paths/log names (hook block).

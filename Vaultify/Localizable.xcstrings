@@ -3366,6 +3366,36 @@
           }
         }
       }
+    },
+    "Make it yours": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cá nhân hoá"
+          }
+        }
+      }
+    },
+    "Choose how Vaultify looks. You can change this anytime in Settings.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn giao diện cho Vaultify. Bạn có thể thay đổi bất cứ lúc nào trong Cài đặt."
+          }
+        }
+      }
+    },
+    "Confirm to enable biometric unlock": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xác nhận để bật mở khoá bằng sinh trắc học"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
