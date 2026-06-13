@@ -31,4 +31,21 @@ nonisolated enum BiometricAuth {
         default: return "ic_lock"
         }
     }
+
+    /// Run an interactive biometric evaluation. This is what surfaces the system
+    /// Face ID / Touch ID prompt AND the first-run NSFaceIDUsageDescription
+    /// permission — adding a biometric Keychain item alone does neither.
+    static func authenticate(reason: String) async throws {
+        let context = LAContext()
+        var availability: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &availability)
+        else { throw availability ?? LAError(.biometryNotAvailable) }
+
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { ok, error in
+                if ok { cont.resume() }
+                else { cont.resume(throwing: error ?? LAError(.authenticationFailed)) }
+            }
+        }
+    }
 }

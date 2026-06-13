@@ -9,7 +9,7 @@ struct SettingsScreen: View {
         Binding(
             get: { env.settings.biometricUnlockEnabled },
             set: { isOn in
-                if isOn { try? env.session.enableBiometricUnlock() }
+                if isOn { Task { try? await env.session.enableBiometricUnlock() } }
                 else { env.session.disableBiometricUnlock() }
             })
     }

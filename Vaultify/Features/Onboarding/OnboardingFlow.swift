@@ -46,8 +46,10 @@ struct OnboardingFlow: View {
     }
 
     private func enableBiometric() {
-        try? env.session.enableBiometricUnlock()
-        step = .done
+        Task {
+            try? await env.session.enableBiometricUnlock()
+            step = .done
+        }
     }
 }
 

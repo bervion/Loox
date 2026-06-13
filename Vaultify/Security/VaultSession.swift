@@ -92,8 +92,17 @@ enum AuthError: Error, LocalizedError {
 
     // MARK: Biometric enrolment
 
-    func enableBiometricUnlock() throws {
+    func enableBiometricUnlock() async throws {
         guard let vaultKey else { throw AuthError.locked }
+        // Evaluate biometrics first — this surfaces the system permission prompt
+        // and confirms the user can authenticate. Storing the key alone never
+        // exercises Face ID, so the prompt would otherwise be deferred to the
+        // first unlock.
+        do {
+            try await BiometricAuth.authenticate(reason: appString("Confirm to enable biometric unlock"))
+        } catch {
+            throw AuthError.biometricFailed
+        }
         var bytes = vaultKey.bytes
         defer { secureZero(&bytes) }
         try BiometricKeyStore.store(vaultKey: bytes)
