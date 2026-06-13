@@ -34,6 +34,10 @@ let project = Project(
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                 "CFBundleLocalizations": ["en", "vi"],
+                // Export compliance: app uses only exempt encryption (standard
+                // algorithms protecting the user's own on-device data) → skips the
+                // per-upload encryption questionnaire in App Store Connect.
+                "ITSAppUsesNonExemptEncryption": false,
                 "LSApplicationCategoryType": "public.app-category.utilities",
                 "NSCameraUsageDescription": "Vaultify uses the camera to scan 2FA setup QR codes.",
                 "NSFaceIDUsageDescription": "Vaultify uses Face ID to unlock your vault.",
