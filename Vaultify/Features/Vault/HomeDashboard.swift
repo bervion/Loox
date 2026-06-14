@@ -21,9 +21,9 @@ struct HomeDashboard: View {
 
     var body: some View {
         List {
-            if hasQuickAccess { dashboardRow { QuickAccessSection() } }
+            if hasQuickAccess { dashboardRow { QuickAccessSection(path: $path) } }
             if env.repository.folders.count >= 2 { dashboardRow { SpacesSection(path: $path) } }
-            if !env.repository.allTags().isEmpty { dashboardRow { TagsSection() } }
+            if !env.repository.allTags().isEmpty { dashboardRow { TagsSection(path: $path) } }
 
             ForEach(visibleCategories) { category in
                 Section {

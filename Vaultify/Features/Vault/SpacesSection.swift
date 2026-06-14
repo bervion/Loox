@@ -42,7 +42,7 @@ struct SpacesSection: View {
     private var grid: some View {
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(env.repository.folders) { folder in
-                NavigationLink(value: VaultRoute.folder(folder.id)) {
+                Button { path.append(VaultRoute.folder(folder.id)) } label: {
                     SpaceCard(name: folder.name, icon: folder.iconAsset,
                               color: folder.color, count: env.repository.itemCount(for: folder.id))
                 }
@@ -59,7 +59,7 @@ struct SpacesSection: View {
     }
 
     private var unfiledCard: some View {
-        NavigationLink(value: VaultRoute.folder(nil)) {
+        Button { path.append(VaultRoute.folder(nil)) } label: {
             SpaceCard(name: nil, icon: Icons.folder, color: .gray, count: env.repository.unfiledCount)
         }
         .buttonStyle(.plain)

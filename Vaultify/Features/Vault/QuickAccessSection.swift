@@ -5,6 +5,7 @@ import SwiftUI
 /// when there are neither favorites nor recents.
 struct QuickAccessSection: View {
     @Environment(AppEnvironment.self) private var env
+    @Binding var path: NavigationPath
 
     private var favorites: [VaultItem] { env.repository.items.filter(\.favorite) }
     private var recents: [VaultItem] { env.repository.recentlyUsed(limit: 8) }
@@ -24,7 +25,7 @@ struct QuickAccessSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(items) { item in
-                        NavigationLink(value: item.id) { QuickAccessCard(item: item) }
+                        Button { path.append(item.id) } label: { QuickAccessCard(item: item) }
                             .buttonStyle(.plain)
                     }
                 }

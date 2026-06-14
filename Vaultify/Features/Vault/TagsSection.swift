@@ -4,6 +4,7 @@ import SwiftUI
 /// when there are no tags. Neutral styling — tags are the lightweight layer.
 struct TagsSection: View {
     @Environment(AppEnvironment.self) private var env
+    @Binding var path: NavigationPath
     private var tags: [(tag: String, count: Int)] { env.repository.allTags() }
 
     var body: some View {
@@ -13,7 +14,7 @@ struct TagsSection: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(tags, id: \.tag) { entry in
-                            NavigationLink(value: VaultRoute.tag(entry.tag)) { chip(entry) }
+                            Button { path.append(VaultRoute.tag(entry.tag)) } label: { chip(entry) }
                                 .buttonStyle(.plain)
                         }
                     }
