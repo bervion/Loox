@@ -8,6 +8,9 @@ import UIKit
     private(set) var settings: ThemeSettings
     private(set) var active: AppTheme
 
+    /// Bumped to trigger a mesh-gradient morph (unlock / tab change). Wraps 0…7.
+    private(set) var meshPhase = 0
+
     /// True device appearance, fed by the root view's `colorScheme` (auto-night).
     var systemIsDark: Bool { didSet { if systemIsDark != oldValue { recompute() } } }
 
@@ -60,6 +63,11 @@ import UIKit
     private func recompute() {
         active = ThemePalette.resolve(settings, systemIsDark: systemIsDark, brightness: brightness)
     }
+
+    // MARK: - Mesh
+
+    /// Advance the mesh phase → the animated mesh wallpaper morphs once.
+    func morphMesh() { meshPhase = (meshPhase + 1) % 8 }
 
     // MARK: - Settings mutators
 

@@ -20,6 +20,8 @@ struct VaultifyApp: App {
                 .tint(env.theme.accentColor)
                 .preferredColorScheme(env.theme.preferredColorScheme)
                 .appFontScale(env.theme.settings.fontScale)
+                .environment(\.meshPhase, env.theme.meshPhase)
+                .environment(\.meshAnimated, !env.theme.settings.reduceMotion)
         }
     }
 }

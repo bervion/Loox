@@ -18,8 +18,12 @@ struct MainTabView: View {
         }
         .overlay(alignment: .bottom) { copyToast }
         .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
-        .onChange(of: selection) { _, _ in env.session.registerActivity() }
+        .onChange(of: selection) { _, _ in
+            env.session.registerActivity()
+            env.theme.morphMesh()
+        }
         .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
+        .onAppear { env.theme.morphMesh() }
     }
 
     // Search is a regular tab; `SearchScreen` owns its NavigationStack +

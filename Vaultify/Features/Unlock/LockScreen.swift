@@ -96,6 +96,7 @@ struct LockScreen: View {
         } catch {
             self.error = error.localizedDescription
             Haptics.error()
+            env.theme.morphMesh()
         }
         busy = false
     }

@@ -6,6 +6,8 @@ import SwiftUI
 struct WallpaperView: View {
     let wallpaper: Wallpaper
     var fallbackColor: Color
+    @Environment(\.meshPhase) private var meshPhase
+    @Environment(\.meshAnimated) private var meshAnimated
 
     var body: some View {
         content.ignoresSafeArea()
@@ -20,7 +22,7 @@ struct WallpaperView: View {
         case .gradient(let colors, let settings):
             gradient(colors, settings)
         case .mesh(let colors):
-            gradient(colors, WallpaperSettings(rotation: 45))
+            MeshGradientView(colors: colors, phase: meshPhase, animated: meshAnimated)
         case .pattern(_, let colors, let settings):
             gradient(colors, settings)            // pattern overlay added once assets ship
         case .image(let fileName, let settings):
