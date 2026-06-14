@@ -26,6 +26,8 @@ struct ItemsScreen: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
             .navigationTitle("Items")
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }

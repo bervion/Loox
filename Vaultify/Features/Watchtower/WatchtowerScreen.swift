@@ -46,6 +46,8 @@ struct WatchtowerScreen: View {
                     Text("Uses k-anonymity — only the first five characters of each password’s SHA-1 hash are sent. Passwords never leave your device.")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
             .navigationTitle("Watchtower")
             .navigationDestination(for: String.self) { ItemDetailScreen(itemID: $0) }
             .overlay { if checking { checkingOverlay } }
