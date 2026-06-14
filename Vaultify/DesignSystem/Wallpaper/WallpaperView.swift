@@ -60,9 +60,10 @@ struct WallpaperView: View {
 /// Blur + dim scrim shared by gradient/image wallpapers.
 private struct WallpaperEffects: ViewModifier {
     let settings: WallpaperSettings
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     func body(content: Content) -> some View {
         content
-            .blur(radius: settings.blur ? 28 : 0)
+            .blur(radius: (settings.blur && !reduceTransparency) ? 28 : 0)
             .overlay(Color.black.opacity(settings.dimAlpha))
     }
 }

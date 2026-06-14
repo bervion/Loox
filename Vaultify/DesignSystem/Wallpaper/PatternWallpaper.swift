@@ -63,6 +63,7 @@ struct PatternWallpaperView: View {
     let colors: [UInt32]
     let style: PatternStyle
     let settings: WallpaperSettings
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         let base = colors.isEmpty ? [0x1C1C1E, 0x2C2C2E] : colors
@@ -73,7 +74,7 @@ struct PatternWallpaperView: View {
                 .opacity(0.10 + settings.intensity * 0.35)
                 .blendMode(.softLight)
         }
-        .blur(radius: settings.blur ? 28 : 0)
+        .blur(radius: (settings.blur && !reduceTransparency) ? 28 : 0)
         .overlay(Color.black.opacity(settings.dimAlpha))
     }
 }
