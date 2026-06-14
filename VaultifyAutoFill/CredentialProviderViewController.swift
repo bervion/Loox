@@ -104,7 +104,16 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     // MARK: Hosting & completion
 
     private func host(_ rootView: some View) {
-        let hosting = UIHostingController(rootView: rootView)
+        // Apply the user's theme (shared via the App Group) so the extension matches
+        // the app: accent tint + light/dark. Static — no wallpaper/animation here.
+        let theme = ThemePalette.resolve(
+            ThemeReader.load(),
+            systemIsDark: traitCollection.userInterfaceStyle == .dark,
+            brightness: 1.0)
+        let hosting = UIHostingController(
+            rootView: rootView
+                .tint(Color(rgb: theme.accent))
+                .preferredColorScheme(theme.isDark ? .dark : .light))
         addChild(hosting)
         hosting.view.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(hosting.view)
