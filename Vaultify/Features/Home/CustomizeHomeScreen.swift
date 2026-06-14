@@ -18,6 +18,7 @@ struct CustomizeHomeScreen: View {
                 } footer: {
                     Text("Pinned, Favorites, Recently Created, and Frequently Used always appear when they have items.")
                 }
+                .listRowBackground(VaultColors.surface)
             }
             .themedFormBackground()
             .navigationTitle("Customize Home")

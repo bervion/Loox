@@ -19,6 +19,7 @@ struct AboutView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
             }
+            .listRowBackground(VaultColors.surface)
 
             Section("How your data is protected") {
                 aboutRow(Icons.key, "Argon2id key derivation",
@@ -30,6 +31,7 @@ struct AboutView: View {
                 aboutRow(Icons.globe, "Zero backend",
                          "Nothing is sent to a server. Your vault never leaves the device unencrypted.")
             }
+            .listRowBackground(VaultColors.surface)
 
             Section {
                 Text("Vaultify collects no analytics and has no accounts. The only network request is the optional, anonymised breach check.")
@@ -39,6 +41,7 @@ struct AboutView: View {
             } footer: {
                 Text("Includes the Argon2 reference implementation (CC0 / Apache-2.0).")
             }
+            .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
         .navigationTitle("About")

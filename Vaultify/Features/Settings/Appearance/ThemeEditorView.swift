@@ -25,14 +25,17 @@ struct ThemeEditorView: View {
     var body: some View {
         Form {
             Section { previewCard.listRowInsets(EdgeInsets()) }
+            .listRowBackground(VaultColors.surface)
 
             Section { TextField("Theme name", text: $name) } header: { Text("Name") }
+            .listRowBackground(VaultColors.surface)
 
             Section {
                 Picker(selection: $base) {
                     ForEach(BuiltinTheme.allCases) { Text($0.displayName).tag($0) }
                 } label: { Text("Base") }
             } header: { Text("Base") }
+            .listRowBackground(VaultColors.surface)
 
             Section {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 46), spacing: 12)], spacing: 12) {
@@ -41,10 +44,12 @@ struct ThemeEditorView: View {
                 .padding(.vertical, 6)
                 ColorPicker(selection: customAccentBinding, supportsOpacity: false) { Text("Custom Color") }
             } header: { Text("Accent Color") }
+            .listRowBackground(VaultColors.surface)
 
             Section {
                 wallpaperGrid
             } header: { Text("Background") }
+            .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
         .navigationTitle(editingID == nil ? "New Theme" : "Edit Theme")

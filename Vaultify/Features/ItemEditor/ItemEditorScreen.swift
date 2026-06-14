@@ -45,6 +45,7 @@ struct ItemEditorScreen: View {
                             .font(.headline)
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Fields") {
                     ForEach($draft.fields) { $field in
@@ -71,6 +72,7 @@ struct ItemEditorScreen: View {
                         Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Space") {
                     Button { showFolderPicker = true } label: {
@@ -89,10 +91,12 @@ struct ItemEditorScreen: View {
                     }
                     .buttonStyle(.plain)
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Tags") {
                     TagChipEditor(tags: $draft.tags)
                 }
+                .listRowBackground(VaultColors.surface)
             }
             .themedFormBackground()
             .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")

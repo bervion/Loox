@@ -47,6 +47,7 @@ struct ProtectFieldSheet: View {
                     } footer: {
                         Text("Only this code can reveal the field. If you forget it, the field cannot be recovered.")
                     }
+                    .listRowBackground(VaultColors.surface)
                 }
 
                 if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
@@ -72,6 +73,7 @@ struct ProtectFieldSheet: View {
                         .font(.footnote).themedForeground(.secondary)
                 } icon: { PolarisIcon(Icons.alert).foregroundStyle(VaultColors.strengthMedium) }
             }
+            .listRowBackground(VaultColors.surface)
         } else if !level2Unlocked {
             Section {
                 RevealableSecureField(title: "Extra password", text: $level2Password).listRowInsets(.init())
@@ -80,8 +82,10 @@ struct ProtectFieldSheet: View {
             } footer: {
                 Text("Enter it once to unlock extra protection for this session.")
             }
+            .listRowBackground(VaultColors.surface)
         } else {
             Section { Text("This field will be protected with your Extra Password.").font(.footnote).themedForeground(.secondary) }
+            .listRowBackground(VaultColors.surface)
         }
     }
 

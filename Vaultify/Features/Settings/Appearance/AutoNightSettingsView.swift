@@ -30,12 +30,14 @@ struct AutoNightSettingsView: View {
                 modeRow(Text("Scheduled"), .scheduled)
                 modeRow(Text("Brightness"), .brightness)
             }
+            .listRowBackground(VaultColors.surface)
 
             if mode == .scheduled {
                 Section {
                     DatePicker(selection: fromBinding, displayedComponents: .hourAndMinute) { Text("From") }
                     DatePicker(selection: toBinding, displayedComponents: .hourAndMinute) { Text("To") }
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             if mode == .brightness {
@@ -49,6 +51,7 @@ struct AutoNightSettingsView: View {
                         Slider(value: brightnessBinding, in: 0...1)
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             if mode != .off {
@@ -64,6 +67,7 @@ struct AutoNightSettingsView: View {
                 } header: {
                     Text("Night Theme")
                 }
+                .listRowBackground(VaultColors.surface)
             }
         }
         .themedFormBackground()

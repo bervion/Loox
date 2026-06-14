@@ -22,6 +22,7 @@ struct ChangeMasterPasswordView: View {
                 RevealableSecureField(title: "Current master password", text: $current)
                     .listRowInsets(.init())
             }
+            .listRowBackground(VaultColors.surface)
             Section("New password") {
                 RevealableSecureField(title: "New password", text: $newPassword)
                     .listRowInsets(.init())
@@ -29,6 +30,7 @@ struct ChangeMasterPasswordView: View {
                 RevealableSecureField(title: "Confirm new password", text: $confirm)
                     .listRowInsets(.init())
             }
+            .listRowBackground(VaultColors.surface)
             if let error {
                 Text(error).foregroundStyle(VaultColors.strengthWeak)
             }

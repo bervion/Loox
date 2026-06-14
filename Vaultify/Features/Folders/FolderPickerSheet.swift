@@ -17,6 +17,7 @@ struct FolderPickerSheet: View {
                     }
                     .buttonStyle(.plain)
                 }
+                .listRowBackground(VaultColors.surface)
                 if !env.repository.folders.isEmpty {
                     Section {
                         ForEach(env.repository.folders) { folder in
@@ -28,12 +29,14 @@ struct FolderPickerSheet: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    .listRowBackground(VaultColors.surface)
                 }
                 Section {
                     Button { creating = true } label: {
                         Label { Text("New Space…") } icon: { PolarisIcon(Icons.addCircle) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
             .themedFormBackground()
             .navigationTitle("Space")

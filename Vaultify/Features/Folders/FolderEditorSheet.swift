@@ -31,16 +31,19 @@ struct FolderEditorSheet: View {
         NavigationStack {
             Form {
                 Section { TextField("Space name", text: $name).autocorrectionDisabled() }
+                .listRowBackground(VaultColors.surface)
                 Section {
                     IconColorPicker(icon: $icon, color: $color)
                         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                 }
+                .listRowBackground(VaultColors.surface)
                 if isEditing {
                     Section {
                         Button(role: .destructive) { confirmDelete = true } label: {
                             Label { Text("Delete Space") } icon: { PolarisIcon(Icons.trash) }
                         }
                     }
+                    .listRowBackground(VaultColors.surface)
                 }
             }
             .themedFormBackground()

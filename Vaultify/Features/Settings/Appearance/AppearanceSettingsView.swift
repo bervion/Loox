@@ -56,6 +56,7 @@ struct AppearanceSettingsView: View {
         } header: {
             Text("Theme")
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private var customThemesSection: some View {
@@ -71,6 +72,7 @@ struct AppearanceSettingsView: View {
         } footer: {
             Text("Long-press a custom theme to edit, export, or delete it.")
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private func handleImport(_ result: Result<URL, Error>) {
@@ -126,6 +128,7 @@ struct AppearanceSettingsView: View {
         } header: {
             Text("Accent Color")
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private func accentSwatch(_ preset: AccentPreset) -> some View {
@@ -168,6 +171,7 @@ struct AppearanceSettingsView: View {
         } footer: {
             Text("Shown behind the vault, lock, and onboarding screens.")
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     // MARK: Options
@@ -190,5 +194,6 @@ struct AppearanceSettingsView: View {
                 Label { Text("Reduce Motion") } icon: { PolarisIcon(Icons.reveal) }
             }
         }
+        .listRowBackground(VaultColors.surface)
     }
 }

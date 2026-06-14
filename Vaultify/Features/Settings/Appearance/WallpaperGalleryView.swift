@@ -23,6 +23,7 @@ struct WallpaperGalleryView: View {
                     env.theme.setWallpaper(.none, for: ref)
                 }
             }
+            .listRowBackground(VaultColors.surface)
 
             presetSection(Text("Gradients"), WallpaperPresets.gradients)
             presetSection(Text("Patterns"), WallpaperPresets.patterns)
@@ -35,6 +36,7 @@ struct WallpaperGalleryView: View {
             } footer: {
                 Text("Your photo stays on this device.")
             }
+            .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
         .navigationTitle("Background")
@@ -53,6 +55,7 @@ struct WallpaperGalleryView: View {
         } header: {
             title
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private func presetTile(_ preset: WallpaperPreset) -> some View {

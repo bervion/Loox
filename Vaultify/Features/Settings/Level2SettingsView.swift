@@ -27,11 +27,13 @@ struct Level2SettingsView: View {
                     PolarisIcon(Icons.lockFill).foregroundStyle(Color.accentColor)
                 }
             }
+            .listRowBackground(VaultColors.surface)
 
             if hasLevel2 {
                 Section("Current password") {
                     RevealableSecureField(title: "Current extra password", text: $current).listRowInsets(.init())
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             Section(hasLevel2 ? "New password" : "Set password") {
@@ -39,6 +41,7 @@ struct Level2SettingsView: View {
                 PasswordStrengthMeter(password: newPassword)
                 RevealableSecureField(title: "Confirm", text: $confirm).listRowInsets(.init())
             }
+            .listRowBackground(VaultColors.surface)
 
             if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
         }

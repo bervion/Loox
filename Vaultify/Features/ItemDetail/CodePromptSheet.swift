@@ -18,6 +18,7 @@ struct CodePromptSheet: View {
             Form {
                 if let message {
                     Section { Text(message.inAppLocalized).font(.footnote).themedForeground(.secondary) }
+                    .listRowBackground(VaultColors.surface)
                 }
                 Section {
                     RevealableSecureField(title: "Code", text: $code)
@@ -25,6 +26,7 @@ struct CodePromptSheet: View {
                         .submitLabel(.go)
                         .onSubmit { Task { await submit() } }
                 }
+                .listRowBackground(VaultColors.surface)
                 if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
             }
             .themedFormBackground()

@@ -58,7 +58,7 @@ nonisolated enum BuiltinThemes {
         elevatedBackground: 0x213040, barBackground: 0x1B2735,
         primaryText: 0xFFFFFF, secondaryText: 0x8AA0B6, tertiaryText: 0x6A7E92, placeholderText: 0x5B6E82,
         accent: 0x3CA7F0, accentForeground: 0xFFFFFF,
-        separator: 0x2A3848, border: 0x33445A, controlBackground: 0x243343,
+        separator: 0x36465A, border: 0x3C5068, controlBackground: 0x243343,
         switchOn: 0x3CA7F0, checkmark: 0x3CA7F0, selection: 0x223247,
         destructive: 0xFF6B5B, success: 0x34C789, warning: 0xE3B341, overlayDim: 0x000000)
 }

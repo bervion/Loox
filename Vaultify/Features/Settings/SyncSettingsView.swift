@@ -22,6 +22,7 @@ struct SyncSettingsView: View {
             } footer: {
                 Text("Items are end-to-end encrypted before they sync. iCloud stores only ciphertext — neither Apple nor anyone else can read your vault.")
             }
+            .listRowBackground(VaultColors.surface)
 
             if !CloudSyncService.isConfigured {
                 Section {
@@ -32,6 +33,7 @@ struct SyncSettingsView: View {
                         PolarisIcon(Icons.info).foregroundStyle(VaultColors.strengthMedium)
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             if env.settings.iCloudSyncEnabled {
@@ -42,6 +44,7 @@ struct SyncSettingsView: View {
                     .disabled(env.cloudSync.status == .syncing)
                     statusRow
                 }
+                .listRowBackground(VaultColors.surface)
             }
         }
         .themedFormBackground()
