@@ -56,6 +56,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
     var clipboardClearSeconds: Int { didSet { defaults.set(clipboardClearSeconds, forKey: Key.clipboard) } }
     var hideInAppSwitcher: Bool { didSet { defaults.set(hideInAppSwitcher, forKey: Key.privacyScreen) } }
+    var homeShowRecentlyUsed: Bool { didSet { defaults.set(homeShowRecentlyUsed, forKey: Key.homeRecentlyUsed) } }
+    var homeShowRecentlyModified: Bool { didSet { defaults.set(homeShowRecentlyModified, forKey: Key.homeRecentlyModified) } }
     var preferredLanguage: String {
         didSet {
             defaults.set(preferredLanguage, forKey: Key.language)
@@ -75,6 +77,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
+        homeShowRecentlyUsed = d.bool(forKey: Key.homeRecentlyUsed)
+        homeShowRecentlyModified = d.bool(forKey: Key.homeRecentlyModified)
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
         appResourceLocale = appLocale(forCode: preferredLanguage)
     }
@@ -90,6 +94,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let favicons = "show_website_icons"
         static let clipboard = "clipboard_clear_seconds"
         static let privacyScreen = "hide_in_app_switcher"
+        static let homeRecentlyUsed = "home_show_recently_used"
+        static let homeRecentlyModified = "home_show_recently_modified"
         static let language = "preferred_language"
     }
 }

@@ -11,18 +11,18 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            VaultListScreen()
+            HomeScreen()
                 .tag(0)
-                .tabItem { Label("Vault", image: selection == 0 ? Icons.homeFill : Icons.home) }
-            GeneratorScreen()
+                .tabItem { Label("Home", image: selection == 0 ? Icons.homeFill : Icons.home) }
+            ItemsScreen()
                 .tag(1)
-                .tabItem { Label("Generator", image: Icons.magic) }
+                .tabItem { Label("Items", image: selection == 1 ? Icons.organizationFill : Icons.organization) }
             WatchtowerScreen()
                 .tag(2)
-                .tabItem { Label("Watchtower", image: Icons.shield) }
-            SettingsScreen()
+                .tabItem { Label("Watchtower", image: selection == 2 ? Icons.planFill : Icons.plan) }
+            SearchScreen()
                 .tag(3)
-                .tabItem { Label("Settings", image: selection == 3 ? Icons.settingsFill : Icons.settings) }
+                .tabItem { Label("Search", image: Icons.search) }
         }
         .overlay(alignment: .bottom) { copyToast }
         .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)

@@ -155,4 +155,31 @@ extension VaultRepository {
     func recentlyModified(limit: Int) -> [VaultItem] {
         Array(items.sorted { $0.updatedAt > $1.updatedAt }.prefix(limit))
     }
+
+    // MARK: Category, lookup & search
+
+    func items(ofCategory category: ItemCategory) -> [VaultItem] {
+        items.filter { $0.category == category }
+    }
+    func count(forCategory category: ItemCategory) -> Int {
+        items.filter { $0.category == category }.count
+    }
+
+    /// Live + archived lookup (so an item opened from Archive still resolves).
+    func item(id: String) -> VaultItem? {
+        items.first { $0.id == id } ?? archived.first { $0.id == id }
+    }
+
+    /// Smart search: every space-separated token must appear in the item's
+    /// searchable text (title/fields/tags) OR its Space name.
+    func search(_ query: String) -> [VaultItem] {
+        let tokens = query.trimmingCharacters(in: .whitespaces).lowercased()
+            .split(separator: " ").map(String.init)
+        guard !tokens.isEmpty else { return [] }
+        let names = Dictionary(folders.map { ($0.id, $0.name.lowercased()) }, uniquingKeysWith: { a, _ in a })
+        return items.filter { item in
+            let hay = item.searchText + " " + (item.folderId.flatMap { names[$0] } ?? "")
+            return tokens.allSatisfy { hay.contains($0) }
+        }
+    }
 }

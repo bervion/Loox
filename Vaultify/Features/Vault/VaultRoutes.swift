@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// Push destinations within the Vault tab's `NavigationStack`. Item detail is
-/// keyed separately by the item id (`String`).
+/// Push destinations shared by the Home / Items / Search NavigationStacks. Item
+/// detail is keyed separately by the item id (`String`).
 enum VaultRoute: Hashable {
-    case folder(String?)   // nil = Unfiled
+    case folder(String?)            // nil = Unfiled
     case tag(String)
+    case category(ItemCategory)
     case manageFolders
+    case archive
+    case recentlyDeleted
 }
 
 /// Sort order shared by the item browse lists.
@@ -22,5 +25,21 @@ enum VaultSort: String, CaseIterable, Identifiable {
     }
 }
 
-/// Active Space filter for the Home item list.
-enum SpaceFilter: Hashable { case all, unfiled, folder(String) }
+extension View {
+    /// The destinations every tab stack can push. Declared once (DRY) so Home,
+    /// Items, and Search resolve item detail + folder/tag/category/archive/trash.
+    func vaultNavigationDestinations() -> some View {
+        self
+            .navigationDestination(for: String.self) { ItemDetailScreen(itemID: $0) }
+            .navigationDestination(for: VaultRoute.self) { route in
+                switch route {
+                case .folder(let id): FolderItemsScreen(folderId: id)
+                case .tag(let tag): TagItemsScreen(tag: tag)
+                case .category(let category): ItemListScreen(category: category)
+                case .manageFolders: ManageFoldersScreen()
+                case .archive: ArchiveScreen()
+                case .recentlyDeleted: TrashScreen()
+                }
+            }
+    }
+}

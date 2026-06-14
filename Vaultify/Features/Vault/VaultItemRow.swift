@@ -32,6 +32,9 @@ struct VaultItemRow: View {
             .layoutPriority(1)
             Spacer(minLength: 8)
             if let folder { spaceChip(folder) }
+            if item.pinned {
+                PolarisIcon(Icons.pinFill, size: 12).foregroundStyle(Color.accentColor)
+            }
             if item.favorite {
                 PolarisIcon(Icons.starFill, size: 14)
                     .foregroundStyle(VaultColors.strengthMedium)

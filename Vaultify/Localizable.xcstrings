@@ -170,6 +170,7 @@
       }
     },
     "Add Space": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -302,7 +303,6 @@
       }
     },
     "All": {
-      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -313,6 +313,7 @@
       }
     },
     "All Items": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -818,7 +819,24 @@
         }
       }
     },
+    "Create Space": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Space"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo nhóm"
+          }
+        }
+      }
+    },
     "Create your first Space": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1587,6 +1605,7 @@
       }
     },
     "Group items by company or project": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2034,6 +2053,7 @@
       }
     },
     "Manage": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2045,6 +2065,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Quản lý"
+          }
+        }
+      }
+    },
+    "Manage Spaces": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage Spaces"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quản lý nhóm"
           }
         }
       }
@@ -2124,6 +2160,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chuyển vào thùng rác"
+          }
+        }
+      }
+    },
+    "My Vault": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Vault"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kho của tôi"
           }
         }
       }
@@ -2411,6 +2463,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hoặc dán khóa thiết lập"
+          }
+        }
+      }
+    },
+    "Organization": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organization"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tổ chức"
           }
         }
       }
@@ -3761,66 +3829,338 @@
         }
       }
     },
-    "My Vault": {
+    "Home": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "My Vault"
+            "value": "Home"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kho của tôi"
+            "value": "Trang chủ"
           }
         }
       }
     },
-    "Create Space": {
+    "Items": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create Space"
+            "value": "Items"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo nhóm"
+            "value": "Mục"
           }
         }
       }
     },
-    "Manage Spaces": {
+    "Pinned": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Manage Spaces"
+            "value": "Pinned"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quản lý nhóm"
+            "value": "Đã ghim"
           }
         }
       }
     },
-    "Organization": {
+    "Recently Created": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Organization"
+            "value": "Recently Created"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tổ chức"
+            "value": "Mới tạo"
+          }
+        }
+      }
+    },
+    "Frequently Used": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequently Used"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hay dùng"
+          }
+        }
+      }
+    },
+    "Recently Modified": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently Modified"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mới sửa"
+          }
+        }
+      }
+    },
+    "Utilities": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilities"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiện ích"
+          }
+        }
+      }
+    },
+    "Password Generator": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Password Generator"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trình tạo mật khẩu"
+          }
+        }
+      }
+    },
+    "Customize Home": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Customize Home"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tùy chỉnh Trang chủ"
+          }
+        }
+      }
+    },
+    "Optional sections": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional sections"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục tùy chọn"
+          }
+        }
+      }
+    },
+    "Pinned, Favorites, Recently Created, and Frequently Used always appear when they have items.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinned, Favorites, Recently Created, and Frequently Used always appear when they have items."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã ghim, Yêu thích, Mới tạo và Hay dùng luôn hiển thị khi có mục."
+          }
+        }
+      }
+    },
+    "Categories": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Categories"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phân loại"
+          }
+        }
+      }
+    },
+    "Archive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưu trữ"
+          }
+        }
+      }
+    },
+    "Recently Deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently Deleted"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vừa xóa"
+          }
+        }
+      }
+    },
+    "Unarchive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unarchive"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ lưu trữ"
+          }
+        }
+      }
+    },
+    "Pin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pin"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghim"
+          }
+        }
+      }
+    },
+    "Unpin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unpin"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ ghim"
+          }
+        }
+      }
+    },
+    "No archived items": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No archived items"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa có mục lưu trữ"
+          }
+        }
+      }
+    },
+    "Archived items are hidden from your lists but never deleted.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archived items are hidden from your lists but never deleted."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục lưu trữ bị ẩn khỏi danh sách nhưng không bị xóa."
+          }
+        }
+      }
+    },
+    "Search your vault": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search your vault"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm trong kho"
+          }
+        }
+      }
+    },
+    "Find items by name, site, tag, or Space.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find items by name, site, tag, or Space."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm theo tên, trang web, thẻ hoặc nhóm."
           }
         }
       }

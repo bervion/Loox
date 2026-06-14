@@ -22,5 +22,13 @@ struct VaultItemRowLink: View {
                 }
                 .tint(VaultColors.strengthMedium)
             }
+            .contextMenu {
+                Button { env.repository.togglePin(item) } label: {
+                    Label(item.pinned ? "Unpin" : "Pin", image: item.pinned ? Icons.pinFill : Icons.pin)
+                }
+                Button { env.repository.archive(item) } label: {
+                    Label("Archive", image: Icons.archive)
+                }
+            }
     }
 }

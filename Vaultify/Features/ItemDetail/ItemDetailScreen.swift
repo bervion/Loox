@@ -10,7 +10,7 @@ struct ItemDetailScreen: View {
     @State private var editing: EditorTarget?
     @State private var confirmTrash = false
 
-    private var item: VaultItem? { env.repository.items.first { $0.id == itemID } }
+    private var item: VaultItem? { env.repository.item(id: itemID) }
 
     var body: some View {
         ScrollView {
@@ -35,7 +35,16 @@ struct ItemDetailScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let item {
-                ToolbarItem(placement: .topBarTrailing) { Button("Edit") { editing = .edit(item) } }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
+                        if item.archived {
+                            Button { env.repository.unarchive(item) } label: { Label("Unarchive", image: Icons.archive) }
+                        } else {
+                            Button { env.repository.archive(item); dismiss() } label: { Label("Archive", image: Icons.archive) }
+                        }
+                    } label: { PolarisIcon("ic_menu_horizontal", size: 20) }
+                }
             }
         }
         .sheet(item: $editing) { ItemEditorScreen(target: $0) }
@@ -70,6 +79,11 @@ struct ItemDetailScreen: View {
                 Text(item.category.title).font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
+            Button { env.repository.togglePin(item) } label: {
+                PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
+                    .foregroundStyle(item.pinned ? Color.accentColor : .secondary)
+            }
+            .buttonStyle(.plain)
             Button { try? env.repository.toggleFavorite(item) } label: {
                 PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: 24)
                     .foregroundStyle(item.favorite ? VaultColors.strengthMedium : .secondary)

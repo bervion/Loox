@@ -29,7 +29,7 @@ Vaultify/
 │   ├── PasswordGenerator + DicewareWordList (EFF 7776), TOTPGenerator (RFC 6238), Haptics, ClipboardService
 │   ├── Watchtower/          PasswordAudit (weak/reused/score), HIBPService (k-anonymity)
 │   └── ImportExport/        VaultBackup (CSV + Argon2id/AES-GCM encrypted backup)
-└── Features/                Onboarding, Unlock, Main (tabs), Vault (Home dashboard: Quick Access/Spaces/Tags), Folders (badge/picker/editor/manage), ItemDetail, ItemEditor, Generator, Search, Watchtower, Settings, ImportExport, Components
+└── Features/                Onboarding, Unlock, Main (4 tabs: Home·Items·Watchtower·Search), Home (personalized: Pinned/Favorites/Recently Created/Frequently Used/Utilities + Customize), Items (Spaces/Categories/Tags/Archive/Recently Deleted), Folders, ItemDetail, ItemEditor, Generator, Search, Watchtower, Settings, ImportExport, Components
 ```
 
 ## Security model
@@ -43,7 +43,9 @@ Vaultify/
 - **Tags** — many per item, stored lightweight as `tags: [String]` inside the sealed `ItemSecret` (no separate record). Aggregated case-insensitively by `allTags()`; surfaced as `#` chips.
 - **Recents** — `ItemRecord.lastUsedAt` (plaintext, device-local, NOT synced); `markUsed` writes it without re-sealing/`dirty` on copy/reveal; powers Home's "Recently Used".
 - **Home dashboard** (`VaultListScreen` → `HomeDashboard`): Quick Access (favorites + recents) → Spaces grid (tap → folder-color-tinted `FolderItemsScreen`) → Tags row → All Items (category-grouped). Search stays global.
-- **Default space:** first launch seeds a renameable **"My Vault"** space; new items default to the primary space. The Home Spaces section is hidden when there are <2 spaces (manage via **Settings → Spaces**, or the section's "…" menu → Create/Manage). One space = a clean single-vault feel; the grid appears once you add a second.
+- **Default space:** first launch seeds a renameable **"My Vault"** space; new items default to the primary space.
+- **Navigation (4 tabs):** **Home** = personalized dashboard (Pinned · Favorites · Recently Created · Frequently Used, + optional Recently Used/Modified via Customize, + Utilities/Generator; Settings via header gear). **Items** = organization browser (Spaces + Create Space · Categories · Tags · Archive · Recently Deleted). **Watchtower** (security). **Search** = smart search (token-AND over title/fields/tags + Space name). Each tab owns a NavigationStack sharing `vaultNavigationDestinations()`.
+- **Pinned / Archived / Frequently-Used:** `pinned`/`archived`/`useCount` are plaintext `ItemRecord` columns (codec untouched). `reload()` splits items 3-way (live / archived / trashed) so archived stays out of every normal surface (Home, Items, Search, counts, AutoFill) but lives in Archive. `togglePin`/`archive`/`unarchive` are column-only (no re-seal, no `updatedAt` bump); `markUsed` bumps `useCount`.
 - **Back-compat (critical):** `ItemSecret`/`PortableItem` use a custom `init(from:)` that `decodeIfPresent`s `tags` (default `[]`) so pre-existing sealed blobs and old backups still open.
 - **CSV/backup:** export adds `folder` + `tags` columns; import matches/creates folders by name. **CloudKit:** `FolderRecord` syncs as `"VaultFolder"` (sealed name + metadata) behind the `VAULTIFY_ICLOUD` gate; tags ride inside the item blob.
 
