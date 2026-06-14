@@ -1,38 +1,51 @@
 import SwiftUI
 
-/// The Vault tab landing: Quick Access → Spaces → Tags → All Items entry. A
-/// scrollable dashboard so opening the app surfaces context and frequent items.
+/// The Vault tab landing: a List with dashboard rows on top (Quick Access,
+/// Spaces, Tags) followed by all items grouped by category — so opening the app
+/// surfaces both context and the items themselves. Each dashboard row hides
+/// itself when empty; item rows keep the standard swipe actions.
 struct HomeDashboard: View {
+    @Environment(AppEnvironment.self) private var env
     @Binding var path: NavigationPath
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                QuickAccessSection()
-                SpacesSection(path: $path)
-                TagsSection()
-                allItemsLink
-            }
-            .padding(.vertical, 16)
-        }
-        .background(Color(.systemGroupedBackground))
+    private func items(for category: ItemCategory) -> [VaultItem] {
+        env.repository.items.filter { $0.category == category }.sorted { $0.updatedAt > $1.updatedAt }
+    }
+    private var visibleCategories: [ItemCategory] {
+        ItemCategory.allCases.filter { !items(for: $0).isEmpty }
     }
 
-    private var allItemsLink: some View {
-        NavigationLink(value: VaultRoute.all) {
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(.tertiarySystemFill)).frame(width: 38, height: 38)
-                    .overlay(PolarisIcon("ic_apps_filled", size: 20).foregroundStyle(.secondary))
-                Text("All Items").font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                Spacer()
-                PolarisIcon(Icons.chevronRight, size: 14).foregroundStyle(.tertiary)
+    private var hasQuickAccess: Bool {
+        env.repository.items.contains(where: \.favorite) || !env.repository.recentlyUsed(limit: 1).isEmpty
+    }
+
+    var body: some View {
+        List {
+            if hasQuickAccess { dashboardRow { QuickAccessSection() } }
+            if env.repository.folders.count >= 2 { dashboardRow { SpacesSection(path: $path) } }
+            if !env.repository.allTags().isEmpty { dashboardRow { TagsSection() } }
+
+            ForEach(visibleCategories) { category in
+                Section {
+                    ForEach(items(for: category)) { VaultItemRowLink(item: $0) }
+                } header: {
+                    HStack {
+                        Text(category.title)
+                        Spacer()
+                        Text("\(items(for: category).count)").foregroundStyle(.secondary)
+                    }
+                }
             }
-            .padding(14).frame(maxWidth: .infinity)
-            .background(Color(.secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 16)
+        .listStyle(.insetGrouped)
+    }
+
+    /// A full-bleed, separator-free, transparent List row hosting a dashboard
+    /// section (the section draws its own cards over the grouped background).
+    private func dashboardRow(@ViewBuilder _ content: () -> some View) -> some View {
+        content()
+            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 }

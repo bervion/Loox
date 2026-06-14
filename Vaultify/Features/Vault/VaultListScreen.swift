@@ -19,7 +19,7 @@ struct VaultListScreen: View {
     var body: some View {
         NavigationStack(path: $path) {
             Group {
-                if env.repository.items.isEmpty && env.repository.folders.isEmpty {
+                if env.repository.items.isEmpty {
                     emptyState
                 } else if isSearching {
                     searchList
@@ -35,7 +35,6 @@ struct VaultListScreen: View {
             .navigationDestination(for: String.self) { ItemDetailScreen(itemID: $0) }
             .navigationDestination(for: VaultRoute.self) { route in
                 switch route {
-                case .all: AllItemsScreen()
                 case .folder(let id): FolderItemsScreen(folderId: id)
                 case .tag(let tag): TagItemsScreen(tag: tag)
                 case .manageFolders: ManageFoldersScreen()

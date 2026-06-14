@@ -3,7 +3,6 @@ import SwiftUI
 /// Push destinations within the Vault tab's `NavigationStack`. Item detail is
 /// keyed separately by the item id (`String`).
 enum VaultRoute: Hashable {
-    case all
     case folder(String?)   // nil = Unfiled
     case tag(String)
     case manageFolders
