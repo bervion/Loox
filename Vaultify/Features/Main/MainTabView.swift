@@ -1,9 +1,8 @@
 import SwiftUI
 import Combine
 
-/// The unlocked app shell: Home · Items · Watchtower + a dedicated Search tab.
-/// On iOS 18+ the Search tab uses `.search` role, which the system renders as a
-/// separate trailing search button (Apple News style on iOS 26 Liquid Glass).
+/// The unlocked app shell: Home · Items · Watchtower · Search.
+/// Search is a regular tab whose screen hosts a standard top search bar.
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var selection = 0
@@ -23,21 +22,16 @@ struct MainTabView: View {
         .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
     }
 
-    // The search tab MUST be declared with only `value:` + `role: .search` (no
-    // title/image) — passing a title or image keeps it inline. With that, iOS 26
-    // detaches it into its own floating Liquid-Glass search button and drops its
-    // `.searchable` field to the bottom (Apple News pattern). `selection`/`value`
-    // on the regular tabs is fine and keeps the filled-on-select icon swap.
-    // `SearchScreen` owns the NavigationStack + `.searchable`.
+    // Search is a regular tab; `SearchScreen` owns its NavigationStack +
+    // `.searchable`, so the search field sits at the top of the screen.
     @available(iOS 18.0, *)
     private var modernTabs: some View {
         TabView(selection: $selection) {
             Tab("Home", image: selection == 0 ? Icons.homeFill : Icons.home, value: 0) { HomeScreen() }
-            Tab("Items", image: selection == 1 ? Icons.organizationFill : Icons.organization, value: 1) { ItemsScreen() }
-            Tab("Watchtower", image: selection == 2 ? Icons.planFill : Icons.plan, value: 2) { WatchtowerScreen() }
-            Tab(value: 3, role: .search) { SearchScreen() }
+            Tab("Items", image: selection == 1 ? Icons.appsFill : Icons.apps, value: 1) { ItemsScreen() }
+            Tab("Watchtower", image: selection == 2 ? Icons.organizationFill : Icons.organization, value: 2) { WatchtowerScreen() }
+            Tab("Search", image: Icons.search, value: 3) { SearchScreen() }
         }
-        .liquidGlassTabExtras()
     }
 
     private var classicTabs: some View {
@@ -45,9 +39,9 @@ struct MainTabView: View {
             HomeScreen().tag(0)
                 .tabItem { Label("Home", image: selection == 0 ? Icons.homeFill : Icons.home) }
             ItemsScreen().tag(1)
-                .tabItem { Label("Items", image: selection == 1 ? Icons.organizationFill : Icons.organization) }
+                .tabItem { Label("Items", image: selection == 1 ? Icons.appsFill : Icons.apps) }
             WatchtowerScreen().tag(2)
-                .tabItem { Label("Watchtower", image: selection == 2 ? Icons.planFill : Icons.plan) }
+                .tabItem { Label("Watchtower", image: selection == 2 ? Icons.organizationFill : Icons.organization) }
             SearchScreen().tag(3)
                 .tabItem { Label("Search", image: Icons.search) }
         }
@@ -65,19 +59,6 @@ struct MainTabView: View {
             .shadow(color: .black.opacity(0.12), radius: 10, y: 3)
             .padding(.bottom, 70)
             .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-    }
-}
-
-private extension View {
-    /// iOS 26 Liquid Glass extras: minimize the search field into a floating
-    /// button (so the `.search` tab detaches), and shrink the tab bar on scroll.
-    @ViewBuilder func liquidGlassTabExtras() -> some View {
-        if #available(iOS 26.0, *) {
-            self.searchToolbarBehavior(.minimize)
-                .tabBarMinimizeBehavior(.onScrollDown)
-        } else {
-            self
         }
     }
 }

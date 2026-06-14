@@ -63,6 +63,8 @@ enum Icons {
     static let planFill = "ic_plan_filled"
     static let organization = "ic_organization"
     static let organizationFill = "ic_organization_filled"
+    static let apps = "ic_apps"
+    static let appsFill = "ic_apps_filled"
     static let pin = "ic_pin"
     static let pinFill = "ic_pin_filled"
     static let archive = "ic_archive"

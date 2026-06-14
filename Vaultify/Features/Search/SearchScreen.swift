@@ -1,9 +1,7 @@
 import SwiftUI
 
-/// Search tab body for the iOS 17.6 path (own NavigationStack + `.searchable`).
-/// On iOS 18+/26 the search field is hosted by the TabView itself (`.searchable`
-/// on the TabView) so it expands in place over the Liquid Glass bar, News-style;
-/// see `MainTabView.modernTabs`. Both paths render `SearchResultsList`.
+/// Search tab — own NavigationStack + `.searchable`, so the search bar sits at
+/// the top of the screen. Renders `SearchResultsList`.
 struct SearchScreen: View {
     @State private var search = ""
 
