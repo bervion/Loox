@@ -1,7 +1,16 @@
 {
-  "images" : [
-    { "idiom" : "universal", "filename" : "ic_export.pdf" }
+  "images": [
+    {
+      "idiom": "universal",
+      "filename": "ic_export.svg"
+    }
   ],
-  "info" : { "author" : "xcode", "version" : 1 },
-  "properties" : { "preserves-vector-representation" : true, "template-rendering-intent" : "template" }
+  "info": {
+    "author": "xcode",
+    "version": 1
+  },
+  "properties": {
+    "preserves-vector-representation": true,
+    "template-rendering-intent": "template"
+  }
 }
