@@ -24,5 +24,14 @@ enum WallpaperPresets {
         WallpaperPreset(id: "ember", wallpaper: .mesh(colors: [0x3A1C71, 0xD76D77, 0xFFAF7B, 0x3A1C71])),
     ]
 
-    static let all: [WallpaperPreset] = gradients + meshes
+    static let patterns: [WallpaperPreset] = [
+        WallpaperPreset(id: "p-dots", wallpaper: .pattern(id: "dots", colors: [0x1B2735, 0x2A3F55], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
+        WallpaperPreset(id: "p-rings", wallpaper: .pattern(id: "rings", colors: [0x2B1A3D, 0x4A2D63], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
+        WallpaperPreset(id: "p-waves", wallpaper: .pattern(id: "waves", colors: [0x10303A, 0x1C5560], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
+        WallpaperPreset(id: "p-plus", wallpaper: .pattern(id: "plus", colors: [0x2A2310, 0x4A3D1C], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
+        WallpaperPreset(id: "p-diagonal", wallpaper: .pattern(id: "diagonal", colors: [0x1A2B1A, 0x2D4A2D], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
+        WallpaperPreset(id: "p-grid", wallpaper: .pattern(id: "grid", colors: [0x202024, 0x35353C], settings: WallpaperSettings(intensity: 0.45, rotation: 90))),
+    ]
+
+    static let all: [WallpaperPreset] = gradients + patterns + meshes
 }

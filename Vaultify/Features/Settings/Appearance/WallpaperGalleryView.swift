@@ -25,6 +25,7 @@ struct WallpaperGalleryView: View {
             }
 
             presetSection(Text("Gradients"), WallpaperPresets.gradients)
+            presetSection(Text("Patterns"), WallpaperPresets.patterns)
             presetSection(Text("Animated Mesh"), WallpaperPresets.meshes)
 
             Section {

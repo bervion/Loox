@@ -23,8 +23,8 @@ struct WallpaperView: View {
             gradient(colors, settings)
         case .mesh(let colors):
             MeshGradientView(colors: colors, phase: meshPhase, animated: meshAnimated)
-        case .pattern(_, let colors, let settings):
-            gradient(colors, settings)            // pattern overlay added once assets ship
+        case .pattern(let id, let colors, let settings):
+            PatternWallpaperView(colors: colors, style: PatternStyle(rawValue: id) ?? .dots, settings: settings)
         case .image(let fileName, let settings):
             imageView(fileName, settings)
         }

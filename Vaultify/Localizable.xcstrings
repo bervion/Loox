@@ -4445,6 +4445,16 @@
           }
         }
       }
+    },
+    "Patterns" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ho\u1ea1 ti\u1ebft"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
