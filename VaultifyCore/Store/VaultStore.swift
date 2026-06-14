@@ -41,6 +41,7 @@ final class VaultStore {
     /// Last-writer-wins upsert of a remote record (ciphertext + metadata).
     func upsertFromRemote(id: String, sealed: Data, favorite: Bool, trashedAt: Date?,
                           deletedAt: Date?, createdAt: Date, updatedAt: Date,
+                          pinned: Bool, archived: Bool, useCount: Int,
                           changeTag: String?) {
         if let existing = record(id: id) {
             guard updatedAt > existing.updatedAt else { return }
@@ -49,12 +50,18 @@ final class VaultStore {
             existing.trashedAt = trashedAt
             existing.deletedAt = deletedAt
             existing.updatedAt = updatedAt
+            existing.pinned = pinned
+            existing.archived = archived
+            existing.useCount = useCount
             existing.ckChangeTag = changeTag
             existing.dirty = false
         } else {
             let record = ItemRecord(id: id, sealed: sealed, favorite: favorite,
                                     createdAt: createdAt, updatedAt: updatedAt, trashedAt: trashedAt)
             record.deletedAt = deletedAt
+            record.pinned = pinned
+            record.archived = archived
+            record.useCount = useCount
             record.ckChangeTag = changeTag
             record.dirty = false
             context.insert(record)

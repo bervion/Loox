@@ -112,6 +112,9 @@ import CloudKit
         ck["createdAt"] = record.createdAt as CKRecordValue
         ck["updatedAt"] = record.updatedAt as CKRecordValue
         ck["favorite"] = (record.favorite ? 1 : 0) as CKRecordValue
+        ck["pinned"] = (record.pinned ? 1 : 0) as CKRecordValue
+        ck["archived"] = (record.archived ? 1 : 0) as CKRecordValue
+        ck["useCount"] = record.useCount as CKRecordValue
         if let trashedAt = record.trashedAt { ck["trashedAt"] = trashedAt as CKRecordValue }
         if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
         return ck
@@ -127,6 +130,9 @@ import CloudKit
             trashedAt: record["trashedAt"] as? Date,
             deletedAt: record["deletedAt"] as? Date,
             createdAt: createdAt, updatedAt: updatedAt,
+            pinned: (record["pinned"] as? Int ?? 0) == 1,
+            archived: (record["archived"] as? Int ?? 0) == 1,
+            useCount: record["useCount"] as? Int ?? 0,
             changeTag: record.recordChangeTag)
     }
 

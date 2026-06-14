@@ -12,6 +12,9 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
     /// Last in-app copy/reveal time. Powers Recents; plaintext metadata mirrored
     /// from `ItemRecord.lastUsedAt` so Home can sort without re-decrypting.
     var lastUsedAt: Date?
+    var pinned: Bool
+    var archived: Bool
+    var useCount: Int
     var createdAt: Date
     var updatedAt: Date
     var trashedAt: Date?
@@ -24,6 +27,9 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
          favorite: Bool = false,
          tags: [String] = [],
          lastUsedAt: Date? = nil,
+         pinned: Bool = false,
+         archived: Bool = false,
+         useCount: Int = 0,
          createdAt: Date = .now,
          updatedAt: Date = .now,
          trashedAt: Date? = nil) {
@@ -35,6 +41,9 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
         self.favorite = favorite
         self.tags = tags
         self.lastUsedAt = lastUsedAt
+        self.pinned = pinned
+        self.archived = archived
+        self.useCount = useCount
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.trashedAt = trashedAt

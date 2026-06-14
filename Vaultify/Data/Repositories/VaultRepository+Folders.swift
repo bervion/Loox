@@ -141,4 +141,18 @@ extension VaultRepository {
         let needle = tag.lowercased()
         return items.filter { $0.tags.contains { $0.lowercased() == needle } }
     }
+
+    // MARK: Home accessors (live items only — archived/trashed already excluded)
+
+    var pinnedItems: [VaultItem] { items.filter(\.pinned) }
+
+    func frequentlyUsed(limit: Int) -> [VaultItem] {
+        Array(items.filter { $0.useCount > 0 }.sorted { $0.useCount > $1.useCount }.prefix(limit))
+    }
+    func recentlyCreated(limit: Int) -> [VaultItem] {
+        Array(items.sorted { $0.createdAt > $1.createdAt }.prefix(limit))
+    }
+    func recentlyModified(limit: Int) -> [VaultItem] {
+        Array(items.sorted { $0.updatedAt > $1.updatedAt }.prefix(limit))
+    }
 }
