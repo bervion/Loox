@@ -78,7 +78,7 @@ struct SettingsScreen: View {
                 }
 
                 Section("Appearance") {
-                    Picker(selection: $settings.appearance) {
+                    Picker(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
                         ForEach(AppearanceMode.allCases) { Text($0.title).tag($0) }
                     } label: {
                         Label { Text("Theme") } icon: { PolarisIcon("ic_apps_filled") }

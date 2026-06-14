@@ -5,6 +5,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
     @State private var obscured = false
     @State private var showSplash = true
 
@@ -46,6 +47,8 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in handleScenePhase(phase) }
+        .onChange(of: colorScheme) { _, scheme in env.theme.systemColorSchemeChanged(scheme) }
+        .onAppear { env.theme.systemColorSchemeChanged(colorScheme) }
     }
 
     private func handleScenePhase(_ phase: ScenePhase) {

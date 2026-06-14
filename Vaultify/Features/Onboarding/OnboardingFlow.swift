@@ -11,7 +11,6 @@ struct OnboardingFlow: View {
     enum Step: Equatable { case welcome, create, emergencyKit, theme, biometric, done }
 
     var body: some View {
-        @Bindable var settings = env.settings
         ZStack {
             switch step {
             case .welcome:
@@ -21,7 +20,7 @@ struct OnboardingFlow: View {
             case .emergencyKit:
                 EmergencyKitView(recoveryKey: recoveryKey) { step = .theme }
             case .theme:
-                ChooseThemeView(selection: $settings.appearance) {
+                ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
                     step = BiometricAuth.isAvailable ? .biometric : .done
                 }
             case .biometric:

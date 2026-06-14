@@ -16,7 +16,9 @@ struct VaultifyApp: App {
             RootView()
                 .environment(env)
                 .environment(\.locale, locale)
-                .preferredColorScheme(env.settings.appearance.colorScheme)
+                .environment(\.appTheme, env.theme.active)
+                .tint(env.theme.accentColor)
+                .preferredColorScheme(env.theme.preferredColorScheme)
         }
     }
 }
