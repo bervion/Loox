@@ -1,6 +1,6 @@
-# Private repo holding the encrypted App Store distribution cert + provisioning
-# profiles. Create it first (see docs/deployment-guide.md), then `make match-setup`.
-git_url("https://github.com/bervion/vaultify-ios-certificates.git")
+# Shared team certs repo — one distribution cert reused by every app; this app
+# only stores its own provisioning profiles. See its SIGNING.md.
+git_url("https://github.com/bervion/bervion-ios-certificates.git")
 
 storage_mode("git")
 
