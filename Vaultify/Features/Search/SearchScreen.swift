@@ -1,36 +1,46 @@
 import SwiftUI
 
-/// Search tab: smart search across all items — every space-separated token must
-/// match the item's title/fields/tags OR its Space name (e.g. "github work"
-/// finds the GitHub login in the Work space). Taps open detail.
+/// Search tab body for the iOS 17.6 path (own NavigationStack + `.searchable`).
+/// On iOS 18+/26 the search field is hosted by the TabView itself (`.searchable`
+/// on the TabView) so it expands in place over the Liquid Glass bar, News-style;
+/// see `MainTabView.modernTabs`. Both paths render `SearchResultsList`.
 struct SearchScreen: View {
-    @Environment(AppEnvironment.self) private var env
     @State private var search = ""
-    @State private var path = NavigationPath()
-
-    private var query: String { search.trimmingCharacters(in: .whitespaces) }
-    private var results: [VaultItem] { env.repository.search(query) }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if query.isEmpty {
-                    ContentUnavailableView {
-                        Label { Text("Search your vault") } icon: { PolarisIcon(Icons.search, size: 48) }
-                    } description: {
-                        Text("Find items by name, site, tag, or Space.")
-                    }
-                } else if results.isEmpty {
-                    ContentUnavailableView.search(text: search)
-                } else {
-                    List(results) { VaultItemRowLink(item: $0) }
+        NavigationStack {
+            SearchResultsList(query: search)
+                .navigationTitle("Search")
+                .searchable(text: $search, prompt: "Search vault")
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .vaultNavigationDestinations()
+        }
+    }
+}
+
+/// Smart-search results — every space-separated token must match the item's
+/// title/fields/tags OR its Space name (e.g. "github work"). Taps open detail.
+struct SearchResultsList: View {
+    @Environment(AppEnvironment.self) private var env
+    let query: String
+
+    private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
+    private var results: [VaultItem] { env.repository.search(trimmed) }
+
+    var body: some View {
+        Group {
+            if trimmed.isEmpty {
+                ContentUnavailableView {
+                    Label { Text("Search your vault") } icon: { PolarisIcon(Icons.search, size: 48) }
+                } description: {
+                    Text("Find items by name, site, tag, or Space.")
                 }
+            } else if results.isEmpty {
+                ContentUnavailableView.search(text: query)
+            } else {
+                List(results) { VaultItemRowLink(item: $0) }
             }
-            .navigationTitle("Search")
-            .searchable(text: $search, prompt: "Search vault")
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-            .vaultNavigationDestinations()
         }
     }
 }

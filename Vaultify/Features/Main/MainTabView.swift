@@ -7,6 +7,7 @@ import Combine
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var selection = 0
+    @State private var searchText = ""
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -29,8 +30,15 @@ struct MainTabView: View {
             Tab("Home", image: selection == 0 ? Icons.homeFill : Icons.home, value: 0) { HomeScreen() }
             Tab("Items", image: selection == 1 ? Icons.organizationFill : Icons.organization, value: 1) { ItemsScreen() }
             Tab("Watchtower", image: selection == 2 ? Icons.planFill : Icons.plan, value: 2) { WatchtowerScreen() }
-            Tab("Search", image: Icons.search, value: 3, role: .search) { SearchScreen() }
+            Tab("Search", image: Icons.search, value: 3, role: .search) {
+                NavigationStack {
+                    SearchResultsList(query: searchText)
+                        .navigationTitle("Search")
+                        .vaultNavigationDestinations()
+                }
+            }
         }
+        .searchable(text: $searchText)
     }
 
     private var classicTabs: some View {
