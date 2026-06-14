@@ -37,6 +37,7 @@ struct MainTabView: View {
             Tab("Watchtower", image: selection == 2 ? Icons.planFill : Icons.plan, value: 2) { WatchtowerScreen() }
             Tab(value: 3, role: .search) { SearchScreen() }
         }
+        .liquidGlassTabExtras()
     }
 
     private var classicTabs: some View {
@@ -64,6 +65,19 @@ struct MainTabView: View {
             .shadow(color: .black.opacity(0.12), radius: 10, y: 3)
             .padding(.bottom, 70)
             .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+}
+
+private extension View {
+    /// iOS 26 Liquid Glass extras: minimize the search field into a floating
+    /// button (so the `.search` tab detaches), and shrink the tab bar on scroll.
+    @ViewBuilder func liquidGlassTabExtras() -> some View {
+        if #available(iOS 26.0, *) {
+            self.searchToolbarBehavior(.minimize)
+                .tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
         }
     }
 }
