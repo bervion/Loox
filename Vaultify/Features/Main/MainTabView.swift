@@ -1,17 +1,13 @@
 import SwiftUI
 import Combine
-import UIKit
 
 /// The unlocked app shell: Home · Items · Watchtower + a dedicated Search tab.
 /// On iOS 18+ the Search tab uses `.search` role, which the system renders as a
-/// separate trailing circle (Apple News style). Tab titles are hidden so the
-/// icons read larger; accessibility labels are kept.
+/// separate trailing search button (Apple News style on iOS 26 Liquid Glass).
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var selection = 0
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
-
-    init() { Self.hideTabBarTitles() }
 
     var body: some View {
         Group {
@@ -63,24 +59,5 @@ struct MainTabView: View {
             .padding(.bottom, 70)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
-    }
-
-    /// Hide tab-item titles (icon-only bar) while keeping the icons' accessibility
-    /// labels. Pushes the title off-screen and clears its color across layouts.
-    private static func hideTabBarTitles() {
-        let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
-        let off = UIOffset(horizontal: 0, vertical: 200)
-        let clear: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.clear]
-        for layout in [appearance.stackedLayoutAppearance,
-                       appearance.inlineLayoutAppearance,
-                       appearance.compactInlineLayoutAppearance] {
-            layout.normal.titleTextAttributes = clear
-            layout.selected.titleTextAttributes = clear
-            layout.normal.titlePositionAdjustment = off
-            layout.selected.titlePositionAdjustment = off
-        }
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 }
