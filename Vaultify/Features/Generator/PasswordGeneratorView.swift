@@ -29,6 +29,7 @@ struct PasswordGeneratorView: View {
                 ForEach(Mode.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
+            .listRowBackground(VaultColors.surface)
 
             if mode == .password { passwordControls } else { passphraseControls }
 

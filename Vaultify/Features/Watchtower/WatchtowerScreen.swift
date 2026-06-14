@@ -25,6 +25,7 @@ struct WatchtowerScreen: View {
         NavigationStack {
             List {
                 Section { HealthGauge(score: health.score, issueCount: health.issueCount + pwned.count) }
+                .listRowBackground(VaultColors.surface)
 
                 issueSection("Weak Passwords", "Short or low-entropy — easy to crack.", health.weak)
                 issueSection("Reused Passwords", "The same password protects multiple items.", health.reused)
@@ -38,6 +39,7 @@ struct WatchtowerScreen: View {
                             PolarisIcon(Icons.checkCircle).foregroundStyle(VaultColors.strengthStrong)
                         }
                     }
+                    .listRowBackground(VaultColors.surface)
                 }
 
                 Section {
@@ -45,6 +47,7 @@ struct WatchtowerScreen: View {
                 } footer: {
                     Text("Uses k-anonymity — only the first five characters of each password’s SHA-1 hash are sent. Passwords never leave your device.")
                 }
+                .listRowBackground(VaultColors.surface)
             }
             .scrollContentBackground(.hidden)
             .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
@@ -71,6 +74,7 @@ struct WatchtowerScreen: View {
             } footer: {
                 Text(subtitle)
             }
+            .listRowBackground(VaultColors.surface)
         }
     }
 

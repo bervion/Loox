@@ -29,6 +29,7 @@ struct ManageFoldersScreen: View {
                     .buttonStyle(.plain)
                 }
                 .onMove(perform: move)
+                .listRowBackground(VaultColors.surface)
             }
         }
         .themedFormBackground()

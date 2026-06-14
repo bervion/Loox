@@ -24,6 +24,7 @@ struct ItemsScreen: View {
                     standaloneRow(Text("Recently Deleted"), icon: Icons.trash,
                                   count: env.repository.trashed.count, route: .recentlyDeleted)
                 }
+                .listRowBackground(VaultColors.surface)
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -62,6 +63,7 @@ struct ItemsScreen: View {
                 Label { Text("Create Space") } icon: { PolarisIcon(Icons.addCircle) }
             }
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private var categoriesSection: some View {
@@ -78,6 +80,7 @@ struct ItemsScreen: View {
                 }
             }
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private var tagsSection: some View {
@@ -93,6 +96,7 @@ struct ItemsScreen: View {
                 }
             }
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private func standaloneRow(_ title: Text, icon: String, count: Int, route: VaultRoute) -> some View {

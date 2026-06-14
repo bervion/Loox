@@ -33,6 +33,7 @@ struct TrashScreen: View {
                                 }
                                 .tint(VaultColors.strengthStrong)
                             }
+                            .listRowBackground(VaultColors.surface)
                     }
                 }
             }

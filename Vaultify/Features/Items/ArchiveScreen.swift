@@ -28,6 +28,7 @@ struct ArchiveScreen: View {
                                     Label("Trash", image: Icons.trash)
                                 }
                             }
+                            .listRowBackground(VaultColors.surface)
                     }
                 }
             }
