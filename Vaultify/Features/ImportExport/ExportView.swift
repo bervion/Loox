@@ -79,11 +79,13 @@ struct ExportView: View {
         working = true; error = nil; exportURL = nil
         do {
             let items = env.repository.items
+            let folderNames = Dictionary(env.repository.folders.map { ($0.id, $0.name) },
+                                         uniquingKeysWith: { a, _ in a })
             if mode == .encrypted {
-                let data = try await VaultBackup.exportEncrypted(items, passphrase: passphrase)
+                let data = try await VaultBackup.exportEncrypted(items, folderNames: folderNames, passphrase: passphrase)
                 exportURL = try write(data, name: "vaultify-backup.vaultify")
             } else {
-                exportURL = try write(Data(VaultBackup.makeCSV(items).utf8), name: "vaultify-export.csv")
+                exportURL = try write(Data(VaultBackup.makeCSV(items, folderNames: folderNames).utf8), name: "vaultify-export.csv")
             }
         } catch {
             self.error = error.localizedDescription

@@ -2,13 +2,21 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Import from a CSV export (1Password / Bitwarden / Chrome) or a Vaultify
-/// encrypted backup.
+/// encrypted backup. Folder names in the file are resolved to Spaces on import
+/// (matched by name, created if missing); tags are restored too.
 struct ImportView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
 
+    /// One parsed row: the item plus the folder NAME it should join (if any).
+    private struct ImportRow: Identifiable {
+        let item: VaultItem
+        let folderName: String?
+        var id: String { item.id }
+    }
+
     @State private var showPicker = false
-    @State private var parsed: [VaultItem] = []
+    @State private var parsed: [ImportRow] = []
     @State private var encryptedData: Data?
     @State private var passphrase = ""
     @State private var error: String?
@@ -35,7 +43,7 @@ struct ImportView: View {
 
             if !parsed.isEmpty {
                 Section("Preview (\(parsed.count))") {
-                    ForEach(parsed.prefix(6)) { VaultItemRow(item: $0) }
+                    ForEach(parsed.prefix(6)) { VaultItemRow(item: $0.item) }
                     if parsed.count > 6 { Text("and \(parsed.count - 6) more…").font(.footnote).foregroundStyle(.secondary) }
                 }
                 Section {
@@ -71,7 +79,7 @@ struct ImportView: View {
         if (try? JSONDecoder().decode(VaultBackup.EncryptedBackup.self, from: data)) != nil {
             encryptedData = data
         } else if let text = String(data: data, encoding: .utf8) {
-            parsed = VaultBackup.parseCSV(text)
+            parsed = VaultBackup.parseCSVWithFolders(text).map { ImportRow(item: $0.item, folderName: $0.folderName) }
             if parsed.isEmpty { error = "No items found in that file." }
         } else {
             error = "Unsupported file format."
@@ -82,6 +90,7 @@ struct ImportView: View {
         working = true; error = nil
         do {
             parsed = try await VaultBackup.importEncrypted(data, passphrase: passphrase)
+                .map { ImportRow(item: $0.item, folderName: $0.folderName) }
             encryptedData = nil
             if parsed.isEmpty { error = "Backup contained no items." }
         } catch {
@@ -91,8 +100,30 @@ struct ImportView: View {
     }
 
     private func performImport() {
-        for item in parsed { try? env.repository.add(item) }
+        var folderCache: [String: String] = [:]   // lowercased name → folder id
+        for row in parsed {
+            var item = row.item
+            if let name = row.folderName, !name.isEmpty {
+                item.folderId = resolveFolder(name, cache: &folderCache)
+            }
+            try? env.repository.add(item)
+        }
         Haptics.success()
         dismiss()
+    }
+
+    /// Match a folder by name (case-insensitive), creating it if it doesn't exist.
+    private func resolveFolder(_ name: String, cache: inout [String: String]) -> String? {
+        let key = name.lowercased()
+        if let id = cache[key] { return id }
+        if let existing = env.repository.folders.first(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }) {
+            cache[key] = existing.id
+            return existing.id
+        }
+        if let id = try? env.repository.addFolder(name: name, icon: "ic_folder", color: .blue) {
+            cache[key] = id
+            return id
+        }
+        return nil
     }
 }
