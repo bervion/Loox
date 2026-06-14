@@ -3,11 +3,13 @@ import SwiftUI
 /// The Vault tab landing: Quick Access → Spaces → Tags → All Items entry. A
 /// scrollable dashboard so opening the app surfaces context and frequent items.
 struct HomeDashboard: View {
+    @Binding var path: NavigationPath
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 QuickAccessSection()
-                SpacesSection()
+                SpacesSection(path: $path)
                 TagsSection()
                 allItemsLink
             }

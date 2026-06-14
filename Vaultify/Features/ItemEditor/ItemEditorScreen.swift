@@ -14,6 +14,7 @@ struct ItemEditorScreen: View {
     @State private var scanningFieldID: String?
     @State private var showAttachmentPicker = false
     @State private var showFolderPicker = false
+    @State private var didApplyDefaultFolder = false
 
     init(target: EditorTarget) {
         self.target = target
@@ -95,6 +96,15 @@ struct ItemEditorScreen: View {
             }
             .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                // New items default to the primary Space ("My Vault") so they have
+                // a home; applied once so it never overrides a user's own pick.
+                if isNew, !didApplyDefaultFolder, draft.folderId == nil,
+                   let primary = env.repository.folders.first {
+                    draft.folderId = primary.id
+                }
+                didApplyDefaultFolder = true
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { hasChanges ? (confirmDiscard = true) : dismiss() }

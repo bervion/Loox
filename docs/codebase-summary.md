@@ -43,6 +43,7 @@ Vaultify/
 - **Tags** — many per item, stored lightweight as `tags: [String]` inside the sealed `ItemSecret` (no separate record). Aggregated case-insensitively by `allTags()`; surfaced as `#` chips.
 - **Recents** — `ItemRecord.lastUsedAt` (plaintext, device-local, NOT synced); `markUsed` writes it without re-sealing/`dirty` on copy/reveal; powers Home's "Recently Used".
 - **Home dashboard** (`VaultListScreen` → `HomeDashboard`): Quick Access (favorites + recents) → Spaces grid (tap → folder-color-tinted `FolderItemsScreen`) → Tags row → All Items (category-grouped). Search stays global.
+- **Default space:** first launch seeds a renameable **"My Vault"** space; new items default to the primary space. The Home Spaces section is hidden when there are <2 spaces (manage via **Settings → Spaces**, or the section's "…" menu → Create/Manage). One space = a clean single-vault feel; the grid appears once you add a second.
 - **Back-compat (critical):** `ItemSecret`/`PortableItem` use a custom `init(from:)` that `decodeIfPresent`s `tags` (default `[]`) so pre-existing sealed blobs and old backups still open.
 - **CSV/backup:** export adds `folder` + `tags` columns; import matches/creates folders by name. **CloudKit:** `FolderRecord` syncs as `"VaultFolder"` (sealed name + metadata) behind the `VAULTIFY_ICLOUD` gate; tags ride inside the item blob.
 

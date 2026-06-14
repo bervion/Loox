@@ -8,6 +8,7 @@ struct VaultListScreen: View {
     @State private var editorTarget: EditorTarget?
     @State private var showTrash = false
     @State private var search = ""
+    @State private var path = NavigationPath()
 
     private var query: String { search.trimmingCharacters(in: .whitespaces).lowercased() }
     private var isSearching: Bool { !query.isEmpty }
@@ -16,14 +17,14 @@ struct VaultListScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if env.repository.items.isEmpty && env.repository.folders.isEmpty {
                     emptyState
                 } else if isSearching {
                     searchList
                 } else {
-                    HomeDashboard()
+                    HomeDashboard(path: $path)
                 }
             }
             .navigationTitle("Vault")

@@ -41,6 +41,9 @@ struct OnboardingFlow: View {
     private func createVault(_ password: String) async -> String? {
         do {
             try await env.session.createVault(masterPassword: password)
+            // Seed a default Space ("My Vault") so new items have a home; the user
+            // can rename it or add more later. Best-effort — never block setup.
+            try? env.repository.addFolder(name: appString("My Vault"), icon: Icons.lockFill, color: .blue)
             step = .emergencyKit
             return nil
         } catch {
