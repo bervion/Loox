@@ -28,6 +28,9 @@ The `Wallpaper` model + a SwiftUI renderer for everything except the animated me
   (solid themed bg).
 - Bundle curated presets: ~6 gradients + ~6 patterns + each built-in theme's default
   wallpaper. Default for Day = subtle light gradient; Night = dark gradient/mesh.
+- **AutoFill extension**: optional **static** themed backdrop (solid/gradient only — no
+  pattern/photo/morph) behind its credential list; defaults to the themed solid
+  background. Keep it light (extension memory budget).
 
 ## Architecture
 

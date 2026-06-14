@@ -21,8 +21,10 @@ battery pass, accessibility, full test suite, docs, optional AutoFill theming.
   `MeshMath` (shift/gather/interp) determinism; migration from `appearance_mode`.
 - **Docs**: update `docs/codebase-summary.md` (new Theme/Wallpaper subsystems) +
   `README.md` highlight; note Metal + App-Group theme settings.
-- **Optional**: theme the **AutoFill extension** credential UI from the shared
-  App-Group settings (consistency) — behind its own toggle if risky.
+- **AutoFill extension** (now core, delivered in Phase 02/03): verify it reads the
+  shared theme, applies colors/accent + static background, and stays within the
+  extension memory budget (no morph); fall back to the default theme if the settings
+  file is missing/unreadable.
 
 ## Related code files
 

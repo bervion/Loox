@@ -56,9 +56,13 @@ semantics: `category(ItemCategory)`, `strength(PasswordStrength)`, `severity`.
 
 ## Related code files
 
-**Create** (under `Vaultify/DesignSystem/Theme/`): `AppTheme.swift`,
-`AppThemeReference.swift`, `BuiltinThemes.swift`, `AccentColor.swift`,
-`ThemeSettings.swift`, `AutoNight.swift`, `ThemeStore.swift`, `ThemeEnvironment.swift`.
+**Create — shared core** (`VaultifyCore/Theme/`, compiled into BOTH app + extension):
+`AppTheme.swift`, `AppThemeReference.swift`, `BuiltinThemes.swift`, `AccentColor.swift`,
+`ThemeSettings.swift`, `AutoNight.swift`, `ThemePalette.swift` (pure `nonisolated`
+`resolve(settings:isDark:) -> AppTheme`), `ThemeReader.swift` (App-Group load/save).
+**Create — app only** (`Vaultify/DesignSystem/Theme/`): `ThemeStore.swift`
+(`@MainActor @Observable` wrapper over the core) + `ThemeEnvironment.swift`.
+The AutoFill extension consumes `ThemeReader` + `ThemePalette` directly (no store/UI).
 
 **Modify**: `Vaultify/App/AppEnvironment.swift` (own `ThemeStore`),
 `Vaultify/App/VaultifyApp.swift` (tint + colorScheme from theme),

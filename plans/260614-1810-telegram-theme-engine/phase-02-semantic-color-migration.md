@@ -21,6 +21,9 @@ phase guarantees every screen reads theme colors and stays legible in all 4 them
 - Nav/tab bar, grouped backgrounds, card surfaces, switches/checks reflect the theme
   (esp. Night-Tinted, which is not plain black).
 - Verify contrast/legibility for Day / Day-Classic / Night / Night-Tinted.
+- **AutoFill extension UI** reads the shared theme (`VaultifyCore` `ThemeReader`, App
+  Group) and applies themed colors + accent — same chrome as the app, static (no
+  wallpaper/morph in the extension). Modify `VaultifyAutoFill/**` credential views.
 
 ## Architecture
 
