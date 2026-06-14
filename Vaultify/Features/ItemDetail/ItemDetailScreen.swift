@@ -84,7 +84,8 @@ struct ItemDetailScreen: View {
             ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
                 DetailFieldRow(field: field,
                                onChange: { update($0, in: item) },
-                               onRemove: { remove(field, in: item) })
+                               onRemove: { remove(field, in: item) },
+                               onUsed: { env.repository.markUsed(item) })
                 if index < fields.count - 1 { Divider().padding(.leading, 16) }
             }
         }

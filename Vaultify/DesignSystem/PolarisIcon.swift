@@ -58,6 +58,7 @@ enum Icons {
     static let share = "ic_share"
     static let info = "ic_info"
     static let folder = "ic_folder"
+    static let hashtag = "ic_hashtag"
     static let trash = "ic_delete"
     static let importData = "ic_import"
     static let exportData = "ic_export"
