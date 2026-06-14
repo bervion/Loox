@@ -1,8 +1,8 @@
 import SwiftUI
 
-// Reusable, theme-driven building blocks. Every component reads the active theme
-// from `\.appTheme`, so changing or adding a theme restyles the whole app — and new
-// screens stay consistent by composing these instead of hard-coding colors.
+// Reusable, theme-driven building blocks. Components read the active theme from the
+// shared @Observable `AppEnvironment` (`env.theme.active`), so they update live
+// everywhere — including inside sheets, where a plain EnvironmentKey value can go stale.
 
 // MARK: - Semantic text color
 
@@ -19,8 +19,10 @@ extension View {
 
 private struct ThemedForegroundModifier: ViewModifier {
     let role: ThemeRole
-    @Environment(\.appTheme) private var theme
-    func body(content: Content) -> some View { content.foregroundStyle(theme.color(role)) }
+    @Environment(AppEnvironment.self) private var env
+    func body(content: Content) -> some View {
+        content.foregroundStyle(env.theme.active.color(role))
+    }
 }
 
 extension AppTheme {
@@ -47,9 +49,9 @@ extension View {
 }
 
 private struct AppBackgroundModifier: ViewModifier {
-    @Environment(\.appTheme) private var theme
+    @Environment(AppEnvironment.self) private var env
     func body(content: Content) -> some View {
-        content.background(Color(rgb: theme.background).ignoresSafeArea())
+        content.background(Color(rgb: env.theme.active.background).ignoresSafeArea())
     }
 }
 
@@ -61,11 +63,11 @@ extension View {
 }
 
 private struct ThemedFormBackgroundModifier: ViewModifier {
-    @Environment(\.appTheme) private var theme
+    @Environment(AppEnvironment.self) private var env
     func body(content: Content) -> some View {
         content
             .scrollContentBackground(.hidden)
-            .background(Color(rgb: theme.groupedBackground).ignoresSafeArea())
+            .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
     }
 }
 
@@ -73,12 +75,13 @@ private struct ThemedFormBackgroundModifier: ViewModifier {
 
 /// An elevated surface that floats over the background / wallpaper and stays legible.
 struct ThemedCard<Content: View>: View {
-    @Environment(\.appTheme) private var theme
+    @Environment(AppEnvironment.self) private var env
     var cornerRadius: CGFloat = 16
     var padding: CGFloat = 16
     @ViewBuilder var content: Content
 
     var body: some View {
+        let theme = env.theme.active
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -99,6 +102,6 @@ extension View {
 // MARK: - Divider
 
 struct ThemedDivider: View {
-    @Environment(\.appTheme) private var theme
-    var body: some View { Rectangle().fill(Color(rgb: theme.separator)).frame(height: 0.5) }
+    @Environment(AppEnvironment.self) private var env
+    var body: some View { Rectangle().fill(Color(rgb: env.theme.active.separator)).frame(height: 0.5) }
 }

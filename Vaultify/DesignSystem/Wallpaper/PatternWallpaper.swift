@@ -63,18 +63,30 @@ struct PatternWallpaperView: View {
     let colors: [UInt32]
     let style: PatternStyle
     let settings: WallpaperSettings
+    @Environment(\.meshPhase) private var meshPhase
+    @Environment(\.meshAnimated) private var meshAnimated
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
-        let base = colors.isEmpty ? [0x1C1C1E, 0x2C2C2E] : colors
-        let (start, end) = WallpaperView.endpoints(forDegrees: settings.rotation)
         ZStack {
-            LinearGradient(colors: base.map { Color(rgb: $0) }, startPoint: start, endPoint: end)
+            base
             PatternCanvas(style: style)
-                .opacity(0.10 + settings.intensity * 0.35)
+                .opacity(0.12 + settings.intensity * 0.40)
                 .blendMode(.softLight)
         }
         .blur(radius: (settings.blur && !reduceTransparency) ? 28 : 0)
         .overlay(Color.black.opacity(settings.dimAlpha))
+    }
+
+    /// A 4-color palette glows on the animated mesh (Telegram-style "lit" pattern);
+    /// anything else falls back to a static gradient.
+    @ViewBuilder private var base: some View {
+        if colors.count == 4 {
+            MeshGradientView(colors: colors, phase: meshPhase, animated: meshAnimated)
+        } else {
+            let palette = (colors.isEmpty ? [0x1C1C1E, 0x2C2C2E] : colors).map { Color(rgb: $0) }
+            let (start, end) = WallpaperView.endpoints(forDegrees: settings.rotation)
+            LinearGradient(colors: palette, startPoint: start, endPoint: end)
+        }
     }
 }

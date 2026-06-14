@@ -9,9 +9,10 @@ struct ThemedProminentButtonStyle: ButtonStyle {
 
     private struct StyledButton: View {
         let configuration: ButtonStyleConfiguration
-        @Environment(\.appTheme) private var theme
+        @Environment(AppEnvironment.self) private var env
         @Environment(\.isEnabled) private var isEnabled
         var body: some View {
+            let theme = env.theme.active
             configuration.label
                 .font(.headline)
                 .foregroundStyle(Color(rgb: theme.accentForeground))
@@ -30,8 +31,9 @@ struct ThemedTintedButtonStyle: ButtonStyle {
 
     private struct StyledButton: View {
         let configuration: ButtonStyleConfiguration
-        @Environment(\.appTheme) private var theme
+        @Environment(AppEnvironment.self) private var env
         var body: some View {
+            let theme = env.theme.active
             configuration.label
                 .font(.headline)
                 .foregroundStyle(Color(rgb: theme.accent))
@@ -50,8 +52,9 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
 
     private struct StyledButton: View {
         let configuration: ButtonStyleConfiguration
-        @Environment(\.appTheme) private var theme
+        @Environment(AppEnvironment.self) private var env
         var body: some View {
+            let theme = env.theme.active
             configuration.label
                 .font(.headline)
                 .foregroundStyle(.white)

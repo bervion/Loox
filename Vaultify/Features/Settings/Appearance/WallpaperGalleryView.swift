@@ -26,7 +26,8 @@ struct WallpaperGalleryView: View {
             .listRowBackground(VaultColors.surface)
 
             presetSection(Text("Gradients"), WallpaperPresets.gradients)
-            presetSection(Text("Patterns"), WallpaperPresets.patterns)
+            presetSection(Text("Patterns"),
+                          WallpaperPresets.patterns(accent: env.theme.active.accent, dark: env.theme.active.isDark))
             presetSection(Text("Animated Mesh"), WallpaperPresets.meshes)
 
             Section {

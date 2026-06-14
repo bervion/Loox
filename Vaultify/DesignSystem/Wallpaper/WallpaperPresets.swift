@@ -6,8 +6,8 @@ struct WallpaperPreset: Identifiable, Equatable {
     let wallpaper: Wallpaper
 }
 
-/// Curated, tasteful presets — gradients + a few animated mesh palettes (incl.
-/// Telegram's signature). Patterns ship once their SVG assets are added.
+/// Curated presets. Patterns + the per-theme glow are derived from the active accent so
+/// the background harmonizes with the theme and the app's cards stand out on top.
 enum WallpaperPresets {
     static let gradients: [WallpaperPreset] = [
         WallpaperPreset(id: "sky", wallpaper: .gradient(colors: [0x6EA8FE, 0xC9E0FF], settings: WallpaperSettings(rotation: 90))),
@@ -24,14 +24,24 @@ enum WallpaperPresets {
         WallpaperPreset(id: "ember", wallpaper: .mesh(colors: [0x3A1C71, 0xD76D77, 0xFFAF7B, 0x3A1C71])),
     ]
 
-    static let patterns: [WallpaperPreset] = [
-        WallpaperPreset(id: "p-dots", wallpaper: .pattern(id: "dots", colors: [0x1B2735, 0x2A3F55], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
-        WallpaperPreset(id: "p-rings", wallpaper: .pattern(id: "rings", colors: [0x2B1A3D, 0x4A2D63], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
-        WallpaperPreset(id: "p-waves", wallpaper: .pattern(id: "waves", colors: [0x10303A, 0x1C5560], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
-        WallpaperPreset(id: "p-plus", wallpaper: .pattern(id: "plus", colors: [0x2A2310, 0x4A3D1C], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
-        WallpaperPreset(id: "p-diagonal", wallpaper: .pattern(id: "diagonal", colors: [0x1A2B1A, 0x2D4A2D], settings: WallpaperSettings(intensity: 0.5, rotation: 90))),
-        WallpaperPreset(id: "p-grid", wallpaper: .pattern(id: "grid", colors: [0x202024, 0x35353C], settings: WallpaperSettings(intensity: 0.45, rotation: 90))),
-    ]
+    /// A 4-color glowing mesh palette derived from an accent. Tuned so the app's cards
+    /// (the elevated surface) stand out: deep shades for dark themes, soft for light.
+    static func glowColors(accent: UInt32, dark: Bool) -> [UInt32] {
+        let base: UInt32 = dark ? 0x000000 : 0xFFFFFF
+        let amounts: [Double] = dark ? [0.74, 0.56, 0.84, 0.66] : [0.68, 0.50, 0.80, 0.60]
+        return amounts.map { RGBMath.blend(accent, base, $0) }
+    }
 
-    static let all: [WallpaperPreset] = gradients + patterns + meshes
+    /// Pattern presets over an accent-derived glow mesh (the line-art glows on the
+    /// animated gradient, Telegram-style). Built per theme in the gallery.
+    static func patterns(accent: UInt32, dark: Bool) -> [WallpaperPreset] {
+        let glow = glowColors(accent: accent, dark: dark)
+        return PatternStyle.allCases.map { style in
+            WallpaperPreset(id: "p-\(style.rawValue)",
+                            wallpaper: .pattern(id: style.rawValue, colors: glow,
+                                                settings: WallpaperSettings(intensity: 0.55)))
+        }
+    }
+
+    static let all: [WallpaperPreset] = gradients + patterns(accent: 0x3CA7F0, dark: true) + meshes
 }
