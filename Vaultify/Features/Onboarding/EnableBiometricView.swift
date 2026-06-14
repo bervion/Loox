@@ -25,7 +25,7 @@ struct EnableBiometricView: View {
                 Button(action: onEnable) {
                     Text("Enable \(BiometricAuth.displayName)").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.themedProminent)
                 .controlSize(.large)
 
                 Button(action: onSkip) {

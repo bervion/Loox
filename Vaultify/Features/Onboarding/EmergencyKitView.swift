@@ -51,7 +51,7 @@ struct EmergencyKitView: View {
             Button(action: onContinue) {
                 Text("Continue").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.themedProminent)
             .controlSize(.large)
             .disabled(!confirmedSaved || recoveryKey.isEmpty)
             .padding(.horizontal, 24)

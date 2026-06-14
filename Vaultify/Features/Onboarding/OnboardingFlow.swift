@@ -92,7 +92,7 @@ private struct WelcomeStep: View {
             Button(action: onContinue) {
                 Text("Get Started").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.themedProminent)
             .controlSize(.large)
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -133,7 +133,7 @@ private struct OnboardingDoneStep: View {
             Button(action: onFinish) {
                 Text("Open Vaultify").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent).controlSize(.large)
+            .buttonStyle(.themedProminent).controlSize(.large)
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
     }

@@ -56,7 +56,7 @@ struct ExportView: View {
                 Button { Task { await generate() } } label: {
                     Text("Create Export").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.themedProminent)
                 .disabled(!canExport || working)
             }
 

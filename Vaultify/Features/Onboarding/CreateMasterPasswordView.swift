@@ -60,7 +60,7 @@ struct CreateMasterPasswordView: View {
                 if busy { ProgressView().frame(maxWidth: .infinity) }
                 else { Text("Continue").frame(maxWidth: .infinity) }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.themedProminent)
             .controlSize(.large)
             .disabled(!canSubmit)
             .padding(.horizontal, 24)

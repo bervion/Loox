@@ -71,7 +71,20 @@ import UIKit
 
     // MARK: - Settings mutators
 
-    func setTheme(_ ref: AppThemeReference) { update { $0.theme = ref } }
+    func setTheme(_ ref: AppThemeReference) {
+        update { settings in
+            settings.theme = ref
+            // A dark primary theme can't pair with auto-night's light↔dark switching, so
+            // picking one switches to manual mode — keeps the rendered theme and the
+            // forced color scheme in sync (avoids dark wallpaper + light system chrome).
+            let picksDark: Bool
+            switch ref {
+            case .builtin(let builtin): picksDark = builtin.isDark
+            case .custom(let id): picksDark = settings.customTheme(id)?.base.isDark ?? false
+            }
+            if picksDark { settings.autoNight = .off }
+        }
+    }
     func setNightTheme(_ ref: AppThemeReference) { update { $0.nightTheme = ref } }
     func setAutoNight(_ setting: AutoNightSetting) { update { $0.autoNight = setting } }
     func setFontScale(_ scale: FontScale) { update { $0.fontScale = scale } }

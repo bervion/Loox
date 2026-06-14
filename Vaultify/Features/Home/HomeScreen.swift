@@ -69,7 +69,7 @@ struct HomeScreen: View {
         } description: {
             Text("Add your first login, card, or secure note.")
         } actions: {
-            Menu { addMenu } label: { Text("Add Item") }.buttonStyle(.borderedProminent)
+            Menu { addMenu } label: { Text("Add Item") }.buttonStyle(.themedProminent)
         }
     }
 

@@ -50,7 +50,7 @@ struct ImportView: View {
                     Button { performImport() } label: {
                         Text("Import \(parsed.count) Items").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.themedProminent)
                 }
             }
 
