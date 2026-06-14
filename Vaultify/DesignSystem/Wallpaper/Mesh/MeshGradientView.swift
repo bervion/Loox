@@ -79,7 +79,7 @@ final class MeshHostView: UIView {
         layer.contents = last
         let animation = CAKeyframeAnimation(keyPath: "contents")
         animation.values = frames
-        animation.duration = duration * Double(UIView.animationDurationFactor())
+        animation.duration = duration
         animation.calculationMode = .linear
         animation.isRemovedOnCompletion = true
         layer.removeAnimation(forKey: "contents")
