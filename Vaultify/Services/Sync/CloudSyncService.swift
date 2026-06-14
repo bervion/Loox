@@ -18,6 +18,7 @@ import CloudKit
     @ObservationIgnored private lazy var container = CKContainer(identifier: "iCloud.com.bervion.vaultify")
     private let zone = CKRecordZone(zoneName: "Vault")
     private let recordType = "VaultItem"
+    private let folderRecordType = "VaultFolder"
     private var database: CKDatabase { container.privateCloudDatabase }
 
     init(store: VaultStore, settings: SettingsStore) {
@@ -60,6 +61,11 @@ import CloudKit
     }
 
     private func push() async throws {
+        try await pushItems()
+        try await pushFolders()
+    }
+
+    private func pushItems() async throws {
         let dirty = store.allRecords().filter(\.dirty)
         guard !dirty.isEmpty else { return }
         let records = dirty.map(ckRecord(from:))
@@ -71,7 +77,24 @@ import CloudKit
         }
     }
 
+    private func pushFolders() async throws {
+        let dirty = store.allFolderRecords().filter(\.dirty)
+        guard !dirty.isEmpty else { return }
+        let records = dirty.map(ckFolderRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult, let local = store.folderRecord(id: recordID.recordName) {
+                store.markFolderSynced(local, changeTag: saved.recordChangeTag)
+            }
+        }
+    }
+
     private func pull() async throws {
+        try await pull(recordType: recordType, apply: apply)
+        try await pull(recordType: folderRecordType, apply: applyFolder)
+    }
+
+    private func pull(recordType: String, apply: (CKRecord) -> Void) async throws {
         let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
         let (matches, _) = try await database.records(
             matching: query, inZoneWith: zone.zoneID,
@@ -89,6 +112,9 @@ import CloudKit
         ck["createdAt"] = record.createdAt as CKRecordValue
         ck["updatedAt"] = record.updatedAt as CKRecordValue
         ck["favorite"] = (record.favorite ? 1 : 0) as CKRecordValue
+        ck["pinned"] = (record.pinned ? 1 : 0) as CKRecordValue
+        ck["archived"] = (record.archived ? 1 : 0) as CKRecordValue
+        ck["useCount"] = record.useCount as CKRecordValue
         if let trashedAt = record.trashedAt { ck["trashedAt"] = trashedAt as CKRecordValue }
         if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
         return ck
@@ -102,6 +128,37 @@ import CloudKit
             id: record.recordID.recordName, sealed: sealed,
             favorite: (record["favorite"] as? Int ?? 0) == 1,
             trashedAt: record["trashedAt"] as? Date,
+            deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            pinned: (record["pinned"] as? Int ?? 0) == 1,
+            archived: (record["archived"] as? Int ?? 0) == 1,
+            useCount: record["useCount"] as? Int ?? 0,
+            changeTag: record.recordChangeTag)
+    }
+
+    private func ckFolderRecord(from record: FolderRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: folderRecordType, recordID: id)
+        ck["sealed"] = record.sealed as CKRecordValue
+        ck["iconAsset"] = record.iconAsset as CKRecordValue
+        ck["colorRaw"] = record.colorRaw as CKRecordValue
+        ck["sortIndex"] = record.sortIndex as CKRecordValue
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
+        return ck
+    }
+
+    private func applyFolder(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let iconAsset = record["iconAsset"] as? String,
+              let colorRaw = record["colorRaw"] as? String,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        store.upsertFolderFromRemote(
+            id: record.recordID.recordName, sealed: sealed,
+            iconAsset: iconAsset, colorRaw: colorRaw,
+            sortIndex: (record["sortIndex"] as? Int) ?? 0,
             deletedAt: record["deletedAt"] as? Date,
             createdAt: createdAt, updatedAt: updatedAt,
             changeTag: record.recordChangeTag)

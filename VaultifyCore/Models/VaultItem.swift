@@ -8,6 +8,13 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
     var folderId: String?
     var fields: [DynamicField]
     var favorite: Bool
+    var tags: [String]
+    /// Last in-app copy/reveal time. Powers Recents; plaintext metadata mirrored
+    /// from `ItemRecord.lastUsedAt` so Home can sort without re-decrypting.
+    var lastUsedAt: Date?
+    var pinned: Bool
+    var archived: Bool
+    var useCount: Int
     var createdAt: Date
     var updatedAt: Date
     var trashedAt: Date?
@@ -18,6 +25,11 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
          folderId: String? = nil,
          fields: [DynamicField] = [],
          favorite: Bool = false,
+         tags: [String] = [],
+         lastUsedAt: Date? = nil,
+         pinned: Bool = false,
+         archived: Bool = false,
+         useCount: Int = 0,
          createdAt: Date = .now,
          updatedAt: Date = .now,
          trashedAt: Date? = nil) {
@@ -27,6 +39,11 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
         self.folderId = folderId
         self.fields = fields
         self.favorite = favorite
+        self.tags = tags
+        self.lastUsedAt = lastUsedAt
+        self.pinned = pinned
+        self.archived = archived
+        self.useCount = useCount
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.trashedAt = trashedAt
@@ -51,16 +68,18 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
         return nil
     }
 
-    /// Lowercased text used for in-memory search. Excludes protected values.
+    /// Lowercased text used for in-memory search. Excludes protected values;
+    /// includes tags so `#work` etc. are searchable.
     var searchText: String {
         var parts = [title]
         for field in fields where !field.protected && !field.isEmpty { parts.append(field.value) }
+        parts.append(contentsOf: tags)
         return parts.joined(separator: " ").lowercased()
     }
 
     /// The portion sealed (AES-256-GCM) at rest.
     var secret: ItemSecret {
-        ItemSecret(title: title, category: category, folderId: folderId, fields: fields)
+        ItemSecret(title: title, category: category, folderId: folderId, fields: fields, tags: tags)
     }
 }
 
@@ -70,4 +89,30 @@ nonisolated struct ItemSecret: Codable, Sendable {
     var category: ItemCategory
     var folderId: String?
     var fields: [DynamicField]
+    var tags: [String]
+
+    init(title: String,
+         category: ItemCategory,
+         folderId: String? = nil,
+         fields: [DynamicField],
+         tags: [String] = []) {
+        self.title = title
+        self.category = category
+        self.folderId = folderId
+        self.fields = fields
+        self.tags = tags
+    }
+
+    /// Custom decode so legacy sealed blobs (written before `tags` existed) still
+    /// open: a missing `tags` key yields `[]` instead of failing the decode —
+    /// without this, every pre-existing item would look corrupt. `encode(to:)`
+    /// and `CodingKeys` stay compiler-synthesized.
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        title = try c.decode(String.self, forKey: .title)
+        category = try c.decode(ItemCategory.self, forKey: .category)
+        folderId = try c.decodeIfPresent(String.self, forKey: .folderId)
+        fields = try c.decode([DynamicField].self, forKey: .fields)
+        tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+    }
 }

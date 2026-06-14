@@ -16,6 +16,15 @@ final class ItemRecord {
     var trashedAt: Date?
     /// Soft-delete tombstone retained for sync reconciliation.
     var deletedAt: Date?
+    /// Last in-app copy/reveal time (powers Recents). Plaintext (timing only,
+    /// not content), device-local — intentionally NOT synced.
+    var lastUsedAt: Date?
+    /// Pinned to the top of Home — a separate concept from `favorite`.
+    var pinned: Bool = false
+    /// Archived: kept out of normal lists but not deleted (no auto-purge).
+    var archived: Bool = false
+    /// In-app use tally powering "Frequently Used". Plaintext, device-local.
+    var useCount: Int = 0
 
     // Sync metadata (CloudKit).
     var dirty: Bool
@@ -35,6 +44,7 @@ final class ItemRecord {
         self.updatedAt = updatedAt
         self.trashedAt = trashedAt
         self.deletedAt = nil
+        self.lastUsedAt = nil
         self.dirty = true
     }
 }

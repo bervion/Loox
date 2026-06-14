@@ -6,6 +6,7 @@ import SwiftUI
 struct ProtectedFieldRow: View {
     let field: DynamicField
     let onChange: (DynamicField) -> Void
+    var onUsed: () -> Void = {}
 
     @Environment(AppEnvironment.self) private var env
     @State private var plaintext: String?
@@ -100,6 +101,7 @@ struct ProtectedFieldRow: View {
     private func revealLevel2(with key: [UInt8]) {
         if let text = try? SecretGuard.openLevel2(field.value, l2Key: key) {
             withAnimation { plaintext = text }
+            onUsed()
         } else {
             error = appString("Couldn’t decrypt this field.")
         }
@@ -120,6 +122,7 @@ struct ProtectedFieldRow: View {
         do {
             let text = try await SecretGuard.openCustom(field.value, code: code)
             withAnimation { plaintext = text }
+            onUsed()
             return nil
         } catch {
             return appString("Incorrect code.")
@@ -130,6 +133,7 @@ struct ProtectedFieldRow: View {
 
     private func copyText(_ text: String) {
         env.clipboard.copy(text, label: field.label, sensitive: true)
+        onUsed()
         copied = true
         Task { try? await Task.sleep(for: .seconds(1.2)); withAnimation { copied = false } }
     }

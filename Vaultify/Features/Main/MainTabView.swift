@@ -1,33 +1,50 @@
 import SwiftUI
 import Combine
 
-/// The unlocked app shell: four native tabs with Polaris tab icons, a transient
-/// copy confirmation, and a foreground inactivity auto-lock check. Search is the
-/// native `.searchable` bar on the Vault tab (not a separate tab).
+/// The unlocked app shell: Home · Items · Watchtower · Search.
+/// Search is a regular tab whose screen hosts a standard top search bar.
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var selection = 0
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        TabView(selection: $selection) {
-            VaultListScreen()
-                .tag(0)
-                .tabItem { Label("Vault", image: selection == 0 ? Icons.homeFill : Icons.home) }
-            GeneratorScreen()
-                .tag(1)
-                .tabItem { Label("Generator", image: Icons.magic) }
-            WatchtowerScreen()
-                .tag(2)
-                .tabItem { Label("Watchtower", image: Icons.shield) }
-            SettingsScreen()
-                .tag(3)
-                .tabItem { Label("Settings", image: selection == 3 ? Icons.settingsFill : Icons.settings) }
+        Group {
+            if #available(iOS 18.0, *) {
+                modernTabs
+            } else {
+                classicTabs
+            }
         }
         .overlay(alignment: .bottom) { copyToast }
         .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
         .onChange(of: selection) { _, _ in env.session.registerActivity() }
         .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
+    }
+
+    // Search is a regular tab; `SearchScreen` owns its NavigationStack +
+    // `.searchable`, so the search field sits at the top of the screen.
+    @available(iOS 18.0, *)
+    private var modernTabs: some View {
+        TabView(selection: $selection) {
+            Tab("Home", image: selection == 0 ? Icons.homeFill : Icons.home, value: 0) { HomeScreen() }
+            Tab("Items", image: selection == 1 ? Icons.appsFill : Icons.apps, value: 1) { ItemsScreen() }
+            Tab("Watchtower", image: selection == 2 ? Icons.organizationFill : Icons.organization, value: 2) { WatchtowerScreen() }
+            Tab("Search", image: Icons.search, value: 3) { SearchScreen() }
+        }
+    }
+
+    private var classicTabs: some View {
+        TabView(selection: $selection) {
+            HomeScreen().tag(0)
+                .tabItem { Label("Home", image: selection == 0 ? Icons.homeFill : Icons.home) }
+            ItemsScreen().tag(1)
+                .tabItem { Label("Items", image: selection == 1 ? Icons.appsFill : Icons.apps) }
+            WatchtowerScreen().tag(2)
+                .tabItem { Label("Watchtower", image: selection == 2 ? Icons.organizationFill : Icons.organization) }
+            SearchScreen().tag(3)
+                .tabItem { Label("Search", image: Icons.search) }
+        }
     }
 
     @ViewBuilder private var copyToast: some View {

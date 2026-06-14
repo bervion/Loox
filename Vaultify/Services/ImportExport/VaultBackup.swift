@@ -3,12 +3,43 @@ import Foundation
 /// CSV import/export (1Password / Bitwarden / Chrome layouts) and a portable
 /// passphrase-encrypted backup (Argon2id KEK → AES-256-GCM).
 nonisolated enum VaultBackup {
-    struct PortableItem: Codable { var title: String; var category: String; var fields: [DynamicField] }
+    struct PortableItem: Codable {
+        var title: String
+        var category: String
+        var fields: [DynamicField]
+        var tags: [String]
+        /// Folder by NAME (ids aren't portable across vaults); resolved on import.
+        var folderName: String?
+
+        init(title: String, category: String, fields: [DynamicField],
+             tags: [String] = [], folderName: String? = nil) {
+            self.title = title; self.category = category; self.fields = fields
+            self.tags = tags; self.folderName = folderName
+        }
+
+        /// Back-compat decode: backups written before folders/tags lack these keys.
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            title = try c.decode(String.self, forKey: .title)
+            category = try c.decode(String.self, forKey: .category)
+            fields = try c.decode([DynamicField].self, forKey: .fields)
+            tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+            folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
+        }
+    }
     struct EncryptedBackup: Codable { var version: Int; var salt: Data; var kdf: KdfParams; var sealed: Data }
 
     // MARK: CSV
 
+    /// Back-compat thin wrapper — drops folder names (use `parseCSVWithFolders`
+    /// when the caller can resolve folders against the repository).
     static func parseCSV(_ text: String) -> [VaultItem] {
+        parseCSVWithFolders(text).map(\.item)
+    }
+
+    /// Parse a CSV into items plus an optional folder NAME per row. The caller
+    /// resolves names to folder ids (match-or-create) against the live vault.
+    static func parseCSVWithFolders(_ text: String) -> [(item: VaultItem, folderName: String?)] {
         let rows = parseRows(text)
         guard let header = rows.first else { return [] }
         let cols = header.map { $0.lowercased().trimmingCharacters(in: .whitespaces) }
@@ -19,8 +50,10 @@ nonisolated enum VaultBackup {
         let urlIdx = index(["url", "login_uri", "website", "uri"])
         let noteIdx = index(["notes", "note"])
         let totpIdx = index(["otpauth", "totp", "one-time password"])
+        let folderIdx = index(["folder", "collection", "space", "group", "grouping"])
+        let tagsIdx = index(["tags", "tag"])
 
-        var items: [VaultItem] = []
+        var results: [(item: VaultItem, folderName: String?)] = []
         for row in rows.dropFirst() where row.contains(where: { !$0.isEmpty }) {
             func value(_ i: Int?) -> String { if let i, i < row.count { return row[i] } else { return "" } }
             let username = value(userIdx), password = value(passIdx)
@@ -35,19 +68,26 @@ nonisolated enum VaultBackup {
             let rawTitle = value(titleIdx)
             let title = !rawTitle.isEmpty ? rawTitle : (url.isEmpty ? (username.isEmpty ? "Imported" : username) : url)
             let category: ItemCategory = (password.isEmpty && !notes.isEmpty && username.isEmpty) ? .note : .login
-            items.append(VaultItem(category: category, title: title, fields: fields))
+            let tags = value(tagsIdx).split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+            let folderRaw = value(folderIdx)
+            results.append((VaultItem(category: category, title: title, fields: fields, tags: tags),
+                            folderRaw.isEmpty ? nil : folderRaw))
         }
-        return items
+        return results
     }
 
-    static func makeCSV(_ items: [VaultItem]) -> String {
-        var lines = ["name,username,password,url,notes"]
+    /// `folderNames` maps folder id → name so exported rows carry the folder name.
+    static func makeCSV(_ items: [VaultItem], folderNames: [String: String] = [:]) -> String {
+        var lines = ["name,username,password,url,notes,folder,tags"]
         for item in items {
+            let folder = item.folderId.flatMap { folderNames[$0] } ?? ""
             let cells = [item.title,
                          item.usernameField?.value ?? "",
                          item.passwordField?.value ?? "",
                          item.urlField?.value ?? "",
-                         item.firstField(of: .multiline)?.value ?? ""]
+                         item.firstField(of: .multiline)?.value ?? "",
+                         folder,
+                         item.tags.joined(separator: "; ")]
             lines.append(cells.map(escape).joined(separator: ","))
         }
         return lines.joined(separator: "\n")
@@ -55,8 +95,12 @@ nonisolated enum VaultBackup {
 
     // MARK: Encrypted backup
 
-    static func exportEncrypted(_ items: [VaultItem], passphrase: String) async throws -> Data {
-        let portable = items.map { PortableItem(title: $0.title, category: $0.category.rawValue, fields: $0.fields) }
+    static func exportEncrypted(_ items: [VaultItem], folderNames: [String: String] = [:],
+                                passphrase: String) async throws -> Data {
+        let portable = items.map {
+            PortableItem(title: $0.title, category: $0.category.rawValue, fields: $0.fields,
+                         tags: $0.tags, folderName: $0.folderId.flatMap { folderNames[$0] })
+        }
         let json = try JSONEncoder().encode(portable)
         let salt = KeyHierarchy.newSalt()
         let kdf = KdfParams.standard
@@ -68,7 +112,7 @@ nonisolated enum VaultBackup {
         return try JSONEncoder().encode(EncryptedBackup(version: 1, salt: Data(salt), kdf: kdf, sealed: sealed))
     }
 
-    static func importEncrypted(_ data: Data, passphrase: String) async throws -> [VaultItem] {
+    static func importEncrypted(_ data: Data, passphrase: String) async throws -> [(item: VaultItem, folderName: String?)] {
         let backup = try JSONDecoder().decode(EncryptedBackup.self, from: data)
         var kek = try await Task.detached(priority: .userInitiated) {
             try KeyHierarchy.deriveKEK(passphrase: passphrase, salt: Array(backup.salt), params: backup.kdf)
@@ -77,7 +121,8 @@ nonisolated enum VaultBackup {
         let json = try AESGCM.open(backup.sealed, key: kek)
         let portable = try JSONDecoder().decode([PortableItem].self, from: json)
         return portable.map {
-            VaultItem(category: ItemCategory(rawValue: $0.category) ?? .custom, title: $0.title, fields: $0.fields)
+            (VaultItem(category: ItemCategory(rawValue: $0.category) ?? .custom,
+                       title: $0.title, fields: $0.fields, tags: $0.tags), $0.folderName)
         }
     }
 

@@ -9,10 +9,12 @@
 # (or any build target, which depends on it) after pulling or adding files.
 
 .PHONY: help push release beta hotfix version changelog notes gen \
-        match-setup certificates submit-ios check lint
+        match-setup certificates submit-ios check lint test
 
 SCHEME := Vaultify
 DD     := /tmp/vaultify-ci-dd
+# Override with: make test DEST='platform=iOS Simulator,id=<UDID>'
+DEST   ?= platform=iOS Simulator,name=iPhone 16
 
 help:
 	@echo ""
@@ -85,3 +87,9 @@ check lint: gen
 	  -destination 'generic/platform=iOS Simulator' -derivedDataPath $(DD) \
 	  CODE_SIGNING_ALLOWED=NO build | tail -20
 	@echo "✓ Compile check passed"
+
+# ── Unit tests (in-memory store; needs a concrete simulator) ──
+test: gen
+	xcodebuild test -workspace Vaultify.xcworkspace -scheme $(SCHEME) \
+	  -destination '$(DEST)' -derivedDataPath $(DD) \
+	  CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/vaultify-xctest.log | tail -6

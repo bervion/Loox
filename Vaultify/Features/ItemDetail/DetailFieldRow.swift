@@ -8,6 +8,7 @@ struct DetailFieldRow: View {
     let field: DynamicField
     var onChange: (DynamicField) -> Void = { _ in }
     var onRemove: () -> Void = {}
+    var onUsed: () -> Void = {}
     @Environment(AppEnvironment.self) private var env
     @State private var copied = false
     @State private var revealed = false
@@ -23,7 +24,7 @@ struct DetailFieldRow: View {
 
     var body: some View {
         if field.isExtraProtected {
-            ProtectedFieldRow(field: field, onChange: onChange)
+            ProtectedFieldRow(field: field, onChange: onChange, onUsed: onUsed)
         } else if field.kind == .fileRef {
             AttachmentFieldRow(field: field, onRemove: onRemove)
         } else {
@@ -108,7 +109,10 @@ struct DetailFieldRow: View {
             Button { copy() } label: { Label("Copy", image: Icons.copy) }
             Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
             if isSecret {
-                Button { withAnimation { revealed.toggle() } } label: {
+                Button {
+                    withAnimation { revealed.toggle() }
+                    if revealed { onUsed() }
+                } label: {
                     Label(revealed ? "Conceal" : "Reveal", image: revealed ? Icons.hide : Icons.reveal)
                 }
             }
@@ -130,6 +134,7 @@ struct DetailFieldRow: View {
     private func copy() {
         guard !copied, !field.value.isEmpty else { return }
         env.clipboard.copy(copyValue, label: field.label, sensitive: isSecret || field.kind == .totp)
+        onUsed()
         copied = true
         Task {
             try? await Task.sleep(for: .seconds(1.2))
