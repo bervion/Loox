@@ -7,7 +7,6 @@ import Combine
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var selection = 0
-    @State private var searchText = ""
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -24,21 +23,19 @@ struct MainTabView: View {
         .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
     }
 
+    // No `selection`/`value:` here on purpose: programmatic selection keeps the
+    // search role inline. Without it, `Tab(role: .search)` detaches into its own
+    // floating Liquid-Glass search button and its `.searchable` field drops to the
+    // bottom (Apple News pattern). The system tints the active tab, so outline
+    // icons are fine. `SearchScreen` owns the NavigationStack + `.searchable`.
     @available(iOS 18.0, *)
     private var modernTabs: some View {
-        TabView(selection: $selection) {
-            Tab("Home", image: selection == 0 ? Icons.homeFill : Icons.home, value: 0) { HomeScreen() }
-            Tab("Items", image: selection == 1 ? Icons.organizationFill : Icons.organization, value: 1) { ItemsScreen() }
-            Tab("Watchtower", image: selection == 2 ? Icons.planFill : Icons.plan, value: 2) { WatchtowerScreen() }
-            Tab("Search", image: Icons.search, value: 3, role: .search) {
-                NavigationStack {
-                    SearchResultsList(query: searchText)
-                        .navigationTitle("Search")
-                        .vaultNavigationDestinations()
-                }
-            }
+        TabView {
+            Tab("Home", image: Icons.home) { HomeScreen() }
+            Tab("Items", image: Icons.organization) { ItemsScreen() }
+            Tab("Watchtower", image: Icons.plan) { WatchtowerScreen() }
+            Tab(role: .search) { SearchScreen() }
         }
-        .searchable(text: $searchText)
     }
 
     private var classicTabs: some View {
