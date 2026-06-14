@@ -28,7 +28,7 @@ enum VaultReader {
     @MainActor static func logins(vaultKey: [UInt8]) -> [VaultItem] {
         let store = VaultStore()
         return store.allRecords()
-            .filter { $0.trashedAt == nil && $0.deletedAt == nil }
+            .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
             .compactMap { decrypt($0, key: vaultKey) }
             .filter { $0.passwordField != nil }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
@@ -40,7 +40,10 @@ enum VaultReader {
         else { return nil }
         return VaultItem(id: record.id, category: secret.category, title: secret.title,
                          folderId: secret.folderId, fields: secret.fields,
-                         favorite: record.favorite, createdAt: record.createdAt,
+                         favorite: record.favorite, tags: secret.tags,
+                         lastUsedAt: record.lastUsedAt,
+                         pinned: record.pinned, archived: record.archived, useCount: record.useCount,
+                         createdAt: record.createdAt,
                          updatedAt: record.updatedAt, trashedAt: record.trashedAt)
     }
 }

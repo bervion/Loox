@@ -4,22 +4,28 @@ import SwiftData
 /// Decrypts vault records into an in-memory cache on unlock and performs CRUD,
 /// re-sealing payloads under the Vault Key. The cache is cleared on lock.
 @MainActor @Observable final class VaultRepository {
-    private let store: VaultStore
-    private let session: VaultSession
+    // Internal (not private) so the `+Folders` extension in a sibling file can
+    // reach the store/session; the item seal/decrypt helpers stay private.
+    let store: VaultStore
+    let session: VaultSession
 
     private(set) var items: [VaultItem] = []
     private(set) var trashed: [VaultItem] = []
+    private(set) var archived: [VaultItem] = []
+    private(set) var folders: [Folder] = []
 
     init(store: VaultStore, session: VaultSession) {
         self.store = store
         self.session = session
     }
 
-    var isEmpty: Bool { items.isEmpty && trashed.isEmpty }
+    var isEmpty: Bool { items.isEmpty && trashed.isEmpty && archived.isEmpty }
 
     func clear() {
         items = []
         trashed = []
+        archived = []
+        folders = []
         CredentialIdentityService.clear()
     }
 
@@ -31,12 +37,19 @@ import SwiftData
         guard let records = try? store.context.fetch(descriptor) else { return }
         var active: [VaultItem] = []
         var trash: [VaultItem] = []
+        var arch: [VaultItem] = []
         for record in records {
             guard let item = try? decrypt(record, key: key) else { continue }
-            if item.isTrashed { trash.append(item) } else { active.append(item) }
+            // Trash wins over archive when an item is both; archived items stay out
+            // of every normal surface but remain reachable in the Archive screen.
+            if item.isTrashed { trash.append(item) }
+            else if item.archived { arch.append(item) }
+            else { active.append(item) }
         }
         items = active.sorted { $0.updatedAt > $1.updatedAt }
         trashed = trash.sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
+        archived = arch.sorted { $0.updatedAt > $1.updatedAt }
+        folders = loadFolders(key: key)
         CredentialIdentityService.refresh(items: items)
     }
 
@@ -50,6 +63,9 @@ import SwiftData
                                 createdAt: item.createdAt,
                                 updatedAt: item.updatedAt,
                                 trashedAt: item.trashedAt)
+        record.pinned = item.pinned
+        record.archived = item.archived
+        record.useCount = item.useCount
         store.context.insert(record)
         try store.context.save()
         reload()
@@ -73,6 +89,39 @@ import SwiftData
         var updated = item
         updated.favorite.toggle()
         try update(updated)
+    }
+
+    /// Pin/unpin (Home "Pinned"). Column-only — no re-seal, no `updatedAt` bump,
+    /// so it never pollutes "Recently Modified".
+    func togglePin(_ item: VaultItem) { setColumn(item.id) { $0.pinned.toggle() } }
+
+    /// Archive / unarchive — keeps the item out of normal lists without deleting
+    /// it. Same column-only contract as pin.
+    func archive(_ item: VaultItem) { setColumn(item.id) { $0.archived = true } }
+    func unarchive(_ item: VaultItem) { setColumn(item.id) { $0.archived = false } }
+
+    /// Mutate a plaintext metadata column, mark dirty for sync, and reload —
+    /// without re-sealing or bumping `updatedAt`.
+    private func setColumn(_ id: String, _ mutate: (ItemRecord) -> Void) {
+        guard let record = store.record(id: id) else { return }
+        mutate(record)
+        record.dirty = true
+        try? store.context.save()
+        reload()
+    }
+
+    /// Record an in-app use (copy/reveal) for Recents + Frequently Used. Writes
+    /// only the plaintext `lastUsedAt`/`useCount` columns — no re-seal, no
+    /// `dirty`, no `reload()` — and patches the in-memory cache in place.
+    func markUsed(_ item: VaultItem) {
+        guard let record = store.record(id: item.id) else { return }
+        record.lastUsedAt = .now
+        record.useCount += 1
+        try? store.context.save()
+        if let idx = items.firstIndex(where: { $0.id == item.id }) {
+            items[idx].lastUsedAt = record.lastUsedAt
+            items[idx].useCount = record.useCount
+        }
     }
 
     func moveToTrash(_ item: VaultItem) throws {
@@ -115,6 +164,11 @@ import SwiftData
                          folderId: secret.folderId,
                          fields: secret.fields,
                          favorite: record.favorite,
+                         tags: secret.tags,
+                         lastUsedAt: record.lastUsedAt,
+                         pinned: record.pinned,
+                         archived: record.archived,
+                         useCount: record.useCount,
                          createdAt: record.createdAt,
                          updatedAt: record.updatedAt,
                          trashedAt: record.trashedAt)

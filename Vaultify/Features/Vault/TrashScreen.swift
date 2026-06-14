@@ -36,7 +36,7 @@ struct TrashScreen: View {
                 }
             }
         }
-        .navigationTitle("Trash")
+        .navigationTitle("Recently Deleted")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !env.repository.trashed.isEmpty {

@@ -116,5 +116,17 @@ let project = Project(
                 "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks",
             ])
         ),
+        // Unit tests (pure-logic + in-memory store). Hosted by the app so it can
+        // `@testable import Vaultify`. Run with `make test`.
+        .target(
+            name: "VaultifyTests",
+            destinations: [.iPhone],
+            product: .unitTests,
+            bundleId: "com.bervion.vaultify.tests",
+            deploymentTargets: .iOS("17.6"),
+            infoPlist: .default,
+            sources: ["VaultifyTests/**"],
+            dependencies: [.target(name: "Vaultify")]
+        ),
     ]
 )

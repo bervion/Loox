@@ -49,6 +49,12 @@ struct SettingsScreen: View {
                     }
                 }
 
+                Section("Organization") {
+                    NavigationLink { ManageFoldersScreen() } label: {
+                        Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
+                    }
+                }
+
                 Section("Privacy") {
                     Toggle(isOn: $settings.hideInAppSwitcher) {
                         Label { Text("Hide contents in App Switcher") } icon: { PolarisIcon(Icons.hide) }
