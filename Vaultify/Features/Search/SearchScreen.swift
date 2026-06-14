@@ -38,7 +38,10 @@ struct SearchResultsList: View {
                 ContentUnavailableView.search(text: query)
             } else {
                 List(results) { VaultItemRowLink(item: $0) }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
             }
         }
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
     }
 }

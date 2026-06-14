@@ -31,6 +31,7 @@ struct ImportView: View {
             } footer: {
                 Text("Supports CSV exports and Vaultify encrypted backups (.vaultify).")
             }
+            .listRowBackground(VaultColors.surface)
 
             if let encryptedData {
                 Section("Encrypted backup") {
@@ -39,23 +40,27 @@ struct ImportView: View {
                     Button("Decrypt") { Task { await decrypt(encryptedData) } }
                         .disabled(passphrase.isEmpty || working)
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             if !parsed.isEmpty {
                 Section("Preview (\(parsed.count))") {
                     ForEach(parsed.prefix(6)) { VaultItemRow(item: $0.item) }
-                    if parsed.count > 6 { Text("and \(parsed.count - 6) more…").font(.footnote).foregroundStyle(.secondary) }
+                    if parsed.count > 6 { Text("and \(parsed.count - 6) more…").font(.footnote).themedForeground(.secondary) }
                 }
+                .listRowBackground(VaultColors.surface)
                 Section {
                     Button { performImport() } label: {
                         Text("Import \(parsed.count) Items").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.themedProminent)
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
         }
+        .themedFormBackground()
         .navigationTitle("Import")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if working { ProgressView().controlSize(.large) } }

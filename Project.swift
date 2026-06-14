@@ -39,6 +39,17 @@ let project = Project(
                 // per-upload encryption questionnaire in App Store Connect.
                 "ITSAppUsesNonExemptEncryption": false,
                 "LSApplicationCategoryType": "public.app-category.utilities",
+                // Exported document type for shareable `.vaultheme` custom themes.
+                "UTExportedTypeDeclarations": [
+                    [
+                        "UTTypeIdentifier": "com.bervion.vaultify.theme",
+                        "UTTypeDescription": "Vaultify Theme",
+                        "UTTypeConformsTo": ["public.json"],
+                        "UTTypeTagSpecification": [
+                            "public.filename-extension": ["vaultheme"],
+                        ],
+                    ],
+                ],
                 "NSCameraUsageDescription": "Vaultify uses the camera to scan 2FA setup QR codes.",
                 "NSFaceIDUsageDescription": "Vaultify uses Face ID to unlock your vault.",
                 "UIApplicationSupportsIndirectInputEvents": true,

@@ -16,7 +16,7 @@ struct ChooseThemeView: View {
                 .padding(.top, 16)
             Text("Choose how Vaultify looks. You can change this anytime in Settings.")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
                 .padding(.top, 8)
@@ -35,7 +35,7 @@ struct ChooseThemeView: View {
             Button(action: onContinue) {
                 Text("Continue").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.themedProminent)
             .controlSize(.large)
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -55,7 +55,7 @@ private struct ThemeOptionRow: View {
                     .fill(swatchStyle)
                     .frame(width: 26, height: 26)
                     .overlay(Circle().strokeBorder(.quaternary, lineWidth: 1))
-                Text(mode.title).font(.headline).foregroundStyle(.primary)
+                Text(mode.title).font(.headline).themedForeground()
                 Spacer()
                 if isSelected {
                     PolarisIcon(Icons.checkCircle, size: 22).foregroundStyle(Color.accentColor)
@@ -63,7 +63,7 @@ private struct ThemeOptionRow: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(.secondarySystemBackground)))
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(VaultColors.surface))
             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
         }

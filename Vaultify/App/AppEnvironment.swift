@@ -4,6 +4,7 @@ import SwiftUI
 /// together. Injected into the SwiftUI environment.
 @MainActor @Observable final class AppEnvironment {
     let settings: SettingsStore
+    let theme: ThemeStore
     let session: VaultSession
     let store: VaultStore
     let repository: VaultRepository
@@ -17,6 +18,7 @@ import SwiftUI
         let session = VaultSession(settings: settings)
         let store = VaultStore()
         self.settings = settings
+        self.theme = ThemeStore()
         self.session = session
         self.store = store
         self.repository = VaultRepository(store: store, session: session)

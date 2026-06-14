@@ -7,21 +7,30 @@ struct RevealableSecureField: View {
     var monospaced: Bool = true
     @State private var reveal = false
     @FocusState private var focused: Bool
+    @Environment(\.appTheme) private var theme
 
     var body: some View {
         HStack(spacing: 8) {
-            Group {
-                if reveal {
-                    TextField(title, text: $text)
-                } else {
-                    SecureField(title, text: $text)
+            ZStack(alignment: .leading) {
+                if text.isEmpty {
+                    Text(title)
+                        .font(monospaced ? .vaultMono() : .body)
+                        .foregroundStyle(Color(rgb: theme.secondaryText))
                 }
+                Group {
+                    if reveal {
+                        TextField("", text: $text)
+                    } else {
+                        SecureField("", text: $text)
+                    }
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textContentType(.password)
+                .font(monospaced ? .vaultMono() : .body)
+                .focused($focused)
+                .foregroundStyle(Color(rgb: theme.primaryText))
             }
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .textContentType(.password)
-            .font(monospaced ? .vaultMono() : .body)
-            .focused($focused)
 
             if !text.isEmpty {
                 Button {
@@ -29,13 +38,13 @@ struct RevealableSecureField: View {
                     Haptics.tap()
                 } label: {
                     PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: 20)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color(rgb: theme.secondaryText))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Color(rgb: theme.controlBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

@@ -14,11 +14,12 @@ struct AboutView: View {
                 VStack(spacing: 10) {
                     PolarisIcon(Icons.shield, size: 56).foregroundStyle(Color.accentColor)
                     Text("Vaultify").font(.title2.bold())
-                    Text("Version \(version) (\(build))").font(.footnote).foregroundStyle(.secondary)
+                    Text("Version \(version) (\(build))").font(.footnote).themedForeground(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
             }
+            .listRowBackground(VaultColors.surface)
 
             Section("How your data is protected") {
                 aboutRow(Icons.key, "Argon2id key derivation",
@@ -30,16 +31,19 @@ struct AboutView: View {
                 aboutRow(Icons.globe, "Zero backend",
                          "Nothing is sent to a server. Your vault never leaves the device unencrypted.")
             }
+            .listRowBackground(VaultColors.surface)
 
             Section {
                 Text("Vaultify collects no analytics and has no accounts. The only network request is the optional, anonymised breach check.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).themedForeground(.secondary)
             } header: {
                 Text("Privacy")
             } footer: {
                 Text("Includes the Argon2 reference implementation (CC0 / Apache-2.0).")
             }
+            .listRowBackground(VaultColors.surface)
         }
+        .themedFormBackground()
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -49,7 +53,7 @@ struct AboutView: View {
             PolarisIcon(icon, size: 22).foregroundStyle(Color.accentColor).frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.subheadline.weight(.medium))
-                Text(detail).font(.caption).foregroundStyle(.secondary)
+                Text(detail).font(.caption).themedForeground(.secondary)
             }
         }
         .padding(.vertical, 2)

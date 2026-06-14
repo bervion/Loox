@@ -28,10 +28,12 @@ struct ArchiveScreen: View {
                                     Label("Trash", image: Icons.trash)
                                 }
                             }
+                            .listRowBackground(VaultColors.surface)
                     }
                 }
             }
         }
+        .themedFormBackground()
         .navigationTitle("Archive")
         .navigationBarTitleDisplayMode(.inline)
     }

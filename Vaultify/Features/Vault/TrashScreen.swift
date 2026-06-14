@@ -17,8 +17,9 @@ struct TrashScreen: View {
                 List {
                     Section {
                         Text("Items in Trash are still encrypted. Deleting them is permanent.")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(.footnote).themedForeground(.secondary)
                     }
+                    .listRowBackground(VaultColors.surface)
                     ForEach(env.repository.trashed) { item in
                         VaultItemRow(item: item)
                             .swipeActions(edge: .trailing) {
@@ -32,10 +33,12 @@ struct TrashScreen: View {
                                 }
                                 .tint(VaultColors.strengthStrong)
                             }
+                            .listRowBackground(VaultColors.surface)
                     }
                 }
             }
         }
+        .themedFormBackground()
         .navigationTitle("Recently Deleted")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

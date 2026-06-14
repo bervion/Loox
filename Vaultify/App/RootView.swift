@@ -5,6 +5,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
     @State private var obscured = false
     @State private var showSplash = true
 
@@ -33,6 +34,7 @@ struct RootView: View {
         }
         .animation(.smooth(duration: 0.3), value: route)
         .animation(.easeOut(duration: 0.4), value: showSplash)
+        .animation(.easeInOut(duration: 0.3), value: env.theme.active)
         .task {
             try? await Task.sleep(for: .milliseconds(750))
             showSplash = false
@@ -46,6 +48,11 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in handleScenePhase(phase) }
+        .onChange(of: colorScheme) { _, scheme in env.theme.systemColorSchemeChanged(scheme) }
+        .onAppear {
+            env.theme.systemColorSchemeChanged(colorScheme)
+            env.theme.applyInterfaceStyle()
+        }
     }
 
     private func handleScenePhase(_ phase: ScenePhase) {

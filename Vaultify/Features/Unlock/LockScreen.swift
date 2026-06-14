@@ -23,9 +23,9 @@ struct LockScreen: View {
                 .frame(width: 72, height: 72)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
-            Text("Vaultify").font(.largeTitle.bold()).padding(.top, 12)
+            Text("Vaultify").font(.largeTitle.bold()).themedForeground().padding(.top, 12)
             Text("Enter your master password to unlock")
-                .font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
+                .font(.subheadline).themedForeground(.secondary).padding(.top, 2)
 
             VStack(spacing: 12) {
                 RevealableSecureField(title: "Master password", text: $password)
@@ -42,7 +42,7 @@ struct LockScreen: View {
                     if busy { ProgressView().frame(maxWidth: .infinity) }
                     else { Text("Unlock").frame(maxWidth: .infinity) }
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.themedProminent)
                 .controlSize(.large)
                 .disabled(password.isEmpty || busy)
 
@@ -53,7 +53,7 @@ struct LockScreen: View {
                         Label("Unlock with \(BiometricAuth.displayName)", image: BiometricAuth.iconAsset)
                             .frame(maxWidth: .infinity)
                     }
-                    .controlSize(.large)
+                    .buttonStyle(.themedTinted)
                 }
             }
             .padding(.horizontal, 32)
@@ -71,6 +71,7 @@ struct LockScreen: View {
             // auto-locks on background, so the lock screen is already on screen).
             if phase == .active { triggerBiometric() }
         }
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
     }
 
     /// Auto-prompt biometrics, but only while the app is active (iOS won't show
@@ -95,6 +96,7 @@ struct LockScreen: View {
         } catch {
             self.error = error.localizedDescription
             Haptics.error()
+            env.theme.morphMesh()
         }
         busy = false
     }

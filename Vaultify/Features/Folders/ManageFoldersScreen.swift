@@ -19,18 +19,20 @@ struct ManageFoldersScreen: View {
                     Button { editorFolder = folder } label: {
                         HStack(spacing: 12) {
                             FolderBadge(icon: folder.iconAsset, color: folder.color, size: 34)
-                            Text(folder.name).foregroundStyle(.primary)
+                            Text(folder.name).themedForeground()
                             Spacer()
-                            Text("\(env.repository.itemCount(for: folder.id))").foregroundStyle(.secondary)
-                            PolarisIcon(Icons.chevronRight, size: 14).foregroundStyle(.tertiary)
+                            Text("\(env.repository.itemCount(for: folder.id))").themedForeground(.secondary)
+                            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                         }
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                 }
                 .onMove(perform: move)
+                .listRowBackground(VaultColors.surface)
             }
         }
+        .themedFormBackground()
         .navigationTitle("Spaces")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -24,8 +24,11 @@ struct ItemsScreen: View {
                     standaloneRow(Text("Recently Deleted"), icon: Icons.trash,
                                   count: env.repository.trashed.count, route: .recentlyDeleted)
                 }
+                .listRowBackground(VaultColors.surface)
             }
             .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
             .navigationTitle("Items")
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
@@ -40,7 +43,7 @@ struct ItemsScreen: View {
                         FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
                         Text(folder.name)
                         Spacer()
-                        Text("\(env.repository.itemCount(for: folder.id))").foregroundStyle(.secondary)
+                        Text("\(env.repository.itemCount(for: folder.id))").themedForeground(.secondary)
                     }
                 }
             }
@@ -48,11 +51,11 @@ struct ItemsScreen: View {
                 NavigationLink(value: VaultRoute.folder(nil)) {
                     HStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color(.tertiarySystemFill)).frame(width: 30, height: 30)
-                            .overlay(PolarisIcon(Icons.folder, size: 16).foregroundStyle(.secondary))
+                            .fill(VaultColors.fill).frame(width: 30, height: 30)
+                            .overlay(PolarisIcon(Icons.folder, size: 16).themedForeground(.secondary))
                         Text("Unfiled")
                         Spacer()
-                        Text("\(env.repository.unfiledCount)").foregroundStyle(.secondary)
+                        Text("\(env.repository.unfiledCount)").themedForeground(.secondary)
                     }
                 }
             }
@@ -60,6 +63,7 @@ struct ItemsScreen: View {
                 Label { Text("Create Space") } icon: { PolarisIcon(Icons.addCircle) }
             }
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private var categoriesSection: some View {
@@ -71,11 +75,12 @@ struct ItemsScreen: View {
                             .foregroundStyle(Color.accentColor).frame(width: 30)
                         Text(category.title)
                         Spacer()
-                        Text("\(env.repository.count(forCategory: category))").foregroundStyle(.secondary)
+                        Text("\(env.repository.count(forCategory: category))").themedForeground(.secondary)
                     }
                 }
             }
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private var tagsSection: some View {
@@ -83,23 +88,24 @@ struct ItemsScreen: View {
             ForEach(tags, id: \.tag) { entry in
                 NavigationLink(value: VaultRoute.tag(entry.tag)) {
                     HStack(spacing: 12) {
-                        PolarisIcon(Icons.hashtag, size: 18).foregroundStyle(.secondary).frame(width: 30)
+                        PolarisIcon(Icons.hashtag, size: 18).themedForeground(.secondary).frame(width: 30)
                         Text(entry.tag)
                         Spacer()
-                        Text("\(entry.count)").foregroundStyle(.secondary)
+                        Text("\(entry.count)").themedForeground(.secondary)
                     }
                 }
             }
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private func standaloneRow(_ title: Text, icon: String, count: Int, route: VaultRoute) -> some View {
         NavigationLink(value: route) {
             HStack(spacing: 12) {
-                PolarisIcon(icon, size: 20).foregroundStyle(.secondary).frame(width: 30)
+                PolarisIcon(icon, size: 20).themedForeground(.secondary).frame(width: 30)
                 title
                 Spacer()
-                if count > 0 { Text("\(count)").foregroundStyle(.secondary) }
+                if count > 0 { Text("\(count)").themedForeground(.secondary) }
             }
         }
     }

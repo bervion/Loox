@@ -30,5 +30,6 @@ struct VaultItemRowLink: View {
                     Label("Archive", image: Icons.archive)
                 }
             }
+            .listRowBackground(VaultColors.surface)
     }
 }

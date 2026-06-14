@@ -13,6 +13,7 @@ struct TagItemsScreen: View {
             ForEach(items) { VaultItemRowLink(item: $0) }
         }
         .listStyle(.insetGrouped)
+        .themedFormBackground()
         .navigationTitle("#\(tag)")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

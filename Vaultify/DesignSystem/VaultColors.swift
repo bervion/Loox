@@ -29,6 +29,13 @@ enum VaultColors {
         }
     }
 
+    // Theme-driven surfaces — read the active theme (re-resolved when it changes), so
+    // tinted / custom themes apply everywhere these are used.
+    static var surface: Color { Color(rgb: ThemeHolder.current.elevatedBackground) }
+    static var groupedBackground: Color { Color(rgb: ThemeHolder.current.groupedBackground) }
+    static var fill: Color { Color(rgb: ThemeHolder.current.controlBackground) }
+    static var separatorColor: Color { Color(rgb: ThemeHolder.current.separator) }
+
     static func dynamic(light: UInt32, dark: UInt32) -> Color {
         Color(uiColor: UIColor { traits in
             UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)

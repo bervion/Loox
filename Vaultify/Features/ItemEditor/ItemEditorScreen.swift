@@ -45,6 +45,7 @@ struct ItemEditorScreen: View {
                             .font(.headline)
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Fields") {
                     ForEach($draft.fields) { $field in
@@ -71,29 +72,33 @@ struct ItemEditorScreen: View {
                         Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Space") {
                     Button { showFolderPicker = true } label: {
                         HStack(spacing: 12) {
                             if let folder = selectedFolder {
                                 FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
-                                Text(folder.name).foregroundStyle(.primary)
+                                Text(folder.name).themedForeground()
                             } else {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .fill(Color(.tertiarySystemFill)).frame(width: 30, height: 30)
-                                Text("None").foregroundStyle(.secondary)
+                                    .fill(VaultColors.fill).frame(width: 30, height: 30)
+                                Text("None").themedForeground(.secondary)
                             }
                             Spacer()
-                            PolarisIcon(Icons.chevronRight, size: 14).foregroundStyle(.tertiary)
+                            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                         }
                     }
                     .buttonStyle(.plain)
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Tags") {
                     TagChipEditor(tags: $draft.tags)
                 }
+                .listRowBackground(VaultColors.surface)
             }
+            .themedFormBackground()
             .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {

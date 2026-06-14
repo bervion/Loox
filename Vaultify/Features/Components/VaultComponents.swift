@@ -37,7 +37,7 @@ struct FilterChip: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.accentColor : Color(.secondarySystemBackground),
+            .background(isSelected ? Color.accentColor : VaultColors.surface,
                         in: Capsule())
             .foregroundStyle(isSelected ? Color.white : Color.primary)
         }

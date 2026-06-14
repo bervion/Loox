@@ -29,6 +29,7 @@ struct RecoveryView: View {
                 } footer: {
                     Text("Enter the recovery key from your Emergency Kit.")
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("New master password") {
                     RevealableSecureField(title: "New password", text: $newPassword)
@@ -37,11 +38,13 @@ struct RecoveryView: View {
                     RevealableSecureField(title: "Confirm password", text: $confirm)
                         .listRowInsets(.init())
                 }
+                .listRowBackground(VaultColors.surface)
 
                 if let error {
                     Text(error).foregroundStyle(VaultColors.strengthWeak)
                 }
             }
+            .themedFormBackground()
             .navigationTitle("Recover Vault")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

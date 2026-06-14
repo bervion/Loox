@@ -22,16 +22,18 @@ struct Level2SettingsView: View {
             Section {
                 Label {
                     Text("A second password for your most sensitive fields. Items can use this or their own code. If you forget it, those fields cannot be recovered.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(.footnote).themedForeground(.secondary)
                 } icon: {
                     PolarisIcon(Icons.lockFill).foregroundStyle(Color.accentColor)
                 }
             }
+            .listRowBackground(VaultColors.surface)
 
             if hasLevel2 {
                 Section("Current password") {
                     RevealableSecureField(title: "Current extra password", text: $current).listRowInsets(.init())
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             Section(hasLevel2 ? "New password" : "Set password") {
@@ -39,9 +41,11 @@ struct Level2SettingsView: View {
                 PasswordStrengthMeter(password: newPassword)
                 RevealableSecureField(title: "Confirm", text: $confirm).listRowInsets(.init())
             }
+            .listRowBackground(VaultColors.surface)
 
             if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
         }
+        .themedFormBackground()
         .navigationTitle("Extra Protection")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

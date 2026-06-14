@@ -47,7 +47,6 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     @ObservationIgnored private let defaults = UserDefaults.standard
 
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
-    var appearance: AppearanceMode { didSet { defaults.set(appearance.rawValue, forKey: Key.appearance) } }
     var autoLock: AutoLockTimeout { didSet { defaults.set(autoLock.rawValue, forKey: Key.autoLock) } }
     var lockOnBackground: Bool { didSet { defaults.set(lockOnBackground, forKey: Key.lockOnBackground) } }
     var biometricUnlockEnabled: Bool { didSet { defaults.set(biometricUnlockEnabled, forKey: Key.biometric) } }
@@ -68,7 +67,6 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     init() {
         let d = UserDefaults.standard
         onboardingCompleted = d.bool(forKey: Key.onboarding)
-        appearance = AppearanceMode(rawValue: d.string(forKey: Key.appearance) ?? "") ?? .system
         autoLock = AutoLockTimeout(rawValue: d.object(forKey: Key.autoLock) as? Int ?? 300) ?? .fiveMinutes
         lockOnBackground = d.object(forKey: Key.lockOnBackground) as? Bool ?? true
         biometricUnlockEnabled = d.bool(forKey: Key.biometric)
@@ -85,7 +83,6 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
 
     private enum Key {
         static let onboarding = "onboarding_completed"
-        static let appearance = "appearance_mode"
         static let autoLock = "auto_lock_timeout"
         static let lockOnBackground = "lock_on_background"
         static let biometric = "biometric_unlock_enabled"

@@ -21,6 +21,7 @@ struct RegenerateKitView: View {
             } footer: {
                 Text("The recovery key can restore your vault if you forget your master password.")
             }
+            .listRowBackground(VaultColors.surface)
 
             if !newKey.isEmpty {
                 Section {
@@ -38,6 +39,7 @@ struct RegenerateKitView: View {
                 } footer: {
                     Text("Store it somewhere safe and offline. It is shown only once.")
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             Section {
@@ -48,7 +50,9 @@ struct RegenerateKitView: View {
                 }
                 .disabled(busy)
             }
+            .listRowBackground(VaultColors.surface)
         }
+        .themedFormBackground()
         .navigationTitle("Emergency Kit")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if busy { ProgressView().controlSize(.large) } }

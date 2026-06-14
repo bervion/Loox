@@ -11,6 +11,7 @@ no server, no tracking.
 - 👤 **Face ID** unlock
 - 🔑 **iOS AutoFill** for passwords **and passkeys** (Credential Provider extension)
 - 🗂 **Spaces & tags** — group logins by company/project (color + icon), with a Home dashboard (Quick Access, recents, tags)
+- 🎨 **Themes & wallpapers** — Day / Night / Tinted themes, accent colors, gradient · pattern · animated-mesh backgrounds, auto-night, and custom themes you can export / import (`.vaultheme`)
 - 🌏 **EN / VI** with an in-app language toggle
 - ☁️ **Optional** iCloud (CloudKit) sync — off by default, compile-gated
 - 📱 iPhone-only, iOS 17.6+

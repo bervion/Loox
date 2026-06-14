@@ -23,11 +23,13 @@ struct PasswordGeneratorView: View {
     var body: some View {
         Form {
             Section { outputCard }
+            .listRowBackground(VaultColors.surface)
 
             Picker("Mode", selection: $mode) {
                 ForEach(Mode.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
+            .listRowBackground(VaultColors.surface)
 
             if mode == .password { passwordControls } else { passphraseControls }
 
@@ -38,8 +40,10 @@ struct PasswordGeneratorView: View {
                     }
                     .disabled(output.isEmpty)
                 }
+                .listRowBackground(VaultColors.surface)
             }
         }
+        .themedFormBackground()
         .onAppear { if output.isEmpty { regenerate() } }
         .onChange(of: pwd) { regenerate() }
         .onChange(of: phrase) { regenerate() }
@@ -80,6 +84,7 @@ struct PasswordGeneratorView: View {
             Toggle("Symbols (!@#…)", isOn: $pwd.symbols)
             Toggle("Avoid ambiguous", isOn: $pwd.avoidAmbiguous)
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     @ViewBuilder private var passphraseControls: some View {
@@ -96,6 +101,7 @@ struct PasswordGeneratorView: View {
             Toggle("Capitalize", isOn: $phrase.capitalize)
             Toggle("Include number", isOn: $phrase.includeNumber)
         }
+        .listRowBackground(VaultColors.surface)
     }
 
     private func regenerate() {

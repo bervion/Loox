@@ -28,6 +28,7 @@ struct HomeScreen: View {
                     content
                 }
             }
+            .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
             .navigationTitle("Vault")
             .toolbar { toolbar }
             .vaultNavigationDestinations()
@@ -52,13 +53,12 @@ struct HomeScreen: View {
             }
             .padding(.vertical, 16)
         }
-        .background(Color(.systemGroupedBackground))
     }
 
     private var customizeButton: some View {
         Button { showCustomize = true } label: {
             Label { Text("Customize Home") } icon: { PolarisIcon(Icons.edit, size: 15) }
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(.subheadline).themedForeground(.secondary)
         }
         .padding(.horizontal, 16).padding(.top, 4)
     }
@@ -69,7 +69,7 @@ struct HomeScreen: View {
         } description: {
             Text("Add your first login, card, or secure note.")
         } actions: {
-            Menu { addMenu } label: { Text("Add Item") }.buttonStyle(.borderedProminent)
+            Menu { addMenu } label: { Text("Add Item") }.buttonStyle(.themedProminent)
         }
     }
 

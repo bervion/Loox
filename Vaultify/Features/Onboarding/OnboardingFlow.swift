@@ -11,7 +11,6 @@ struct OnboardingFlow: View {
     enum Step: Equatable { case welcome, create, emergencyKit, theme, biometric, done }
 
     var body: some View {
-        @Bindable var settings = env.settings
         ZStack {
             switch step {
             case .welcome:
@@ -21,7 +20,7 @@ struct OnboardingFlow: View {
             case .emergencyKit:
                 EmergencyKitView(recoveryKey: recoveryKey) { step = .theme }
             case .theme:
-                ChooseThemeView(selection: $settings.appearance) {
+                ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
                     step = BiometricAuth.isAvailable ? .biometric : .done
                 }
             case .biometric:
@@ -36,6 +35,7 @@ struct OnboardingFlow: View {
                 recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""
             }
         }
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
     }
 
     private func createVault(_ password: String) async -> String? {
@@ -72,7 +72,7 @@ private struct WelcomeStep: View {
                 .padding(.top, 16)
             Text("A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
                 .padding(.top, 8)
@@ -92,7 +92,7 @@ private struct WelcomeStep: View {
             Button(action: onContinue) {
                 Text("Get Started").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.themedProminent)
             .controlSize(.large)
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -110,7 +110,7 @@ private struct FeatureRow: View {
             PolarisIcon(icon, size: 24).foregroundStyle(Color.accentColor).frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title.inAppLocalized).font(.headline)
-                Text(detail.inAppLocalized).font(.subheadline).foregroundStyle(.secondary)
+                Text(detail.inAppLocalized).font(.subheadline).themedForeground(.secondary)
             }
         }
     }
@@ -127,13 +127,13 @@ private struct OnboardingDoneStep: View {
                 .font(.largeTitle.bold())
                 .padding(.top, 16)
             Text("Your vault is ready. Add your first item to get started.")
-                .font(.body).foregroundStyle(.secondary)
+                .font(.body).themedForeground(.secondary)
                 .multilineTextAlignment(.center).padding(.horizontal, 32).padding(.top, 8)
             Spacer()
             Button(action: onFinish) {
                 Text("Open Vaultify").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent).controlSize(.large)
+            .buttonStyle(.themedProminent).controlSize(.large)
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
     }

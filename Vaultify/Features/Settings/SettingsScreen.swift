@@ -48,12 +48,14 @@ struct SettingsScreen: View {
                         Label { Text("Extra Protection") } icon: { PolarisIcon(Icons.lockFill) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Organization") {
                     NavigationLink { ManageFoldersScreen() } label: {
                         Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Privacy") {
                     Toggle(isOn: $settings.hideInAppSwitcher) {
@@ -68,6 +70,7 @@ struct SettingsScreen: View {
                         Label { Text("Clear clipboard") } icon: { PolarisIcon(Icons.copy) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section {
                     Toggle(isOn: $settings.showWebsiteIcons) {
@@ -76,12 +79,13 @@ struct SettingsScreen: View {
                 } footer: {
                     Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Appearance") {
-                    Picker(selection: $settings.appearance) {
-                        ForEach(AppearanceMode.allCases) { Text($0.title).tag($0) }
+                    NavigationLink {
+                        AppearanceSettingsView()
                     } label: {
-                        Label { Text("Theme") } icon: { PolarisIcon("ic_apps_filled") }
+                        Label { Text("Theme & Wallpaper") } icon: { PolarisIcon("ic_apps_filled") }
                     }
                     Picker(selection: $settings.preferredLanguage) {
                         Text("System").tag("system")
@@ -91,12 +95,14 @@ struct SettingsScreen: View {
                         Label { Text("Language") } icon: { PolarisIcon(Icons.language) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Watchtower") {
                     Toggle(isOn: $settings.hibpEnabled) {
                         Label { Text("Check for known breaches") } icon: { PolarisIcon(Icons.shield) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section("Data") {
                     NavigationLink { SyncSettingsView() } label: {
@@ -109,6 +115,7 @@ struct SettingsScreen: View {
                         Label { Text("Export") } icon: { PolarisIcon(Icons.exportData) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section {
                     Button { env.session.lock() } label: {
@@ -118,13 +125,16 @@ struct SettingsScreen: View {
                         Label { Text("Erase Vault").foregroundStyle(.red) } icon: { PolarisIcon(Icons.delete).foregroundStyle(.red) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
 
                 Section {
                     NavigationLink { AboutView() } label: {
                         Label { Text("About") } icon: { PolarisIcon(Icons.info) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
+            .themedFormBackground()
             .navigationTitle("Settings")
             .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
                 Button("Erase Everything", role: .destructive) { env.eraseEverything() }

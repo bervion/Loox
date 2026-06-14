@@ -127,7 +127,7 @@ struct DetailFieldRow: View {
             PolarisIcon("ic_menu_horizontal", size: 17)
                 .foregroundStyle(copied ? .white : .secondary)
                 .frame(width: 30, height: 30)
-                .background(Circle().fill(copied ? Color.white.opacity(0.22) : Color(.tertiarySystemFill)))
+                .background(Circle().fill(copied ? Color.white.opacity(0.22) : VaultColors.fill))
         }
     }
 

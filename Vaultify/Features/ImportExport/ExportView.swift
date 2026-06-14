@@ -42,6 +42,7 @@ struct ExportView: View {
                 } footer: {
                     Text("The backup is sealed with Argon2id + AES-256-GCM. You’ll need this password to restore it.")
                 }
+                .listRowBackground(VaultColors.surface)
             } else {
                 Section {
                     Label {
@@ -50,15 +51,17 @@ struct ExportView: View {
                         PolarisIcon(Icons.alert).foregroundStyle(VaultColors.strengthWeak)
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             Section {
                 Button { Task { await generate() } } label: {
                     Text("Create Export").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.themedProminent)
                 .disabled(!canExport || working)
             }
+            .listRowBackground(VaultColors.surface)
 
             if let exportURL {
                 Section {
@@ -66,10 +69,12 @@ struct ExportView: View {
                         Label { Text("Share Export") } icon: { PolarisIcon(Icons.share) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
         }
+        .themedFormBackground()
         .navigationTitle("Export")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if working { ProgressView().controlSize(.large) } }

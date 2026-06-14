@@ -31,7 +31,7 @@ struct CountdownRing: View {
                 .stroke(remaining <= 5 ? VaultColors.strengthWeak : Color.accentColor,
                         style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text("\(remaining)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+            Text("\(remaining)").font(.caption2.monospacedDigit()).themedForeground(.secondary)
         }
         .frame(width: 26, height: 26)
         .animation(.linear(duration: 0.5), value: remaining)

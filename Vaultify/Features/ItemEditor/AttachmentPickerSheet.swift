@@ -15,14 +15,18 @@ struct AttachmentPickerSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Button { showFileImporter = true } label: {
-                    Label { Text("Choose File") } icon: { PolarisIcon("ic_attachment") }
+                Section {
+                    Button { showFileImporter = true } label: {
+                        Label { Text("Choose File") } icon: { PolarisIcon("ic_attachment") }
+                    }
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Label { Text("Choose Photo") } icon: { PolarisIcon(Icons.image) }
+                    }
+                    if let error { Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak) }
                 }
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label { Text("Choose Photo") } icon: { PolarisIcon(Icons.image) }
-                }
-                if let error { Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak) }
+                .listRowBackground(VaultColors.surface)
             }
+            .themedFormBackground()
             .navigationTitle("Add Attachment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }

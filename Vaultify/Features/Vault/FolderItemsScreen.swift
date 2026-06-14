@@ -20,6 +20,7 @@ struct FolderItemsScreen: View {
             ForEach(items) { VaultItemRowLink(item: $0, showSpace: false) }
         }
         .listStyle(.insetGrouped)
+        .themedFormBackground()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .tint(folder?.color.tint)

@@ -17,6 +17,7 @@ struct FolderPickerSheet: View {
                     }
                     .buttonStyle(.plain)
                 }
+                .listRowBackground(VaultColors.surface)
                 if !env.repository.folders.isEmpty {
                     Section {
                         ForEach(env.repository.folders) { folder in
@@ -28,13 +29,16 @@ struct FolderPickerSheet: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    .listRowBackground(VaultColors.surface)
                 }
                 Section {
                     Button { creating = true } label: {
                         Label { Text("New Space…") } icon: { PolarisIcon(Icons.addCircle) }
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
+            .themedFormBackground()
             .navigationTitle("Space")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
@@ -55,9 +59,9 @@ struct FolderPickerSheet: View {
                 badge
             } else {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color(.tertiarySystemFill)).frame(width: 30, height: 30)
+                    .fill(VaultColors.fill).frame(width: 30, height: 30)
             }
-            name.foregroundStyle(.primary)
+            name.themedForeground()
             Spacer()
             if selected { PolarisIcon(Icons.check, size: 18).foregroundStyle(Color.accentColor) }
         }

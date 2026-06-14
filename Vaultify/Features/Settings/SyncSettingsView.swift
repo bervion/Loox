@@ -22,16 +22,18 @@ struct SyncSettingsView: View {
             } footer: {
                 Text("Items are end-to-end encrypted before they sync. iCloud stores only ciphertext — neither Apple nor anyone else can read your vault.")
             }
+            .listRowBackground(VaultColors.surface)
 
             if !CloudSyncService.isConfigured {
                 Section {
                     Label {
                         Text("To use iCloud Sync, enable the iCloud capability (CloudKit) for the app target in Xcode and sign in to iCloud on this device.")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(.footnote).themedForeground(.secondary)
                     } icon: {
                         PolarisIcon(Icons.info).foregroundStyle(VaultColors.strengthMedium)
                     }
                 }
+                .listRowBackground(VaultColors.surface)
             }
 
             if env.settings.iCloudSyncEnabled {
@@ -42,8 +44,10 @@ struct SyncSettingsView: View {
                     .disabled(env.cloudSync.status == .syncing)
                     statusRow
                 }
+                .listRowBackground(VaultColors.surface)
             }
         }
+        .themedFormBackground()
         .navigationTitle("iCloud Sync")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -53,7 +57,7 @@ struct SyncSettingsView: View {
         case .idle:
             EmptyView()
         case .syncing:
-            HStack(spacing: 8) { ProgressView(); Text("Syncing…").foregroundStyle(.secondary) }
+            HStack(spacing: 8) { ProgressView(); Text("Syncing…").themedForeground(.secondary) }
         case .success(let date):
             LabeledContent("Last sync", value: date.formatted(date: .omitted, time: .shortened))
         case .error(let message):
