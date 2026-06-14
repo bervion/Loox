@@ -15,6 +15,7 @@ struct AppearanceSettingsView: View {
             backgroundSection
             optionsSection
         }
+        .themedFormBackground()
         .navigationTitle("Appearance")
         .navigationBarTitleDisplayMode(.inline)
     }

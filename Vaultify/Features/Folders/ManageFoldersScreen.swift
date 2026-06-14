@@ -31,6 +31,7 @@ struct ManageFoldersScreen: View {
                 .onMove(perform: move)
             }
         }
+        .themedFormBackground()
         .navigationTitle("Spaces")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

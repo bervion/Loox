@@ -32,6 +32,7 @@ struct ArchiveScreen: View {
                 }
             }
         }
+        .themedFormBackground()
         .navigationTitle("Archive")
         .navigationBarTitleDisplayMode(.inline)
     }

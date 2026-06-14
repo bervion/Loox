@@ -19,6 +19,7 @@ struct CustomizeHomeScreen: View {
                     Text("Pinned, Favorites, Recently Created, and Frequently Used always appear when they have items.")
                 }
             }
+            .themedFormBackground()
             .navigationTitle("Customize Home")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }

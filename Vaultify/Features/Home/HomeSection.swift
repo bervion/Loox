@@ -54,6 +54,7 @@ struct HomeSectionView: View {
 /// Compact item card used across Home sections.
 struct ItemCard: View {
     let item: VaultItem
+    @Environment(\.appTheme) private var theme
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             FaviconView(urlString: item.urlField?.value, category: item.category, size: 36)
@@ -65,7 +66,7 @@ struct ItemCard: View {
         }
         .frame(width: 132, alignment: .leading)
         .padding(12)
-        .background(Color(.secondarySystemGroupedBackground),
+        .background(Color(rgb: theme.elevatedBackground),
                     in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }

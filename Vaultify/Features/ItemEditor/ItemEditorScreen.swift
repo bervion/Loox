@@ -94,6 +94,7 @@ struct ItemEditorScreen: View {
                     TagChipEditor(tags: $draft.tags)
                 }
             }
+            .themedFormBackground()
             .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {

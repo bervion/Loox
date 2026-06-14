@@ -53,6 +53,22 @@ private struct AppBackgroundModifier: ViewModifier {
     }
 }
 
+extension View {
+    /// Themed backdrop for Form / List screens (non-canvas): hides the system scroll
+    /// background and fills with the theme's grouped background, so tinted / custom
+    /// themes show through while grouped cells stay legible.
+    func themedFormBackground() -> some View { modifier(ThemedFormBackgroundModifier()) }
+}
+
+private struct ThemedFormBackgroundModifier: ViewModifier {
+    @Environment(\.appTheme) private var theme
+    func body(content: Content) -> some View {
+        content
+            .scrollContentBackground(.hidden)
+            .background(Color(rgb: theme.groupedBackground).ignoresSafeArea())
+    }
+}
+
 // MARK: - Card
 
 /// An elevated surface that floats over the background / wallpaper and stays legible.

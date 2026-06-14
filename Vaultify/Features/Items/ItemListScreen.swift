@@ -14,6 +14,7 @@ struct ItemListScreen: View {
             ForEach(items) { VaultItemRowLink(item: $0) }
         }
         .listStyle(.insetGrouped)
+        .themedFormBackground()
         .navigationTitle(String(localized: category.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

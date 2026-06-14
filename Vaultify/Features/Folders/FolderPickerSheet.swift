@@ -35,6 +35,7 @@ struct FolderPickerSheet: View {
                     }
                 }
             }
+            .themedFormBackground()
             .navigationTitle("Space")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }

@@ -70,6 +70,7 @@ struct ExportView: View {
 
             if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
         }
+        .themedFormBackground()
         .navigationTitle("Export")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if working { ProgressView().controlSize(.large) } }

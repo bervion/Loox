@@ -40,6 +40,7 @@ struct AboutView: View {
                 Text("Includes the Argon2 reference implementation (CC0 / Apache-2.0).")
             }
         }
+        .themedFormBackground()
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
     }

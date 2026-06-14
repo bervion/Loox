@@ -44,6 +44,7 @@ struct SyncSettingsView: View {
                 }
             }
         }
+        .themedFormBackground()
         .navigationTitle("iCloud Sync")
         .navigationBarTitleDisplayMode(.inline)
     }

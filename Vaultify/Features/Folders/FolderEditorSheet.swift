@@ -43,6 +43,7 @@ struct FolderEditorSheet: View {
                     }
                 }
             }
+            .themedFormBackground()
             .navigationTitle(isEditing ? "Edit Space" : "New Space")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

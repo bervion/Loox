@@ -28,6 +28,7 @@ struct HomeScreen: View {
                     content
                 }
             }
+            .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
             .navigationTitle("Vault")
             .toolbar { toolbar }
             .vaultNavigationDestinations()
@@ -52,7 +53,6 @@ struct HomeScreen: View {
             }
             .padding(.vertical, 16)
         }
-        .background(Color(.systemGroupedBackground))
     }
 
     private var customizeButton: some View {

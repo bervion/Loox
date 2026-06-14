@@ -33,6 +33,7 @@ struct ChangeMasterPasswordView: View {
                 Text(error).foregroundStyle(VaultColors.strengthWeak)
             }
         }
+        .themedFormBackground()
         .navigationTitle("Change Master Password")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

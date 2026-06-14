@@ -66,6 +66,7 @@ struct AutoNightSettingsView: View {
                 }
             }
         }
+        .themedFormBackground()
         .navigationTitle("Automatic Dark Mode")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: seed)

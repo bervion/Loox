@@ -27,6 +27,7 @@ struct CodePromptSheet: View {
                 }
                 if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
             }
+            .themedFormBackground()
             .navigationTitle(Text(title.inAppLocalized))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

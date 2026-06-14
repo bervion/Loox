@@ -125,6 +125,7 @@ struct SettingsScreen: View {
                     }
                 }
             }
+            .themedFormBackground()
             .navigationTitle("Settings")
             .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
                 Button("Erase Everything", role: .destructive) { env.eraseEverything() }

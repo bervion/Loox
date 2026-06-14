@@ -49,6 +49,7 @@ struct RegenerateKitView: View {
                 .disabled(busy)
             }
         }
+        .themedFormBackground()
         .navigationTitle("Emergency Kit")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if busy { ProgressView().controlSize(.large) } }

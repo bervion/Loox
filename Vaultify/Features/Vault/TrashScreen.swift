@@ -36,6 +36,7 @@ struct TrashScreen: View {
                 }
             }
         }
+        .themedFormBackground()
         .navigationTitle("Recently Deleted")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

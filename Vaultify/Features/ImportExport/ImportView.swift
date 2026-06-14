@@ -56,6 +56,7 @@ struct ImportView: View {
 
             if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
         }
+        .themedFormBackground()
         .navigationTitle("Import")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if working { ProgressView().controlSize(.large) } }

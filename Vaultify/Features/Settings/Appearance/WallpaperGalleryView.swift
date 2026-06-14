@@ -36,6 +36,7 @@ struct WallpaperGalleryView: View {
                 Text("Your photo stays on this device.")
             }
         }
+        .themedFormBackground()
         .navigationTitle("Background")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem) { _, item in importPhoto(item) }

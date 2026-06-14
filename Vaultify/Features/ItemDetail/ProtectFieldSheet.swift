@@ -51,6 +51,7 @@ struct ProtectFieldSheet: View {
 
                 if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
             }
+            .themedFormBackground()
             .navigationTitle("Protect Field")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

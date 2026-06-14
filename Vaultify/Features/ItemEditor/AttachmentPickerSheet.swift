@@ -23,6 +23,7 @@ struct AttachmentPickerSheet: View {
                 }
                 if let error { Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak) }
             }
+            .themedFormBackground()
             .navigationTitle("Add Attachment")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }

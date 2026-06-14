@@ -42,6 +42,7 @@ struct RecoveryView: View {
                     Text(error).foregroundStyle(VaultColors.strengthWeak)
                 }
             }
+            .themedFormBackground()
             .navigationTitle("Recover Vault")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

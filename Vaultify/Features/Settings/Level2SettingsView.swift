@@ -42,6 +42,7 @@ struct Level2SettingsView: View {
 
             if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
         }
+        .themedFormBackground()
         .navigationTitle("Extra Protection")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
