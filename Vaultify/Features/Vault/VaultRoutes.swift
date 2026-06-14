@@ -21,3 +21,6 @@ enum VaultSort: String, CaseIterable, Identifiable {
         }
     }
 }
+
+/// Active Space filter for the Home item list.
+enum SpaceFilter: Hashable { case all, unfiled, folder(String) }

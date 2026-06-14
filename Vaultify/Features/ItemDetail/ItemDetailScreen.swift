@@ -17,6 +17,7 @@ struct ItemDetailScreen: View {
             if let item {
                 VStack(spacing: 18) {
                     header(item)
+                    organization(item)
                     fieldsCard(item)
                     trashCard(item)
                     metadata(item)
@@ -76,6 +77,34 @@ struct ItemDetailScreen: View {
             .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
+    }
+
+    /// Shows which Space the item belongs to, plus its tags. Hidden when neither.
+    @ViewBuilder private func organization(_ item: VaultItem) -> some View {
+        let folder = item.folderId.flatMap { id in env.repository.folders.first { $0.id == id } }
+        if folder != nil || !item.tags.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    if let folder {
+                        HStack(spacing: 6) {
+                            FolderBadge(icon: folder.iconAsset, color: folder.color, size: 20)
+                            Text(folder.name).font(.subheadline.weight(.medium))
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                    }
+                    ForEach(item.tags, id: \.self) { tag in
+                        HStack(spacing: 3) {
+                            PolarisIcon(Icons.hashtag, size: 11).foregroundStyle(.secondary)
+                            Text(tag).font(.subheadline)
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private func fieldsCard(_ item: VaultItem) -> some View {

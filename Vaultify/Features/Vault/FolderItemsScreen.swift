@@ -17,7 +17,7 @@ struct FolderItemsScreen: View {
 
     var body: some View {
         List {
-            ForEach(items) { VaultItemRowLink(item: $0) }
+            ForEach(items) { VaultItemRowLink(item: $0, showSpace: false) }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(title)
