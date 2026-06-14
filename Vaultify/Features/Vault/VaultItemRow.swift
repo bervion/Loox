@@ -49,6 +49,6 @@ struct VaultItemRow: View {
             Text(folder.name).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
         }
         .padding(.horizontal, 8).padding(.vertical, 4)
-        .background(Color(.tertiarySystemFill), in: Capsule())
+        .background(VaultColors.fill, in: Capsule())
     }
 }

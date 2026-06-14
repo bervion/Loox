@@ -22,7 +22,7 @@ struct TagChipEditor: View {
                                 .buttonStyle(.plain)
                             }
                             .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Color(.secondarySystemBackground), in: Capsule())
+                            .background(VaultColors.surface, in: Capsule())
                         }
                     }
                 }

@@ -50,7 +50,7 @@ struct ItemsScreen: View {
                 NavigationLink(value: VaultRoute.folder(nil)) {
                     HStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color(.tertiarySystemFill)).frame(width: 30, height: 30)
+                            .fill(VaultColors.fill).frame(width: 30, height: 30)
                             .overlay(PolarisIcon(Icons.folder, size: 16).foregroundStyle(.secondary))
                         Text("Unfiled")
                         Spacer()

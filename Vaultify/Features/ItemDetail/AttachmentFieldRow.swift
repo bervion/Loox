@@ -50,7 +50,7 @@ struct AttachmentFieldRow: View {
             PolarisIcon("ic_menu_horizontal", size: 17)
                 .foregroundStyle(.secondary)
                 .frame(width: 30, height: 30)
-                .background(Circle().fill(Color(.tertiarySystemFill)))
+                .background(Circle().fill(VaultColors.fill))
         }
     }
 

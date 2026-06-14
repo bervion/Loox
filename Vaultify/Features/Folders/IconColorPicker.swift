@@ -39,7 +39,7 @@ struct IconColorPicker: View {
                             .frame(width: 50, height: 50)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(selected ? color.tint.opacity(0.16) : Color(.secondarySystemBackground))
+                                    .fill(selected ? color.tint.opacity(0.16) : VaultColors.surface)
                             )
                             .overlay {
                                 if selected {

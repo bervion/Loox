@@ -56,7 +56,7 @@ struct FolderPickerSheet: View {
                 badge
             } else {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color(.tertiarySystemFill)).frame(width: 30, height: 30)
+                    .fill(VaultColors.fill).frame(width: 30, height: 30)
             }
             name.foregroundStyle(.primary)
             Spacer()

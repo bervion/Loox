@@ -63,7 +63,7 @@ private struct ThemeOptionRow: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(.secondarySystemBackground)))
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(VaultColors.surface))
             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
         }

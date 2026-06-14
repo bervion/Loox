@@ -24,6 +24,7 @@ import UIKit
         self.settings = loaded
         self.systemIsDark = dark
         self.active = ThemePalette.resolve(loaded, systemIsDark: dark, brightness: 1.0)
+        ThemeHolder.current = self.active
     }
 
     /// The active wallpaper (rendered from Phase 03).
@@ -62,6 +63,7 @@ import UIKit
 
     private func recompute() {
         active = ThemePalette.resolve(settings, systemIsDark: systemIsDark, brightness: brightness)
+        ThemeHolder.current = active
     }
 
     // MARK: - Mesh

@@ -11,19 +11,26 @@ struct RevealableSecureField: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Group {
-                if reveal {
-                    TextField(title, text: $text)
-                } else {
-                    SecureField(title, text: $text)
+            ZStack(alignment: .leading) {
+                if text.isEmpty {
+                    Text(title)
+                        .font(monospaced ? .vaultMono() : .body)
+                        .foregroundStyle(Color(rgb: theme.secondaryText))
                 }
+                Group {
+                    if reveal {
+                        TextField("", text: $text)
+                    } else {
+                        SecureField("", text: $text)
+                    }
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textContentType(.password)
+                .font(monospaced ? .vaultMono() : .body)
+                .focused($focused)
+                .foregroundStyle(Color(rgb: theme.primaryText))
             }
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .textContentType(.password)
-            .font(monospaced ? .vaultMono() : .body)
-            .focused($focused)
-            .foregroundStyle(Color(rgb: theme.primaryText))
 
             if !text.isEmpty {
                 Button {

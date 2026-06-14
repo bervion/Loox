@@ -44,7 +44,7 @@ struct CreateMasterPasswordView: View {
                     PolarisIcon(Icons.alert, size: 18).foregroundStyle(VaultColors.strengthMedium)
                 }
                 .padding(12)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 if let error {
                     Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)

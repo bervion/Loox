@@ -8,7 +8,7 @@ struct LargeTypeView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            VaultColors.surface.ignoresSafeArea()
 
             ScrollView {
                 Text(colorCoded)
@@ -26,7 +26,7 @@ struct LargeTypeView: View {
                 PolarisIcon(Icons.close, size: 22)
                     .foregroundStyle(.secondary)
                     .padding(10)
-                    .background(Circle().fill(Color(.secondarySystemFill)))
+                    .background(Circle().fill(VaultColors.fill))
             }
             .padding(16)
         }

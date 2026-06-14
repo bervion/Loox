@@ -73,6 +73,6 @@ struct EmergencyKitView: View {
                     .padding(.horizontal, 12)
             }
         }
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }

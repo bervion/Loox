@@ -17,7 +17,7 @@ struct UtilitiesSection: View {
                     PolarisIcon(Icons.chevronRight, size: 14).foregroundStyle(.tertiary)
                 }
                 .padding(14)
-                .background(Color(.secondarySystemGroupedBackground),
+                .background(VaultColors.surface,
                             in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
