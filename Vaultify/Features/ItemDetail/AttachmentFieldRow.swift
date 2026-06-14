@@ -23,12 +23,12 @@ struct AttachmentFieldRow: View {
                     .overlay(PolarisIcon(meta.iconAsset, size: 22).foregroundStyle(Color.accentColor))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(meta.name).font(.body).lineLimit(1)
-                    Text("\(meta.ext.uppercased()) · \(meta.sizeText)").font(.caption).foregroundStyle(.secondary)
+                    Text("\(meta.ext.uppercased()) · \(meta.sizeText)").font(.caption).themedForeground(.secondary)
                 }
                 Spacer(minLength: 8)
                 menu(meta)
             } else {
-                Text("Attachment unavailable").font(.subheadline).foregroundStyle(.secondary)
+                Text("Attachment unavailable").font(.subheadline).themedForeground(.secondary)
             }
             if let error { Text(error).font(.caption).foregroundStyle(VaultColors.strengthWeak) }
         }
@@ -48,7 +48,7 @@ struct AttachmentFieldRow: View {
             } label: { Label("Delete Attachment", image: Icons.delete) }
         } label: {
             PolarisIcon("ic_menu_horizontal", size: 17)
-                .foregroundStyle(.secondary)
+                .themedForeground(.secondary)
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(VaultColors.fill))
         }

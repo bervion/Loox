@@ -14,10 +14,10 @@ struct TagChipEditor: View {
                     HStack(spacing: 8) {
                         ForEach(tags, id: \.self) { tag in
                             HStack(spacing: 4) {
-                                PolarisIcon(Icons.hashtag, size: 12).foregroundStyle(.secondary)
+                                PolarisIcon(Icons.hashtag, size: 12).themedForeground(.secondary)
                                 Text(tag).font(.subheadline)
                                 Button { remove(tag) } label: {
-                                    PolarisIcon(Icons.close, size: 11).foregroundStyle(.secondary)
+                                    PolarisIcon(Icons.close, size: 11).themedForeground(.secondary)
                                 }
                                 .buttonStyle(.plain)
                             }

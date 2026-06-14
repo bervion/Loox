@@ -12,9 +12,9 @@ struct UtilitiesSection: View {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color.accentColor.opacity(0.15)).frame(width: 38, height: 38)
                         .overlay(PolarisIcon(Icons.magic, size: 20).foregroundStyle(Color.accentColor))
-                    Text("Password Generator").foregroundStyle(.primary)
+                    Text("Password Generator").themedForeground()
                     Spacer()
-                    PolarisIcon(Icons.chevronRight, size: 14).foregroundStyle(.tertiary)
+                    PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                 }
                 .padding(14)
                 .background(VaultColors.surface,

@@ -20,7 +20,7 @@ struct HealthGauge: View {
                     .animation(.smooth, value: score)
                 VStack(spacing: 0) {
                     Text("\(score)").font(.system(size: 42, weight: .bold, design: .rounded))
-                    Text("Health").font(.caption).foregroundStyle(.secondary)
+                    Text("Health").font(.caption).themedForeground(.secondary)
                 }
             }
             .frame(width: 140, height: 140)
@@ -44,11 +44,11 @@ struct WatchtowerIssueRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(issue.itemTitle).font(.body).lineLimit(1)
                 if let detail = issue.detail {
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
+                    Text(detail).font(.caption).themedForeground(.secondary)
                 }
             }
             Spacer(minLength: 8)
-            PolarisIcon(Icons.chevronRight, size: 14).foregroundStyle(.tertiary)
+            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
         }
         .contentShape(.rect)
     }

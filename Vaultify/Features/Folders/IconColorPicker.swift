@@ -57,7 +57,7 @@ struct IconColorPicker: View {
 
     @ViewBuilder private func section(title: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            Text(title).font(.subheadline.weight(.semibold)).themedForeground(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             content()
         }

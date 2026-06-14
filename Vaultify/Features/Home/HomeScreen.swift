@@ -58,7 +58,7 @@ struct HomeScreen: View {
     private var customizeButton: some View {
         Button { showCustomize = true } label: {
             Label { Text("Customize Home") } icon: { PolarisIcon(Icons.edit, size: 15) }
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(.subheadline).themedForeground(.secondary)
         }
         .padding(.horizontal, 16).padding(.top, 4)
     }

@@ -16,7 +16,7 @@ struct ChooseThemeView: View {
                 .padding(.top, 16)
             Text("Choose how Vaultify looks. You can change this anytime in Settings.")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
                 .padding(.top, 8)
@@ -55,7 +55,7 @@ private struct ThemeOptionRow: View {
                     .fill(swatchStyle)
                     .frame(width: 26, height: 26)
                     .overlay(Circle().strokeBorder(.quaternary, lineWidth: 1))
-                Text(mode.title).font(.headline).foregroundStyle(.primary)
+                Text(mode.title).font(.headline).themedForeground()
                 Spacer()
                 if isSelected {
                     PolarisIcon(Icons.checkCircle, size: 22).foregroundStyle(Color.accentColor)

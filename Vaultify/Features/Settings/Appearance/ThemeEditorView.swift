@@ -114,7 +114,7 @@ struct ThemeEditorView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: selected ? 3 : 1))
-                .overlay { if let label { label.font(.caption).foregroundStyle(.secondary) } }
+                .overlay { if let label { label.font(.caption).themedForeground(.secondary) } }
         }
         .buttonStyle(.plain)
     }

@@ -16,7 +16,7 @@ struct EnableBiometricView: View {
                 .padding(.top, 16)
             Text("Unlock your vault quickly with \(BiometricAuth.displayName). Your master password still works anytime.")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
                 .padding(.top, 8)

@@ -77,14 +77,14 @@ struct ItemEditorScreen: View {
                         HStack(spacing: 12) {
                             if let folder = selectedFolder {
                                 FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
-                                Text(folder.name).foregroundStyle(.primary)
+                                Text(folder.name).themedForeground()
                             } else {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .fill(VaultColors.fill).frame(width: 30, height: 30)
-                                Text("None").foregroundStyle(.secondary)
+                                Text("None").themedForeground(.secondary)
                             }
                             Spacer()
-                            PolarisIcon(Icons.chevronRight, size: 14).foregroundStyle(.tertiary)
+                            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                         }
                     }
                     .buttonStyle(.plain)

@@ -23,7 +23,7 @@ struct CreateMasterPasswordView: View {
                     Text("Create your master password")
                         .font(.title.bold())
                     Text("This is the only password you’ll need to remember. It unlocks everything.")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.subheadline).themedForeground(.secondary)
                 }
                 .padding(.top, 8)
 
@@ -39,7 +39,7 @@ struct CreateMasterPasswordView: View {
 
                 Label {
                     Text("If you forget this password, only your Emergency Kit can recover the vault. There is no reset.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(.footnote).themedForeground(.secondary)
                 } icon: {
                     PolarisIcon(Icons.alert, size: 18).foregroundStyle(VaultColors.strengthMedium)
                 }

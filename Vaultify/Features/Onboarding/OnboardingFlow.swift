@@ -72,7 +72,7 @@ private struct WelcomeStep: View {
                 .padding(.top, 16)
             Text("A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
                 .padding(.top, 8)
@@ -110,7 +110,7 @@ private struct FeatureRow: View {
             PolarisIcon(icon, size: 24).foregroundStyle(Color.accentColor).frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title.inAppLocalized).font(.headline)
-                Text(detail.inAppLocalized).font(.subheadline).foregroundStyle(.secondary)
+                Text(detail.inAppLocalized).font(.subheadline).themedForeground(.secondary)
             }
         }
     }
@@ -127,7 +127,7 @@ private struct OnboardingDoneStep: View {
                 .font(.largeTitle.bold())
                 .padding(.top, 16)
             Text("Your vault is ready. Add your first item to get started.")
-                .font(.body).foregroundStyle(.secondary)
+                .font(.body).themedForeground(.secondary)
                 .multilineTextAlignment(.center).padding(.horizontal, 32).padding(.top, 8)
             Spacer()
             Button(action: onFinish) {

@@ -58,7 +58,7 @@ struct FolderPickerSheet: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(VaultColors.fill).frame(width: 30, height: 30)
             }
-            name.foregroundStyle(.primary)
+            name.themedForeground()
             Spacer()
             if selected { PolarisIcon(Icons.check, size: 18).foregroundStyle(Color.accentColor) }
         }

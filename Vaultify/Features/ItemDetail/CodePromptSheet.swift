@@ -17,7 +17,7 @@ struct CodePromptSheet: View {
         NavigationStack {
             Form {
                 if let message {
-                    Section { Text(message.inAppLocalized).font(.footnote).foregroundStyle(.secondary) }
+                    Section { Text(message.inAppLocalized).font(.footnote).themedForeground(.secondary) }
                 }
                 Section {
                     RevealableSecureField(title: "Code", text: $code)

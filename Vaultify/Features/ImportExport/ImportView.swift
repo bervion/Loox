@@ -44,7 +44,7 @@ struct ImportView: View {
             if !parsed.isEmpty {
                 Section("Preview (\(parsed.count))") {
                     ForEach(parsed.prefix(6)) { VaultItemRow(item: $0.item) }
-                    if parsed.count > 6 { Text("and \(parsed.count - 6) more…").font(.footnote).foregroundStyle(.secondary) }
+                    if parsed.count > 6 { Text("and \(parsed.count - 6) more…").font(.footnote).themedForeground(.secondary) }
                 }
                 Section {
                     Button { performImport() } label: {

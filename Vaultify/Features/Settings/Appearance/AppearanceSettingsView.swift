@@ -88,7 +88,7 @@ struct AppearanceSettingsView: View {
         } label: {
             HStack(spacing: 14) {
                 swatch(preview)
-                name.foregroundStyle(.primary)
+                name.themedForeground()
                 Spacer()
                 if current == ref {
                     PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor)

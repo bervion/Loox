@@ -17,7 +17,7 @@ struct EmergencyKitView: View {
                     Text("Save your Emergency Kit")
                         .font(.title.bold())
                     Text("This recovery key can restore your vault if you forget your master password. Store it somewhere safe and offline — it is shown only once.")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.subheadline).themedForeground(.secondary)
                 }
                 .padding(.top, 8)
 

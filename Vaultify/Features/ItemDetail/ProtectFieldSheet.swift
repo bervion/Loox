@@ -69,7 +69,7 @@ struct ProtectFieldSheet: View {
             Section {
                 Label {
                     Text("Set an Extra Protection password in Settings → Security first.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(.footnote).themedForeground(.secondary)
                 } icon: { PolarisIcon(Icons.alert).foregroundStyle(VaultColors.strengthMedium) }
             }
         } else if !level2Unlocked {
@@ -81,7 +81,7 @@ struct ProtectFieldSheet: View {
                 Text("Enter it once to unlock extra protection for this session.")
             }
         } else {
-            Section { Text("This field will be protected with your Extra Password.").font(.footnote).foregroundStyle(.secondary) }
+            Section { Text("This field will be protected with your Extra Password.").font(.footnote).themedForeground(.secondary) }
         }
     }
 

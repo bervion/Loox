@@ -27,7 +27,7 @@ struct SyncSettingsView: View {
                 Section {
                     Label {
                         Text("To use iCloud Sync, enable the iCloud capability (CloudKit) for the app target in Xcode and sign in to iCloud on this device.")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(.footnote).themedForeground(.secondary)
                     } icon: {
                         PolarisIcon(Icons.info).foregroundStyle(VaultColors.strengthMedium)
                     }
@@ -54,7 +54,7 @@ struct SyncSettingsView: View {
         case .idle:
             EmptyView()
         case .syncing:
-            HStack(spacing: 8) { ProgressView(); Text("Syncing…").foregroundStyle(.secondary) }
+            HStack(spacing: 8) { ProgressView(); Text("Syncing…").themedForeground(.secondary) }
         case .success(let date):
             LabeledContent("Last sync", value: date.formatted(date: .omitted, time: .shortened))
         case .error(let message):

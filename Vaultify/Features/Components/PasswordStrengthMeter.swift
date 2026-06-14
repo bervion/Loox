@@ -29,7 +29,7 @@ struct PasswordStrengthMeter: View {
                 if !password.isEmpty {
                     Text("\(bits) bits")
                         .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .themedForeground(.secondary)
                 }
             }
         }

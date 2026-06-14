@@ -80,7 +80,7 @@ struct WallpaperGalleryView: View {
     private func choiceRow(title: Text, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack {
-                title.foregroundStyle(.primary)
+                title.themedForeground()
                 Spacer()
                 if isSelected { PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor) }
             }

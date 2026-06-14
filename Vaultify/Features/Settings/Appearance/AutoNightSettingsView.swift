@@ -44,7 +44,7 @@ struct AutoNightSettingsView: View {
                         HStack {
                             Text("Dark below brightness")
                             Spacer()
-                            Text(verbatim: "\(Int(threshold * 100))%").foregroundStyle(.secondary)
+                            Text(verbatim: "\(Int(threshold * 100))%").themedForeground(.secondary)
                         }
                         Slider(value: brightnessBinding, in: 0...1)
                     }
@@ -75,7 +75,7 @@ struct AutoNightSettingsView: View {
     private func modeRow(_ title: Text, _ value: Mode) -> some View {
         Button { apply(value) } label: {
             HStack {
-                title.foregroundStyle(.primary)
+                title.themedForeground()
                 Spacer()
                 if mode == value { PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor) }
             }

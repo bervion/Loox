@@ -20,7 +20,7 @@ struct SplashView: View {
 
                 Text("Vaultify")
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(.primary)
+                    .themedForeground()
             }
             .scaleEffect(appeared ? 1 : 0.92)
             .opacity(appeared ? 1 : 0)

@@ -76,7 +76,7 @@ struct ItemDetailScreen: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.title.isEmpty ? "Untitled" : item.title)
                     .font(.title2.bold()).lineLimit(2)
-                Text(item.category.title).font(.subheadline).foregroundStyle(.secondary)
+                Text(item.category.title).font(.subheadline).themedForeground(.secondary)
             }
             Spacer(minLength: 8)
             Button { env.repository.togglePin(item) } label: {
@@ -109,7 +109,7 @@ struct ItemDetailScreen: View {
                     }
                     ForEach(item.tags, id: \.self) { tag in
                         HStack(spacing: 3) {
-                            PolarisIcon(Icons.hashtag, size: 11).foregroundStyle(.secondary)
+                            PolarisIcon(Icons.hashtag, size: 11).themedForeground(.secondary)
                             Text(tag).font(.subheadline)
                         }
                         .padding(.horizontal, 10).padding(.vertical, 6)
@@ -156,7 +156,7 @@ struct ItemDetailScreen: View {
             Text("Created \(item.createdAt.formatted(date: .abbreviated, time: .shortened))")
             Text("Modified \(item.updatedAt.formatted(date: .abbreviated, time: .shortened))")
         }
-        .font(.caption).foregroundStyle(.secondary)
+        .font(.caption).themedForeground(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
     }
 }

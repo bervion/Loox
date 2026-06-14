@@ -24,7 +24,7 @@ struct LargeTypeView: View {
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: {
                 PolarisIcon(Icons.close, size: 22)
-                    .foregroundStyle(.secondary)
+                    .themedForeground(.secondary)
                     .padding(10)
                     .background(Circle().fill(VaultColors.fill))
             }

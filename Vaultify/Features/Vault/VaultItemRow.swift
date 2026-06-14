@@ -25,7 +25,7 @@ struct VaultItemRow: View {
                 if let subtitle = item.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .themedForeground(.secondary)
                         .lineLimit(1)
                 }
             }
@@ -46,7 +46,7 @@ struct VaultItemRow: View {
     private func spaceChip(_ folder: Folder) -> some View {
         HStack(spacing: 4) {
             Circle().fill(folder.color.tint).frame(width: 7, height: 7)
-            Text(folder.name).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            Text(folder.name).font(.caption2).themedForeground(.secondary).lineLimit(1)
         }
         .padding(.horizontal, 8).padding(.vertical, 4)
         .background(VaultColors.fill, in: Capsule())

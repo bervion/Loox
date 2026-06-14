@@ -13,7 +13,7 @@ struct EditorFieldRow: View {
             HStack {
                 TextField("Label", text: $field.label)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .themedForeground(.secondary)
                     .textInputAutocapitalization(.words)
                 Spacer()
                 Menu {
@@ -24,7 +24,7 @@ struct EditorFieldRow: View {
                     }
                     Toggle(isOn: $field.protected) { Text("Hidden value") }
                 } label: {
-                    PolarisIcon(field.kind.iconAsset, size: 18).foregroundStyle(.secondary)
+                    PolarisIcon(field.kind.iconAsset, size: 18).themedForeground(.secondary)
                 }
             }
             valueEditor
@@ -35,8 +35,8 @@ struct EditorFieldRow: View {
     @ViewBuilder private var valueEditor: some View {
         if field.isExtraProtected {
             HStack(spacing: 6) {
-                PolarisIcon(Icons.lockFill, size: 14).foregroundStyle(.secondary)
-                Text("Protected — manage in the item view").font(.caption).foregroundStyle(.secondary)
+                PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
+                Text("Protected — manage in the item view").font(.caption).themedForeground(.secondary)
             }
         } else {
             kindEditor
@@ -58,7 +58,7 @@ struct EditorFieldRow: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 Button { reveal.toggle() } label: {
-                    PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: 18).foregroundStyle(.secondary)
+                    PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: 18).themedForeground(.secondary)
                 }
                 .buttonStyle(.plain)
                 if field.kind == .password {
@@ -81,7 +81,7 @@ struct EditorFieldRow: View {
                 Text(AttachmentMeta.decode(field.value)?.name ?? "Attachment").font(.subheadline).lineLimit(1)
                 Spacer()
                 if let meta = AttachmentMeta.decode(field.value) {
-                    Text(meta.sizeText).font(.caption).foregroundStyle(.secondary)
+                    Text(meta.sizeText).font(.caption).themedForeground(.secondary)
                 }
             }
         default:
