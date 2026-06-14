@@ -59,5 +59,8 @@ nonisolated struct ThemeSettings: Codable, Sendable, Equatable {
 
     func wallpaper(for ref: AppThemeReference) -> Wallpaper { wallpapers[ref.key] ?? .none }
 
+    /// Explicit per-theme wallpaper override (nil → use the built-in default).
+    func wallpaperOverride(for ref: AppThemeReference) -> Wallpaper? { wallpapers[ref.key] }
+
     func customTheme(_ id: UUID) -> CustomTheme? { customThemes.first { $0.id == id } }
 }

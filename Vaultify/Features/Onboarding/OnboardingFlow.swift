@@ -35,6 +35,7 @@ struct OnboardingFlow: View {
                 recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""
             }
         }
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
     }
 
     private func createVault(_ password: String) async -> String? {

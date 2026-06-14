@@ -12,6 +12,16 @@ nonisolated enum BuiltinThemes {
         }
     }
 
+    /// Default wallpaper shipped with each built-in theme. Light themes stay clean;
+    /// dark themes get a subtle wallpaper that showcases the engine.
+    static func defaultWallpaper(_ theme: BuiltinTheme) -> Wallpaper {
+        switch theme {
+        case .day, .dayClassic: return .none
+        case .night: return .mesh(colors: [0x0E1F1A, 0x14302A, 0x0B2330, 0x1A2E22])
+        case .nightTinted: return .gradient(colors: [0x16222E, 0x1E2D3C], settings: WallpaperSettings(rotation: 90))
+        }
+    }
+
     static let day = AppTheme(
         reference: .builtin(.day), isDark: false,
         background: 0xFFFFFF, secondaryBackground: 0xF2F2F7, groupedBackground: 0xF2F2F7,

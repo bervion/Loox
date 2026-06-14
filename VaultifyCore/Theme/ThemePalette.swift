@@ -35,12 +35,19 @@ nonisolated enum ThemePalette {
         return theme
     }
 
-    /// The wallpaper for the active reference.
+    /// The wallpaper for the active reference: a custom theme's own, else the user's
+    /// per-theme override, else the built-in default.
     static func activeWallpaper(_ settings: ThemeSettings, systemIsDark: Bool, brightness: Double, now: Date = Date()) -> Wallpaper {
         let ref = activeReference(settings, systemIsDark: systemIsDark, brightness: brightness, now: now)
         if case .custom(let id) = ref, let custom = settings.customTheme(id) {
             return custom.wallpaper
         }
-        return settings.wallpaper(for: ref)
+        if let override = settings.wallpaperOverride(for: ref) {
+            return override
+        }
+        if case .builtin(let builtin) = ref {
+            return BuiltinThemes.defaultWallpaper(builtin)
+        }
+        return .none
     }
 }

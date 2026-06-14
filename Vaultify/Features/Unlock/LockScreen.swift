@@ -71,6 +71,7 @@ struct LockScreen: View {
             // auto-locks on background, so the lock screen is already on screen).
             if phase == .active { triggerBiometric() }
         }
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
     }
 
     /// Auto-prompt biometrics, but only while the app is active (iOS won't show
