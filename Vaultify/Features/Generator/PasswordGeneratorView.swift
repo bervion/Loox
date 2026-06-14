@@ -40,6 +40,7 @@ struct PasswordGeneratorView: View {
                 }
             }
         }
+        .themedFormBackground()
         .onAppear { if output.isEmpty { regenerate() } }
         .onChange(of: pwd) { regenerate() }
         .onChange(of: phrase) { regenerate() }

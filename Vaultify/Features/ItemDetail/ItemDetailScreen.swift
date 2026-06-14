@@ -30,7 +30,7 @@ struct ItemDetailScreen: View {
                 .padding(.top, 80)
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .appBackground()
         .navigationTitle(item?.title ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
