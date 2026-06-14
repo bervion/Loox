@@ -10,6 +10,7 @@ no server, no tracking.
 - 🧬 **Argon2id** key derivation (vendored reference C) + AES-GCM vault encryption
 - 👤 **Face ID** unlock
 - 🔑 **iOS AutoFill** for passwords **and passkeys** (Credential Provider extension)
+- 🗂 **Spaces & tags** — group logins by company/project (color + icon), with a Home dashboard (Quick Access, recents, tags)
 - 🌏 **EN / VI** with an in-app language toggle
 - ☁️ **Optional** iCloud (CloudKit) sync — off by default, compile-gated
 - 📱 iPhone-only, iOS 17.6+
