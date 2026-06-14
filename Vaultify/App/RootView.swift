@@ -49,7 +49,10 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in handleScenePhase(phase) }
         .onChange(of: colorScheme) { _, scheme in env.theme.systemColorSchemeChanged(scheme) }
-        .onAppear { env.theme.systemColorSchemeChanged(colorScheme) }
+        .onAppear {
+            env.theme.systemColorSchemeChanged(colorScheme)
+            env.theme.applyInterfaceStyle()
+        }
     }
 
     private func handleScenePhase(_ phase: ScenePhase) {

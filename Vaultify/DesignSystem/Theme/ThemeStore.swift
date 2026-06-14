@@ -59,6 +59,25 @@ import UIKit
 
     var accentColor: Color { Color(rgb: active.accent) }
 
+    /// UIKit interface style for the whole window — incl. presented sheets, which a
+    /// SwiftUI `.preferredColorScheme` on the root does NOT reliably reach (so a sheet
+    /// can stay dark on a light theme → invisible system text + dark sheet background).
+    var interfaceStyle: UIUserInterfaceStyle {
+        switch settings.autoNight {
+        case .system: return .unspecified
+        case .off, .time, .brightness: return active.isDark ? .dark : .light
+        }
+    }
+
+    /// Force every window in the active scene to the theme's light/dark, so sheets and
+    /// the system chrome match the rendered theme. Called on theme change + on appear.
+    func applyInterfaceStyle() {
+        let style = interfaceStyle
+        for scene in UIApplication.shared.connectedScenes {
+            (scene as? UIWindowScene)?.windows.forEach { $0.overrideUserInterfaceStyle = style }
+        }
+    }
+
     // MARK: - System input
 
     func systemColorSchemeChanged(_ scheme: ColorScheme) {
@@ -80,6 +99,7 @@ import UIKit
     private func recompute() {
         active = ThemePalette.resolve(settings, systemIsDark: systemIsDark, brightness: brightness)
         ThemeHolder.current = active
+        applyInterfaceStyle()
     }
 
     // MARK: - Mesh
