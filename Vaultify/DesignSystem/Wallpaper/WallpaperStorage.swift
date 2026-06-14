@@ -30,4 +30,16 @@ nonisolated enum WallpaperStorage {
     static func delete(named name: String) {
         try? FileManager.default.removeItem(at: url(named: name))
     }
+
+    /// Downscale so the longest side is at most `maxDimension` (keeps the wallpaper
+    /// file small + memory-cheap, esp. for the AutoFill extension).
+    static func downscale(_ image: UIImage, maxDimension: CGFloat = 1600) -> UIImage {
+        let longest = max(image.size.width, image.size.height)
+        guard longest > maxDimension, longest > 0 else { return image }
+        let scale = maxDimension / longest
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        return UIGraphicsImageRenderer(size: size).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
 }

@@ -19,6 +19,7 @@ struct VaultifyApp: App {
                 .environment(\.appTheme, env.theme.active)
                 .tint(env.theme.accentColor)
                 .preferredColorScheme(env.theme.preferredColorScheme)
+                .appFontScale(env.theme.settings.fontScale)
         }
     }
 }

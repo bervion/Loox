@@ -78,10 +78,10 @@ struct SettingsScreen: View {
                 }
 
                 Section("Appearance") {
-                    Picker(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
-                        ForEach(AppearanceMode.allCases) { Text($0.title).tag($0) }
+                    NavigationLink {
+                        AppearanceSettingsView()
                     } label: {
-                        Label { Text("Theme") } icon: { PolarisIcon("ic_apps_filled") }
+                        Label { Text("Theme & Wallpaper") } icon: { PolarisIcon("ic_apps_filled") }
                     }
                     Picker(selection: $settings.preferredLanguage) {
                         Text("System").tag("system")
