@@ -36,27 +36,73 @@ struct AppearanceSettingsView: View {
 
     private var themeSection: some View {
         Section {
-            ForEach(BuiltinTheme.allCases) { builtin in
-                themeRow(.builtin(builtin), name: Text(builtin.displayName),
-                         preview: BuiltinThemes.palette(builtin))
-            }
-            ForEach(settings.customThemes) { custom in
-                themeRow(.custom(custom.id), name: Text(custom.name),
-                         preview: BuiltinThemes.palette(custom.base).recolored(accent: custom.accent.rgb))
-                    .contextMenu {
-                        Button { editingTheme = custom } label: { Label { Text("Edit") } icon: { PolarisIcon(Icons.edit) } }
-                        Button { exportDocument = ThemeFileDocument(theme: custom); exporting = true } label: {
-                            Label { Text("Export") } icon: { PolarisIcon(Icons.exportData) }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 12)], spacing: 12) {
+                ForEach(BuiltinTheme.allCases) { builtin in
+                    themeCard(.builtin(builtin), name: Text(builtin.displayName),
+                              preview: BuiltinThemes.palette(builtin))
+                }
+                ForEach(settings.customThemes) { custom in
+                    themeCard(.custom(custom.id), name: Text(custom.name),
+                              preview: BuiltinThemes.palette(custom.base).recolored(accent: custom.accent.rgb))
+                        .contextMenu {
+                            Button { editingTheme = custom } label: { Label { Text("Edit") } icon: { PolarisIcon(Icons.edit) } }
+                            Button { exportDocument = ThemeFileDocument(theme: custom); exporting = true } label: {
+                                Label { Text("Export") } icon: { PolarisIcon(Icons.exportData) }
+                            }
+                            Button(role: .destructive) { env.theme.deleteCustomTheme(custom.id) } label: {
+                                Label { Text("Delete") } icon: { PolarisIcon(Icons.delete) }
+                            }
                         }
-                        Button(role: .destructive) { env.theme.deleteCustomTheme(custom.id) } label: {
-                            Label { Text("Delete") } icon: { PolarisIcon(Icons.delete) }
-                        }
-                    }
+                }
             }
+            .padding(.vertical, 6)
         } header: {
             Text("Theme")
         }
         .listRowBackground(VaultColors.surface)
+    }
+
+    /// A tappable theme card with a mini vault-style preview (cards over a background —
+    /// not a chat preview). The whole card is the hit target.
+    private func themeCard(_ ref: AppThemeReference, name: Text, preview: AppTheme) -> some View {
+        let selected = current == ref
+        return Button {
+            env.theme.setTheme(ref)
+        } label: {
+            VStack(spacing: 7) {
+                ZStack(alignment: .topTrailing) {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(rgb: preview.background))
+                    VStack(spacing: 5) {
+                        ForEach(0..<2, id: \.self) { _ in
+                            HStack(spacing: 5) {
+                                Circle().fill(Color(rgb: preview.accent)).frame(width: 9, height: 9)
+                                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                    .fill(Color(rgb: preview.secondaryText)).frame(height: 5)
+                            }
+                            .padding(6)
+                            .background(Color(rgb: preview.elevatedBackground),
+                                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        }
+                    }
+                    .padding(8)
+                    if selected {
+                        PolarisIcon(Icons.checkCircle, size: 18)
+                            .foregroundStyle(Color(rgb: preview.accent))
+                            .padding(5)
+                            .background(Color(rgb: preview.background), in: Circle())
+                            .padding(5)
+                    }
+                }
+                .frame(height: 84)
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(selected ? Color.accentColor : Color(rgb: preview.separator),
+                                  lineWidth: selected ? 2.5 : 1))
+                name.font(.caption).themedForeground().lineLimit(1)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
 
     private var customThemesSection: some View {
@@ -82,34 +128,6 @@ struct AppearanceSettingsView: View {
         guard let data = try? Data(contentsOf: url), let theme = try? ThemeExchange.decode(data) else { return }
         env.theme.saveCustomTheme(theme)
         env.theme.setTheme(.custom(theme.id))
-    }
-
-    private func themeRow(_ ref: AppThemeReference, name: Text, preview: AppTheme) -> some View {
-        Button {
-            env.theme.setTheme(ref)
-        } label: {
-            HStack(spacing: 14) {
-                swatch(preview)
-                name.themedForeground()
-                Spacer()
-                if current == ref {
-                    PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func swatch(_ theme: AppTheme) -> some View {
-        RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .fill(Color(rgb: theme.background))
-            .frame(width: 34, height: 34)
-            .overlay(
-                Circle().fill(Color(rgb: theme.accent))
-                    .frame(width: 13, height: 13).padding(5),
-                alignment: .bottomTrailing)
-            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .strokeBorder(Color(rgb: theme.separator)))
     }
 
     // MARK: Accent

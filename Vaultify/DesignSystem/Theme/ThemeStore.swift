@@ -19,12 +19,28 @@ import UIKit
     private var brightness: Double = 1.0
 
     init() {
-        let loaded = ThemeReader.load()
+        var loaded = ThemeReader.load()
+        // Sanitize an invalid persisted combo: auto-night switches primary↔night by
+        // light/dark, so the primary must be a LIGHT theme. A dark primary + auto-night
+        // renders dark while the window color scheme follows the device → mismatched
+        // (light-mode) system chrome on a dark theme. Make such a combo manual.
+        if loaded.autoNight != .off, Self.isDark(loaded.theme, in: loaded) {
+            loaded.autoNight = .off
+            ThemeReader.save(loaded)
+        }
         let dark = UITraitCollection.current.userInterfaceStyle == .dark
         self.settings = loaded
         self.systemIsDark = dark
         self.active = ThemePalette.resolve(loaded, systemIsDark: dark, brightness: 1.0)
         ThemeHolder.current = self.active
+    }
+
+    /// Whether a theme reference resolves to a dark appearance.
+    static func isDark(_ ref: AppThemeReference, in settings: ThemeSettings) -> Bool {
+        switch ref {
+        case .builtin(let builtin): return builtin.isDark
+        case .custom(let id): return settings.customTheme(id)?.base.isDark ?? false
+        }
     }
 
     /// The active wallpaper (rendered from Phase 03).
@@ -76,19 +92,21 @@ import UIKit
     func setTheme(_ ref: AppThemeReference) {
         update { settings in
             settings.theme = ref
-            // A dark primary theme can't pair with auto-night's light↔dark switching, so
-            // picking one switches to manual mode — keeps the rendered theme and the
-            // forced color scheme in sync (avoids dark wallpaper + light system chrome).
-            let picksDark: Bool
-            switch ref {
-            case .builtin(let builtin): picksDark = builtin.isDark
-            case .custom(let id): picksDark = settings.customTheme(id)?.base.isDark ?? false
-            }
-            if picksDark { settings.autoNight = .off }
+            // A dark primary can't pair with auto-night's light↔dark switch → make it
+            // manual so the rendered theme and the forced color scheme stay in sync.
+            if Self.isDark(ref, in: settings) { settings.autoNight = .off }
         }
     }
     func setNightTheme(_ ref: AppThemeReference) { update { $0.nightTheme = ref } }
-    func setAutoNight(_ setting: AutoNightSetting) { update { $0.autoNight = setting } }
+    func setAutoNight(_ setting: AutoNightSetting) {
+        update { settings in
+            settings.autoNight = setting
+            // Auto-night needs a light primary (it switches to the night theme itself).
+            if setting != .off, Self.isDark(settings.theme, in: settings) {
+                settings.theme = .builtin(.day)
+            }
+        }
+    }
     func setFontScale(_ scale: FontScale) { update { $0.fontScale = scale } }
     func setReduceMotion(_ enabled: Bool) { update { $0.reduceMotion = enabled } }
 
