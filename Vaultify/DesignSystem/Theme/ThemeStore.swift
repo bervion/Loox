@@ -61,6 +61,42 @@ import UIKit
         active = ThemePalette.resolve(settings, systemIsDark: systemIsDark, brightness: brightness)
     }
 
+    // MARK: - Settings mutators
+
+    func setTheme(_ ref: AppThemeReference) { update { $0.theme = ref } }
+    func setNightTheme(_ ref: AppThemeReference) { update { $0.nightTheme = ref } }
+    func setAutoNight(_ setting: AutoNightSetting) { update { $0.autoNight = setting } }
+    func setFontScale(_ scale: FontScale) { update { $0.fontScale = scale } }
+    func setReduceMotion(_ enabled: Bool) { update { $0.reduceMotion = enabled } }
+
+    /// Set or clear (nil) the per-theme accent override.
+    func setAccent(_ accent: AppAccentColor?, for ref: AppThemeReference) {
+        update { $0.accents[ref.key] = accent }
+    }
+
+    /// Set or clear (nil → built-in default) the per-theme wallpaper.
+    func setWallpaper(_ wallpaper: Wallpaper?, for ref: AppThemeReference) {
+        update { $0.wallpapers[ref.key] = wallpaper }
+    }
+
+    func saveCustomTheme(_ theme: CustomTheme) {
+        update { settings in
+            if let index = settings.customThemes.firstIndex(where: { $0.id == theme.id }) {
+                settings.customThemes[index] = theme
+            } else {
+                settings.customThemes.append(theme)
+            }
+        }
+    }
+
+    func deleteCustomTheme(_ id: UUID) {
+        update { settings in
+            settings.customThemes.removeAll { $0.id == id }
+            if settings.theme == .custom(id) { settings.theme = .builtin(.day) }
+            if settings.nightTheme == .custom(id) { settings.nightTheme = .builtin(.night) }
+        }
+    }
+
     // MARK: - Legacy bridge
 
     /// Bridges the existing system/light/dark picker (onboarding + settings) onto the

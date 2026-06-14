@@ -33,19 +33,6 @@ nonisolated enum ThemeReader {
         store.set(true, forKey: migratedKey)
 
         let legacy = UserDefaults.standard.string(forKey: legacyAppearanceKey) ?? "system"
-        var settings = ThemeSettings.default
-        switch legacy {
-        case "light":
-            settings.theme = .builtin(.day)
-            settings.autoNight = .off
-        case "dark":
-            settings.theme = .builtin(.night)
-            settings.autoNight = .off
-        default:
-            settings.theme = .builtin(.day)
-            settings.nightTheme = .builtin(.night)
-            settings.autoNight = .system
-        }
-        save(settings)
+        save(ThemeSettings.fromLegacyAppearance(legacy))
     }
 }

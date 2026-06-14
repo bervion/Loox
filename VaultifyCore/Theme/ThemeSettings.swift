@@ -53,6 +53,25 @@ nonisolated struct ThemeSettings: Codable, Sendable, Equatable {
 
     static let `default` = ThemeSettings()
 
+    /// Map the legacy `appearance_mode` value (system/light/dark) onto the new model.
+    /// Pure → unit-testable; used by the one-time migration.
+    static func fromLegacyAppearance(_ raw: String) -> ThemeSettings {
+        var settings = ThemeSettings.default
+        switch raw {
+        case "light":
+            settings.theme = .builtin(.day)
+            settings.autoNight = .off
+        case "dark":
+            settings.theme = .builtin(.night)
+            settings.autoNight = .off
+        default:
+            settings.theme = .builtin(.day)
+            settings.nightTheme = .builtin(.night)
+            settings.autoNight = .system
+        }
+        return settings
+    }
+
     /// Explicit per-theme accent override, if the user set one (nil → use the
     /// built-in's native accent).
     func accentOverride(for ref: AppThemeReference) -> AppAccentColor? { accents[ref.key] }
