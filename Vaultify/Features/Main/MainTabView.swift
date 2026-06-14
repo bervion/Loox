@@ -23,18 +23,19 @@ struct MainTabView: View {
         .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
     }
 
-    // No `selection`/`value:` here on purpose: programmatic selection keeps the
-    // search role inline. Without it, `Tab(role: .search)` detaches into its own
-    // floating Liquid-Glass search button and its `.searchable` field drops to the
-    // bottom (Apple News pattern). The system tints the active tab, so outline
-    // icons are fine. `SearchScreen` owns the NavigationStack + `.searchable`.
+    // The search tab MUST be declared with only `value:` + `role: .search` (no
+    // title/image) — passing a title or image keeps it inline. With that, iOS 26
+    // detaches it into its own floating Liquid-Glass search button and drops its
+    // `.searchable` field to the bottom (Apple News pattern). `selection`/`value`
+    // on the regular tabs is fine and keeps the filled-on-select icon swap.
+    // `SearchScreen` owns the NavigationStack + `.searchable`.
     @available(iOS 18.0, *)
     private var modernTabs: some View {
-        TabView {
-            Tab("Home", image: Icons.home) { HomeScreen() }
-            Tab("Items", image: Icons.organization) { ItemsScreen() }
-            Tab("Watchtower", image: Icons.plan) { WatchtowerScreen() }
-            Tab(role: .search) { SearchScreen() }
+        TabView(selection: $selection) {
+            Tab("Home", image: selection == 0 ? Icons.homeFill : Icons.home, value: 0) { HomeScreen() }
+            Tab("Items", image: selection == 1 ? Icons.organizationFill : Icons.organization, value: 1) { ItemsScreen() }
+            Tab("Watchtower", image: selection == 2 ? Icons.planFill : Icons.plan, value: 2) { WatchtowerScreen() }
+            Tab(value: 3, role: .search) { SearchScreen() }
         }
     }
 
