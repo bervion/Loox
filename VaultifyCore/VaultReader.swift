@@ -40,7 +40,8 @@ enum VaultReader {
         else { return nil }
         return VaultItem(id: record.id, category: secret.category, title: secret.title,
                          folderId: secret.folderId, fields: secret.fields,
-                         favorite: record.favorite, createdAt: record.createdAt,
+                         favorite: record.favorite, tags: secret.tags,
+                         lastUsedAt: record.lastUsedAt, createdAt: record.createdAt,
                          updatedAt: record.updatedAt, trashedAt: record.trashedAt)
     }
 }

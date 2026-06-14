@@ -4,11 +4,14 @@ import SwiftData
 /// Decrypts vault records into an in-memory cache on unlock and performs CRUD,
 /// re-sealing payloads under the Vault Key. The cache is cleared on lock.
 @MainActor @Observable final class VaultRepository {
-    private let store: VaultStore
-    private let session: VaultSession
+    // Internal (not private) so the `+Folders` extension in a sibling file can
+    // reach the store/session; the item seal/decrypt helpers stay private.
+    let store: VaultStore
+    let session: VaultSession
 
     private(set) var items: [VaultItem] = []
     private(set) var trashed: [VaultItem] = []
+    private(set) var folders: [Folder] = []
 
     init(store: VaultStore, session: VaultSession) {
         self.store = store
@@ -20,6 +23,7 @@ import SwiftData
     func clear() {
         items = []
         trashed = []
+        folders = []
         CredentialIdentityService.clear()
     }
 
@@ -37,6 +41,7 @@ import SwiftData
         }
         items = active.sorted { $0.updatedAt > $1.updatedAt }
         trashed = trash.sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
+        folders = loadFolders(key: key)
         CredentialIdentityService.refresh(items: items)
     }
 
@@ -73,6 +78,18 @@ import SwiftData
         var updated = item
         updated.favorite.toggle()
         try update(updated)
+    }
+
+    /// Record an in-app use (copy/reveal) for Recents. Writes only the plaintext
+    /// `lastUsedAt` column — no re-seal, no `dirty`, no `reload()` — and patches
+    /// the in-memory cache in place so Home updates without re-decrypting.
+    func markUsed(_ item: VaultItem) {
+        guard let record = store.record(id: item.id) else { return }
+        record.lastUsedAt = .now
+        try? store.context.save()
+        if let idx = items.firstIndex(where: { $0.id == item.id }) {
+            items[idx].lastUsedAt = record.lastUsedAt
+        }
     }
 
     func moveToTrash(_ item: VaultItem) throws {
@@ -115,6 +132,8 @@ import SwiftData
                          folderId: secret.folderId,
                          fields: secret.fields,
                          favorite: record.favorite,
+                         tags: secret.tags,
+                         lastUsedAt: record.lastUsedAt,
                          createdAt: record.createdAt,
                          updatedAt: record.updatedAt,
                          trashedAt: record.trashedAt)

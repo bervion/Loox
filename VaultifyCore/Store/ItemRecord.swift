@@ -16,6 +16,9 @@ final class ItemRecord {
     var trashedAt: Date?
     /// Soft-delete tombstone retained for sync reconciliation.
     var deletedAt: Date?
+    /// Last in-app copy/reveal time (powers Recents). Plaintext (timing only,
+    /// not content), device-local — intentionally NOT synced.
+    var lastUsedAt: Date?
 
     // Sync metadata (CloudKit).
     var dirty: Bool
@@ -35,6 +38,7 @@ final class ItemRecord {
         self.updatedAt = updatedAt
         self.trashedAt = trashedAt
         self.deletedAt = nil
+        self.lastUsedAt = nil
         self.dirty = true
     }
 }
