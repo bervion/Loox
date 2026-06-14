@@ -21,7 +21,7 @@ struct QuickAccessSection: View {
 
     @ViewBuilder private func group(title: LocalizedStringKey, items: [VaultItem]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.title3.bold()).padding(.horizontal, 16)
+            Text(title).font(.title3.bold())
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(items) { item in
@@ -29,7 +29,6 @@ struct QuickAccessSection: View {
                             .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16)
             }
         }
     }

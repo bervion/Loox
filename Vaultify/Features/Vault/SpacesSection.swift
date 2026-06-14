@@ -15,7 +15,7 @@ struct SpacesSection: View {
         if env.repository.folders.count >= 2 {
             VStack(alignment: .leading, spacing: 12) {
                 header
-                grid.padding(.horizontal, 16)
+                grid
             }
             .sheet(isPresented: $creating) { FolderEditorSheet(folder: nil) }
             .sheet(item: $editFolder) { FolderEditorSheet(folder: $0) }
@@ -36,7 +36,6 @@ struct SpacesSection: View {
                     .contentShape(.rect)
             }
         }
-        .padding(.horizontal, 16)
     }
 
     private var grid: some View {

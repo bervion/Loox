@@ -10,7 +10,7 @@ struct TagsSection: View {
     var body: some View {
         if !tags.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Tags").font(.title3.bold()).padding(.horizontal, 16)
+                Text("Tags").font(.title3.bold())
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(tags, id: \.tag) { entry in
@@ -18,7 +18,6 @@ struct TagsSection: View {
                                 .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 16)
                 }
             }
         }
