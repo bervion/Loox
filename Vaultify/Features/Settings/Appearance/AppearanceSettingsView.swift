@@ -8,9 +8,16 @@ struct AppearanceSettingsView: View {
     private var settings: ThemeSettings { env.theme.settings }
     private var current: AppThemeReference { settings.theme }
 
+    @State private var editingTheme: CustomTheme?
+    @State private var creatingTheme = false
+    @State private var importing = false
+    @State private var exportDocument: ThemeFileDocument?
+    @State private var exporting = false
+
     var body: some View {
         Form {
             themeSection
+            customThemesSection
             accentSection
             backgroundSection
             optionsSection
@@ -18,6 +25,11 @@ struct AppearanceSettingsView: View {
         .themedFormBackground()
         .navigationTitle("Appearance")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $creatingTheme) { NavigationStack { ThemeEditorView() } }
+        .sheet(item: $editingTheme) { theme in NavigationStack { ThemeEditorView(existing: theme) } }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.vaultTheme]) { handleImport($0) }
+        .fileExporter(isPresented: $exporting, document: exportDocument, contentType: .vaultTheme,
+                      defaultFilename: exportDocument?.theme.name ?? "Theme") { _ in }
     }
 
     // MARK: Theme
@@ -31,10 +43,43 @@ struct AppearanceSettingsView: View {
             ForEach(settings.customThemes) { custom in
                 themeRow(.custom(custom.id), name: Text(custom.name),
                          preview: BuiltinThemes.palette(custom.base).recolored(accent: custom.accent.rgb))
+                    .contextMenu {
+                        Button { editingTheme = custom } label: { Label { Text("Edit") } icon: { PolarisIcon(Icons.edit) } }
+                        Button { exportDocument = ThemeFileDocument(theme: custom); exporting = true } label: {
+                            Label { Text("Export") } icon: { PolarisIcon(Icons.exportData) }
+                        }
+                        Button(role: .destructive) { env.theme.deleteCustomTheme(custom.id) } label: {
+                            Label { Text("Delete") } icon: { PolarisIcon(Icons.delete) }
+                        }
+                    }
             }
         } header: {
             Text("Theme")
         }
+    }
+
+    private var customThemesSection: some View {
+        Section {
+            Button { creatingTheme = true } label: {
+                Label { Text("Create Theme") } icon: { PolarisIcon(Icons.add) }
+            }
+            Button { importing = true } label: {
+                Label { Text("Import Theme") } icon: { PolarisIcon(Icons.importData) }
+            }
+        } header: {
+            Text("Custom Themes")
+        } footer: {
+            Text("Long-press a custom theme to edit, export, or delete it.")
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        guard case .success(let url) = result else { return }
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url), let theme = try? ThemeExchange.decode(data) else { return }
+        env.theme.saveCustomTheme(theme)
+        env.theme.setTheme(.custom(theme.id))
     }
 
     private func themeRow(_ ref: AppThemeReference, name: Text, preview: AppTheme) -> some View {
