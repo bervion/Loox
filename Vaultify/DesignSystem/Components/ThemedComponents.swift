@@ -7,7 +7,13 @@ import SwiftUI
 // MARK: - Semantic text color
 
 enum ThemeRole {
-    case primary, secondary, tertiary, accent, destructive, success, warning, onAccent
+    // Text
+    case primary, secondary, tertiary, disabled
+    // Icons (Design System icon roles)
+    case iconPrimary, iconSecondary, iconDisabled
+    // Accent + status
+    case accent, accentSoft, onAccent
+    case destructive, onDestructive, success, warning
 }
 
 extension View {
@@ -31,11 +37,17 @@ extension AppTheme {
         case .primary: return Color(rgb: primaryText)
         case .secondary: return Color(rgb: secondaryText)
         case .tertiary: return Color(rgb: tertiaryText)
+        case .disabled: return Color(rgb: textDisabled)
+        case .iconPrimary: return Color(rgb: iconPrimary)
+        case .iconSecondary: return Color(rgb: iconSecondary)
+        case .iconDisabled: return Color(rgb: iconDisabled)
         case .accent: return Color(rgb: accent)
+        case .accentSoft: return Color(rgb: accentSoft)
+        case .onAccent: return Color(rgb: accentForeground)
         case .destructive: return Color(rgb: destructive)
+        case .onDestructive: return Color(rgb: onDestructive)
         case .success: return Color(rgb: success)
         case .warning: return Color(rgb: warning)
-        case .onAccent: return Color(rgb: accentForeground)
         }
     }
 }

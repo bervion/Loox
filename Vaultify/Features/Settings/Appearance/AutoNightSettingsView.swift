@@ -42,7 +42,7 @@ struct AutoNightSettingsView: View {
 
             if mode == .brightness {
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: Space.s2) {
                         HStack {
                             Text("Dark below brightness")
                             Spacer()
@@ -81,7 +81,7 @@ struct AutoNightSettingsView: View {
             HStack {
                 title.themedForeground()
                 Spacer()
-                if mode == value { PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor) }
+                if mode == value { PolarisIcon(Icons.checkCircle, size: Metric.iconInline).foregroundStyle(Color.accentColor) }
             }
             .contentShape(.rect) // whole row is tappable, not just the label text
         }

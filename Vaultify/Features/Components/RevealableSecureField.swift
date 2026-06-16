@@ -10,7 +10,7 @@ struct RevealableSecureField: View {
     @Environment(\.appTheme) private var theme
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s2) {
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     Text(title)
@@ -37,14 +37,14 @@ struct RevealableSecureField: View {
                     reveal.toggle()
                     Haptics.tap()
                 } label: {
-                    PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: 20)
+                    PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: Metric.iconInline)
                         .foregroundStyle(Color(rgb: theme.secondaryText))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, Space.s3)
         .background(Color(rgb: theme.controlBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

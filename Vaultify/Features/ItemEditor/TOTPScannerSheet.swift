@@ -46,7 +46,7 @@ struct TOTPScannerSheet: View {
     }
 
     private var controls: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Space.s3) {
             if let error {
                 Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
             }

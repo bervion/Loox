@@ -1,6 +1,6 @@
 # Vaultify Design Guidelines
 
-Last updated: 2026-06-16  
+Last updated: 2026-06-17  
 Audience: AI agents, designers, iOS engineers  
 Platform: Native iOS SwiftUI, deployment target iOS 17.6+
 
@@ -59,6 +59,32 @@ The design system has four layers:
 4. Feature screens: only compose components and semantic tokens.
 
 Agents must update lower layers first when a pattern repeats. Feature screens should not invent new visual language.
+
+## Swift Token API (implemented)
+
+The four layers map to concrete Swift symbols. **Use a token — never a magic number, ad-hoc font, or raw shadow.**
+
+| DS concept | Swift symbol | Location |
+| --- | --- | --- |
+| Spacing (4pt grid) | `Space.s1…s10`, `Space.gutter`, `Space.contentMax` | `DesignSystem/Tokens/Spacing.swift` |
+| Corner radius | `Radius.xs/sm/md/lg/xl/pill` + `.vaultCornerRadius(_)` | `DesignSystem/Tokens/Radius.swift` |
+| Control / icon / row sizing | `Metric.hitMin/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge` | `DesignSystem/Tokens/Metrics.swift` |
+| Legacy custom tab-bar layout | `TabBarMetric.*` | `DesignSystem/Tokens/Metrics.swift` |
+| Elevation (soft shadow) | `.elevation(.level1/.level2/.level3/.sheet)` | `DesignSystem/Tokens/Elevation.swift` |
+| Motion | `Motion.spring/standard/fast/base/medium/slow/pressScale`, `.vault(_,reduceMotion:)` | `DesignSystem/Tokens/Motion.swift` |
+| Typography roles | `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)` | `DesignSystem/Typography.swift` |
+| Monospace amounts/secrets | `Font.vaultMono(_:weight:)` | `DesignSystem/Typography.swift` |
+| Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
+| Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
+| Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
+| Card / divider / form bg | `ThemedCard`, `.themedCard()`, `ThemedDivider`, `.appBackground()`, `.themedFormBackground()` | `DesignSystem/Components/ThemedComponents.swift` |
+| Buttons | `.buttonStyle(.themedProminent/.themedTinted/.themedDestructive)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
+| Switch | `.toggleStyle(.themed)` | `DesignSystem/Components/ThemedToggleStyle.swift` |
+| Icons | `PolarisIcon(Icons.<name>, size: Metric.icon*)` | `DesignSystem/PolarisIcon.swift` |
+
+`ThemeRole` values: `primary, secondary, tertiary, disabled, iconPrimary, iconSecondary, iconDisabled,
+accent, accentSoft, onAccent, destructive, onDestructive, success, warning`. Derived tokens are computed
+on `AppTheme` so **every** builtin and custom theme gets them without touching constructors.
 
 ## Theme And Contrast
 
@@ -176,9 +202,12 @@ Runtime icon rules:
 
 ## Bottom Tab Bar Direction
 
-The Vaultify tab bar must be custom, icon-only, floating, and minimal.
+The Vaultify tab bar must use the native iOS `TabView` tab bar for switching performance,
+system safe-area behavior, and Apple-provided Liquid Glass on iOS 26+. The visual tab items
+remain icon-only by supplying Polaris image assets without visible text labels.
 
-The tab bar should look like a native Apple control layer, not a Material tab bar and not a labeled bottom navigation bar.
+The tab bar should look and behave like a native Apple control layer, not a Material bottom
+navigation bar and not a heavy custom overlay.
 
 ### Required Behavior
 
@@ -191,11 +220,12 @@ The tab bar should look like a native Apple control layer, not a Material tab ba
   - Search
 - Preserve each tab's navigation stack state.
 - Switching tabs must not recreate root views unnecessarily.
-- Content must reserve enough bottom inset so the tab bar never covers rows, buttons, or scroll content.
+- Let the native tab bar own safe-area/content avoidance. Do not add a second custom bottom
+  overlay unless a feature explicitly requires it.
 - The selected tab must be visually obvious without relying on text.
 - Badges are allowed only for meaningful alerts; use dots or compact counters.
-- Use light haptic feedback when selection changes.
 - Use reduced-motion fallback for users who request it.
+- Do not trigger wallpaper/mesh morphing on tab selection; keep switching cheap and immediate.
 
 ### Accessibility
 
@@ -220,53 +250,35 @@ These labels are not visible in the tab bar.
 
 ### Layout Spec
 
-Base dimensions for iPhone portrait:
+The system owns bar height, corner radius, safe-area behavior, Liquid Glass surface, and
+selection interaction. Vaultify owns only the tab order, icon asset choice, accent tint, and
+localized accessibility labels.
 
-| Token | Value |
-| --- | ---: |
-| Bar horizontal inset | 20-24 pt |
-| Bar bottom offset | 10-14 pt above safe area |
-| Bar height | 58-64 pt |
-| Bar corner radius | height / 2 |
-| Button hit area | 56 x 48 pt minimum |
-| Selected indicator | 44-48 pt wide, 42-46 pt high |
-| Icon visual size | 25-27 pt active, 24-26 pt inactive |
-| Badge dot | 7-8 pt |
-| Content bottom padding | tab bar height + safe area + 24-32 pt |
+Icon asset guidance:
 
-Small iPhone adjustments:
-
-- Keep touch target at least 44 x 44 pt.
-- Reduce horizontal inset before reducing icon size.
+- Keep tab icon artboards normalized and optically balanced.
+- Provide filled selected variants where possible.
+- Use template rendering so the system/accent tint can apply cleanly.
 - Do not reintroduce visible labels.
-
-iPad adjustments:
-
-- Keep bar compact; do not stretch icons across the full width.
-- Max bar width around 430-520 pt.
-- Center the floating bar.
 
 ### Visual States
 
 Inactive tab:
 
-- icon color: `iconSecondary`
-- no background or a nearly invisible hover/pressed state
-- opacity must not be the main contrast strategy
+- rendered by the native tab bar
+- use the outline Polaris icon asset where possible
+- opacity must not be the main contrast strategy in custom assets
 
 Active tab:
 
-- icon color: `accent` or `iconPrimary`, depending on selected indicator contrast
-- selected indicator uses `accentSoft` or a neutral selected fill
-- selected indicator can be a soft circle/pill behind the icon
-- icon may use a filled variant
+- rendered by the native tab bar with app accent tint
+- use the filled Polaris icon asset where possible
 - no visible text label
 
 Pressed state:
 
-- scale 0.96-0.98
-- selected fill slightly deepens
-- animation must feel native, not bouncy or playful
+- leave press/highlight interaction to the system tab bar
+- do not add custom spring, drag, scale, or glass morphing on top
 
 Badge state:
 
@@ -278,21 +290,15 @@ Badge state:
 
 Default:
 
-- selection indicator moves with a short spring
-- icon color fades over 160-220 ms
-- pressed scale returns quickly
+- native tab selection animation only
+- no app-driven wallpaper/mesh morph on tab selection
 
-Suggested animation:
-
-- duration: 180-260 ms
-- spring: smooth, low bounce
-- no excessive blur, glow, rotation, or long elastic movement
+Avoid excessive blur, glow, rotation, drag-follow, or long elastic movement in tab switching.
 
 Reduced Motion:
 
-- no moving indicator travel
-- use crossfade or immediate state change
-- no scale bounce
+- rely on system behavior
+- do not add additional custom tab motion
 
 ## Liquid Glass Strategy
 
@@ -357,43 +363,45 @@ Increased Contrast:
 - strengthen selected indicator edge
 - avoid low-alpha separators
 
-## Tab Bar Implementation Guidance
+## Tab Bar Implementation (implemented)
 
-Current app uses native `TabView` in `Vaultify/Features/Main/MainTabView.swift`. For the requested icon-only visual language, agents should move toward a custom tab container.
+Built in `Vaultify/Features/Main/` using native SwiftUI `TabView`. The native tab bar remains
+visible so iOS owns switching, safe area, selection interaction, and iOS 26 Liquid Glass. Vaultify
+keeps the visual bar icon-only by providing only Polaris `Image` assets in each `.tabItem`; localized
+labels are accessibility-only.
 
-Recommended structure:
+- `MainTabView`: owns the `TabView(selection:)`, tab order, app accent tint, inactivity timer, and copy toast.
+- `VaultTab`: enum (order, outline + filled Polaris icon, localized accessibility label).
+- `VaultTabBar` / `VaultTabBarBackground`: legacy custom implementation kept out of the runtime path unless
+  a future experiment explicitly re-enables it.
 
-- `MainTabView`: owns selected tab and tab content.
-- `VaultTabBar`: renders floating icon-only control.
-- `VaultTabButton`: renders each tab item and accessibility state.
-- `VaultTabBarBackground`: chooses Liquid Glass or fallback material.
-- `VaultTabItem`: enum with icon asset names, accessibility keys, and ordering.
+Liquid Glass note: prefer framework-provided Liquid Glass from the native tab bar. Use custom
+`glassEffect` only for truly custom floating controls, guarded by `#if compiler(>=6.2)` +
+`#available(iOS 26, *)` with a solid/material fallback. Never glass on content cards/rows.
 
 Implementation constraints:
 
 - Keep per-tab state alive.
-- Hide any native tab bar if a custom overlay is used.
+- Do not hide the native tab bar for the main shell.
 - Do not place labels visually under icons.
 - Do not hardcode strings in tab item views.
 - Do not use SF Symbols.
 - Use Polaris assets for icon rendering.
 - Use semantic theme tokens for all colors.
-- Use safe-area-aware bottom positioning.
-- Add bottom padding to scrollable root content.
+- Let native `TabView` handle bottom safe area for root content.
 - Keep tab bar independent from feature screens.
 
 Suggested layering:
 
 ```text
 Root container
-  Tab content area
+  Native TabView
     Home navigation stack
     Items navigation stack
     Watchtower navigation stack
     Search navigation stack
-  Floating tab bar overlay
-    Liquid Glass / solid fallback background
-    Icon-only tab buttons
+    Native system tab bar
+      Icon-only Polaris tab items
 ```
 
 Do not place the tab bar inside every feature screen.
@@ -407,7 +415,7 @@ Root screens:
 - Use section titles consistently.
 - Use cards only when grouping or affordance is needed.
 - Keep content aligned to a shared horizontal grid.
-- Reserve bottom padding for the floating tab bar.
+- Let the native tab bar reserve bottom space; add extra bottom padding only for custom overlays/toasts.
 
 Rows:
 
@@ -500,13 +508,12 @@ Phase 2: Icon system cleanup
 - Normalize stroke weight and optical size.
 - Ensure template rendering works in light and dark mode.
 
-Phase 3: Custom tab bar
+Phase 3: Native icon-only tab bar
 
-- Replace visible native tab labels with custom icon-only floating tab bar.
+- Use native `TabView` tab bar with icon-only visual tab items.
 - Preserve tab navigation state.
-- Add Liquid Glass path with availability guard.
-- Add solid fallback path for older iOS and accessibility settings.
-- Add haptic, selected, pressed, badge, and VoiceOver states.
+- Keep visible labels hidden while preserving localized accessibility labels.
+- Avoid custom tab switching animations, drag-follow, and mesh morphing on selection.
 
 Phase 4: Screen polish
 
@@ -532,7 +539,7 @@ Read first:
 - docs/design-guidelines.md
 
 Task:
-Implement Vaultify icon-only floating tab bar per docs/design-guidelines.md.
+Implement Vaultify native icon-only tab bar per docs/design-guidelines.md.
 
 Constraints:
 - Native SwiftUI, iOS 17.6+ target.
@@ -542,7 +549,7 @@ Constraints:
 - Use Polaris icon assets, not SF Symbols.
 - Use live semantic theme tokens only.
 - Preserve per-tab navigation state.
-- Add solid fallback when Liquid Glass is unavailable or Reduce Transparency is enabled.
+- Prefer the native iOS tab bar surface; do not add a custom overlay for the shell.
 - Verify theme switching without restart.
 
 Acceptance:
@@ -563,8 +570,18 @@ Acceptance:
 - Apple SF Symbols design principles: https://developer.apple.com/sf-symbols/
 - WCAG 2.2 contrast requirements: https://www.w3.org/TR/WCAG22/
 
+## Resolved Decisions (2026-06-17)
+
+- **Tab naming:** `Home / Items / Watchtower / Search` (accessibility labels only; bar is icon-only).
+- **Selected state:** native tab bar selection with app accent tint and filled Polaris icon variants where available.
+- **Accent presets:** keep all **10** presets + custom RGB (superset of the DS's 6); every one must pass
+  WCAG `onAccent` (`RGBMath.onColor`).
+- **Type scale:** DS roles map onto Apple **Dynamic Type** styles (`VaultType`) — keeps accessibility /
+  Dynamic Type rather than fixed pixel sizes.
+- **Liquid Glass:** use framework-provided native tab bar Liquid Glass on iOS 26+. Keep shell tab switching on
+  the native `TabView` path; use custom `glassEffect` only for non-shell custom floating controls.
+
 ## Unresolved Questions
 
-- Confirm exact Liquid Glass API names from the local Xcode SDK before implementation; keep all usage behind availability guards.
-- Confirm final tab naming: `Home/Items/Watchtower/Search` or `Vault/Items/Watchtower/Search`.
-- Confirm whether selected tab should use a circular indicator or a compact pill indicator. Recommendation: compact pill for stronger Apple/Threads feel.
+- Wire a meaningful Watchtower **badge** on the native tab item once a
+  cheap shared issue-count provider exists (today the count is computed inside `WatchtowerScreen`).

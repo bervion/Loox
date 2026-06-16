@@ -38,7 +38,7 @@ struct FilterChip: View {
                 Text(title).font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.vertical, Space.s2)
             .background(isSelected ? theme.color(.accent) : VaultColors.surface,
                         in: Capsule())
             .foregroundStyle(isSelected ? theme.color(.onAccent) : theme.color(.primary))

@@ -51,7 +51,7 @@ struct PasswordGeneratorView: View {
     }
 
     private var outputCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Space.s3) {
             Text(output)
                 .font(.vaultMono(.title3, weight: .medium))
                 .textSelection(.enabled)
@@ -70,7 +70,7 @@ struct PasswordGeneratorView: View {
                 .buttonStyle(.bordered)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Space.s1)
     }
 
     @ViewBuilder private var passwordControls: some View {

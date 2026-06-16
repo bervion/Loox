@@ -17,7 +17,7 @@ struct AttachmentFieldRow: View {
     var body: some View {
         HStack(spacing: 12) {
             if let meta {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
                     .fill(Color.accentColor.opacity(0.14))
                     .frame(width: 44, height: 44)
                     .overlay(PolarisIcon(meta.iconAsset, size: 22).foregroundStyle(Color.accentColor))
@@ -32,7 +32,7 @@ struct AttachmentFieldRow: View {
             }
             if let error { Text(error).font(.caption).foregroundStyle(VaultColors.strengthWeak) }
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
+        .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .onTapGesture { preview() }

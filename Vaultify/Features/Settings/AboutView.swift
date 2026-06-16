@@ -17,7 +17,7 @@ struct AboutView: View {
                     Text("Version \(version) (\(build))").font(.footnote).themedForeground(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
+                .padding(.vertical, Space.s2)
             }
             .listRowBackground(VaultColors.surface)
 
@@ -49,7 +49,7 @@ struct AboutView: View {
     }
 
     private func aboutRow(_ icon: String, _ title: LocalizedStringResource, _ detail: LocalizedStringResource) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: Space.s3) {
             PolarisIcon(icon, size: 22).foregroundStyle(Color.accentColor).frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.subheadline.weight(.medium))

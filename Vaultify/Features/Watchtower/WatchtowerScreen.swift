@@ -80,8 +80,8 @@ struct WatchtowerScreen: View {
 
     private var checkingOverlay: some View {
         ProgressView("Checking breaches…")
-            .padding(20)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(Space.s5)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
     private func fullAudit() async {

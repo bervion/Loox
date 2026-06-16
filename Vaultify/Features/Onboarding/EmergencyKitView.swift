@@ -13,17 +13,17 @@ struct EmergencyKitView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 6) {
-                    PolarisIcon(Icons.shield, size: 44).foregroundStyle(Color.accentColor)
+                    PolarisIcon(Icons.shield, size: Metric.controlMedium).foregroundStyle(Color.accentColor)
                     Text("Save your Emergency Kit")
                         .font(.title.bold())
                     Text("This recovery key can restore your vault if you forget your master password. Store it somewhere safe and offline — it is shown only once.")
                         .font(.subheadline).themedForeground(.secondary)
                 }
-                .padding(.top, 8)
+                .padding(.top, Space.s2)
 
                 keyCard
 
-                HStack(spacing: 12) {
+                HStack(spacing: Space.s3) {
                     Button {
                         env.clipboard.copy(recoveryKey, label: "Recovery key", sensitive: true)
                     } label: {
@@ -43,9 +43,9 @@ struct EmergencyKitView: View {
                     Text("I’ve saved my recovery key in a safe place")
                         .font(.subheadline)
                 }
-                .padding(.top, 4)
+                .padding(.top, Space.s1)
             }
-            .padding(24)
+            .padding(Space.s6)
         }
         .safeAreaInset(edge: .bottom) {
             Button(action: onContinue) {
@@ -54,8 +54,8 @@ struct EmergencyKitView: View {
             .buttonStyle(.themedProminent)
             .controlSize(.large)
             .disabled(!confirmedSaved || recoveryKey.isEmpty)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
+            .padding(.horizontal, Space.s6)
+            .padding(.bottom, Space.gutter)
         }
     }
 
@@ -69,10 +69,10 @@ struct EmergencyKitView: View {
                     .multilineTextAlignment(.center)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
-                    .padding(.horizontal, 12)
+                    .padding(.vertical, Space.s6)
+                    .padding(.horizontal, Space.s3)
             }
         }
-        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
     }
 }

@@ -36,7 +36,7 @@ struct FolderItemsScreen: View {
         .overlay {
             if items.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No items here") } icon: { PolarisIcon(Icons.folder, size: 40) }
+                    Label { Text("No items here") } icon: { PolarisIcon(Icons.folder, size: Metric.iconTileLarge) }
                 }
             }
         }

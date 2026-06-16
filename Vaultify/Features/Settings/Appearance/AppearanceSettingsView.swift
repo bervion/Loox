@@ -36,7 +36,7 @@ struct AppearanceSettingsView: View {
 
     private var themeSection: some View {
         Section {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: Space.s3)], spacing: Space.s3) {
                 ForEach(BuiltinTheme.allCases) { builtin in
                     themeCard(.builtin(builtin), name: Text(builtin.displayName),
                               preview: BuiltinThemes.palette(builtin))
@@ -71,7 +71,7 @@ struct AppearanceSettingsView: View {
         } label: {
             VStack(spacing: 7) {
                 ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                         .fill(Color(rgb: preview.background))
                     VStack(spacing: 5) {
                         ForEach(0..<2, id: \.self) { _ in
@@ -80,12 +80,12 @@ struct AppearanceSettingsView: View {
                                 RoundedRectangle(cornerRadius: 2, style: .continuous)
                                     .fill(Color(rgb: preview.secondaryText)).frame(height: 5)
                             }
-                            .padding(6)
+                            .padding(Space.s1)
                             .background(Color(rgb: preview.elevatedBackground),
-                                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                        in: RoundedRectangle(cornerRadius: Radius.xs, style: .continuous))
                         }
                     }
-                    .padding(8)
+                    .padding(Space.s2)
                     if selected {
                         PolarisIcon(Icons.checkCircle, size: 18)
                             .foregroundStyle(Color(rgb: preview.accent))
@@ -95,7 +95,7 @@ struct AppearanceSettingsView: View {
                     }
                 }
                 .frame(height: 84)
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor : Color(rgb: preview.separator),
                                   lineWidth: selected ? 2.5 : 1))
                 name.font(.caption).themedForeground().lineLimit(1)
@@ -134,7 +134,7 @@ struct AppearanceSettingsView: View {
 
     private var accentSection: some View {
         Section {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 46), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 46), spacing: Space.s3)], spacing: Space.s3) {
                 ForEach(AccentPreset.allCases) { preset in
                     accentSwatch(preset)
                 }
@@ -157,7 +157,7 @@ struct AppearanceSettingsView: View {
         } label: {
             Circle()
                 .fill(Color(rgb: preset.rgb))
-                .frame(width: 34, height: 34)
+                .frame(width: Metric.controlSmall, height: Metric.controlSmall)
                 .overlay(Circle().strokeBorder(Color.primary.opacity(isSelected ? 0.9 : 0), lineWidth: 2).padding(-3))
         }
         .buttonStyle(.plain)
@@ -178,7 +178,7 @@ struct AppearanceSettingsView: View {
             } label: {
                 HStack(spacing: 14) {
                     WallpaperView(wallpaper: env.theme.wallpaper, fallbackColor: Color(rgb: env.theme.active.background))
-                        .frame(width: 44, height: 44)
+                        .frame(width: Metric.controlMedium, height: Metric.controlMedium)
                         .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Color(rgb: env.theme.active.separator)))
                     Text("Background")

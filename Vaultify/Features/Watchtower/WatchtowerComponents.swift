@@ -12,7 +12,7 @@ struct HealthGauge: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Space.s3) {
             ZStack {
                 Circle().stroke(VaultColors.fill, lineWidth: 10)
                 Circle()
@@ -41,7 +41,7 @@ struct WatchtowerIssueRow: View {
     let issue: VaultIssue
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Space.s3) {
             CategoryBadge(category: issue.category, size: 34)
             VStack(alignment: .leading, spacing: 2) {
                 Text(issue.itemTitle).font(.body).lineLimit(1)

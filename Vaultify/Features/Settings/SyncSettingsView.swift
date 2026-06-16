@@ -57,7 +57,7 @@ struct SyncSettingsView: View {
         case .idle:
             EmptyView()
         case .syncing:
-            HStack(spacing: 8) { ProgressView(); Text("Syncing…").themedForeground(.secondary) }
+            HStack(spacing: Space.s2) { ProgressView(); Text("Syncing…").themedForeground(.secondary) }
         case .success(let date):
             LabeledContent("Last sync", value: date.formatted(date: .omitted, time: .shortened))
         case .error(let message):

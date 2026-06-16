@@ -38,7 +38,7 @@ struct ThemeEditorView: View {
             .listRowBackground(VaultColors.surface)
 
             Section {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 46), spacing: 12)], spacing: 12) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 46), spacing: Space.s3)], spacing: Space.s3) {
                     ForEach(AccentPreset.allCases) { preset in accentSwatch(preset) }
                 }
                 .padding(.vertical, 6)
@@ -70,19 +70,19 @@ struct ThemeEditorView: View {
     private var previewCard: some View {
         ZStack {
             WallpaperView(wallpaper: wallpaper, fallbackColor: Color(rgb: preview.background))
-            VStack(spacing: 8) {
+            VStack(spacing: Space.s2) {
                 ForEach(0..<2, id: \.self) { _ in
                     HStack(spacing: 10) {
-                        Circle().fill(Color(rgb: preview.accent)).frame(width: 20, height: 20)
+                        Circle().fill(Color(rgb: preview.accent)).frame(width: Metric.iconInline, height: Metric.iconInline)
                         RoundedRectangle(cornerRadius: 4).fill(Color(rgb: preview.primaryText)).frame(width: 90, height: 8)
                         Spacer()
                     }
                     .padding(10)
                     .background(Color(rgb: preview.elevatedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                 }
             }
-            .padding(16)
+            .padding(Space.gutter)
         }
         .frame(height: 150)
     }
@@ -92,7 +92,7 @@ struct ThemeEditorView: View {
     private func accentSwatch(_ preset: AccentPreset) -> some View {
         let selected = accent.base == preset && accent.customRGB == nil
         return Button { accent = AppAccentColor(base: preset) } label: {
-            Circle().fill(Color(rgb: preset.rgb)).frame(width: 34, height: 34)
+            Circle().fill(Color(rgb: preset.rgb)).frame(width: Metric.controlSmall, height: Metric.controlSmall)
                 .overlay(Circle().strokeBorder(Color.primary.opacity(selected ? 0.9 : 0), lineWidth: 2).padding(-3))
         }
         .buttonStyle(.plain)
@@ -106,13 +106,13 @@ struct ThemeEditorView: View {
     // MARK: Wallpaper
 
     private var wallpaperGrid: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 12)], spacing: 12) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: Space.s3)], spacing: Space.s3) {
             wallpaperTile(.none, label: Text("None"))
             ForEach(WallpaperPresets.all) { preset in
                 wallpaperTile(preset.wallpaper, label: nil)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Space.s1)
     }
 
     @ViewBuilder private func wallpaperTile(_ value: Wallpaper, label: Text?) -> some View {
@@ -120,8 +120,8 @@ struct ThemeEditorView: View {
         Button { wallpaper = value } label: {
             WallpaperView(wallpaper: value, fallbackColor: Color(rgb: preview.secondaryBackground))
                 .frame(height: 70)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor : Color(rgb: env.theme.active.separator), lineWidth: selected ? 3 : 1))
                 .overlay { if let label { label.font(.caption).themedForeground(.secondary) } }
         }

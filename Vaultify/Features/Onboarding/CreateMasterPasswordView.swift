@@ -19,15 +19,15 @@ struct CreateMasterPasswordView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 6) {
-                    PolarisIcon(Icons.lockFill, size: 44).foregroundStyle(Color.accentColor)
+                    PolarisIcon(Icons.lockFill, size: Metric.controlMedium).foregroundStyle(Color.accentColor)
                     Text("Create your master password")
                         .font(.title.bold())
                     Text("This is the only password you’ll need to remember. It unlocks everything.")
                         .font(.subheadline).themedForeground(.secondary)
                 }
-                .padding(.top, 8)
+                .padding(.top, Space.s2)
 
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: Space.s3) {
                     RevealableSecureField(title: "Master password", text: $password)
                     PasswordStrengthMeter(password: password)
                     RevealableSecureField(title: "Confirm password", text: $confirm)
@@ -43,14 +43,14 @@ struct CreateMasterPasswordView: View {
                 } icon: {
                     PolarisIcon(Icons.alert, size: 18).foregroundStyle(VaultColors.strengthMedium)
                 }
-                .padding(12)
-                .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(Space.s3)
+                .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
 
                 if let error {
                     Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
                 }
             }
-            .padding(24)
+            .padding(Space.s6)
         }
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
@@ -62,8 +62,8 @@ struct CreateMasterPasswordView: View {
             .buttonStyle(.themedProminent)
             .controlSize(.large)
             .disabled(!canSubmit)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
+            .padding(.horizontal, Space.s6)
+            .padding(.bottom, Space.gutter)
         }
     }
 

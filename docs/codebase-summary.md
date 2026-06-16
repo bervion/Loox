@@ -24,12 +24,12 @@ Vaultify/
 │   ├── Models/              ItemCategory, FieldKind, DynamicField, VaultItem + ItemSecret (+tags), Folder/FolderSecret/FolderColor (pure, Sendable)
 │   ├── Store/               ItemRecord (@Model, +lastUsedAt) & FolderRecord (@Model, sealed name), VaultStore (ModelContainer)
 │   └── Repositories/        VaultRepository (@Observable, + VaultRepository+Folders): decrypt→cache, CRUD, trash, favorites, folders, recents, tags
-├── DesignSystem/           PolarisIcon + Icons, VaultColors (dynamic light/dark), PasswordStrength, Typography
+├── DesignSystem/           Tokens/ (Space·Radius·Metric·Elevation·Motion), Typography (VaultType roles + vaultMono), PolarisIcon + Icons, VaultColors (dynamic light/dark), PasswordStrength, Components (ThemedCard/ButtonStyles/ToggleStyle, themedForeground), Theme/ (ThemeStore/Holder/Environment)
 ├── Services/
 │   ├── PasswordGenerator + DicewareWordList (EFF 7776), TOTPGenerator (RFC 6238), Haptics, ClipboardService
 │   ├── Watchtower/          PasswordAudit (weak/reused/score), HIBPService (k-anonymity)
 │   └── ImportExport/        VaultBackup (CSV + Argon2id/AES-GCM encrypted backup)
-└── Features/                Onboarding, Unlock, Main (4 tabs: Home·Items·Watchtower·Search), Home (personalized: Pinned/Favorites/Recently Created/Frequently Used/Utilities + Customize), Items (Spaces/Categories/Tags/Archive/Recently Deleted), Folders, ItemDetail, ItemEditor, Generator, Search, Watchtower, Settings, ImportExport, Components
+└── Features/                Onboarding, Unlock, Main (native icon-only visual `TabView`: Home·Items·Watchtower·Search), Home (personalized: Pinned/Favorites/Recently Created/Frequently Used/Utilities + Customize), Items (Spaces/Categories/Tags/Archive/Recently Deleted), Folders, ItemDetail, ItemEditor, Generator, Search, Watchtower, Settings, ImportExport, Components
 ```
 
 ## Security model
@@ -63,7 +63,12 @@ Night / Night-Tinted (`BuiltinThemes`); accent HSB recolor (`AccentColor`); `The
   defaults (clears per-theme accent/wallpaper overrides) so it always looks as designed.
   `ThemeHolder` is the synchronous snapshot for `VaultColors`, whose surfaces
   (`surface/fill/groupedBackground/separatorColor`) are **dynamic `UIColor`s** that re-resolve
-  on a color-scheme flip — staying in lock-step with trait-driven foregrounds. Reusable
+  on a color-scheme flip — staying in lock-step with trait-driven foregrounds. **Design tokens**
+  (`DesignSystem/Tokens/`: `Space`·`Radius`·`Metric`·`Elevation`·`Motion`) + `VaultType` typography
+  roles + **derived** semantic colors (`AppTheme+Tokens.swift`: surfaceFloatingSolid / surfacePressed /
+  accentSoft / accentPress / icon* / textDisabled / *Soft / onDestructive, computed so every builtin +
+  custom theme gets them) round out the system; `ThemeRole` now also covers icon + disabled + accentSoft +
+  onDestructive. Reusable
   components (`DesignSystem/Components`): `ThemedCard`, `.themedForeground(role)`,
   `.appBackground()`, `.themedFormBackground()`, button styles
   (`.themedProminent/.themedTinted/.themedDestructive`), `ThemedToggleStyle` (draws the switch

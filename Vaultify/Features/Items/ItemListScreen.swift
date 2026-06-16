@@ -29,7 +29,7 @@ struct ItemListScreen: View {
         .overlay {
             if items.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No items here") } icon: { PolarisIcon(category.iconAsset, size: 40) }
+                    Label { Text("No items here") } icon: { PolarisIcon(category.iconAsset, size: Metric.iconTileLarge) }
                 }
             }
         }

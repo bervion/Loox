@@ -37,15 +37,15 @@ struct HomeSectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.title3.bold()).padding(.horizontal, 16)
+            Text(title).font(.title3.bold()).padding(.horizontal, Space.s4)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: Space.s3) {
                     ForEach(items) { item in
                         Button { path.append(item.id) } label: { ItemCard(item: item) }
                             .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, Space.s4)
             }
         }
     }
@@ -56,7 +56,7 @@ struct ItemCard: View {
     let item: VaultItem
     @Environment(\.appTheme) private var theme
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Space.s2) {
             FaviconView(urlString: item.urlField?.value, category: item.category, size: 36)
             Text(item.title.isEmpty ? "Untitled" : item.title)
                 .font(.subheadline.weight(.medium)).lineLimit(1).themedForeground()
@@ -65,8 +65,8 @@ struct ItemCard: View {
             }
         }
         .frame(width: 132, alignment: .leading)
-        .padding(12)
+        .padding(Space.s3)
         .background(Color(rgb: theme.elevatedBackground),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 }

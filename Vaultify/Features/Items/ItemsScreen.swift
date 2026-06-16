@@ -39,7 +39,7 @@ struct ItemsScreen: View {
         Section("Spaces") {
             ForEach(env.repository.folders) { folder in
                 NavigationLink(value: VaultRoute.folder(folder.id)) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Space.s3) {
                         FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
                         Text(folder.name)
                         Spacer()
@@ -49,7 +49,7 @@ struct ItemsScreen: View {
             }
             if env.repository.unfiledCount > 0 {
                 NavigationLink(value: VaultRoute.folder(nil)) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Space.s3) {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(VaultColors.fill).frame(width: 30, height: 30)
                             .overlay(PolarisIcon(Icons.folder, size: 16).themedForeground(.secondary))
@@ -70,7 +70,7 @@ struct ItemsScreen: View {
         Section("Categories") {
             ForEach(categories) { category in
                 NavigationLink(value: VaultRoute.category(category)) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Space.s3) {
                         PolarisIcon(category.iconAsset, size: 22)
                             .foregroundStyle(Color.accentColor).frame(width: 30)
                         Text(category.title)
@@ -87,7 +87,7 @@ struct ItemsScreen: View {
         Section("Tags") {
             ForEach(tags, id: \.tag) { entry in
                 NavigationLink(value: VaultRoute.tag(entry.tag)) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Space.s3) {
                         PolarisIcon(Icons.hashtag, size: 18).themedForeground(.secondary).frame(width: 30)
                         Text(entry.tag)
                         Spacer()
@@ -101,8 +101,8 @@ struct ItemsScreen: View {
 
     private func standaloneRow(_ title: Text, icon: String, count: Int, route: VaultRoute) -> some View {
         NavigationLink(value: route) {
-            HStack(spacing: 12) {
-                PolarisIcon(icon, size: 20).themedForeground(.secondary).frame(width: 30)
+            HStack(spacing: Space.s3) {
+                PolarisIcon(icon, size: Metric.iconInline).themedForeground(.secondary).frame(width: 30)
                 title
                 Spacer()
                 if count > 0 { Text("\(count)").themedForeground(.secondary) }

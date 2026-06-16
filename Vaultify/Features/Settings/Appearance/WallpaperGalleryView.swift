@@ -11,7 +11,7 @@ struct WallpaperGalleryView: View {
 
     private var ref: AppThemeReference { env.theme.settings.theme }
     private var override: Wallpaper? { env.theme.settings.wallpaperOverride(for: ref) }
-    private let columns = [GridItem(.adaptive(minimum: 92), spacing: 12)]
+    private let columns = [GridItem(.adaptive(minimum: 92), spacing: Space.s3)]
 
     var body: some View {
         Form {
@@ -47,12 +47,12 @@ struct WallpaperGalleryView: View {
 
     private func presetSection(_ title: Text, _ presets: [WallpaperPreset]) -> some View {
         Section {
-            LazyVGrid(columns: columns, spacing: 12) {
+            LazyVGrid(columns: columns, spacing: Space.s3) {
                 ForEach(presets) { preset in
                     presetTile(preset)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, Space.s1)
         } header: {
             title
         }
@@ -66,13 +66,13 @@ struct WallpaperGalleryView: View {
         } label: {
             WallpaperView(wallpaper: preset.wallpaper, fallbackColor: .gray)
                 .frame(height: 84)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor : Color(rgb: env.theme.active.separator),
                                   lineWidth: selected ? 3 : 1))
                 .overlay(alignment: .topTrailing) {
                     if selected {
-                        PolarisIcon(Icons.checkCircle, size: 20)
+                        PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
                             .foregroundStyle(.white)
                             .padding(6)
                     }
@@ -86,7 +86,7 @@ struct WallpaperGalleryView: View {
             HStack {
                 title.themedForeground()
                 Spacer()
-                if isSelected { PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor) }
+                if isSelected { PolarisIcon(Icons.checkCircle, size: Metric.iconInline).foregroundStyle(Color.accentColor) }
             }
             .contentShape(.rect) // whole row is tappable, not just the label text
         }

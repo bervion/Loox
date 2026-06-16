@@ -28,7 +28,7 @@ struct TagItemsScreen: View {
         .overlay {
             if items.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No items here") } icon: { PolarisIcon(Icons.hashtag, size: 40) }
+                    Label { Text("No items here") } icon: { PolarisIcon(Icons.hashtag, size: Metric.iconTileLarge) }
                 }
             }
         }

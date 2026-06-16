@@ -7,4 +7,5 @@ import UIKit
     static func error() { UINotificationFeedbackGenerator().notificationOccurred(.error) }
     static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
     static func rigid() { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
+    static func selection() { UISelectionFeedbackGenerator().selectionChanged() }
 }

@@ -19,7 +19,7 @@ struct ThemedProminentButtonStyle: ButtonStyle {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color(rgb: theme.accent))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                 .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.5)
         }
     }
@@ -40,7 +40,7 @@ struct ThemedTintedButtonStyle: ButtonStyle {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color(rgb: theme.controlBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                 .opacity(configuration.isPressed ? 0.85 : 1)
         }
     }
@@ -61,7 +61,7 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color(rgb: theme.destructive))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                 .opacity(configuration.isPressed ? 0.85 : 1)
         }
     }

@@ -11,8 +11,8 @@ struct IconColorPicker: View {
     private let colorColumns = [GridItem(.adaptive(minimum: 44), spacing: 12)]
 
     var body: some View {
-        VStack(spacing: 20) {
-            FolderBadge(icon: icon, color: color, size: 64).padding(.top, 4)
+        VStack(spacing: Space.s5) {
+            FolderBadge(icon: icon, color: color, size: 64).padding(.top, Space.s1)
 
             section(title: "Color") {
                 LazyVGrid(columns: colorColumns, spacing: 12) {
@@ -35,7 +35,7 @@ struct IconColorPicker: View {
                 LazyVGrid(columns: iconColumns, spacing: 12) {
                     ForEach(CuratedFolderIcons.all, id: \.self) { name in
                         let selected = name == icon
-                        PolarisIcon(name, size: 24)
+                        PolarisIcon(name, size: Metric.iconUtility)
                             .foregroundStyle(selected ? color.tint : env.theme.active.color(.primary))
                             .frame(width: 50, height: 50)
                             .background(
@@ -57,7 +57,7 @@ struct IconColorPicker: View {
     }
 
     @ViewBuilder private func section(title: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Space.s2) {
             Text(title).font(.subheadline.weight(.semibold)).themedForeground(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             content()

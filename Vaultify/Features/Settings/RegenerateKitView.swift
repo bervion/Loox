@@ -29,7 +29,7 @@ struct RegenerateKitView: View {
                         .font(.vaultMono(.body, weight: .medium))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, Space.s2)
                     Button { env.clipboard.copy(newKey, label: "Recovery key") } label: {
                         Label { Text("Copy") } icon: { PolarisIcon(Icons.copy) }
                     }

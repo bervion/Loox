@@ -10,7 +10,7 @@ struct ManageFoldersScreen: View {
         List {
             if env.repository.folders.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No Spaces yet") } icon: { PolarisIcon(Icons.folder, size: 40) }
+                    Label { Text("No Spaces yet") } icon: { PolarisIcon(Icons.folder, size: Metric.iconTileLarge) }
                 } description: {
                     Text("Group your items by company, project, or context.")
                 }
@@ -37,7 +37,7 @@ struct ManageFoldersScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { creating = true } label: { PolarisIcon(Icons.add, size: 24) }
+                Button { creating = true } label: { PolarisIcon(Icons.add, size: Metric.iconUtility) }
             }
             if !env.repository.folders.isEmpty {
                 ToolbarItem(placement: .topBarLeading) { EditButton() }

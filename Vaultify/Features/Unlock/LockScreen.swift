@@ -18,11 +18,11 @@ struct LockScreen: View {
         VStack(spacing: 0) {
             Spacer()
             BrandLogoMark(size: 72)
-            Text("Vaultify").font(.largeTitle.bold()).themedForeground().padding(.top, 12)
+            Text("Vaultify").font(.largeTitle.bold()).themedForeground().padding(.top, Space.s3)
             Text("Enter your master password to unlock")
                 .font(.subheadline).themedForeground(.secondary).padding(.top, 2)
 
-            VStack(spacing: 12) {
+            VStack(spacing: Space.s3) {
                 RevealableSecureField(title: "Master password", text: $password)
                     .submitLabel(.go)
                     .onSubmit { Task { await unlock() } }
@@ -50,13 +50,13 @@ struct LockScreen: View {
                     .buttonStyle(.themedTinted)
                 }
             }
-            .padding(.horizontal, 32)
-            .padding(.top, 32)
+            .padding(.horizontal, Space.s8)
+            .padding(.top, Space.s8)
 
             Spacer()
             Button("Forgot master password?") { showRecovery = true }
                 .font(.footnote)
-                .padding(.bottom, 24)
+                .padding(.bottom, Space.s6)
         }
         .sheet(isPresented: $showRecovery) { RecoveryView() }
         .onAppear { triggerBiometric() }

@@ -69,13 +69,13 @@ private struct WelcomeStep: View {
                 .foregroundStyle(Color.accentColor)
             Text("Vaultify")
                 .font(.largeTitle.bold())
-                .padding(.top, 16)
+                .padding(.top, Space.gutter)
             Text("A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
                 .font(.body)
                 .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-                .padding(.top, 8)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s2)
 
             VStack(alignment: .leading, spacing: 18) {
                 FeatureRow(icon: Icons.lockFill, title: "End-to-end encryption",
@@ -86,7 +86,7 @@ private struct WelcomeStep: View {
                            detail: "Fast biometric access backed by the Secure Enclave.")
             }
             .padding(.top, 36)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Space.s6)
 
             Spacer()
             Button(action: onContinue) {
@@ -94,8 +94,8 @@ private struct WelcomeStep: View {
             }
             .buttonStyle(.themedProminent)
             .controlSize(.large)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.horizontal, Space.s6)
+            .padding(.bottom, Space.s6)
         }
     }
 }
@@ -107,7 +107,7 @@ private struct FeatureRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            PolarisIcon(icon, size: 24).foregroundStyle(Color.accentColor).frame(width: 28)
+            PolarisIcon(icon, size: Metric.iconUtility).foregroundStyle(Color.accentColor).frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title.inAppLocalized).font(.headline)
                 Text(detail.inAppLocalized).font(.subheadline).themedForeground(.secondary)
@@ -125,16 +125,16 @@ private struct OnboardingDoneStep: View {
             PolarisIcon(Icons.checkCircle, size: 72).foregroundStyle(VaultColors.strengthStrong)
             Text("You’re all set")
                 .font(.largeTitle.bold())
-                .padding(.top, 16)
+                .padding(.top, Space.gutter)
             Text("Your vault is ready. Add your first item to get started.")
                 .font(.body).themedForeground(.secondary)
-                .multilineTextAlignment(.center).padding(.horizontal, 32).padding(.top, 8)
+                .multilineTextAlignment(.center).padding(.horizontal, Space.s8).padding(.top, Space.s2)
             Spacer()
             Button(action: onFinish) {
                 Text("Open Vaultify").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent).controlSize(.large)
-            .padding(.horizontal, 24).padding(.bottom, 24)
+            .padding(.horizontal, Space.s6).padding(.bottom, Space.s6)
         }
     }
 }

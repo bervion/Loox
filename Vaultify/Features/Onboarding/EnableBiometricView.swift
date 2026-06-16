@@ -13,15 +13,15 @@ struct EnableBiometricView: View {
             Text("Enable \(BiometricAuth.displayName)")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
-                .padding(.top, 16)
+                .padding(.top, Space.gutter)
             Text("Unlock your vault quickly with \(BiometricAuth.displayName). Your master password still works anytime.")
                 .font(.body)
                 .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-                .padding(.top, 8)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s2)
             Spacer()
-            VStack(spacing: 12) {
+            VStack(spacing: Space.s3) {
                 Button(action: onEnable) {
                     Text("Enable \(BiometricAuth.displayName)").frame(maxWidth: .infinity)
                 }
@@ -33,8 +33,8 @@ struct EnableBiometricView: View {
                 }
                 .controlSize(.large)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.horizontal, Space.s6)
+            .padding(.bottom, Space.s6)
         }
     }
 }

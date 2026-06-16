@@ -16,7 +16,7 @@ struct VaultItemRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Space.s3) {
             FaviconView(urlString: item.urlField?.value, category: item.category, size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title.isEmpty ? "Untitled" : item.title)
@@ -48,7 +48,7 @@ struct VaultItemRow: View {
             Circle().fill(folder.color.tint).frame(width: 7, height: 7)
             Text(folder.name).font(.caption2).themedForeground(.secondary).lineLimit(1)
         }
-        .padding(.horizontal, 8).padding(.vertical, 4)
+        .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
         .background(VaultColors.fill, in: Capsule())
     }
 }

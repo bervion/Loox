@@ -13,15 +13,15 @@ struct ChooseThemeView: View {
             PolarisIcon(Icons.magic, size: 72).foregroundStyle(Color.accentColor)
             Text("Make it yours")
                 .font(.largeTitle.bold())
-                .padding(.top, 16)
+                .padding(.top, Space.gutter)
             Text("Choose how Vaultify looks. You can change this anytime in Settings.")
                 .font(.body)
                 .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-                .padding(.top, 8)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s2)
 
-            VStack(spacing: 12) {
+            VStack(spacing: Space.s3) {
                 ForEach(AppearanceMode.allCases) { mode in
                     ThemeOptionRow(mode: mode, isSelected: selection == mode) {
                         withAnimation(.smooth(duration: 0.2)) { selection = mode }
@@ -29,7 +29,7 @@ struct ChooseThemeView: View {
                 }
             }
             .padding(.top, 36)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Space.s6)
 
             Spacer()
             Button(action: onContinue) {
@@ -37,8 +37,8 @@ struct ChooseThemeView: View {
             }
             .buttonStyle(.themedProminent)
             .controlSize(.large)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.horizontal, Space.s6)
+            .padding(.bottom, Space.s6)
         }
     }
 }
@@ -61,10 +61,10 @@ private struct ThemeOptionRow: View {
                     PolarisIcon(Icons.checkCircle, size: 22).foregroundStyle(Color.accentColor)
                 }
             }
-            .padding(16)
+            .padding(Space.gutter)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(VaultColors.surface))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).fill(VaultColors.surface))
+            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                 .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
         }
         .buttonStyle(.plain)

@@ -69,6 +69,45 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
   iOS 26+ → use `LocalizedStringKey`.
 - **Icons**: use the **Polaris SVG icon set**, not SF Symbols.
 
+## Design System (READ before ANY UI work)
+
+Source of truth: **`Design System/`** (web spec: tokens, components, iOS UI kit) +
+**`docs/design-guidelines.md`** (the SwiftUI contract). The app is token-driven — never
+hardcode visual constants. Four layers: foundation tokens → semantic tokens → components →
+feature screens (screens only compose, never invent visual language).
+
+**Token API (Swift) — `Vaultify/DesignSystem/Tokens/` + `Typography.swift`:**
+- **Spacing** `Space.s1…s10` (4 → 64, 4pt grid), `Space.gutter` (16). Use instead of `.padding(16)`.
+- **Radius** `Radius.xs/sm/md/lg/xl/pill` (6/10/14/20/28/999). Helper `.vaultCornerRadius(Radius.x)`
+  (continuous curve) instead of `RoundedRectangle(cornerRadius: N, style: .continuous)`.
+- **Metric** `Metric.hitMin(44)/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge`.
+- **Elevation** `.elevation(.level1/.level2/.level3/.sheet)` (light/dark-aware soft shadow) instead of raw `.shadow`.
+- **Motion** `Motion.spring`, `Motion.standard`, `Motion.fast/base/medium/slow`, `Motion.pressScale`;
+  `.vault(_, reduceMotion:)` collapses under Reduce Motion.
+- **Typography** `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)`
+  → Apple Dynamic Type (keeps accessibility). Never `.font(.system(size: N))`. Amounts/secrets: `Font.vaultMono`.
+
+**Color — semantic only, live, WCAG.** Resolve via `.themedForeground(role)` / `theme.color(role)`
+(`ThemeRole`: primary/secondary/tertiary/disabled · iconPrimary/Secondary/Disabled · accent/accentSoft/onAccent ·
+destructive/onDestructive/success/warning) or `Color(rgb: theme.<token>)`. Stored palette =
+`VaultifyCore/Theme/AppTheme.swift`; **derived** tokens (surfaceFloatingSolid, surfacePressed,
+accentSoft/Press, icon*, *Soft, separatorOpaque, onDestructive…) = `AppTheme+Tokens.swift` (computed,
+so every builtin/custom theme gets them free). `onAccent` is WCAG-derived (`RGBMath.onColor`), never a
+brightness guess. **Never** raw `.white/.black/.red/.primary/.secondary` on themed surfaces (only
+camera/QR/favicon/literal light-dark preview swatches are exempt). Theme + accent switch **live, no restart**.
+
+**Accents:** 10 presets + custom RGB (`AccentColor.swift`); all must pass WCAG `onAccent`.
+
+**Tab bar — native `TabView`, icon-only visual.** `MainTabView` keeps the system tab bar visible for
+native switching performance, safe-area handling, and iOS 26 Liquid Glass. Each `.tabItem` supplies only a
+Polaris icon asset visually; localized tab names live in accessibility labels via `VaultTab`. Do not restore
+the custom shell overlay unless explicitly re-approved; prior custom glass/indicator motion caused switch
+latency. For any future custom iOS-26 Liquid Glass API, guard with `#if compiler(>=6.2)` +
+`#available(iOS 26, *)` and provide a material/solid fallback. Never glass on content cards/rows.
+
+**Before UI work:** verify light + dark + Reduce Transparency + Reduce Motion + increased contrast; no
+invisible text/icons after a theme switch; 44pt hit targets; new strings localized EN + VI.
+
 ## Entitlements & capabilities (crash traps)
 
 - `INFOPLIST_KEY_NSFaceIDUsageDescription` is required, or biometric Keychain access

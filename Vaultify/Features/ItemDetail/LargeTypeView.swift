@@ -17,7 +17,7 @@ struct LargeTypeView: View {
                     .font(.system(size: fontSize, weight: .semibold, design: .monospaced))
                     .multilineTextAlignment(.center)
                     .lineSpacing(8)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, Space.s6)
                     .padding(.vertical, 60)
                     .frame(maxWidth: .infinity)
                     .textSelection(.enabled)
@@ -30,7 +30,7 @@ struct LargeTypeView: View {
                     .padding(10)
                     .background(Circle().fill(VaultColors.fill))
             }
-            .padding(16)
+            .padding(Space.gutter)
         }
         .contentShape(.rect)
         .onTapGesture { dismiss() }

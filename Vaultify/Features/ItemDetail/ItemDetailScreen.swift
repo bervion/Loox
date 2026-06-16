@@ -22,10 +22,10 @@ struct ItemDetailScreen: View {
                     trashCard(item)
                     metadata(item)
                 }
-                .padding(16)
+                .padding(Space.gutter)
             } else {
                 ContentUnavailableView {
-                    Label { Text("Item not found") } icon: { PolarisIcon(Icons.alert, size: 44) }
+                    Label { Text("Item not found") } icon: { PolarisIcon(Icons.alert, size: Metric.iconTileLarge) }
                 }
                 .padding(.top, 80)
             }
@@ -43,7 +43,7 @@ struct ItemDetailScreen: View {
                         } else {
                             Button { env.repository.archive(item); dismiss() } label: { Label("Archive", image: Icons.archive) }
                         }
-                    } label: { PolarisIcon("ic_menu_horizontal", size: 20) }
+                    } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
                 }
             }
         }
@@ -85,12 +85,12 @@ struct ItemDetailScreen: View {
             }
             .buttonStyle(.plain)
             Button { try? env.repository.toggleFavorite(item) } label: {
-                PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: 24)
+                PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: Metric.iconUtility)
                     .foregroundStyle(item.favorite ? VaultColors.strengthMedium : env.theme.active.color(.secondary))
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Space.s1)
     }
 
     /// Shows which Space the item belongs to, plus its tags. Hidden when neither.
@@ -129,24 +129,24 @@ struct ItemDetailScreen: View {
                                onChange: { update($0, in: item) },
                                onRemove: { remove(field, in: item) },
                                onUsed: { env.repository.markUsed(item) })
-                if index < fields.count - 1 { Divider().padding(.leading, 16) }
+                if index < fields.count - 1 { Divider().padding(.leading, Space.gutter) }
             }
         }
         .background(VaultColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .vaultCornerRadius(Radius.md)
     }
 
     private func trashCard(_ item: VaultItem) -> some View {
         Button(role: .destructive) { confirmTrash = true } label: {
             HStack(spacing: 12) {
-                PolarisIcon(Icons.trash, size: 20).foregroundStyle(env.theme.active.color(.destructive))
+                PolarisIcon(Icons.trash, size: Metric.iconInline).foregroundStyle(env.theme.active.color(.destructive))
                 Text("Move to Trash").foregroundStyle(env.theme.active.color(.destructive))
                 Spacer()
             }
-            .padding(.horizontal, 16).padding(.vertical, 14)
+            .padding(.horizontal, Space.gutter).padding(.vertical, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(VaultColors.surface,
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -157,6 +157,6 @@ struct ItemDetailScreen: View {
             Text("Modified \(item.updatedAt.formatted(date: .abbreviated, time: .shortened))")
         }
         .font(.caption).themedForeground(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
+        .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, Space.s1)
     }
 }

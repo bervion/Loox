@@ -41,7 +41,7 @@ struct HomeScreen: View {
 
     private var content: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 24) {
+            LazyVStack(alignment: .leading, spacing: Space.s6) {
                 ForEach(sections) { section in
                     let items = section.items(env.repository)
                     if !items.isEmpty {
@@ -51,7 +51,7 @@ struct HomeScreen: View {
                 UtilitiesSection(showGenerator: $showGenerator)
                 customizeButton
             }
-            .padding(.vertical, 16)
+            .padding(.vertical, Space.s4)
         }
     }
 
@@ -60,7 +60,7 @@ struct HomeScreen: View {
             Label { Text("Customize Home") } icon: { PolarisIcon(Icons.edit, size: 15) }
                 .font(.subheadline).themedForeground(.secondary)
         }
-        .padding(.horizontal, 16).padding(.top, 4)
+        .padding(.horizontal, Space.s4).padding(.top, Space.s1)
     }
 
     private var emptyState: some View {
@@ -75,7 +75,7 @@ struct HomeScreen: View {
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button { showSettings = true } label: { PolarisIcon(Icons.settings, size: 24) }
+            Button { showSettings = true } label: { PolarisIcon(Icons.settings, size: Metric.iconUtility) }
         }
         ToolbarItem(placement: .topBarTrailing) {
             Menu { addMenu } label: { PolarisIcon(Icons.add, size: 26) }

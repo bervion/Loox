@@ -2,66 +2,60 @@ import SwiftUI
 import Combine
 
 /// The unlocked app shell: Home · Items · Watchtower · Search.
-/// Search is a regular tab whose screen hosts a standard top search bar.
+///
+/// Uses the system `TabView` tab bar for native switching performance and iOS 26 Liquid
+/// Glass. Each tab item intentionally provides only a Polaris icon asset, so the visual
+/// bar remains icon-only while VoiceOver still gets localized labels.
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
-    @State private var selection = 0
+    @State private var selection: VaultTab = .home
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
+    /// Keeps transient toasts above the native tab bar without depending on custom bar metrics.
+    private var tabBarToastClearance: CGFloat { Metric.controlLarge + Space.s8 }
+
     var body: some View {
-        Group {
-            if #available(iOS 18.0, *) {
-                modernTabs
-            } else {
-                classicTabs
-            }
+        TabView(selection: $selection) {
+            tab(.home) { HomeScreen() }
+            tab(.items) { ItemsScreen() }
+            tab(.watchtower) { WatchtowerScreen() }
+            tab(.search) { SearchScreen() }
         }
+        .tint(Color(rgb: env.theme.active.accent))
         .overlay(alignment: .bottom) { copyToast }
         .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
         .onChange(of: selection) { _, _ in
             env.session.registerActivity()
-            env.theme.morphMesh()
         }
         .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
         .onAppear { env.theme.morphMesh() }
     }
 
-    // Search is a regular tab; `SearchScreen` owns its NavigationStack +
-    // `.searchable`, so the search field sits at the top of the screen.
-    @available(iOS 18.0, *)
-    private var modernTabs: some View {
-        TabView(selection: $selection) {
-            Tab("Home", image: selection == 0 ? Icons.homeFill : Icons.home, value: 0) { HomeScreen() }
-            Tab("Items", image: selection == 1 ? Icons.appsFill : Icons.apps, value: 1) { ItemsScreen() }
-            Tab("Watchtower", image: selection == 2 ? Icons.organizationFill : Icons.organization, value: 2) { WatchtowerScreen() }
-            Tab("Search", image: Icons.search, value: 3) { SearchScreen() }
-        }
+    /// One tab: native system navigation with an icon-only tab item.
+    private func tab<Content: View>(_ tab: VaultTab, @ViewBuilder content: () -> Content) -> some View {
+        content()
+            .tag(tab)
+            .tabItem { tabIcon(tab) }
     }
 
-    private var classicTabs: some View {
-        TabView(selection: $selection) {
-            HomeScreen().tag(0)
-                .tabItem { Label("Home", image: selection == 0 ? Icons.homeFill : Icons.home) }
-            ItemsScreen().tag(1)
-                .tabItem { Label("Items", image: selection == 1 ? Icons.appsFill : Icons.apps) }
-            WatchtowerScreen().tag(2)
-                .tabItem { Label("Watchtower", image: selection == 2 ? Icons.organizationFill : Icons.organization) }
-            SearchScreen().tag(3)
-                .tabItem { Label("Search", image: Icons.search) }
-        }
+    @ViewBuilder private func tabIcon(_ tab: VaultTab) -> some View {
+        Image(selection == tab ? tab.iconSelected : tab.icon)
+            .renderingMode(.template)
+            .accessibilityLabel(Text(tab.accessibilityLabel))
     }
 
     @ViewBuilder private var copyToast: some View {
         if let label = env.clipboard.recentCopyLabel {
-            HStack(spacing: 8) {
-                PolarisIcon(Icons.checkCircle, size: 18).foregroundStyle(VaultColors.strengthStrong)
-                Text("Copied \(label)").font(.subheadline.weight(.medium))
+            HStack(spacing: Space.s2) {
+                PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+                    .foregroundStyle(Color(rgb: env.theme.active.success))
+                Text(appString("Copied \(label)")).vaultType(.subhead).fontWeight(.medium)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s3)
             .background(.regularMaterial, in: Capsule())
-            .shadow(color: .black.opacity(0.12), radius: 10, y: 3)
-            .padding(.bottom, 70)
+            .elevation(.level2)
+            .padding(.bottom, tabBarToastClearance)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
