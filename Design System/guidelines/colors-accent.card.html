@@ -1,0 +1,47 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Accent & theme presets" subtitle="Default blue accent + Telegram-style accent presets, light & dark" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--background-grouped); }
+  .wrap { display: flex; gap: 14px; }
+  .panel { flex: 1; padding: 16px; border-radius: var(--radius-lg); background: var(--surface-base); box-shadow: var(--hairline); }
+  .panel.dark { background: #1c1c1e; }
+  .row { display: flex; gap: 10px; }
+  .sw { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chip { width: 100%; height: 38px; border-radius: var(--radius-sm); }
+  .lab { font: var(--weight-medium) 11px var(--font-text); color: var(--text-secondary); }
+  .dark .lab { color: #c7c7cc; }
+  .hd { font: var(--weight-semibold) 12px var(--font-text); letter-spacing:.4px; text-transform:uppercase; color: var(--text-tertiary); margin: 0 0 12px; }
+  .dark .hd { color: #8e8e93; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel" id="light">
+      <p class="hd">Light</p>
+      <div class="row">
+        <div class="sw"><div class="chip" style="background:#2563eb"></div><span class="lab">Blue</span></div>
+        <div class="sw"><div class="chip" style="background:#5145cd"></div><span class="lab">Indigo</span></div>
+        <div class="sw"><div class="chip" style="background:#0e8a7d"></div><span class="lab">Teal</span></div>
+        <div class="sw"><div class="chip" style="background:#7c3aed"></div><span class="lab">Purple</span></div>
+        <div class="sw"><div class="chip" style="background:#d6256e"></div><span class="lab">Pink</span></div>
+        <div class="sw"><div class="chip" style="background:#4b4b50"></div><span class="lab">Graphite</span></div>
+      </div>
+    </div>
+    <div class="panel dark" data-theme="dark">
+      <p class="hd">Dark</p>
+      <div class="row">
+        <div class="sw"><div class="chip" style="background:#4c8dff"></div><span class="lab">Blue</span></div>
+        <div class="sw"><div class="chip" style="background:#8b80ff"></div><span class="lab">Indigo</span></div>
+        <div class="sw"><div class="chip" style="background:#2fd0bf"></div><span class="lab">Teal</span></div>
+        <div class="sw"><div class="chip" style="background:#b388ff"></div><span class="lab">Purple</span></div>
+        <div class="sw"><div class="chip" style="background:#ff77ab"></div><span class="lab">Pink</span></div>
+        <div class="sw"><div class="chip" style="background:#aeaeb2"></div><span class="lab">Graphite</span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

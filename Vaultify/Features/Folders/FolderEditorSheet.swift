@@ -48,6 +48,7 @@ struct FolderEditorSheet: View {
             }
             .themedFormBackground()
             .navigationTitle(isEditing ? "Edit Space" : "New Space")
+            .themedColorScheme()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

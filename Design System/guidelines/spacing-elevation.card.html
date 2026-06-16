@@ -1,0 +1,20 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Elevation" subtitle="Soft ambient shadows — hairline, 1, 2, 3 (floating control)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 26px; background: var(--background-grouped); display: flex; gap: 28px; align-items:center; justify-content: center; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .box { width: 110px; height: 78px; background: var(--surface-base); border-radius: var(--radius-lg); }
+  .lab { font: var(--weight-medium) 11px var(--font-mono); color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+  <div class="col"><div class="box" style="box-shadow:var(--hairline)"></div><span class="lab">hairline</span></div>
+  <div class="col"><div class="box" style="box-shadow:var(--elevation-1)"></div><span class="lab">elevation-1</span></div>
+  <div class="col"><div class="box" style="box-shadow:var(--elevation-2)"></div><span class="lab">elevation-2</span></div>
+  <div class="col"><div class="box" style="box-shadow:var(--elevation-3)"></div><span class="lab">elevation-3</span></div>
+</body>
+</html>

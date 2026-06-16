@@ -28,8 +28,10 @@ struct FilterChip: View {
     let isSelected: Bool
     var icon: String?
     let action: () -> Void
+    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
+        let theme = env.theme.active
         Button(action: action) {
             HStack(spacing: 6) {
                 if let icon { PolarisIcon(icon, size: 15) }
@@ -37,9 +39,9 @@ struct FilterChip: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.accentColor : VaultColors.surface,
+            .background(isSelected ? theme.color(.accent) : VaultColors.surface,
                         in: Capsule())
-            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .foregroundStyle(isSelected ? theme.color(.onAccent) : theme.color(.primary))
         }
         .buttonStyle(.plain)
     }

@@ -40,6 +40,26 @@ extension AppTheme {
     }
 }
 
+// MARK: - Color scheme
+
+extension View {
+    /// Force this view's UIKit trait (navigation-bar title, `Form` section headers /
+    /// footers, pickers, menus) to the active theme's light/dark. Sheets and
+    /// full-screen covers do NOT inherit the root `.preferredColorScheme`, so their
+    /// system chrome otherwise follows the *device* appearance — a light theme on a
+    /// dark device renders an invisible light title on a light surface. Apply at every
+    /// presented root (the preference propagates up to the sheet's hosting controller
+    /// and down to pushed children).
+    func themedColorScheme() -> some View { modifier(ThemedColorSchemeModifier()) }
+}
+
+private struct ThemedColorSchemeModifier: ViewModifier {
+    @Environment(AppEnvironment.self) private var env
+    func body(content: Content) -> some View {
+        content.preferredColorScheme(env.theme.active.isDark ? .dark : .light)
+    }
+}
+
 // MARK: - Background
 
 extension View {

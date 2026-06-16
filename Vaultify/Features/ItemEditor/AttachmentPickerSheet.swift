@@ -28,6 +28,7 @@ struct AttachmentPickerSheet: View {
             }
             .themedFormBackground()
             .navigationTitle("Add Attachment")
+            .themedColorScheme()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             .fileImporter(isPresented: $showFileImporter,

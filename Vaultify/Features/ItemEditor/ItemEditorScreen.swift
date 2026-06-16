@@ -88,6 +88,7 @@ struct ItemEditorScreen: View {
                             Spacer()
                             PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                         }
+                        .contentShape(.rect) // whole row is tappable, not just the label text
                     }
                     .buttonStyle(.plain)
                 }
@@ -100,6 +101,7 @@ struct ItemEditorScreen: View {
             }
             .themedFormBackground()
             .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")
+            .themedColorScheme()
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 // New items default to the primary Space ("My Vault") so they have

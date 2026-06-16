@@ -5,6 +5,7 @@ import SwiftUI
 struct IconColorPicker: View {
     @Binding var icon: String
     @Binding var color: FolderColor
+    @Environment(AppEnvironment.self) private var env
 
     private let iconColumns = [GridItem(.adaptive(minimum: 54), spacing: 12)]
     private let colorColumns = [GridItem(.adaptive(minimum: 44), spacing: 12)]
@@ -35,7 +36,7 @@ struct IconColorPicker: View {
                     ForEach(CuratedFolderIcons.all, id: \.self) { name in
                         let selected = name == icon
                         PolarisIcon(name, size: 24)
-                            .foregroundStyle(selected ? color.tint : Color.primary)
+                            .foregroundStyle(selected ? color.tint : env.theme.active.color(.primary))
                             .frame(width: 50, height: 50)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)

@@ -3,6 +3,7 @@ import SwiftUI
 /// Animated strength bar + label + entropy estimate.
 struct PasswordStrengthMeter: View {
     let password: String
+    @Environment(AppEnvironment.self) private var env
 
     private var strength: PasswordStrength { PasswordStrength.evaluate(password) }
     private var bits: Int { Int(PasswordStrength.entropyBits(password)) }
@@ -12,7 +13,7 @@ struct PasswordStrengthMeter: View {
         VStack(alignment: .leading, spacing: 6) {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(.systemGray5))
+                    Capsule().fill(VaultColors.fill)
                     Capsule()
                         .fill(color)
                         .frame(width: geometry.size.width * (password.isEmpty ? 0 : strength.fraction))
@@ -24,7 +25,7 @@ struct PasswordStrengthMeter: View {
             HStack {
                 Text(password.isEmpty ? "Enter a master password" : String(localized: strength.title))
                     .font(.caption)
-                    .foregroundStyle(password.isEmpty ? .secondary : color)
+                    .foregroundStyle(password.isEmpty ? env.theme.active.color(.secondary) : color)
                 Spacer()
                 if !password.isEmpty {
                     Text("\(bits) bits")

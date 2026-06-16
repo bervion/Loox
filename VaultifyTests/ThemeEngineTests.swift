@@ -52,6 +52,29 @@ final class ThemeEngineTests: XCTestCase {
         XCTAssertEqual(onDarkAccent.accentForeground, 0xFFFFFF)
     }
 
+    func testOnColorPicksHigherContrast() {
+        XCTAssertEqual(RGBMath.onColor(0xFFFFFF), 0x000000)
+        XCTAssertEqual(RGBMath.onColor(0x000000), 0xFFFFFF)
+        // Night accent is light enough that dark text wins (was white → 2.79:1 before).
+        XCTAssertEqual(RGBMath.onColor(0x5B9CF6), 0x000000)
+    }
+
+    func testBuiltinAccentForegroundMeetsWCAGAA() {
+        for theme in BuiltinTheme.allCases {
+            let p = BuiltinThemes.palette(theme)
+            let ratio = RGBMath.contrastRatio(p.accentForeground, p.accent)
+            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(theme) on-accent contrast \(ratio) < AA")
+        }
+    }
+
+    func testAccentPresetsGetReadableForeground() {
+        for preset in AccentPreset.allCases {
+            let t = BuiltinThemes.night.recolored(accent: preset.rgb)
+            let ratio = RGBMath.contrastRatio(t.accentForeground, preset.rgb)
+            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(preset) on-accent contrast \(ratio) < AA")
+        }
+    }
+
     func testAccentPresetRGB() {
         XCTAssertEqual(AccentPreset.blue.rgb, 0x2C6ECB)
         XCTAssertEqual(AppAccentColor(base: .red, customRGB: 0x123456).rgb, 0x123456)
@@ -110,15 +133,21 @@ final class ThemeEngineTests: XCTestCase {
 
     func testActiveWallpaperUsesBuiltinDefaults() {
         var settings = ThemeSettings.default
-        settings.theme = .builtin(.night)
         settings.autoNight = .off
-        if case .mesh = ThemePalette.activeWallpaper(settings, systemIsDark: false, brightness: 1) {
-            // expected
-        } else {
-            XCTFail("night theme should default to a mesh wallpaper")
-        }
+
+        // Day and Night stay clean (just the theme background).
+        settings.theme = .builtin(.night)
+        XCTAssertEqual(ThemePalette.activeWallpaper(settings, systemIsDark: false, brightness: 1), .none)
         settings.theme = .builtin(.day)
         XCTAssertEqual(ThemePalette.activeWallpaper(settings, systemIsDark: false, brightness: 1), .none)
+
+        // Night Tinted ships a subtle gradient by default — being tinted is its point.
+        settings.theme = .builtin(.nightTinted)
+        if case .gradient = ThemePalette.activeWallpaper(settings, systemIsDark: false, brightness: 1) {
+            // expected
+        } else {
+            XCTFail("night tinted should default to a gradient wallpaper")
+        }
     }
 
     // MARK: Legacy migration mapping

@@ -6,6 +6,7 @@ struct GeneratorScreen: View {
         NavigationStack {
             PasswordGeneratorView()
                 .navigationTitle("Generator")
+                .themedColorScheme()
         }
     }
 }

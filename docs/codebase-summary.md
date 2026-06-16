@@ -58,11 +58,22 @@ Night / Night-Tinted (`BuiltinThemes`); accent HSB recolor (`AccentColor`); `The
 `appearance_mode`); `Wallpaper`/`WallpaperSettings`; `MeshMath` + `MeshGradientRenderer`
 (CPU mesh); `ThemeExchange` (`.vaultheme` codec).
 - **App layer:** `ThemeStore` (`@MainActor @Observable`) resolves the active `AppTheme`,
-  persists, and drives `\.appTheme` + `.tint` + `preferredColorScheme` from the root;
-  `ThemeHolder` is a static snapshot for `VaultColors`. Reusable components
-  (`DesignSystem/Components`): `ThemedCard`, `.themedForeground(role)`, `.appBackground()`,
-  `.themedFormBackground()`, button styles (`.themedProminent/.themedTinted/.themedDestructive`)
-  — all read the active theme, so changing a theme or a component restyles the whole app.
+  persists, drives `\.appTheme` + `.tint` + `preferredColorScheme` from the root, and forces
+  the window `overrideUserInterfaceStyle`. `setTheme` resets the selected theme to its own
+  defaults (clears per-theme accent/wallpaper overrides) so it always looks as designed.
+  `ThemeHolder` is the synchronous snapshot for `VaultColors`, whose surfaces
+  (`surface/fill/groupedBackground/separatorColor`) are **dynamic `UIColor`s** that re-resolve
+  on a color-scheme flip — staying in lock-step with trait-driven foregrounds. Reusable
+  components (`DesignSystem/Components`): `ThemedCard`, `.themedForeground(role)`,
+  `.appBackground()`, `.themedFormBackground()`, button styles
+  (`.themedProminent/.themedTinted/.themedDestructive`), `ThemedToggleStyle` (draws the switch
+  from theme colors — native `.tint` does not reach `Toggle` in `Form`/sheets), and
+  `.themedColorScheme()` (applied at every sheet / full-screen-cover root so their system
+  chrome — nav title, `Form` section headers/footers, pickers — follows the theme instead of
+  the device appearance). Feature views use semantic theme colors throughout (no raw
+  `.primary/.secondary/.red/.white` on themed surfaces). `accentForeground` is **derived by
+  WCAG contrast** (`RGBMath.onColor`) for built-ins + custom accents, so text on filled accent
+  always clears AA. `BrandLogoMark` renders the app brand from the `BrandLogo` asset.
 - **Wallpaper:** solid / multi-stop gradient / procedural pattern (Canvas, soft-light) / image
   (`PhotosPicker`, no Photos permission; stored file-protected in the App Group) / **animated
   mesh** (Telegram's CPU `generateGradient` frames played via `CAKeyframeAnimation` — no Metal;
@@ -72,6 +83,12 @@ Night / Night-Tinted (`BuiltinThemes`); accent HSB recolor (`AccentColor`); `The
   (off·system·scheduled·brightness) / text size / reduce motion, plus a custom **theme editor**
   with `.vaultheme` import/export. All strings EN + VI. Tests: `VaultifyTests/ThemeEngineTests`.
 
+## App icon
+`Vaultify/vaultify.icon` (Icon Composer, layered eagle on a blue gradient) is the app icon —
+referenced via `ASSETCATALOG_COMPILER_APPICON_NAME = vaultify` in `Project.swift` and compiled
+by `actool` (glass on iOS 26, flat fallback on 17.6). The in-app brand mark (`BrandLogoMark` on
+splash / lock / privacy-shield) uses the `BrandLogo` imageset rendered from the same icon.
+
 ## Build
 See memory `vaultify-ios-build-setup`. `xcodebuild -scheme Vaultify -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/vaultify-dd`. Xcode synchronized folders → new files auto-compile. Bridging header + `HEADER_SEARCH_PATHS` wire the Argon2 C.
 
@@ -80,4 +97,4 @@ Implemented & verified running (EN + VI): onboarding, master password, Emergency
 
 **Deferred (need Apple Developer entitlements / extra targets):** CloudKit sync, AutoFill Credential Provider extension, passkeys (ASAuthorization), StoreKit 2 IAP/paywall. Service interfaces and security core are ready for these.
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-16

@@ -77,8 +77,8 @@ private struct PrivacyShield: View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
             VStack(spacing: 12) {
-                PolarisIcon(Icons.lockFill, size: 44).foregroundStyle(.secondary)
-                Text("Vaultify").font(.headline).foregroundStyle(.secondary)
+                BrandLogoMark(size: 72)
+                Text("Vaultify").font(.headline).themedForeground(.secondary)
             }
         }
     }

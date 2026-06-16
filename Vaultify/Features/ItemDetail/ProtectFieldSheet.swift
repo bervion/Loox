@@ -54,6 +54,7 @@ struct ProtectFieldSheet: View {
             }
             .themedFormBackground()
             .navigationTitle("Protect Field")
+            .themedColorScheme()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

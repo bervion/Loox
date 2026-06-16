@@ -1,0 +1,28 @@
+<!-- @dsCard group="Type" viewport="700x160" name="Monospace — secrets & amounts" subtitle="SF Mono with tabular figures for passwords, codes and money" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 24px; background: var(--surface-base); display:flex; gap: 32px; flex-wrap: wrap; }
+  .block { display:flex; flex-direction:column; gap:8px; }
+  .lab { font: var(--weight-semibold) 11px var(--font-text); letter-spacing:.4px; text-transform:uppercase; color: var(--text-tertiary); }
+  .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-primary); }
+</style>
+</head>
+<body>
+  <div class="block">
+    <span class="lab">Password</span>
+    <span class="val" style="font-size:22px;letter-spacing:.08em;">k7$Rm2!qZ4xL</span>
+  </div>
+  <div class="block">
+    <span class="lab">One-time code</span>
+    <span class="val" style="font-size:28px;letter-spacing:.18em;">481 902</span>
+  </div>
+  <div class="block">
+    <span class="lab">Card number</span>
+    <span class="val" style="font-size:18px;letter-spacing:.06em;">4242 4242 4242 4242</span>
+  </div>
+</body>
+</html>

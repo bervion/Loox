@@ -1,0 +1,12 @@
+/* ============================================================
+   Vaultify Design System — global entry point
+   Consumers link THIS file only. Import order matters:
+   foundation tokens first, then accents/base which depend on them.
+   ============================================================ */
+
+@import "tokens/colors.css";
+@import "tokens/accents.css";
+@import "tokens/typography.css";
+@import "tokens/spacing.css";
+@import "tokens/elevation.css";
+@import "tokens/base.css";

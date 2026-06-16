@@ -53,8 +53,12 @@ struct ThemeEditorView: View {
         }
         .themedFormBackground()
         .navigationTitle(editingID == nil ? "New Theme" : "Edit Theme")
+        .themedColorScheme()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button { dismiss() } label: { Text("Cancel") }
+            }
             ToolbarItem(placement: .confirmationAction) {
                 Button { save() } label: { Text("Save") }
             }
@@ -118,7 +122,7 @@ struct ThemeEditorView: View {
                 .frame(height: 70)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: selected ? 3 : 1))
+                    .strokeBorder(selected ? Color.accentColor : Color(rgb: env.theme.active.separator), lineWidth: selected ? 3 : 1))
                 .overlay { if let label { label.font(.caption).themedForeground(.secondary) } }
         }
         .buttonStyle(.plain)

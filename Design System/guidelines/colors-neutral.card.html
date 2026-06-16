@@ -1,0 +1,30 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Neutral ramp" subtitle="Apple-system flavored grays — foundation only, never used raw in UI" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--background-grouped); }
+  .ramp { display: flex; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--hairline); }
+  .cell { flex: 1; height: 92px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; }
+  .cell span { font: var(--weight-semibold) 10px var(--font-mono); }
+</style>
+</head>
+<body>
+  <div class="ramp">
+    <div class="cell" style="background:#ffffff"><span style="color:#8e8e93">0</span></div>
+    <div class="cell" style="background:#f2f2f7"><span style="color:#8e8e93">50</span></div>
+    <div class="cell" style="background:#e9e9ef"><span style="color:#8e8e93">100</span></div>
+    <div class="cell" style="background:#d8d8de"><span style="color:#4b4b50">200</span></div>
+    <div class="cell" style="background:#c7c7cc"><span style="color:#4b4b50">300</span></div>
+    <div class="cell" style="background:#aeaeb2"><span style="color:#1c1c1e">400</span></div>
+    <div class="cell" style="background:#8e8e93"><span style="color:#fff">500</span></div>
+    <div class="cell" style="background:#6c6c70"><span style="color:#fff">600</span></div>
+    <div class="cell" style="background:#4b4b50"><span style="color:#fff">700</span></div>
+    <div class="cell" style="background:#2c2c2e"><span style="color:#fff">800</span></div>
+    <div class="cell" style="background:#1c1c1e"><span style="color:#fff">900</span></div>
+    <div class="cell" style="background:#000000"><span style="color:#fff">1000</span></div>
+  </div>
+</body>
+</html>

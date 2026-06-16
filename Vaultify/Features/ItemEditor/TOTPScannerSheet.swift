@@ -33,6 +33,10 @@ struct TOTPScannerSheet: View {
             }
             .ignoresSafeArea(edges: .top)
             .navigationTitle("Add 2FA Code")
+            // Camera scanner is always dark (black preview), so keep the nav title /
+            // chrome light regardless of the app theme — themed light here would make
+            // the title invisible over the black camera feed.
+            .preferredColorScheme(.dark)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

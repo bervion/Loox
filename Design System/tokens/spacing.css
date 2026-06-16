@@ -1,0 +1,51 @@
+/* ============================================================
+   Vaultify — Spacing, radius, sizing, layout tokens
+   Base unit = 4px. Use the named steps, not raw px.
+   ============================================================ */
+
+:root {
+  /* ---- Spacing scale (4pt grid) ---- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;   /* default screen gutter */
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+
+  /* ---- Screen layout ---- */
+  --screen-gutter:   16px;  /* horizontal content inset */
+  --content-max:     430px; /* iPhone portrait content width cap */
+
+  /* ---- Corner radii ---- */
+  --radius-xs:   6px;   /* chips, small controls */
+  --radius-sm:   10px;  /* buttons, fields, icon tiles */
+  --radius-md:   14px;  /* grouped list container */
+  --radius-lg:   20px;  /* app cards */
+  --radius-xl:   28px;  /* sheets, hero cards */
+  --radius-pill: 999px; /* tab bar, capsule buttons */
+
+  /* ---- Control sizing ---- */
+  --hit-min:        44px;  /* minimum touch target */
+  --control-h-sm:   34px;
+  --control-h-md:   44px;
+  --control-h-lg:   52px;
+  --row-h:          56px;  /* standard list row */
+  --icon-tile:      32px;  /* leading row tile */
+  --icon-tile-lg:   40px;
+
+  /* ---- Icon sizing ---- */
+  --icon-inline: 20px;  /* inline / in-row */
+  --icon-tab:    27px;  /* tab bar */
+  --icon-util:   24px;  /* utility tiles */
+
+  /* ---- Floating tab bar (per design spec) ---- */
+  --tabbar-inset:    22px;  /* horizontal */
+  --tabbar-offset:   12px;  /* above safe area */
+  --tabbar-height:   62px;
+  --tabbar-radius:   31px;  /* height / 2 */
+  --tabbar-bottom-pad: 110px; /* content reserve under bar */
+}

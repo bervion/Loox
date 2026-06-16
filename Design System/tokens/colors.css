@@ -1,0 +1,137 @@
+/* ============================================================
+   Vaultify — Color tokens
+   Two layers:
+   1. Foundation palette (raw values, do NOT use directly in UI)
+   2. Semantic tokens (use THESE in components & screens)
+   Light is the :root default. Dark is scoped to [data-theme="dark"].
+   Accent presets (Telegram-style theming) live in accents.css.
+   ============================================================ */
+
+:root {
+  /* ---- Foundation: neutral ramp (Apple-system flavored) ---- */
+  --gray-0:   #ffffff;
+  --gray-50:  #f2f2f7;  /* iOS systemGroupedBackground */
+  --gray-100: #e9e9ef;
+  --gray-200: #d8d8de;
+  --gray-300: #c7c7cc;
+  --gray-400: #aeaeb2;
+  --gray-500: #8e8e93;  /* iOS systemGray */
+  --gray-600: #6c6c70;
+  --gray-700: #4b4b50;
+  --gray-800: #2c2c2e;
+  --gray-900: #1c1c1e;  /* iOS systemGray6 dark / near-black text */
+  --gray-1000:#000000;
+
+  /* ---- Foundation: brand blue (default accent ramp) ---- */
+  --blue-50:  #eaf1fe;
+  --blue-100: #d6e3fd;
+  --blue-300: #7aa6f6;
+  --blue-500: #2563eb;  /* default accent, light */
+  --blue-600: #1d4fd0;  /* pressed */
+  --blue-400: #4c8dff;  /* default accent, dark */
+
+  /* ---- Foundation: semantic hues ---- */
+  --red-500:    #e5484d;
+  --red-400:    #ff5c5c;
+  --green-500:  #1a8e5f;
+  --green-400:  #30d158;
+  --amber-500:  #b06f00;
+  --amber-400:  #ffd60a;
+
+  /* ===========================================================
+     SEMANTIC TOKENS — LIGHT (default)
+     =========================================================== */
+
+  /* Backgrounds & surfaces */
+  --background-base:        #ffffff;
+  --background-grouped:     #f2f2f7;
+  --surface-base:           #ffffff;
+  --surface-elevated:       #ffffff;
+  --surface-floating:       rgba(255, 255, 255, 0.72); /* glass control layer */
+  --surface-floating-solid: #ffffff;                   /* reduced-transparency fallback */
+  --surface-pressed:        rgba(60, 60, 67, 0.10);
+
+  /* Text */
+  --text-primary:   #1c1c1e;  /* 15.8:1 on white */
+  --text-secondary: #4b4b50;  /* 8.6:1 — real content */
+  --text-tertiary:  #8a8a8e;  /* 3.1:1 — metadata only */
+  --text-disabled:  #b6b6bb;
+
+  /* Icons */
+  --icon-primary:   #1c1c1e;
+  --icon-secondary: #6c6c70;  /* 4.9:1 — inactive nav */
+  --icon-disabled:  #c2c2c7;
+
+  /* Accent (overridden by accents.css presets) */
+  --accent:       #2563eb;
+  --on-accent:    #ffffff;    /* chosen by WCAG vs accent, not brightness */
+  --accent-soft:  #e6edfd;    /* low-emphasis selected fill */
+  --accent-press: #1d4fd0;
+
+  /* Lines & shadow */
+  --separator:        rgba(60, 60, 67, 0.18);
+  --separator-opaque: #d8d8de;
+  --shadow-ambient:   rgba(0, 0, 0, 0.10);
+
+  /* Status */
+  --destructive:      #e5484d;
+  --on-destructive:   #ffffff;
+  --destructive-soft: #fdeaea;
+  --success:          #1a8e5f;
+  --success-soft:     #e3f4ec;
+  --warning:          #b06f00;
+  --warning-soft:     #fbf0db;
+}
+
+/* ===========================================================
+   SEMANTIC TOKENS — DARK
+   =========================================================== */
+[data-theme="dark"] {
+  --background-base:        #000000;
+  --background-grouped:     #000000;
+  --surface-base:           #1c1c1e;
+  --surface-elevated:       #2c2c2e;
+  --surface-floating:       rgba(30, 30, 32, 0.72);
+  --surface-floating-solid: #1c1c1e;
+  --surface-pressed:        rgba(235, 235, 245, 0.16);
+
+  --text-primary:   #ffffff;
+  --text-secondary: #c7c7cc;  /* real content on dark */
+  --text-tertiary:  #8e8e93;  /* metadata */
+  --text-disabled:  #5a5a5e;
+
+  --icon-primary:   #ffffff;
+  --icon-secondary: #98989d;
+  --icon-disabled:  #5a5a5e;
+
+  --accent:       #4c8dff;
+  --on-accent:    #ffffff;
+  --accent-soft:  #16294b;
+  --accent-press: #3b7dff;
+
+  --separator:        rgba(235, 235, 245, 0.18);
+  --separator-opaque: #38383a;
+  --shadow-ambient:   rgba(0, 0, 0, 0.55);
+
+  --destructive:      #ff5c5c;
+  --on-destructive:   #ffffff;
+  --destructive-soft: #3a1d1f;
+  --success:          #30d158;
+  --success-soft:     #12331f;
+  --warning:          #ffd60a;
+  --warning-soft:     #33290a;
+}
+
+/* Increased contrast — strengthen lines & secondary text */
+[data-contrast="more"] {
+  --text-secondary: #2c2c2e;
+  --text-tertiary:  #5a5a5e;
+  --icon-secondary: #3a3a3c;
+  --separator:      rgba(60, 60, 67, 0.42);
+}
+[data-theme="dark"][data-contrast="more"] {
+  --text-secondary: #ebebf0;
+  --text-tertiary:  #b0b0b5;
+  --icon-secondary: #d0d0d4;
+  --separator:      rgba(235, 235, 245, 0.42);
+}

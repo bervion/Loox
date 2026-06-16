@@ -57,8 +57,7 @@ struct CreateMasterPasswordView: View {
             Button {
                 Task { await submit() }
             } label: {
-                if busy { ProgressView().frame(maxWidth: .infinity) }
-                else { Text("Continue").frame(maxWidth: .infinity) }
+                Text("Continue").frame(maxWidth: .infinity).prominentButtonLoading(busy)
             }
             .buttonStyle(.themedProminent)
             .controlSize(.large)

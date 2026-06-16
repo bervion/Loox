@@ -11,12 +11,7 @@ struct SplashView: View {
             Color("LaunchBackground").ignoresSafeArea()
 
             VStack(spacing: 18) {
-                Image("AppLogo")
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 104, height: 104)
-                    .clipShape(RoundedRectangle(cornerRadius: 23, style: .continuous))
-                    .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
+                BrandLogoMark(size: 104, shadowRadius: 16, shadowY: 8)
 
                 Text("Vaultify")
                     .font(.title2.weight(.semibold))

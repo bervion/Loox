@@ -46,6 +46,7 @@ struct RecoveryView: View {
             }
             .themedFormBackground()
             .navigationTitle("Recover Vault")
+            .themedColorScheme()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

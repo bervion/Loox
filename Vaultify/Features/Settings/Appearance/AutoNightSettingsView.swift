@@ -83,6 +83,7 @@ struct AutoNightSettingsView: View {
                 Spacer()
                 if mode == value { PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor) }
             }
+            .contentShape(.rect) // whole row is tappable, not just the label text
         }
         .buttonStyle(.plain)
     }

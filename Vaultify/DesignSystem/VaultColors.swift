@@ -29,12 +29,19 @@ enum VaultColors {
         }
     }
 
-    // Theme-driven surfaces — read the active theme (re-resolved when it changes), so
-    // tinted / custom themes apply everywhere these are used.
-    static var surface: Color { Color(rgb: ThemeHolder.current.elevatedBackground) }
-    static var groupedBackground: Color { Color(rgb: ThemeHolder.current.groupedBackground) }
-    static var fill: Color { Color(rgb: ThemeHolder.current.controlBackground) }
-    static var separatorColor: Color { Color(rgb: ThemeHolder.current.separator) }
+    // Theme-driven surfaces. Resolved through a *dynamic* UIColor so SwiftUI re-resolves
+    // them whenever the color scheme flips (day↔night) — keeping these backgrounds in
+    // lock-step with trait-driven foregrounds (.primary/.secondary) instead of lagging a
+    // frame behind a static snapshot (which left text mismatched until an app restart).
+    // The provider reads the live active theme, so tinted / custom themes apply too.
+    static var surface: Color { themed(\.elevatedBackground) }
+    static var groupedBackground: Color { themed(\.groupedBackground) }
+    static var fill: Color { themed(\.controlBackground) }
+    static var separatorColor: Color { themed(\.separator) }
+
+    private static func themed(_ key: KeyPath<AppTheme, UInt32>) -> Color {
+        Color(uiColor: UIColor { _ in UIColor(hex: ThemeHolder.current[keyPath: key]) })
+    }
 
     static func dynamic(light: UInt32, dark: UInt32) -> Color {
         Color(uiColor: UIColor { traits in

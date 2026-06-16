@@ -1,0 +1,49 @@
+/* ============================================================
+   Vaultify — Typography tokens
+   The app ships on Apple platforms and uses the SYSTEM font
+   (SF Pro Text / SF Pro Display) plus SF Mono for amounts and
+   secrets. On the web specimen we use the same system stack, so
+   reviewers on Apple hardware see the real San Francisco faces.
+   No webfont is bundled — see README "Font substitution" note.
+   ============================================================ */
+
+:root {
+  /* ---- Families ---- */
+  --font-text:    -apple-system, "SF Pro Text", BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, "SF Pro Display", BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono:    "SF Mono", ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+  /* ---- Weights ---- */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ---- Type scale (px). Pair size + line-height per role. ---- */
+  --size-large-title:  34px;  --lh-large-title:  41px;
+  --size-screen-title: 28px;  --lh-screen-title: 34px;
+  --size-section:      19px;  --lh-section:      24px;
+  --size-headline:     17px;  --lh-headline:     22px;  /* row titles, emphasized */
+  --size-body:         17px;  --lh-body:         22px;
+  --size-callout:      16px;  --lh-callout:      21px;
+  --size-subhead:      15px;  --lh-subhead:      20px;
+  --size-footnote:     13px;  --lh-footnote:     18px;
+  --size-caption:      12px;  --lh-caption:      16px;
+
+  /* ---- Tracking ---- */
+  --tracking-tight:  -0.4px;  /* large display */
+  --tracking-normal: -0.2px;
+  --tracking-wide:    0.2px;  /* all-caps section labels */
+}
+
+/* ---- Optional role helpers (semantic, not required) ---- */
+.t-large-title  { font-family:var(--font-display); font-size:var(--size-large-title);  line-height:var(--lh-large-title);  font-weight:var(--weight-bold); letter-spacing:var(--tracking-tight); }
+.t-screen-title { font-family:var(--font-display); font-size:var(--size-screen-title); line-height:var(--lh-screen-title); font-weight:var(--weight-bold); letter-spacing:var(--tracking-tight); }
+.t-section      { font-family:var(--font-text); font-size:var(--size-section); line-height:var(--lh-section); font-weight:var(--weight-semibold); letter-spacing:var(--tracking-normal); }
+.t-headline     { font-family:var(--font-text); font-size:var(--size-headline); line-height:var(--lh-headline); font-weight:var(--weight-semibold); }
+.t-body         { font-family:var(--font-text); font-size:var(--size-body); line-height:var(--lh-body); font-weight:var(--weight-regular); }
+.t-callout      { font-family:var(--font-text); font-size:var(--size-callout); line-height:var(--lh-callout); font-weight:var(--weight-regular); }
+.t-subhead      { font-family:var(--font-text); font-size:var(--size-subhead); line-height:var(--lh-subhead); font-weight:var(--weight-regular); }
+.t-footnote     { font-family:var(--font-text); font-size:var(--size-footnote); line-height:var(--lh-footnote); font-weight:var(--weight-regular); }
+.t-caption      { font-family:var(--font-text); font-size:var(--size-caption); line-height:var(--lh-caption); font-weight:var(--weight-medium); }
+.t-mono         { font-family:var(--font-mono); font-variant-numeric:tabular-nums; letter-spacing:0; }
