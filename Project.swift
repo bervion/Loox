@@ -71,6 +71,7 @@ let project = Project(
             sources: ["Vaultify/**", "VaultifyCore/**"],
             resources: [
                 "Vaultify/Assets.xcassets",
+                "Vaultify/vaultify.icon",
                 "Vaultify/Localizable.xcstrings",
             ],
             entitlements: "Vaultify/Vaultify.entitlements",
@@ -78,7 +79,7 @@ let project = Project(
                 .target(name: "VaultifyAutoFill"),
             ],
             settings: .settings(base: [
-                "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+                "ASSETCATALOG_COMPILER_APPICON_NAME": "vaultify",
                 "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
                 "CODE_SIGN_STYLE": "Automatic",
                 "ENABLE_PREVIEWS": "YES",
