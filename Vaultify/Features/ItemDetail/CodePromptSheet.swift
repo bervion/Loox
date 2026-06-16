@@ -31,6 +31,7 @@ struct CodePromptSheet: View {
             }
             .themedFormBackground()
             .navigationTitle(Text(title.inAppLocalized))
+            .themedColorScheme()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

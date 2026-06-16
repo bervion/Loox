@@ -40,6 +40,7 @@ struct FolderPickerSheet: View {
             }
             .themedFormBackground()
             .navigationTitle("Space")
+            .themedColorScheme()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .sheet(isPresented: $creating) {

@@ -3,6 +3,7 @@ import SwiftUI
 /// The Settings tab.
 struct SettingsScreen: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.dismiss) private var dismiss
     @State private var confirmErase = false
 
     private var biometricBinding: Binding<Bool> {
@@ -122,7 +123,8 @@ struct SettingsScreen: View {
                         Label { Text("Lock Now") } icon: { PolarisIcon(Icons.lockFill) }
                     }
                     Button(role: .destructive) { confirmErase = true } label: {
-                        Label { Text("Erase Vault").foregroundStyle(.red) } icon: { PolarisIcon(Icons.delete).foregroundStyle(.red) }
+                        Label { Text("Erase Vault").foregroundStyle(env.theme.active.color(.destructive)) }
+                            icon: { PolarisIcon(Icons.delete).foregroundStyle(env.theme.active.color(.destructive)) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -136,6 +138,10 @@ struct SettingsScreen: View {
             }
             .themedFormBackground()
             .navigationTitle("Settings")
+            .themedColorScheme()
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
             .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
                 Button("Erase Everything", role: .destructive) { env.eraseEverything() }
             } message: {

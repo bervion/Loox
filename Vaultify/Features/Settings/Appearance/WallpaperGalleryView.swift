@@ -68,7 +68,7 @@ struct WallpaperGalleryView: View {
                 .frame(height: 84)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.08),
+                    .strokeBorder(selected ? Color.accentColor : Color(rgb: env.theme.active.separator),
                                   lineWidth: selected ? 3 : 1))
                 .overlay(alignment: .topTrailing) {
                     if selected {
@@ -88,6 +88,7 @@ struct WallpaperGalleryView: View {
                 Spacer()
                 if isSelected { PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(Color.accentColor) }
             }
+            .contentShape(.rect) // whole row is tappable, not just the label text
         }
         .buttonStyle(.plain)
     }

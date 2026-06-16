@@ -112,6 +112,11 @@ import UIKit
     func setTheme(_ ref: AppThemeReference) {
         update { settings in
             settings.theme = ref
+            // Switching a theme resets it to its own defaults: drop any saved accent /
+            // wallpaper customization for this theme so it always looks as designed (no
+            // carried-over history from a previous customization).
+            settings.accents[ref.key] = nil
+            settings.wallpapers[ref.key] = nil
             // A dark primary can't pair with auto-night's light↔dark switch → make it
             // manual so the rendered theme and the forced color scheme stay in sync.
             if Self.isDark(ref, in: settings) { settings.autoNight = .off }

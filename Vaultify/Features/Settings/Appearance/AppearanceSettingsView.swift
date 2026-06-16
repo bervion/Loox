@@ -180,7 +180,7 @@ struct AppearanceSettingsView: View {
                     WallpaperView(wallpaper: env.theme.wallpaper, fallbackColor: Color(rgb: env.theme.active.background))
                         .frame(width: 44, height: 44)
                         .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(.quaternary))
+                        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Color(rgb: env.theme.active.separator)))
                     Text("Background")
                 }
             }

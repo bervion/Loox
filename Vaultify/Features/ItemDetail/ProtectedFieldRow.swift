@@ -17,23 +17,24 @@ struct ProtectedFieldRow: View {
     @State private var showLargeType = false
 
     private var scheme: SecretGuard.Scheme? { SecretGuard.scheme(of: field.value) }
+    private var theme: AppTheme { env.theme.active }
 
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(copied ? Color.white.opacity(0.85) : Color.accentColor)
+                    .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
                 value
-                if let error { Text(error).font(.caption).foregroundStyle(copied ? .white : VaultColors.strengthWeak) }
+                if let error { Text(error).font(.caption).foregroundStyle(copied ? theme.color(.onAccent) : VaultColors.strengthWeak) }
             }
             Spacer(minLength: 8)
             trailing
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(copied ? Color.accentColor : Color.clear)
-        .foregroundStyle(copied ? .white : .primary)
+        .background(copied ? theme.color(.accent) : Color.clear)
+        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
         .contentShape(.rect)
         .onTapGesture { primaryTap() }
         .animation(.easeOut(duration: 0.18), value: copied)
@@ -75,9 +76,9 @@ struct ProtectedFieldRow: View {
             }
         } label: {
             PolarisIcon("ic_menu_horizontal", size: 17)
-                .foregroundStyle(copied ? .white : .secondary)
+                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
                 .frame(width: 30, height: 30)
-                .background(Circle().fill(copied ? Color.white.opacity(0.22) : VaultColors.fill))
+                .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
         }
     }
 

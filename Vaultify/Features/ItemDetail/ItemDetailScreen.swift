@@ -81,12 +81,12 @@ struct ItemDetailScreen: View {
             Spacer(minLength: 8)
             Button { env.repository.togglePin(item) } label: {
                 PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
-                    .foregroundStyle(item.pinned ? Color.accentColor : .secondary)
+                    .foregroundStyle(item.pinned ? env.theme.active.color(.accent) : env.theme.active.color(.secondary))
             }
             .buttonStyle(.plain)
             Button { try? env.repository.toggleFavorite(item) } label: {
                 PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: 24)
-                    .foregroundStyle(item.favorite ? VaultColors.strengthMedium : .secondary)
+                    .foregroundStyle(item.favorite ? VaultColors.strengthMedium : env.theme.active.color(.secondary))
             }
             .buttonStyle(.plain)
         }
@@ -139,8 +139,8 @@ struct ItemDetailScreen: View {
     private func trashCard(_ item: VaultItem) -> some View {
         Button(role: .destructive) { confirmTrash = true } label: {
             HStack(spacing: 12) {
-                PolarisIcon(Icons.trash, size: 20).foregroundStyle(.red)
-                Text("Move to Trash").foregroundStyle(.red)
+                PolarisIcon(Icons.trash, size: 20).foregroundStyle(env.theme.active.color(.destructive))
+                Text("Move to Trash").foregroundStyle(env.theme.active.color(.destructive))
                 Spacer()
             }
             .padding(.horizontal, 16).padding(.vertical, 14)

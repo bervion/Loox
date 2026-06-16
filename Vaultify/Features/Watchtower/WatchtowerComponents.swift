@@ -4,6 +4,8 @@ import SwiftUI
 struct HealthGauge: View {
     let score: Int
     let issueCount: Int
+    @Environment(AppEnvironment.self) private var env
+    @ScaledMetric(relativeTo: .largeTitle) private var scoreSize: CGFloat = 42
 
     private var color: Color {
         score >= 80 ? VaultColors.strengthStrong : score >= 50 ? VaultColors.strengthMedium : VaultColors.strengthWeak
@@ -12,14 +14,14 @@ struct HealthGauge: View {
     var body: some View {
         VStack(spacing: 12) {
             ZStack {
-                Circle().stroke(Color(.systemGray5), lineWidth: 10)
+                Circle().stroke(VaultColors.fill, lineWidth: 10)
                 Circle()
                     .trim(from: 0, to: CGFloat(score) / 100)
                     .stroke(color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .animation(.smooth, value: score)
                 VStack(spacing: 0) {
-                    Text("\(score)").font(.system(size: 42, weight: .bold, design: .rounded))
+                    Text("\(score)").font(.system(size: scoreSize, weight: .bold, design: .rounded))
                     Text("Health").font(.caption).themedForeground(.secondary)
                 }
             }
@@ -27,7 +29,7 @@ struct HealthGauge: View {
 
             Text(issueCount == 0 ? "No issues found" : "^[\(issueCount) issue](inflect: true) to review")
                 .font(.subheadline)
-                .foregroundStyle(issueCount == 0 ? VaultColors.strengthStrong : .secondary)
+                .foregroundStyle(issueCount == 0 ? VaultColors.strengthStrong : env.theme.active.color(.secondary))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)

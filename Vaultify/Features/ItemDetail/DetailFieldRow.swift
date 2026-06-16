@@ -15,6 +15,7 @@ struct DetailFieldRow: View {
     @State private var showLargeType = false
     @State private var showProtect = false
 
+    private var theme: AppTheme { env.theme.active }
     private var isSecret: Bool { field.protected || field.kind.isSecret }
 
     private var copyValue: String {
@@ -37,7 +38,7 @@ struct DetailFieldRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(copied ? Color.white.opacity(0.85) : Color.accentColor)
+                    .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
                 valueView
             }
             Spacer(minLength: 8)
@@ -46,8 +47,8 @@ struct DetailFieldRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(copied ? Color.accentColor : Color.clear)
-        .foregroundStyle(copied ? .white : .primary)
+        .background(copied ? theme.color(.accent) : Color.clear)
+        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
         .contentShape(.rect)
         .onTapGesture { copy() }
         .animation(.easeOut(duration: 0.18), value: copied)
@@ -67,7 +68,7 @@ struct DetailFieldRow: View {
             case .totp:
                 TOTPCodeView(secret: field.value)
             case .url:
-                Text(field.value).font(.body).foregroundStyle(Color.accentColor)
+                Text(field.value).font(.body).foregroundStyle(theme.color(.accent))
                     .lineLimit(1).truncationMode(.middle)
             default:
                 if isSecret && !revealed {
@@ -99,7 +100,7 @@ struct DetailFieldRow: View {
     private var strengthBadge: some View {
         let strength = PasswordStrength.evaluate(field.value)
         return HStack(spacing: 5) {
-            Text(strength.title).font(.subheadline).foregroundStyle(copied ? Color.white.opacity(0.85) : .secondary)
+            Text(strength.title).font(.subheadline).foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
             Circle().fill(VaultColors.strength(strength)).frame(width: 9, height: 9)
         }
     }
@@ -125,9 +126,9 @@ struct DetailFieldRow: View {
             }
         } label: {
             PolarisIcon("ic_menu_horizontal", size: 17)
-                .foregroundStyle(copied ? .white : .secondary)
+                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
                 .frame(width: 30, height: 30)
-                .background(Circle().fill(copied ? Color.white.opacity(0.22) : VaultColors.fill))
+                .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
         }
     }
 

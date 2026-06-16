@@ -17,12 +17,27 @@ extension UIColor {
 
 /// Color math used by accent recolor. Pure + off-main safe.
 nonisolated enum RGBMath {
-    /// Relative luminance (sRGB-ish, 0…1) — used to pick on-accent foreground.
-    static func luminance(_ rgb: UInt32) -> Double {
-        let r = Double((rgb >> 16) & 0xFF) / 255
-        let g = Double((rgb >> 8) & 0xFF) / 255
-        let b = Double(rgb & 0xFF) / 255
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    /// WCAG 2.x relative luminance (0…1): channels linearized from sRGB before the
+    /// Rec.709 weighting. This is the value contrast ratios must be computed from.
+    static func relativeLuminance(_ rgb: UInt32) -> Double {
+        func channel(_ shift: UInt32) -> Double {
+            let c = Double((rgb >> shift) & 0xFF) / 255
+            return c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0)
+    }
+
+    /// WCAG contrast ratio between two colors (1…21).
+    static func contrastRatio(_ a: UInt32, _ b: UInt32) -> Double {
+        let la = relativeLuminance(a), lb = relativeLuminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
+    /// Best-contrast on-color (white or black) for text/icons drawn on `background`,
+    /// chosen by real WCAG contrast rather than a raw luminance threshold.
+    static func onColor(_ background: UInt32) -> UInt32 {
+        let white: UInt32 = 0xFFFFFF, black: UInt32 = 0x000000
+        return contrastRatio(white, background) >= contrastRatio(black, background) ? white : black
     }
 
     /// Per-channel linear blend of `a` toward `b` by `t` (0…1).

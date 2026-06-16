@@ -17,12 +17,7 @@ struct LockScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            Image("AppLogo")
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 72, height: 72)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+            BrandLogoMark(size: 72)
             Text("Vaultify").font(.largeTitle.bold()).themedForeground().padding(.top, 12)
             Text("Enter your master password to unlock")
                 .font(.subheadline).themedForeground(.secondary).padding(.top, 2)
@@ -39,8 +34,7 @@ struct LockScreen: View {
                 Button {
                     Task { await unlock() }
                 } label: {
-                    if busy { ProgressView().frame(maxWidth: .infinity) }
-                    else { Text("Unlock").frame(maxWidth: .infinity) }
+                    Text("Unlock").frame(maxWidth: .infinity).prominentButtonLoading(busy)
                 }
                 .buttonStyle(.themedProminent)
                 .controlSize(.large)

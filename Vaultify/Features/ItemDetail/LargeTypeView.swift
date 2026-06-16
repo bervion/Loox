@@ -5,6 +5,8 @@ import SwiftUI
 struct LargeTypeView: View {
     let text: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppEnvironment.self) private var env
+    @ScaledMetric(relativeTo: .largeTitle) private var fontSize: CGFloat = 38
 
     var body: some View {
         ZStack {
@@ -12,7 +14,7 @@ struct LargeTypeView: View {
 
             ScrollView {
                 Text(colorCoded)
-                    .font(.system(size: 38, weight: .semibold, design: .monospaced))
+                    .font(.system(size: fontSize, weight: .semibold, design: .monospaced))
                     .multilineTextAlignment(.center)
                     .lineSpacing(8)
                     .padding(.horizontal, 24)
@@ -41,11 +43,11 @@ struct LargeTypeView: View {
         for character in text {
             var piece = AttributedString(String(character))
             if character.isNumber {
-                piece.foregroundColor = .blue
+                piece.foregroundColor = VaultColors.category(.login)
             } else if character.isLetter {
-                piece.foregroundColor = .primary
+                piece.foregroundColor = env.theme.active.color(.primary)
             } else {
-                piece.foregroundColor = .red
+                piece.foregroundColor = env.theme.active.color(.destructive)
             }
             result.append(piece)
         }
