@@ -1,0 +1,21 @@
+/* ============================================================
+   Vaultify — Accent presets (Telegram-style live theming)
+   Apply on any ancestor: <div data-accent="teal"> … </div>
+   Each preset only re-maps --accent / --on-accent / --accent-soft
+   / --accent-press, so every component re-tints live.
+   Soft / press values are tuned per light & dark.
+   ============================================================ */
+
+[data-accent="blue"]   { --accent:#2563eb; --on-accent:#fff; --accent-soft:#e6edfd; --accent-press:#1d4fd0; }
+[data-accent="indigo"] { --accent:#5145cd; --on-accent:#fff; --accent-soft:#eae8fb; --accent-press:#3f37a6; }
+[data-accent="teal"]   { --accent:#0e8a7d; --on-accent:#fff; --accent-soft:#dcf2ef; --accent-press:#0a6c62; }
+[data-accent="purple"] { --accent:#7c3aed; --on-accent:#fff; --accent-soft:#f0e8fd; --accent-press:#6325c9; }
+[data-accent="pink"]   { --accent:#d6256e; --on-accent:#fff; --accent-soft:#fce3ee; --accent-press:#b01a59; }
+[data-accent="graphite"]{--accent:#4b4b50; --on-accent:#fff; --accent-soft:#ececef; --accent-press:#343438; }
+
+[data-theme="dark"][data-accent="blue"]   { --accent:#4c8dff; --accent-soft:#16294b; --accent-press:#3b7dff; }
+[data-theme="dark"][data-accent="indigo"] { --accent:#8b80ff; --accent-soft:#231f47; --accent-press:#7468ff; }
+[data-theme="dark"][data-accent="teal"]   { --accent:#2fd0bf; --on-accent:#06302b; --accent-soft:#0c322d; --accent-press:#27b8a9; }
+[data-theme="dark"][data-accent="purple"] { --accent:#b388ff; --accent-soft:#281b45; --accent-press:#a06fff; }
+[data-theme="dark"][data-accent="pink"]   { --accent:#ff77ab; --on-accent:#3a0f22; --accent-soft:#3d1226; --accent-press:#ff5e9b; }
+[data-theme="dark"][data-accent="graphite"]{--accent:#aeaeb2; --on-accent:#1c1c1e; --accent-soft:#2c2c2e; --accent-press:#c2c2c7; }

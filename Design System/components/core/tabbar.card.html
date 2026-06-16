@@ -1,0 +1,48 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Floating tab bar" subtitle="Icon-only, sliding pill, badges — solid fallback & glass layer" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin:0; padding:22px; background:var(--background-grouped); }
+  .bg { position:relative; height:96px; border-radius:var(--radius-lg); overflow:hidden; margin-bottom:8px;
+        background:linear-gradient(120deg,#2563eb22,#7c3aed22); display:flex; align-items:flex-end; padding:12px; }
+  .bg.dark { background:linear-gradient(120deg,#4c8dff33,#b388ff22); }
+  .cap { font: var(--weight-semibold) 11px var(--font-text); letter-spacing:.4px; text-transform:uppercase; color: var(--text-tertiary); margin:0 0 6px 2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+  const { TabBar } = window.VaultifyDesignSystem_ffd0d9;
+  const tabs = [
+    { id:'home', icon:'home', iconFill:'home.fill', label:'Trang chủ' },
+    { id:'items', icon:'items', iconFill:'items.fill', label:'Mục' },
+    { id:'watchtower', icon:'watchtower', label:'Giám sát', badge:3 },
+    { id:'search', icon:'search', label:'Tìm kiếm' },
+  ];
+  function Demo(){
+    const [a,setA]=React.useState('home');
+    const [b,setB]=React.useState('watchtower');
+    return (
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div>
+          <p class="cap">Solid fallback</p>
+          <div className="bg"><TabBar tabs={tabs} value={a} onChange={setA} style={{width:'100%'}} /></div>
+        </div>
+        <div data-theme="dark">
+          <p class="cap" style={{color:'#8e8e93'}}>Glass · dark</p>
+          <div className="bg dark"><TabBar tabs={tabs} value={b} onChange={setB} glass style={{width:'100%'}} /></div>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!-- @dsCard group="Spacing" viewport="700x170" name="Motion" subtitle="Tap a swatch — short, low-bounce, Apple-native easing" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 22px; background: var(--surface-base); display: flex; gap: 18px; align-items:center; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .track { width: 130px; height: 44px; background: var(--background-grouped); border-radius: var(--radius-pill); display:flex; align-items:center; padding: 4px; }
+  .dot { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); transform: translateX(0); }
+  .lab { font: var(--weight-medium) 11px var(--font-mono); color: var(--text-tertiary); }
+  .play.on .standard { transform: translateX(86px); transition: transform var(--dur-medium) var(--ease-standard); }
+  .play.on .spring   { transform: translateX(86px); transition: transform var(--dur-medium) var(--ease-spring); }
+  .play.on .fast     { transform: translateX(86px); transition: transform var(--dur-fast) var(--ease-standard); }
+</style>
+</head>
+<body class="play" onclick="this.classList.toggle('on')">
+  <div class="col"><div class="track"><div class="dot fast"></div></div><span class="lab">fast · 140ms</span></div>
+  <div class="col"><div class="track"><div class="dot standard"></div></div><span class="lab">base · ease-out</span></div>
+  <div class="col"><div class="track"><div class="dot spring"></div></div><span class="lab">spring · low bounce</span></div>
+</body>
+</html>

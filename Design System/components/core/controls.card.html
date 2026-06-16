@@ -1,0 +1,46 @@
+<!-- @dsCard group="Components" viewport="700x180" name="Controls" subtitle="IconButton · Switch · SegmentedControl · Badge" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style> body { margin:0; padding:22px; background:var(--background-grouped); } </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+  const { IconButton, Switch, SegmentedControl, Badge, Icon } = window.VaultifyDesignSystem_ffd0d9;
+  function Demo(){
+    const [on,setOn] = React.useState(true);
+    const [seg,setSeg] = React.useState('all');
+    return (
+      <div style={{display:'flex',gap:28,alignItems:'center',flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <IconButton name="copy" label="Copy" />
+          <IconButton name="edit" label="Edit" variant="tinted" />
+          <IconButton name="add" label="Add" variant="filled" />
+        </div>
+        <Switch checked={on} onChange={setOn} label="Face ID" />
+        <div style={{width:220}}>
+          <SegmentedControl value={seg} onChange={setSeg}
+            options={[{value:'all',label:'All'},{value:'logins',label:'Logins'},{value:'cards',label:'Cards'}]} />
+        </div>
+        <div style={{display:'flex',gap:14,alignItems:'center'}}>
+          <span style={{position:'relative',display:'inline-flex'}}>
+            <Icon name="watchtower" size={26} color="var(--icon-secondary)" />
+            <span style={{position:'absolute',top:-4,right:-8}}><Badge count={3} /></span>
+          </span>
+          <Badge dot tone="success" />
+          <Badge count={128} max={99} tone="accent" />
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

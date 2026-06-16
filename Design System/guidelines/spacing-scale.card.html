@@ -1,0 +1,27 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Spacing scale" subtitle="4pt grid — space-1 (4px) through space-10 (64px)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 22px; background: var(--surface-base); display: flex; align-items: flex-end; gap: 14px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .bar { background: var(--accent); border-radius: 3px; width: 100%; }
+  .box { display:flex; align-items:flex-end; width: 28px; height: 72px; }
+  .lab { font: var(--weight-semibold) 10px var(--font-mono); color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+  <div class="col"><div class="box"><div class="bar" style="height:4px"></div></div><span class="lab">1·4</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:8px"></div></div><span class="lab">2·8</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:12px"></div></div><span class="lab">3·12</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:16px"></div></div><span class="lab">4·16</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:20px"></div></div><span class="lab">5·20</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:24px"></div></div><span class="lab">6·24</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:32px"></div></div><span class="lab">7·32</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:40px"></div></div><span class="lab">8·40</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:48px"></div></div><span class="lab">9·48</span></div>
+  <div class="col"><div class="box"><div class="bar" style="height:64px"></div></div><span class="lab">10·64</span></div>
+</body>
+</html>

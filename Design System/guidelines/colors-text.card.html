@@ -1,0 +1,35 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="Text on surfaces" subtitle="Primary / secondary / tertiary text with WCAG ratios, light & dark" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--background-grouped); display:flex; gap:14px; }
+  .panel { flex:1; padding: 18px; border-radius: var(--radius-lg); background: var(--surface-base); box-shadow: var(--hairline); }
+  .line { display:flex; align-items:baseline; justify-content:space-between; padding: 7px 0; border-bottom: 0.5px solid var(--separator); }
+  .line:last-child { border-bottom: none; }
+  .t { font-family: var(--font-text); }
+  .ratio { font: var(--weight-medium) 11px var(--font-mono); color: var(--text-tertiary); }
+  .cap { font: var(--weight-semibold) 11px var(--font-text); letter-spacing:.4px; text-transform:uppercase; color: var(--text-tertiary); margin: 0 0 10px; }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <p class="cap">Light · surface-base</p>
+    <div class="line"><span class="t" style="font-size:17px;font-weight:600;color:var(--text-primary)">Primary label</span><span class="ratio">15.8:1</span></div>
+    <div class="line"><span class="t" style="font-size:15px;color:var(--text-secondary)">Secondary content</span><span class="ratio">8.6:1</span></div>
+    <div class="line"><span class="t" style="font-size:13px;color:var(--text-tertiary)">Tertiary metadata</span><span class="ratio">3.1:1</span></div>
+    <div class="line"><span class="t" style="font-size:15px;color:var(--text-disabled)">Disabled</span><span class="ratio">—</span></div>
+    <div class="line"><span class="t" style="font-size:15px;font-weight:600;color:var(--accent)">Accent link</span><span class="ratio">4.6:1</span></div>
+  </div>
+  <div class="panel" data-theme="dark" style="background:#1c1c1e">
+    <p class="cap">Dark · surface-base</p>
+    <div class="line"><span class="t" style="font-size:17px;font-weight:600;color:var(--text-primary)">Primary label</span><span class="ratio">16.1:1</span></div>
+    <div class="line"><span class="t" style="font-size:15px;color:var(--text-secondary)">Secondary content</span><span class="ratio">9.7:1</span></div>
+    <div class="line"><span class="t" style="font-size:13px;color:var(--text-tertiary)">Tertiary metadata</span><span class="ratio">4.6:1</span></div>
+    <div class="line"><span class="t" style="font-size:15px;color:var(--text-disabled)">Disabled</span><span class="ratio">—</span></div>
+    <div class="line"><span class="t" style="font-size:15px;font-weight:600;color:var(--accent)">Accent link</span><span class="ratio">6.2:1</span></div>
+  </div>
+</body>
+</html>

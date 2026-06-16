@@ -1,0 +1,37 @@
+/* ============================================================
+   Vaultify — base reset & app defaults
+   Imported last so tokens are available. Keep minimal.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-text);
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+  color: var(--text-primary);
+  background: var(--background-grouped);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tabular numbers everywhere numbers align */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Visually-hidden but accessible (for icon-only control labels) */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+::selection { background: var(--accent-soft); }
+
+/* Reduced transparency → always use solid floating fallback */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --surface-floating: var(--surface-floating-solid); }
+}

@@ -1,0 +1,35 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Status & semantic surfaces" subtitle="Accent, destructive, success, warning — solid + soft pairs" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--background-grouped); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .pair { border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--hairline); }
+  .solid { height: 56px; display:flex; align-items:center; justify-content:center; font: var(--weight-semibold) 13px var(--font-text); color: #fff; }
+  .soft { height: 38px; display:flex; align-items:center; justify-content:center; font: var(--weight-medium) 12px var(--font-text); }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="pair">
+      <div class="solid" style="background:var(--accent)">Accent</div>
+      <div class="soft" style="background:var(--accent-soft);color:var(--accent)">accent-soft</div>
+    </div>
+    <div class="pair">
+      <div class="solid" style="background:var(--destructive)">Destructive</div>
+      <div class="soft" style="background:var(--destructive-soft);color:var(--destructive)">destructive-soft</div>
+    </div>
+    <div class="pair">
+      <div class="solid" style="background:var(--success)">Success</div>
+      <div class="soft" style="background:var(--success-soft);color:var(--success)">success-soft</div>
+    </div>
+    <div class="pair">
+      <div class="solid" style="background:var(--warning)">Warning</div>
+      <div class="soft" style="background:var(--warning-soft);color:var(--warning)">warning-soft</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!-- @dsCard group="Brand" viewport="700x300" name="Polaris icon set" subtitle="Shopify Polaris glyphs, recolored via CSS mask to follow semantic tokens" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 22px; background: var(--surface-base); }
+  .grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 18px 10px; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .ico { width: 26px; height: 26px; background: var(--icon-primary);
+         -webkit-mask: center/contain no-repeat; mask: center/contain no-repeat; }
+  .lab { font: var(--weight-medium) 10px var(--font-text); color: var(--text-tertiary); }
+  .accent { background: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="grid" id="grid"></div>
+  <script>
+    const BASE = "https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/";
+    const icons = [
+      ["home","HomeMajor"],["items","CollectionsMajor"],["watchtower","FraudProtectMajor",1],
+      ["search","SearchMinor"],["login","KeyMajor",1],["card","CreditCardMajor"],
+      ["identity","IdentityCardMajor"],["note","ContentMinor"],["email","EmailMajor"],
+      ["website","GlobeMajor"],["bank","BankMajor"],["copy","DuplicateMinor",1],
+      ["view","ViewMinor"],["hide","HideMinor"],["edit","EditMinor"],
+      ["delete","DeleteMinor"],["refresh","RefreshMajor"],["settings","SettingsMajor"],
+      ["profile","CustomersMajor"],["lock","LockMajor"],["success","CircleTickMajor",1],
+      ["alert","AlertMinor"],["warning","DiamondAlertMajor"],["info","InfoMinor"],
+      ["favorite","FavoriteMajor"],["clock","ClockMajor"],["chevron.right","ChevronRightMinor"],
+    ];
+    document.getElementById('grid').innerHTML = icons.map(([name,file,accent])=>`
+      <div class="cell">
+        <span class="ico ${accent?'accent':''}" style="-webkit-mask-image:url('${BASE}${file}.svg');mask-image:url('${BASE}${file}.svg')"></span>
+        <span class="lab">${name}</span>
+      </div>`).join('');
+  </script>
+</body>
+</html>
