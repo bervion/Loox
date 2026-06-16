@@ -1,1 +1,1 @@
-Phiên bản 1.1.2 ra mắt hệ thống giao diện toàn diện — tùy chỉnh bảng màu, đặt hình nền động và chia sẻ theme qua tính năng nhập/xuất. Không gian và nhãn mới giúp sắp xếp mật khẩu theo danh mục. Thanh điều hướng được thiết kế lại với tab Tìm kiếm riêng và bảng tổng quan Home tiện dụng hơn.
+Phiên bản 1.2.0 làm mới diện mạo Vaultify với biểu tượng ứng dụng được thiết kế lại và giao diện đồng nhất trên toàn bộ màn hình. Màu sắc hiển thị chính xác hơn ở cả chế độ sáng lẫn tối, độ tương phản cũng được tinh chỉnh để dễ nhìn hơn.

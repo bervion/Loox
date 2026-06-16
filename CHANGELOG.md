@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0] - 2026-06-17
+
+### Added
+- Standardize UI with token system and native tab bar
+- adopt Icon Composer app icon and brand mark
+
+### Fixed
+- theme-consistent UI, WCAG accent contrast, reactive surfaces
+
+### Changed
+- ```
+- add standardized home theme demo screenshots
+
+
 ## [1.1.2] - 2026-06-14
 
 ### Added
