@@ -22,6 +22,7 @@ struct WatchtowerScreen: View {
     @State private var health = VaultHealth.empty
     @State private var pwned: [VaultIssue] = []
     @State private var checking = false
+    @State private var editorTarget: EditorTarget?
 
     private var allClear: Bool {
         health.analyzedCount > 0 && totalIssueCount == 0
@@ -47,7 +48,6 @@ struct WatchtowerScreen: View {
                     ringSection
                     contentSection
                 }
-                .padding(.top, Space.s2)
                 .padding(.bottom, Space.s10)
             }
             .scrollContentBackground(.hidden)
@@ -56,6 +56,24 @@ struct WatchtowerScreen: View {
             // System large title → native collapse-to-inline on scroll (Apple-standard).
             .navigationTitle("Watchtower")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        ForEach(ItemCategory.allCases) { category in
+                            Button {
+                                editorTarget = .new(category)
+                            } label: {
+                                Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
+                            }
+                        }
+                    } label: {
+                        PolarisIcon(Icons.add, size: Metric.iconUtility)
+                            .foregroundStyle(Color(rgb: env.theme.active.accent))
+                    }
+                    .accessibilityLabel(Text("Add Item"))
+                }
+            }
+            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
             .navigationDestination(for: String.self) { itemID in
                 ItemDetailScreen(itemID: itemID)

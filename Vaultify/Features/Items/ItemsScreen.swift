@@ -20,21 +20,18 @@ struct ItemsScreen: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    Text("Items")
-                        .vaultType(.largeTitle)
-                        .themedForeground()
-                        .padding(.top, Space.s3)
-
                     spacesSection
                     if !categories.isEmpty { categoriesSection }
                     if !tags.isEmpty { tagsSection }
                     standaloneSection
                 }
                 .padding(.horizontal, Space.gutter)
+                .padding(.top, Space.s2)
                 .padding(.bottom, TabBarMetric.contentBottomInset)
             }
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("Items")
+            .navigationBarTitleDisplayMode(.large)
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
         }
