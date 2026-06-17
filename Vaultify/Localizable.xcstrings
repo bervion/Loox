@@ -4686,6 +4686,17 @@
       },
       "comment": "Rotation status: days remaining until rotation is due."
     },
+    "%lld days": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ngày"
+          }
+        }
+      },
+      "comment": "Rotation status short label: change due in N days."
+    },
     "%lld months since last change": {
       "localizations": {
         "vi": {
@@ -4883,6 +4894,116 @@
         }
       },
       "comment": "Watchtower category subtitle: count of items that support 2FA."
+    },
+    "2FA Codes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã 2FA"
+          }
+        }
+      }
+    },
+    "Authenticator Codes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã xác thực"
+          }
+        }
+      }
+    },
+    "View All": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem tất cả"
+          }
+        }
+      }
+    },
+    "Needs Attention": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần chú ý"
+          }
+        }
+      }
+    },
+    "Needs Attention · %lld": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần chú ý · %lld"
+          }
+        }
+      }
+    },
+    "All · %lld": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tất cả · %lld"
+          }
+        }
+      }
+    },
+    "All Spaces": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tất cả space"
+          }
+        }
+      }
+    },
+    "No 2FA codes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có mã 2FA"
+          }
+        }
+      }
+    },
+    "Add a one-time code field to any login item to see it here.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm trường mã xác thực vào mục đăng nhập để hiển thị tại đây."
+          }
+        }
+      }
+    },
+    "Weak password": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mật khẩu yếu"
+          }
+        }
+      }
+    },
+    "Check needed": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần kiểm tra"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

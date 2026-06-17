@@ -29,6 +29,12 @@ struct MainTabView: View {
         }
         .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
         .onAppear { env.theme.morphMesh() }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToSearch)) { _ in
+            selection = .search
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
+            selection = .watchtower
+        }
     }
 
     /// One tab: native system navigation with an icon-only tab item.
