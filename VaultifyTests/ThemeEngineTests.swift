@@ -68,17 +68,33 @@ final class ThemeEngineTests: XCTestCase {
     }
 
     func testAccentPresetsGetReadableForeground() {
+        // WCAG-derived on-accent must clear AA for all 7 presets in light AND dark.
         for preset in AccentPreset.allCases {
-            let t = BuiltinThemes.night.recolored(accent: preset.rgb)
-            let ratio = RGBMath.contrastRatio(t.accentForeground, preset.rgb)
-            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(preset) on-accent contrast \(ratio) < AA")
+            for isDark in [false, true] {
+                let base = isDark ? BuiltinThemes.night : BuiltinThemes.day
+                let accent = preset.rgb(isDark: isDark)
+                let t = base.recolored(accent: accent)
+                let ratio = RGBMath.contrastRatio(t.accentForeground, accent)
+                XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(preset) \(isDark ? "dark" : "light") on-accent contrast \(ratio) < AA")
+            }
         }
     }
 
     func testAccentPresetRGB() {
-        XCTAssertEqual(AccentPreset.blue.rgb, 0x2C6ECB)
-        XCTAssertEqual(AppAccentColor(base: .red, customRGB: 0x123456).rgb, 0x123456)
-        XCTAssertEqual(AppAccentColor(base: .red).rgb, AccentPreset.red.rgb)
+        // The seven Design-System presets resolve light/dark hues from accents.css.
+        XCTAssertEqual(AccentPreset.blue.rgb(isDark: false), 0x2563EB)
+        XCTAssertEqual(AccentPreset.blue.rgb(isDark: true), 0x4C8DFF)
+        XCTAssertEqual(AccentPreset.mono.rgb(isDark: false), 0x1C1C1E)
+        XCTAssertEqual(AccentPreset.mono.rgb(isDark: true), 0xFFFFFF)
+        // Custom RGB was removed: resolution ignores any legacy customRGB value.
+        XCTAssertEqual(AppAccentColor(base: .teal, customRGB: 0x123456).rgb(isDark: false),
+                       AccentPreset.teal.lightRGB)
+    }
+
+    func testAccentPresetTolerantDecodeOfRemovedCase() throws {
+        // Older builds persisted cases that no longer exist (e.g. "orange") → fall back to blue.
+        let decoded = try JSONDecoder().decode(AccentPreset.self, from: Data(#""orange""#.utf8))
+        XCTAssertEqual(decoded, .blue)
     }
 
     // MARK: Auto-night
@@ -127,8 +143,8 @@ final class ThemeEngineTests: XCTestCase {
         var settings = ThemeSettings.default
         settings.theme = .builtin(.day)
         settings.autoNight = .off
-        settings.accents["builtin.day"] = AppAccentColor(base: .red)
-        XCTAssertEqual(ThemePalette.resolve(settings, systemIsDark: false, brightness: 1).accent, AccentPreset.red.rgb)
+        settings.accents["builtin.day"] = AppAccentColor(base: .pink)
+        XCTAssertEqual(ThemePalette.resolve(settings, systemIsDark: false, brightness: 1).accent, AccentPreset.pink.rgb(isDark: false))
     }
 
     func testActiveWallpaperUsesBuiltinDefaults() {
@@ -199,7 +215,7 @@ final class ThemeEngineTests: XCTestCase {
     // MARK: Theme exchange
 
     func testVaultThemeRoundTripAssignsFreshID() throws {
-        let theme = CustomTheme(name: "Sunset", base: .nightTinted, accent: AppAccentColor(base: .orange),
+        let theme = CustomTheme(name: "Sunset", base: .nightTinted, accent: AppAccentColor(base: .pink),
                                 wallpaper: .gradient(colors: [0x111111, 0x222222], settings: .none))
         let decoded = try ThemeExchange.decode(try ThemeExchange.encode(theme))
         XCTAssertEqual(decoded.name, theme.name)

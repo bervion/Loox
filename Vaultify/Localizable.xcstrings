@@ -116,6 +116,16 @@
         }
       }
     },
+    "Accent applies instantly across the app — no restart needed." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Màu nhấn áp dụng tức thì cho toàn bộ ứng dụng — không cần khởi động lại."
+          }
+        }
+      }
+    },
     "Accent Color" : {
       "localizations" : {
         "vi" : {

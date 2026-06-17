@@ -12,7 +12,7 @@ nonisolated enum ThemePalette {
             guard let custom = settings.customTheme(id) else { return BuiltinThemes.day }
             var theme = BuiltinThemes.palette(custom.base)
             theme.reference = ref
-            return theme.recolored(accent: custom.accent.rgb)
+            return theme.recolored(accent: custom.accent.rgb(isDark: theme.isDark))
         }
     }
 
@@ -30,7 +30,7 @@ nonisolated enum ThemePalette {
         let ref = activeReference(settings, systemIsDark: systemIsDark, brightness: brightness, now: now)
         var theme = base(ref, settings: settings)
         if case .builtin = ref, let accent = settings.accents[ref.key] {
-            theme = theme.recolored(accent: accent.rgb)
+            theme = theme.recolored(accent: accent.rgb(isDark: theme.isDark))
         }
         return theme
     }
