@@ -63,8 +63,9 @@ struct WatchtowerScoreRing: View {
     @State private var animatedFraction: CGFloat = 0
     // Blur on the centre number: starts high, animates down to 0
     @State private var numberBlur: CGFloat = 0
-    // Tick opacity: fades in during the sweep
-    @State private var tickOpacity: CGFloat = 0
+    // Ticks fade + scale in as a whole layer — a reliable view-level animation.
+    // The ticks themselves are always drawn at full opacity so they never vanish.
+    @State private var ticksIn = false
 
     // Target fraction [0, 1]
     private var fraction: CGFloat { CGFloat(max(0, min(100, score))) / 100 }
@@ -89,15 +90,26 @@ struct WatchtowerScoreRing: View {
             let bw     = Geo.bandWidth * scale
 
             ZStack {
+                // Track + gradient fill (animatedFraction-driven)
                 Canvas { ctx, _ in
                     drawTrack(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, theme: theme)
                     drawFill(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw)
-                    // Ticks render on TOP of the fill so they stay visible across the
-                    // whole arc (filled + unfilled), like the 1Password dial.
-                    drawTicks(ctx: ctx, cx: cx, cy: cy, r: r, scale: scale,
-                              theme: theme, reveal: tickOpacity)
-                    drawMarker(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw,
-                               band: band, theme: theme, scale: scale)
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+
+                // Ticks on their own layer (always drawn full) so a reliable
+                // view-level fade + scale powers them in — they never disappear.
+                Canvas { ctx, _ in
+                    drawTicks(ctx: ctx, cx: cx, cy: cy, r: r, scale: scale, theme: theme)
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .opacity(ticksIn ? 1 : 0)
+                .scaleEffect(ticksIn ? 1 : 0.92, anchor: .center)
+                .animation(reduceMotion ? nil : .easeOut(duration: Motion.slow * 1.8), value: ticksIn)
+
+                // Needle marker on top
+                Canvas { ctx, _ in
+                    drawMarker(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, scale: scale)
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
 
@@ -115,17 +127,15 @@ struct WatchtowerScoreRing: View {
 
     private func animate(to target: CGFloat) {
         if reduceMotion {
-            // Instant: no sweep, no blur, ticks visible immediately
             animatedFraction = target
             numberBlur       = 0
-            tickOpacity      = 1
+            ticksIn          = true
             return
         }
 
-        // Reset for replay (e.g. score updates)
+        // Reset the sweep for replay (e.g. when the score settles after the audit)
         animatedFraction = 0
         numberBlur       = 6
-        tickOpacity      = 0
 
         // Needle + fill swing toward the score and settle — a low-damping spring
         // gives the "đung đưa" swing of a real gauge needle stepping onto a scale.
@@ -136,10 +146,8 @@ struct WatchtowerScoreRing: View {
         withAnimation(.easeOut(duration: Motion.slow * 1.6)) {
             numberBlur = 0
         }
-        // Ticks sweep in left→right (staggered per tick) like a scale powering up
-        withAnimation(.easeOut(duration: Motion.slow * 2.4)) {
-            tickOpacity = 1
-        }
+        // Ticks layer fades + scales in (eased by its .animation modifier)
+        ticksIn = true
     }
 
     // MARK: - Drawing helpers
@@ -174,18 +182,14 @@ struct WatchtowerScoreRing: View {
     }
 
     private func drawTicks(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
-                           r: CGFloat, scale: CGFloat, theme: AppTheme,
-                           reveal: CGFloat) {
+                           r: CGFloat, scale: CGFloat, theme: AppTheme) {
+        // Always full opacity — the parent layer animates them in. Dark + semi-
+        // transparent so they read on the grey track AND the coloured fill.
+        let tickColor = Color(rgb: theme.primaryText).opacity(0.24)
         for i in 0...Geo.tickCount {
-            let tf = CGFloat(i) / CGFloat(Geo.tickCount)
-            // Staggered sweep-in: each tick fades + grows as `reveal` (0→1) passes
-            // its position along the arc — a clear "scale powering up" animation
-            // (dark + semi-transparent so it reads on the grey track AND the fill).
-            let appear = max(0, min(1, (reveal * 1.15 - tf) * 7))
-            guard appear > 0.02 else { continue }
-            let deg = Geo.startDeg + Geo.sweepDeg * tf
+            let deg = Geo.startDeg + Geo.sweepDeg * CGFloat(i) / CGFloat(Geo.tickCount)
             let isMajor = i % 4 == 0
-            let length: CGFloat = (isMajor ? 11 : 7) * scale * (0.45 + 0.55 * appear)
+            let length: CGFloat = (isMajor ? 11 : 7) * scale
             let strokeW: CGFloat = (isMajor ? 2.2 : 1.4) * scale
             let innerR = r - length / 2
             let outerR = r + length / 2
@@ -193,20 +197,16 @@ struct WatchtowerScoreRing: View {
             var path = Path()
             path.move(to: CGPoint(x: cx + innerR * cos(rad), y: cy + innerR * sin(rad)))
             path.addLine(to: CGPoint(x: cx + outerR * cos(rad), y: cy + outerR * sin(rad)))
-            ctx.stroke(path,
-                       with: .color(Color(rgb: theme.primaryText).opacity(0.24 * appear)),
+            ctx.stroke(path, with: .color(tickColor),
                        style: StrokeStyle(lineWidth: strokeW, lineCap: .round))
         }
     }
 
-    /// Needle marker: a small rounded pointer centred on the band at the fill tip.
-    ///
-    /// Why this design: the previous filled triangle sat on the gradient and was
-    /// hard to distinguish. This version uses a band-semantic colour fill with a
-    /// ~2pt surface-background outline so it pops regardless of the gradient under it.
+    /// Needle: a triangle in the ring's interior just below the band, pointing
+    /// OUTWARD at the fill tip (1Password style). Coloured to match the fill at the
+    /// tip (green→blue) so it reads as part of the dial, and travels with the score.
     private func drawMarker(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
-                            r: CGFloat, bw: CGFloat,
-                            band: ScoreBand, theme: AppTheme, scale: CGFloat) {
+                            r: CGFloat, bw: CGFloat, scale: CGFloat) {
         // Always drawn — even at score 0 it rests at the arc start, so the needle
         // is never missing. The spring may overshoot past 1 → clamp.
         let f = min(1, animatedFraction)
@@ -231,12 +231,22 @@ struct WatchtowerScoreRing: View {
         tri = tri.applying(
             CGAffineTransform(translationX: mcx, y: mcy).rotated(by: endRad + .pi / 2))
 
-        ctx.fill(tri, with: .color(bandColor(band: band, theme: theme)))
+        ctx.fill(tri, with: .color(fillTipColor(f)))
     }
 
-    /// Resolves the band's semantic colour using the theme's own role→Color mapping.
-    private func bandColor(band: ScoreBand, theme: AppTheme) -> Color {
-        theme.color(band.role)
+    /// Colour of the gradient fill at fraction `f` (green→teal→blue) — tints the
+    /// needle so it matches the fill tip, like the 1Password marker.
+    private func fillTipColor(_ f: CGFloat) -> Color {
+        let stops: [(CGFloat, CGFloat, CGFloat)] = [
+            (0x16, 0xA3, 0x4A), (0x10, 0xB9, 0x81), (0x38, 0xBD, 0xF8)
+        ]
+        let t = max(0, min(1, f)) * 2          // 0…2 across the two gradient segments
+        let i = min(1, Int(t))
+        let lt = t - CGFloat(i)
+        let a = stops[i], b = stops[i + 1]
+        return Color(red:   (a.0 + (b.0 - a.0) * lt) / 255,
+                     green: (a.1 + (b.1 - a.1) * lt) / 255,
+                     blue:  (a.2 + (b.2 - a.2) * lt) / 255)
     }
 
     // MARK: - Centre readout
