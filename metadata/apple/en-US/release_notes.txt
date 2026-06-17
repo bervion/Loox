@@ -1,1 +1,1 @@
-1.2.0 brings a more polished look to Vaultify. The app icon has been refreshed with a new design, and the interface now follows a consistent visual system across every screen. Colors respond more reliably in both light and dark mode, and contrast has been improved throughout for easier reading.
+Version 1.2.1: Performance improvements and bug fixes.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.1] - 2026-06-18
+
+### Changed
+- update design
+
+
 ## [1.2.0] - 2026-06-17
 
 ### Added

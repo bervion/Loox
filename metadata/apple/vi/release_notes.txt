@@ -1,1 +1,1 @@
-Phiên bản 1.2.0 làm mới diện mạo Vaultify với biểu tượng ứng dụng được thiết kế lại và giao diện đồng nhất trên toàn bộ màn hình. Màu sắc hiển thị chính xác hơn ở cả chế độ sáng lẫn tối, độ tương phản cũng được tinh chỉnh để dễ nhìn hơn.
+Phiên bản 1.2.1: Cải thiện hiệu suất và sửa lỗi.
