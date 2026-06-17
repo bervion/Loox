@@ -9,7 +9,11 @@ struct FolderPickerSheet: View {
     @State private var creating = false
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(
+            title: "Space",
+            leading: { EmptyView() },
+            trailing: { SheetDismissButton("Done") }
+        ) {
             List {
                 Section {
                     Button { select(nil) } label: {
@@ -38,11 +42,6 @@ struct FolderPickerSheet: View {
                 }
                 .listRowBackground(VaultColors.surface)
             }
-            .themedFormBackground()
-            .navigationTitle("Space")
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .sheet(isPresented: $creating) {
                 FolderEditorSheet(folder: nil) { newID in folderId = newID }
             }

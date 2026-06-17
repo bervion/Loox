@@ -20,7 +20,7 @@ struct ThemeEditorView: View {
         _wallpaper = State(initialValue: existing?.wallpaper ?? .none)
     }
 
-    private var preview: AppTheme { BuiltinThemes.palette(base).recolored(accent: accent.rgb) }
+    private var preview: AppTheme { BuiltinThemes.palette(base).recolored(accent: accent.rgb(isDark: base.isDark)) }
 
     var body: some View {
         Form {
@@ -42,7 +42,6 @@ struct ThemeEditorView: View {
                     ForEach(AccentPreset.allCases) { preset in accentSwatch(preset) }
                 }
                 .padding(.vertical, 6)
-                ColorPicker(selection: customAccentBinding, supportsOpacity: false) { Text("Custom Color") }
             } header: { Text("Accent Color") }
             .listRowBackground(VaultColors.surface)
 
@@ -92,15 +91,10 @@ struct ThemeEditorView: View {
     private func accentSwatch(_ preset: AccentPreset) -> some View {
         let selected = accent.base == preset && accent.customRGB == nil
         return Button { accent = AppAccentColor(base: preset) } label: {
-            Circle().fill(Color(rgb: preset.rgb)).frame(width: Metric.controlSmall, height: Metric.controlSmall)
+            Circle().fill(Color(rgb: preset.rgb(isDark: base.isDark))).frame(width: Metric.controlSmall, height: Metric.controlSmall)
                 .overlay(Circle().strokeBorder(Color.primary.opacity(selected ? 0.9 : 0), lineWidth: 2).padding(-3))
         }
         .buttonStyle(.plain)
-    }
-
-    private var customAccentBinding: Binding<Color> {
-        Binding(get: { Color(rgb: accent.rgb) },
-                set: { accent = AppAccentColor(base: accent.base, customRGB: $0.themeRGB) })
     }
 
     // MARK: Wallpaper

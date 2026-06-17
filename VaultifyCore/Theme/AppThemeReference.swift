@@ -7,6 +7,11 @@ nonisolated enum BuiltinTheme: String, Codable, Sendable, CaseIterable, Identifi
 
     var id: String { rawValue }
     var isDark: Bool { self == .night || self == .nightTinted }
+
+    /// Themes offered in the picker grid (Design System = light + dark). `dayClassic` /
+    /// `nightTinted` stay valid (palettes retained, still resolve if already selected)
+    /// but are no longer offered for new selection.
+    static let selectable: [BuiltinTheme] = [.day, .night]
 }
 
 /// Reference to a theme the user can select: a built-in base, or a saved custom

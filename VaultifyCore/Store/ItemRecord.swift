@@ -25,6 +25,15 @@ final class ItemRecord {
     var archived: Bool = false
     /// In-app use tally powering "Frequently Used". Plaintext, device-local.
     var useCount: Int = 0
+    /// Rotation reminder cadence in days: 0 = off, 15 / 30 / 90 = enabled.
+    /// Plaintext — reveals timing preference only, not secret content. Currently
+    /// device-local (not in the CloudKit mapping); add to `CloudSyncService` if
+    /// per-item cadence should sync once iCloud is enabled.
+    var rotateDays: Int = 0
+    /// When the password was last changed. Nil means use `createdAt` as the
+    /// baseline. Updated only when the decrypted password value actually changes.
+    /// Device-local for now (see `rotateDays` note re: CloudKit).
+    var passwordChangedAt: Date?
 
     // Sync metadata (CloudKit).
     var dirty: Bool

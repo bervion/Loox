@@ -36,7 +36,16 @@ struct ItemEditorScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(
+            title: nil,  // 3 actions (Cancel · Edit · Save) — hide the centre title
+            leading: {
+                Button("Cancel") { hasChanges ? (confirmDiscard = true) : dismiss() }
+            },
+            trailing: {
+                EditButton()
+                Button("Save", action: save).disabled(!canSave).fontWeight(.semibold)
+            }
+        ) {
             Form {
                 Section {
                     HStack(spacing: 12) {
@@ -98,11 +107,9 @@ struct ItemEditorScreen: View {
                     TagChipEditor(tags: $draft.tags)
                 }
                 .listRowBackground(VaultColors.surface)
+
+                RotationReminderSection(rotateDays: $draft.rotateDays)
             }
-            .themedFormBackground()
-            .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 // New items default to the primary Space ("My Vault") so they have
                 // a home; applied once so it never overrides a user's own pick.
@@ -111,15 +118,6 @@ struct ItemEditorScreen: View {
                     draft.folderId = primary.id
                 }
                 didApplyDefaultFolder = true
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { hasChanges ? (confirmDiscard = true) : dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(!canSave).fontWeight(.semibold)
-                }
-                ToolbarItem(placement: .topBarLeading) { EditButton() }
             }
             .interactiveDismissDisabled(hasChanges)
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
@@ -178,6 +176,39 @@ struct ItemEditorScreen: View {
         } catch {
             Haptics.error()
         }
+    }
+}
+
+// MARK: - Rotation reminder picker
+
+/// Segmented-style Picker for the per-item rotation cadence.
+/// Cadence options: 0 = off, 15 / 30 / 90 days.
+private struct RotationReminderSection: View {
+    @Binding var rotateDays: Int
+
+    private let options: [(label: LocalizedStringResource, value: Int)] = [
+        ("Off", 0),
+        ("15 days", 15),
+        ("30 days", 30),
+        ("90 days", 90),
+    ]
+
+    var body: some View {
+        Section {
+            Picker(selection: $rotateDays) {
+                ForEach(options, id: \.value) { option in
+                    Text(option.label).tag(option.value)
+                }
+            } label: {
+                Label {
+                    Text("Rotation reminder")
+                } icon: {
+                    PolarisIcon("ic_refresh")
+                }
+            }
+            .pickerStyle(.menu)
+        }
+        .listRowBackground(VaultColors.surface)
     }
 }
 

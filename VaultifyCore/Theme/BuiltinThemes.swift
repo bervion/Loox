@@ -14,7 +14,7 @@ nonisolated enum BuiltinThemes {
         // Derive the on-accent foreground from the accent by real WCAG contrast so every
         // theme's filled controls (buttons / selected chips) keep legible text. Single
         // source of truth — the literal `accentForeground` below is just a placeholder.
-        base.accentForeground = RGBMath.onColor(base.accent)
+        base.accentForeground = RGBMath.onAccent(base.accent)
         return base
     }
 
@@ -29,15 +29,16 @@ nonisolated enum BuiltinThemes {
         }
     }
 
+    // Retuned to Design System tokens (`Design System/tokens/colors.css`, light).
     static let day = AppTheme(
         reference: .builtin(.day), isDark: false,
         background: 0xFFFFFF, secondaryBackground: 0xF2F2F7, groupedBackground: 0xF2F2F7,
-        elevatedBackground: 0xFFFFFF, barBackground: 0xF9F9F9,
-        primaryText: 0x111213, secondaryText: 0x6D7175, tertiaryText: 0x9BA1A6, placeholderText: 0xB0B4B8,
-        accent: 0x2C6ECB, accentForeground: 0xFFFFFF,
-        separator: 0xE3E5E7, border: 0xD2D5D8, controlBackground: 0xE9EBED,
-        switchOn: 0x2C6ECB, checkmark: 0x2C6ECB, selection: 0xEAF1FB,
-        destructive: 0xD72C0D, success: 0x1A8B5E, warning: 0xB98900, overlayDim: 0x000000)
+        elevatedBackground: 0xFFFFFF, barBackground: 0xFFFFFF,
+        primaryText: 0x1C1C1E, secondaryText: 0x4B4B50, tertiaryText: 0x8A8A8E, placeholderText: 0xB6B6BB,
+        accent: 0x2563EB, accentForeground: 0xFFFFFF,
+        separator: 0xD8D8DE, border: 0xC7C7CC, controlBackground: 0xE9E9EF,
+        switchOn: 0x2563EB, checkmark: 0x2563EB, selection: 0xE6EDFD,
+        destructive: 0xE5484D, success: 0x1A8E5F, warning: 0xB06F00, overlayDim: 0x000000)
 
     static let dayClassic = AppTheme(
         reference: .builtin(.dayClassic), isDark: false,
@@ -49,17 +50,18 @@ nonisolated enum BuiltinThemes {
         switchOn: 0x2C6ECB, checkmark: 0x2C6ECB, selection: 0xEFEADB,
         destructive: 0xC4391B, success: 0x1A8B5E, warning: 0xB07D00, overlayDim: 0x000000)
 
+    // Retuned to Design System tokens (`Design System/tokens/colors.css`, dark).
     static let night = AppTheme(
         reference: .builtin(.night), isDark: true,
         background: 0x000000, secondaryBackground: 0x1C1C1E, groupedBackground: 0x000000,
-        elevatedBackground: 0x1C1C1E, barBackground: 0x121214,
-        primaryText: 0xFFFFFF, secondaryText: 0x98989F, tertiaryText: 0x6C6C70, placeholderText: 0x5A5A5E,
-        // Deep enough that white text on a filled accent clears WCAG AA (~5.2:1); the
-        // on-accent foreground is derived from this by contrast in `palette()`.
-        accent: 0x2563EB, accentForeground: 0xFFFFFF,
-        separator: 0x2C2C2E, border: 0x38383A, controlBackground: 0x2C2C2E,
-        switchOn: 0x2563EB, checkmark: 0x2563EB, selection: 0x1E2A3A,
-        destructive: 0xFF6B5B, success: 0x34C789, warning: 0xE3B341, overlayDim: 0x000000)
+        elevatedBackground: 0x1C1C1E, barBackground: 0x1C1C1E,
+        primaryText: 0xFFFFFF, secondaryText: 0xC7C7CC, tertiaryText: 0x8E8E93, placeholderText: 0x5A5A5E,
+        // On-accent foreground is derived from the resolved accent by WCAG contrast in
+        // `palette()` / `recolored()`, so any preset stays legible on filled controls.
+        accent: 0x4C8DFF, accentForeground: 0xFFFFFF,
+        separator: 0x38383A, border: 0x38383A, controlBackground: 0x2C2C2E,
+        switchOn: 0x4C8DFF, checkmark: 0x4C8DFF, selection: 0x16294B,
+        destructive: 0xFF5C5C, success: 0x30D158, warning: 0xFFD60A, overlayDim: 0x000000)
 
     static let nightTinted = AppTheme(
         reference: .builtin(.nightTinted), isDark: true,

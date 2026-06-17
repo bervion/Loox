@@ -17,7 +17,9 @@ struct RecoveryView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(title: "Recover Vault", trailing: {
+            Button("Recover") { Task { await recover() } }.disabled(!canSubmit)
+        }) {
             Form {
                 Section {
                     TextField("Recovery key", text: $recoveryKey, axis: .vertical)
@@ -42,19 +44,6 @@ struct RecoveryView: View {
 
                 if let error {
                     Text(error).foregroundStyle(VaultColors.strengthWeak)
-                }
-            }
-            .themedFormBackground()
-            .navigationTitle("Recover Vault")
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Recover") { Task { await recover() } }
-                        .disabled(!canSubmit)
                 }
             }
             .overlay { if busy { ProgressView().controlSize(.large) } }

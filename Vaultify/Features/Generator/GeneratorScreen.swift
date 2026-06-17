@@ -3,10 +3,10 @@ import SwiftUI
 /// The Generator tab.
 struct GeneratorScreen: View {
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(title: "Generator",
+                           leading: { EmptyView() },
+                           trailing: { SheetDismissButton("Done") }) {
             PasswordGeneratorView()
-                .navigationTitle("Generator")
-                .themedColorScheme()
         }
     }
 }
@@ -17,15 +17,10 @@ struct PasswordGeneratorSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(title: "Generate Password") {
             PasswordGeneratorView { password in
                 onUse(password)
                 dismiss()
-            }
-            .navigationTitle("Generate Password")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
         }
     }

@@ -27,9 +27,9 @@ Vaultify/
 ├── DesignSystem/           Tokens/ (Space·Radius·Metric·Elevation·Motion), Typography (VaultType roles + vaultMono), PolarisIcon + Icons, VaultColors (dynamic light/dark), PasswordStrength, Components (ThemedCard/ButtonStyles/ToggleStyle, themedForeground), Theme/ (ThemeStore/Holder/Environment)
 ├── Services/
 │   ├── PasswordGenerator + DicewareWordList (EFF 7776), TOTPGenerator (RFC 6238), Haptics, ClipboardService
-│   ├── Watchtower/          PasswordAudit (weak/reused/score), HIBPService (k-anonymity)
+│   ├── Watchtower/          PasswordAudit (weak/reused/score), HIBPService (k-anonymity), TwoFactorCatalog (2FA host support), RotationNotificationService (OS local notifications)
 │   └── ImportExport/        VaultBackup (CSV + Argon2id/AES-GCM encrypted backup)
-└── Features/                Onboarding, Unlock, Main (native icon-only visual `TabView`: Home·Items·Watchtower·Search), Home (personalized: Pinned/Favorites/Recently Created/Frequently Used/Utilities + Customize), Items (Spaces/Categories/Tags/Archive/Recently Deleted), Folders, ItemDetail, ItemEditor, Generator, Search, Watchtower, Settings, ImportExport, Components
+└── Features/                Onboarding, Unlock, Main (native icon-only visual `TabView`: Home·Items·Watchtower·Search), Home (redesigned: folder switcher + quick actions + TOTP quick-view + "Needs attention" + Favorites + All items; Components: HomeHeaderBar/QuickActionTile/TotpCardView/TotpRingView/AttentionCell), Items (Spaces/Categories/Tags/Archive/Recently Deleted), Folders, ItemDetail, ItemEditor, Generator, Search, Watchtower (WatchtowerScoreRing/StrengthCard/issue categories: Compromised/Reused/Weak/Missing2FA), Settings, ImportExport, Components
 ```
 
 ## Security model
@@ -42,51 +42,19 @@ Vaultify/
 - **Folders ("Spaces")** — one per item via `VaultItem.folderId`; `nil` = Unfiled. `FolderRecord` keeps the **name sealed** (AES-GCM under the Vault Key) while icon/color/sortIndex/sync metadata stay plaintext so the Spaces grid renders without unsealing. CRUD + counts + reassign-on-delete (members → Unfiled, items never deleted) live in `VaultRepository+Folders`.
 - **Tags** — many per item, stored lightweight as `tags: [String]` inside the sealed `ItemSecret` (no separate record). Aggregated case-insensitively by `allTags()`; surfaced as `#` chips.
 - **Recents** — `ItemRecord.lastUsedAt` (plaintext, device-local, NOT synced); `markUsed` writes it without re-sealing/`dirty` on copy/reveal; powers Home's "Recently Used".
-- **Home dashboard** (`VaultListScreen` → `HomeDashboard`): Quick Access (favorites + recents) → Spaces grid (tap → folder-color-tinted `FolderItemsScreen`) → Tags row → All Items (category-grouped). Search stays global.
+- **Rotation reminders** — `ItemRecord.rotateDays` (plaintext: 0=off, 15/30/90=enabled) + `passwordChangedAt` (plaintext: last explicit password change, or `nil` → use `createdAt`). Both device-local for now. `RotationStatus` struct (pure, `nonisolated`) evaluates state (ok/overdue/soon/stale) + display label from metadata + current date. `RotationNotificationService` sends OS local notifications. Item editor includes "Rotation reminder" picker. Currently NOT synced to CloudKit; per-item cadence sync may be added later behind the `VAULTIFY_ICLOUD` gate.
+- **Home dashboard** (`HomeScreen`): Folder-switcher header + Quick actions (Generator, Settings, …) + TOTP quick-view + "Needs attention" (rotation + weak passwords via `RotationStatus`) + Favorites + All Items (pinned-first, category-grouped). Built from DS-spec components (`HomeHeaderBar`, `QuickActionTile`, `TotpCardView`, `AttentionCell`).
 - **Default space:** first launch seeds a renameable **"My Vault"** space; new items default to the primary space.
-- **Navigation (4 tabs):** **Home** = personalized dashboard (Pinned · Favorites · Recently Created · Frequently Used, + optional Recently Used/Modified via Customize, + Utilities/Generator; Settings via header gear). **Items** = organization browser (Spaces + Create Space · Categories · Tags · Archive · Recently Deleted). **Watchtower** (security). **Search** = smart search (token-AND over title/fields/tags + Space name). Each tab owns a NavigationStack sharing `vaultNavigationDestinations()`.
-- **Pinned / Archived / Frequently-Used:** `pinned`/`archived`/`useCount` are plaintext `ItemRecord` columns (codec untouched). `reload()` splits items 3-way (live / archived / trashed) so archived stays out of every normal surface (Home, Items, Search, counts, AutoFill) but lives in Archive. `togglePin`/`archive`/`unarchive` are column-only (no re-seal, no `updatedAt` bump); `markUsed` bumps `useCount`.
+- **Navigation (4 tabs):** **Home** = redesigned DS-compliant dashboard (folder switcher, quick actions, TOTP, "Needs attention", Favorites, All items). **Items** = organization browser (Spaces + Create Space · Categories · Tags · Archive · Recently Deleted). **Watchtower** = security monitoring (ScoreRing, StrengthCard, issue categories: Compromised/Reused/Weak/Missing2FA). **Search** = smart search (token-AND over title/fields/tags + Space name). Each tab owns a NavigationStack sharing `vaultNavigationDestinations()`.
+- **Pinned / Archived / Frequently-Used / Rotation:** `pinned`/`archived`/`useCount` and `rotateDays`/`passwordChangedAt` are plaintext `ItemRecord` columns (codec untouched). `reload()` splits items 3-way (live / archived / trashed) so archived stays out of every normal surface (Home, Items, Search, counts, AutoFill) but lives in Archive. `togglePin`/`archive`/`unarchive` are column-only (no re-seal, no `updatedAt` bump); `markUsed` bumps `useCount`; rotation metadata updates don't dirty the item (preserve seal).
 - **Back-compat (critical):** `ItemSecret`/`PortableItem` use a custom `init(from:)` that `decodeIfPresent`s `tags` (default `[]`) so pre-existing sealed blobs and old backups still open.
 - **CSV/backup:** export adds `folder` + `tags` columns; import matches/creates folders by name. **CloudKit:** `FolderRecord` syncs as `"VaultFolder"` (sealed name + metadata) behind the `VAULTIFY_ICLOUD` gate; tags ride inside the item blob.
 
 ## Theming & Wallpaper
-Telegram-adapted (no chat). **Core** in `VaultifyCore/Theme/` (shared into app + AutoFill
-extension): `AppTheme` (semantic palette, packed `0xRRGGBB`); built-ins Day / Day-Classic /
-Night / Night-Tinted (`BuiltinThemes`); accent HSB recolor (`AccentColor`); `ThemeSettings`
-(Codable — theme ref + per-theme accent/wallpaper + custom themes + auto-night + font scale);
-`ThemePalette.resolve` (pure); `ThemeReader` (App-Group persist + one-time migrate from
-`appearance_mode`); `Wallpaper`/`WallpaperSettings`; `MeshMath` + `MeshGradientRenderer`
-(CPU mesh); `ThemeExchange` (`.vaultheme` codec).
-- **App layer:** `ThemeStore` (`@MainActor @Observable`) resolves the active `AppTheme`,
-  persists, drives `\.appTheme` + `.tint` + `preferredColorScheme` from the root, and forces
-  the window `overrideUserInterfaceStyle`. `setTheme` resets the selected theme to its own
-  defaults (clears per-theme accent/wallpaper overrides) so it always looks as designed.
-  `ThemeHolder` is the synchronous snapshot for `VaultColors`, whose surfaces
-  (`surface/fill/groupedBackground/separatorColor`) are **dynamic `UIColor`s** that re-resolve
-  on a color-scheme flip — staying in lock-step with trait-driven foregrounds. **Design tokens**
-  (`DesignSystem/Tokens/`: `Space`·`Radius`·`Metric`·`Elevation`·`Motion`) + `VaultType` typography
-  roles + **derived** semantic colors (`AppTheme+Tokens.swift`: surfaceFloatingSolid / surfacePressed /
-  accentSoft / accentPress / icon* / textDisabled / *Soft / onDestructive, computed so every builtin +
-  custom theme gets them) round out the system; `ThemeRole` now also covers icon + disabled + accentSoft +
-  onDestructive. Reusable
-  components (`DesignSystem/Components`): `ThemedCard`, `.themedForeground(role)`,
-  `.appBackground()`, `.themedFormBackground()`, button styles
-  (`.themedProminent/.themedTinted/.themedDestructive`), `ThemedToggleStyle` (draws the switch
-  from theme colors — native `.tint` does not reach `Toggle` in `Form`/sheets), and
-  `.themedColorScheme()` (applied at every sheet / full-screen-cover root so their system
-  chrome — nav title, `Form` section headers/footers, pickers — follows the theme instead of
-  the device appearance). Feature views use semantic theme colors throughout (no raw
-  `.primary/.secondary/.red/.white` on themed surfaces). `accentForeground` is **derived by
-  WCAG contrast** (`RGBMath.onColor`) for built-ins + custom accents, so text on filled accent
-  always clears AA. `BrandLogoMark` renders the app brand from the `BrandLogo` asset.
-- **Wallpaper:** solid / multi-stop gradient / procedural pattern (Canvas, soft-light) / image
-  (`PhotosPicker`, no Photos permission; stored file-protected in the App Group) / **animated
-  mesh** (Telegram's CPU `generateGradient` frames played via `CAKeyframeAnimation` — no Metal;
-  morphs on unlock-fail / tab change; honors Reduce Motion). Rendered behind the canvas (vault
-  tabs) + lock + onboarding; settings/detail stay solid. Reduce Transparency drops blur.
-- **Settings UI** (`Features/Settings/Appearance`): theme / accent / wallpaper / auto-night
-  (off·system·scheduled·brightness) / text size / reduce motion, plus a custom **theme editor**
-  with `.vaultheme` import/export. All strings EN + VI. Tests: `VaultifyTests/ThemeEngineTests`.
+Design-System aligned, simplified. **Core** in `VaultifyCore/Theme/` (shared into app + AutoFill extension): `AppTheme` (semantic palette, packed `0xRRGGBB`); built-ins **Day + Night** (Day-Classic / Night-Tinted code retained, not surfaced); **7 accent presets** (blue/indigo/teal/purple/pink/graphite/mono) with light + dark hues (`AccentColor.swift`); custom RGB removed; `ThemeSettings` (Codable — theme ref + accent selection + auto-night + font scale); `ThemePalette.resolve` (pure); `ThemeReader` (App-Group persist + one-time migrate from `appearance_mode`); `WallpaperFeature.decorativeEnabled = false` gates decorative backgrounds (wallpaper engine code retained for future re-enable).
+- **App layer:** `ThemeStore` (`@MainActor @Observable`) resolves the active `AppTheme`, persists, drives `\.appTheme` + `.tint` + `preferredColorScheme` from the root, and forces the window `overrideUserInterfaceStyle`. `setTheme` resets the selected theme to its own defaults (clears per-theme accent overrides) so it always looks as designed. `ThemeHolder` is the synchronous snapshot for `VaultColors`, whose surfaces (`surface/fill/groupedBackground/separatorColor`) are **dynamic `UIColor`s** that re-resolve on a color-scheme flip — staying in lock-step with trait-driven foregrounds. **Design tokens** (`DesignSystem/Tokens/`: `Space`·`Radius`·`Metric`·`Elevation`·`Motion`) + `VaultType` typography roles + **derived** semantic colors (`AppTheme+Tokens.swift`: surfaceFloatingSolid / surfacePressed / accentSoft / accentPress / icon* / textDisabled / *Soft / onDestructive, computed so every builtin theme gets them) round out the system; `ThemeRole` now also covers icon + disabled + accentSoft + onDestructive. Reusable components (`DesignSystem/Components`): `ThemedCard`, `.themedForeground(role)`, `.appBackground()`, `.themedFormBackground()`, button styles (`.themedProminent/.themedTinted/.themedDestructive`), `ThemedToggleStyle` (draws the switch from theme colors — native `.tint` does not reach `Toggle` in `Form`/sheets), and `.themedColorScheme()` (applied at every sheet / full-screen-cover root so their system chrome — nav title, `Form` section headers/footers, pickers — follows the theme instead of the device appearance). Feature views use semantic theme colors throughout (no raw `.primary/.secondary/.red/.white` on themed surfaces). `accentForeground` is **derived by WCAG contrast** (`RGBMath.onColor`) for presets, so text on filled accent always clears AA. `BrandLogoMark` renders the app brand from the `BrandLogo` asset.
+- **Wallpaper:** Engine (solid / gradient / pattern / image / animated mesh) is fully implemented but **gated OFF** by `WallpaperFeature.decorativeEnabled = false`. `WallpaperView` renders flat fills when gated. Mesh code (Telegram's CPU `generateGradient` frames via `CAKeyframeAnimation`, no Metal) retained for future re-enable behind the flag. Settings UI simplified: no wallpaper picker, no custom-theme editor surfaced. Reduce Transparency still respected when engine is re-enabled.
+- **Settings UI** (`Features/Settings/Appearance`): theme selection / accent preset picker / auto-night (off·system·scheduled·brightness) / text size / reduce motion. Custom theme editor + `.vaultheme` import/export hidden (code retained). All strings EN + VI. Tests: `VaultifyTests/ThemeEngineTests`.
 
 ## App icon
 `Vaultify/vaultify.icon` (Icon Composer, layered eagle on a blue gradient) is the app icon —
@@ -98,8 +66,8 @@ splash / lock / privacy-shield) uses the `BrandLogo` imageset rendered from the 
 See memory `vaultify-ios-build-setup`. `xcodebuild -scheme Vaultify -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/vaultify-dd`. Xcode synchronized folders → new files auto-compile. Bridging header + `HEADER_SEARCH_PATHS` wire the Argon2 C.
 
 ## Status
-Implemented & verified running (EN + VI): onboarding, master password, Emergency Kit, biometric unlock, recovery, full vault (5 categories, dynamic encrypted fields, favorites, trash, search), item detail (reveal/copy/live TOTP/URL), editor, password+passphrase generator, Watchtower (weak/reused/HIBP), import/export, settings, change MP, regenerate kit, about, light/dark, VI+EN. **Vault organization:** Spaces (sealed-name folders w/ icon+color), tags, Home dashboard (Quick Access/recents/Spaces grid/tags), folder-tinted & tag-filtered lists, CSV/backup + CloudKit folder support.
+Implemented & verified running (EN + VI): onboarding, master password, Emergency Kit, biometric unlock, recovery, full vault (5 categories, dynamic encrypted fields, favorites, trash, search), item detail (reveal/copy/live TOTP/URL), editor with rotation reminder picker, password+passphrase generator, Watchtower (weak/reused/HIBP, 2FA catalog, rotation status), rotation notifications (OS local), import/export, settings, change MP, regenerate kit, about, light/dark, VI+EN. **Vault organization:** Spaces (sealed-name folders w/ icon+color), tags, **redesigned Home** (folder switcher, quick actions, TOTP quick-view, "Needs attention", Favorites, All items), folder-tinted & tag-filtered lists, CSV/backup + CloudKit folder support. **Theme:** 7 DS accent presets (light+dark), flat backgrounds (wallpaper gated OFF), Day+Night builtin themes.
 
-**Deferred (need Apple Developer entitlements / extra targets):** CloudKit sync, AutoFill Credential Provider extension, passkeys (ASAuthorization), StoreKit 2 IAP/paywall. Service interfaces and security core are ready for these.
+**Deferred (need Apple Developer entitlements / extra targets):** CloudKit sync (full), AutoFill Credential Provider extension, passkeys (ASAuthorization), StoreKit 2 IAP/paywall. Service interfaces and security core are ready for these. Rotation reminder sync (per-item cadence) deferred pending iCloud enablement.
 
-**Last updated:** 2026-06-16
+**Last updated:** 2026-06-17

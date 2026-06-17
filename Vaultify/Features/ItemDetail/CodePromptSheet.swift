@@ -14,7 +14,10 @@ struct CodePromptSheet: View {
     @State private var error: String?
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(title: title, trailing: {
+            Button(String(localized: confirmLabel.inAppLocalized)) { Task { await submit() } }
+                .disabled(code.isEmpty || busy)
+        }) {
             Form {
                 if let message {
                     Section { Text(message.inAppLocalized).font(.footnote).themedForeground(.secondary) }
@@ -28,17 +31,6 @@ struct CodePromptSheet: View {
                 }
                 .listRowBackground(VaultColors.surface)
                 if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
-            }
-            .themedFormBackground()
-            .navigationTitle(Text(title.inAppLocalized))
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: confirmLabel.inAppLocalized)) { Task { await submit() } }
-                        .disabled(code.isEmpty || busy)
-                }
             }
             .overlay { if busy { ProgressView().controlSize(.large) } }
         }

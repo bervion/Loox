@@ -42,6 +42,6 @@ struct SearchResultsList: View {
                     .scrollContentBackground(.hidden)
             }
         }
-        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
     }
 }
