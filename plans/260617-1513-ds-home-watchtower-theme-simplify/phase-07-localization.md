@@ -1,10 +1,13 @@
 ---
 phase: 7
-title: "Localization"
-status: pending
+title: Localization
+status: completed
 priority: P2
-effort: "2-3h"
-dependencies: [2, 5, 6]
+effort: 2-3h
+dependencies:
+  - 2
+  - 5
+  - 6
 ---
 
 # Phase 7: Localization

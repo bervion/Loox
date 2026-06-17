@@ -1,10 +1,17 @@
 ---
 phase: 8
-title: "docs & QA"
-status: pending
+title: docs & QA
+status: completed
 priority: P2
-effort: "2-4h"
-dependencies: [1, 2, 3, 4, 5, 6, 7]
+effort: 2-4h
+dependencies:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
 ---
 
 # Phase 8: docs & QA

@@ -1,10 +1,11 @@
 ---
 phase: 4
-title: "Home DS component library"
-status: pending
+title: Home DS component library
+status: completed
 priority: P2
-effort: "4-6h"
-dependencies: [1]
+effort: 4-6h
+dependencies:
+  - 1
 ---
 
 # Phase 4: Home DS component library

@@ -1,10 +1,12 @@
 ---
 phase: 5
-title: "Home screen assembly (DS spec)"
-status: pending
+title: Home screen assembly (DS spec)
+status: completed
 priority: P2
-effort: "5-7h"
-dependencies: [3, 4]
+effort: 5-7h
+dependencies:
+  - 3
+  - 4
 ---
 
 # Phase 5: Home screen assembly (DS spec)
