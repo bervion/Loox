@@ -27,6 +27,8 @@ struct ItemsScreen: View {
                 .listRowBackground(VaultColors.surface)
             }
             .listStyle(.insetGrouped)
+            // Align the grouped cards' leading edge with the large title gutter.
+            .contentMargins(.horizontal, Space.gutter, for: .scrollContent)
             .scrollContentBackground(.hidden)
             .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
             .navigationTitle("Items")
@@ -71,8 +73,10 @@ struct ItemsScreen: View {
             ForEach(categories) { category in
                 NavigationLink(value: VaultRoute.category(category)) {
                     HStack(spacing: Space.s3) {
-                        PolarisIcon(category.iconAsset, size: 22)
-                            .foregroundStyle(Color.accentColor).frame(width: 30)
+                        leadingTile(category.iconAsset,
+                                    fill: Color(rgb: env.theme.active.accent).opacity(0.14),
+                                    iconColor: Color(rgb: env.theme.active.accent),
+                                    iconSize: 17)
                         Text(category.title)
                         Spacer()
                         Text("\(env.repository.count(forCategory: category))").themedForeground(.secondary)
@@ -88,7 +92,8 @@ struct ItemsScreen: View {
             ForEach(tags, id: \.tag) { entry in
                 NavigationLink(value: VaultRoute.tag(entry.tag)) {
                     HStack(spacing: Space.s3) {
-                        PolarisIcon(Icons.hashtag, size: 18).themedForeground(.secondary).frame(width: 30)
+                        leadingTile(Icons.hashtag, fill: VaultColors.fill,
+                                    iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
                         Text(entry.tag)
                         Spacer()
                         Text("\(entry.count)").themedForeground(.secondary)
@@ -102,11 +107,21 @@ struct ItemsScreen: View {
     private func standaloneRow(_ title: Text, icon: String, count: Int, route: VaultRoute) -> some View {
         NavigationLink(value: route) {
             HStack(spacing: Space.s3) {
-                PolarisIcon(icon, size: Metric.iconInline).themedForeground(.secondary).frame(width: 30)
+                leadingTile(icon, fill: VaultColors.fill,
+                            iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
                 title
                 Spacer()
                 if count > 0 { Text("\(count)").themedForeground(.secondary) }
             }
         }
+    }
+
+    /// 30pt rounded leading badge (matches the Spaces folder tiles) so every row
+    /// has a consistent tinted icon tile instead of a bare glyph.
+    private func leadingTile(_ icon: String, fill: Color, iconColor: Color, iconSize: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(fill)
+            .frame(width: 30, height: 30)
+            .overlay(PolarisIcon(icon, size: iconSize).foregroundStyle(iconColor))
     }
 }
