@@ -98,6 +98,8 @@ struct ItemEditorScreen: View {
                     TagChipEditor(tags: $draft.tags)
                 }
                 .listRowBackground(VaultColors.surface)
+
+                RotationReminderSection(rotateDays: $draft.rotateDays)
             }
             .themedFormBackground()
             .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")
@@ -178,6 +180,39 @@ struct ItemEditorScreen: View {
         } catch {
             Haptics.error()
         }
+    }
+}
+
+// MARK: - Rotation reminder picker
+
+/// Segmented-style Picker for the per-item rotation cadence.
+/// Cadence options: 0 = off, 15 / 30 / 90 days.
+private struct RotationReminderSection: View {
+    @Binding var rotateDays: Int
+
+    private let options: [(label: LocalizedStringResource, value: Int)] = [
+        ("Off", 0),
+        ("15 days", 15),
+        ("30 days", 30),
+        ("90 days", 90),
+    ]
+
+    var body: some View {
+        Section {
+            Picker(selection: $rotateDays) {
+                ForEach(options, id: \.value) { option in
+                    Text(option.label).tag(option.value)
+                }
+            } label: {
+                Label {
+                    Text("Rotation reminder")
+                } icon: {
+                    PolarisIcon("ic_refresh")
+                }
+            }
+            .pickerStyle(.menu)
+        }
+        .listRowBackground(VaultColors.surface)
     }
 }
 

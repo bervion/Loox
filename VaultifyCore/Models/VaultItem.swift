@@ -15,6 +15,13 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
     var pinned: Bool
     var archived: Bool
     var useCount: Int
+    /// Rotation reminder cadence in days: 0 = off, 15 / 30 / 90 = enabled.
+    /// Mirrored from `ItemRecord.rotateDays` so the editor and Home can read
+    /// cadence without re-decrypting.
+    var rotateDays: Int
+    /// When the password was last changed. Nil → `createdAt` used as baseline
+    /// in `RotationStatus`. Mirrored from `ItemRecord.passwordChangedAt`.
+    var passwordChangedAt: Date?
     var createdAt: Date
     var updatedAt: Date
     var trashedAt: Date?
@@ -30,6 +37,8 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
          pinned: Bool = false,
          archived: Bool = false,
          useCount: Int = 0,
+         rotateDays: Int = 0,
+         passwordChangedAt: Date? = nil,
          createdAt: Date = .now,
          updatedAt: Date = .now,
          trashedAt: Date? = nil) {
@@ -44,6 +53,8 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
         self.pinned = pinned
         self.archived = archived
         self.useCount = useCount
+        self.rotateDays = rotateDays
+        self.passwordChangedAt = passwordChangedAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.trashedAt = trashedAt
