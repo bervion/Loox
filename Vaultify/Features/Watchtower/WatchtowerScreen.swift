@@ -51,7 +51,7 @@ struct WatchtowerScreen: View {
             }
             .scrollContentBackground(.hidden)
             .themedWallpaper(env.theme.wallpaper,
-                             fallback: Color(rgb: env.theme.active.background))
+                             fallback: Color(rgb: env.theme.active.groupedBackground))
             .navigationBarHidden(true)
             // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
             .navigationDestination(for: String.self) { itemID in

@@ -25,7 +25,7 @@ struct TotpListScreen: View {
                 .padding(.bottom, TabBarMetric.contentBottomInset)
             }
         }
-        .background(Color(rgb: env.theme.active.background).ignoresSafeArea())
+        .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle(Text("2FA Codes"))
         .navigationBarTitleDisplayMode(.large)
         .vaultNavigationDestinations()

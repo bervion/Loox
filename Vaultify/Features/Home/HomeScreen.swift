@@ -45,7 +45,7 @@ struct HomeScreen: View {
                     scrollContent
                 }
             }
-            .background(Color(rgb: env.theme.active.background).ignoresSafeArea())
+            .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .vaultNavigationDestinations()
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             .sheet(isPresented: $showSettings) { SettingsScreen() }

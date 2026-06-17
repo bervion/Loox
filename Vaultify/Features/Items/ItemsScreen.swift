@@ -33,7 +33,7 @@ struct ItemsScreen: View {
                 .padding(.horizontal, Space.gutter)
                 .padding(.bottom, TabBarMetric.contentBottomInset)
             }
-            .background(Color(rgb: env.theme.active.background).ignoresSafeArea())
+            .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
