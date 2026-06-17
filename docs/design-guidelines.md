@@ -459,6 +459,45 @@ Desired result:
 - Liquid Glass control layer on supported iOS
 - no invisible text after theme switching
 
+## Home & Watchtower Components (Implemented)
+
+### Home Screen (`Vaultify/Features/Home/`)
+
+Rebuilt to DS spec with folder switcher, quick actions, TOTP quick-view, and "Needs attention" list.
+
+**Components** (`Components/`):
+- `HomeHeaderBar` — folder switcher + header controls.
+- `QuickActionTile` — tappable action tile (Generator, Settings, etc.).
+- `TotpCardView` — TOTP display with 6-digit code + countdown ring.
+- `TotpRingView` — circular progress indicator for TOTP countdown.
+- `AttentionCell` — item row for "Needs attention" (rotation overdue/soon/stale, weak password).
+
+**Sections** (from top):
+1. **Folder switcher** (header) — tap to navigate folders.
+2. **Quick actions** — Generator, Settings, ⋯ (configurable).
+3. **TOTP quick-view** — show next TOTP without entering detail screen.
+4. **"Needs attention"** — rotation reminders + weak passwords (from `RotationStatus`).
+5. **Favorites** — pinned + favorite items.
+6. **"All items"** — full list, pinned-first within each category.
+
+**Retired:** `CustomizeHomeScreen`, `UtilitiesSection`, `homeShowRecentlyUsed/Modified` settings. Underlying data (`pinned`, `favorite`, `useCount`) retained.
+
+### Watchtower Screen (`Vaultify/Features/Watchtower/`)
+
+Reshaped with visual strength gauge and issue category drill-down.
+
+**Components:**
+- `WatchtowerScoreRing` — 270° semicircle gauge (0–100 strength score), color-coded (destructive/warning/neutral).
+- `WatchtowerStrengthCard` — overall strength summary (distinct from security health).
+- `WatchtowerComponents` — helper views (category headers, issue rows, 2FA support indicator).
+- `TwoFactorCatalog` (`Services/Watchtower/`) — curated "supports 2FA" service hostnames (host-suffix matching, no false-positives).
+
+**Issue Categories** (drill-down from home):
+- **Compromised** — HIBP match (plaintext, k-anonymity hash).
+- **Reused** — appears in ≥2 items (levenshtein match, configurable threshold).
+- **Weak** — low password strength score (≤1 per `PasswordStrength.evaluate`).
+- **Missing 2FA** — item has no 2FA code / TOTP, and its hostname matches `TwoFactorCatalog`.
+
 ## Token Checklist For Agents
 
 Before changing feature UI, verify:
@@ -574,8 +613,8 @@ Acceptance:
 
 - **Tab naming:** `Home / Items / Watchtower / Search` (accessibility labels only; bar is icon-only).
 - **Selected state:** native tab bar selection with app accent tint and filled Polaris icon variants where available.
-- **Accent presets:** keep all **10** presets + custom RGB (superset of the DS's 6); every one must pass
-  WCAG `onAccent` (`RGBMath.onColor`).
+- **Accent presets:** 7 Design-System presets (blue/indigo/teal/purple/pink/graphite/mono), light + dark hues each; custom RGB removed. Every preset must pass WCAG `onAccent` (`RGBMath.onColor`).
+- **Backgrounds:** Flat themed backgrounds only; decorative wallpapers (gradient/pattern/mesh/photo) gated OFF via `WallpaperFeature.decorativeEnabled = false`. Engine code retained; re-enable flag for future advanced theming.
 - **Type scale:** DS roles map onto Apple **Dynamic Type** styles (`VaultType`) — keeps accessibility /
   Dynamic Type rather than fixed pixel sizes.
 - **Liquid Glass:** use framework-provided native tab bar Liquid Glass on iOS 26+. Keep shell tab switching on
