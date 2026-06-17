@@ -38,14 +38,24 @@ struct HomeScreen: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            Group {
-                if env.repository.items.isEmpty {
-                    emptyVaultState
-                } else {
-                    scrollContent
+            VStack(spacing: 0) {
+                // Fixed (non-collapsing) header — folder switcher + Add + Settings.
+                HomeHeaderBar(
+                    selectedFolderId: $selectedFolderId,
+                    onAddCategory: { editorTarget = .new($0) },
+                    onSettings: { showSettings = true }
+                )
+
+                Group {
+                    if env.repository.items.isEmpty {
+                        emptyVaultState
+                    } else {
+                        scrollContent
+                    }
                 }
             }
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
             .vaultNavigationDestinations()
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             .sheet(isPresented: $showSettings) { SettingsScreen() }
@@ -58,17 +68,7 @@ struct HomeScreen: View {
     private var scrollContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                // 1. Header: folder switcher + Add + Settings
-                HomeHeaderBar(
-                    selectedFolderId: $selectedFolderId,
-                    onAddCategory: { editorTarget = .new($0) },
-                    onSettings: { showSettings = true }
-                )
-                .padding(.top, Space.s2)
-
-                // 2. Search entry button (tapping switches to Search tab — we
-                //    post a tab-switch notification picked up by MainTabView,
-                //    or just present Search as a sheet fallback).
+                // Search entry button (tapping switches to the Search tab).
                 searchEntryButton
                     .padding(.horizontal, Space.gutter)
                     .padding(.top, Space.s2)

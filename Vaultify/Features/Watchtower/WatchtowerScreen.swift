@@ -43,21 +43,9 @@ struct WatchtowerScreen: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    ringSection
-                    contentSection
-                }
-                .padding(.bottom, Space.s10)
-            }
-            .scrollContentBackground(.hidden)
-            .themedWallpaper(env.theme.wallpaper,
-                             fallback: Color(rgb: env.theme.active.groupedBackground))
-            // System large title → native collapse-to-inline on scroll (Apple-standard).
-            .navigationTitle("Watchtower")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+            VStack(spacing: 0) {
+                // Fixed (non-collapsing) header, Threads-style, with quick-add.
+                VaultScreenHeader("Watchtower") {
                     Menu {
                         ForEach(ItemCategory.allCases) { category in
                             Button {
@@ -69,10 +57,24 @@ struct WatchtowerScreen: View {
                     } label: {
                         PolarisIcon(Icons.add, size: Metric.iconUtility)
                             .foregroundStyle(Color(rgb: env.theme.active.accent))
+                            .frame(width: Metric.hitMin, height: Metric.hitMin)
                     }
                     .accessibilityLabel(Text("Add Item"))
                 }
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ringSection
+                        contentSection
+                    }
+                    .padding(.bottom, Space.s10)
+                }
+                .scrollContentBackground(.hidden)
+                .refreshable { await fullAudit() }
             }
+            .themedWallpaper(env.theme.wallpaper,
+                             fallback: Color(rgb: env.theme.active.groupedBackground))
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
             .navigationDestination(for: String.self) { itemID in
@@ -83,7 +85,6 @@ struct WatchtowerScreen: View {
                 categoryScreen(for: category)
             }
             .overlay { if checking { checkingOverlay } }
-            .refreshable { await fullAudit() }
             .task { await fullAudit() }
             .onChange(of: env.repository.items.count) {
                 health = PasswordAudit.analyze(env.repository.items)

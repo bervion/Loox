@@ -18,20 +18,23 @@ struct ItemsScreen: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Space.s6) {
-                    spacesSection
-                    if !categories.isEmpty { categoriesSection }
-                    if !tags.isEmpty { tagsSection }
-                    standaloneSection
+            VStack(spacing: 0) {
+                VaultScreenHeader("Items")
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Space.s6) {
+                        spacesSection
+                        if !categories.isEmpty { categoriesSection }
+                        if !tags.isEmpty { tagsSection }
+                        standaloneSection
+                    }
+                    .padding(.horizontal, Space.gutter)
+                    .padding(.top, Space.s2)
+                    .padding(.bottom, TabBarMetric.contentBottomInset)
                 }
-                .padding(.horizontal, Space.gutter)
-                .padding(.top, Space.s2)
-                .padding(.bottom, TabBarMetric.contentBottomInset)
             }
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-            .navigationTitle("Items")
-            .navigationBarTitleDisplayMode(.large)
+            .toolbar(.hidden, for: .navigationBar)
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
         }
