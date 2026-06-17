@@ -95,7 +95,7 @@ struct WatchtowerScoreRing: View {
                     // Ticks render on TOP of the fill so they stay visible across the
                     // whole arc (filled + unfilled), like the 1Password dial.
                     drawTicks(ctx: ctx, cx: cx, cy: cy, r: r, scale: scale,
-                              theme: theme, opacity: tickOpacity)
+                              theme: theme, reveal: tickOpacity)
                     drawMarker(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw,
                                band: band, theme: theme, scale: scale)
                 }
@@ -136,8 +136,8 @@ struct WatchtowerScoreRing: View {
         withAnimation(.easeOut(duration: Motion.slow * 1.6)) {
             numberBlur = 0
         }
-        // Ticks fade in just behind the needle for the "scale settling" feel
-        withAnimation(.easeOut(duration: Motion.slow * 1.4).delay(0.08)) {
+        // Ticks sweep in left→right (staggered per tick) like a scale powering up
+        withAnimation(.easeOut(duration: Motion.slow * 2.4)) {
             tickOpacity = 1
         }
     }
@@ -175,25 +175,26 @@ struct WatchtowerScoreRing: View {
 
     private func drawTicks(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
                            r: CGFloat, scale: CGFloat, theme: AppTheme,
-                           opacity: CGFloat) {
-        // Dark + semi-transparent so ticks read on the grey track AND on the
-        // coloured fill beneath them (they no longer vanish under the fill).
-        let tickColor = Color(rgb: theme.primaryText).opacity(0.22 * opacity)
+                           reveal: CGFloat) {
         for i in 0...Geo.tickCount {
-            let deg    = Geo.startDeg + Geo.sweepDeg * CGFloat(i) / CGFloat(Geo.tickCount)
+            let tf = CGFloat(i) / CGFloat(Geo.tickCount)
+            // Staggered sweep-in: each tick fades + grows as `reveal` (0→1) passes
+            // its position along the arc — a clear "scale powering up" animation
+            // (dark + semi-transparent so it reads on the grey track AND the fill).
+            let appear = max(0, min(1, (reveal * 1.15 - tf) * 7))
+            guard appear > 0.02 else { continue }
+            let deg = Geo.startDeg + Geo.sweepDeg * tf
             let isMajor = i % 4 == 0
-            let length: CGFloat = (isMajor ? 11 : 7) * scale
+            let length: CGFloat = (isMajor ? 11 : 7) * scale * (0.45 + 0.55 * appear)
             let strokeW: CGFloat = (isMajor ? 2.2 : 1.4) * scale
-            // Ticks straddle the arc radius
             let innerR = r - length / 2
             let outerR = r + length / 2
             let rad = deg * .pi / 180
             var path = Path()
-            path.move(to: CGPoint(x: cx + innerR * cos(rad),
-                                  y: cy + innerR * sin(rad)))
-            path.addLine(to: CGPoint(x: cx + outerR * cos(rad),
-                                     y: cy + outerR * sin(rad)))
-            ctx.stroke(path, with: .color(tickColor),
+            path.move(to: CGPoint(x: cx + innerR * cos(rad), y: cy + innerR * sin(rad)))
+            path.addLine(to: CGPoint(x: cx + outerR * cos(rad), y: cy + outerR * sin(rad)))
+            ctx.stroke(path,
+                       with: .color(Color(rgb: theme.primaryText).opacity(0.24 * appear)),
                        style: StrokeStyle(lineWidth: strokeW, lineCap: .round))
         }
     }
@@ -211,27 +212,26 @@ struct WatchtowerScoreRing: View {
         let f = min(1, animatedFraction)
         let endRad = currentEndDeg(f) * .pi / 180
 
-        // Chunky rounded thumb straddling the band at the fill tip (1Password style)
-        let markerLength = bw * 1.35
-        let markerWidth  = bw * 0.72
-        let outlineWidth = 3 * scale
+        // 1Password-style triangle sitting in the interior just below the band,
+        // pointing OUTWARD at the fill tip; travels with the score.
+        let triH: CGFloat = 15 * scale     // radial height
+        let triW: CGFloat = 17 * scale     // base width
+        let gap:  CGFloat = 4  * scale     // gap between the tip and the band's inner edge
+        let centreR = r - bw / 2 - gap - triH / 2
 
-        let markerCx = cx + r * cos(endRad)
-        let markerCy = cy + r * sin(endRad)
+        let mcx = cx + centreR * cos(endRad)
+        let mcy = cy + centreR * sin(endRad)
 
-        var marker = Path(roundedRect: CGRect(
-            x: -markerWidth / 2, y: -markerLength / 2,
-            width: markerWidth, height: markerLength
-        ), cornerRadius: markerWidth / 2, style: .continuous)
-        // Place + orient: rotate local Y to the outward radial, then translate to the tip.
-        marker = marker.applying(
-            CGAffineTransform(translationX: markerCx, y: markerCy).rotated(by: endRad + .pi / 2))
+        // Build pointing up (-y = tip); rotation maps local up → the outward radial.
+        var tri = Path()
+        tri.move(to: CGPoint(x: 0, y: -triH / 2))            // tip → points at the band
+        tri.addLine(to: CGPoint(x: -triW / 2, y: triH / 2))  // base left
+        tri.addLine(to: CGPoint(x:  triW / 2, y: triH / 2))  // base right
+        tri.closeSubpath()
+        tri = tri.applying(
+            CGAffineTransform(translationX: mcx, y: mcy).rotated(by: endRad + .pi / 2))
 
-        // Page-coloured halo cuts the thumb out of the band so it always pops.
-        ctx.fill(marker.strokedPath(StrokeStyle(lineWidth: outlineWidth, lineCap: .round, lineJoin: .round)),
-                 with: .color(Color(rgb: theme.groupedBackground)))
-        // Band-semantic fill on top (red / amber / green).
-        ctx.fill(marker, with: .color(bandColor(band: band, theme: theme)))
+        ctx.fill(tri, with: .color(bandColor(band: band, theme: theme)))
     }
 
     /// Resolves the band's semantic colour using the theme's own role→Color mapping.
