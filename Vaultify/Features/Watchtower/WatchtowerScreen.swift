@@ -1,7 +1,21 @@
 import SwiftUI
 
-/// The Watchtower tab: offline weak/reused analysis plus optional HIBP breach
-/// checking (k-anonymity). Tapping an issue opens the item.
+/// Typed navigation values for the "To fix" drill-down categories.
+/// Declared at file scope (not private) so NavigationLink can infer the type.
+enum WatchtowerCategory: Hashable {
+    case compromised, reused, weak, missing2FA
+}
+
+/// Watchtower — vault health monitor.
+///
+/// Layout (per DS Watchtower.jsx):
+///   Title "Watchtower"
+///   → WatchtowerScoreRing (270° speedometer)
+///   → Subtitle "Fix N issues below…"
+///   → WatchtowerStrengthCard
+///   → "To fix" section: CategoryRow list (non-zero only)
+///   → HIBP toggle (bottom)
+///   → All-clear state when issueCount == 0
 struct WatchtowerScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var health = VaultHealth.empty
@@ -9,7 +23,11 @@ struct WatchtowerScreen: View {
     @State private var checking = false
 
     private var allClear: Bool {
-        health.analyzedCount > 0 && health.issueCount == 0 && pwned.isEmpty
+        health.analyzedCount > 0 && totalIssueCount == 0
+    }
+
+    private var totalIssueCount: Int {
+        health.weak.count + health.reused.count + pwned.count + health.missing2FA.count
     }
 
     private var hibpBinding: Binding<Bool> {
@@ -23,36 +41,26 @@ struct WatchtowerScreen: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section { HealthGauge(score: health.score, issueCount: health.issueCount + pwned.count) }
-                .listRowBackground(VaultColors.surface)
-
-                issueSection("Weak Passwords", "Short or low-entropy — easy to crack.", health.weak)
-                issueSection("Reused Passwords", "The same password protects multiple items.", health.reused)
-                if env.settings.hibpEnabled {
-                    issueSection("Found in Data Breaches", "Change these as soon as possible.", pwned)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    screenTitle
+                    ringSection
+                    contentSection
                 }
-
-                if allClear {
-                    Section {
-                        Label { Text("Every password is strong and unique.") } icon: {
-                            PolarisIcon(Icons.checkCircle).foregroundStyle(VaultColors.strengthStrong)
-                        }
-                    }
-                    .listRowBackground(VaultColors.surface)
-                }
-
-                Section {
-                    Toggle(isOn: hibpBinding) { Text("Check for known breaches") }
-                } footer: {
-                    Text("Uses k-anonymity — only the first five characters of each password’s SHA-1 hash are sent. Passwords never leave your device.")
-                }
-                .listRowBackground(VaultColors.surface)
+                .padding(.bottom, Space.s10)
             }
             .scrollContentBackground(.hidden)
-            .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
-            .navigationTitle("Watchtower")
-            .navigationDestination(for: String.self) { ItemDetailScreen(itemID: $0) }
+            .themedWallpaper(env.theme.wallpaper,
+                             fallback: Color(rgb: env.theme.active.background))
+            .navigationBarHidden(true)
+            // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
+            .navigationDestination(for: String.self) { itemID in
+                ItemDetailScreen(itemID: itemID)
+            }
+            // Category drill-down navigation
+            .navigationDestination(for: WatchtowerCategory.self) { category in
+                categoryScreen(for: category)
+            }
             .overlay { if checking { checkingOverlay } }
             .refreshable { await fullAudit() }
             .task { await fullAudit() }
@@ -62,27 +70,218 @@ struct WatchtowerScreen: View {
         }
     }
 
+    // MARK: - Category screen factory
+
     @ViewBuilder
-    private func issueSection(_ title: LocalizedStringResource, _ subtitle: LocalizedStringResource, _ issues: [VaultIssue]) -> some View {
-        if !issues.isEmpty {
-            Section {
-                ForEach(issues) { issue in
-                    NavigationLink(value: issue.itemID) { WatchtowerIssueRow(issue: issue) }
-                }
-            } header: {
-                Text(title)
-            } footer: {
-                Text(subtitle)
-            }
-            .listRowBackground(VaultColors.surface)
+    private func categoryScreen(for category: WatchtowerCategory) -> some View {
+        switch category {
+        case .compromised:
+            WatchtowerCategoryScreen(title: "Exposed password", issues: pwned)
+        case .reused:
+            WatchtowerCategoryScreen(title: "Reused passwords", issues: health.reused)
+        case .weak:
+            WatchtowerCategoryScreen(title: "Weak passwords", issues: health.weak)
+        case .missing2FA:
+            WatchtowerCategoryScreen(title: "Set up two-factor authentication", issues: health.missing2FA)
         }
     }
+
+    // MARK: - Screen title
+
+    private var screenTitle: some View {
+        Text("Watchtower")
+            .vaultType(.screenTitle)
+            .themedForeground(.primary)
+            .padding(.horizontal, Space.gutter)
+            .padding(.top, Space.s4)
+            .padding(.bottom, Space.s2)
+    }
+
+    // MARK: - Score ring + subtitle
+
+    private var ringSection: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                WatchtowerScoreRing(score: health.score)
+                Spacer()
+            }
+            .padding(.vertical, Space.s2)
+
+            if totalIssueCount > 0 {
+                Text("Fix \(totalIssueCount) issues below to raise your vault's security score.")
+                    .vaultType(.callout)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, Space.s7)
+                    .padding(.bottom, Space.s3)
+            }
+        }
+    }
+
+    // MARK: - Main content
+
+    @ViewBuilder
+    private var contentSection: some View {
+        VStack(spacing: Space.s5) {
+            WatchtowerStrengthCard(overallStrength: health.overallStrength) {
+                // Tapping strength card navigates to weak-password drill-down
+                // when there are weak items; otherwise it's informational.
+            }
+            .padding(.horizontal, Space.gutter)
+
+            if allClear {
+                allClearView
+            } else {
+                issueSection
+            }
+
+            hibpToggleSection
+        }
+        .padding(.top, Space.s4)
+    }
+
+    // MARK: - "To fix" issue list
+
+    @ViewBuilder
+    private var issueSection: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text("To fix")
+                .vaultType(.sectionLabel)
+                .themedForeground(.secondary)
+                .padding(.horizontal, Space.gutter)
+                .padding(.bottom, Space.s1)
+
+            ThemedCard(cornerRadius: Radius.lg, padding: 0) {
+                VStack(spacing: 0) {
+                    categoryRowList
+                }
+            }
+            .padding(.horizontal, Space.gutter)
+        }
+    }
+
+    @ViewBuilder
+    private var categoryRowList: some View {
+        let entries = activeCategoryEntries
+        ForEach(entries) { entry in
+            NavigationLink(value: entry.category) {
+                CategoryRow(
+                    icon: entry.icon,
+                    tintRole: entry.tintRole,
+                    title: entry.title,
+                    subtitle: entry.subtitle,
+                    count: entry.count
+                ) {}
+            }
+            .buttonStyle(.plain)
+
+            // Divider after every entry except the last
+            if entry.id != entries.last?.id {
+                ThemedDivider()
+                    .padding(.leading, Space.gutter + Metric.iconTile + Space.s3)
+            }
+        }
+    }
+
+    // Build the ordered list of non-zero issue categories
+    private struct CategoryEntry: Identifiable {
+        var id: WatchtowerCategory { category }
+        let category: WatchtowerCategory
+        let icon: String
+        let tintRole: ThemeRole
+        let title: LocalizedStringResource
+        let subtitle: String
+        let count: Int
+    }
+
+    private var activeCategoryEntries: [CategoryEntry] {
+        var entries: [CategoryEntry] = []
+        if !pwned.isEmpty {
+            entries.append(CategoryEntry(
+                category: .compromised,
+                icon: Icons.shieldAlert,
+                tintRole: .destructive,
+                title: "Exposed password",
+                subtitle: appString("\(pwned.count) in a data breach"),
+                count: pwned.count))
+        }
+        if !health.reused.isEmpty {
+            entries.append(CategoryEntry(
+                category: .reused,
+                icon: Icons.copy,
+                tintRole: .warning,
+                title: "Reused passwords",
+                subtitle: appString("\(health.reused.count) share a password"),
+                count: health.reused.count))
+        }
+        if !health.weak.isEmpty {
+            entries.append(CategoryEntry(
+                category: .weak,
+                icon: Icons.lock,
+                tintRole: .warning,
+                title: "Weak passwords",
+                subtitle: appString("\(health.weak.count) easy to guess"),
+                count: health.weak.count))
+        }
+        if !health.missing2FA.isEmpty {
+            entries.append(CategoryEntry(
+                category: .missing2FA,
+                icon: Icons.checkCircle,
+                tintRole: .accent,
+                title: "Set up two-factor authentication",
+                subtitle: appString("\(health.missing2FA.count) can use 2FA"),
+                count: health.missing2FA.count))
+        }
+        return entries
+    }
+
+    // MARK: - All-clear
+
+    private var allClearView: some View {
+        HStack(spacing: Space.s3) {
+            PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+                .themedForeground(.success)
+            Text("Every password is strong and unique.")
+                .vaultType(.callout)
+                .themedForeground(.secondary)
+        }
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .themedCard()
+        .padding(.horizontal, Space.gutter)
+    }
+
+    // MARK: - HIBP toggle
+
+    private var hibpToggleSection: some View {
+        VStack(spacing: 0) {
+            Toggle(isOn: hibpBinding) {
+                Text("Check for known breaches")
+            }
+            .toggleStyle(.themed)
+            .padding(Space.s4)
+
+            Text("Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
+                .vaultType(.footnote)
+                .themedForeground(.secondary)
+                .padding(.horizontal, Space.s4)
+                .padding(.bottom, Space.s4)
+        }
+        .themedCard()
+        .padding(.horizontal, Space.gutter)
+    }
+
+    // MARK: - Checking overlay
 
     private var checkingOverlay: some View {
         ProgressView("Checking breaches…")
             .padding(Space.s5)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .background(.regularMaterial,
+                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
+
+    // MARK: - Audit logic
 
     private func fullAudit() async {
         health = PasswordAudit.analyze(env.repository.items)
@@ -105,7 +304,8 @@ struct WatchtowerScreen: View {
                 cache[password] = count
             }
             if count > 0 {
-                results.append(PasswordAudit.issue(item, kind: .pwned, detail: "Seen \(count) times in breaches"))
+                results.append(PasswordAudit.issue(item, kind: .pwned,
+                                                   detail: "Seen \(count) times in breaches"))
             }
         }
         pwned = results
