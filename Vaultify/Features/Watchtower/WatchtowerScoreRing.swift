@@ -70,7 +70,7 @@ struct WatchtowerScoreRing: View {
     private var fraction: CGFloat { CGFloat(max(0, min(100, score))) / 100 }
 
     // Displayed integer derived from animated fraction so it counts up each frame
-    private var displayedScore: Int { Int((animatedFraction * 100).rounded()) }
+    private var displayedScore: Int { max(0, min(100, Int((animatedFraction * 100).rounded()))) }
 
     // Angle where the fill tip currently sits
     private func currentEndDeg(_ f: CGFloat) -> CGFloat {
@@ -91,9 +91,11 @@ struct WatchtowerScoreRing: View {
             ZStack {
                 Canvas { ctx, _ in
                     drawTrack(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, theme: theme)
+                    drawFill(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw)
+                    // Ticks render on TOP of the fill so they stay visible across the
+                    // whole arc (filled + unfilled), like the 1Password dial.
                     drawTicks(ctx: ctx, cx: cx, cy: cy, r: r, scale: scale,
                               theme: theme, opacity: tickOpacity)
-                    drawFill(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw)
                     drawMarker(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw,
                                band: band, theme: theme, scale: scale)
                 }
@@ -122,20 +124,20 @@ struct WatchtowerScoreRing: View {
 
         // Reset for replay (e.g. score updates)
         animatedFraction = 0
-        numberBlur       = 10
+        numberBlur       = 6
         tickOpacity      = 0
 
-        // Needle + fill sweep: ease-out settle, like stepping on a scale
-        withAnimation(.timingCurve(0.32, 0.72, 0, 1, duration: Motion.slow * 2)) {
+        // Needle + fill swing toward the score and settle — a low-damping spring
+        // gives the "đung đưa" swing of a real gauge needle stepping onto a scale.
+        withAnimation(.spring(response: 0.9, dampingFraction: 0.6)) {
             animatedFraction = target
         }
-        // Number blur dissolves over the same window
-        withAnimation(.timingCurve(0.32, 0.72, 0, 1, duration: Motion.slow * 2)) {
+        // Number blur dissolves as the needle settles
+        withAnimation(.easeOut(duration: Motion.slow * 1.6)) {
             numberBlur = 0
         }
-        // Ticks fade in slightly after the sweep begins (staggered for "settle" feel)
-        withAnimation(.timingCurve(0.32, 0.72, 0, 1,
-                                   duration: Motion.slow * 1.6).delay(0.1)) {
+        // Ticks fade in just behind the needle for the "scale settling" feel
+        withAnimation(.easeOut(duration: Motion.slow * 1.4).delay(0.08)) {
             tickOpacity = 1
         }
     }
@@ -156,11 +158,12 @@ struct WatchtowerScoreRing: View {
 
     private func drawFill(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
                           r: CGFloat, bw: CGFloat) {
-        guard animatedFraction > 0 else { return }
+        let f = min(1, animatedFraction)   // spring may overshoot past 1
+        guard f > 0 else { return }
         var path = Path()
         path.addArc(center: CGPoint(x: cx, y: cy), radius: r,
                     startAngle: .degrees(Geo.startDeg),
-                    endAngle:   .degrees(currentEndDeg(animatedFraction)),
+                    endAngle:   .degrees(currentEndDeg(f)),
                     clockwise:  false)
         // Diagonal linear gradient follows the arc direction (left-top → right)
         ctx.stroke(path,
@@ -173,7 +176,9 @@ struct WatchtowerScoreRing: View {
     private func drawTicks(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
                            r: CGFloat, scale: CGFloat, theme: AppTheme,
                            opacity: CGFloat) {
-        let tickColor = Color(rgb: theme.primaryText).opacity(0.15 * opacity)
+        // Dark + semi-transparent so ticks read on the grey track AND on the
+        // coloured fill beneath them (they no longer vanish under the fill).
+        let tickColor = Color(rgb: theme.primaryText).opacity(0.22 * opacity)
         for i in 0...Geo.tickCount {
             let deg    = Geo.startDeg + Geo.sweepDeg * CGFloat(i) / CGFloat(Geo.tickCount)
             let isMajor = i % 4 == 0
@@ -201,41 +206,32 @@ struct WatchtowerScoreRing: View {
     private func drawMarker(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
                             r: CGFloat, bw: CGFloat,
                             band: ScoreBand, theme: AppTheme, scale: CGFloat) {
-        guard animatedFraction > 0 else { return }
-        let endDeg = currentEndDeg(animatedFraction)
-        let endRad = endDeg * .pi / 180
+        // Always drawn — even at score 0 it rests at the arc start, so the needle
+        // is never missing. The spring may overshoot past 1 → clamp.
+        let f = min(1, animatedFraction)
+        let endRad = currentEndDeg(f) * .pi / 180
 
-        // Marker is a rounded lozenge sitting on the arc, pointing outward
-        let markerLength = bw * 1.1        // slightly taller than band
-        let markerWidth  = bw * 0.55       // narrower — clean needle shape
-        let outlineWidth = 2.2 * scale
+        // Chunky rounded thumb straddling the band at the fill tip (1Password style)
+        let markerLength = bw * 1.35
+        let markerWidth  = bw * 0.72
+        let outlineWidth = 3 * scale
 
-        // Centre of the marker == point on the arc at the tip angle
         let markerCx = cx + r * cos(endRad)
         let markerCy = cy + r * sin(endRad)
 
-        // Build the marker shape in local space, then rotate to the arc tangent.
-        // The "outward" direction from the arc centre is exactly `endRad`, so
-        // rotating the local Y-axis to that direction aligns the needle with the arc.
-        var localRect = Path(roundedRect: CGRect(
-            x: -markerWidth / 2,
-            y: -markerLength / 2,
-            width: markerWidth,
-            height: markerLength
+        var marker = Path(roundedRect: CGRect(
+            x: -markerWidth / 2, y: -markerLength / 2,
+            width: markerWidth, height: markerLength
         ), cornerRadius: markerWidth / 2, style: .continuous)
+        // Place + orient: rotate local Y to the outward radial, then translate to the tip.
+        marker = marker.applying(
+            CGAffineTransform(translationX: markerCx, y: markerCy).rotated(by: endRad + .pi / 2))
 
-        // Transform: rotate so local Y aligns with the outward radial, then translate
-        let transform = CGAffineTransform(translationX: markerCx, y: markerCy)
-            .rotated(by: endRad + .pi / 2)
-        localRect = localRect.applying(transform)
-
-        // Outline first (renders behind the fill, visually as a halo)
-        let outlinePath = localRect.strokedPath(
-            StrokeStyle(lineWidth: outlineWidth, lineCap: .round, lineJoin: .round))
-        ctx.fill(outlinePath, with: .color(Color(rgb: theme.groupedBackground).opacity(0.9)))
-
-        // Band-coloured fill on top
-        ctx.fill(localRect, with: .color(bandColor(band: band, theme: theme)))
+        // Page-coloured halo cuts the thumb out of the band so it always pops.
+        ctx.fill(marker.strokedPath(StrokeStyle(lineWidth: outlineWidth, lineCap: .round, lineJoin: .round)),
+                 with: .color(Color(rgb: theme.groupedBackground)))
+        // Band-semantic fill on top (red / amber / green).
+        ctx.fill(marker, with: .color(bandColor(band: band, theme: theme)))
     }
 
     /// Resolves the band's semantic colour using the theme's own role→Color mapping.
