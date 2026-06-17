@@ -79,4 +79,8 @@ enum Icons {
     static let person = "ic_person"
     static let camera = "ic_camera"
     static let image = "ic_image"
+    /// Document with a plus badge — used on the Add quick-action tile and header cluster.
+    static let pageAdd = "ic_page_add"
+    /// Horizontal three-dot overflow ("•••") — used in the header action cluster.
+    static let moreHorizontal = "ic_menu_horizontal"
 }

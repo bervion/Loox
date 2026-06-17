@@ -66,10 +66,11 @@ private struct QuickActionButtonStyle: ButtonStyle {
 // MARK: - Convenience factory for the four canonical Home quick actions
 
 extension QuickActionTile {
-    /// Accent tint — matches the live theme accent.
+    /// Accent tint — matches the live theme accent. Uses ic_page_add for visual
+    /// consistency with the header cluster's Add button.
     static func add(env: AppEnvironment, action: @escaping () -> Void) -> QuickActionTile {
         QuickActionTile(
-            icon: Icons.add,
+            icon: Icons.pageAdd,
             label: LocalizedStringResource("Add Item").inAppLocalized,
             tint: Color(rgb: env.theme.active.accent),
             action: action)

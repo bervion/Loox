@@ -38,14 +38,8 @@ struct HomeScreen: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            VStack(spacing: 0) {
-                // Fixed (non-collapsing) header — folder switcher + Add + Settings.
-                HomeHeaderBar(
-                    selectedFolderId: $selectedFolderId,
-                    onAddCategory: { editorTarget = .new($0) },
-                    onSettings: { showSettings = true }
-                )
-
+            // ZStack lets the header float over scroll content so glass blurs it.
+            ZStack(alignment: .top) {
                 Group {
                     if env.repository.items.isEmpty {
                         emptyVaultState
@@ -53,6 +47,13 @@ struct HomeScreen: View {
                         scrollContent
                     }
                 }
+
+                // Header overlays the scroll content — glass blurs whatever scrolls beneath.
+                HomeHeaderBar(
+                    selectedFolderId: $selectedFolderId,
+                    onAddCategory: { editorTarget = .new($0) },
+                    onSettings: { showSettings = true }
+                )
             }
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
@@ -68,11 +69,10 @@ struct HomeScreen: View {
     private var scrollContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                // Search entry button (tapping switches to the Search tab).
-                searchEntryButton
-                    .padding(.horizontal, Space.gutter)
-                    .padding(.top, Space.s2)
-                    .padding(.bottom, Space.s4)
+                // Top inset clears the floating header bar (two pill rows + padding).
+                // Content renders beneath the glass from the start, giving the glass
+                // something to blur immediately without extra empty space.
+                Color.clear.frame(height: Space.s10 + Metric.hitMin)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
                     // 3. Quick actions row
@@ -103,41 +103,16 @@ struct HomeScreen: View {
         }
     }
 
-    // MARK: Search entry
-
-    private var searchEntryButton: some View {
-        Button {
-            // Post notification so MainTabView switches to the Search tab.
-            NotificationCenter.default.post(name: .vaultSwitchToSearch, object: nil)
-        } label: {
-            HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.search, size: 18)
-                    .themedForeground(.secondary)
-                Text("Search vault")
-                    .vaultType(.callout)
-                    .themedForeground(.tertiary)
-                Spacer()
-            }
-            .padding(.horizontal, Space.s3)
-            .frame(height: 40)
-            .background(
-                Color(rgb: env.theme.active.primaryText).opacity(0.07),
-                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Search vault"))
-    }
-
     // MARK: Quick actions
 
     private var quickActionsRow: some View {
         HStack(spacing: Space.s2) {
+            // Add tile now uses ic_page_add to match the header cluster icon.
             Menu {
                 newItemMenuItems
             } label: {
                 QuickActionTileLabel(
-                    icon: Icons.add,
+                    icon: Icons.pageAdd,
                     label: LocalizedStringResource("Add Item").inAppLocalized,
                     tint: Color(rgb: env.theme.active.accent)
                 )
