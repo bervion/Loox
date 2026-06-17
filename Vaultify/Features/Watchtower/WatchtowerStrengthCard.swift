@@ -5,8 +5,11 @@ import SwiftUI
 /// Horizontal strength bar: a solid success fill on the left scaled to `value`%,
 /// then a faded spectrum remainder — mirrors `StrengthBar` in Watchtower.jsx.
 struct WatchtowerStrengthBar: View {
-    /// 0-100, animated by caller.
+    /// 0-100 target strength.
     let value: Int
+
+    @State private var shown: CGFloat = 0   // animates 0 → value on entry
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // Spectrum colours matching the DS StrengthBar definition (right → left fade)
     private static let spectrum: [Color] = [
@@ -22,14 +25,12 @@ struct WatchtowerStrengthBar: View {
 
     var body: some View {
         GeometryReader { geo in
-            let fillWidth = max(14, geo.size.width * CGFloat(value) / 100)
+            let fillWidth = max(14, geo.size.width * shown / 100)
             HStack(spacing: Space.s1) {
-                // Solid success fill portion
+                // Solid success fill portion — grows in from 0 on entry
                 Capsule()
                     .fill(Color(red: 0x22/255, green: 0xC5/255, blue: 0x5E/255))
                     .frame(width: fillWidth)
-                    .animation(.timingCurve(0.32, 0.72, 0, 1, duration: Motion.slow),
-                               value: value)
 
                 // Remaining spectrum segments
                 HStack(spacing: Space.s1) {
@@ -42,6 +43,17 @@ struct WatchtowerStrengthBar: View {
             }
         }
         .frame(height: 14)
+        .onAppear { grow() }
+        .onChange(of: value) { _, _ in grow() }
+    }
+
+    /// Grow the success fill from 0 → value (frame width animates reliably).
+    private func grow() {
+        if reduceMotion { shown = CGFloat(value); return }
+        shown = 0
+        withAnimation(.easeOut(duration: Motion.slow * 3)) {   // ~0.96s, alongside the gauge
+            shown = CGFloat(value)
+        }
     }
 }
 
