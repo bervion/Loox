@@ -6,6 +6,7 @@ const ACCENTS = [
   { id:'purple', light:'#7c3aed', dark:'#b388ff' },
   { id:'pink', light:'#d6256e', dark:'#ff77ab' },
   { id:'graphite', light:'#4b4b50', dark:'#aeaeb2' },
+  { id:'mono', light:'#1c1c1e', dark:'#ffffff' },
 ];
 
 function Appearance({ theme, setTheme, accent, setAccent, onClose }) {
@@ -33,12 +34,15 @@ function Appearance({ theme, setTheme, accent, setAccent, onClose }) {
             <div style={{ display:'flex', justifyContent:'space-between' }}>
               {ACCENTS.map(a => {
                 const sel = a.id===accent;
+                const sw = isDark?a.dark:a.light;
+                const lightSwatch = (parseInt(sw.slice(1,3),16)*0.299 + parseInt(sw.slice(3,5),16)*0.587 + parseInt(sw.slice(5,7),16)*0.114) > 150;
                 return <button key={a.id} onClick={()=>setAccent(a.id)} aria-label={a.id} style={{
-                  width:42, height:42, borderRadius:'50%', border:'none', cursor:'pointer', padding:0,
-                  background: isDark?a.dark:a.light, position:'relative', WebkitTapHighlightColor:'transparent',
-                  boxShadow: sel?`0 0 0 3px var(--surface-base), 0 0 0 5px ${isDark?a.dark:a.light}`:'none',
+                  width:42, height:42, borderRadius:'50%', cursor:'pointer', padding:0,
+                  border: lightSwatch?'1px solid var(--separator)':'none',
+                  background: sw, position:'relative', WebkitTapHighlightColor:'transparent',
+                  boxShadow: sel?`0 0 0 3px var(--surface-base), 0 0 0 5px ${sw}`:'none',
                   transition:'box-shadow var(--dur-fast)' }}>
-                  {sel && <Icon name="success" size={20} color="#fff" style={{ position:'absolute', inset:0, margin:'auto' }} />}
+                  {sel && <Icon name="success" size={20} color={lightSwatch?'#1c1c1e':'#fff'} style={{ position:'absolute', inset:0, margin:'auto' }} />}
                 </button>;
               })}
             </div>

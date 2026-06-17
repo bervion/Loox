@@ -21,7 +21,11 @@ const ICON_MAP = {
   lock:'LockMajor', unlock:'KeyMajor', success:'CircleTickMajor', alert:'AlertMinor',
   warning:'DiamondAlertMajor', info:'InfoMinor', favorite:'FavoriteMajor', clock:'ClockMajor',
 };
-const iconUrl = (n) => `${POLARIS_BASE}${ICON_MAP[n] || n}.svg`;
+const iconUrl = (n) => {
+  const file = ICON_MAP[n] || n;
+  return (typeof window !== 'undefined' && window.__resources && window.__resources[file])
+    || `${POLARIS_BASE}${file}.svg`;
+};
 const _svgCache = {};
 function fetchIconSvg(url){ if(!_svgCache[url]) _svgCache[url]=fetch(url).then(r=>r.ok?r.text():'').catch(()=>''); return _svgCache[url]; }
 
@@ -241,5 +245,101 @@ function IPhone({ children, theme='light', accent='blue' }) {
   </div>;
 }
 
+/* ---- TOTP (authenticator codes) ---- */
+function totpCode(seed, step){ let h=2166136261; const s=(seed||'')+':'+step;
+  for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); }
+  return String((h>>>0)%1000000).padStart(6,'0'); }
+function useTotp(seed, period=30){
+  const [t,setT] = React.useState(()=>Math.floor(Date.now()/1000));
+  React.useEffect(()=>{ const id=setInterval(()=>setT(Math.floor(Date.now()/1000)),1000); return ()=>clearInterval(id); },[]);
+  const step=Math.floor(t/period), remaining=period-(t%period);
+  return { code: totpCode(seed,step), remaining, period, progress: remaining/period };
+}
+function fmtCode(c){ return c ? c.slice(0,3)+' '+c.slice(3) : ''; }
+function TotpRing({ progress, remaining, size=26 }){
+  const r=(size-4)/2, c=2*Math.PI*r, off=c*(1-progress);
+  const col = remaining<=5 ? 'var(--warning)' : 'var(--accent)';
+  return <span style={{ position:'relative', width:size, height:size, flex:'0 0 auto' }}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform:'rotate(-90deg)' }} aria-hidden="true">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="color-mix(in srgb, var(--text-primary) 12%, transparent)" strokeWidth="2.5" />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={off} style={{ transition:'stroke-dashoffset 1s linear, stroke var(--dur-base)' }} />
+    </svg>
+    <span style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
+      fontFamily:'var(--font-mono)', fontSize:10, fontWeight:600, color:col, fontVariantNumeric:'tabular-nums' }}>{remaining}</span>
+  </span>;
+}
+/* Horizontal authenticator card for Home */
+function TotpCard({ item, onCopy }){
+  const { code, remaining, progress } = useTotp(item.totp);
+  const [copied,setCopied] = React.useState(false);
+  function copy(){ setCopied(true); setTimeout(()=>setCopied(false),1100); onCopy&&onCopy(); }
+  return <button onClick={copy} style={{ flex:'0 0 auto', width:158, textAlign:'left', border:'none', cursor:'pointer',
+    background:'var(--surface-base)', borderRadius:'var(--radius-md)', boxShadow:'0 0 0 0.5px var(--separator)',
+    padding:'12px 14px', display:'flex', flexDirection:'column', gap:10, WebkitTapHighlightColor:'transparent' }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      <IconTile name={item.icon} tint={item.tint} size={26} iconSize={15} />
+      <TotpRing progress={progress} remaining={remaining} />
+    </div>
+    <div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize:23, fontWeight:600, letterSpacing:'0.06em',
+        color: copied?'var(--success)':'var(--text-primary)', fontVariantNumeric:'tabular-nums', transition:'color var(--dur-fast)' }}>
+        {copied ? 'Đã chép' : fmtCode(code)}</div>
+      <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
+        <span style={{ fontFamily:'var(--font-text)', fontSize:13, color:'var(--text-secondary)', whiteSpace:'nowrap',
+          overflow:'hidden', textOverflow:'ellipsis' }}>{item.name}</span>
+      </div>
+    </div>
+  </button>;
+}
+
+/* ---- Space tag (which space an item belongs to) ---- */
+function SpaceTag({ space, size='sm' }){
+  if(!space) return null;
+  const pad = size==='sm' ? '2px 7px 2px 6px' : '3px 9px 3px 7px';
+  return <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:pad, borderRadius:'var(--radius-pill)',
+    background:'color-mix(in srgb, '+space.tint+' 14%, transparent)', maxWidth:'100%' }}>
+    <span style={{ width:6, height:6, borderRadius:'50%', background:space.tint, flex:'0 0 auto' }} />
+    <span style={{ fontFamily:'var(--font-text)', fontSize:11, fontWeight:600, color:space.tint, whiteSpace:'nowrap',
+      overflow:'hidden', textOverflow:'ellipsis', letterSpacing:'0.1px' }}>{space.name}</span>
+  </span>;
+}
+
+/* ---- Quick action tile (Home) ---- */
+function QuickAction({ icon, label, tint='var(--accent)', onClick }){
+  const [p,bind]=usePress();
+  return <button onClick={onClick} {...bind} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:8,
+    border:'none', background:'transparent', cursor:'pointer', padding:'2px 0', WebkitTapHighlightColor:'transparent',
+    transform:p?'scale(0.96)':'scale(1)', transition:'transform var(--dur-fast)' }}>
+    <span style={{ width:54, height:54, borderRadius:'var(--radius-md)', display:'flex', alignItems:'center', justifyContent:'center',
+      background:'color-mix(in srgb, '+tint+' 14%, transparent)' }}>
+      <Icon name={icon} size={24} color={tint} />
+    </span>
+    <span style={{ fontFamily:'var(--font-text)', fontSize:12, fontWeight:500, color:'var(--text-secondary)', textAlign:'center', lineHeight:'14px' }}>{label}</span>
+  </button>;
+}
+
+/* ---- Bottom sheet ---- */
+function Sheet({ title, onClose, children, maxHeight='86%' }){
+  return <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:80, background:'rgba(0,0,0,0.32)',
+    display:'flex', flexDirection:'column', justifyContent:'flex-end', animation:'fade var(--dur-fast) var(--ease-standard)' }}>
+    <div onClick={(e)=>e.stopPropagation()} style={{ background:'var(--background-grouped)', borderTopLeftRadius:'var(--radius-xl)',
+      borderTopRightRadius:'var(--radius-xl)', maxHeight, display:'flex', flexDirection:'column', overflow:'hidden',
+      boxShadow:'var(--elevation-sheet)', animation:'sheetUp var(--dur-medium) var(--ease-standard)' }}>
+      <div style={{ flex:'0 0 auto', paddingTop:8 }}>
+        <div style={{ width:38, height:5, borderRadius:3, background:'var(--separator-opaque)', margin:'0 auto 6px' }} />
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 12px 10px' }}>
+          <span style={{ width:60 }} />
+          <span style={{ fontFamily:'var(--font-text)', fontSize:17, fontWeight:600, color:'var(--text-primary)' }}>{title}</span>
+          <button onClick={onClose} style={{ width:60, textAlign:'right', border:'none', background:'none', cursor:'pointer',
+            color:'var(--accent)', fontFamily:'var(--font-text)', fontSize:17, fontWeight:600, padding:'2px 4px' }}>Xong</button>
+        </div>
+      </div>
+      <div style={{ overflowY:'auto', padding:'0 var(--screen-gutter) calc(var(--space-6) + env(safe-area-inset-bottom))' }}>{children}</div>
+    </div>
+  </div>;
+}
+
 Object.assign(window, { Icon, IconTile, Button, IconButton, Card, Row, SectionHeader, Switch,
-  SegmentedControl, Badge, StrengthMeter, TabBar, StatusBar, IPhone, iconUrl, ICON_MAP });
+  SegmentedControl, Badge, StrengthMeter, TabBar, StatusBar, IPhone, iconUrl, ICON_MAP,
+  useTotp, TotpRing, TotpCard, fmtCode, SpaceTag, QuickAction, Sheet });

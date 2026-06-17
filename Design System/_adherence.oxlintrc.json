@@ -35,6 +35,10 @@
         "message": "Raw px value — use a design-system spacing token via var()."
       },
       {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Inter))/i]",
+        "message": "Font not provided by the design system. Available: Inter."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='Badge'] > JSXAttribute > JSXIdentifier[name!=/^(?:count|dot|tone|max|key|ref|className|style|children)$/]",
         "message": "<Badge> doesn't accept that prop. Declared props: count, dot, tone, max."
       },
@@ -428,6 +432,8 @@
       "--ease-in-out": "other",
       "--press-scale": "other"
     },
-    "fontFamilies": []
+    "fontFamilies": [
+      "Inter"
+    ]
   }
 }

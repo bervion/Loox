@@ -1,17 +1,17 @@
 /* ============================================================
    Vaultify — Typography tokens
-   The app ships on Apple platforms and uses the SYSTEM font
-   (SF Pro Text / SF Pro Display) plus SF Mono for amounts and
-   secrets. On the web specimen we use the same system stack, so
-   reviewers on Apple hardware see the real San Francisco faces.
-   No webfont is bundled — see README "Font substitution" note.
+   The native iOS app uses the SYSTEM font (SF Pro Text / SF Pro
+   Display) + SF Mono. On the web specimen/prototypes we TEMPORARILY
+   substitute Inter (loaded in fonts.css) while keeping -apple-system
+   as the next fallback, so Apple hardware still falls back to real
+   San Francisco. Standardize back to SF Pro in the SwiftUI source.
    ============================================================ */
 
 :root {
   /* ---- Families ---- */
-  --font-text:    -apple-system, "SF Pro Text", BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: -apple-system, "SF Pro Display", BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono:    "SF Mono", ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  --font-text:    'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono:    'SF Mono', ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
 
   /* ---- Weights ---- */
   --weight-regular:  400;

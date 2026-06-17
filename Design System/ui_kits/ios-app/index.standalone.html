@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vaultify — iOS UI kit</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  html, body { margin:0; }
+  body {
+    min-height:100vh; padding:40px 28px;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #ffffff 0%, #e9e9ef 55%, #e2e2e8 100%);
+    display:flex; align-items:flex-start; justify-content:center;
+    font-family: var(--font-text);
+  }
+  @keyframes slideIn { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes sheetUp { from { transform: translateY(40px); } to { transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    [style*="animation"] { animation: none !important; }
+  }
+</style>
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/HomeMajor.svg" data-resource-id="HomeMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/HomeFilledMinor.svg" data-resource-id="HomeFilledMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/CollectionsMajor.svg" data-resource-id="CollectionsMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/CollectionsFilledMajor.svg" data-resource-id="CollectionsFilledMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/FraudProtectMajor.svg" data-resource-id="FraudProtectMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/SearchMinor.svg" data-resource-id="SearchMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/CategoriesMajor.svg" data-resource-id="CategoriesMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/KeyMajor.svg" data-resource-id="KeyMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/CreditCardMajor.svg" data-resource-id="CreditCardMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/IdentityCardMajor.svg" data-resource-id="IdentityCardMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ContentMinor.svg" data-resource-id="ContentMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/EmailMajor.svg" data-resource-id="EmailMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/GlobeMajor.svg" data-resource-id="GlobeMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/BankMajor.svg" data-resource-id="BankMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/DuplicateMinor.svg" data-resource-id="DuplicateMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ViewMinor.svg" data-resource-id="ViewMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/HideMinor.svg" data-resource-id="HideMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/EditMinor.svg" data-resource-id="EditMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/DeleteMinor.svg" data-resource-id="DeleteMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/AddMajor.svg" data-resource-id="AddMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/CirclePlusMinor.svg" data-resource-id="CirclePlusMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/RefreshMajor.svg" data-resource-id="RefreshMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/FilterMajor.svg" data-resource-id="FilterMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/SettingsMajor.svg" data-resource-id="SettingsMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/CustomersMajor.svg" data-resource-id="CustomersMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ExitMajor.svg" data-resource-id="ExitMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/HorizontalDotsMinor.svg" data-resource-id="HorizontalDotsMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ExportMinor.svg" data-resource-id="ExportMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ExternalMinor.svg" data-resource-id="ExternalMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ChevronRightMinor.svg" data-resource-id="ChevronRightMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ChevronLeftMinor.svg" data-resource-id="ChevronLeftMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ChevronDownMinor.svg" data-resource-id="ChevronDownMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ChevronUpMinor.svg" data-resource-id="ChevronUpMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/LockMajor.svg" data-resource-id="LockMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/CircleTickMajor.svg" data-resource-id="CircleTickMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/AlertMinor.svg" data-resource-id="AlertMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/DiamondAlertMajor.svg" data-resource-id="DiamondAlertMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/InfoMinor.svg" data-resource-id="InfoMinor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/FavoriteMajor.svg" data-resource-id="FavoriteMajor" />
+<meta name="ext-resource-dependency" content="https://unpkg.com/@shopify/polaris-icons@7.13.0/dist/svg/ClockMajor.svg" data-resource-id="ClockMajor" />
+<template id="__bundler_thumbnail" data-bg-color="#0e8a7d">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#0e8a7d"/>
+    <g transform="translate(600 400)" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M0 -190 L150 -125 V-10 C150 110 80 175 0 205 C-80 175 -150 110 -150 -10 V-125 Z" fill="rgba(255,255,255,0.10)"/>
+      <circle cx="0" cy="-35" r="44"/>
+      <path d="M0 9 V70"/>
+    </g>
+  </svg>
+</template>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="kit-components.jsx"></script>
+<script type="text/babel" src="UnlockScreen.jsx"></script>
+<script type="text/babel" src="ItemDetail.jsx"></script>
+<script type="text/babel" src="Watchtower.jsx"></script>
+<script type="text/babel" src="Appearance.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
