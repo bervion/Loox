@@ -10,17 +10,23 @@ enum WatchtowerCategory: Hashable {
 ///
 /// Layout (per DS Watchtower.jsx):
 ///   Title "Watchtower"
-///   → WatchtowerScoreRing (270° speedometer)
+///   → WatchtowerScoreRing (270° speedometer, hero element)
 ///   → Subtitle "Fix N issues below…"
-///   → WatchtowerStrengthCard
-///   → "To fix" section: CategoryRow list (non-zero only)
+///   → WatchtowerStrengthCard  ┐ revealed ~0.3 s after ring sweep starts
+///   → "To fix" section        ┘ so the ring animates as the hero moment
 ///   → HIBP toggle (bottom)
 ///   → All-clear state when issueCount == 0
 struct WatchtowerScreen: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var health = VaultHealth.empty
     @State private var pwned: [VaultIssue] = []
     @State private var checking = false
+    /// Controls the delayed reveal of the strength card + issue list after the
+    /// ring sweep finishes its hero entrance. Jumps to `true` immediately when
+    /// Reduce Motion is on (no delay / no transition).
+    @State private var revealContent = false
 
     private var allClear: Bool {
         health.analyzedCount > 0 && totalIssueCount == 0
@@ -63,7 +69,7 @@ struct WatchtowerScreen: View {
             }
             .overlay { if checking { checkingOverlay } }
             .refreshable { await fullAudit() }
-            .task { await fullAudit() }
+            .task { await fullAuditWithReveal() }
             .onChange(of: env.repository.items.count) {
                 health = PasswordAudit.analyze(env.repository.items)
             }
@@ -123,22 +129,31 @@ struct WatchtowerScreen: View {
 
     @ViewBuilder
     private var contentSection: some View {
-        VStack(spacing: Space.s5) {
-            WatchtowerStrengthCard(overallStrength: health.overallStrength) {
-                // Tapping strength card navigates to weak-password drill-down
-                // when there are weak items; otherwise it's informational.
-            }
-            .padding(.horizontal, Space.gutter)
+        // Strength card + issue list reveal after the ring hero sweep.
+        // Reduce Motion: shown immediately (revealContent starts true in that path).
+        if revealContent {
+            VStack(spacing: Space.s5) {
+                WatchtowerStrengthCard(overallStrength: health.overallStrength) {
+                    // Tapping strength card navigates to weak-password drill-down
+                    // when there are weak items; otherwise it's informational.
+                }
+                .padding(.horizontal, Space.gutter)
 
-            if allClear {
-                allClearView
-            } else {
-                issueSection
-            }
+                if allClear {
+                    allClearView
+                } else {
+                    issueSection
+                }
 
-            hibpToggleSection
+                hibpToggleSection
+            }
+            .padding(.top, Space.s4)
+            .transition(
+                reduceMotion
+                    ? .identity
+                    : .opacity.combined(with: .offset(y: 12))
+            )
         }
-        .padding(.top, Space.s4)
     }
 
     // MARK: - "To fix" issue list
@@ -286,6 +301,25 @@ struct WatchtowerScreen: View {
     private func fullAudit() async {
         health = PasswordAudit.analyze(env.repository.items)
         if env.settings.hibpEnabled { await runHIBP() }
+    }
+
+    /// Runs the full audit then triggers the hero reveal of content below the ring.
+    /// Under Reduce Motion the reveal is instant (no animation, no delay).
+    private func fullAuditWithReveal() async {
+        // Reset for re-entry (e.g. pull-to-refresh)
+        if revealContent {
+            revealContent = false
+        }
+        await fullAudit()
+        if reduceMotion {
+            revealContent = true
+        } else {
+            // ~0.3 s delay lets the ring sweep play as the hero before the card slides in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            withAnimation(.timingCurve(0.32, 0.72, 0, 1, duration: Motion.medium)) {
+                revealContent = true
+            }
+        }
     }
 
     private func runHIBP() async {
