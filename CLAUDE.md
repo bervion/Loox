@@ -96,7 +96,11 @@ so every builtin/custom theme gets them free). `onAccent` is WCAG-derived (`RGBM
 brightness guess. **Never** raw `.white/.black/.red/.primary/.secondary` on themed surfaces (only
 camera/QR/favicon/literal light-dark preview swatches are exempt). Theme + accent switch **live, no restart**.
 
-**Accents:** 10 presets + custom RGB (`AccentColor.swift`); all must pass WCAG `onAccent`.
+**Accents:** 7 Design-System presets (blue/indigo/teal/purple/pink/graphite/mono), each with light + dark hues (`AccentColor.swift`); custom RGB removed. All must pass WCAG `onAccent`.
+
+**Flat backgrounds:** Decorative wallpapers (gradients, patterns, mesh, photos) are gated OFF via `WallpaperFeature.decorativeEnabled = false` (`VaultifyCore/Theme/WallpaperFeature.swift`). The wallpaper engine code is fully retained; flip the flag to re-enable advanced theming later. Appearance UI is simplified (no wallpaper picker, no custom-theme editor surfaced).
+
+**Rotation reminders:** Items support plaintext `rotateDays` (cadence: 0=off, 15/30/90=enabled) and `passwordChangedAt` columns on `ItemRecord`, mirrored on `VaultItem`. Pure `RotationStatus` logic (`VaultifyCore/Models/RotationStatus.swift`) derives state (ok/overdue/soon/stale) + display label. `RotationNotificationService` sends OS local notifications. Editor includes "Rotation reminder" picker. Currently device-local; per-item cadence may be added to CloudKit sync later.
 
 **Tab bar — native `TabView`, icon-only visual.** `MainTabView` keeps the system tab bar visible for
 native switching performance, safe-area handling, and iOS 26 Liquid Glass. Each `.tabItem` supplies only a

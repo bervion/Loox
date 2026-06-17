@@ -45,6 +45,7 @@ enum Icons {
     static let close = "ic_x"
     static let chevronRight = "ic_chevron_right"
     static let chevronDown = "ic_chevron_down"
+    static let arrowRight = "ic_arrow_right"
     static let lock = "ic_lock"
     static let lockFill = "ic_lock_filled"
     static let key = "ic_key"
@@ -58,6 +59,7 @@ enum Icons {
     static let share = "ic_share"
     static let info = "ic_info"
     static let folder = "ic_folder"
+    static let inventory = "ic_inventory"
     static let hashtag = "ic_hashtag"
     static let plan = "ic_plan"
     static let planFill = "ic_plan_filled"
@@ -79,4 +81,8 @@ enum Icons {
     static let person = "ic_person"
     static let camera = "ic_camera"
     static let image = "ic_image"
+    /// Document with a plus badge — used on the Add quick-action tile and header cluster.
+    static let pageAdd = "ic_page_add"
+    /// Horizontal three-dot overflow ("•••") — used in the header action cluster.
+    static let moreHorizontal = "ic_menu_horizontal"
 }

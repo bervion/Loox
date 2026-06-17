@@ -9,7 +9,7 @@ extension Font {
 }
 
 /// Typography roles from the Vaultify Design System hierarchy (large title 34 ·
-/// screen 28 · section 19 · body 17 · callout 16 · subhead 15 · footnote 13 ·
+/// screen 22 · section 19 · body 17 · callout 16 · subhead 15 · footnote 13 ·
 /// caption 12), mapped onto Apple Dynamic Type text styles so they scale with the
 /// user's text-size setting and stay Apple-native. Use a role via `.vaultType(_:)`,
 /// never an ad-hoc `.font(.system(size:))`.
@@ -28,7 +28,7 @@ nonisolated enum VaultType {
     var font: Font {
         switch self {
         case .largeTitle:   return .system(.largeTitle).weight(.bold)
-        case .screenTitle:  return .system(.title).weight(.bold)
+        case .screenTitle:  return .system(.title2).weight(.bold)
         case .section:      return .system(.title3).weight(.semibold)
         case .headline:     return .system(.headline)
         case .body:         return .system(.body)

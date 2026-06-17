@@ -1,11 +1,16 @@
 import SwiftUI
 
-/// Items tab: the organization browser — Spaces (with a Create Space row),
+/// Items tab: the organisation browser — Spaces (with a Create Space row),
 /// Categories, Tags, plus standalone Archive and Recently Deleted rows.
+///
+/// Header floats over the scroll content as a glass overlay (same pattern as Home
+/// and Watchtower) so the glass blurs whatever scrolls beneath it.
 struct ItemsScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var path = NavigationPath()
     @State private var creatingSpace = false
+    @State private var editorTarget: EditorTarget?
+    @State private var scrolledUnder = false
 
     private var categories: [ItemCategory] {
         ItemCategory.allCases.filter { env.repository.count(forCategory: $0) > 0 }
@@ -14,99 +19,204 @@ struct ItemsScreen: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            List {
-                spacesSection
-                if !categories.isEmpty { categoriesSection }
-                if !tags.isEmpty { tagsSection }
-                Section {
-                    standaloneRow(Text("Archive"), icon: Icons.archive,
-                                  count: env.repository.archived.count, route: .archive)
-                    standaloneRow(Text("Recently Deleted"), icon: Icons.trash,
-                                  count: env.repository.trashed.count, route: .recentlyDeleted)
+            ZStack(alignment: .top) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Space.s6) {
+                        // Top inset clears the floating header + reports scroll-edge state.
+                        VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
+
+                        spacesSection
+                        if !categories.isEmpty { categoriesSection }
+                        if !tags.isEmpty { tagsSection }
+                        standaloneSection
+                    }
+                    .padding(.horizontal, Space.gutter)
+                    .padding(.bottom, TabBarMetric.contentBottomInset)
                 }
-                .listRowBackground(VaultColors.surface)
+
+                // Floating header overlays scroll content — glass blurs beneath.
+                VaultScreenHeader("Items") {
+                    HeaderActionCluster {
+                        // Add — menu to choose item type to create
+                        Menu {
+                            ForEach(ItemCategory.allCases) { category in
+                                Button {
+                                    editorTarget = .new(category)
+                                } label: {
+                                    Label {
+                                        Text(category.title)
+                                    } icon: {
+                                        PolarisIcon(category.iconAsset)
+                                    }
+                                }
+                            }
+                        } label: {
+                            PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
+                                .themedForeground()
+                        }
+                        .frame(width: Metric.hitMin, height: Metric.hitMin)
+                        .accessibilityLabel(Text("Add Item"))
+                    }
+                }
             }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
-            .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
-            .navigationTitle("Items")
+            .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
+            .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
+            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
         }
     }
 
+    // MARK: - Sections
+
     private var spacesSection: some View {
-        Section("Spaces") {
-            ForEach(env.repository.folders) { folder in
-                NavigationLink(value: VaultRoute.folder(folder.id)) {
-                    HStack(spacing: Space.s3) {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            sectionHeader("Spaces")
+            groupedCard {
+                ForEach(env.repository.folders) { folder in
+                    navRow(.folder(folder.id), title: Text(verbatim: folder.name),
+                           count: env.repository.itemCount(for: folder.id), showDivider: true) {
                         FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
-                        Text(folder.name)
-                        Spacer()
-                        Text("\(env.repository.itemCount(for: folder.id))").themedForeground(.secondary)
                     }
                 }
-            }
-            if env.repository.unfiledCount > 0 {
-                NavigationLink(value: VaultRoute.folder(nil)) {
-                    HStack(spacing: Space.s3) {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(VaultColors.fill).frame(width: 30, height: 30)
-                            .overlay(PolarisIcon(Icons.folder, size: 16).themedForeground(.secondary))
-                        Text("Unfiled")
-                        Spacer()
-                        Text("\(env.repository.unfiledCount)").themedForeground(.secondary)
+                if env.repository.unfiledCount > 0 {
+                    navRow(.folder(nil), title: Text("Unfiled"),
+                           count: env.repository.unfiledCount, showDivider: true) {
+                        leadingTile(Icons.folder, fill: VaultColors.fill,
+                                    iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
                     }
                 }
-            }
-            Button { creatingSpace = true } label: {
-                Label { Text("Create Space") } icon: { PolarisIcon(Icons.addCircle) }
+                createSpaceRow
             }
         }
-        .listRowBackground(VaultColors.surface)
     }
 
     private var categoriesSection: some View {
-        Section("Categories") {
-            ForEach(categories) { category in
-                NavigationLink(value: VaultRoute.category(category)) {
-                    HStack(spacing: Space.s3) {
-                        PolarisIcon(category.iconAsset, size: 22)
-                            .foregroundStyle(Color.accentColor).frame(width: 30)
-                        Text(category.title)
-                        Spacer()
-                        Text("\(env.repository.count(forCategory: category))").themedForeground(.secondary)
+        VStack(alignment: .leading, spacing: Space.s2) {
+            sectionHeader("Categories")
+            groupedCard {
+                ForEach(Array(categories.enumerated()), id: \.element.id) { idx, category in
+                    navRow(.category(category), title: Text(category.title),
+                           count: env.repository.count(forCategory: category),
+                           showDivider: idx < categories.count - 1) {
+                        leadingTile(category.iconAsset,
+                                    fill: Color(rgb: env.theme.active.accent).opacity(0.14),
+                                    iconColor: Color(rgb: env.theme.active.accent), iconSize: 17)
                     }
                 }
             }
         }
-        .listRowBackground(VaultColors.surface)
     }
 
     private var tagsSection: some View {
-        Section("Tags") {
-            ForEach(tags, id: \.tag) { entry in
-                NavigationLink(value: VaultRoute.tag(entry.tag)) {
-                    HStack(spacing: Space.s3) {
-                        PolarisIcon(Icons.hashtag, size: 18).themedForeground(.secondary).frame(width: 30)
-                        Text(entry.tag)
-                        Spacer()
-                        Text("\(entry.count)").themedForeground(.secondary)
+        VStack(alignment: .leading, spacing: Space.s2) {
+            sectionHeader("Tags")
+            groupedCard {
+                ForEach(Array(tags.enumerated()), id: \.element.tag) { idx, entry in
+                    navRow(.tag(entry.tag), title: Text(verbatim: entry.tag),
+                           count: entry.count, showDivider: idx < tags.count - 1) {
+                        leadingTile(Icons.hashtag, fill: VaultColors.fill,
+                                    iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
                     }
                 }
             }
         }
-        .listRowBackground(VaultColors.surface)
     }
 
-    private func standaloneRow(_ title: Text, icon: String, count: Int, route: VaultRoute) -> some View {
-        NavigationLink(value: route) {
-            HStack(spacing: Space.s3) {
-                PolarisIcon(icon, size: Metric.iconInline).themedForeground(.secondary).frame(width: 30)
-                title
-                Spacer()
-                if count > 0 { Text("\(count)").themedForeground(.secondary) }
+    private var standaloneSection: some View {
+        groupedCard {
+            navRow(.archive, title: Text("Archive"),
+                   count: env.repository.archived.count, showDivider: true) {
+                leadingTile(Icons.archive, fill: VaultColors.fill,
+                            iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
+            }
+            navRow(.recentlyDeleted, title: Text("Recently Deleted"),
+                   count: env.repository.trashed.count, showDivider: false) {
+                leadingTile(Icons.trash, fill: VaultColors.fill,
+                            iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
             }
         }
+    }
+
+    private var createSpaceRow: some View {
+        Button { creatingSpace = true } label: {
+            HStack(spacing: Space.s3) {
+                PolarisIcon(Icons.addCircle, size: 22)
+                    .foregroundStyle(Color(rgb: env.theme.active.accent))
+                    .frame(width: 30)
+                Text("Create Space").foregroundStyle(Color(rgb: env.theme.active.accent))
+                Spacer()
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s3)
+            .frame(minHeight: Metric.rowHeight)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Row + container helpers
+
+    private func sectionHeader(_ title: LocalizedStringResource) -> some View {
+        Text(title)
+            .vaultType(.sectionLabel)
+            .themedForeground(.tertiary)
+            .padding(.bottom, Space.s1)
+    }
+
+    @ViewBuilder
+    private func groupedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(Color(rgb: env.theme.active.elevatedBackground))
+            .vaultCornerRadius(Radius.lg)
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
+            )
+    }
+
+    /// Navigation row inside a grouped card: leading badge + title + optional count
+    /// + chevron, with a leading-inset hairline divider.
+    @ViewBuilder
+    private func navRow<Leading: View>(
+        _ route: VaultRoute,
+        title: Text,
+        count: Int,
+        showDivider: Bool,
+        @ViewBuilder leading: () -> Leading
+    ) -> some View {
+        NavigationLink(value: route) {
+            HStack(spacing: Space.s3) {
+                leading()
+                title.themedForeground()
+                Spacer(minLength: Space.s2)
+                if count > 0 {
+                    Text("\(count)").themedForeground(.secondary)
+                }
+                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s3)
+            .frame(minHeight: Metric.rowHeight)
+            .contentShape(.rect)
+            .overlay(alignment: .bottom) {
+                if showDivider {
+                    Rectangle()
+                        .fill(Color(rgb: env.theme.active.separator))
+                        .frame(height: 0.5)
+                        .padding(.leading, Space.s4 + 30 + Space.s3)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 30pt rounded leading badge so every row has a consistent tinted icon tile.
+    private func leadingTile(_ icon: String, fill: Color, iconColor: Color, iconSize: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(fill)
+            .frame(width: 30, height: 30)
+            .overlay(PolarisIcon(icon, size: iconSize).foregroundStyle(iconColor))
     }
 }

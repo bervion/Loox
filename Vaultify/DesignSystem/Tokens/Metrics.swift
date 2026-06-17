@@ -17,7 +17,7 @@ nonisolated enum Metric {
     // Icon optical sizes
     static let iconInline: CGFloat = 20    // inline within text / rows
     static let iconUtility: CGFloat = 24   // utility tiles / toolbar
-    static let iconTab: CGFloat = 29       // tab bar (icon-only → a touch larger)
+    static let iconTab: CGFloat = 28       // tab bar (icon-only → standard tab-icon size)
     static let iconTile: CGFloat = 32      // leading row tile
     static let iconTileLarge: CGFloat = 40
 }

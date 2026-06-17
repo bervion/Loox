@@ -14,6 +14,24 @@ struct WallpaperView: View {
     }
 
     @ViewBuilder private var content: some View {
+        // Decorative wallpapers (gradient / mesh / pattern / photo) are gated off for the
+        // simplified flat Design-System look; only flat fills render. Engine retained.
+        if WallpaperFeature.decorativeEnabled {
+            decorativeContent
+        } else {
+            flatContent
+        }
+    }
+
+    /// Flat path: honor an explicit solid color, otherwise the themed fallback.
+    @ViewBuilder private var flatContent: some View {
+        switch wallpaper {
+        case .solid(let rgb): Color(rgb: rgb)
+        default: fallbackColor
+        }
+    }
+
+    @ViewBuilder private var decorativeContent: some View {
         switch wallpaper {
         case .none:
             fallbackColor

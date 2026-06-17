@@ -28,7 +28,12 @@ struct FolderEditorSheet: View {
     private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(
+            title: isEditing ? "Edit Space" : "New Space",
+            trailing: {
+                Button("Save", action: save).disabled(!canSave).fontWeight(.semibold)
+            }
+        ) {
             Form {
                 Section { TextField("Space name", text: $name).autocorrectionDisabled() }
                 .listRowBackground(VaultColors.surface)
@@ -44,16 +49,6 @@ struct FolderEditorSheet: View {
                         }
                     }
                     .listRowBackground(VaultColors.surface)
-                }
-            }
-            .themedFormBackground()
-            .navigationTitle(isEditing ? "Edit Space" : "New Space")
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(!canSave).fontWeight(.semibold)
                 }
             }
             .confirmationDialog("Delete this Space? Items move to Unfiled.",

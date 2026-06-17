@@ -7,7 +7,6 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) private var colorScheme
     @State private var obscured = false
-    @State private var showSplash = true
 
     private enum Route: Equatable { case onboarding, locked, unlocked }
 
@@ -27,18 +26,9 @@ struct RootView: View {
             if obscured && env.settings.hideInAppSwitcher && route == .unlocked {
                 PrivacyShield().transition(.opacity)
             }
-
-            if showSplash {
-                SplashView().transition(.opacity).zIndex(2)
-            }
         }
         .animation(.smooth(duration: 0.3), value: route)
-        .animation(.easeOut(duration: 0.4), value: showSplash)
         .animation(.easeInOut(duration: 0.3), value: env.theme.active)
-        .task {
-            try? await Task.sleep(for: .milliseconds(750))
-            showSplash = false
-        }
         .onChange(of: env.session.state) { _, newState in
             if newState == .unlocked {
                 env.repository.reload()
@@ -72,14 +62,12 @@ struct RootView: View {
 }
 
 /// Opaque overlay shown when the app is inactive/backgrounded to hide secrets.
+/// Logo only — no wordmark — matching the splash logo size.
 private struct PrivacyShield: View {
     var body: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
-            VStack(spacing: 12) {
-                BrandLogoMark(size: 72)
-                Text("Vaultify").font(.headline).themedForeground(.secondary)
-            }
+            BrandLogoMark(size: 104, shadowRadius: 16, shadowY: 8)
         }
     }
 }

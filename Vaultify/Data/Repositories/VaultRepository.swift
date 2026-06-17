@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import UserNotifications
 
 /// Decrypts vault records into an in-memory cache on unlock and performs CRUD,
 /// re-sealing payloads under the Vault Key. The cache is cleared on lock.
@@ -66,9 +67,13 @@ import SwiftData
         record.pinned = item.pinned
         record.archived = item.archived
         record.useCount = item.useCount
+        record.rotateDays = item.rotateDays
+        // New items: baseline is createdAt (caller provides it).
+        record.passwordChangedAt = item.createdAt
         store.context.insert(record)
         try store.context.save()
         reload()
+        RotationNotificationService.shared.schedule(item: item, passwordChangedAt: record.passwordChangedAt)
     }
 
     func update(_ item: VaultItem) throws {
@@ -76,13 +81,28 @@ import SwiftData
         guard let record = try record(id: item.id) else { return try add(item) }
         var updated = item
         updated.updatedAt = .now
+
+        // Detect a real password change by comparing decrypted old password to new.
+        // We re-seal regardless; the comparison is purely for the timestamp.
+        let oldPassword = passwordValue(for: record, key: key)
+        let newPassword = item.passwordField?.value
+
         record.sealed = try seal(updated, key: key)
         record.favorite = updated.favorite
         record.trashedAt = updated.trashedAt
         record.updatedAt = updated.updatedAt
+        record.rotateDays = updated.rotateDays
         record.dirty = true
+
+        if oldPassword != newPassword {
+            // Password value changed — reset the baseline so rotation tracking is accurate.
+            record.passwordChangedAt = .now
+        }
+
         try store.context.save()
         reload()
+        RotationNotificationService.shared.schedule(
+            item: updated, passwordChangedAt: record.passwordChangedAt)
     }
 
     func toggleFavorite(_ item: VaultItem) throws {
@@ -128,6 +148,7 @@ import SwiftData
         var updated = item
         updated.trashedAt = .now
         try update(updated)
+        RotationNotificationService.shared.cancel(itemID: item.id)
     }
 
     func restore(_ item: VaultItem) throws {
@@ -143,6 +164,36 @@ import SwiftData
         record.dirty = true
         try store.context.save()
         reload()
+        RotationNotificationService.shared.cancel(itemID: item.id)
+    }
+
+    // MARK: Attention list
+
+    /// Items that need user attention: overdue rotation, then weak passwords,
+    /// then soon-due rotation, then stale (no cadence, 180+ days). Excludes
+    /// trashed/archived items.
+    func itemsNeedingAttention(limit: Int = 50) -> [VaultItem] {
+        typealias Ranked = (item: VaultItem, order: Int)
+        var ranked: [Ranked] = []
+        for item in items {
+            let status = RotationStatus.evaluate(
+                rotateDays: item.rotateDays,
+                passwordChangedAt: item.passwordChangedAt,
+                createdAt: item.createdAt)
+            let isWeak = (item.passwordField.map { PasswordStrength.evaluate($0.value) } ?? .strong) == .weak
+            let reason = RotationStatus.attentionReason(status: status, isWeak: isWeak)
+            switch reason {
+            case .overdue:  ranked.append((item, 0))
+            case .weak:     ranked.append((item, 1))
+            case .soon:     ranked.append((item, 2))
+            case .stale:    ranked.append((item, 3))
+            case .none:     break
+            }
+        }
+        return ranked
+            .sorted { $0.order < $1.order }
+            .prefix(limit)
+            .map(\.item)
     }
 
     func emptyTrash() throws {
@@ -169,9 +220,21 @@ import SwiftData
                          pinned: record.pinned,
                          archived: record.archived,
                          useCount: record.useCount,
+                         rotateDays: record.rotateDays,
+                         passwordChangedAt: record.passwordChangedAt,
                          createdAt: record.createdAt,
                          updatedAt: record.updatedAt,
                          trashedAt: record.trashedAt)
+    }
+
+    /// Unseal the record and return just the password field value. Returns nil
+    /// on any error (key mismatch, missing field). Used only to detect actual
+    /// password changes without a separate decrypt path.
+    private func passwordValue(for record: ItemRecord, key: SecureBytes) -> String? {
+        guard let plaintext = try? AESGCM.open(record.sealed, key: key),
+              let secret = try? JSONDecoder().decode(ItemSecret.self, from: plaintext)
+        else { return nil }
+        return secret.fields.first { $0.kind == .password }?.value
     }
 
     private func record(id: String) throws -> ItemRecord? {

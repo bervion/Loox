@@ -156,6 +156,56 @@ extension VaultRepository {
         Array(items.sorted { $0.updatedAt > $1.updatedAt }.prefix(limit))
     }
 
+    // MARK: Home DS section queries (folder-scoped)
+
+    /// Scoped set of live items for a folder filter. nil = all folders.
+    private func scoped(_ folderId: String?) -> [VaultItem] {
+        guard let folderId else { return items }
+        return items.filter { $0.folderId == folderId }
+    }
+
+    /// Favorite items, optionally scoped to a folder, sorted alphabetically.
+    func favorites(folder folderId: String?) -> [VaultItem] {
+        scoped(folderId).filter(\.favorite)
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    /// All live items, optionally scoped, pinned items first then by updatedAt.
+    func allItems(folder folderId: String?) -> [VaultItem] {
+        scoped(folderId).sorted {
+            if $0.pinned != $1.pinned { return $0.pinned }
+            return $0.updatedAt > $1.updatedAt
+        }
+    }
+
+    /// Items that have a non-empty TOTP field, optionally scoped to a folder.
+    func totpItems(folder folderId: String?) -> [VaultItem] {
+        scoped(folderId).filter { $0.totpField != nil }
+    }
+
+    /// Items needing attention, optionally scoped to a folder, capped at `limit`.
+    func itemsNeedingAttention(folder folderId: String?, limit: Int = 4) -> [VaultItem] {
+        let source: [VaultItem] = folderId == nil ? items : items.filter { $0.folderId == folderId }
+        typealias Ranked = (item: VaultItem, order: Int)
+        var ranked: [Ranked] = []
+        for item in source {
+            let status = RotationStatus.evaluate(
+                rotateDays: item.rotateDays,
+                passwordChangedAt: item.passwordChangedAt,
+                createdAt: item.createdAt)
+            let isWeak = (item.passwordField.map { PasswordStrength.evaluate($0.value) } ?? .strong) == .weak
+            let reason = RotationStatus.attentionReason(status: status, isWeak: isWeak)
+            switch reason {
+            case .overdue: ranked.append((item, 0))
+            case .weak:    ranked.append((item, 1))
+            case .soon:    ranked.append((item, 2))
+            case .stale:   ranked.append((item, 3))
+            case .none:    break
+            }
+        }
+        return ranked.sorted { $0.order < $1.order }.prefix(limit).map(\.item)
+    }
+
     // MARK: Category, lookup & search
 
     func items(ofCategory category: ItemCategory) -> [VaultItem] {
