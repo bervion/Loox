@@ -6,7 +6,8 @@ import SwiftUI
 struct HomeHeaderBar: View {
     /// nil = "All spaces" (no folder filter).
     @Binding var selectedFolderId: String?
-    let onAdd: () -> Void
+    /// Called with the chosen item category when the user picks one from the Add menu.
+    let onAddCategory: (ItemCategory) -> Void
     let onSettings: () -> Void
 
     @Environment(AppEnvironment.self) private var env
@@ -50,8 +51,16 @@ struct HomeHeaderBar: View {
 
             Spacer()
 
-            // Add item
-            Button(action: onAdd) {
+            // Add item — menu to choose the item type (login / card / note / …).
+            Menu {
+                ForEach(ItemCategory.allCases) { category in
+                    Button {
+                        onAddCategory(category)
+                    } label: {
+                        Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
+                    }
+                }
+            } label: {
                 PolarisIcon(Icons.add, size: Metric.iconUtility)
                     .foregroundStyle(env.theme.active.color(.accent))
             }

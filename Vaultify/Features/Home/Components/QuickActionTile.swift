@@ -14,27 +14,40 @@ struct QuickActionTile: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: Space.s2) {
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .fill(tint.opacity(0.14))
-                    .frame(width: 54, height: 54)
-                    .overlay(
-                        PolarisIcon(icon, size: 24)
-                            .foregroundStyle(tint)
-                    )
-                Text(label)
-                    .vaultType(.caption)
-                    .themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity)
-            // 44pt minimum hit target (Apple HIG)
-            .contentShape(.rect(cornerRadius: Radius.md))
+            QuickActionTileLabel(icon: icon, label: label, tint: tint)
         }
         .buttonStyle(QuickActionButtonStyle(reduceMotion: reduceMotion))
         .accessibilityLabel(Text(label))
+    }
+}
+
+/// The visual content of a quick-action tile (tinted icon square + caption),
+/// usable as a plain view — e.g. as the label of a `Menu` so the "Add" action
+/// can present an item-type menu instead of a single hard-coded tap.
+struct QuickActionTileLabel: View {
+    let icon: String
+    let label: LocalizedStringResource
+    let tint: Color
+
+    var body: some View {
+        VStack(spacing: Space.s2) {
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(tint.opacity(0.14))
+                .frame(width: 54, height: 54)
+                .overlay(
+                    PolarisIcon(icon, size: 24)
+                        .foregroundStyle(tint)
+                )
+            Text(label)
+                .vaultType(.caption)
+                .themedForeground(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+        // 44pt minimum hit target (Apple HIG)
+        .contentShape(.rect(cornerRadius: Radius.md))
     }
 }
 

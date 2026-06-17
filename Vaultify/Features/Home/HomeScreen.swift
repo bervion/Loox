@@ -61,7 +61,7 @@ struct HomeScreen: View {
                 // 1. Header: folder switcher + Add + Settings
                 HomeHeaderBar(
                     selectedFolderId: $selectedFolderId,
-                    onAdd: { editorTarget = .new(.login) },
+                    onAddCategory: { editorTarget = .new($0) },
                     onSettings: { showSettings = true }
                 )
                 .padding(.top, Space.s2)
@@ -133,9 +133,16 @@ struct HomeScreen: View {
 
     private var quickActionsRow: some View {
         HStack(spacing: Space.s2) {
-            QuickActionTile.add(env: env) {
-                editorTarget = .new(.login)
+            Menu {
+                newItemMenuItems
+            } label: {
+                QuickActionTileLabel(
+                    icon: Icons.add,
+                    label: LocalizedStringResource("Add Item").inAppLocalized,
+                    tint: Color(rgb: env.theme.active.accent)
+                )
             }
+            .accessibilityLabel(Text("Add Item"))
             QuickActionTile.generate {
                 showGenerator = true
             }
@@ -247,17 +254,25 @@ struct HomeScreen: View {
             Text("Add your first login, card, or secure note.")
         } actions: {
             Menu {
-                ForEach(ItemCategory.allCases) { category in
-                    Button {
-                        editorTarget = .new(category)
-                    } label: {
-                        Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
-                    }
-                }
+                newItemMenuItems
             } label: {
                 Text("Add Item")
             }
             .buttonStyle(.themedProminent)
+        }
+    }
+
+    // MARK: Add-item menu
+
+    /// Item-type menu shared by the header "+", the Add quick action, and the empty
+    /// state — lets the user choose which kind of item to create (not just a login).
+    @ViewBuilder private var newItemMenuItems: some View {
+        ForEach(ItemCategory.allCases) { category in
+            Button {
+                editorTarget = .new(category)
+            } label: {
+                Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
+            }
         }
     }
 
