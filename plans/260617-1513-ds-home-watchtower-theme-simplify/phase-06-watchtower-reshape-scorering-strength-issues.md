@@ -1,10 +1,11 @@
 ---
 phase: 6
-title: "Watchtower reshape (ScoreRing + strength + issues)"
-status: pending
+title: Watchtower reshape (ScoreRing + strength + issues)
+status: completed
 priority: P2
-effort: "5-7h"
-dependencies: [1]
+effort: 5-7h
+dependencies:
+  - 1
 ---
 
 # Phase 6: Watchtower reshape (ScoreRing + strength + issues)

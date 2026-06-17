@@ -43,10 +43,10 @@ Two tracks against the now-final **`Design System/`** spec (web source of truth:
 |-------|------|--------|---------|
 | 1 | [Color & accent foundation (DS palette + 7 presets)](./phase-01-color-accent-foundation-ds-palette-7-presets.md) | ✅ Completed | — |
 | 2 | [Flat background & simplified Appearance UI](./phase-02-flat-background-simplified-appearance-ui.md) | ✅ Completed | 1 |
-| 3 | [Rotation reminder model & logic](./phase-03-rotation-reminder-model-logic.md) | Pending | — |
+| 3 | [Rotation reminder model & logic](./phase-03-rotation-reminder-model-logic.md) | ✅ Completed | — |
 | 4 | [Home DS component library](./phase-04-home-ds-component-library.md) | Pending | 1 |
 | 5 | [Home screen assembly (DS spec)](./phase-05-home-screen-assembly-ds-spec.md) | Pending | 3,4 |
-| 6 | [Watchtower reshape (ScoreRing + strength + issues)](./phase-06-watchtower-reshape-scorering-strength-issues.md) | Pending | 1 |
+| 6 | [Watchtower reshape (ScoreRing + strength + issues)](./phase-06-watchtower-reshape-scorering-strength-issues.md) | ✅ Completed | 1 |
 | 7 | [Localization](./phase-07-localization.md) | Pending | 2,5,6 |
 | 8 | [docs & QA](./phase-08-docs-qa.md) | Pending | 1-7 |
 
@@ -84,3 +84,16 @@ mirrors `ItemRecord` metadata (`VaultItem.swift:10-18`); derived tokens incl. `o
 Re-read `plan.md` + all 8 phases after propagation. No stale terms / contradictions remain; the two
 scope-up decisions (2FA build, local notifications) are reflected in Phases 6 + 3. Plan is eligible to
 implement (Failed: 0).
+
+## Cook progress (2026-06-17)
+
+Branch `feat/ds-home-watchtower-theme-simplify`. Each commit: `make check` (app+ext) + full test suite green + code-review.
+
+- **Phase 1 + 2 done** — `d618e2c` feat(theme) + `d4bd0e5` docs(plan). 7-preset accent (light/dark), palette retuned, flat-bg gate, simplified Appearance, builtin grid → Day+Night.
+- **Phase 3 done** — `2f17096` feat(vault). Rotation reminders + OS local notifications. 15 new tests.
+- **Phase 6 done** — `1005b14` feat(watchtower). ScoreRing + StrengthCard + issue categories + 2FA catalog.
+- Code-review fixes applied: localization converted to EN-source + VI (the Phase 2/3/6 strings are localized — **Phase 7 now only needs the Phase 4/5 Home strings + a final audit**); 2FA catalog uses host-suffix matching (no substring false-positives).
+
+**Remaining:** Phase 4 → 5 (Home: component library + assembly; retire Customize Home) · Phase 7 (Home strings + audit) · Phase 8 (docs + on-device QA).
+
+**Follow-up (M1, non-blocking):** `rotateDays`/`passwordChangedAt` are device-local; add to `CloudSyncService` CK mapping (behind `#if VAULTIFY_ICLOUD`) if per-item cadence should sync when iCloud is enabled.

@@ -1,9 +1,9 @@
 ---
 phase: 3
-title: "Rotation reminder model & logic"
-status: pending
+title: Rotation reminder model & logic
+status: completed
 priority: P2
-effort: "5-7h"
+effort: 5-7h
 dependencies: []
 ---
 
