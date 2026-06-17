@@ -34,6 +34,113 @@ struct VaultScreenHeader<Leading: View, Trailing: View>: View {
         .frame(minHeight: Metric.hitMin)
         .padding(.horizontal, Space.gutter)
         .padding(.vertical, Space.s2)
+        .background(VaultScreenHeaderBackground())
+    }
+}
+
+// MARK: - VaultScreenHeaderBackground
+
+/// Blur surface behind the floating header. Extends up behind the status bar like a real
+/// nav bar.
+///
+/// **iOS 26+ (Liquid Glass):** `glassEffect`, but **revealed only once content is actually
+/// beneath the header** (`vaultHeaderScrolledUnder`). At rest the surface is `Color.clear`
+/// — not a faded glass — so the screen background shows through with **zero band** (an
+/// always-on glass renders a faint material band even over pure black on-device). The glass
+/// is conditionally inserted, never given a static opacity (Apple forbids opacity on glass).
+///
+/// **Older OSes / Reduce Transparency:** a material reveal that mirrors the tab bar —
+/// transparent at rest, cross-fading to `.regularMaterial` (or a solid `surfaceFloatingSolid`)
+/// on the same `scrolledUnder` signal.
+///
+/// Either way the blur appears only when real content has scrolled up beneath the header
+/// (threshold in `VaultHeaderScrollSpacer`), not on the first pixel of scroll.
+private struct VaultScreenHeaderBackground: View {
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.vaultHeaderScrolledUnder) private var scrolledUnder
+
+    var body: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26, *), !reduceTransparency {
+            glassReveal
+        } else {
+            materialReveal
+        }
+        #else
+        materialReveal
+        #endif
+    }
+
+    #if compiler(>=6.2)
+    @available(iOS 26, *)
+    private var glassReveal: some View {
+        ZStack {
+            Color.clear
+            if scrolledUnder {
+                Rectangle()
+                    .fill(.clear)
+                    .glassEffect(.regular, in: Rectangle())
+                    .ignoresSafeArea(edges: .top)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: scrolledUnder)
+    }
+    #endif
+
+    private var materialReveal: some View {
+        let fill: AnyShapeStyle = reduceTransparency
+            ? AnyShapeStyle(Color(rgb: env.theme.active.surfaceFloatingSolid))
+            : AnyShapeStyle(.regularMaterial)
+        return Rectangle()
+            .fill(fill)
+            .opacity(scrolledUnder ? 1 : 0)
+            .animation(.easeInOut(duration: 0.2), value: scrolledUnder)
+            .ignoresSafeArea(edges: .top)
+    }
+}
+
+// MARK: - Header scroll-edge plumbing
+
+/// Whether tab-root scroll content has slid beneath the floating header. Drives the
+/// header blur's reveal. Set per screen via `VaultHeaderScrollSpacer`; read by
+/// `VaultScreenHeaderBackground`.
+private struct VaultHeaderScrolledUnderKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var vaultHeaderScrolledUnder: Bool {
+        get { self[VaultHeaderScrolledUnderKey.self] }
+        set { self[VaultHeaderScrolledUnderKey.self] = newValue }
+    }
+}
+
+/// Top inset spacer for tab-root screens: clears the floating header height AND reports
+/// when content scrolls beneath it. Use as the first child of the screen's `ScrollView`
+/// (replaces the manual `Color.clear.frame(...)` spacer), then forward `scrolledUnder`
+/// to the header via `.environment(\.vaultHeaderScrolledUnder, …)`.
+struct VaultHeaderScrollSpacer: View {
+    @Binding var scrolledUnder: Bool
+
+    var body: some View {
+        Color.clear
+            .frame(height: Space.s10 + Metric.hitMin)
+            .background(
+                GeometryReader { proxy in
+                    // Reveal only once content has scrolled far enough to actually sit
+                    // beneath the header — i.e. past the gap between where content starts
+                    // (this spacer's full height) and the header's visual bottom edge.
+                    // Gap = spacerHeight − headerHeight = Space.s10 − 2·Space.s2 (the
+                    // shared Metric.hitMin cancels), so the blur doesn't trigger on the
+                    // first pixel of scroll. (iOS 26 ignores this — native edge effect.)
+                    Color.clear
+                        .onChange(of: proxy.frame(in: .scrollView).minY < -(Space.s10 - Space.s2 * 2)) { _, under in
+                            scrolledUnder = under
+                        }
+                }
+            )
     }
 }
 

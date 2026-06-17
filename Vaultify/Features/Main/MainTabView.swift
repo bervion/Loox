@@ -35,6 +35,9 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
             selection = .watchtower
         }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToItems)) { _ in
+            selection = .items
+        }
     }
 
     /// One tab: native system navigation with an icon-only tab item.
@@ -45,9 +48,22 @@ struct MainTabView: View {
     }
 
     @ViewBuilder private func tabIcon(_ tab: VaultTab) -> some View {
-        Image(selection == tab ? tab.iconSelected : tab.icon)
+        Image(uiImage: tabImage(selection == tab ? tab.iconSelected : tab.icon))
             .renderingMode(.template)
             .accessibilityLabel(Text(tab.accessibilityLabel))
+    }
+
+    /// The native tab bar sizes a custom template image by its **intrinsic** size and ignores
+    /// any SwiftUI `.frame`. The Polaris assets are a 20pt square, so re-render each into a
+    /// UIImage at `Metric.iconTab` — the size the bar actually honours (verified: an SF Symbol
+    /// renders larger, so the bar sizes by the image, not a fixed slot).
+    private func tabImage(_ name: String) -> UIImage {
+        let size = CGSize(width: Metric.iconTab, height: Metric.iconTab)
+        guard let base = UIImage(named: name) else { return UIImage() }
+        let rendered = UIGraphicsImageRenderer(size: size).image { _ in
+            base.draw(in: CGRect(origin: .zero, size: size))
+        }
+        return rendered.withRenderingMode(.alwaysTemplate)
     }
 
     @ViewBuilder private var copyToast: some View {

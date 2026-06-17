@@ -23,6 +23,7 @@ struct WatchtowerScreen: View {
     @State private var pwned: [VaultIssue] = []
     @State private var checking = false
     @State private var editorTarget: EditorTarget?
+    @State private var scrolledUnder = false
 
     private var allClear: Bool {
         health.analyzedCount > 0 && totalIssueCount == 0
@@ -46,8 +47,8 @@ struct WatchtowerScreen: View {
             ZStack(alignment: .top) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        // Top inset clears the floating header (header height + padding).
-                        Color.clear.frame(height: Space.s10 + Metric.hitMin)
+                        // Top inset clears the floating header + reports scroll-edge state.
+                        VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                         ringSection
                         contentSection
@@ -78,6 +79,7 @@ struct WatchtowerScreen: View {
                     }
                 }
             }
+            .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .themedWallpaper(env.theme.wallpaper,
                              fallback: Color(rgb: env.theme.active.groupedBackground))
             .toolbar(.hidden, for: .navigationBar)

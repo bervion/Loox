@@ -36,7 +36,16 @@ struct ItemEditorScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(
+            title: nil,  // 3 actions (Cancel · Edit · Save) — hide the centre title
+            leading: {
+                Button("Cancel") { hasChanges ? (confirmDiscard = true) : dismiss() }
+            },
+            trailing: {
+                EditButton()
+                Button("Save", action: save).disabled(!canSave).fontWeight(.semibold)
+            }
+        ) {
             Form {
                 Section {
                     HStack(spacing: 12) {
@@ -101,10 +110,6 @@ struct ItemEditorScreen: View {
 
                 RotationReminderSection(rotateDays: $draft.rotateDays)
             }
-            .themedFormBackground()
-            .navigationTitle(isNew ? String(localized: draft.category.title) : "Edit Item")
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 // New items default to the primary Space ("My Vault") so they have
                 // a home; applied once so it never overrides a user's own pick.
@@ -113,15 +118,6 @@ struct ItemEditorScreen: View {
                     draft.folderId = primary.id
                 }
                 didApplyDefaultFolder = true
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { hasChanges ? (confirmDiscard = true) : dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(!canSave).fontWeight(.semibold)
-                }
-                ToolbarItem(placement: .topBarLeading) { EditButton() }
             }
             .interactiveDismissDisabled(hasChanges)
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {

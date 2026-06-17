@@ -40,6 +40,15 @@ nonisolated enum RGBMath {
         return contrastRatio(white, background) >= contrastRatio(black, background) ? white : black
     }
 
+    /// On-color for a tinted **control** (button / badge) — prefers **white**, the iOS
+    /// convention for coloured controls, whenever white clears the 3:1 floor for bold/large
+    /// UI text. Falls back to black only for genuinely light tints (e.g. a pale teal/pink or
+    /// a near-white accent) where white would be unreadable. Unlike `onColor` (max contrast),
+    /// this keeps bright-but-saturated accents (e.g. dark-mode blue) reading white, not black.
+    static func onAccent(_ background: UInt32) -> UInt32 {
+        contrastRatio(0xFFFFFF, background) >= 3.0 ? 0xFFFFFF : 0x000000
+    }
+
     /// Per-channel linear blend of `a` toward `b` by `t` (0…1).
     static func blend(_ a: UInt32, _ b: UInt32, _ t: Double) -> UInt32 {
         let clamped = max(0, min(1, t))

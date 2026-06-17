@@ -103,49 +103,62 @@ struct HomeHeaderBar: View {
 
 // MARK: - Folder picker sheet
 
-/// Lightweight folder picker for the Home header. Lets the user pick "All
-/// Spaces" (nil) or a specific folder to filter the Home feed.
+/// Folder picker for the Home header. Lets the user pick "All Spaces" (nil) or a
+/// specific folder to filter the Home feed, plus create/manage spaces.
 private struct HomeFolderPickerSheet: View {
     @Binding var selectedFolderId: String?
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
+    @State private var creatingSpace = false
+
+    private var accent: Color { Color(rgb: env.theme.active.accent) }
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(
+            title: "Spaces",
+            trailing: {
+                Button { creatingSpace = true } label: {
+                    PolarisIcon(Icons.add, size: 18)
+                }
+                .accessibilityLabel(Text("Create New Space"))
+            }
+        ) {
             List {
+                // Spaces — All Spaces + every folder, with item counts.
                 Section {
-                    folderRow(
-                        name: Text("All Spaces"),
-                        badge: nil,
-                        selected: selectedFolderId == nil
-                    ) { select(nil) }
+                    spaceRow(name: Text("All Spaces"),
+                             count: env.repository.allItems(folder: nil).count,
+                             selected: selectedFolderId == nil) {
+                        tile(Icons.inventory, fill: VaultColors.fill,
+                             iconColor: env.theme.active.color(.iconSecondary))
+                    } action: { select(nil) }
+
+                    ForEach(env.repository.folders) { folder in
+                        spaceRow(name: Text(verbatim: folder.name),
+                                 count: env.repository.itemCount(for: folder.id),
+                                 selected: selectedFolderId == folder.id) {
+                            FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
+                        } action: { select(folder.id) }
+                    }
                 }
                 .listRowBackground(VaultColors.surface)
 
-                if !env.repository.folders.isEmpty {
-                    Section {
-                        ForEach(env.repository.folders) { folder in
-                            folderRow(
-                                name: Text(folder.name),
-                                badge: FolderBadge(icon: folder.iconAsset,
-                                                   color: folder.color,
-                                                   size: 30),
-                                selected: selectedFolderId == folder.id
-                            ) { select(folder.id) }
-                        }
-                    }
-                    .listRowBackground(VaultColors.surface)
+                // Management — create a space, or jump to the Items tab to manage them.
+                Section {
+                    managementRow(title: Text("Create New Space"),
+                                  tint: accent, showChevron: false) {
+                        tile(Icons.addCircle, fill: accent.opacity(0.14), iconColor: accent)
+                    } action: { creatingSpace = true }
+
+                    managementRow(title: Text("Manage Spaces & Members"),
+                                  tint: nil, showChevron: true) {
+                        tile(Icons.settings, fill: VaultColors.fill,
+                             iconColor: env.theme.active.color(.iconSecondary))
+                    } action: { openManagement() }
                 }
+                .listRowBackground(VaultColors.surface)
             }
-            .themedFormBackground()
-            .navigationTitle(Text("Spaces"))
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
+            .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
         }
     }
 
@@ -154,29 +167,64 @@ private struct HomeFolderPickerSheet: View {
         dismiss()
     }
 
+    /// Dismiss and switch to the Items tab — the surface that manages all spaces.
+    private func openManagement() {
+        dismiss()
+        NotificationCenter.default.post(name: .vaultSwitchToItems, object: nil)
+    }
+
+    // MARK: Rows
+
     @ViewBuilder
-    private func folderRow(name: Text,
-                           badge: FolderBadge?,
-                           selected: Bool,
-                           action: @escaping () -> Void) -> some View {
+    private func spaceRow<Leading: View>(
+        name: Text, count: Int, selected: Bool,
+        @ViewBuilder leading: () -> Leading,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                if let badge {
-                    badge
-                } else {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(VaultColors.fill)
-                        .frame(width: 30, height: 30)
-                }
+                leading()
                 name.themedForeground()
-                Spacer()
+                Spacer(minLength: Space.s2)
+                Text("\(count)").themedForeground(.secondary)
                 if selected {
-                    PolarisIcon(Icons.check, size: 18)
-                        .foregroundStyle(Color(rgb: env.theme.active.accent))
+                    PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(accent)
                 }
             }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func managementRow<Leading: View>(
+        title: Text, tint: Color?, showChevron: Bool,
+        @ViewBuilder leading: () -> Leading,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                leading()
+                if let tint {
+                    title.foregroundStyle(tint)
+                } else {
+                    title.themedForeground()
+                }
+                Spacer()
+                if showChevron {
+                    PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 30pt rounded leading tile with a centred Polaris icon.
+    private func tile(_ icon: String, fill: Color, iconColor: Color) -> some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(fill)
+            .frame(width: 30, height: 30)
+            .overlay(PolarisIcon(icon, size: 17).foregroundStyle(iconColor))
     }
 }

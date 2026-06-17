@@ -15,6 +15,10 @@ struct HomeScreen: View {
     @State private var showTotpList = false
     @State private var selectedFolderId: String?
     @State private var sortOrder: VaultSort = .updated
+    @State private var scrolledUnder = false
+    /// Cached Watchtower issue count for the quick-action badge (recomputed on appear and
+    /// when the item set changes — `PasswordAudit.analyze` is too costly to run per render).
+    @State private var watchtowerIssueCount = 0
 
     // MARK: Filtered sections (recomputed when items or folder changes)
 
@@ -36,6 +40,14 @@ struct HomeScreen: View {
         return sorted.filter(\.pinned) + sorted.filter { !$0.pinned }
     }
 
+    /// Whole-vault security issues (weak + reused + missing 2FA) for the Watchtower badge —
+    /// matches the Watchtower screen's synchronous count (HIBP/pwned excluded; that needs the
+    /// network). Not folder-scoped: Watchtower audits the entire vault.
+    private func recomputeWatchtowerCount() {
+        let health = PasswordAudit.analyze(env.repository.items)
+        watchtowerIssueCount = health.weak.count + health.reused.count + health.missing2FA.count
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             // ZStack lets the header float over scroll content so glass blurs it.
@@ -55,9 +67,12 @@ struct HomeScreen: View {
                     onSettings: { showSettings = true }
                 )
             }
+            .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .vaultNavigationDestinations()
+            .task { recomputeWatchtowerCount() }
+            .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             .sheet(isPresented: $showSettings) { SettingsScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
@@ -69,14 +84,13 @@ struct HomeScreen: View {
     private var scrollContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                // Top inset clears the floating header bar (two pill rows + padding).
-                // Content renders beneath the glass from the start, giving the glass
-                // something to blur immediately without extra empty space.
-                Color.clear.frame(height: Space.s10 + Metric.hitMin)
+                // Top inset clears the floating header bar + reports scroll-edge state so
+                // the header blur reveals only once content scrolls beneath it.
+                VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    // 3. Quick actions row
-                    quickActionsRow
+                    // 3. Quick actions grid (Reminders-style colour cards)
+                    quickActionsGrid
 
                     // 4. TOTP scroller (only when items with TOTP exist)
                     if !totpItems.isEmpty {
@@ -105,31 +119,42 @@ struct HomeScreen: View {
 
     // MARK: Quick actions
 
-    private var quickActionsRow: some View {
-        HStack(spacing: Space.s2) {
-            // Add tile now uses ic_page_add to match the header cluster icon.
+    /// Reminders-style quick-action cards in a 2-up grid: Add · Generate (top row),
+    /// 2FA · Watchtower (bottom row). 2FA and Watchtower carry a live count badge.
+    private var quickActionsGrid: some View {
+        // One GlassEffectContainer for all 8 glass views (4 cards + 4 badges) → a single
+        // backdrop layer; fixes the per-frame glass-update warning on theme changes.
+        VaultGlassGroup {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: Space.s3),
+                      GridItem(.flexible(), spacing: Space.s3)],
+            spacing: Space.s3
+        ) {
+            // Add — presents the item-type menu (uses ic_page_add, matches the header).
             Menu {
                 newItemMenuItems
             } label: {
-                QuickActionTileLabel(
+                QuickActionCardLabel(
                     icon: Icons.pageAdd,
                     label: LocalizedStringResource("Add Item").inAppLocalized,
-                    tint: Color(rgb: env.theme.active.accent)
+                    fill: Color(rgb: env.theme.active.accent)
                 )
             }
             .accessibilityLabel(Text("Add Item"))
-            QuickActionTile.generate {
+
+            QuickActionCard.generate {
                 showGenerator = true
             }
-            QuickActionTile.totp {
+            QuickActionCard.totp(count: totpItems.count) {
                 showTotpList = true
             }
-            QuickActionTile.watchtower {
+            QuickActionCard.watchtower(count: watchtowerIssueCount) {
                 NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil)
             }
         }
+        }
         .sheet(isPresented: $showTotpList) {
-            NavigationStack { TotpListScreen() }
+            TotpListScreen()
         }
     }
 
@@ -322,4 +347,6 @@ extension Notification.Name {
     static let vaultSwitchToSearch = Notification.Name("vaultSwitchToSearch")
     /// Posted by Home quick-action to switch to the Watchtower tab.
     static let vaultSwitchToWatchtower = Notification.Name("vaultSwitchToWatchtower")
+    /// Posted by the Spaces sheet to switch to the Items tab (spaces management).
+    static let vaultSwitchToItems = Notification.Name("vaultSwitchToItems")
 }

@@ -47,9 +47,10 @@ nonisolated struct AppTheme: Sendable, Equatable {
         theme.accent = accent
         theme.switchOn = accent
         theme.checkmark = accent
-        // Pick the on-accent foreground by real WCAG contrast so text on filled accent
-        // controls stays legible for any accent (built-in or user-custom).
-        theme.accentForeground = RGBMath.onColor(accent)
+        // White-preferred on-accent (iOS convention for coloured controls) so text/icons on
+        // filled accent buttons read white on saturated accents (e.g. dark-mode blue), only
+        // falling back to black for genuinely light tints.
+        theme.accentForeground = RGBMath.onAccent(accent)
         let white: UInt32 = 0xFFFFFF
         theme.selection = RGBMath.blend(accent, isDark ? background : white, isDark ? 0.80 : 0.88)
         return theme

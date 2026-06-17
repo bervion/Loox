@@ -14,7 +14,7 @@ nonisolated enum BuiltinThemes {
         // Derive the on-accent foreground from the accent by real WCAG contrast so every
         // theme's filled controls (buttons / selected chips) keep legible text. Single
         // source of truth — the literal `accentForeground` below is just a placeholder.
-        base.accentForeground = RGBMath.onColor(base.accent)
+        base.accentForeground = RGBMath.onAccent(base.accent)
         return base
     }
 

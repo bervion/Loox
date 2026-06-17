@@ -10,6 +10,7 @@ struct ItemsScreen: View {
     @State private var path = NavigationPath()
     @State private var creatingSpace = false
     @State private var editorTarget: EditorTarget?
+    @State private var scrolledUnder = false
 
     private var categories: [ItemCategory] {
         ItemCategory.allCases.filter { env.repository.count(forCategory: $0) > 0 }
@@ -21,8 +22,8 @@ struct ItemsScreen: View {
             ZStack(alignment: .top) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s6) {
-                        // Top inset clears the floating header (header height + padding).
-                        Color.clear.frame(height: Space.s10 + Metric.hitMin)
+                        // Top inset clears the floating header + reports scroll-edge state.
+                        VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                         spacesSection
                         if !categories.isEmpty { categoriesSection }
@@ -58,6 +59,7 @@ struct ItemsScreen: View {
                     }
                 }
             }
+            .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .vaultNavigationDestinations()

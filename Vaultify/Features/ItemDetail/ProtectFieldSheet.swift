@@ -28,7 +28,9 @@ struct ProtectFieldSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VaultSheetScaffold(title: "Protect Field", trailing: {
+            Button("Protect") { Task { await protect() } }.disabled(!canProtect)
+        }) {
             Form {
                 Picker("Protect with", selection: $scheme) {
                     Text("Extra Password").tag(SecretGuard.Scheme.level2)
@@ -51,16 +53,6 @@ struct ProtectFieldSheet: View {
                 }
 
                 if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
-            }
-            .themedFormBackground()
-            .navigationTitle("Protect Field")
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Protect") { Task { await protect() } }.disabled(!canProtect)
-                }
             }
             .overlay { if busy { ProgressView().controlSize(.large) } }
         }

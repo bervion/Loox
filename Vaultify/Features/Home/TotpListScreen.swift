@@ -11,6 +11,9 @@ struct TotpListScreen: View {
 
     var body: some View {
         let totpItems = env.repository.totpItems(folder: nil)
+        VaultSheetScaffold(title: "2FA Codes",
+                           leading: { EmptyView() },
+                           trailing: { SheetDismissButton("Done") }) {
         ScrollView {
             if totpItems.isEmpty {
                 emptyState
@@ -25,11 +28,9 @@ struct TotpListScreen: View {
                 .padding(.bottom, TabBarMetric.contentBottomInset)
             }
         }
-        .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-        .navigationTitle(Text("2FA Codes"))
-        .navigationBarTitleDisplayMode(.large)
         .vaultNavigationDestinations()
         .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+        }
     }
 
     private var emptyState: some View {

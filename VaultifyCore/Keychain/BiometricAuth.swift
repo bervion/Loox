@@ -32,6 +32,17 @@ nonisolated enum BiometricAuth {
         }
     }
 
+    /// SF Symbol for the available biometry — used for the lock-screen badge, where the
+    /// system glyph is the recognised affordance and Polaris ships no biometric equivalent.
+    static var systemImage: String {
+        switch biometryType() {
+        case .faceID: return "faceid"
+        case .touchID: return "touchid"
+        case .opticID: return "opticid"
+        default: return "lock.fill"
+        }
+    }
+
     /// Run an interactive biometric evaluation. This is what surfaces the system
     /// Face ID / Touch ID prompt AND the first-run NSFaceIDUsageDescription
     /// permission — adding a biometric Keychain item alone does neither.

@@ -17,7 +17,9 @@ struct SettingsScreen: View {
 
     var body: some View {
         @Bindable var settings = env.settings
-        NavigationStack {
+        VaultSheetScaffold(title: "Settings",
+                           leading: { EmptyView() },
+                           trailing: { SheetDismissButton("Done") }) {
             Form {
                 Section("Security") {
                     if BiometricAuth.isAvailable {
@@ -135,12 +137,6 @@ struct SettingsScreen: View {
                     }
                 }
                 .listRowBackground(VaultColors.surface)
-            }
-            .themedFormBackground()
-            .navigationTitle("Settings")
-            .themedColorScheme()
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
             .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
                 Button("Erase Everything", role: .destructive) { env.eraseEverything() }

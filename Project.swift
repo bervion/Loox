@@ -58,10 +58,10 @@ let project = Project(
                 ],
                 // Background only — a static launch image can't be rounded and gets
                 // cached by iOS (a square logo flashed before the rounded SplashView).
-                // The logo is shown by SplashView instead.
-                "UILaunchScreen": [
-                    "UIColorName": "LaunchBackground",
-                ],
+                // The logo is shown by SplashView instead. A storyboard (vs a color-only
+                // UILaunchScreen) renders the LaunchBackground reliably from the very first
+                // cold launch — color-only UILaunchScreen can flash white on first install.
+                "UILaunchStoryboardName": "LaunchScreen",
                 "UISupportedInterfaceOrientations": [
                     "UIInterfaceOrientationPortrait",
                     "UIInterfaceOrientationLandscapeLeft",
@@ -73,6 +73,7 @@ let project = Project(
                 "Vaultify/Assets.xcassets",
                 "Vaultify/vaultify.icon",
                 "Vaultify/Localizable.xcstrings",
+                "Vaultify/LaunchScreen.storyboard",
             ],
             entitlements: "Vaultify/Vaultify.entitlements",
             dependencies: [
