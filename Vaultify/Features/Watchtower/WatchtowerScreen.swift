@@ -43,27 +43,12 @@ struct WatchtowerScreen: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Fixed (non-collapsing) header, Threads-style, with quick-add.
-                VaultScreenHeader("Watchtower") {
-                    Menu {
-                        ForEach(ItemCategory.allCases) { category in
-                            Button {
-                                editorTarget = .new(category)
-                            } label: {
-                                Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
-                            }
-                        }
-                    } label: {
-                        PolarisIcon(Icons.add, size: Metric.iconUtility)
-                            .foregroundStyle(Color(rgb: env.theme.active.accent))
-                            .frame(width: Metric.hitMin, height: Metric.hitMin)
-                    }
-                    .accessibilityLabel(Text("Add Item"))
-                }
-
+            ZStack(alignment: .top) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
+                        // Top inset clears the floating header (header height + padding).
+                        Color.clear.frame(height: Space.s10 + Metric.hitMin)
+
                         ringSection
                         contentSection
                     }
@@ -71,6 +56,27 @@ struct WatchtowerScreen: View {
                 }
                 .scrollContentBackground(.hidden)
                 .refreshable { await fullAudit() }
+
+                // Floating header overlays the scroll content — glass blurs beneath.
+                VaultScreenHeader("Watchtower") {
+                    HeaderActionCluster {
+                        // Add — menu to choose item type to create
+                        Menu {
+                            ForEach(ItemCategory.allCases) { category in
+                                Button {
+                                    editorTarget = .new(category)
+                                } label: {
+                                    Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
+                                }
+                            }
+                        } label: {
+                            PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
+                                .themedForeground()
+                        }
+                        .frame(width: Metric.hitMin, height: Metric.hitMin)
+                        .accessibilityLabel(Text("Add Item"))
+                    }
+                }
             }
             .themedWallpaper(env.theme.wallpaper,
                              fallback: Color(rgb: env.theme.active.groupedBackground))

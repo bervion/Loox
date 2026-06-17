@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// Items tab: the organization browser — Spaces (with a Create Space row),
+/// Items tab: the organisation browser — Spaces (with a Create Space row),
 /// Categories, Tags, plus standalone Archive and Recently Deleted rows.
 ///
-/// Uses the same custom large-title + gutter layout as Home (ScrollView + grouped
-/// cards at `Space.gutter`) so the title and the cards share one leading edge,
-/// instead of `insetGrouped` whose cards sit further in than the large title.
+/// Header floats over the scroll content as a glass overlay (same pattern as Home
+/// and Watchtower) so the glass blurs whatever scrolls beneath it.
 struct ItemsScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var path = NavigationPath()
     @State private var creatingSpace = false
+    @State private var editorTarget: EditorTarget?
 
     private var categories: [ItemCategory] {
         ItemCategory.allCases.filter { env.repository.count(forCategory: $0) > 0 }
@@ -18,29 +18,55 @@ struct ItemsScreen: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            VStack(spacing: 0) {
-                VaultScreenHeader("Items")
-
+            ZStack(alignment: .top) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s6) {
+                        // Top inset clears the floating header (header height + padding).
+                        Color.clear.frame(height: Space.s10 + Metric.hitMin)
+
                         spacesSection
                         if !categories.isEmpty { categoriesSection }
                         if !tags.isEmpty { tagsSection }
                         standaloneSection
                     }
                     .padding(.horizontal, Space.gutter)
-                    .padding(.top, Space.s2)
                     .padding(.bottom, TabBarMetric.contentBottomInset)
+                }
+
+                // Floating header overlays scroll content — glass blurs beneath.
+                VaultScreenHeader("Items") {
+                    HeaderActionCluster {
+                        // Add — menu to choose item type to create
+                        Menu {
+                            ForEach(ItemCategory.allCases) { category in
+                                Button {
+                                    editorTarget = .new(category)
+                                } label: {
+                                    Label {
+                                        Text(category.title)
+                                    } icon: {
+                                        PolarisIcon(category.iconAsset)
+                                    }
+                                }
+                            }
+                        } label: {
+                            PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
+                                .themedForeground()
+                        }
+                        .frame(width: Metric.hitMin, height: Metric.hitMin)
+                        .accessibilityLabel(Text("Add Item"))
+                    }
                 }
             }
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
+            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
         }
     }
 
-    // MARK: Sections
+    // MARK: - Sections
 
     private var spacesSection: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -128,7 +154,7 @@ struct ItemsScreen: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: Row + container helpers (mirror Home)
+    // MARK: - Row + container helpers
 
     private func sectionHeader(_ title: LocalizedStringResource) -> some View {
         Text(title)
@@ -149,7 +175,7 @@ struct ItemsScreen: View {
     }
 
     /// Navigation row inside a grouped card: leading badge + title + optional count
-    /// + chevron, with a leading-inset hairline divider (matches the Home item rows).
+    /// + chevron, with a leading-inset hairline divider.
     @ViewBuilder
     private func navRow<Leading: View>(
         _ route: VaultRoute,
