@@ -66,7 +66,6 @@ struct WatchtowerStrengthCard: View {
     let onTap: () -> Void
 
     @Environment(AppEnvironment.self) private var env
-    @State private var isPressed = false
 
     var body: some View {
         let theme = env.theme.active
@@ -84,25 +83,12 @@ struct WatchtowerStrengthCard: View {
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                isPressed
-                    ? Color(rgb: theme.surfacePressed)
-                    : Color(rgb: theme.elevatedBackground)
-            )
-            .animation(.timingCurve(0.32, 0.72, 0, 1, duration: Motion.fast), value: isPressed)
         }
-        .buttonStyle(.plain)
-        // Manual press state so we can replicate the DS pressed background swap
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded   { _ in isPressed = false }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .strokeBorder(Color(rgb: theme.separator), lineWidth: 0.5)
-        )
+        // ButtonStyle press state (scroll-friendly — a minimumDistance:0 DragGesture
+        // would block scrolling when a press lands on the card).
+        .buttonStyle(PressableSurfaceStyle(theme: theme,
+                                           base: Color(rgb: theme.elevatedBackground),
+                                           cornerRadius: Radius.lg, bordered: true))
         .accessibilityLabel(Text("Overall password strength: \(overallStrength)%"))
         .accessibilityAddTraits(.isButton)
     }

@@ -1,5 +1,30 @@
 import SwiftUI
 
+// MARK: - PressableSurfaceStyle
+
+/// Button style that swaps a pressed background WITHOUT a `DragGesture`, so rows and
+/// cards stay scrollable inside a `ScrollView` (a `minimumDistance: 0` drag gesture
+/// captures the touch and blocks scrolling).
+struct PressableSurfaceStyle: ButtonStyle {
+    let theme: AppTheme
+    var base: Color = .clear
+    var cornerRadius: CGFloat = 0
+    var bordered: Bool = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? Color(rgb: theme.surfacePressed) : base)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                if bordered {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .strokeBorder(Color(rgb: theme.separator), lineWidth: 0.5)
+                }
+            }
+            .animation(.easeOut(duration: Motion.fast), value: configuration.isPressed)
+    }
+}
+
 // MARK: - CategoryRow
 
 /// A tappable row representing one issue category in the "Cần xử lý" list.
@@ -15,7 +40,6 @@ struct CategoryRow: View {
     let onTap: () -> Void
 
     @Environment(AppEnvironment.self) private var env
-    @State private var isPressed = false
 
     var body: some View {
         let theme = env.theme.active
@@ -45,15 +69,8 @@ struct CategoryRow: View {
             .padding(.horizontal, Space.s4)
             .frame(minHeight: Metric.rowHeight)
             .contentShape(.rect)
-            .background(isPressed ? Color(rgb: theme.surfacePressed) : Color.clear)
-            .animation(.timingCurve(0.32, 0.72, 0, 1, duration: Motion.fast), value: isPressed)
         }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded   { _ in isPressed = false }
-        )
+        .buttonStyle(PressableSurfaceStyle(theme: theme))
         .accessibilityLabel(Text(title))
         .accessibilityValue(Text(subtitle))
         .accessibilityAddTraits(.isButton)

@@ -44,16 +44,18 @@ struct WatchtowerScreen: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    screenTitle
                     ringSection
                     contentSection
                 }
+                .padding(.top, Space.s2)
                 .padding(.bottom, Space.s10)
             }
             .scrollContentBackground(.hidden)
             .themedWallpaper(env.theme.wallpaper,
                              fallback: Color(rgb: env.theme.active.groupedBackground))
-            .navigationBarHidden(true)
+            // System large title → native collapse-to-inline on scroll (Apple-standard).
+            .navigationTitle("Watchtower")
+            .navigationBarTitleDisplayMode(.large)
             // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
             .navigationDestination(for: String.self) { itemID in
                 ItemDetailScreen(itemID: itemID)
@@ -85,17 +87,6 @@ struct WatchtowerScreen: View {
         case .missing2FA:
             WatchtowerCategoryScreen(title: "Set up two-factor authentication", issues: health.missing2FA)
         }
-    }
-
-    // MARK: - Screen title
-
-    private var screenTitle: some View {
-        Text("Watchtower")
-            .vaultType(.screenTitle)
-            .themedForeground(.primary)
-            .padding(.horizontal, Space.gutter)
-            .padding(.top, Space.s4)
-            .padding(.bottom, Space.s2)
     }
 
     // MARK: - Score ring + subtitle
@@ -258,19 +249,18 @@ struct WatchtowerScreen: View {
     // MARK: - HIBP toggle
 
     private var hibpToggleSection: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: Space.s2) {
             Toggle(isOn: hibpBinding) {
                 Text("Check for known breaches")
             }
             .toggleStyle(.themed)
-            .padding(Space.s4)
 
             Text("Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
                 .vaultType(.footnote)
                 .themedForeground(.secondary)
-                .padding(.horizontal, Space.s4)
-                .padding(.bottom, Space.s4)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(Space.s4)
         .themedCard()
         .padding(.horizontal, Space.gutter)
     }
