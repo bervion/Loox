@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.3.0] - 2026-06-18
+
+### Added
+- Liquid-Glass header action cluster (search/add/more) + ic_page_add
+- strength card animates in sync with the gauge (no delay)
+- TimelineView-driven gauge — reliable spin intro + safety colours
+- 1Password-style animated score gauge + hero reveal
+- rebuild Home tab to the Design System spec
+- reshape to Design System — ScoreRing, strength card, issue categories
+- password-rotation reminders with local notifications
+- simplify to Design System palette — 7-preset accent, flat backgrounds
+
+### Fixed
+- smaller native large title, Watchtower quick-add +, Items collapse header
+- scrollable rows, native large-title collapse, tighter HIBP spacing
+- ticks on their own layer (never vanish) + fill-coloured needle
+- triangle needle in the ring interior + animated tick sweep
+- visible needle marker, ticks on top of fill, spring swing
+- use grouped background on canvas screens so cards stand out
+- match Home layout so the list aligns with the large title
+- icon-tile badges for categories/tags/archive rows; align list to gutter
+- Add buttons present an item-type menu instead of forcing login
+- add missing VI (strength a11y label, HIBP description); normalize catalog format
+
+### Changed
+- improve UI
+- one reusable VaultScreenHeader for all tabs + real Polaris page-add
+- Threads-style fixed headers — moderate title, no collapse, consistent
+- session entry for DS theme + Home/Watchtower work
+- mark all 8 phases complete
+- sync CLAUDE.md + guidelines + codebase-summary to DS theme/Home/Watchtower
+- mark phases 1-3 + 6 complete; cook progress + M1 follow-up
+- add DS Home/Watchtower + theme-simplify plan
+
+
 ## [1.2.1] - 2026-06-18
 
 ### Changed
