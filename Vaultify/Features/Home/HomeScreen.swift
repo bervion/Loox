@@ -243,23 +243,43 @@ struct HomeScreen: View {
     // MARK: Empty vault state
 
     private var emptyVaultState: some View {
-        ContentUnavailableView {
-            Label {
-                Text("Your vault is empty")
-            } icon: {
-                PolarisIcon(Icons.lockFill, size: 48)
-                    .themedForeground(.secondary)
+        VStack(spacing: Space.s6) {
+            // Layered lock crest — an accent-soft halo with the lock glyph, gently
+            // elevated so it reads as a deliberate emblem rather than a stray icon.
+            ZStack {
+                Circle()
+                    .fill(Color(rgb: env.theme.active.accentSoft))
+                    .frame(width: 116, height: 116)
+                    .elevation(.level1)
+                PolarisIcon(Icons.lockFill, size: 52)
+                    .themedForeground(.accent)
             }
-        } description: {
-            Text("Add your first login, card, or secure note.")
-        } actions: {
+
+            VStack(spacing: Space.s2) {
+                Text("Your vault is empty")
+                    .vaultType(.screenTitle)
+                    .themedForeground(.primary)
+                    .multilineTextAlignment(.center)
+                Text("Add your first login, card, or secure note.")
+                    .vaultType(.callout)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+            }
+
             Menu {
                 newItemMenuItems
             } label: {
-                Text("Add Item")
+                HStack(spacing: Space.s2) {
+                    PolarisIcon(Icons.add, size: Metric.iconInline)
+                    Text("Add Item")
+                }
             }
             .buttonStyle(.themedProminent)
+            .padding(.horizontal, Space.s8)
+            .padding(.top, Space.s2)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: Add-item menu
