@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.0] - 2026-06-19
+
+### Added
+- redesign item header + dark-mode neutral tint
+
+
 ## [1.3.1] - 2026-06-18
 
 ### Added

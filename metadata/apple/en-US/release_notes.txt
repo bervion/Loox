@@ -1,1 +1,1 @@
-Search now feels more natural and integrated with iOS. The empty vault screen has a cleaner, refined appearance. The app locks immediately when you switch away, ensuring your vault contents are never briefly visible on return. Typography is consistent throughout.
+The item detail screen has a refreshed header for a cleaner, more focused look. Dark mode now uses a neutral tint, making the interface easier on the eyes in low-light conditions.

@@ -1,1 +1,1 @@
-Tìm kiếm được cải thiện, hoà hợp hơn với chuẩn iOS. Màn hình kho trống có diện mạo mới gọn gàng hơn. Ứng dụng khoá ngay khi bạn chuyển sang ứng dụng khác, tránh để lộ nội dung kho khi quay lại. Kiểu chữ được thống nhất trên toàn ứng dụng.
+Màn hình chi tiết mục được làm mới với phần tiêu đề gọn gàng hơn. Chế độ tối nay dùng tông màu trung tính, giúp giao diện dễ nhìn và thoải mái hơn khi dùng trong điều kiện thiếu sáng.
