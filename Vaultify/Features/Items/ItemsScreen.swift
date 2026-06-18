@@ -33,6 +33,7 @@ struct ItemsScreen: View {
                     .padding(.horizontal, Space.gutter)
                     .padding(.bottom, TabBarMetric.contentBottomInset)
                 }
+                .scrollIndicators(.hidden)
 
                 // Floating header overlays scroll content — glass blurs beneath.
                 VaultScreenHeader("Items") {

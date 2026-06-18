@@ -48,6 +48,25 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// Stable English source label stored when a field of this kind is created. The UI
+    /// localizes it for display (`appLabel` / catalog); storing the source keeps labels
+    /// language-independent. Mirrors `title`'s English base.
+    var defaultLabel: String {
+        switch self {
+        case .text: return "Text"
+        case .username: return "Username"
+        case .password: return "Password"
+        case .totp: return "One-time Code"
+        case .url: return "Website"
+        case .email: return "Email"
+        case .number: return "Number"
+        case .multiline: return "Note"
+        case .monospace: return "Monospace"
+        case .date: return "Date"
+        case .fileRef: return "Attachment"
+        }
+    }
+
     var title: LocalizedStringResource {
         let base: LocalizedStringResource = switch self {
         case .text: "Text"

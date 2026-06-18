@@ -42,6 +42,8 @@ enum Icons {
     static let starFill = "ic_star_filled"
     static let check = "ic_check"
     static let checkCircle = "ic_check_circle"
+    static let layoutSection = "ic_layout_section"
+    static let enter = "ic_enter"
     static let close = "ic_x"
     static let chevronRight = "ic_chevron_right"
     static let chevronDown = "ic_chevron_down"

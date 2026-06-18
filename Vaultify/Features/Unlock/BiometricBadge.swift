@@ -17,21 +17,22 @@ struct BiometricBadge: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                // Fixed white square (slight corner) for every theme — the icon/progress is
-                // accent-tinted on top, like a small app-icon badge.
+                // App-icon-style badge: an elevated surface (white in light, dark in dark) with
+                // the glyph/progress in the control tint (accent in light, white in dark) so it
+                // stays legible without a glaring white square on dark.
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .fill(.white)
+                    .fill(VaultColors.surface)
 
                 if authenticating {
                     ProgressView()
                         .controlSize(.small)
-                        .tint(Color(rgb: env.theme.active.accent))
+                        .tint(env.theme.uiTint)
                 } else {
                     Image(systemName: BiometricAuth.systemImage)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 22, height: 22)
-                        .foregroundStyle(Color(rgb: env.theme.active.accent))
+                        .foregroundStyle(env.theme.uiTint)
                 }
             }
             .frame(width: side, height: side)

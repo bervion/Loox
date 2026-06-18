@@ -24,11 +24,16 @@ struct VaultSheetScaffold<Leading: View, Trailing: View, Content: View>: View {
     @ViewBuilder var trailing: () -> Trailing
     @ViewBuilder var content: () -> Content
 
+    @Environment(AppEnvironment.self) private var env
+
     var body: some View {
         NavigationStack {
             content()
                 .themedFormBackground()
                 .themedColorScheme()
+                // The root `.tint` doesn't reliably reach presented sheets, so re-apply the
+                // control tint here (accent in light, white in dark) for sheet content too.
+                .tint(env.theme.uiTint)
                 .navigationTitle(titleText)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {

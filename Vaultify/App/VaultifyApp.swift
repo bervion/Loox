@@ -18,7 +18,7 @@ struct VaultifyApp: App {
                 .environment(\.locale, locale)
                 .environment(\.appTheme, env.theme.active)
                 .toggleStyle(.themed)
-                .tint(env.theme.accentColor)
+                .tint(env.theme.uiTint)
                 .preferredColorScheme(env.theme.preferredColorScheme)
                 .appFontScale(env.theme.settings.fontScale)
                 .environment(\.meshPhase, env.theme.meshPhase)

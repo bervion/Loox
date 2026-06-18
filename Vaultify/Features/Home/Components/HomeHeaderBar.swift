@@ -84,10 +84,13 @@ struct HomeHeaderBar: View {
                             }
                         }
                     } label: {
+                        // Frame + contentShape inside the label so the full 44pt
+                        // area triggers the menu, not just the 24pt glyph.
                         PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
                             .themedForeground()
+                            .frame(width: Metric.hitMin, height: Metric.hitMin)
+                            .contentShape(.rect)
                     }
-                    .frame(width: Metric.hitMin, height: Metric.hitMin)
                     .accessibilityLabel(Text("Add Item"))
 
                     // Settings — direct, no "more" indirection

@@ -15,7 +15,7 @@ struct LockPasswordField: View {
         HStack(spacing: Space.s2) {
             ZStack(alignment: .leading) {
                 if text.isEmpty {
-                    Text("Master password")
+                    Text("Enter password")
                         .font(.vaultCode())
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
                 }
@@ -41,17 +41,21 @@ struct LockPasswordField: View {
     }
 
     private var loginButton: some View {
-        Button(action: onSubmit) {
+        // Follow the app's control tint: accent fill in light, white in dark. The glyph is the
+        // contrasting colour (white on the accent fill; the dark background colour on white).
+        let theme = env.theme.active
+        let onTint = Color(rgb: theme.isDark ? theme.background : theme.accentForeground)
+        return Button(action: onSubmit) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(rgb: env.theme.active.accent))
+                    .fill(env.theme.uiTint)
                 if busy {
                     ProgressView()
                         .controlSize(.small)
-                        .tint(Color(rgb: env.theme.active.accentForeground))
+                        .tint(onTint)
                 } else {
                     PolarisIcon(Icons.arrowRight, size: 18)
-                        .foregroundStyle(Color(rgb: env.theme.active.accentForeground))
+                        .foregroundStyle(onTint)
                 }
             }
             .frame(width: 36, height: 36)

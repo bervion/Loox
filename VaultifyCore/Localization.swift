@@ -33,3 +33,16 @@ extension LocalizedStringResource {
 nonisolated func appString(_ key: String.LocalizationValue) -> String {
     String(localized: key, locale: appResourceLocale)
 }
+
+/// Localize a stored field label (a runtime `String`) against the in-app language. Known
+/// template labels ("Username", "Password", …) resolve via the catalog; user-authored labels
+/// have no catalog entry and pass through unchanged. Lets the editor display a localized label
+/// while storage keeps the stable English source.
+nonisolated func appLabel(_ raw: String) -> String {
+    // Go through a LocalizedStringResource with an explicit `.locale` (same mechanism as
+    // `inAppLocalized`): that actually selects the in-app language's table, whereas
+    // `String(localized:locale:)`'s `locale:` only drives formatting, not table selection.
+    var resource = LocalizedStringResource(String.LocalizationValue(stringLiteral: raw))
+    resource.locale = appResourceLocale
+    return String(localized: resource)
+}

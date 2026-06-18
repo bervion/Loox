@@ -42,9 +42,10 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
         }
     }
 
-    /// Default fields used when creating a new item of this category. Labels are
-    /// English source strings; the UI localizes them via the string catalog and
-    /// passes user-authored labels through verbatim.
+    /// Default fields used when creating a new item of this category. Labels are stored as
+    /// stable English source strings (language-independent, so AutoFill stays kind-based and
+    /// a later language switch still localizes correctly); the UI localizes them for display
+    /// via the string catalog and passes user-authored labels through verbatim.
     var fieldTemplate: [DynamicField] {
         switch self {
         case .login:

@@ -264,10 +264,14 @@ struct HeaderIconButton: View {
 
     var body: some View {
         Button(action: action) {
+            // Frame + contentShape live INSIDE the label so the whole 44pt
+            // area is hit-testable, not just the 24pt glyph (SwiftUI only taps
+            // the label's content shape, ignoring a frame applied to the Button).
             PolarisIcon(icon, size: Metric.iconUtility)
                 .themedForeground(role)
+                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                .contentShape(.rect)
         }
-        .frame(width: Metric.hitMin, height: Metric.hitMin)
         .accessibilityLabel(Text(accessibilityLabel))
     }
 }

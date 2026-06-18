@@ -73,7 +73,9 @@ struct HomeScreen: View {
             .vaultNavigationDestinations()
             .task { recomputeWatchtowerCount() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
-            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+            // New items inherit the Space currently selected on Home (nil = All Spaces →
+            // editor falls back to the primary Space).
+            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
             .sheet(isPresented: $showSettings) { SettingsScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
         }
@@ -115,6 +117,7 @@ struct HomeScreen: View {
                 .padding(.bottom, TabBarMetric.contentBottomInset)
             }
         }
+        .scrollIndicators(.hidden)
     }
 
     // MARK: Quick actions
@@ -314,7 +317,7 @@ struct HomeScreen: View {
                 Button(action: onAction) {
                     Text(action)
                         .vaultType(.sectionLabel)
-                        .foregroundStyle(env.theme.active.color(.accent))
+                        .foregroundStyle(env.theme.uiTint)
                 }
                 .buttonStyle(.plain)
             }

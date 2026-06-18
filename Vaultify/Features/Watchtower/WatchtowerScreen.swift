@@ -56,6 +56,7 @@ struct WatchtowerScreen: View {
                     .padding(.bottom, Space.s10)
                 }
                 .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
                 .refreshable { await fullAudit() }
 
                 // Floating header overlays the scroll content — glass blurs beneath.

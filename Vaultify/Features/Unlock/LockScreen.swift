@@ -7,7 +7,8 @@ import SwiftUI
 ///   corner (progress while authenticating, reverts on failure). After repeated failures it
 ///   falls back to password entry.
 /// - **Password** — the logo eases up to make room for the password field (inline accent
-///   login arrow; the keyboard's Go key also submits) and a "Forgot master password?" link.
+///   login arrow; the keyboard's Go key also submits) and a "Forgot password?" link pinned
+///   to the bottom of the screen.
 struct LockScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
@@ -52,6 +53,15 @@ struct LockScreen: View {
             .padding(.horizontal, Space.s8)
 
             Spacer()
+
+            // "Forgot password?" pinned to the bottom (password mode only). Keyboard
+            // avoidance lifts it just above the keyboard when the field is focused.
+            if mode == .password {
+                Button("Forgot password?") { showRecovery = true }
+                    .font(.footnote)
+                    .padding(.bottom, Space.s8)
+                    .transition(.opacity)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Centre in the full screen (not just the safe area) so the logo lines up with the
@@ -74,18 +84,13 @@ struct LockScreen: View {
     }
 
     private var passwordSection: some View {
-        VStack(spacing: Space.s4) {
-            VStack(spacing: Space.s2) {
-                LockPasswordField(text: $password, busy: busy) {
-                    Task { await unlock() }
-                }
-                if let error {
-                    Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
-                }
+        VStack(spacing: Space.s2) {
+            LockPasswordField(text: $password, busy: busy) {
+                Task { await unlock() }
             }
-
-            Button("Forgot master password?") { showRecovery = true }
-                .font(.footnote)
+            if let error {
+                Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
+            }
         }
     }
 

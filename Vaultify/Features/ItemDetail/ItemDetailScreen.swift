@@ -9,8 +9,13 @@ struct ItemDetailScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editing: EditorTarget?
     @State private var confirmTrash = false
+    @State private var showLocatedIn = false
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
+
+    private func folder(for item: VaultItem) -> Folder? {
+        item.folderId.flatMap { id in env.repository.folders.first { $0.id == id } }
+    }
 
     var body: some View {
         ScrollView {
@@ -48,6 +53,7 @@ struct ItemDetailScreen: View {
             }
         }
         .sheet(item: $editing) { ItemEditorScreen(target: $0) }
+        .sheet(isPresented: $showLocatedIn) { LocatedInSheet(itemID: itemID) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
                 if let item { try? env.repository.moveToTrash(item); dismiss() }
@@ -71,42 +77,60 @@ struct ItemDetailScreen: View {
     }
 
     private func header(_ item: VaultItem) -> some View {
-        HStack(spacing: 14) {
-            FaviconView(urlString: item.urlField?.value, category: item.category, size: 60)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.title.isEmpty ? "Untitled" : item.title)
-                    .font(.title2.bold()).lineLimit(2)
-                Text(item.category.title).font(.subheadline).themedForeground(.secondary)
-            }
-            Spacer(minLength: 8)
-            Button { env.repository.togglePin(item) } label: {
-                PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
-                    .foregroundStyle(item.pinned ? env.theme.active.color(.accent) : env.theme.active.color(.secondary))
+        VStack(alignment: .leading, spacing: Space.s3) {
+            // Space pill (left-aligned) → tap opens the "Located In" sheet (move / view Space).
+            Button { showLocatedIn = true } label: {
+                HStack(spacing: Space.s2) {
+                    if let folder = folder(for: item) {
+                        FolderBadge(icon: folder.iconAsset, color: folder.color, size: 20)
+                        Text(folder.name)
+                            .vaultType(.subhead).fontWeight(.semibold).themedForeground()
+                            .lineLimit(1).truncationMode(.tail)
+                    } else {
+                        Text("No Space").vaultType(.subhead).themedForeground(.secondary)
+                    }
+                    PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
+                }
+                .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+                .background(VaultColors.surface,
+                            in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
             }
             .buttonStyle(.plain)
-            Button { try? env.repository.toggleFavorite(item) } label: {
-                PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: Metric.iconUtility)
-                    .foregroundStyle(item.favorite ? VaultColors.strengthMedium : env.theme.active.color(.secondary))
+
+            HStack(spacing: Space.s3) {
+                // Favicon wins when the item has a website; otherwise the custom icon / avatar.
+                if let url = item.urlField?.value, !url.isEmpty {
+                    FaviconView(urlString: url, category: item.category, size: 56)
+                } else {
+                    ItemThumbnail(title: item.title, category: item.category,
+                                  iconAsset: item.iconAsset, size: 56)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(item.title.isEmpty ? "Untitled" : item.title)
+                        .font(.title2.bold()).lineLimit(2)
+                    Text(item.category.title).font(.subheadline).themedForeground(.secondary)
+                }
+                Spacer(minLength: 8)
+                Button { env.repository.togglePin(item) } label: {
+                    PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
+                        .foregroundStyle(item.pinned ? env.theme.active.color(.accent) : env.theme.active.color(.secondary))
+                }
+                .buttonStyle(.plain)
+                Button { try? env.repository.toggleFavorite(item) } label: {
+                    PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: Metric.iconUtility)
+                        .foregroundStyle(item.favorite ? VaultColors.strengthMedium : env.theme.active.color(.secondary))
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, Space.s1)
     }
 
-    /// Shows which Space the item belongs to, plus its tags. Hidden when neither.
+    /// Item tags. The Space now lives in the header pill, so this is tags-only.
     @ViewBuilder private func organization(_ item: VaultItem) -> some View {
-        let folder = item.folderId.flatMap { id in env.repository.folders.first { $0.id == id } }
-        if folder != nil || !item.tags.isEmpty {
+        if !item.tags.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    if let folder {
-                        HStack(spacing: 6) {
-                            FolderBadge(icon: folder.iconAsset, color: folder.color, size: 20)
-                            Text(folder.name).font(.subheadline.weight(.medium))
-                        }
-                        .padding(.horizontal, 10).padding(.vertical, 6)
-                        .background(VaultColors.surface, in: Capsule())
-                    }
                     ForEach(item.tags, id: \.self) { tag in
                         HStack(spacing: 3) {
                             PolarisIcon(Icons.hashtag, size: 11).themedForeground(.secondary)

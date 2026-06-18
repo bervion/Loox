@@ -1,9 +1,13 @@
 import SwiftUI
+import UIKit
 
 /// Create or edit an item: title + dynamic fields (add/remove/reorder, change
 /// kind, toggle protection, generate passwords). Presented as a sheet.
 struct ItemEditorScreen: View {
     let target: EditorTarget
+    /// Space to preselect for a new item (the caller's current Space context, e.g. the
+    /// Space selected on Home). `nil` → fall back to the primary Space.
+    let preselectedFolderId: String?
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
 
@@ -13,11 +17,12 @@ struct ItemEditorScreen: View {
     @State private var generatingFieldID: String?
     @State private var scanningFieldID: String?
     @State private var showAttachmentPicker = false
-    @State private var showFolderPicker = false
+    @State private var showIconPicker = false
     @State private var didApplyDefaultFolder = false
 
-    init(target: EditorTarget) {
+    init(target: EditorTarget, preselectedFolderId: String? = nil) {
         self.target = target
+        self.preselectedFolderId = preselectedFolderId
         let item: VaultItem
         switch target {
         case .new(let category):
@@ -37,29 +42,42 @@ struct ItemEditorScreen: View {
 
     var body: some View {
         VaultSheetScaffold(
-            title: nil,  // 3 actions (Cancel · Edit · Save) — hide the centre title
+            // A real (inline) title is required for the nav bar to render its scroll-edge
+            // blur material — an empty title leaves the bar background-less, so scrolled
+            // content shows through the toolbar pills. Use the item's category name.
+            title: draft.category.title,
             leading: {
-                Button("Cancel") { hasChanges ? (confirmDiscard = true) : dismiss() }
+                // Compact X icon (instead of "Cancel" text) so the centre title fits.
+                Button {
+                    hasChanges ? (confirmDiscard = true) : dismiss()
+                } label: {
+                    PolarisIcon(Icons.close, size: 16)
+                }
+                .accessibilityLabel(Text("Cancel"))
             },
             trailing: {
-                EditButton()
-                Button("Save", action: save).disabled(!canSave).fontWeight(.semibold)
+                EditorHeaderActions(canSave: canSave, save: save)
             }
         ) {
             Form {
+                // Space pill (centred) directly above the thumbnail + title, all in one
+                // section so they stay close (no inter-section gap). No card — the title field
+                // carries its own elevated surface so it reads on the grouped backdrop.
                 Section {
-                    HStack(spacing: 12) {
-                        CategoryBadge(category: draft.category, size: 38)
-                        TextField("Title", text: $draft.title)
-                            .font(.headline)
+                    VStack(spacing: Space.s4) {
+                        spaceDropdown
+                        HStack(spacing: Space.s3) {
+                            editorThumbnail
+                            titleField
+                        }
                     }
                 }
-                .listRowBackground(VaultColors.surface)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
                 Section("Fields") {
                     ForEach($draft.fields) { $field in
                         EditorFieldRow(field: $field,
-                                       onGenerate: { generatingFieldID = field.id },
                                        onScanTOTP: { scanningFieldID = field.id })
                     }
                     .onDelete { draft.fields.remove(atOffsets: $0) }
@@ -68,7 +86,7 @@ struct ItemEditorScreen: View {
                     Menu {
                         ForEach(FieldKind.allCases.filter { $0 != .fileRef }, id: \.self) { kind in
                             Button {
-                                draft.fields.append(DynamicField(label: String(localized: kind.title), kind: kind))
+                                draft.fields.append(DynamicField(label: kind.defaultLabel, kind: kind))
                             } label: {
                                 Label { Text(kind.title) } icon: { PolarisIcon(kind.iconAsset) }
                             }
@@ -83,26 +101,6 @@ struct ItemEditorScreen: View {
                 }
                 .listRowBackground(VaultColors.surface)
 
-                Section("Space") {
-                    Button { showFolderPicker = true } label: {
-                        HStack(spacing: 12) {
-                            if let folder = selectedFolder {
-                                FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
-                                Text(folder.name).themedForeground()
-                            } else {
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .fill(VaultColors.fill).frame(width: 30, height: 30)
-                                Text("None").themedForeground(.secondary)
-                            }
-                            Spacer()
-                            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
-                        }
-                        .contentShape(.rect) // whole row is tappable, not just the label text
-                    }
-                    .buttonStyle(.plain)
-                }
-                .listRowBackground(VaultColors.surface)
-
                 Section("Tags") {
                     TagChipEditor(tags: $draft.tags)
                 }
@@ -110,12 +108,23 @@ struct ItemEditorScreen: View {
 
                 RotationReminderSection(rotateDays: $draft.rotateDays)
             }
+            // Dismiss the keyboard when the form is scrolled or an empty area is tapped.
+            // (Field/button taps keep their own handling — children win over this gesture.)
+            .scrollDismissesKeyboard(.immediately)
+            .onTapGesture { dismissKeyboard() }
             .onAppear {
                 // New items default to the primary Space ("My Vault") so they have
                 // a home; applied once so it never overrides a user's own pick.
-                if isNew, !didApplyDefaultFolder, draft.folderId == nil,
-                   let primary = env.repository.folders.first {
-                    draft.folderId = primary.id
+                if isNew, !didApplyDefaultFolder, draft.folderId == nil {
+                    // Preselect the caller's Space context (e.g. the Space selected on Home);
+                    // when there's none ("All Spaces") fall back to the primary Space.
+                    if let target = preselectedFolderId ?? env.repository.folders.first?.id {
+                        draft.folderId = target
+                        // Fold the auto-applied Space into the baseline too, so it isn't
+                        // counted as an unsaved change (otherwise X would prompt "Discard?"
+                        // on a pristine new item).
+                        original.folderId = target
+                    }
                 }
                 didApplyDefaultFolder = true
             }
@@ -142,10 +151,104 @@ struct ItemEditorScreen: View {
             .sheet(isPresented: $showAttachmentPicker) {
                 AttachmentPickerSheet { data, name, ext in addAttachment(data, name: name, ext: ext) }
             }
-            .sheet(isPresented: $showFolderPicker) {
-                FolderPickerSheet(folderId: $draft.folderId)
+            .sheet(isPresented: $showIconPicker) {
+                ItemIconPickerSheet(selected: draft.iconAsset) { draft.iconAsset = $0 }
             }
         }
+        // Float the "generate" bubble anchored just below the focused password field. Applied
+        // OUTSIDE the scaffold/Form so the overlay never covers the scroll view — covering it
+        // would suppress the nav-bar scroll-edge blur and block scroll-to-dismiss-keyboard.
+        // The anchor resolves in global space, so positioning stays correct from out here.
+        .overlayPreferenceValue(GenerateChipAnchorKey.self) { value in
+            GeometryReader { proxy in
+                if let value {
+                    let rect = proxy[value.bounds]
+                    GenerateChip { generatingFieldID = value.fieldID }
+                        .offset(x: rect.minX, y: rect.maxY + 4)
+                        .transition(.scale(scale: 0.9, anchor: .topLeading).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.32, dampingFraction: 0.82), value: value?.fieldID)
+        }
+    }
+
+    // MARK: Header pieces
+
+    /// Centred Space pill — quick-switch the item's Space via a menu.
+    @ViewBuilder private var spaceDropdown: some View {
+        Menu {
+            ForEach(env.repository.folders) { folder in
+                Button { draft.folderId = folder.id } label: {
+                    Label { Text(folder.name) } icon: { PolarisIcon(folder.iconAsset) }
+                }
+            }
+        } label: {
+            HStack(spacing: Space.s2) {
+                if let folder = selectedFolder {
+                    FolderBadge(icon: folder.iconAsset, color: folder.color, size: 22)
+                    Text(folder.name)
+                        .vaultType(.subhead).fontWeight(.semibold).themedForeground()
+                        .lineLimit(1).truncationMode(.tail)
+                } else {
+                    Text("No Space").vaultType(.subhead).themedForeground(.secondary)
+                }
+                PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
+            }
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s2)
+            .frame(maxWidth: 280)
+            .background(VaultColors.fill,
+                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Thumbnail. When the item has a website the favicon wins (icon picker disabled — no
+    /// chevron badge); otherwise a custom icon / letter-avatar can be chosen via the menu.
+    @ViewBuilder private var editorThumbnail: some View {
+        if let website = draft.urlField?.value, !website.isEmpty {
+            FaviconView(urlString: website, category: draft.category, size: 56)
+        } else {
+            Menu {
+                Button { showIconPicker = true } label: {
+                    Label { Text("Choose icon") } icon: { PolarisIcon("ic_apps") }
+                }
+                Button { draft.iconAsset = nil } label: {
+                    Label { Text("Letter avatar") } icon: { PolarisIcon("ic_text") }
+                }
+            } label: {
+                ItemThumbnail(title: draft.title, category: draft.category,
+                              iconAsset: draft.iconAsset, size: 56)
+                    .overlay(alignment: .bottomTrailing) {
+                        PolarisIcon(Icons.chevronDown, size: 10)
+                            .themedForeground(.secondary)
+                            .padding(4)
+                            .background(VaultColors.surface, in: Circle())
+                            .overlay(Circle().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
+                            .elevation(.level1)
+                            .offset(x: 3, y: 3)
+                    }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Bold title field on an elevated surface (adapts to light/dark for contrast).
+    private var titleField: some View {
+        TextField("Enter a title", text: $draft.title)
+            .vaultType(.headline)
+            .fontWeight(.bold)
+            .themedForeground()
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s3)
+            .background(VaultColors.surface,
+                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+    }
+
+    /// Resign the first responder so the keyboard hides (on scroll / tap-outside).
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     /// The folder the draft item currently belongs to, if any.
@@ -213,3 +316,29 @@ private struct RotationReminderSection: View {
 }
 
 private struct GeneratorRequest: Identifiable { let id: String }
+
+/// Trailing header actions (Edit · Save), each a 44pt `HeaderIconButton` so the hit areas
+/// match the Home header cluster. A plain `HStack` (no own glass) lets the iOS 26 toolbar wrap
+/// both in its single native glass pill — using our `HeaderActionCluster` here would nest a
+/// second glass capsule inside the toolbar's, doubling the background. Edit toggles the Form's
+/// edit mode (reorder / delete fields); Save commits.
+private struct EditorHeaderActions: View {
+    let canSave: Bool
+    let save: () -> Void
+    @Environment(\.editMode) private var editMode
+
+    private var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            HeaderIconButton(Icons.layoutSection,
+                             role: isEditing ? .accent : .iconPrimary,
+                             accessibilityLabel: "Edit") {
+                withAnimation { editMode?.wrappedValue = isEditing ? .inactive : .active }
+            }
+            HeaderIconButton(Icons.check, role: .accent, accessibilityLabel: "Save", action: save)
+                .disabled(!canSave)
+                .opacity(canSave ? 1 : 0.4)
+        }
+    }
+}

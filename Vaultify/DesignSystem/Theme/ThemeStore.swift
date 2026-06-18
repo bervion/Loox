@@ -59,6 +59,12 @@ import UIKit
 
     var accentColor: Color { Color(rgb: active.accent) }
 
+    /// App-wide control tint (drives `Color.accentColor`): the accent in light mode, but a
+    /// neutral white in dark mode — the accent blue is low-contrast on dark glass / grey
+    /// surfaces, whereas white reads cleanly. Filled accents and toggles keep the true accent
+    /// explicitly (toggles via `.tint(VaultColors.accent)`).
+    var uiTint: Color { Color(rgb: active.isDark ? active.primaryText : active.accent) }
+
     /// UIKit interface style for the whole window — incl. presented sheets, which a
     /// SwiftUI `.preferredColorScheme` on the root does NOT reliably reach (so a sheet
     /// can stay dark on a light theme → invisible system text + dark sheet background).

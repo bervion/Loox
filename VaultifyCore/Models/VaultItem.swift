@@ -9,6 +9,9 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
     var fields: [DynamicField]
     var favorite: Bool
     var tags: [String]
+    /// Optional icon override (a Polaris icon asset name). `nil` → the UI shows the default
+    /// letter-avatar (initials + colour derived from the title). Sealed at rest.
+    var iconAsset: String?
     /// Last in-app copy/reveal time. Powers Recents; plaintext metadata mirrored
     /// from `ItemRecord.lastUsedAt` so Home can sort without re-decrypting.
     var lastUsedAt: Date?
@@ -33,6 +36,7 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
          fields: [DynamicField] = [],
          favorite: Bool = false,
          tags: [String] = [],
+         iconAsset: String? = nil,
          lastUsedAt: Date? = nil,
          pinned: Bool = false,
          archived: Bool = false,
@@ -49,6 +53,7 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
         self.fields = fields
         self.favorite = favorite
         self.tags = tags
+        self.iconAsset = iconAsset
         self.lastUsedAt = lastUsedAt
         self.pinned = pinned
         self.archived = archived
@@ -90,7 +95,8 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
 
     /// The portion sealed (AES-256-GCM) at rest.
     var secret: ItemSecret {
-        ItemSecret(title: title, category: category, folderId: folderId, fields: fields, tags: tags)
+        ItemSecret(title: title, category: category, folderId: folderId,
+                   fields: fields, tags: tags, iconAsset: iconAsset)
     }
 }
 
@@ -101,17 +107,20 @@ nonisolated struct ItemSecret: Codable, Sendable {
     var folderId: String?
     var fields: [DynamicField]
     var tags: [String]
+    var iconAsset: String?
 
     init(title: String,
          category: ItemCategory,
          folderId: String? = nil,
          fields: [DynamicField],
-         tags: [String] = []) {
+         tags: [String] = [],
+         iconAsset: String? = nil) {
         self.title = title
         self.category = category
         self.folderId = folderId
         self.fields = fields
         self.tags = tags
+        self.iconAsset = iconAsset
     }
 
     /// Custom decode so legacy sealed blobs (written before `tags` existed) still
@@ -125,5 +134,6 @@ nonisolated struct ItemSecret: Codable, Sendable {
         folderId = try c.decodeIfPresent(String.self, forKey: .folderId)
         fields = try c.decode([DynamicField].self, forKey: .fields)
         tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+        iconAsset = try c.decodeIfPresent(String.self, forKey: .iconAsset)
     }
 }

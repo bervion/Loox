@@ -41,6 +41,7 @@ enum VaultReader {
         return VaultItem(id: record.id, category: secret.category, title: secret.title,
                          folderId: secret.folderId, fields: secret.fields,
                          favorite: record.favorite, tags: secret.tags,
+                         iconAsset: secret.iconAsset,
                          lastUsedAt: record.lastUsedAt,
                          pinned: record.pinned, archived: record.archived, useCount: record.useCount,
                          createdAt: record.createdAt,

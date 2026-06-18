@@ -44,6 +44,7 @@ struct SearchResultsList: View {
                 List(results) { VaultItemRowLink(item: $0) }
                     .listStyle(.insetGrouped)
                     .scrollContentBackground(.hidden)
+                    .scrollIndicators(.hidden)
             }
         }
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))

@@ -34,6 +34,9 @@ enum VaultColors {
     // lock-step with trait-driven foregrounds (.primary/.secondary) instead of lagging a
     // frame behind a static snapshot (which left text mismatched until an app restart).
     // The provider reads the live active theme, so tinted / custom themes apply too.
+    /// The true accent (blue in both modes). Use for toggles / fills that must stay accent
+    /// even though the global control tint goes white in dark mode.
+    static var accent: Color { themed(\.accent) }
     static var surface: Color { themed(\.elevatedBackground) }
     static var groupedBackground: Color { themed(\.groupedBackground) }
     static var fill: Color { themed(\.controlBackground) }

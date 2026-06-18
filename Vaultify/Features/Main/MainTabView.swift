@@ -16,7 +16,7 @@ struct MainTabView: View {
 
     var body: some View {
         tabContent
-            .tint(Color(rgb: env.theme.active.accent))
+            .tint(env.theme.uiTint)
             .overlay(alignment: .bottom) { copyToast }
             .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
             .onChange(of: selection) { _, _ in
