@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Full-screen "Large Type" display: shows a value in large monospaced text with
+/// Full-screen "Large Type" display: shows a value in large SF text with
 /// digits / letters / symbols color-coded for easy reading aloud. Tap to dismiss.
 struct LargeTypeView: View {
     let text: String
@@ -14,7 +14,8 @@ struct LargeTypeView: View {
 
             ScrollView {
                 Text(colorCoded)
-                    .font(.system(size: fontSize, weight: .semibold, design: .monospaced))
+                    .font(.system(size: fontSize, weight: .semibold))
+                    .monospacedDigit()
                     .multilineTextAlignment(.center)
                     .lineSpacing(8)
                     .padding(.horizontal, Space.s6)

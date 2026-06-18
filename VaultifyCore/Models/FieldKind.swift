@@ -22,14 +22,6 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// Whether the value should be rendered with a monospaced font.
-    var isMonospaced: Bool {
-        switch self {
-        case .password, .totp, .monospace, .number: return true
-        default: return false
-        }
-    }
-
     var isMultiline: Bool { self == .multiline }
 
     /// Whether revealing the value should be a guarded (tap-to-show) interaction.

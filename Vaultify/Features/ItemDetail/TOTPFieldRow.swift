@@ -7,7 +7,7 @@ struct TOTPCodeView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             Text(TOTPGenerator.code(forStoredValue: secret, date: context.date).map(Self.format) ?? "Invalid secret")
-                .font(.vaultMono(.body, weight: .medium))
+                .font(.vaultCode(.body, weight: .medium))
         }
     }
 

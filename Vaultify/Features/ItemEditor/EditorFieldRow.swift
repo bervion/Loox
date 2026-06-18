@@ -54,7 +54,7 @@ struct EditorFieldRow: View {
                     if reveal { TextField("Value", text: $field.value) }
                     else { SecureField("Value", text: $field.value) }
                 }
-                .font(.vaultMono())
+                .font(.vaultCode())
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 Button { reveal.toggle() } label: {
@@ -86,7 +86,7 @@ struct EditorFieldRow: View {
             }
         default:
             TextField("Value", text: $field.value)
-                .font(field.kind.isMonospaced ? .vaultMono() : .body)
+                .font(.body)
                 .keyboardType(keyboardType)
                 .textInputAutocapitalization(autocapitalization)
                 .autocorrectionDisabled(noAutocorrect)

@@ -23,7 +23,7 @@ struct RecoveryView: View {
             Form {
                 Section {
                     TextField("Recovery key", text: $recoveryKey, axis: .vertical)
-                        .font(.vaultMono())
+                        .font(.vaultCode())
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                 } header: {

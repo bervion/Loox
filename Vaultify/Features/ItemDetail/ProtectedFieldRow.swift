@@ -53,7 +53,7 @@ struct ProtectedFieldRow: View {
         if copied {
             Text("Copied").font(.body)
         } else if let plaintext {
-            Text(plaintext).font(.vaultMono()).textSelection(.enabled).lineLimit(nil)
+            Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
         } else {
             HStack(spacing: 6) {
                 PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)

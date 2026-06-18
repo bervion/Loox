@@ -16,14 +16,14 @@ struct LockPasswordField: View {
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     Text("Master password")
-                        .font(.vaultMono())
+                        .font(.vaultCode())
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
                 }
                 SecureField("", text: $text)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .textContentType(.password)
-                    .font(.vaultMono())
+                    .font(.vaultCode())
                     .focused($focused)
                     .submitLabel(.go)
                     .onSubmit(onSubmit)

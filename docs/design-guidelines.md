@@ -73,7 +73,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Elevation (soft shadow) | `.elevation(.level1/.level2/.level3/.sheet)` | `DesignSystem/Tokens/Elevation.swift` |
 | Motion | `Motion.spring/standard/fast/base/medium/slow/pressScale`, `.vault(_,reduceMotion:)` | `DesignSystem/Tokens/Motion.swift` |
 | Typography roles | `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)` | `DesignSystem/Typography.swift` |
-| Monospace amounts/secrets | `Font.vaultMono(_:weight:)` | `DesignSystem/Typography.swift` |
+| Secrets/codes (SF) | `Font.vaultCode(_:weight:)` — SF, no monospaced typeface | `DesignSystem/Typography.swift` |
 | Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
 | Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
 | Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
@@ -167,7 +167,7 @@ Recommended roles:
 | Body | 16-17 | Regular | Main rows, descriptions |
 | Callout | 15-16 | Regular/Medium | Secondary row content |
 | Caption | 12-13 | Regular/Medium | Metadata |
-| Numeric amount | existing mono amount style | role-specific | Money and aligned numbers |
+| Secrets/codes | `Font.vaultCode` (SF) | role-specific | Passwords, codes, card numbers, TOTP |
 
 Rules:
 
@@ -176,7 +176,7 @@ Rules:
 - Do not mix many weights on one screen.
 - Prefer system dynamic type styles where possible.
 - Support Dynamic Type without overlapping controls.
-- Use monospace amount typography only for financial amounts.
+- Use SF everywhere — no monospaced typeface. For aligned numerals (countdowns, scores) add `.monospacedDigit()` (still SF, tabular figures).
 
 ## Icon System
 

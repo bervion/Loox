@@ -223,7 +223,7 @@ struct WatchtowerScoreRing: View {
         VStack(spacing: 0) {
             Spacer().frame(height: cy - 28 * scale)
             Text("\(displayed)")
-                .font(.vaultMono(.largeTitle, weight: .bold))
+                .font(.vaultCode(.largeTitle, weight: .bold))
                 .themedForeground(.primary)
                 .monospacedDigit()
             Text(band.label)

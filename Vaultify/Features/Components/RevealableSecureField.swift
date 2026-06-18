@@ -4,7 +4,6 @@ import SwiftUI
 struct RevealableSecureField: View {
     let title: LocalizedStringKey
     @Binding var text: String
-    var monospaced: Bool = true
     @State private var reveal = false
     @FocusState private var focused: Bool
     @Environment(\.appTheme) private var theme
@@ -14,7 +13,7 @@ struct RevealableSecureField: View {
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     Text(title)
-                        .font(monospaced ? .vaultMono() : .body)
+                        .font(.body)
                         .foregroundStyle(Color(rgb: theme.secondaryText))
                 }
                 Group {
@@ -27,7 +26,7 @@ struct RevealableSecureField: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .textContentType(.password)
-                .font(monospaced ? .vaultMono() : .body)
+                .font(.body)
                 .focused($focused)
                 .foregroundStyle(Color(rgb: theme.primaryText))
             }

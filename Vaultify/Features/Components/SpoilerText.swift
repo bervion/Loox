@@ -6,7 +6,7 @@ import UIKit
 /// row's "•••" menu) — this view just renders the hidden state.
 struct SpoilerText: View {
     let text: String
-    var font: Font = .vaultMono()
+    var font: Font = .vaultCode()
 
     var body: some View {
         Text(text)

@@ -24,7 +24,7 @@ Vaultify/
 │   ├── Models/              ItemCategory, FieldKind, DynamicField, VaultItem + ItemSecret (+tags), Folder/FolderSecret/FolderColor (pure, Sendable)
 │   ├── Store/               ItemRecord (@Model, +lastUsedAt) & FolderRecord (@Model, sealed name), VaultStore (ModelContainer)
 │   └── Repositories/        VaultRepository (@Observable, + VaultRepository+Folders): decrypt→cache, CRUD, trash, favorites, folders, recents, tags
-├── DesignSystem/           Tokens/ (Space·Radius·Metric·Elevation·Motion), Typography (VaultType roles + vaultMono), PolarisIcon + Icons, VaultColors (dynamic light/dark), PasswordStrength, Components (ThemedCard/ButtonStyles/ToggleStyle, themedForeground), Theme/ (ThemeStore/Holder/Environment)
+├── DesignSystem/           Tokens/ (Space·Radius·Metric·Elevation·Motion), Typography (VaultType roles + vaultCode SF), PolarisIcon + Icons, VaultColors (dynamic light/dark), PasswordStrength, Components (ThemedCard/ButtonStyles/ToggleStyle, themedForeground), Theme/ (ThemeStore/Holder/Environment)
 ├── Services/
 │   ├── PasswordGenerator + DicewareWordList (EFF 7776), TOTPGenerator (RFC 6238), Haptics, ClipboardService
 │   ├── Watchtower/          PasswordAudit (weak/reused/score), HIBPService (k-anonymity), TwoFactorCatalog (2FA host support), RotationNotificationService (OS local notifications)

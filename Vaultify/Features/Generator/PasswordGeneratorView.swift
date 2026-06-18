@@ -53,7 +53,7 @@ struct PasswordGeneratorView: View {
     private var outputCard: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             Text(output)
-                .font(.vaultMono(.title3, weight: .medium))
+                .font(.vaultCode(.title3, weight: .medium))
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)

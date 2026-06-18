@@ -75,7 +75,7 @@ struct DetailFieldRow: View {
                     SpoilerText(text: field.value)
                 } else {
                     Text(field.value)
-                        .font(field.kind.isMonospaced ? .vaultMono() : .body)
+                        .font(.body)
                         .lineLimit(field.kind == .multiline ? nil : 1)
                         .textSelection(.enabled)
                 }

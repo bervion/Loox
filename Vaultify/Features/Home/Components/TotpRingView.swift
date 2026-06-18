@@ -25,7 +25,7 @@ struct TotpRingView: View {
         if reduceMotion {
             // Plain numeric fallback — no ring, just the countdown digit.
             Text("\(remaining)")
-                .font(.vaultMono(.caption2, weight: .semibold))
+                .font(.vaultCode(.caption2, weight: .semibold))
                 .foregroundStyle(tintColor)
                 .monospacedDigit()
                 .frame(width: size, height: size)
@@ -58,7 +58,7 @@ struct TotpRingView: View {
 
             // Remaining seconds centred in the ring.
             Text("\(remaining)")
-                .font(.vaultMono(.caption2, weight: .semibold))
+                .font(.vaultCode(.caption2, weight: .semibold))
                 .foregroundStyle(tintColor)
                 .monospacedDigit()
         }
