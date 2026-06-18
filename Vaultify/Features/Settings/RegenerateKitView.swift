@@ -26,7 +26,7 @@ struct RegenerateKitView: View {
             if !newKey.isEmpty {
                 Section {
                     Text(newKey)
-                        .font(.vaultMono(.body, weight: .medium))
+                        .font(.vaultCode(.body, weight: .medium))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Space.s2)

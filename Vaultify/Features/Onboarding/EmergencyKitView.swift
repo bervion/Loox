@@ -65,7 +65,7 @@ struct EmergencyKitView: View {
                 ProgressView().frame(maxWidth: .infinity, minHeight: 80)
             } else {
                 Text(recoveryKey)
-                    .font(.vaultMono(.title3, weight: .medium))
+                    .font(.vaultCode(.title3, weight: .medium))
                     .multilineTextAlignment(.center)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity)
