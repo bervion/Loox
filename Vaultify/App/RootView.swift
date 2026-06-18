@@ -54,7 +54,15 @@ struct RootView: View {
             obscured = true
         case .background:
             obscured = true
-            if env.settings.lockOnBackground { env.session.lock() }
+            // Lock instantly (no animation): the app is backgrounded and covered, so the
+            // lock screen should simply *be there* on return — not visibly cross-fade in from
+            // the unlocked UI. Animating this route change is what made the return to the
+            // foreground look like a jump back to the lock screen.
+            if env.settings.lockOnBackground {
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { env.session.lock() }
+            }
         @unknown default:
             break
         }
