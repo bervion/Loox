@@ -1,1 +1,1 @@
-Version 1.3.0: Performance improvements and bug fixes.
+Search now feels more natural and integrated with iOS. The empty vault screen has a cleaner, refined appearance. The app locks immediately when you switch away, ensuring your vault contents are never briefly visible on return. Typography is consistent throughout.

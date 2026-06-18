@@ -1,1 +1,1 @@
-Phiên bản 1.3.0: Cải thiện hiệu suất và sửa lỗi.
+Tìm kiếm được cải thiện, hoà hợp hơn với chuẩn iOS. Màn hình kho trống có diện mạo mới gọn gàng hơn. Ứng dụng khoá ngay khi bạn chuyển sang ứng dụng khác, tránh để lộ nội dung kho khi quay lại. Kiểu chữ được thống nhất trên toàn ứng dụng.

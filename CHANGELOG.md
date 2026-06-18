@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.1] - 2026-06-18
+
+### Added
+- adopt native Tab(role:.search) and fix header localization
+- redesign empty-vault state with accent-soft lock emblem
+
+### Fixed
+- lock instantly on background to avoid lock-screen jump on return
+
+### Changed
+- SF font for emergency-kit and regenerate-kit views
+- use SF everywhere, drop monospaced typeface
+
+
 ## [1.3.0] - 2026-06-18
 
 ### Added
