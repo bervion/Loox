@@ -85,7 +85,7 @@ feature screens (screens only compose, never invent visual language).
 - **Motion** `Motion.spring`, `Motion.standard`, `Motion.fast/base/medium/slow`, `Motion.pressScale`;
   `.vault(_, reduceMotion:)` collapses under Reduce Motion.
 - **Typography** `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)`
-  → Apple Dynamic Type (keeps accessibility). Never `.font(.system(size: N))`. Amounts/secrets: `Font.vaultMono`.
+  → Apple Dynamic Type (keeps accessibility). Never `.font(.system(size: N))`. Secrets/codes: `Font.vaultCode` (SF — no monospaced typeface; add `.monospacedDigit()` only where digit width must stay stable).
 
 **Color — semantic only, live, WCAG.** Resolve via `.themedForeground(role)` / `theme.color(role)`
 (`ThemeRole`: primary/secondary/tertiary/disabled · iconPrimary/Secondary/Disabled · accent/accentSoft/onAccent ·
@@ -103,8 +103,12 @@ camera/QR/favicon/literal light-dark preview swatches are exempt). Theme + accen
 **Rotation reminders:** Items support plaintext `rotateDays` (cadence: 0=off, 15/30/90=enabled) and `passwordChangedAt` columns on `ItemRecord`, mirrored on `VaultItem`. Pure `RotationStatus` logic (`VaultifyCore/Models/RotationStatus.swift`) derives state (ok/overdue/soon/stale) + display label. `RotationNotificationService` sends OS local notifications. Editor includes "Rotation reminder" picker. Currently device-local; per-item cadence may be added to CloudKit sync later.
 
 **Tab bar — native `TabView`, icon-only visual.** `MainTabView` keeps the system tab bar visible for
-native switching performance, safe-area handling, and iOS 26 Liquid Glass. Each `.tabItem` supplies only a
-Polaris icon asset visually; localized tab names live in accessibility labels via `VaultTab`. Do not restore
+native switching performance, safe-area handling, and iOS 26 Liquid Glass. iOS 18+ uses the `Tab` builder so
+the Search tab carries `role: .search` (native search — on iOS 26 the search field lives in the tab bar /
+above the keyboard, driven by `SearchScreen`'s `.searchable`); iOS 17.6 falls back to classic `.tabItem`
+tabs with Search as an ordinary tab. Each tab supplies only a Polaris icon asset visually; localized tab
+names live in accessibility labels via `VaultTab`. The Home header magnifier and the search tab both land on
+`SearchScreen`, which auto-activates `.searchable(isPresented:)` on appear. Do not restore
 the custom shell overlay unless explicitly re-approved; prior custom glass/indicator motion caused switch
 latency. For any future custom iOS-26 Liquid Glass API, guard with `#if compiler(>=6.2)` +
 `#available(iOS 26, *)` and provide a material/solid fallback. Never glass on content cards/rows.

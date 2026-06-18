@@ -15,33 +15,50 @@ struct MainTabView: View {
     private var tabBarToastClearance: CGFloat { Metric.controlLarge + Space.s8 }
 
     var body: some View {
-        TabView(selection: $selection) {
-            tab(.home) { HomeScreen() }
-            tab(.items) { ItemsScreen() }
-            tab(.watchtower) { WatchtowerScreen() }
-            tab(.search) { SearchScreen() }
-        }
-        .tint(Color(rgb: env.theme.active.accent))
-        .overlay(alignment: .bottom) { copyToast }
-        .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
-        .onChange(of: selection) { _, _ in
-            env.session.registerActivity()
-        }
-        .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
-        .onAppear { env.theme.morphMesh() }
-        .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToSearch)) { _ in
-            selection = .search
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
-            selection = .watchtower
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToItems)) { _ in
-            selection = .items
+        tabContent
+            .tint(Color(rgb: env.theme.active.accent))
+            .overlay(alignment: .bottom) { copyToast }
+            .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
+            .onChange(of: selection) { _, _ in
+                env.session.registerActivity()
+            }
+            .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
+            .onAppear { env.theme.morphMesh() }
+            .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToSearch)) { _ in
+                selection = .search
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
+                selection = .watchtower
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToItems)) { _ in
+                selection = .items
+            }
+    }
+
+    /// Tab list. iOS 18+ uses the `Tab` builder so the Search tab can carry
+    /// `role: .search` — that gives the native search experience (on iOS 26 the
+    /// search field lives in the tab bar / above the keyboard). iOS 17.6 falls back
+    /// to the classic `.tabItem` bar with Search as an ordinary tab.
+    @ViewBuilder private var tabContent: some View {
+        if #available(iOS 18.0, *) {
+            TabView(selection: $selection) {
+                Tab(value: VaultTab.home) { HomeScreen() } label: { tabIcon(.home) }
+                Tab(value: VaultTab.items) { ItemsScreen() } label: { tabIcon(.items) }
+                Tab(value: VaultTab.watchtower) { WatchtowerScreen() } label: { tabIcon(.watchtower) }
+                Tab(value: VaultTab.search, role: .search) { SearchScreen() } label: { tabIcon(.search) }
+            }
+        } else {
+            TabView(selection: $selection) {
+                legacyTab(.home) { HomeScreen() }
+                legacyTab(.items) { ItemsScreen() }
+                legacyTab(.watchtower) { WatchtowerScreen() }
+                legacyTab(.search) { SearchScreen() }
+            }
         }
     }
 
-    /// One tab: native system navigation with an icon-only tab item.
-    private func tab<Content: View>(_ tab: VaultTab, @ViewBuilder content: () -> Content) -> some View {
+    /// One classic tab (iOS 17.6 fallback): native navigation with an icon-only item.
+    private func legacyTab<Content: View>(_ tab: VaultTab, @ViewBuilder content: () -> Content) -> some View {
         content()
             .tag(tab)
             .tabItem { tabIcon(tab) }

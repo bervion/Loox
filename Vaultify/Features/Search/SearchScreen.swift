@@ -1,19 +1,23 @@
 import SwiftUI
 
-/// Search tab — own NavigationStack + `.searchable`, so the search bar sits at
-/// the top of the screen. Renders `SearchResultsList`.
+/// Search tab — own NavigationStack + `.searchable`. With `Tab(role: .search)`
+/// (iOS 18+) this is the native search surface (search field in the tab bar /
+/// above the keyboard on iOS 26). Activating the search field on appear means both
+/// the tab-bar search and the Home header magnifier drop straight into search.
 struct SearchScreen: View {
     @State private var search = ""
+    @State private var searchPresented = false
 
     var body: some View {
         NavigationStack {
             SearchResultsList(query: search)
                 .navigationTitle("Search")
-                .searchable(text: $search, prompt: "Search vault")
+                .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .vaultNavigationDestinations()
         }
+        .onAppear { searchPresented = true }
     }
 }
 

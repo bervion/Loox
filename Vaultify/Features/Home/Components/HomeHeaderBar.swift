@@ -20,8 +20,13 @@ struct HomeHeaderBar: View {
         return env.repository.folders.first { $0.id == id }
     }
 
-    private var folderDisplayName: String {
-        selectedFolder?.name ?? appString("All Spaces")
+    /// Title shown in the header. A selected folder's name is verbatim (user data);
+    /// the "All Spaces" fallback is a SwiftUI `Text` literal so it localizes via the
+    /// environment locale (the in-app language) — `appString` can't switch the string
+    /// table when the device language differs from the in-app choice.
+    private var folderTitle: Text {
+        if let folder = selectedFolder { return Text(verbatim: folder.name) }
+        return Text("All Spaces")
     }
 
     private var folderDotColor: Color {
@@ -41,7 +46,7 @@ struct HomeHeaderBar: View {
                             .fill(folderDotColor)
                             .frame(width: 10, height: 10)
 
-                        Text(folderDisplayName)
+                        folderTitle
                             .vaultType(.screenTitle)
                             .themedForeground()
                             .lineLimit(1)
