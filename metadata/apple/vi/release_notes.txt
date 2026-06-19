@@ -1,1 +1,1 @@
-Màn hình chi tiết mục được làm mới với phần tiêu đề gọn gàng hơn. Chế độ tối nay dùng tông màu trung tính, giúp giao diện dễ nhìn và thoải mái hơn khi dùng trong điều kiện thiếu sáng.
+Phiên bản 1.4.1: Cải thiện hiệu suất và sửa lỗi.

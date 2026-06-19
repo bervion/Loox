@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.1] - 2026-06-19
+
+### Added
+- Implement shake to lock and refine auto-lock UX
+
+
 ## [1.4.0] - 2026-06-19
 
 ### Added
