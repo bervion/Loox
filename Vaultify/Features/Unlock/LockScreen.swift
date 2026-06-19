@@ -17,6 +17,14 @@ struct LockScreen: View {
     @State private var mode: Mode = .biometric
     @State private var bioAuthenticating = false
     @State private var bioFailCount = 0
+    /// True once the app has actually gone to `.background` — so we only auto-prompt Face ID on
+    /// a real return to the foreground, not on the `.inactive → .active` bounce the Face ID
+    /// system sheet itself produces (which previously spammed prompts).
+    @State private var didBackground = false
+    /// Whether we've auto-prompted Face ID yet for this lock-screen appearance. Lets the first
+    /// `.active` (cold launch — `onAppear` often fires before the scene is active) prompt once,
+    /// while still ignoring the `.inactive → .active` bounce the Face ID sheet itself causes.
+    @State private var didAutoPrompt = false
     @State private var password = ""
     @State private var busy = false
     @State private var error: String?
@@ -25,9 +33,16 @@ struct LockScreen: View {
     /// Biometric attempts (auto-prompt + taps) before falling back to the password field.
     private let maxBioAttempts = 3
 
+    /// Set once the user slides to confirm after a shake-lock.
+    @State private var slideConfirmed = false
+
     private var canUseBiometrics: Bool {
         env.session.biometricEnrolled && env.settings.biometricUnlockEnabled && BiometricAuth.isAvailable
     }
+
+    /// After a shake-lock, gate Face ID behind a deliberate slide so a panic-shake in public
+    /// can't be instantly re-opened before the user puts the phone away.
+    private var requireSlide: Bool { env.session.shakeLocked && !slideConfirmed }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -36,16 +51,20 @@ struct LockScreen: View {
             VStack(spacing: Space.s8) {
                 BrandLogoMark(size: 104, shadowRadius: 16, shadowY: 8)
                     .overlay(alignment: .bottomTrailing) {
-                        if mode == .biometric {
+                        if mode == .biometric && !requireSlide {
                             BiometricBadge(authenticating: bioAuthenticating) {
-                                Task { await tryBiometrics() }
+                                triggerBiometric()
                             }
                             .offset(x: 6, y: 6)
                             .transition(.scale.combined(with: .opacity))
                         }
                     }
 
-                if mode == .password {
+                if requireSlide {
+                    // Shake-locked → confirm by sliding before any Face ID prompt.
+                    SlideToUnlock { confirmSlide() }
+                        .transition(.opacity)
+                } else if mode == .password {
                     passwordSection
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -71,15 +90,31 @@ struct LockScreen: View {
         .ignoresSafeArea(.container, edges: .vertical)
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: mode)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: requireSlide)
         .sheet(isPresented: $showRecovery) { RecoveryView() }
         .onAppear {
+            // After a shake-lock, wait for the slide; otherwise auto-prompt as usual.
+            guard !requireSlide else { return }
             if !canUseBiometrics { mode = .password }
             triggerBiometric()
         }
         .onChange(of: scenePhase) { _, phase in
-            // Re-prompt Face ID when the app returns to the foreground (it auto-locks on
-            // background, so the lock screen is already on screen).
-            if phase == .active { triggerBiometric() }
+            switch phase {
+            case .background:
+                didBackground = true
+            case .active:
+                // Trigger on a genuine return from background OR on the first activation after
+                // a cold launch — but never on the `.inactive → .active` bounce the Face ID
+                // sheet closing produces (by then `didAutoPrompt` is already true).
+                if didBackground {
+                    didBackground = false
+                    triggerBiometric()
+                } else if !didAutoPrompt {
+                    triggerBiometric()
+                }
+            default:
+                break
+            }
         }
     }
 
@@ -97,19 +132,29 @@ struct LockScreen: View {
     // MARK: - Biometrics
 
     /// Auto-prompt biometrics — only while active, in biometric mode, and under the attempt
-    /// cap. A short delay lets the foreground transition settle so the prompt isn't dismissed.
+    /// cap. Sets `bioAuthenticating` synchronously so two near-simultaneous calls (e.g. the
+    /// onAppear + scene-phase paths) can't launch a second prompt during the settle delay.
+    /// The single entry point for every prompt (auto + badge tap).
+    /// Confirm the post-shake slide, then proceed to the normal unlock affordance.
+    private func confirmSlide() {
+        slideConfirmed = true
+        if canUseBiometrics { triggerBiometric() } else { mode = .password }
+    }
+
     private func triggerBiometric() {
-        guard mode == .biometric, scenePhase == .active, canUseBiometrics,
+        guard !requireSlide, mode == .biometric, scenePhase == .active, canUseBiometrics,
               !bioAuthenticating, bioFailCount < maxBioAttempts else { return }
+        bioAuthenticating = true
+        didAutoPrompt = true
         Task {
+            // Let the foreground transition settle so the system prompt isn't auto-dismissed.
             try? await Task.sleep(for: .milliseconds(250))
-            await tryBiometrics()
+            await runBiometric()
         }
     }
 
-    private func tryBiometrics() async {
-        guard mode == .biometric, !bioAuthenticating else { return }
-        bioAuthenticating = true
+    private func runBiometric() async {
+        defer { bioAuthenticating = false }
         do {
             try await env.session.unlockWithBiometrics()
             // Success → session state flips to unlocked → this view is replaced.
@@ -120,7 +165,6 @@ struct LockScreen: View {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { mode = .password }
             }
         }
-        bioAuthenticating = false
     }
 
     // MARK: - Password

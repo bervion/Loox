@@ -6,6 +6,8 @@ import SwiftUI
 struct AttentionCell: View {
     let item: VaultItem
     let onEdit: (VaultItem) -> Void
+    /// Tapping the row (outside the "Change" button) opens the item detail.
+    let onOpen: (VaultItem) -> Void
     /// Controls the hairline divider between cells inside the grouped card.
     var showDivider: Bool = true
 
@@ -118,6 +120,8 @@ struct AttentionCell: View {
         .padding(.vertical, Space.s3)
         .frame(minHeight: Metric.rowHeight)
         .contentShape(.rect)
+        // Whole row opens detail; the "Change" button intercepts its own taps.
+        .onTapGesture { onOpen(item) }
         .overlay(alignment: .bottom) {
             if showDivider {
                 // Inset divider aligned with text column (after 16 + 40 + 12 = 68 pt).

@@ -25,8 +25,17 @@ enum AuthError: Error, LocalizedError {
     /// App-wide Level-2 Secret Key (extra protection). Present only after a
     /// Level-2 unlock this session; cleared on lock.
     private(set) var level2Key: SecureBytes?
-    /// Timestamp of last user activity — drives auto-lock.
+    /// Timestamp of last user activity — drives foreground inactivity auto-lock.
     var lastActivity: Date = .now
+    /// When the app last entered the background. Drives the scene-based auto-lock on return.
+    /// `nil` while in the foreground. Crucially, the Face ID system prompt only drives the app
+    /// to `.inactive` (never `.background`), so it never sets this — preventing a re-lock /
+    /// re-prompt loop when the biometric sheet closes.
+    private var backgroundedAt: Date?
+    /// True when the last lock was triggered by the shake gesture. The lock screen reads this
+    /// to require a deliberate slide-to-unlock before any Face ID prompt — so a panic-shake
+    /// in public can't be instantly re-opened by Face ID before the user puts the phone away.
+    private(set) var shakeLocked = false
 
     let settings: SettingsStore
 
@@ -116,9 +125,11 @@ enum AuthError: Error, LocalizedError {
 
     // MARK: Lock
 
-    func lock() {
+    func lock(viaShake: Bool = false) {
         vaultKey = nil
         level2Key = nil
+        backgroundedAt = nil
+        shakeLocked = viaShake
         state = .locked
     }
 
@@ -141,12 +152,31 @@ enum AuthError: Error, LocalizedError {
         vaultKey = SecureBytes(key)
         state = .unlocked
         lastActivity = .now
+        shakeLocked = false
     }
 
-    /// Lock if the configured inactivity window has elapsed.
+    /// Lock if the configured inactivity window has elapsed (foreground idle timer).
     func lockIfTimedOut(now: Date = .now) {
         guard state == .unlocked else { return }
         if now.timeIntervalSince(lastActivity) >= settings.autoLock.seconds {
+            lock()
+        }
+    }
+
+    /// Record that the app entered the background (scene-based auto-lock baseline).
+    func markBackgrounded(now: Date = .now) {
+        guard state == .unlocked else { return }
+        backgroundedAt = now
+    }
+
+    /// On returning to the foreground, lock if the time spent in the background met the
+    /// auto-lock window. Measured against the background timestamp (not `lastActivity`), so a
+    /// fresh biometric unlock isn't immediately re-locked, and the Face ID prompt's
+    /// `.inactive → .active` bounce — which never sets `backgroundedAt` — is a no-op.
+    func lockIfBackgroundExpired(now: Date = .now) {
+        guard state == .unlocked, let backgroundedAt else { return }
+        self.backgroundedAt = nil
+        if now.timeIntervalSince(backgroundedAt) >= settings.autoLock.seconds {
             lock()
         }
     }

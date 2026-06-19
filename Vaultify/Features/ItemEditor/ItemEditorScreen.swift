@@ -65,7 +65,13 @@ struct ItemEditorScreen: View {
                 // carries its own elevated surface so it reads on the grouped backdrop.
                 Section {
                     VStack(spacing: Space.s4) {
-                        spaceDropdown
+                        // Centred pill that hugs its text (Spacers collapse for short names and
+                        // let it truncate at the row width for long ones).
+                        HStack(spacing: 0) {
+                            Spacer(minLength: 0)
+                            spaceDropdown
+                            Spacer(minLength: 0)
+                        }
                         HStack(spacing: Space.s3) {
                             editorThumbnail
                             titleField
@@ -74,6 +80,9 @@ struct ItemEditorScreen: View {
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+                // Match the field cards' left/right edges (their row background spans the full
+                // row width), so zero horizontal inset lines the avatar/title up with them.
+                .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s4, trailing: 0))
 
                 Section("Fields") {
                     ForEach($draft.fields) { $field in
@@ -196,7 +205,6 @@ struct ItemEditorScreen: View {
             }
             .padding(.horizontal, Space.s3)
             .padding(.vertical, Space.s2)
-            .frame(maxWidth: 280)
             .background(VaultColors.fill,
                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         }

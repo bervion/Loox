@@ -74,6 +74,7 @@ let project = Project(
                 "Vaultify/vaultify.icon",
                 "Vaultify/Localizable.xcstrings",
                 "Vaultify/LaunchScreen.storyboard",
+                "Vaultify/Resources/**",
             ],
             entitlements: "Vaultify/Vaultify.entitlements",
             dependencies: [

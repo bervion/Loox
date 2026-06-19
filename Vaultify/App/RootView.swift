@@ -49,11 +49,14 @@ struct RootView: View {
         switch phase {
         case .active:
             obscured = false
-            env.session.lockIfTimedOut()
+            // Lock only if a *real* background stay met the auto-lock window. The Face ID
+            // prompt drives `.inactive` (not `.background`), so its close doesn't lock here.
+            env.session.lockIfBackgroundExpired()
         case .inactive:
             obscured = true
         case .background:
             obscured = true
+            env.session.markBackgrounded()
             // Lock instantly (no animation): the app is backgrounded and covered, so the
             // lock screen should simply *be there* on return — not visibly cross-fade in from
             // the unlocked UI. Animating this route change is what made the return to the

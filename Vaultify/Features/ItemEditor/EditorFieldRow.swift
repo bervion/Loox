@@ -179,9 +179,11 @@ struct GenerateChip: View {
                     .font(.caption.weight(.semibold))
             }
             .foregroundStyle(foreground)
-            .padding(.horizontal, Space.s3)
-            .padding(.vertical, 7)
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s2)
             .modifier(GenerateChipSurface())
+            // Whole capsule (incl. padding) is the tap target — not just the text glyphs.
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .elevation(.level2)

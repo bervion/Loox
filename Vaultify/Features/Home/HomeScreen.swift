@@ -200,6 +200,7 @@ struct HomeScreen: View {
                     AttentionCell(
                         item: item,
                         onEdit: { editorTarget = .edit($0) },
+                        onOpen: { path.append($0.id) },
                         showDivider: idx < attentionItems.count - 1
                     )
                 }

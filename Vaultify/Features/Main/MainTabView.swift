@@ -8,7 +8,9 @@ import Combine
 /// bar remains icon-only while VoiceOver still gets localized labels.
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selection: VaultTab = .home
+    @State private var shakeDetector = ShakeToLockService()
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     /// Keeps transient toasts above the native tab bar without depending on custom bar metrics.
@@ -23,7 +25,10 @@ struct MainTabView: View {
                 env.session.registerActivity()
             }
             .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
-            .onAppear { env.theme.morphMesh() }
+            .onAppear { env.theme.morphMesh(); updateShakeDetector() }
+            .onDisappear { shakeDetector.stop() }
+            .onChange(of: env.settings.shakeToLock) { _, _ in updateShakeDetector() }
+            .onChange(of: scenePhase) { _, _ in updateShakeDetector() }
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToSearch)) { _ in
                 selection = .search
             }
@@ -33,6 +38,18 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToItems)) { _ in
                 selection = .items
             }
+    }
+
+    /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).
+    private func updateShakeDetector() {
+        if env.settings.shakeToLock, scenePhase == .active {
+            shakeDetector.start {
+                Haptics.success()
+                env.session.lock(viaShake: true)
+            }
+        } else {
+            shakeDetector.stop()
+        }
     }
 
     /// Tab list. iOS 18+ uses the `Tab` builder so the Search tab can carry

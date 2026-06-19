@@ -13,10 +13,10 @@ struct PasswordGeneratorView: View {
     }
 
     @Environment(AppEnvironment.self) private var env
-    var onUse: ((String) -> Void)?
+    /// Latest generated value, owned by the parent sheet so its header "Use" button can read it.
+    @Binding var output: String
 
     @State private var mode: Mode = .password
-    @State private var output = ""
     @State private var pwd = PasswordOptions()
     @State private var phrase = PassphraseOptions()
 
@@ -32,18 +32,11 @@ struct PasswordGeneratorView: View {
             .listRowBackground(VaultColors.surface)
 
             if mode == .password { passwordControls } else { passphraseControls }
-
-            if let onUse {
-                Section {
-                    Button { onUse(output) } label: {
-                        Text("Use Password").frame(maxWidth: .infinity)
-                    }
-                    .disabled(output.isEmpty)
-                }
-                .listRowBackground(VaultColors.surface)
-            }
         }
         .themedFormBackground()
+        // Local copy toast — the main shell's toast sits behind this sheet, so show our own.
+        .overlay(alignment: .bottom) { copyToast }
+        .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
         .onAppear { if output.isEmpty { regenerate() } }
         .onChange(of: pwd) { regenerate() }
         .onChange(of: phrase) { regenerate() }
@@ -60,12 +53,18 @@ struct PasswordGeneratorView: View {
             PasswordStrengthMeter(password: output)
             HStack {
                 Button { env.clipboard.copy(output, label: "Password") } label: {
-                    Label("Copy", image: Icons.copy)
+                    HStack(spacing: 5) {
+                        PolarisIcon(Icons.copy, size: 16)
+                        Text("Copy")
+                    }
                 }
                 .buttonStyle(.bordered)
                 Spacer()
                 Button { regenerate() } label: {
-                    Label("Regenerate", image: Icons.refresh)
+                    HStack(spacing: 5) {
+                        PolarisIcon(Icons.refresh, size: 16)
+                        Text("Regenerate")
+                    }
                 }
                 .buttonStyle(.bordered)
             }
@@ -73,10 +72,39 @@ struct PasswordGeneratorView: View {
         .padding(.vertical, Space.s1)
     }
 
+    /// Transient "copied" toast shown over the generator sheet.
+    @ViewBuilder private var copyToast: some View {
+        if let label = env.clipboard.recentCopyLabel {
+            HStack(spacing: Space.s2) {
+                PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+                    .foregroundStyle(env.theme.active.color(.success))
+                Text(appString("Copied \(label)")).vaultType(.subhead).fontWeight(.medium)
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s3)
+            .background(.regularMaterial, in: Capsule())
+            .elevation(.level2)
+            .padding(.bottom, Space.s6)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
     @ViewBuilder private var passwordControls: some View {
         Section("Options") {
-            Stepper(value: $pwd.length, in: 8...64) {
-                LabeledContent("Length", value: "\(pwd.length)")
+            // Drag-to-set length (easier than tapping a stepper repeatedly).
+            VStack(spacing: Space.s2) {
+                HStack {
+                    Text("Length")
+                    Spacer()
+                    Text("\(pwd.length)").font(.vaultCode()).monospacedDigit()
+                        .themedForeground(.secondary)
+                }
+                Slider(
+                    value: Binding(get: { Double(pwd.length) },
+                                   set: { pwd.length = Int($0.rounded()) }),
+                    in: 8...64, step: 1
+                )
+                .tint(VaultColors.accent)
             }
             Toggle("Uppercase (A–Z)", isOn: $pwd.uppercase)
             Toggle("Lowercase (a–z)", isOn: $pwd.lowercase)
@@ -89,8 +117,20 @@ struct PasswordGeneratorView: View {
 
     @ViewBuilder private var passphraseControls: some View {
         Section("Options") {
-            Stepper(value: $phrase.wordCount, in: 3...10) {
-                LabeledContent("Words", value: "\(phrase.wordCount)")
+            // Drag-to-set word count.
+            VStack(spacing: Space.s2) {
+                HStack {
+                    Text("Words")
+                    Spacer()
+                    Text("\(phrase.wordCount)").font(.vaultCode()).monospacedDigit()
+                        .themedForeground(.secondary)
+                }
+                Slider(
+                    value: Binding(get: { Double(phrase.wordCount) },
+                                   set: { phrase.wordCount = Int($0.rounded()) }),
+                    in: 3...10, step: 1
+                )
+                .tint(VaultColors.accent)
             }
             Picker("Separator", selection: $phrase.separator) {
                 Text("Hyphen").tag("-")

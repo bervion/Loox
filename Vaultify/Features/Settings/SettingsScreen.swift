@@ -35,6 +35,9 @@ struct SettingsScreen: View {
                     Toggle(isOn: $settings.lockOnBackground) {
                         Label { Text("Lock when backgrounded") } icon: { PolarisIcon(Icons.lock) }
                     }
+                    Toggle(isOn: $settings.shakeToLock) {
+                        Label { Text("Shake to lock") } icon: { PolarisIcon(Icons.alert) }
+                    }
                     NavigationLink {
                         ChangeMasterPasswordView()
                     } label: {

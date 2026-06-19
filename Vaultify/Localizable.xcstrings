@@ -5243,6 +5243,28 @@
           }
         }
       }
+    },
+    "Shake to lock": {
+      "extractionState": "manual",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lắc để khoá"
+          }
+        }
+      }
+    },
+    "Slide to unlock": {
+      "extractionState": "manual",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trượt để mở khoá"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
