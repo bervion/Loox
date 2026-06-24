@@ -11,6 +11,7 @@ struct HomeScreen: View {
     @State private var path = NavigationPath()
     @State private var editorTarget: EditorTarget?
     @State private var showSettings = false
+    @State private var showProfile = false
     @State private var showGenerator = false
     @State private var showTotpList = false
     @State private var selectedFolderId: String?
@@ -64,7 +65,8 @@ struct HomeScreen: View {
                 HomeHeaderBar(
                     selectedFolderId: $selectedFolderId,
                     onAddCategory: { editorTarget = .new($0) },
-                    onSettings: { showSettings = true }
+                    onSettings: { showSettings = true },
+                    onProfile: { showProfile = true }
                 )
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
@@ -77,6 +79,7 @@ struct HomeScreen: View {
             // editor falls back to the primary Space).
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
             .sheet(isPresented: $showSettings) { SettingsScreen() }
+            .sheet(isPresented: $showProfile) { ProfileScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
         }
     }

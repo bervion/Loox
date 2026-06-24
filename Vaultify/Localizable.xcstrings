@@ -5327,6 +5327,106 @@
           }
         }
       }
+    },
+    "Profile": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hồ sơ"
+          }
+        }
+      }
+    },
+    "Edit profile": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sửa hồ sơ"
+          }
+        }
+      }
+    },
+    "Default identity": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danh tính mặc định"
+          }
+        }
+      }
+    },
+    "Payment cards": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thẻ thanh toán"
+          }
+        }
+      }
+    },
+    "No identity yet": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa có danh tính"
+          }
+        }
+      }
+    },
+    "Create your identity to fill your details faster.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo danh tính để điền thông tin nhanh hơn."
+          }
+        }
+      }
+    },
+    "Create identity": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo danh tính"
+          }
+        }
+      }
+    },
+    "Keep at least one identity": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ ít nhất một danh tính"
+          }
+        }
+      }
+    },
+    "This is your only identity. Add another before removing this one.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đây là danh tính duy nhất. Hãy thêm danh tính khác trước khi xóa cái này."
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

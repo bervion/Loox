@@ -10,6 +10,7 @@ struct ItemDetailScreen: View {
     @State private var editing: EditorTarget?
     @State private var confirmTrash = false
     @State private var showLocatedIn = false
+    @State private var showLastIdentityBlock = false
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -46,7 +47,13 @@ struct ItemDetailScreen: View {
                         if item.archived {
                             Button { env.repository.unarchive(item) } label: { Label("Unarchive", image: Icons.archive) }
                         } else {
-                            Button { env.repository.archive(item); dismiss() } label: { Label("Archive", image: Icons.archive) }
+                            Button {
+                                if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
+                                    showLastIdentityBlock = true
+                                } else {
+                                    env.repository.archive(item); dismiss()
+                                }
+                            } label: { Label("Archive", image: Icons.archive) }
                         }
                     } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
                 }
@@ -58,6 +65,11 @@ struct ItemDetailScreen: View {
             Button("Move to Trash", role: .destructive) {
                 if let item { try? env.repository.moveToTrash(item); dismiss() }
             }
+        }
+        .alert("Keep at least one identity", isPresented: $showLastIdentityBlock) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This is your only identity. Add another before removing this one.")
         }
     }
 
@@ -161,7 +173,13 @@ struct ItemDetailScreen: View {
     }
 
     private func trashCard(_ item: VaultItem) -> some View {
-        Button(role: .destructive) { confirmTrash = true } label: {
+        Button(role: .destructive) {
+            if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
+                showLastIdentityBlock = true
+            } else {
+                confirmTrash = true
+            }
+        } label: {
             HStack(spacing: 12) {
                 PolarisIcon(Icons.trash, size: Metric.iconInline).foregroundStyle(env.theme.active.color(.destructive))
                 Text("Move to Trash").foregroundStyle(env.theme.active.color(.destructive))

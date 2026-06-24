@@ -8,11 +8,19 @@ struct VaultItemRowLink: View {
     let item: VaultItem
     var showSpace = true
     @Environment(AppEnvironment.self) private var env
+    @State private var showLastIdentityBlock = false
+
+    /// Removing the user's only identity is blocked (the app keeps ≥1 active identity).
+    private var isLastIdentity: Bool {
+        env.repository.identityRemovalGate(item) == .lastActiveIdentity
+    }
 
     var body: some View {
         NavigationLink(value: item.id) { VaultItemRow(item: item, showSpace: showSpace) }
             .swipeActions(edge: .trailing) {
-                Button(role: .destructive) { try? env.repository.moveToTrash(item) } label: {
+                Button(role: .destructive) {
+                    if isLastIdentity { showLastIdentityBlock = true } else { try? env.repository.moveToTrash(item) }
+                } label: {
                     Label("Trash", image: Icons.trash)
                 }
             }
@@ -26,10 +34,17 @@ struct VaultItemRowLink: View {
                 Button { env.repository.togglePin(item) } label: {
                     Label(item.pinned ? "Unpin" : "Pin", image: item.pinned ? Icons.pinFill : Icons.pin)
                 }
-                Button { env.repository.archive(item) } label: {
+                Button {
+                    if isLastIdentity { showLastIdentityBlock = true } else { env.repository.archive(item) }
+                } label: {
                     Label("Archive", image: Icons.archive)
                 }
             }
             .listRowBackground(VaultColors.surface)
+            .alert("Keep at least one identity", isPresented: $showLastIdentityBlock) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("This is your only identity. Add another before removing this one.")
+            }
     }
 }
