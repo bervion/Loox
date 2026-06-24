@@ -45,7 +45,7 @@ automated coverage limited to avatar-store round-trip + seed/copy helpers; rest 
 | Phase | Name | Status |
 |-------|------|--------|
 | 1 | [Data Model & Sync Column](./phase-01-data-model-sync-column.md) | Completed |
-| 2 | [Default-Identity Invariant](./phase-02-default-identity-invariant.md) | Pending |
+| 2 | [Default-Identity Invariant](./phase-02-default-identity-invariant.md) | Completed |
 | 3 | [Onboarding Identity Step](./phase-03-onboarding-identity-step.md) | Pending |
 | 4 | [Profile Screen & Avatar](./phase-04-profile-screen-avatar.md) | Pending |
 

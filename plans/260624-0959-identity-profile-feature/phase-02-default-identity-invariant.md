@@ -1,10 +1,11 @@
 ---
 phase: 2
-title: "Default-Identity Invariant"
-status: pending
+title: Default-Identity Invariant
+status: completed
 priority: P1
-effort: "1d"
-dependencies: [1]
+effort: 1d
+dependencies:
+  - 1
 ---
 
 # Phase 2: Default-Identity Invariant
@@ -21,7 +22,7 @@ gates, auto-promote on removal, and normalize sync conflicts. Strongest TDD targ
   - When the current default leaves the active set (trash/archive/delete), another active identity is
     promoted to default.
   - `normalizeDefaultIdentity()` after `reload()`: if >1 active default → keep tie-break winner (rule
-    below), clear the rest (set their `isDefaultIdentity=false`, leave their `defaultIdentitySetAt` as-is),
+    below), clear the rest (set their `isDefaultIdentity=false`), bump changed records' `updatedAt` +
     mark dirty; if 0 active default but ≥1 active identity → promote the tie-break winner (bump its
     `updatedAt=.now` so the choice propagates). **If 0 active identities → leave
     `defaultIdentity == nil`; NEVER fabricate an identity** (UI shows a zero-identity empty state — Phase 4).
