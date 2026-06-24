@@ -1,10 +1,13 @@
 ---
 phase: 4
-title: "Profile Screen & Avatar"
-status: pending
+title: Profile Screen & Avatar
+status: completed
 priority: P2
-effort: "1.5d"
-dependencies: [1, 2, 3]
+effort: 1.5d
+dependencies:
+  - 1
+  - 2
+  - 3
 ---
 
 # Phase 4: Profile Screen & Avatar

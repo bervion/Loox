@@ -4,7 +4,7 @@ description: >-
   Mandatory default identity at onboarding + Profile screen (avatar,
   default-identity switch, payment cards, per-field copy). Default identity =
   synced ItemRecord column.
-status: pending
+status: completed
 priority: P2
 branch: main
 tags:
@@ -47,7 +47,7 @@ automated coverage limited to avatar-store round-trip + seed/copy helpers; rest 
 | 1 | [Data Model & Sync Column](./phase-01-data-model-sync-column.md) | Completed |
 | 2 | [Default-Identity Invariant](./phase-02-default-identity-invariant.md) | Completed |
 | 3 | [Onboarding Identity Step](./phase-03-onboarding-identity-step.md) | Completed |
-| 4 | [Profile Screen & Avatar](./phase-04-profile-screen-avatar.md) | Pending |
+| 4 | [Profile Screen & Avatar](./phase-04-profile-screen-avatar.md) | Completed |
 
 ## Key Decisions (locked)
 
