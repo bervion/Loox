@@ -16,10 +16,13 @@ final class IdentityDataModelTests: XCTestCase {
         return (repo, store)
     }
 
-    func testDefaultMarkerDefaultsFalseOnAdd() throws {
+    /// The column defaults to false and non-identity items are never marked. (A lone
+    /// `.identity` would auto-promote to default via the Phase-2 invariant, so this uses
+    /// a `.login` to isolate the column default.)
+    func testDefaultMarkerDefaultsFalseForNonIdentity() throws {
         let (repo, _) = makeStack()
-        try repo.add(VaultItem(category: .identity, title: "Me"))
-        let item = try XCTUnwrap(repo.items.first { $0.title == "Me" })
+        try repo.add(VaultItem(category: .login, title: "GitHub"))
+        let item = try XCTUnwrap(repo.items.first { $0.title == "GitHub" })
         XCTAssertFalse(item.isDefaultIdentity)
     }
 
