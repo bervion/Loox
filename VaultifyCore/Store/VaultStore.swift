@@ -42,6 +42,7 @@ final class VaultStore {
     func upsertFromRemote(id: String, sealed: Data, favorite: Bool, trashedAt: Date?,
                           deletedAt: Date?, createdAt: Date, updatedAt: Date,
                           pinned: Bool, archived: Bool, useCount: Int,
+                          isDefaultIdentity: Bool, avatarSealed: Data?,
                           changeTag: String?) {
         if let existing = record(id: id) {
             guard updatedAt > existing.updatedAt else { return }
@@ -53,6 +54,8 @@ final class VaultStore {
             existing.pinned = pinned
             existing.archived = archived
             existing.useCount = useCount
+            existing.isDefaultIdentity = isDefaultIdentity
+            existing.avatarSealed = avatarSealed
             existing.ckChangeTag = changeTag
             existing.dirty = false
         } else {
@@ -62,6 +65,8 @@ final class VaultStore {
             record.pinned = pinned
             record.archived = archived
             record.useCount = useCount
+            record.isDefaultIdentity = isDefaultIdentity
+            record.avatarSealed = avatarSealed
             record.ckChangeTag = changeTag
             record.dirty = false
             context.insert(record)

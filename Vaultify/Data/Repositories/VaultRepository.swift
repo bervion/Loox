@@ -67,6 +67,7 @@ import UserNotifications
         record.pinned = item.pinned
         record.archived = item.archived
         record.useCount = item.useCount
+        record.isDefaultIdentity = item.isDefaultIdentity
         record.rotateDays = item.rotateDays
         // New items: baseline is createdAt (caller provides it).
         record.passwordChangedAt = item.createdAt
@@ -220,6 +221,7 @@ import UserNotifications
                          pinned: record.pinned,
                          archived: record.archived,
                          useCount: record.useCount,
+                         isDefaultIdentity: record.isDefaultIdentity,
                          rotateDays: record.rotateDays,
                          passwordChangedAt: record.passwordChangedAt,
                          createdAt: record.createdAt,

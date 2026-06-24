@@ -5265,6 +5265,28 @@
           }
         }
       }
+    },
+    "Phone": {
+      "comment": "Display name for an identity profile field.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số điện thoại"
+          }
+        }
+      }
+    },
+    "Address": {
+      "comment": "Display name for an identity profile field.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Địa chỉ"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

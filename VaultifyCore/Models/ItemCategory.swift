@@ -67,8 +67,12 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
         case .identity:
             return [
                 DynamicField(label: "Full Name", kind: .text),
-                DynamicField(label: "ID Number", kind: .monospace, protected: true),
+                DynamicField(label: "Email", kind: .email),
+                // Phone uses .text (not .number): numberPad can't type '+', spaces, or parens.
+                DynamicField(label: "Phone", kind: .text),
+                DynamicField(label: "Address", kind: .multiline),
                 DynamicField(label: "Date of Birth", kind: .date),
+                DynamicField(label: "ID Number", kind: .monospace, protected: true),
             ]
         case .sshKey:
             return [

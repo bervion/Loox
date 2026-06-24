@@ -18,6 +18,10 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
     var pinned: Bool
     var archived: Bool
     var useCount: Int
+    /// Marks this as the user's default identity (only meaningful for `.identity`).
+    /// Mirrored from `ItemRecord.isDefaultIdentity`; set via the repository's
+    /// default-identity API (not by the editor), so the editor's `update` preserves it.
+    var isDefaultIdentity: Bool
     /// Rotation reminder cadence in days: 0 = off, 15 / 30 / 90 = enabled.
     /// Mirrored from `ItemRecord.rotateDays` so the editor and Home can read
     /// cadence without re-decrypting.
@@ -41,6 +45,7 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
          pinned: Bool = false,
          archived: Bool = false,
          useCount: Int = 0,
+         isDefaultIdentity: Bool = false,
          rotateDays: Int = 0,
          passwordChangedAt: Date? = nil,
          createdAt: Date = .now,
@@ -58,6 +63,7 @@ nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
         self.pinned = pinned
         self.archived = archived
         self.useCount = useCount
+        self.isDefaultIdentity = isDefaultIdentity
         self.rotateDays = rotateDays
         self.passwordChangedAt = passwordChangedAt
         self.createdAt = createdAt

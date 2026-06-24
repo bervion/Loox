@@ -115,6 +115,8 @@ import CloudKit
         ck["pinned"] = (record.pinned ? 1 : 0) as CKRecordValue
         ck["archived"] = (record.archived ? 1 : 0) as CKRecordValue
         ck["useCount"] = record.useCount as CKRecordValue
+        ck["isDefaultIdentity"] = (record.isDefaultIdentity ? 1 : 0) as CKRecordValue
+        if let avatarSealed = record.avatarSealed { ck["avatarSealed"] = avatarSealed as CKRecordValue }
         if let trashedAt = record.trashedAt { ck["trashedAt"] = trashedAt as CKRecordValue }
         if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
         return ck
@@ -133,6 +135,8 @@ import CloudKit
             pinned: (record["pinned"] as? Int ?? 0) == 1,
             archived: (record["archived"] as? Int ?? 0) == 1,
             useCount: record["useCount"] as? Int ?? 0,
+            isDefaultIdentity: (record["isDefaultIdentity"] as? Int ?? 0) == 1,
+            avatarSealed: record["avatarSealed"] as? Data,
             changeTag: record.recordChangeTag)
     }
 
