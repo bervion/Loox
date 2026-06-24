@@ -1,10 +1,11 @@
 ---
 phase: 3
-title: "Onboarding Identity Step"
-status: pending
+title: Onboarding Identity Step
+status: completed
 priority: P2
-effort: "0.5d"
-dependencies: [1]
+effort: 0.5d
+dependencies:
+  - 1
 ---
 
 # Phase 3: Onboarding Identity Step
