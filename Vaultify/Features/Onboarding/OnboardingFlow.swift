@@ -8,7 +8,7 @@ struct OnboardingFlow: View {
     @State private var step: Step = .welcome
     @State private var recoveryKey = ""
 
-    enum Step: Equatable { case welcome, create, emergencyKit, theme, biometric, done }
+    enum Step: Equatable { case welcome, create, name, emergencyKit, theme, biometric, done }
 
     var body: some View {
         ZStack {
@@ -17,6 +17,11 @@ struct OnboardingFlow: View {
                 WelcomeStep { step = .create }
             case .create:
                 CreateMasterPasswordView(onSubmit: createVault)
+            case .name:
+                NameStepView { displayName in
+                    seedIdentity(displayName)
+                    step = .emergencyKit
+                }
             case .emergencyKit:
                 EmergencyKitView(recoveryKey: recoveryKey) { step = .theme }
             case .theme:
@@ -44,11 +49,19 @@ struct OnboardingFlow: View {
             // Seed a default Space ("My Vault") so new items have a home; the user
             // can rename it or add more later. Best-effort — never block setup.
             try? env.repository.addFolder(name: appString("My Vault"), icon: Icons.lockFill, color: .blue)
-            step = .emergencyKit
+            step = .name
             return nil
         } catch {
             return error.localizedDescription
         }
+    }
+
+    /// Seed the mandatory default identity from the onboarding display name. Best-effort,
+    /// like the "My Vault" folder seed. Skips if an identity already exists (e.g. re-running
+    /// onboarding after a recovery reset), so it never creates a duplicate default.
+    private func seedIdentity(_ displayName: String) {
+        guard env.repository.activeIdentities.isEmpty else { return }
+        try? env.repository.add(IdentitySeed.make(displayName: displayName, fallback: appString("Me")))
     }
 
     private func enableBiometric() {

@@ -5287,6 +5287,46 @@
           }
         }
       }
+    },
+    "What should we call you?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chúng tôi nên gọi bạn là gì?"
+          }
+        }
+      }
+    },
+    "We’ll set up your identity profile. You can edit it and add details anytime.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chúng tôi sẽ tạo hồ sơ danh tính cho bạn. Bạn có thể chỉnh sửa và thêm thông tin bất cứ lúc nào."
+          }
+        }
+      }
+    },
+    "Your name": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tên của bạn"
+          }
+        }
+      }
+    },
+    "Me": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tôi"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
