@@ -92,7 +92,7 @@ final class RotationNotificationService: @unchecked Sendable {
         let content = UNMutableNotificationContent()
         // Title only — never include passwords, usernames, or any secret.
         let displayTitle = itemTitle.isEmpty ? appString("Untitled item") : itemTitle
-        content.title = appString("Time to change your password: \(String.LocalizationValue(displayTitle))")
+        content.title = appString("Time to change your password: \(displayTitle)")
         content.sound = .default
 
         var components = Calendar.current.dateComponents(

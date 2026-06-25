@@ -34,6 +34,14 @@ final class ItemRecord {
     /// baseline. Updated only when the decrypted password value actually changes.
     /// Device-local for now (see `rotateDays` note re: CloudKit).
     var passwordChangedAt: Date?
+    /// Marks this item as the user's default identity (only meaningful for the
+    /// `.identity` category). Synced; the app enforces a single active default.
+    /// Changing it bumps `updatedAt` so the whole-record LWW sync propagates it.
+    var isDefaultIdentity: Bool = false
+    /// AES-256-GCM-sealed (Vault Key) downscaled avatar JPEG for an identity.
+    /// Synced as a CKRecord Data field — zero-knowledge (iCloud sees ciphertext).
+    /// Nil → the UI shows the letter-avatar fallback.
+    var avatarSealed: Data?
 
     // Sync metadata (CloudKit).
     var dirty: Bool

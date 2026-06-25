@@ -1,4 +1,9 @@
 import Foundation
+import os
+
+/// Diagnostic logger for biometric-key migration to the shared keychain group.
+/// Filter Console by subsystem `com.bervion.vaultify`, category `biometric`. Non-sensitive only.
+private let biometricLog = Logger(subsystem: "com.bervion.vaultify", category: "biometric")
 
 enum AuthError: Error, LocalizedError {
     case noVault, wrongPassword, locked, biometricFailed, recoveryFailed
@@ -116,6 +121,9 @@ enum AuthError: Error, LocalizedError {
         defer { secureZero(&bytes) }
         try BiometricKeyStore.store(vaultKey: bytes)
         settings.biometricUnlockEnabled = true
+        // Fresh enrolment writes straight to the shared group — already "migrated", so the
+        // one-time migration on next unlock is a no-op.
+        settings.biometricKeyMigratedToSharedGroup = true
     }
 
     func disableBiometricUnlock() {
@@ -153,6 +161,29 @@ enum AuthError: Error, LocalizedError {
         state = .unlocked
         lastActivity = .now
         shakeLocked = false
+        migrateBiometricKeyToSharedGroupIfNeeded(key: key)
+    }
+
+    /// One-time: move the biometric Vault Key from the legacy per-app keychain group into the
+    /// shared group so the AutoFill extension can unlock with Face ID. Runs after an in-app unlock;
+    /// guarded by a flag so it never repeats. Storing never prompts (only `retrieve` does), so this is
+    /// silent. Already-enrolled users fall back to the master password in the extension until this runs
+    /// once. Best-effort — on failure the flag stays unset and the legacy key is retried next unlock.
+    private func migrateBiometricKeyToSharedGroupIfNeeded(key: [UInt8]) {
+        guard settings.biometricUnlockEnabled, !settings.biometricKeyMigratedToSharedGroup else {
+            biometricLog.log("migrate skip: enabled=\(self.settings.biometricUnlockEnabled, privacy: .public) migrated=\(self.settings.biometricKeyMigratedToSharedGroup, privacy: .public)")
+            return
+        }
+        do {
+            // `store` clears both groups then writes to the shared group, so the legacy copy is
+            // dropped as part of this call — no orphan left.
+            try BiometricKeyStore.store(vaultKey: key)
+            settings.biometricKeyMigratedToSharedGroup = true
+            biometricLog.log("migrate OK: biometric key written to shared group")
+        } catch {
+            // Leave the flag unset; retry on the next successful unlock.
+            biometricLog.error("migrate FAILED: \(String(describing: error), privacy: .public) — retry next unlock")
+        }
     }
 
     /// Lock if the configured inactivity window has elapsed (foreground idle timer).

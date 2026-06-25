@@ -52,6 +52,12 @@ struct RootView: View {
             // Lock only if a *real* background stay met the auto-lock window. The Face ID
             // prompt drives `.inactive` (not `.background`), so its close doesn't lock here.
             env.session.lockIfBackgroundExpired()
+            // The AutoFill extension may have created a login while we were away. Re-fetch so it
+            // surfaces in the app, and push it to CloudKit (the extension itself can't sync).
+            if env.session.state == .unlocked {
+                env.repository.reload()
+                env.syncNow()
+            }
         case .inactive:
             obscured = true
         case .background:

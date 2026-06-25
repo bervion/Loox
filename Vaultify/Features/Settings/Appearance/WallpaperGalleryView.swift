@@ -19,8 +19,8 @@ struct WallpaperGalleryView: View {
                 choiceRow(title: Text("Default"), isSelected: override == nil) {
                     env.theme.setWallpaper(nil, for: ref)
                 }
-                choiceRow(title: Text("None"), isSelected: override == .none) {
-                    env.theme.setWallpaper(.none, for: ref)
+                choiceRow(title: Text("None"), isSelected: override == Wallpaper.none) {
+                    env.theme.setWallpaper(Wallpaper.none, for: ref)
                 }
             }
             .listRowBackground(VaultColors.surface)

@@ -8,8 +8,8 @@ no server, no tracking.
 
 - 🔐 **On-device only** — vault is an encrypted file in a shared App Group container; no backend
 - 🧬 **Argon2id** key derivation (vendored reference C) + AES-GCM vault encryption
-- 👤 **Face ID** unlock
-- 🔑 **iOS AutoFill** for passwords **and passkeys** (Credential Provider extension)
+- 👤 **Face ID** unlock (app + AutoFill extension)
+- 🔑 **iOS AutoFill** for passwords **and passkeys** (Credential Provider extension) — Face ID unlock + create new login
 - 🗂 **Spaces & tags** — group logins by company/project (color + icon), with a Home dashboard (Quick Access, recents, tags)
 - 🎨 **Themes & wallpapers** — Day / Night / Tinted themes, accent colors, gradient · pattern · animated-mesh backgrounds, auto-night, and custom themes you can export / import (`.vaultheme`)
 - 🌏 **EN / VI** with an in-app language toggle

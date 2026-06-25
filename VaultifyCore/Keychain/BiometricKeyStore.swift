@@ -9,6 +9,10 @@ import LocalAuthentication
 nonisolated enum BiometricKeyStore {
     static let account = "vault.biometricKey"
 
+    /// Shared keychain access group so BOTH the app and the AutoFill extension can
+    /// read the biometric-gated Vault Key. Must be team-prefixed (see `SharedConfig`).
+    private static let accessGroup = SharedConfig.keychainAccessGroup
+
     enum Failure: Error { case accessControl, store(OSStatus), cancelled, unavailable }
 
     /// Whether a biometric-gated key is currently provisioned (no prompt shown).
@@ -19,6 +23,7 @@ nonisolated enum BiometricKeyStore {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: KeychainStore.service,
             kSecAttrAccount as String: account,
+            kSecAttrAccessGroup as String: accessGroup,
             kSecUseAuthenticationContext as String: context,
         ]
         let status = SecItemCopyMatching(query as CFDictionary, nil)
@@ -35,6 +40,7 @@ nonisolated enum BiometricKeyStore {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: KeychainStore.service,
             kSecAttrAccount as String: account,
+            kSecAttrAccessGroup as String: accessGroup,
             kSecValueData as String: Data(vaultKey),
             kSecAttrAccessControl as String: access,
         ]
@@ -50,6 +56,7 @@ nonisolated enum BiometricKeyStore {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: KeychainStore.service,
             kSecAttrAccount as String: account,
+            kSecAttrAccessGroup as String: accessGroup,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
             kSecUseAuthenticationContext as String: context,
@@ -69,6 +76,12 @@ nonisolated enum BiometricKeyStore {
         }
     }
 
+    /// Remove the biometric key from BOTH the shared group and the legacy per-app group, so
+    /// disabling biometrics (or re-storing) never leaves an orphaned key in either location —
+    /// regardless of whether the one-time shared-group migration has run yet.
     @discardableResult
-    static func delete() -> OSStatus { KeychainStore.delete(account: account) }
+    static func delete() -> OSStatus {
+        KeychainStore.delete(account: account, accessGroup: SharedConfig.legacyKeychainGroup)
+        return KeychainStore.delete(account: account, accessGroup: accessGroup)
+    }
 }

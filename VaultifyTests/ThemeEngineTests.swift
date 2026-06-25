@@ -59,23 +59,29 @@ final class ThemeEngineTests: XCTestCase {
         XCTAssertEqual(RGBMath.onColor(0x5B9CF6), 0x000000)
     }
 
+    // `accentForeground` is the foreground for tinted **controls** (buttons / badges) whose labels
+    // are bold/large, so the applicable bar is WCAG AA for large text (3.0:1) — not 4.5:1. `onAccent`
+    // deliberately prefers white above the 3.0 floor (iOS coloured-button convention); see
+    // `RGBMath.onAccent`. (Small on-accent text, if any, should use a max-contrast token instead.)
+    private let onAccentMinContrast = 3.0
+
     func testBuiltinAccentForegroundMeetsWCAGAA() {
         for theme in BuiltinTheme.allCases {
             let p = BuiltinThemes.palette(theme)
             let ratio = RGBMath.contrastRatio(p.accentForeground, p.accent)
-            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(theme) on-accent contrast \(ratio) < AA")
+            XCTAssertGreaterThanOrEqual(ratio, onAccentMinContrast, "\(theme) on-accent contrast \(ratio) < AA-large")
         }
     }
 
     func testAccentPresetsGetReadableForeground() {
-        // WCAG-derived on-accent must clear AA for all 7 presets in light AND dark.
+        // On-accent must clear the large-text floor for all 7 presets in light AND dark.
         for preset in AccentPreset.allCases {
             for isDark in [false, true] {
                 let base = isDark ? BuiltinThemes.night : BuiltinThemes.day
                 let accent = preset.rgb(isDark: isDark)
                 let t = base.recolored(accent: accent)
                 let ratio = RGBMath.contrastRatio(t.accentForeground, accent)
-                XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(preset) \(isDark ? "dark" : "light") on-accent contrast \(ratio) < AA")
+                XCTAssertGreaterThanOrEqual(ratio, onAccentMinContrast, "\(preset) \(isDark ? "dark" : "light") on-accent contrast \(ratio) < AA-large")
             }
         }
     }

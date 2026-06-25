@@ -47,11 +47,10 @@ Do these once. Steps 1–5 are prerequisites; the pipeline cannot upload until t
 ### 1. Apple Developer Portal — App IDs & capabilities
 Both bundle ids must exist as **explicit App IDs** with the capabilities the app uses:
 
-- `com.bervion.vaultify` → enable **App Groups** (`group.com.bervion.vaultify`) + **AutoFill Credential Provider**.
-- `com.bervion.vaultify.autofill` → enable **App Groups** (same group) + **AutoFill Credential Provider**.
+- `com.bervion.vaultify` → enable **App Groups** (`group.com.bervion.vaultify`) + **Keychain Sharing** (`com.bervion.vaultify.shared`) + **AutoFill Credential Provider**.
+- `com.bervion.vaultify.autofill` → enable **App Groups** (same group) + **Keychain Sharing** (`com.bervion.vaultify.shared`) + **AutoFill Credential Provider**.
 
-> match generates profiles from each App ID's enabled capabilities. If you add a
-> capability later, re-run `make certificates` after `bundle exec fastlane match nuke distribution` (or `match appstore --force`) so profiles regenerate.
+> The **Keychain Sharing** capability (group `com.bervion.vaultify.shared`) is **required** for the extension to access the biometric-gated Vault Key stored by the app. Ensure both App IDs have this capability enabled before provisioning profiles are generated. match generates profiles from each App ID's enabled capabilities. If you add a capability later, re-run `make certificates` after `bundle exec fastlane match nuke distribution` (or `match appstore --force`) so profiles regenerate.
 
 ### 2. App Store Connect — create the app record
 App Store Connect → Apps → **＋** → New App. Platform iOS, bundle id `com.bervion.vaultify`. The app must exist before TestFlight accepts a build.
@@ -140,7 +139,7 @@ unique and increasing for every upload (each `make release`/`make beta`/`make ho
 ## Troubleshooting
 
 - **`No profiles for 'com.bervion.vaultify.autofill'`** → the extension App ID is missing
-  or its capabilities differ. Fix the App ID (step 1), then `bundle exec fastlane match appstore --force`.
+  or its capabilities differ (esp. Keychain Sharing). Fix the App ID (step 1), ensure both **Keychain Sharing** and **App Groups** are enabled, then `bundle exec fastlane match appstore --force`.
 - **`Authentication credentials … invalid` (match clone)** → `MATCH_GIT_AUTH` wrong; regenerate
   the base64 of `user:PAT` and confirm the PAT can read the certs repo.
 - **`Invalid App Store Connect API key`** → `APP_STORE_CONNECT_API_KEY` must be the full `.p8`

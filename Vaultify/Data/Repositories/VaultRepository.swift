@@ -52,6 +52,48 @@ import UserNotifications
         archived = arch.sorted { $0.updatedAt > $1.updatedAt }
         folders = loadFolders(key: key)
         CredentialIdentityService.refresh(items: items)
+        normalizeDefaultIdentity()
+    }
+
+    // MARK: Default identity (single-active invariant)
+
+    /// Ensure exactly one ACTIVE identity carries the default marker. Converges sync
+    /// conflicts (two devices each picked a default → a transient double-default) and
+    /// promotes a replacement when the old default leaves the active set. Runs at the
+    /// tail of `reload()`; writes only when the active identities are inconsistent and
+    /// **never calls `reload()`** (it patches the freshly-built `items` in place).
+    private func normalizeDefaultIdentity() {
+        let identities = items.filter { $0.category == .identity }
+        guard !identities.isEmpty else { return }
+        guard identities.filter(\.isDefaultIdentity).count != 1 else { return }
+        // Winner = most recently touched (`updatedAt`), `createdAt` as the final tiebreak.
+        guard let winner = identities.max(by: {
+            ($0.updatedAt, $0.createdAt) < ($1.updatedAt, $1.createdAt)
+        }) else { return }
+        let now = Date()
+        var didWrite = false
+        for identity in identities {
+            let shouldBeDefault = identity.id == winner.id
+            guard identity.isDefaultIdentity != shouldBeDefault else { continue }
+            writeIdentityDefault(id: identity.id, isDefault: shouldBeDefault, now: now)
+            if let idx = items.firstIndex(where: { $0.id == identity.id }) {
+                items[idx].isDefaultIdentity = shouldBeDefault
+                items[idx].updatedAt = now
+            }
+            didWrite = true
+        }
+        if didWrite { try? store.context.save() }
+    }
+
+    /// Set the default-identity marker on a record and bump `updatedAt` so the change
+    /// propagates through the whole-record LWW CloudKit sync (a column-only write is
+    /// dropped on pull). Marks the record dirty. Caller is responsible for save + reload.
+    /// Internal so the `+Identity` extension can drive `setDefaultIdentity`.
+    func writeIdentityDefault(id: String, isDefault: Bool, now: Date) {
+        guard let record = store.record(id: id) else { return }
+        record.isDefaultIdentity = isDefault
+        record.updatedAt = now
+        record.dirty = true
     }
 
     // MARK: CRUD
@@ -67,6 +109,7 @@ import UserNotifications
         record.pinned = item.pinned
         record.archived = item.archived
         record.useCount = item.useCount
+        record.isDefaultIdentity = item.isDefaultIdentity
         record.rotateDays = item.rotateDays
         // New items: baseline is createdAt (caller provides it).
         record.passwordChangedAt = item.createdAt
@@ -220,6 +263,7 @@ import UserNotifications
                          pinned: record.pinned,
                          archived: record.archived,
                          useCount: record.useCount,
+                         isDefaultIdentity: record.isDefaultIdentity,
                          rotateDays: record.rotateDays,
                          passwordChangedAt: record.passwordChangedAt,
                          createdAt: record.createdAt,

@@ -11,9 +11,34 @@ struct HomeHeaderBar: View {
     /// Called with the chosen item category when the user picks from the Add menu.
     let onAddCategory: (ItemCategory) -> Void
     let onSettings: () -> Void
+    let onProfile: () -> Void
 
     @Environment(AppEnvironment.self) private var env
     @State private var showFolderPicker = false
+
+    /// Circular avatar button → Profile. Shows the default identity's avatar (or its
+    /// letter-avatar), falling back to a person glyph when no identity exists yet.
+    @ViewBuilder private var profileButton: some View {
+        Button(action: onProfile) {
+            Group {
+                if let identity = env.repository.defaultIdentity {
+                    if let image = env.repository.avatarImage(for: identity.id) {
+                        Image(uiImage: image).resizable().scaledToFill()
+                    } else {
+                        ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: 28)
+                    }
+                } else {
+                    PolarisIcon(Icons.person, size: Metric.iconUtility).themedForeground()
+                }
+            }
+            .frame(width: 28, height: 28)
+            .clipShape(Circle())
+            .frame(width: Metric.hitMin, height: Metric.hitMin)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Profile"))
+    }
 
     private var selectedFolder: Folder? {
         guard let id = selectedFolderId else { return nil }
@@ -62,6 +87,9 @@ struct HomeHeaderBar: View {
             },
             trailing: {
                 HeaderActionCluster {
+                    // Profile — default identity avatar
+                    profileButton
+
                     // Search — switches to the Search tab via notification
                     HeaderIconButton(
                         Icons.search,

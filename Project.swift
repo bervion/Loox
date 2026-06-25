@@ -113,11 +113,24 @@ let project = Project(
                         "ASCredentialProviderExtensionCapabilities": [
                             "ProvidesPasswords": true,
                             "ProvidesPasskeys": true,
+                            // iOS 26.2+: native "Save password in Vaultify" sheet + branded
+                            // "Use Strong Password" generation. Older iOS uses the manual
+                            // "＋ Create new login" flow. Generation is headless (no extension UI).
+                            "SupportsSavePasswordCredentials": true,
+                            "SupportsGeneratePasswordCredentials": true,
+                            "SupportsGeneratePasswordCredentialsWithUI": false,
                         ],
                     ],
                 ],
             ]),
             sources: ["VaultifyAutoFill/**", "VaultifyCore/**"],
+            // Share the app's string catalog so the extension localizes (EN + VI) instead of
+            // rendering literal keys, plus the diceware wordlist so the in-extension password
+            // generator's passphrase mode works (`Bundle.main` resolves to the .appex bundle).
+            resources: [
+                "Vaultify/Localizable.xcstrings",
+                "Vaultify/Resources/eff_large_wordlist.txt",
+            ],
             entitlements: "VaultifyAutoFill/VaultifyAutoFill.entitlements",
             settings: .settings(base: [
                 "CODE_SIGN_STYLE": "Automatic",

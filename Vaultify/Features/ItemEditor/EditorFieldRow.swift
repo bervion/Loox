@@ -5,7 +5,6 @@ import SwiftUI
 struct EditorFieldRow: View {
     @Binding var field: DynamicField
     var onScanTOTP: () -> Void = {}
-    @State private var reveal = false
     @FocusState private var valueFocused: Bool
 
     var body: some View {
@@ -50,18 +49,27 @@ struct EditorFieldRow: View {
                 .lineLimit(2...6)
         case .password, .totp:
             HStack {
-                Group {
-                    if reveal { TextField(valuePlaceholder, text: $field.value) }
-                    else { SecureField(valuePlaceholder, text: $field.value) }
+                // One persistent TextField keeps the keyboard focus stable (swapping
+                // TextField↔SecureField drops first responder). It shows plaintext only while
+                // focused; when blurred a bullet overlay masks the value. No reveal toggle.
+                ZStack(alignment: .leading) {
+                    TextField(valuePlaceholder, text: $field.value)
+                        .focused($valueFocused)
+                        .font(.vaultCode())
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .opacity(showsPlaintext ? 1 : 0)
+                    if !showsPlaintext {
+                        Text(maskedValue)
+                            .font(.vaultCode())
+                            .themedForeground(.primary)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                            .onTapGesture { valueFocused = true }
+                            .accessibilityHidden(true)
+                    }
                 }
-                .focused($valueFocused)
-                .font(.vaultCode())
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                Button { reveal.toggle() } label: {
-                    PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: 18).themedForeground(.secondary)
-                }
-                .buttonStyle(.plain)
                 if field.kind == .totp {
                     Button(action: onScanTOTP) {
                         PolarisIcon(Icons.camera, size: 18).foregroundStyle(Color.accentColor)
@@ -104,6 +112,14 @@ struct EditorFieldRow: View {
             set: { field.label = $0 }
         )
     }
+
+    /// Plaintext shows only while the secret field is being edited. Empty fields stay plain so
+    /// the placeholder is visible and the row is tappable to start typing.
+    private var showsPlaintext: Bool { valueFocused || field.value.isEmpty }
+
+    /// Bullet-masked rendering shown when the secret field isn't focused. Capped so a long
+    /// secret can't overflow the row.
+    private var maskedValue: String { String(repeating: "•", count: min(field.value.count, 20)) }
 
     /// Field-specific value placeholder (e.g. password → "Enter password") instead of a
     /// generic "Value", so the empty field hints what to type.

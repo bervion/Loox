@@ -8,14 +8,23 @@ final class VaultStore {
     var context: ModelContext { container.mainContext }
 
     init(inMemory: Bool = false) {
+        do { container = try Self.makeContainer(inMemory: inMemory) }
+        catch { fatalError("Failed to initialise vault store: \(error)") }
+    }
+
+    /// Throwing initialiser for callers that must recover from a container failure instead of
+    /// crashing — the AutoFill extension write path, where a `fatalError` would kill the
+    /// credential UI mid-registration. The label distinguishes it from the app's `init`.
+    init(recoverable inMemory: Bool) throws {
+        container = try Self.makeContainer(inMemory: inMemory)
+    }
+
+    private static func makeContainer(inMemory: Bool) throws -> ModelContainer {
         let configuration = inMemory
             ? ModelConfiguration(isStoredInMemoryOnly: true)
             : ModelConfiguration(url: SharedConfig.storeURL)
-        do {
-            container = try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self, configurations: configuration)
-        } catch {
-            fatalError("Failed to initialise vault store: \(error)")
-        }
+        return try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self,
+                                  configurations: configuration)
     }
 
     /// Permanently delete every record (used by "Erase Vault").
@@ -42,6 +51,7 @@ final class VaultStore {
     func upsertFromRemote(id: String, sealed: Data, favorite: Bool, trashedAt: Date?,
                           deletedAt: Date?, createdAt: Date, updatedAt: Date,
                           pinned: Bool, archived: Bool, useCount: Int,
+                          isDefaultIdentity: Bool, avatarSealed: Data?,
                           changeTag: String?) {
         if let existing = record(id: id) {
             guard updatedAt > existing.updatedAt else { return }
@@ -53,6 +63,8 @@ final class VaultStore {
             existing.pinned = pinned
             existing.archived = archived
             existing.useCount = useCount
+            existing.isDefaultIdentity = isDefaultIdentity
+            existing.avatarSealed = avatarSealed
             existing.ckChangeTag = changeTag
             existing.dirty = false
         } else {
@@ -62,6 +74,8 @@ final class VaultStore {
             record.pinned = pinned
             record.archived = archived
             record.useCount = useCount
+            record.isDefaultIdentity = isDefaultIdentity
+            record.avatarSealed = avatarSealed
             record.ckChangeTag = changeTag
             record.dirty = false
             context.insert(record)
