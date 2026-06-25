@@ -1,1 +1,1 @@
-One-time verification codes now fill in automatically. When signing in to a site or app that uses two-step verification, your code appears in the keyboard suggestion bar ready to tap — no more switching between apps to copy a code. Requires iOS 18 or later.
+Vaultify now stores your two-factor authentication codes alongside your passwords. Add an account by scanning or pasting a setup link, and your one-time codes appear automatically in AutoFill on iOS 18 — no separate authenticator app required.

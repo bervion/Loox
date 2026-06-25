@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.0] - 2026-06-25
+
+### Added
+- import otpauth:// setup links (verification-code provider)
+- 2FA one-time-code AutoFill (iOS 18+)
+
+### Changed
+- extract shared UnlockGate from the three flows
+
+
 ## [1.5.0] - 2026-06-25
 
 ### Added

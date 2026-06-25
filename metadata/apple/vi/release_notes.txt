@@ -1,1 +1,1 @@
-Mã xác thực một lần nay được điền tự động. Khi đăng nhập vào trang web hoặc ứng dụng yêu cầu xác minh hai bước, mã hiện ngay trên thanh gợi ý bàn phím để bạn chọn chỉ với một chạm, không cần chuyển sang ứng dụng khác để sao chép. Yêu cầu iOS 18 trở lên.
+Vaultify nay lưu mã xác thực hai bước ngay cạnh mật khẩu của bạn. Thêm tài khoản bằng cách quét hoặc dán liên kết thiết lập, mã một lần sẽ tự động hiện ra trong AutoFill trên iOS 18 — không cần ứng dụng xác thực riêng.
