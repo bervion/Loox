@@ -50,6 +50,16 @@ enum VaultReader {
         return (name?.isEmpty == false) ? name : nil
     }
 
+    /// Non-trashed items that carry a TOTP secret, for 2FA / one-time-code AutoFill.
+    @MainActor static func totpItems(vaultKey: [UInt8]) -> [VaultItem] {
+        let store = VaultStore()
+        return store.allRecords()
+            .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
+            .compactMap { decrypt($0, key: vaultKey) }
+            .filter { $0.totpField != nil }
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
     private nonisolated static func decrypt(_ record: ItemRecord, key: [UInt8]) -> VaultItem? {
         guard let plaintext = try? AESGCM.open(record.sealed, key: key),
               let secret = try? JSONDecoder().decode(ItemSecret.self, from: plaintext)

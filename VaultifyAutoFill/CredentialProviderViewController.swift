@@ -39,6 +39,21 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                           onCancel: { [weak self] in self?.cancel() }))
     }
 
+    /// User taps a 2FA / one-time-code field and picks Vaultify — show our TOTP picker.
+    @available(iOS 18, *)
+    override func prepareOneTimeCodeCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
+        autofillLog.log("prepareOneTimeCodeCredentialList services=\(serviceIdentifiers.count, privacy: .public)")
+        host(OneTimeCodeView(serviceIdentifiers: serviceIdentifiers.map(\.identifier),
+                             preferredRecordID: nil,
+                             onSelect: { [weak self] code in self?.completeOneTimeCode(code) },
+                             onCancel: { [weak self] in self?.cancel() }))
+    }
+
+    @available(iOS 18, *)
+    private func completeOneTimeCode(_ code: String) {
+        extensionContext.completeOneTimeCodeRequest(using: ASOneTimeCodeCredential(code: code))
+    }
+
     /// iOS asks us to provide a credential without UI. Unlock is ALWAYS interactive (Face ID
     /// or master password) — even with a biometric key now reachable, never silently fill.
     /// Must keep returning `userInteractionRequired` so our UI (and its auth gate) is shown.
@@ -49,9 +64,16 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                                code: ASExtensionError.Code.userInteractionRequired.rawValue))
     }
 
-    /// iOS shows our UI to provide a specific credential (password or passkey).
+    /// iOS shows our UI to provide a specific credential (password, passkey, or 2FA code).
     override func prepareInterfaceToProvideCredential(for credentialRequest: ASCredentialRequest) {
         autofillLog.log("prepareInterfaceToProvideCredential")
+        if #available(iOS 18, *), let otp = credentialRequest as? ASOneTimeCodeCredentialRequest {
+            let recordID = (otp.credentialIdentity as? ASOneTimeCodeCredentialIdentity)?.recordIdentifier
+            host(OneTimeCodeView(serviceIdentifiers: [], preferredRecordID: recordID,
+                                 onSelect: { [weak self] code in self?.completeOneTimeCode(code) },
+                                 onCancel: { [weak self] in self?.cancel() }))
+            return
+        }
         if let passkey = credentialRequest as? ASPasskeyCredentialRequest,
            let identity = passkey.credentialIdentity as? ASPasskeyCredentialIdentity {
             showPasskey(.assert(relyingParty: identity.relyingPartyIdentifier,
