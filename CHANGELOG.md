@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.5.0] - 2026-06-25
+
+### Added
+- native save + strong-password generation (iOS 26.2+)
+- Face ID unlock + create-login in extension
+- mask secret field when unfocused, drop reveal eye toggle
+- profile screen, syncable avatar, removal gate UI
+- onboarding step seeds the default identity
+- single-active default-identity invariant
+- add synced default-identity + avatar columns and identity fields
+
+### Fixed
+- only show save prompt at form submission
+
+### Changed
+- journal — Face ID + create-login session lessons
+- journal — sync schema reversal lesson
+- document identity & profile in codebase-summary
+- mark phase 4 complete; plan done
+- mark phase 3 complete
+- mark phases 1-2 complete; finalize sync-gate decision
+- identity & profile plan with red-team/validate reports
+
+
 ## [1.4.1] - 2026-06-19
 
 ### Added

@@ -1,1 +1,1 @@
-Phiên bản 1.4.1: Cải thiện hiệu suất và sửa lỗi.
+Trên iOS 26.2 trở lên, AutoFill nay hỗ trợ lưu mật khẩu và gợi ý mật khẩu mạnh ngay trong trình duyệt. Mở khoá bằng Face ID và tạo thông tin đăng nhập mới trực tiếp từ tiện ích AutoFill. Màn hình hồ sơ mới giúp quản lý danh tính và đồng bộ ảnh đại diện. Các trường nhạy cảm tự ẩn khi không thao tác.
