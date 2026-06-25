@@ -1,111 +1,51 @@
 import SwiftUI
-import os
 
-/// Diagnostic logger for the extension's biometric unlock attempt. Filter Console by subsystem
-/// `com.bervion.vaultify.autofill`, category `biometric`. Non-sensitive markers only.
-private let bioLog = Logger(subsystem: "com.bervion.vaultify.autofill", category: "biometric")
-
-/// Unlock (master password) then pick a login to fill. Items whose website
-/// matches the requesting app/site are shown first.
+/// Unlock then pick a login to fill (or create a new one). Items whose website matches the
+/// requesting app/site are shown first. Unlock is handled by the shared `UnlockGate`.
 struct AutoFillView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
     let onSelect: (_ user: String, _ password: String) -> Void
     let onCancel: () -> Void
 
-    @State private var masterPassword = ""
-    @State private var unlocking = false
-    @State private var errorMessage: String?
+    var body: some View {
+        UnlockGate(title: "Vaultify", onCancel: onCancel) { vaultKey in
+            CredentialListView(serviceIdentifiers: serviceIdentifiers,
+                               preferredRecordID: preferredRecordID,
+                               vaultKey: vaultKey,
+                               onSelect: onSelect)
+        }
+    }
+}
+
+/// Post-unlock login picker. Loads logins + the default-identity prefill once, then auto-selects a
+/// preferred record (the QuickType path) or shows the list with a "Create new login" entry.
+private struct CredentialListView: View {
+    let serviceIdentifiers: [String]
+    let preferredRecordID: String?
+    let vaultKey: [UInt8]
+    let onSelect: (_ user: String, _ password: String) -> Void
+
     @State private var items: [VaultItem] = []
-    @State private var unlocked = false
-    /// True while the initial Face ID attempt is in flight — shows a spinner instead of
-    /// flashing the master-password form. Set false on any biometric failure or when not enrolled.
-    @State private var biometricInProgress = true
-    /// Retained after unlock so "Create new login" can seal a new item; the extension already
-    /// holds decrypted secrets in memory, so this is no new exposure.
-    @State private var vaultKey: [UInt8] = []
-    /// Default-identity email/name to prefill the Create-login username. Empty if none.
     @State private var defaultUsername = ""
+    @State private var loaded = false
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if unlocked { credentialList }
-                else if biometricInProgress { biometricLoading }
-                else { unlockForm }
-            }
-            .navigationTitle("Vaultify")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onCancel) }
-            }
+        Group {
+            if loaded { list } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
         }
-        .task { await attemptBiometricUnlock() }
-    }
-
-    private var biometricLoading: some View {
-        ProgressView().controlSize(.large)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: Biometric unlock (Face ID — no Argon2)
-
-    /// On appear, if a biometric Vault Key is provisioned (shared keychain group), prompt Face ID
-    /// and unlock directly — skipping the master password. ANY failure (cancel, item-not-found,
-    /// entitlement, biometrics changed) reveals the master-password form as a fallback.
-    private func attemptBiometricUnlock() async {
-        let enrolled = BiometricKeyStore.isEnrolled
-        bioLog.log("attemptBiometricUnlock: isEnrolled(shared group)=\(enrolled, privacy: .public)")
-        guard enrolled else { biometricInProgress = false; return }
-        do {
-            let key = try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
-            bioLog.log("biometric retrieve OK — unlocking via Face ID")
-            adoptUnlocked(key: key)
+        .task {
+            guard !loaded else { return }
+            items = VaultReader.logins(vaultKey: vaultKey)
+            defaultUsername = VaultReader.defaultIdentityUsername(vaultKey: vaultKey) ?? ""
+            loaded = true
             if let preferredRecordID, let hit = items.first(where: { $0.id == preferredRecordID }) {
                 select(hit)
             }
-        } catch {
-            bioLog.error("biometric retrieve FAILED: \(String(describing: error), privacy: .public) — fallback to master password")
-            biometricInProgress = false
         }
     }
 
-    /// Load logins + the default-identity prefill and retain the key for Create-login.
-    private func adoptUnlocked(key: [UInt8]) {
-        items = VaultReader.logins(vaultKey: key)
-        vaultKey = key
-        defaultUsername = VaultReader.defaultIdentityUsername(vaultKey: key) ?? ""
-        unlocked = true
-    }
-
-    // MARK: Unlock
-
-    private var unlockForm: some View {
-        Form {
-            Section {
-                SecureField("Master password", text: $masterPassword)
-                    .textContentType(.password)
-                    .submitLabel(.go)
-                    .onSubmit(unlock)
-            } header: {
-                Text("Unlock your vault")
-            } footer: {
-                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-            }
-            Section {
-                Button(action: unlock) {
-                    HStack { Spacer(); Text("Unlock").bold(); Spacer() }
-                }
-                .disabled(masterPassword.isEmpty || unlocking)
-            }
-        }
-        .overlay { if unlocking { ProgressView().controlSize(.large) } }
-        .disabled(unlocking)
-    }
-
-    // MARK: Credential list
-
-    private var credentialList: some View {
+    private var list: some View {
         List {
             Section {
                 NavigationLink {
@@ -140,30 +80,6 @@ struct AutoFillView: View {
                     Text(user).font(.caption).foregroundStyle(.secondary)
                 }
             }
-        }
-    }
-
-    // MARK: Actions
-
-    private func unlock() {
-        guard !masterPassword.isEmpty else { return }
-        unlocking = true; errorMessage = nil
-        let password = masterPassword
-        Task {
-            do {
-                let key = try await Task.detached(priority: .userInitiated) {
-                    try VaultReader.deriveVaultKey(masterPassword: password)
-                }.value
-                adoptUnlocked(key: key)
-                if let preferredRecordID, let hit = items.first(where: { $0.id == preferredRecordID }) {
-                    select(hit)
-                }
-            } catch VaultReader.Failure.wrongPassword {
-                errorMessage = appString("Incorrect master password.")
-            } catch {
-                errorMessage = appString("Couldn’t unlock the vault.")
-            }
-            unlocking = false
         }
     }
 

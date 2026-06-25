@@ -1,1 +1,1 @@
-AutoFill on iOS 26.2 and later now offers native password saving and strong-password suggestions. Face ID unlock and new-login creation are available directly from the AutoFill extension. A new profile screen lets you manage your identity and sync your avatar. Sensitive fields now hide automatically when not in use.
+One-time verification codes now fill in automatically. When signing in to a site or app that uses two-step verification, your code appears in the keyboard suggestion bar ready to tap — no more switching between apps to copy a code. Requires iOS 18 or later.
