@@ -1,0 +1,81 @@
+import SwiftUI
+import AuthenticationServices
+
+/// Create + save a new login during web registration, then fill it. Site is prefilled from the
+/// requesting domain, username/email from the default identity, password freshly generated.
+/// Saving writes the item to the shared vault (`VaultWriter`), indexes it for QuickType, and
+/// returns the credential to fill. There is no iOS hook for registration success, so an abandoned
+/// signup leaves the item in the vault (the user prunes it later) — an accepted trade-off.
+struct CreateLoginView: View {
+    let host: String
+    let vaultKey: [UInt8]
+    /// Called after a successful save to fill the form (maps to the credential completion).
+    let onSaved: (_ user: String, _ password: String) -> Void
+
+    @State private var site: String
+    @State private var username: String
+    @State private var password: String
+    @State private var errorMessage: String?
+
+    init(host: String, defaultUsername: String, vaultKey: [UInt8],
+         onSaved: @escaping (_ user: String, _ password: String) -> Void) {
+        self.host = host
+        self.vaultKey = vaultKey
+        self.onSaved = onSaved
+        _site = State(initialValue: host)
+        _username = State(initialValue: defaultUsername)
+        _password = State(initialValue: PasswordGenerator.generate(PasswordOptions()))
+    }
+
+    var body: some View {
+        Form {
+            Section { TextField("Website", text: $site).textInputAutocapitalization(.never) }
+                header: { Text("Website") }
+            Section { TextField("Username", text: $username).textInputAutocapitalization(.never) }
+                header: { Text("Username") }
+            Section {
+                HStack {
+                    Text(password).font(.body.monospaced()).lineLimit(1).minimumScaleFactor(0.6)
+                    Spacer()
+                    Button("Regenerate") { password = PasswordGenerator.generate(PasswordOptions()) }
+                        .buttonStyle(.borderless)
+                }
+            } header: { Text("Password") } footer: {
+                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+            }
+            Section {
+                Button(action: save) {
+                    HStack { Spacer(); Text("Save & fill").bold(); Spacer() }
+                }
+                .disabled(password.isEmpty)
+            }
+        }
+        .navigationTitle("New login")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func save() {
+        do {
+            let id = try VaultWriter.createLogin(site: site, username: username,
+                                                 password: password, vaultKey: vaultKey)
+            indexCredential(recordID: id)
+            onSaved(username, password)
+        } catch {
+            errorMessage = appString("Couldn’t save the login.")
+        }
+    }
+
+    /// Append (not replace) a QuickType identity for the new item so it's suggested next visit.
+    /// Skips when there's no usable host — `autofillHost` needs a non-empty URL to match.
+    private func indexCredential(recordID: String) {
+        let raw = site.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, !username.isEmpty,
+              let host = URL(string: raw.contains("://") ? raw : "https://\(raw)")?.host?.lowercased()
+        else { return }
+        let identity = ASPasswordCredentialIdentity(
+            serviceIdentifier: ASCredentialServiceIdentifier(identifier: host, type: .domain),
+            user: username,
+            recordIdentifier: recordID)
+        ASCredentialIdentityStore.shared.saveCredentialIdentities([identity], completion: nil)
+    }
+}

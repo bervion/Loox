@@ -34,6 +34,22 @@ enum VaultReader {
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
+    /// Best username/email to prefill a new login from the user's default identity.
+    /// Identities have no password, so they never appear in `logins`; this reads them directly,
+    /// filtering on the plaintext `ItemRecord.isDefaultIdentity` column (the sealed payload doesn't
+    /// carry that flag). Returns the identity's email, else its name; nil if there's no default.
+    @MainActor static func defaultIdentityUsername(vaultKey: [UInt8]) -> String? {
+        let store = VaultStore()
+        guard let record = store.allRecords().first(where: {
+            $0.trashedAt == nil && $0.deletedAt == nil && $0.isDefaultIdentity
+        }), let item = decrypt(record, key: vaultKey) else { return nil }
+        if let email = item.fields.first(where: { $0.kind == .email })?.value, !email.isEmpty {
+            return email
+        }
+        let name = item.fields.first(where: { $0.kind == .text })?.value
+        return (name?.isEmpty == false) ? name : nil
+    }
+
     private nonisolated static func decrypt(_ record: ItemRecord, key: [UInt8]) -> VaultItem? {
         guard let plaintext = try? AESGCM.open(record.sealed, key: key),
               let secret = try? JSONDecoder().decode(ItemSecret.self, from: plaintext)

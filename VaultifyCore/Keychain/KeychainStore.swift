@@ -8,12 +8,13 @@ nonisolated enum KeychainStore {
 
     enum Failure: Error { case unexpectedStatus(OSStatus) }
 
-    static func set(_ data: Data, account: String) throws {
-        let match: [String: Any] = [
+    static func set(_ data: Data, account: String, accessGroup: String? = nil) throws {
+        var match: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
+        if let accessGroup { match[kSecAttrAccessGroup as String] = accessGroup }
         let status = SecItemCopyMatching(match as CFDictionary, nil)
         switch status {
         case errSecSuccess:
@@ -31,14 +32,15 @@ nonisolated enum KeychainStore {
         }
     }
 
-    static func get(account: String) throws -> Data? {
-        let query: [String: Any] = [
+    static func get(account: String, accessGroup: String? = nil) throws -> Data? {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
+        if let accessGroup { query[kSecAttrAccessGroup as String] = accessGroup }
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         if status == errSecItemNotFound { return nil }
@@ -47,12 +49,13 @@ nonisolated enum KeychainStore {
     }
 
     @discardableResult
-    static func delete(account: String) -> OSStatus {
-        let query: [String: Any] = [
+    static func delete(account: String, accessGroup: String? = nil) -> OSStatus {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
+        if let accessGroup { query[kSecAttrAccessGroup as String] = accessGroup }
         return SecItemDelete(query as CFDictionary)
     }
 

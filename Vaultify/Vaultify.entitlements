@@ -8,5 +8,9 @@
 	<array>
 		<string>group.com.bervion.vaultify</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.bervion.vaultify.shared</string>
+	</array>
 </dict>
 </plist>

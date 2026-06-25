@@ -52,6 +52,9 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// Lock the vault on a deliberate device shake (privacy panic gesture). Opt-in.
     var shakeToLock: Bool { didSet { defaults.set(shakeToLock, forKey: Key.shakeToLock) } }
     var biometricUnlockEnabled: Bool { didSet { defaults.set(biometricUnlockEnabled, forKey: Key.biometric) } }
+    /// Set once the biometric Vault Key has moved from the legacy per-app keychain group into the
+    /// shared group (so the AutoFill extension can use Face ID). Guards the one-time migration.
+    var biometricKeyMigratedToSharedGroup: Bool { didSet { defaults.set(biometricKeyMigratedToSharedGroup, forKey: Key.biometricKeyMigrated) } }
     var hibpEnabled: Bool { didSet { defaults.set(hibpEnabled, forKey: Key.hibp) } }
     var iCloudSyncEnabled: Bool { didSet { defaults.set(iCloudSyncEnabled, forKey: Key.icloud) } }
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
@@ -60,6 +63,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     var preferredLanguage: String {
         didSet {
             defaults.set(preferredLanguage, forKey: Key.language)
+            // Mirror into the App Group so the AutoFill extension localizes against the same choice.
+            SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
             appResourceLocale = appLocale(forCode: preferredLanguage)
         }
     }
@@ -71,12 +76,14 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         lockOnBackground = d.object(forKey: Key.lockOnBackground) as? Bool ?? true
         shakeToLock = d.object(forKey: Key.shakeToLock) as? Bool ?? false
         biometricUnlockEnabled = d.bool(forKey: Key.biometric)
+        biometricKeyMigratedToSharedGroup = d.bool(forKey: Key.biometricKeyMigrated)
         hibpEnabled = d.object(forKey: Key.hibp) as? Bool ?? true
         iCloudSyncEnabled = d.bool(forKey: Key.icloud)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
+        SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
         appResourceLocale = appLocale(forCode: preferredLanguage)
     }
 
@@ -86,6 +93,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let lockOnBackground = "lock_on_background"
         static let shakeToLock = "shake_to_lock"
         static let biometric = "biometric_unlock_enabled"
+        static let biometricKeyMigrated = "biometric_key_migrated_shared_group"
         static let hibp = "hibp_enabled"
         static let icloud = "icloud_sync_enabled"
         static let favicons = "show_website_icons"

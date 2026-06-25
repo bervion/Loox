@@ -1,12 +1,27 @@
 import AuthenticationServices
 import SwiftUI
 import UIKit
+import os
+
+/// Diagnostic logger for the AutoFill extension. Filter in Console.app by the
+/// subsystem to trace which entry points iOS actually invokes. Non-sensitive
+/// markers only — never log usernames, passwords, or vault contents.
+private let autofillLog = Logger(subsystem: "com.bervion.vaultify.autofill", category: "lifecycle")
 
 /// AutoFill Credential Provider entry point. Hosts a SwiftUI unlock + picker.
 /// The vault is opened only after the user enters their master password
 /// (Argon2id unwrap of the shared key bundle) — the same zero-knowledge model
 /// as the main app. Provides both passwords and passkeys.
 final class CredentialProviderViewController: ASCredentialProviderViewController {
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        autofillLog.log("viewDidLoad")
+        // Localize the extension UI against the in-app language (mirrored into the App Group by
+        // the app) rather than the device locale — set before any SwiftUI Text renders.
+        appResourceLocale = appLocale(
+            forCode: SharedConfig.sharedDefaults.string(forKey: SharedConfig.languageKey) ?? "system")
+    }
 
     private enum PasskeyPurpose {
         case assert(relyingParty: String, allowedCredentialIDs: [Data], clientDataHash: Data)
@@ -17,15 +32,18 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
 
     /// User picks from our list / a saved credential is requested.
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
+        autofillLog.log("prepareCredentialList(passwords) services=\(serviceIdentifiers.count, privacy: .public)")
         host(AutoFillView(serviceIdentifiers: serviceIdentifiers.map(\.identifier),
                           preferredRecordID: nil,
                           onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
                           onCancel: { [weak self] in self?.cancel() }))
     }
 
-    /// iOS asks us to provide a credential without UI. We always require the
-    /// master password, so request that our UI be shown instead.
+    /// iOS asks us to provide a credential without UI. Unlock is ALWAYS interactive (Face ID
+    /// or master password) — even with a biometric key now reachable, never silently fill.
+    /// Must keep returning `userInteractionRequired` so our UI (and its auth gate) is shown.
     override func provideCredentialWithoutUserInteraction(for credentialRequest: ASCredentialRequest) {
+        autofillLog.log("provideCredentialWithoutUserInteraction → userInteractionRequired")
         extensionContext.cancelRequest(
             withError: NSError(domain: ASExtensionErrorDomain,
                                code: ASExtensionError.Code.userInteractionRequired.rawValue))
@@ -33,6 +51,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
 
     /// iOS shows our UI to provide a specific credential (password or passkey).
     override func prepareInterfaceToProvideCredential(for credentialRequest: ASCredentialRequest) {
+        autofillLog.log("prepareInterfaceToProvideCredential")
         if let passkey = credentialRequest as? ASPasskeyCredentialRequest,
            let identity = passkey.credentialIdentity as? ASPasskeyCredentialIdentity {
             showPasskey(.assert(relyingParty: identity.relyingPartyIdentifier,
@@ -104,6 +123,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     // MARK: Hosting & completion
 
     private func host(_ rootView: some View) {
+        autofillLog.log("host: presenting SwiftUI content")
         // Apply the user's theme (shared via the App Group) so the extension matches
         // the app: accent tint + light/dark. Static — no wallpaper/animation here.
         let theme = ThemePalette.resolve(
@@ -113,7 +133,11 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
         let hosting = UIHostingController(
             rootView: rootView
                 .tint(Color(rgb: theme.accent))
-                .preferredColorScheme(theme.isDark ? .dark : .light))
+                .preferredColorScheme(theme.isDark ? .dark : .light)
+                // Resolve SwiftUI `Text("…")` literals against the in-app language (mirrored from
+                // the app via the App Group) — the environment locale selects the catalog table,
+                // which the bare literals otherwise read from the device locale.
+                .environment(\.locale, appResourceLocale))
         addChild(hosting)
         hosting.view.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(hosting.view)

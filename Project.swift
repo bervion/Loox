@@ -118,6 +118,13 @@ let project = Project(
                 ],
             ]),
             sources: ["VaultifyAutoFill/**", "VaultifyCore/**"],
+            // Share the app's string catalog so the extension localizes (EN + VI) instead of
+            // rendering literal keys, plus the diceware wordlist so the in-extension password
+            // generator's passphrase mode works (`Bundle.main` resolves to the .appex bundle).
+            resources: [
+                "Vaultify/Localizable.xcstrings",
+                "Vaultify/Resources/eff_large_wordlist.txt",
+            ],
             entitlements: "VaultifyAutoFill/VaultifyAutoFill.entitlements",
             settings: .settings(base: [
                 "CODE_SIGN_STYLE": "Automatic",

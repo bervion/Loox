@@ -10,13 +10,16 @@ struct ProfileAvatarView: View {
     @State private var picked: PhotosPickerItem?
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        // Resolve themed colors on the main actor before the Sendable PhotosPicker label closure.
+        let badgeForeground = Color(rgb: env.theme.active.accentForeground)
+        let badgeBackground = Color(rgb: env.theme.active.accent)
+        return ZStack(alignment: .bottomTrailing) {
             avatar
             PhotosPicker(selection: $picked, matching: .images) {
                 PolarisIcon(Icons.camera, size: 15)
-                    .foregroundStyle(Color(rgb: env.theme.active.accentForeground))
+                    .foregroundStyle(badgeForeground)
                     .frame(width: 30, height: 30)
-                    .background(Color(rgb: env.theme.active.accent), in: Circle())
+                    .background(badgeBackground, in: Circle())
             }
         }
         .onChange(of: picked) { _, newItem in

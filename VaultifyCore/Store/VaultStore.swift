@@ -8,14 +8,23 @@ final class VaultStore {
     var context: ModelContext { container.mainContext }
 
     init(inMemory: Bool = false) {
+        do { container = try Self.makeContainer(inMemory: inMemory) }
+        catch { fatalError("Failed to initialise vault store: \(error)") }
+    }
+
+    /// Throwing initialiser for callers that must recover from a container failure instead of
+    /// crashing — the AutoFill extension write path, where a `fatalError` would kill the
+    /// credential UI mid-registration. The label distinguishes it from the app's `init`.
+    init(recoverable inMemory: Bool) throws {
+        container = try Self.makeContainer(inMemory: inMemory)
+    }
+
+    private static func makeContainer(inMemory: Bool) throws -> ModelContainer {
         let configuration = inMemory
             ? ModelConfiguration(isStoredInMemoryOnly: true)
             : ModelConfiguration(url: SharedConfig.storeURL)
-        do {
-            container = try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self, configurations: configuration)
-        } catch {
-            fatalError("Failed to initialise vault store: \(error)")
-        }
+        return try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self,
+                                  configurations: configuration)
     }
 
     /// Permanently delete every record (used by "Erase Vault").
