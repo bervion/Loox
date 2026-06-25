@@ -1,9 +1,8 @@
 import SwiftUI
 import AuthenticationServices
 
-/// Confirm + save a credential the system handed us via the iOS 26.2 native "Save password" flow
-/// (after the user registers/changes a password on a web form). Unlocks the vault (Face ID → master
-/// password fallback), shows the login, then seals it into the vault via `VaultWriter`.
+/// Confirm + save a credential the system handed us via the iOS 26.2 native "Save password" flow.
+/// Unlock is handled by the shared `UnlockGate`; this view confirms + seals via `VaultWriter`.
 struct SavePasswordView: View {
     let host: String
     let username: String
@@ -11,34 +10,26 @@ struct SavePasswordView: View {
     let onSaved: () -> Void
     let onCancel: () -> Void
 
-    @State private var masterPassword = ""
-    @State private var vaultKey: [UInt8] = []
-    @State private var unlocked = false
-    @State private var biometricInProgress = true
-    @State private var unlocking = false
+    var body: some View {
+        UnlockGate(title: "Save login", onCancel: onCancel) { vaultKey in
+            SaveConfirmView(host: host, username: username, password: password,
+                            vaultKey: vaultKey, onSaved: onSaved)
+        }
+    }
+}
+
+/// Post-unlock save confirmation. Shows the login, then seals it into the vault on Save.
+private struct SaveConfirmView: View {
+    let host: String
+    let username: String
+    let password: String
+    let vaultKey: [UInt8]
+    let onSaved: () -> Void
+
     @State private var saving = false
     @State private var errorMessage: String?
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if unlocked { saveConfirm }
-                else if biometricInProgress {
-                    ProgressView().controlSize(.large).frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else { unlockForm }
-            }
-            .navigationTitle("Save login")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onCancel) }
-            }
-        }
-        .task { await attemptBiometricUnlock() }
-    }
-
-    // MARK: Confirm
-
-    private var saveConfirm: some View {
         Form {
             Section {
                 LabeledContent("Website", value: host.isEmpty ? "—" : host)
@@ -52,58 +43,6 @@ struct SavePasswordView: View {
             }
         }
     }
-
-    // MARK: Unlock
-
-    private var unlockForm: some View {
-        Form {
-            Section {
-                SecureField("Master password", text: $masterPassword)
-                    .textContentType(.password).submitLabel(.go).onSubmit(unlockWithMaster)
-            } header: {
-                Text("Unlock your vault")
-            } footer: {
-                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-            }
-            Section {
-                Button(action: unlockWithMaster) { HStack { Spacer(); Text("Unlock").bold(); Spacer() } }
-                    .disabled(masterPassword.isEmpty || unlocking)
-            }
-        }
-        .overlay { if unlocking { ProgressView().controlSize(.large) } }
-        .disabled(unlocking)
-    }
-
-    private func attemptBiometricUnlock() async {
-        guard BiometricKeyStore.isEnrolled else { biometricInProgress = false; return }
-        do {
-            vaultKey = try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
-            unlocked = true
-        } catch {
-            biometricInProgress = false
-        }
-    }
-
-    private func unlockWithMaster() {
-        guard !masterPassword.isEmpty else { return }
-        unlocking = true; errorMessage = nil
-        let password = masterPassword
-        Task {
-            do {
-                vaultKey = try await Task.detached(priority: .userInitiated) {
-                    try VaultReader.deriveVaultKey(masterPassword: password)
-                }.value
-                unlocked = true
-            } catch VaultReader.Failure.wrongPassword {
-                errorMessage = appString("Incorrect master password.")
-            } catch {
-                errorMessage = appString("Couldn’t unlock the vault.")
-            }
-            unlocking = false
-        }
-    }
-
-    // MARK: Save
 
     private func save() {
         saving = true; errorMessage = nil

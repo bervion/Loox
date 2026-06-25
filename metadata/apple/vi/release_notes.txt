@@ -1,1 +1,1 @@
-Trên iOS 26.2 trở lên, AutoFill nay hỗ trợ lưu mật khẩu và gợi ý mật khẩu mạnh ngay trong trình duyệt. Mở khoá bằng Face ID và tạo thông tin đăng nhập mới trực tiếp từ tiện ích AutoFill. Màn hình hồ sơ mới giúp quản lý danh tính và đồng bộ ảnh đại diện. Các trường nhạy cảm tự ẩn khi không thao tác.
+Mã xác thực một lần nay được điền tự động. Khi đăng nhập vào trang web hoặc ứng dụng yêu cầu xác minh hai bước, mã hiện ngay trên thanh gợi ý bàn phím để bạn chọn chỉ với một chạm, không cần chuyển sang ứng dụng khác để sao chép. Yêu cầu iOS 18 trở lên.
