@@ -73,7 +73,13 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     /// into the vault. iOS 26.2+ only; older iOS uses the manual "＋ Create new login" flow.
     @available(iOS 26.2, *)
     override func prepareInterface(for savePasswordRequest: ASSavePasswordRequest) {
-        autofillLog.log("prepareInterface(save)")
+        autofillLog.log("prepareInterface(save) event=\(savePasswordRequest.event.rawValue, privacy: .public)")
+        // Skip the premature "strong password just filled" event — the credential has no
+        // username/email yet. The real save lands at form submission (see below).
+        guard savePasswordRequest.event != .generatedPasswordFilled else {
+            extensionContext.completeSavePasswordRequest(completionHandler: nil)
+            return
+        }
         let credential = savePasswordRequest.credential
         host(SavePasswordView(
             host: savePasswordRequest.serviceIdentifier.identifier,
@@ -83,10 +89,20 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             onCancel: { [weak self] in self?.cancel() }))
     }
 
-    /// Saving needs the vault unlocked, so we can't do it silently — request interactive UI.
+    /// iOS asks whether we can save silently. The vault is locked (need Face ID / master
+    /// password), so for a real save we request interactive UI. EXCEPTION: the
+    /// `generatedPasswordFilled` event fires right after the strong password is inserted, before
+    /// the user types their email — that credential is incomplete, so we complete without a
+    /// prompt and let the proper save happen at form submission (`formDidDisappear` /
+    /// `userInitiated`), when the username/email is present.
     @available(iOS 26.2, *)
     override func performWithoutUserInteractionIfPossible(savePasswordRequest: ASSavePasswordRequest) {
-        autofillLog.log("performSave(noUI) → userInteractionRequired")
+        if savePasswordRequest.event == .generatedPasswordFilled {
+            autofillLog.log("performSave(noUI) generatedPasswordFilled → skip (incomplete credential)")
+            extensionContext.completeSavePasswordRequest(completionHandler: nil)
+            return
+        }
+        autofillLog.log("performSave(noUI) event=\(savePasswordRequest.event.rawValue, privacy: .public) → userInteractionRequired")
         cancel(code: .userInteractionRequired)
     }
 
