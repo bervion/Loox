@@ -1208,6 +1208,16 @@
         }
       }
     },
+    "Create a passkey": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo passkey"
+          }
+        }
+      }
+    },
     "Create identity": {
       "localizations": {
         "vi": {
@@ -4173,6 +4183,16 @@
         }
       }
     },
+    "Save login": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưu đăng nhập"
+          }
+        }
+      }
+    },
     "Save your Emergency Kit": {
       "localizations": {
         "vi": {
@@ -4448,6 +4468,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đăng nhập iCloud để đồng bộ."
+          }
+        }
+      }
+    },
+    "Sign in with a passkey": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đăng nhập bằng passkey"
           }
         }
       }

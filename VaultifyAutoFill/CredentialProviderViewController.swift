@@ -65,6 +65,41 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
         }
     }
 
+    // MARK: Save & generate (iOS 26.2+ native AutoFill)
+
+    #if compiler(>=6.2)
+    /// iOS asks to SAVE a credential the user just created on a web form (the native
+    /// "Save password in Vaultify" sheet). We host a confirm-and-unlock UI, then seal it
+    /// into the vault. iOS 26.2+ only; older iOS uses the manual "＋ Create new login" flow.
+    @available(iOS 26.2, *)
+    override func prepareInterface(for savePasswordRequest: ASSavePasswordRequest) {
+        autofillLog.log("prepareInterface(save)")
+        let credential = savePasswordRequest.credential
+        host(SavePasswordView(
+            host: savePasswordRequest.serviceIdentifier.identifier,
+            username: credential.user,
+            password: credential.password,
+            onSaved: { [weak self] in self?.extensionContext.completeSavePasswordRequest(completionHandler: nil) },
+            onCancel: { [weak self] in self?.cancel() }))
+    }
+
+    /// Saving needs the vault unlocked, so we can't do it silently — request interactive UI.
+    @available(iOS 26.2, *)
+    override func performWithoutUserInteractionIfPossible(savePasswordRequest: ASSavePasswordRequest) {
+        autofillLog.log("performSave(noUI) → userInteractionRequired")
+        cancel(code: .userInteractionRequired)
+    }
+
+    /// Branded "Use Strong Password" generation. Needs no vault key, so return a strong
+    /// password headlessly (the OS presents it); `SupportsGeneratePasswordCredentialsWithUI=false`.
+    @available(iOS 26.2, *)
+    override func performWithoutUserInteraction(generatePasswordsRequest: ASGeneratePasswordsRequest) {
+        autofillLog.log("performGenerate(noUI)")
+        let result = ASGeneratedPassword(kind: .strong, value: PasswordGenerator.generate(PasswordOptions()))
+        extensionContext.completeGeneratePasswordRequest(results: [result], completionHandler: nil)
+    }
+    #endif
+
     // MARK: Passkeys
 
     /// Passkey registration ceremony (create a new credential).

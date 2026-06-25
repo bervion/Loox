@@ -1,4 +1,9 @@
 import SwiftUI
+import os
+
+/// Diagnostic logger for the extension's biometric unlock attempt. Filter Console by subsystem
+/// `com.bervion.vaultify.autofill`, category `biometric`. Non-sensitive markers only.
+private let bioLog = Logger(subsystem: "com.bervion.vaultify.autofill", category: "biometric")
 
 /// Unlock (master password) then pick a login to fill. Items whose website
 /// matches the requesting app/site are shown first.
@@ -49,14 +54,18 @@ struct AutoFillView: View {
     /// and unlock directly — skipping the master password. ANY failure (cancel, item-not-found,
     /// entitlement, biometrics changed) reveals the master-password form as a fallback.
     private func attemptBiometricUnlock() async {
-        guard BiometricKeyStore.isEnrolled else { biometricInProgress = false; return }
+        let enrolled = BiometricKeyStore.isEnrolled
+        bioLog.log("attemptBiometricUnlock: isEnrolled(shared group)=\(enrolled, privacy: .public)")
+        guard enrolled else { biometricInProgress = false; return }
         do {
             let key = try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
+            bioLog.log("biometric retrieve OK — unlocking via Face ID")
             adoptUnlocked(key: key)
             if let preferredRecordID, let hit = items.first(where: { $0.id == preferredRecordID }) {
                 select(hit)
             }
         } catch {
+            bioLog.error("biometric retrieve FAILED: \(String(describing: error), privacy: .public) — fallback to master password")
             biometricInProgress = false
         }
     }

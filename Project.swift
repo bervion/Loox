@@ -113,6 +113,12 @@ let project = Project(
                         "ASCredentialProviderExtensionCapabilities": [
                             "ProvidesPasswords": true,
                             "ProvidesPasskeys": true,
+                            // iOS 26.2+: native "Save password in Vaultify" sheet + branded
+                            // "Use Strong Password" generation. Older iOS uses the manual
+                            // "＋ Create new login" flow. Generation is headless (no extension UI).
+                            "SupportsSavePasswordCredentials": true,
+                            "SupportsGeneratePasswordCredentials": true,
+                            "SupportsGeneratePasswordCredentialsWithUI": false,
                         ],
                     ],
                 ],
