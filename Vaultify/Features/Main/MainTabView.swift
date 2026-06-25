@@ -38,6 +38,11 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToItems)) { _ in
                 selection = .items
             }
+            // Present the editor for a 2FA login imported via otpauth:// (now that we're unlocked).
+            .sheet(item: Binding(get: { env.pendingTOTPImport },
+                                 set: { env.pendingTOTPImport = $0 })) { item in
+                ItemEditorScreen(target: .draft(item))
+            }
     }
 
     /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).
