@@ -14,6 +14,11 @@ struct VaultifyApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .onOpenURL { url in
+                    // 2FA setup from an otpauth:// link/QR → stash a draft login; presented once
+                    // the vault is unlocked (see MainTabView).
+                    if let draft = TOTPImport.draftLogin(from: url) { env.pendingTOTPImport = draft }
+                }
                 .environment(env)
                 .environment(\.locale, locale)
                 .environment(\.appTheme, env.theme.active)

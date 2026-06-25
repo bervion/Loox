@@ -29,12 +29,16 @@ struct ItemEditorScreen: View {
             item = VaultItem(category: category, title: "", fields: category.fieldTemplate)
         case .edit(let existing):
             item = existing
+        case .draft(let prefilled):
+            item = prefilled
         }
         _draft = State(initialValue: item)
         _original = State(initialValue: item)
     }
 
-    private var isNew: Bool { if case .new = target { return true } else { return false } }
+    private var isNew: Bool {
+        switch target { case .new, .draft: return true; case .edit: return false }
+    }
     private var hasChanges: Bool { draft != original }
     private var canSave: Bool {
         !draft.title.trimmingCharacters(in: .whitespaces).isEmpty || draft.fields.contains { !$0.isEmpty }

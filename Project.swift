@@ -50,6 +50,14 @@ let project = Project(
                         ],
                     ],
                 ],
+                // Handle otpauth:// 2FA setup links/QR codes → import into the vault. Makes Vaultify
+                // appear in Settings → "Set Up Verification Codes".
+                "CFBundleURLTypes": [
+                    [
+                        "CFBundleURLName": "com.bervion.vaultify.otpauth",
+                        "CFBundleURLSchemes": ["otpauth"],
+                    ],
+                ],
                 "NSCameraUsageDescription": "Vaultify uses the camera to scan 2FA setup QR codes.",
                 "NSFaceIDUsageDescription": "Vaultify uses Face ID to unlock your vault.",
                 "UIApplicationSupportsIndirectInputEvents": true,

@@ -13,6 +13,10 @@ import SwiftUI
     let faviconService: FaviconService
     let attachmentStore: AttachmentStore
 
+    /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
+    /// vault is unlocked; cleared when the editor dismisses.
+    var pendingTOTPImport: VaultItem?
+
     init() {
         let settings = SettingsStore()
         let session = VaultSession(settings: settings)
