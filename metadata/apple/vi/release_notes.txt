@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện độ ổn định của Face ID khi mở khóa ứng dụng, không còn bị chuyển sang màn hình nhập mật khẩu nếu Face ID cần thử lại.
+Phiên bản 1.8.0: Cải thiện hiệu suất và sửa lỗi.

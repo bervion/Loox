@@ -1,1 +1,1 @@
-This update improves Face ID reliability when unlocking the app, so you're no longer sent to the password screen if Face ID needs another try.
+Version 1.8.0: Performance improvements and bug fixes.

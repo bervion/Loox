@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.8.0] - 2026-07-02
+
+### Added
+- brand the welcome step with the Loox logo mark
+- swap app icon and brand logo to Loox artwork
+- rebrand to Loox (display) / Loox Password (full name)
+- redesign Emergency Kit step
+
+### Fixed
+- About screen shows the Loox wordmark instead of the shield glyph
+- render the Loox wordmark aspect-fit instead of a forced square
+- copy toast in onboarding + compact kit header + confirm card
+- hero titles fit small screens via shared step header
+- saved-login title uses bare domain, not the full URL
+
+### Changed
+- update launch screen
+
+
 ## [1.7.1] - 2026-07-02
 
 ### Fixed
