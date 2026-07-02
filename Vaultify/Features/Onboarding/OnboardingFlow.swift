@@ -84,7 +84,7 @@ private struct WelcomeStep: View {
             Spacer()
             // The brand mark used on splash/lock, so the first-run screen opens
             // with the same Loox identity instead of a generic glyph.
-            BrandLogoMark(size: 92, shadowRadius: 14, shadowY: 7)
+            BrandLogoMark(size: 44)
             OnboardingStepHeader(
                 "Loox Password",
                 subtitle: "A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")

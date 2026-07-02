@@ -84,7 +84,7 @@ private struct PrivacyShield: View {
     var body: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
-            BrandLogoMark(size: 104, shadowRadius: 16, shadowY: 8)
+            BrandLogoMark(size: 48)
         }
     }
 }
