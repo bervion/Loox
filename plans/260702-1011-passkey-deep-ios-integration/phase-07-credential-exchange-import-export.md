@@ -1,11 +1,14 @@
 ---
 phase: 7
 title: "Credential Exchange Import-Export"
-status: pending
+status: partial
 priority: P3
 effort: "2d"
 dependencies: [1, 4]
 ---
+
+<!-- 2026-07-02: mapper + service BUILT (guarded iOS 26.1, dormant/not UI-wired), passkey key-encoding unit-tested. Verification BLOCKED: ASImportable* SDK value types hard-crash on iOS 27.0 beta simulator; round-trip + export/import E2E + import-destination capability + cross-manager key encoding all deferred to on-device QA. See reports/phase-07-credential-exchange-discovery-gate-findings-report.md. -->
+
 
 # Phase 7: Credential Exchange Import-Export — STRETCH
 
