@@ -12,6 +12,50 @@ nonisolated struct PasskeySecret: Codable, Sendable {
     var privateKeyRaw: Data
     var counter: UInt32
     var createdAt: Date
+    /// WebAuthn flags this credential registered with. Nil means a legacy
+    /// Vaultify passkey created before BE/BS support, so assertions keep UP|UV.
+    var flags: UInt8?
+
+    init(relyingParty: String, userName: String, userHandle: Data, credentialID: Data,
+         privateKeyRaw: Data, counter: UInt32, createdAt: Date, flags: UInt8? = nil) {
+        self.relyingParty = relyingParty
+        self.userName = userName
+        self.userHandle = userHandle
+        self.credentialID = credentialID
+        self.privateKeyRaw = privateKeyRaw
+        self.counter = counter
+        self.createdAt = createdAt
+        self.flags = flags
+    }
+}
+
+/// Non-secret passkey projection for app UI and identity publishing. Private
+/// key material must stay out of repository/UI observable state.
+nonisolated struct PasskeyInfo: Identifiable, Equatable, Sendable {
+    var relyingParty: String
+    var userName: String
+    var userHandle: Data
+    var credentialID: Data
+    var createdAt: Date
+    var lastUsedAt: Date?
+    /// Public WebAuthn authenticator flags (BE/BS) — not secret, used only to
+    /// show backup/sync status. Nil for legacy credentials without stored flags.
+    var flags: UInt8?
+
+    init(relyingParty: String, userName: String, userHandle: Data, credentialID: Data,
+         createdAt: Date, lastUsedAt: Date? = nil, flags: UInt8? = nil) {
+        self.relyingParty = relyingParty
+        self.userName = userName
+        self.userHandle = userHandle
+        self.credentialID = credentialID
+        self.createdAt = createdAt
+        self.lastUsedAt = lastUsedAt
+        self.flags = flags
+    }
+
+    var id: String { recordIdentifier }
+    var recordIdentifier: String { credentialID.base64URLEncodedString() }
+    var backupStatus: PasskeyBackupStatus { .evaluate(flags: flags) }
 }
 
 /// Persistent record for one passkey. Content lives only in `sealed`
@@ -21,12 +65,43 @@ nonisolated struct PasskeySecret: Codable, Sendable {
 final class PasskeyRecord {
     @Attribute(.unique) var id: String
     var sealed: Data
+    /// iOS 18 silent upgrades are written while the vault is locked. Those
+    /// records live here until unlock-time migration re-seals them under
+    /// `sealed`; old records keep this nil.
+    var envelopeSealed: Data?
+    /// Non-secret identity metadata used only to remove/quarantine envelope
+    /// records that cannot be opened after a bundle mismatch.
+    var relyingPartyHint: String?
+    var userNameHint: String?
+    var userHandleHint: Data?
+    /// WebAuthn `largeBlob` payload for this credential, sealed under the Vault
+    /// Key like the secret. Nil until a relying party writes one during an
+    /// assertion; interactive ceremonies only (never the locked silent path).
+    var largeBlobSealed: Data?
     var createdAt: Date
+    var usedAt: Date?
 
-    init(id: String, sealed: Data, createdAt: Date = .now) {
+    init(id: String, sealed: Data, envelopeSealed: Data? = nil,
+         relyingPartyHint: String? = nil, userNameHint: String? = nil,
+         userHandleHint: Data? = nil, largeBlobSealed: Data? = nil,
+         createdAt: Date = .now, usedAt: Date? = nil) {
         self.id = id
         self.sealed = sealed
+        self.envelopeSealed = envelopeSealed
+        self.relyingPartyHint = relyingPartyHint
+        self.userNameHint = userNameHint
+        self.userHandleHint = userHandleHint
+        self.largeBlobSealed = largeBlobSealed
         self.createdAt = createdAt
+        self.usedAt = usedAt
+    }
+}
+
+extension PasskeySecret {
+    var info: PasskeyInfo {
+        PasskeyInfo(relyingParty: relyingParty, userName: userName,
+                    userHandle: userHandle, credentialID: credentialID,
+                    createdAt: createdAt, lastUsedAt: nil, flags: flags)
     }
 }
 
@@ -37,5 +112,14 @@ extension Data {
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
+    }
+
+    init?(base64URLEncodedString string: String) {
+        var base64 = string.replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let padding = (4 - base64.count % 4) % 4
+        if padding > 0 { base64.append(String(repeating: "=", count: padding)) }
+        guard let data = Data(base64Encoded: base64) else { return nil }
+        self = data
     }
 }

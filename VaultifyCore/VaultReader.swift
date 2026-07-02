@@ -92,4 +92,13 @@ extension VaultItem {
             return host == other || host.hasSuffix(".\(other)") || other.hasSuffix(".\(host)") || other.contains(host)
         }
     }
+
+    /// Whether this login's host belongs to a WebAuthn relying-party id.
+    /// Unlike the looser password AutoFill matcher above, passkey attachment is
+    /// display-only and conservative: exact host or true subdomain only.
+    func matchesRelyingParty(_ relyingParty: String) -> Bool {
+        let rp = relyingParty.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !rp.isEmpty, let host = autofillHost else { return false }
+        return host == rp || host.hasSuffix(".\(rp)")
+    }
 }

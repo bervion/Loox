@@ -25,6 +25,12 @@ nonisolated struct VaultKeyBundle: Codable, Sendable {
     var l2Kdf: KdfParams?
     var wrappedL2SK: Data?
 
+    /// Write-only passkey envelope: the public half is readable while locked so
+    /// iOS 18 can silently create upgraded passkeys; the private half stays
+    /// sealed under the Vault Key and is verified on unlock.
+    var envelopePublicKey: Data?
+    var envelopePrivateKeySealed: Data?
+
     static let currentVersion = 1
 
     /// Stored as ciphertext in the shared App Group container (with complete

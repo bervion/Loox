@@ -17,6 +17,7 @@ struct ImportView: View {
 
     @State private var showPicker = false
     @State private var parsed: [ImportRow] = []
+    @State private var parsedPasskeys: [PasskeySecret] = []
     @State private var encryptedData: Data?
     @State private var passphrase = ""
     @State private var error: String?
@@ -43,15 +44,22 @@ struct ImportView: View {
                 .listRowBackground(VaultColors.surface)
             }
 
-            if !parsed.isEmpty {
-                Section("Preview (\(parsed.count))") {
+            if !parsed.isEmpty || !parsedPasskeys.isEmpty {
+                Section("Preview (\(parsed.count + parsedPasskeys.count))") {
                     ForEach(parsed.prefix(6)) { VaultItemRow(item: $0.item) }
                     if parsed.count > 6 { Text("and \(parsed.count - 6) more…").font(.footnote).themedForeground(.secondary) }
+                    if !parsedPasskeys.isEmpty {
+                        Label {
+                            Text("\(parsedPasskeys.count) passkeys")
+                        } icon: {
+                            PolarisIcon(Icons.passkey)
+                        }
+                    }
                 }
                 .listRowBackground(VaultColors.surface)
                 Section {
                     Button { performImport() } label: {
-                        Text("Import \(parsed.count) Items").frame(maxWidth: .infinity)
+                        Text("Import \(parsed.count + parsedPasskeys.count) Records").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.themedProminent)
                 }
@@ -72,7 +80,7 @@ struct ImportView: View {
     }
 
     private func handle(_ result: Result<[URL], Error>) {
-        error = nil; parsed = []; encryptedData = nil
+        error = nil; parsed = []; parsedPasskeys = []; encryptedData = nil
         guard case let .success(urls) = result, let url = urls.first else {
             if case let .failure(failure) = result { error = failure.localizedDescription }
             return
@@ -94,10 +102,11 @@ struct ImportView: View {
     private func decrypt(_ data: Data) async {
         working = true; error = nil
         do {
-            parsed = try await VaultBackup.importEncrypted(data, passphrase: passphrase)
-                .map { ImportRow(item: $0.item, folderName: $0.folderName) }
+            let imported = try await VaultBackup.importEncryptedWithPasskeys(data, passphrase: passphrase)
+            parsed = imported.items.map { ImportRow(item: $0.item, folderName: $0.folderName) }
+            parsedPasskeys = imported.passkeys
             encryptedData = nil
-            if parsed.isEmpty { error = "Backup contained no items." }
+            if parsed.isEmpty && parsedPasskeys.isEmpty { error = "Backup contained no records." }
         } catch {
             self.error = "Couldn’t decrypt — check the password."
         }
@@ -105,16 +114,32 @@ struct ImportView: View {
     }
 
     private func performImport() {
-        var folderCache: [String: String] = [:]   // lowercased name → folder id
-        for row in parsed {
-            var item = row.item
-            if let name = row.folderName, !name.isEmpty {
-                item.folderId = resolveFolder(name, cache: &folderCache)
-            }
-            try? env.repository.add(item)
+        error = nil
+        guard parsedPasskeys.isEmpty || env.session.vaultKey != nil else {
+            error = "Unlock your vault before importing passkeys."
+            return
         }
-        Haptics.success()
-        dismiss()
+        var folderCache: [String: String] = [:]   // lowercased name → folder id
+        do {
+            for row in parsed {
+                var item = row.item
+                if let name = row.folderName, !name.isEmpty {
+                    item.folderId = resolveFolder(name, cache: &folderCache)
+                }
+                try env.repository.add(item)
+            }
+            if let key = env.session.vaultKey {
+                let vault = PasskeyVault(store: env.store)
+                for passkey in parsedPasskeys {
+                    _ = try vault.save(passkey, key: key)
+                }
+                env.repository.reload()
+            }
+            Haptics.success()
+            dismiss()
+        } catch {
+            self.error = "Import failed before all records could be saved."
+        }
     }
 
     /// Match a folder by name (case-insensitive), creating it if it doesn't exist.

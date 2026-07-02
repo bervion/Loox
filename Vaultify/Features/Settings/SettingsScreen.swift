@@ -15,13 +15,19 @@ struct SettingsScreen: View {
             })
     }
 
+    private var automaticPasskeyBinding: Binding<Bool> {
+        Binding(
+            get: { SharedConfig.automaticPasskeyUpgradesEnabled },
+            set: { SharedConfig.automaticPasskeyUpgradesEnabled = $0 })
+    }
+
     var body: some View {
         @Bindable var settings = env.settings
         VaultSheetScaffold(title: "Settings",
                            leading: { EmptyView() },
                            trailing: { SheetDismissButton("Done") }) {
             Form {
-                Section("Security") {
+                Section {
                     if BiometricAuth.isAvailable {
                         Toggle(isOn: biometricBinding) {
                             Label { Text("Unlock with \(BiometricAuth.displayName)") } icon: { PolarisIcon(BiometricAuth.iconAsset) }
@@ -53,6 +59,13 @@ struct SettingsScreen: View {
                     } label: {
                         Label { Text("Extra Protection") } icon: { PolarisIcon(Icons.lockFill) }
                     }
+                    Toggle(isOn: automaticPasskeyBinding) {
+                        Label { Text("Automatic passkey upgrades") } icon: { PolarisIcon(Icons.passkey) }
+                    }
+                } header: {
+                    Text("Security")
+                } footer: {
+                    Text("Automatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
                 }
                 .listRowBackground(VaultColors.surface)
 
@@ -113,6 +126,9 @@ struct SettingsScreen: View {
                 Section("Data") {
                     NavigationLink { SyncSettingsView() } label: {
                         Label { Text("iCloud Sync") } icon: { PolarisIcon(Icons.sync) }
+                    }
+                    NavigationLink { PasskeysScreen() } label: {
+                        Label { Text("Passkeys") } icon: { PolarisIcon(Icons.passkey) }
                     }
                     NavigationLink { ImportView() } label: {
                         Label { Text("Import") } icon: { PolarisIcon(Icons.importData) }

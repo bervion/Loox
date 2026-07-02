@@ -25,6 +25,7 @@ struct ItemDetailScreen: View {
                     header(item)
                     organization(item)
                     fieldsCard(item)
+                    ItemPasskeysSection(item: item)
                     trashCard(item)
                     metadata(item)
                 }

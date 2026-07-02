@@ -121,6 +121,7 @@ let project = Project(
                         "ASCredentialProviderExtensionCapabilities": [
                             "ProvidesPasswords": true,
                             "ProvidesPasskeys": true,
+                            "SupportsConditionalPasskeyRegistration": true,
                             // iOS 18+: AutoFill 2FA / one-time codes — Vaultify generates the
                             // current TOTP from the stored secret when an OTP field is focused.
                             "ProvidesOneTimeCodes": true,

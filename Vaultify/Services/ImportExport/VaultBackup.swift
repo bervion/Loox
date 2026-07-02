@@ -28,6 +28,15 @@ nonisolated enum VaultBackup {
         }
     }
     struct EncryptedBackup: Codable { var version: Int; var salt: Data; var kdf: KdfParams; var sealed: Data }
+    struct EncryptedImport {
+        var items: [(item: VaultItem, folderName: String?)]
+        var passkeys: [PasskeySecret]
+    }
+
+    private struct PortableVaultPayload: Codable {
+        var items: [PortableItem]
+        var passkeys: [PasskeySecret]?
+    }
 
     // MARK: CSV
 
@@ -96,12 +105,14 @@ nonisolated enum VaultBackup {
     // MARK: Encrypted backup
 
     static func exportEncrypted(_ items: [VaultItem], folderNames: [String: String] = [:],
+                                passkeys: [PasskeySecret] = [],
                                 passphrase: String) async throws -> Data {
         let portable = items.map {
             PortableItem(title: $0.title, category: $0.category.rawValue, fields: $0.fields,
                          tags: $0.tags, folderName: $0.folderId.flatMap { folderNames[$0] })
         }
-        let json = try JSONEncoder().encode(portable)
+        let json = try JSONEncoder().encode(PortableVaultPayload(items: portable,
+                                                                 passkeys: passkeys.isEmpty ? nil : passkeys))
         let salt = KeyHierarchy.newSalt()
         let kdf = KdfParams.standard
         var kek = try await Task.detached(priority: .userInitiated) {
@@ -113,17 +124,32 @@ nonisolated enum VaultBackup {
     }
 
     static func importEncrypted(_ data: Data, passphrase: String) async throws -> [(item: VaultItem, folderName: String?)] {
+        try await importEncryptedWithPasskeys(data, passphrase: passphrase).items
+    }
+
+    static func importEncryptedWithPasskeys(_ data: Data, passphrase: String) async throws -> EncryptedImport {
         let backup = try JSONDecoder().decode(EncryptedBackup.self, from: data)
         var kek = try await Task.detached(priority: .userInitiated) {
             try KeyHierarchy.deriveKEK(passphrase: passphrase, salt: Array(backup.salt), params: backup.kdf)
         }.value
         defer { secureZero(&kek) }
         let json = try AESGCM.open(backup.sealed, key: kek)
-        let portable = try JSONDecoder().decode([PortableItem].self, from: json)
-        return portable.map {
+        let payload: PortableVaultPayload
+        if let decoded = try? JSONDecoder().decode(PortableVaultPayload.self, from: json) {
+            payload = decoded
+        } else {
+            payload = PortableVaultPayload(items: try JSONDecoder().decode([PortableItem].self, from: json),
+                                           passkeys: nil)
+        }
+        let items = payload.items.map {
             (VaultItem(category: ItemCategory(rawValue: $0.category) ?? .custom,
                        title: $0.title, fields: $0.fields, tags: $0.tags), $0.folderName)
         }
+        let passkeys = try (payload.passkeys ?? []).map { secret in
+            try PasskeyEnvelope.validate(secret)
+            return secret
+        }
+        return EncryptedImport(items: items, passkeys: passkeys)
     }
 
     // MARK: CSV helpers

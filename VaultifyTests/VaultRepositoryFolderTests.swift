@@ -11,6 +11,7 @@ final class VaultRepositoryFolderTests: XCTestCase {
         session.adoptUnlocked(key: [UInt8](repeating: 0x2a, count: 32))
         let repo = VaultRepository(store: VaultStore(inMemory: true), session: session)
         repo.reload()
+        TestLifetimeRetainer.retain(repo)
         return repo
     }
 

@@ -9,14 +9,26 @@ import CryptoKit
 /// Sign counter is kept at 0 (the spec permits a constant zero counter for
 /// authenticators that don't implement one), so assertions never need a write.
 nonisolated enum WebAuthn {
-    /// Anonymous (all-zero) AAGUID — we don't identify the authenticator model.
-    static let aaguid = Data(repeating: 0, count: 16)
+    /// Vaultify authenticator AAGUID. Frozen after first passkey release.
+    static let aaguid = Data([
+        0x90, 0x78, 0x98, 0x4A, 0xB6, 0xCA, 0x4D, 0xA9,
+        0xAA, 0x36, 0x9B, 0xB2, 0xA3, 0xB2, 0x3F, 0x02,
+    ])
 
     static let flagUserPresent: UInt8 = 0x01
     static let flagUserVerified: UInt8 = 0x04
+    static let flagBackupEligible: UInt8 = 0x08
+    static let flagBackupState: UInt8 = 0x10
     static let flagAttestedData: UInt8 = 0x40
+    static let legacyAssertionFlags = flagUserPresent | flagUserVerified
+    static let newCredentialFlags = flagUserPresent | flagUserVerified | flagBackupEligible | flagBackupState
 
-    struct Registration { let credentialID: Data; let attestationObject: Data; let privateKeyRaw: Data }
+    struct Registration {
+        let credentialID: Data
+        let attestationObject: Data
+        let privateKeyRaw: Data
+        let flags: UInt8
+    }
 
     /// Create a new passkey: P-256 key pair + credential id + attestation object.
     static func register(relyingParty: String) -> Registration {
@@ -24,19 +36,20 @@ nonisolated enum WebAuthn {
         let credentialID = Data(CryptoRandom.bytes(16))
         let attested = attestedCredentialData(credentialID: credentialID, publicKey: privateKey.publicKey)
         let authData = authenticatorData(relyingParty: relyingParty,
-                                         flags: flagUserPresent | flagUserVerified | flagAttestedData,
+                                         flags: newCredentialFlags | flagAttestedData,
                                          attestedCredentialData: attested)
         return Registration(credentialID: credentialID,
                             attestationObject: attestationObject(authData: authData),
-                            privateKeyRaw: privateKey.rawRepresentation)
+                            privateKeyRaw: privateKey.rawRepresentation,
+                            flags: newCredentialFlags)
     }
 
     /// Produce an assertion (authenticatorData + DER ECDSA signature) for a login.
-    static func assertion(relyingParty: String, clientDataHash: Data, privateKeyRaw: Data) throws
+    static func assertion(relyingParty: String, clientDataHash: Data, privateKeyRaw: Data, flags: UInt8) throws
         -> (authenticatorData: Data, signature: Data) {
         let privateKey = try P256.Signing.PrivateKey(rawRepresentation: privateKeyRaw)
         let authData = authenticatorData(relyingParty: relyingParty,
-                                         flags: flagUserPresent | flagUserVerified)
+                                         flags: flags)
         let signature = try privateKey.signature(for: authData + clientDataHash)
         return (authData, signature.derRepresentation)
     }

@@ -1,62 +1,71 @@
+import AuthenticationServices
 import SwiftUI
 
-/// Master-password unlock used by the passkey flows. On success it hands the
-/// derived Vault Key back to the view controller, which performs the WebAuthn
-/// registration or assertion.
-struct PasskeyActionView: View {
-    let prompt: LocalizedStringResource
-    let onUnlocked: (_ vaultKey: [UInt8]) -> Void
-    let onCancel: () -> Void
+enum PasskeyPurpose {
+    case assert(relyingParty: String, allowedCredentialIDs: [Data], clientDataHash: Data,
+                largeBlob: PasskeyLargeBlobDirective = .none)
+    case register(identity: ASPasskeyCredentialIdentity, clientDataHash: Data,
+                  largeBlob: PasskeyLargeBlobDirective = .none)
 
-    @State private var masterPassword = ""
-    @State private var working = false
-    @State private var errorMessage: String?
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    SecureField("Master password", text: $masterPassword)
-                        .textContentType(.password)
-                        .submitLabel(.go)
-                        .onSubmit(unlock)
-                } header: {
-                    Text(prompt)
-                } footer: {
-                    if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-                }
-                Section {
-                    Button(action: unlock) {
-                        HStack { Spacer(); Text("Unlock").bold(); Spacer() }
-                    }
-                    .disabled(masterPassword.isEmpty || working)
-                }
-            }
-            .navigationTitle("Vaultify")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onCancel) }
-            }
-            .overlay { if working { ProgressView().controlSize(.large) } }
-            .disabled(working)
+    var largeBlob: PasskeyLargeBlobDirective {
+        switch self {
+        case let .assert(_, _, _, directive): return directive
+        case let .register(_, _, directive): return directive
         }
     }
+}
 
-    private func unlock() {
-        guard !masterPassword.isEmpty else { return }
-        working = true; errorMessage = nil
-        let password = masterPassword
-        Task {
-            do {
-                let key = try await Task.detached(priority: .userInitiated) {
-                    try VaultReader.deriveVaultKey(masterPassword: password)
-                }.value
-                onUnlocked(key)
-            } catch VaultReader.Failure.wrongPassword {
-                errorMessage = String(localized: "Incorrect master password."); working = false
-            } catch {
-                errorMessage = String(localized: "Couldn’t unlock the vault."); working = false
+/// Passkey entry point: shared Face ID / master-password gate, then the
+/// post-unlock ceremony UI.
+struct PasskeyActionView: View {
+    let title: LocalizedStringKey
+    let purpose: PasskeyPurpose
+    let store: VaultStore
+    let onAssertion: (_ credential: ASPasskeyAssertionCredential) -> Void
+    let onRegistration: (_ credential: ASPasskeyRegistrationCredential) -> Void
+    let onCancel: (_ code: ASExtensionError.Code) -> Void
+
+    var body: some View {
+        UnlockGate(title: title, onCancel: { onCancel(.userCanceled) }) { vaultKey in
+            PasskeyMigrationGate(vaultKey: vaultKey, store: store) {
+                PasskeyCeremonyView(purpose: purpose,
+                                    vaultKey: vaultKey,
+                                    store: store,
+                                    onAssertion: onAssertion,
+                                    onRegistration: onRegistration,
+                                    onCancel: onCancel)
             }
         }
+    }
+}
+
+private struct PasskeyMigrationGate<Content: View>: View {
+    let vaultKey: [UInt8]
+    let store: VaultStore
+    @ViewBuilder var content: () -> Content
+    @State private var ready = false
+
+    var body: some View {
+        Group {
+            if ready {
+                content()
+            } else {
+                ProgressView().controlSize(.large).frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task { await prepare() }
+    }
+
+    private func prepare() async {
+        let result = PasskeyVault(store: store).prepareEnvelopeOnUnlock(key: vaultKey)
+        if !result.quarantinedSites.isEmpty {
+            SharedConfig.queuePasskeyQuarantineNotice(sites: result.quarantinedSites)
+        }
+        let replaced = result.replaced.map { $0.credentialIdentity() }
+        if !result.quarantinedIdentities.isEmpty || !replaced.isEmpty {
+            let identities = result.quarantinedIdentities.map { $0.credentialIdentity() } + replaced
+            try? await ASCredentialIdentityStore.shared.removeCredentialIdentities(identities)
+        }
+        ready = true
     }
 }
