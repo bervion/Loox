@@ -2,11 +2,13 @@ import Foundation
 import SwiftData
 
 /// Owns the SwiftData `ModelContainer` for the encrypted vault.
-@MainActor
 final class VaultStore {
     let container: ModelContainer
+
+    @MainActor
     var context: ModelContext { container.mainContext }
 
+    @MainActor
     init(inMemory: Bool = false) {
         do { container = try Self.makeContainer(inMemory: inMemory) }
         catch { fatalError("Failed to initialise vault store: \(error)") }
@@ -15,6 +17,7 @@ final class VaultStore {
     /// Throwing initialiser for callers that must recover from a container failure instead of
     /// crashing — the AutoFill extension write path, where a `fatalError` would kill the
     /// credential UI mid-registration. The label distinguishes it from the app's `init`.
+    @MainActor
     init(recoverable inMemory: Bool) throws {
         container = try Self.makeContainer(inMemory: inMemory)
     }
@@ -28,19 +31,23 @@ final class VaultStore {
     }
 
     /// Permanently delete every record (used by "Erase Vault").
+    @MainActor
     func eraseAll() throws {
         try context.delete(model: ItemRecord.self)
         try context.delete(model: FolderRecord.self)
+        try context.delete(model: PasskeyRecord.self)
         try context.save()
     }
 
     // MARK: Sync access (operates on opaque ciphertext — no Vault Key needed)
 
     /// All records including soft-deleted tombstones (for sync reconciliation).
+    @MainActor
     func allRecords() -> [ItemRecord] {
         (try? context.fetch(FetchDescriptor<ItemRecord>())) ?? []
     }
 
+    @MainActor
     func record(id: String) -> ItemRecord? {
         var descriptor = FetchDescriptor<ItemRecord>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
@@ -48,6 +55,7 @@ final class VaultStore {
     }
 
     /// Last-writer-wins upsert of a remote record (ciphertext + metadata).
+    @MainActor
     func upsertFromRemote(id: String, sealed: Data, favorite: Bool, trashedAt: Date?,
                           deletedAt: Date?, createdAt: Date, updatedAt: Date,
                           pinned: Bool, archived: Bool, useCount: Int,
@@ -83,6 +91,7 @@ final class VaultStore {
         try? context.save()
     }
 
+    @MainActor
     func markSynced(_ record: ItemRecord, changeTag: String?) {
         record.dirty = false
         record.ckChangeTag = changeTag
@@ -91,10 +100,12 @@ final class VaultStore {
 
     // MARK: Folder sync access (sealed name + non-secret presentation metadata)
 
+    @MainActor
     func allFolderRecords() -> [FolderRecord] {
         (try? context.fetch(FetchDescriptor<FolderRecord>())) ?? []
     }
 
+    @MainActor
     func folderRecord(id: String) -> FolderRecord? {
         var descriptor = FetchDescriptor<FolderRecord>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
@@ -102,6 +113,7 @@ final class VaultStore {
     }
 
     /// Last-writer-wins upsert of a remote folder record (sealed + metadata).
+    @MainActor
     func upsertFolderFromRemote(id: String, sealed: Data, iconAsset: String, colorRaw: String,
                                 sortIndex: Int, deletedAt: Date?, createdAt: Date, updatedAt: Date,
                                 changeTag: String?) {
@@ -126,6 +138,7 @@ final class VaultStore {
         try? context.save()
     }
 
+    @MainActor
     func markFolderSynced(_ record: FolderRecord, changeTag: String?) {
         record.dirty = false
         record.ckChangeTag = changeTag

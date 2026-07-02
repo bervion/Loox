@@ -12,6 +12,35 @@ nonisolated struct PasskeySecret: Codable, Sendable {
     var privateKeyRaw: Data
     var counter: UInt32
     var createdAt: Date
+    /// WebAuthn flags this credential registered with. Nil means a legacy
+    /// Vaultify passkey created before BE/BS support, so assertions keep UP|UV.
+    var flags: UInt8?
+
+    init(relyingParty: String, userName: String, userHandle: Data, credentialID: Data,
+         privateKeyRaw: Data, counter: UInt32, createdAt: Date, flags: UInt8? = nil) {
+        self.relyingParty = relyingParty
+        self.userName = userName
+        self.userHandle = userHandle
+        self.credentialID = credentialID
+        self.privateKeyRaw = privateKeyRaw
+        self.counter = counter
+        self.createdAt = createdAt
+        self.flags = flags
+    }
+}
+
+/// Non-secret passkey projection for app UI and identity publishing. Private
+/// key material must stay out of repository/UI observable state.
+nonisolated struct PasskeyInfo: Identifiable, Equatable, Sendable {
+    var relyingParty: String
+    var userName: String
+    var userHandle: Data
+    var credentialID: Data
+    var createdAt: Date
+    var lastUsedAt: Date?
+
+    var id: String { recordIdentifier }
+    var recordIdentifier: String { credentialID.base64URLEncodedString() }
 }
 
 /// Persistent record for one passkey. Content lives only in `sealed`
@@ -22,11 +51,21 @@ final class PasskeyRecord {
     @Attribute(.unique) var id: String
     var sealed: Data
     var createdAt: Date
+    var usedAt: Date?
 
-    init(id: String, sealed: Data, createdAt: Date = .now) {
+    init(id: String, sealed: Data, createdAt: Date = .now, usedAt: Date? = nil) {
         self.id = id
         self.sealed = sealed
         self.createdAt = createdAt
+        self.usedAt = usedAt
+    }
+}
+
+extension PasskeySecret {
+    var info: PasskeyInfo {
+        PasskeyInfo(relyingParty: relyingParty, userName: userName,
+                    userHandle: userHandle, credentialID: credentialID,
+                    createdAt: createdAt, lastUsedAt: nil)
     }
 }
 

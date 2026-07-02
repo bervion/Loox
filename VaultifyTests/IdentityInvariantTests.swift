@@ -12,6 +12,7 @@ final class IdentityInvariantTests: XCTestCase {
         let store = VaultStore(inMemory: true)
         let repo = VaultRepository(store: store, session: session)
         repo.reload()
+        TestLifetimeRetainer.retain(repo)
         return (repo, store)
     }
 

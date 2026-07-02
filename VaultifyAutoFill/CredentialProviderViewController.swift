@@ -23,11 +23,6 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             forCode: SharedConfig.sharedDefaults.string(forKey: SharedConfig.languageKey) ?? "system")
     }
 
-    private enum PasskeyPurpose {
-        case assert(relyingParty: String, allowedCredentialIDs: [Data], clientDataHash: Data)
-        case register(identity: ASPasskeyCredentialIdentity, clientDataHash: Data)
-    }
-
     // MARK: Passwords
 
     /// User picks from our list / a saved credential is requested.
@@ -76,9 +71,11 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
         }
         if let passkey = credentialRequest as? ASPasskeyCredentialRequest,
            let identity = passkey.credentialIdentity as? ASPasskeyCredentialIdentity {
+            guard let store = makePasskeyStore() else { cancel(code: .failed); return }
             showPasskey(.assert(relyingParty: identity.relyingPartyIdentifier,
                                 allowedCredentialIDs: [identity.credentialID],
-                                clientDataHash: passkey.clientDataHash))
+                                clientDataHash: passkey.clientDataHash),
+                        store: store)
         } else {
             let recordID = (credentialRequest.credentialIdentity as? ASPasswordCredentialIdentity)?.recordIdentifier
             host(AutoFillView(serviceIdentifiers: [], preferredRecordID: recordID,
@@ -144,53 +141,61 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     override func prepareInterface(forPasskeyRegistration registrationRequest: ASCredentialRequest) {
         guard let request = registrationRequest as? ASPasskeyCredentialRequest,
               let identity = request.credentialIdentity as? ASPasskeyCredentialIdentity else { cancel(); return }
-        showPasskey(.register(identity: identity, clientDataHash: request.clientDataHash))
+        guard request.supportedAlgorithms.contains(.ES256) else {
+            cancel(code: .failed)
+            return
+        }
+        guard let store = makePasskeyStore() else { cancel(code: .failed); return }
+        if #available(iOS 18, *), hasExcludedCredential(request, store: store) {
+            cancel(code: .matchedExcludedCredential)
+            return
+        }
+        showPasskey(.register(identity: identity, clientDataHash: request.clientDataHash), store: store)
     }
 
     /// Passkey assertion invoked from the QuickType bar.
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier],
                                         requestParameters: ASPasskeyCredentialRequestParameters) {
+        guard let store = makePasskeyStore() else { cancel(code: .failed); return }
         showPasskey(.assert(relyingParty: requestParameters.relyingPartyIdentifier,
                             allowedCredentialIDs: requestParameters.allowedCredentials,
-                            clientDataHash: requestParameters.clientDataHash))
+                            clientDataHash: requestParameters.clientDataHash),
+                    store: store)
     }
 
-    private func showPasskey(_ purpose: PasskeyPurpose) {
-        let prompt: LocalizedStringResource
-        if case .register = purpose { prompt = "Create a passkey" } else { prompt = "Sign in with a passkey" }
-        host(PasskeyActionView(prompt: prompt,
-                               onUnlocked: { [weak self] key in self?.perform(purpose, vaultKey: key) },
-                               onCancel: { [weak self] in self?.cancel() }))
-    }
-
-    private func perform(_ purpose: PasskeyPurpose, vaultKey: [UInt8]) {
-        switch purpose {
-        case let .assert(relyingParty, allowed, clientDataHash):
-            let matches = PasskeyVault.matching(relyingParty: relyingParty, allowedCredentialIDs: allowed, key: vaultKey)
-            guard let passkey = matches.first,
-                  let result = try? WebAuthn.assertion(relyingParty: relyingParty,
-                                                       clientDataHash: clientDataHash,
-                                                       privateKeyRaw: passkey.privateKeyRaw) else {
-                cancel(code: .credentialIdentityNotFound); return
-            }
-            let credential = ASPasskeyAssertionCredential(
-                userHandle: passkey.userHandle, relyingParty: relyingParty,
-                signature: result.signature, clientDataHash: clientDataHash,
-                authenticatorData: result.authenticatorData, credentialID: passkey.credentialID)
-            extensionContext.completeAssertionRequest(using: credential)
-
-        case let .register(identity, clientDataHash):
-            let registration = WebAuthn.register(relyingParty: identity.relyingPartyIdentifier)
-            let secret = PasskeySecret(relyingParty: identity.relyingPartyIdentifier,
-                                       userName: identity.userName, userHandle: identity.userHandle,
-                                       credentialID: registration.credentialID,
-                                       privateKeyRaw: registration.privateKeyRaw, counter: 0, createdAt: .now)
-            try? PasskeyVault.save(secret, key: vaultKey)
-            let credential = ASPasskeyRegistrationCredential(
-                relyingParty: identity.relyingPartyIdentifier, clientDataHash: clientDataHash,
-                credentialID: registration.credentialID, attestationObject: registration.attestationObject)
-            extensionContext.completeRegistrationRequest(using: credential)
+    private func showPasskey(_ purpose: PasskeyPurpose, store: VaultStore) {
+        let title: LocalizedStringKey
+        if case .register = purpose {
+            title = "Create a passkey"
+        } else {
+            title = "Sign in with a passkey"
         }
+        host(PasskeyActionView(
+            title: title,
+            purpose: purpose,
+            store: store,
+            onAssertion: { [weak self] credential in
+                self?.extensionContext.completeAssertionRequest(using: credential)
+            },
+            onRegistration: { [weak self] credential in
+                self?.extensionContext.completeRegistrationRequest(using: credential)
+            },
+            onCancel: { [weak self] code in self?.cancel(code: code) }))
+    }
+
+    private func makePasskeyStore() -> VaultStore? {
+        do { return try VaultStore(recoverable: false) }
+        catch {
+            autofillLog.error("passkey-store-open-failed")
+            return nil
+        }
+    }
+
+    @available(iOS 18, *)
+    private func hasExcludedCredential(_ request: ASPasskeyCredentialRequest, store: VaultStore) -> Bool {
+        guard let excluded = request.excludedCredentials else { return false }
+        let vault = PasskeyVault(store: store)
+        return excluded.contains { vault.hasRecord(credentialID: $0.credentialID) }
     }
 
     // MARK: Hosting & completion

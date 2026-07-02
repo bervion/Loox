@@ -1,62 +1,29 @@
+import AuthenticationServices
 import SwiftUI
 
-/// Master-password unlock used by the passkey flows. On success it hands the
-/// derived Vault Key back to the view controller, which performs the WebAuthn
-/// registration or assertion.
-struct PasskeyActionView: View {
-    let prompt: LocalizedStringResource
-    let onUnlocked: (_ vaultKey: [UInt8]) -> Void
-    let onCancel: () -> Void
+enum PasskeyPurpose {
+    case assert(relyingParty: String, allowedCredentialIDs: [Data], clientDataHash: Data)
+    case register(identity: ASPasskeyCredentialIdentity, clientDataHash: Data)
+}
 
-    @State private var masterPassword = ""
-    @State private var working = false
-    @State private var errorMessage: String?
+/// Passkey entry point: shared Face ID / master-password gate, then the
+/// post-unlock ceremony UI.
+struct PasskeyActionView: View {
+    let title: LocalizedStringKey
+    let purpose: PasskeyPurpose
+    let store: VaultStore
+    let onAssertion: (_ credential: ASPasskeyAssertionCredential) -> Void
+    let onRegistration: (_ credential: ASPasskeyRegistrationCredential) -> Void
+    let onCancel: (_ code: ASExtensionError.Code) -> Void
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    SecureField("Master password", text: $masterPassword)
-                        .textContentType(.password)
-                        .submitLabel(.go)
-                        .onSubmit(unlock)
-                } header: {
-                    Text(prompt)
-                } footer: {
-                    if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-                }
-                Section {
-                    Button(action: unlock) {
-                        HStack { Spacer(); Text("Unlock").bold(); Spacer() }
-                    }
-                    .disabled(masterPassword.isEmpty || working)
-                }
-            }
-            .navigationTitle("Vaultify")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onCancel) }
-            }
-            .overlay { if working { ProgressView().controlSize(.large) } }
-            .disabled(working)
-        }
-    }
-
-    private func unlock() {
-        guard !masterPassword.isEmpty else { return }
-        working = true; errorMessage = nil
-        let password = masterPassword
-        Task {
-            do {
-                let key = try await Task.detached(priority: .userInitiated) {
-                    try VaultReader.deriveVaultKey(masterPassword: password)
-                }.value
-                onUnlocked(key)
-            } catch VaultReader.Failure.wrongPassword {
-                errorMessage = String(localized: "Incorrect master password."); working = false
-            } catch {
-                errorMessage = String(localized: "Couldn’t unlock the vault."); working = false
-            }
+        UnlockGate(title: title, onCancel: { onCancel(.userCanceled) }) { vaultKey in
+            PasskeyCeremonyView(purpose: purpose,
+                                vaultKey: vaultKey,
+                                store: store,
+                                onAssertion: onAssertion,
+                                onRegistration: onRegistration,
+                                onCancel: onCancel)
         }
     }
 }

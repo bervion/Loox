@@ -14,6 +14,7 @@ import UserNotifications
     private(set) var trashed: [VaultItem] = []
     private(set) var archived: [VaultItem] = []
     private(set) var folders: [Folder] = []
+    private(set) var passkeys: [PasskeyInfo] = []
 
     init(store: VaultStore, session: VaultSession) {
         self.store = store
@@ -27,6 +28,7 @@ import UserNotifications
         trashed = []
         archived = []
         folders = []
+        passkeys = []
         CredentialIdentityService.clear()
     }
 
@@ -51,7 +53,8 @@ import UserNotifications
         trashed = trash.sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
         archived = arch.sorted { $0.updatedAt > $1.updatedAt }
         folders = loadFolders(key: key)
-        CredentialIdentityService.refresh(items: items)
+        passkeys = PasskeyVault(store: store).all(key: key)
+        CredentialIdentityService.refresh(items: items, passkeys: passkeys)
         normalizeDefaultIdentity()
     }
 

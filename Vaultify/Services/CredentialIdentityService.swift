@@ -1,17 +1,51 @@
 import Foundation
 import AuthenticationServices
 
+@MainActor
+private enum CredentialIdentityRefreshGate {
+    private static var generation = 0
+    private static var tail: Task<Void, Never>?
+
+    static func next() -> Int {
+        generation += 1
+        return generation
+    }
+
+    static func isCurrent(_ token: Int) -> Bool {
+        token == generation
+    }
+
+    static func enqueue(_ operation: @escaping () async -> Void) {
+        let previous = tail
+        tail = Task {
+            _ = await previous?.value
+            await operation()
+        }
+    }
+}
+
 /// Keeps the system AutoFill index (`ASCredentialIdentityStore`) in sync with
 /// the unlocked vault so iOS can suggest Vaultify logins on the QuickType bar.
 /// Only non-secret data (domain, username, item id) is published — never a
-/// password. No-op when the user hasn't enabled Vaultify for AutoFill.
+/// password or passkey private key. No-op when the user hasn't enabled Vaultify
+/// for AutoFill.
 enum CredentialIdentityService {
+    private static var isRunningUnitTests: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["XCTestConfigurationFilePath"] != nil
+            || environment["XCTestBundlePath"] != nil
+            || environment.keys.contains { $0.hasPrefix("XCTest") }
+            || NSClassFromString("XCTestCase") != nil
+            || NSClassFromString("XCTest.XCTestCase") != nil
+    }
 
     /// Replace the published identities with the current login items. Also publishes
-    /// one-time-code (2FA) identities on iOS 18+ for items carrying a TOTP secret, so iOS
-    /// suggests Vaultify on one-time-code fields too.
-    static func refresh(items: [VaultItem]) {
-        let identities: [ASPasswordCredentialIdentity] = items.compactMap { item in
+    /// passkey identities and one-time-code (2FA) identities on iOS 18+.
+    @MainActor
+    static func refresh(items: [VaultItem], passkeys: [PasskeyInfo]) {
+        guard !isRunningUnitTests else { return }
+        let token = CredentialIdentityRefreshGate.next()
+        let passwordIdentities: [ASPasswordCredentialIdentity] = items.compactMap { item in
             guard item.passwordField?.value.isEmpty == false,
                   let user = item.usernameField?.value, !user.isEmpty,
                   let host = item.autofillHost else { return nil }
@@ -20,14 +54,22 @@ enum CredentialIdentityService {
                 user: user,
                 recordIdentifier: item.id)
         }
-        Task {
+        let passkeyIdentities = passkeys.map { $0.credentialIdentity() }
+        CredentialIdentityRefreshGate.enqueue {
             let store = ASCredentialIdentityStore.shared
-            guard await store.state().isEnabled else { return }
+            guard await store.state().isEnabled,
+                  await CredentialIdentityRefreshGate.isCurrent(token) else { return }
             // Replace clears all types, so re-add OTP identities afterwards (ordered).
-            try? await store.replaceCredentialIdentities(identities)
+            let passwordEntries = passwordIdentities.map { $0 as any ASCredentialIdentity }
+            try? await store.replaceCredentialIdentities(passwordEntries)
+            guard await CredentialIdentityRefreshGate.isCurrent(token) else { return }
+            var secondary = passkeyIdentities.map { $0 as any ASCredentialIdentity }
             if #available(iOS 18, *) {
                 let otp = oneTimeCodeIdentities(items)
-                if !otp.isEmpty { try? await store.saveCredentialIdentities(otp) }
+                secondary.append(contentsOf: otp.map { $0 as any ASCredentialIdentity })
+            }
+            if !secondary.isEmpty {
+                try? await store.saveCredentialIdentities(secondary)
             }
         }
     }
@@ -47,10 +89,14 @@ enum CredentialIdentityService {
     }
 
     /// Drop all published identities (called when the vault locks).
+    @MainActor
     static func clear() {
-        Task {
+        guard !isRunningUnitTests else { return }
+        let token = CredentialIdentityRefreshGate.next()
+        CredentialIdentityRefreshGate.enqueue {
             let store = ASCredentialIdentityStore.shared
-            guard await store.state().isEnabled else { return }
+            guard await store.state().isEnabled,
+                  await CredentialIdentityRefreshGate.isCurrent(token) else { return }
             try? await store.removeAllCredentialIdentities()
         }
     }
