@@ -13,16 +13,9 @@ struct NameStepView: View {
             Spacer()
             PolarisIcon(Icons.person, size: 72)
                 .foregroundStyle(Color.accentColor)
-            Text("What should we call you?")
-                .font(.largeTitle.bold())
-                .multilineTextAlignment(.center)
-                .padding(.top, Space.gutter)
-            Text("We’ll set up your identity profile. You can edit it and add details anytime.")
-                .font(.body)
-                .themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Space.s8)
-                .padding(.top, Space.s2)
+            OnboardingStepHeader(
+                "What should we call you?",
+                subtitle: "We’ll set up your identity profile. You can edit it and add details anytime.")
 
             TextField("Your name", text: $name)
                 .textContentType(.name)

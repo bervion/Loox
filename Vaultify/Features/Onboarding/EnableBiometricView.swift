@@ -10,16 +10,9 @@ struct EnableBiometricView: View {
             Spacer()
             PolarisIcon(BiometricAuth.iconAsset, size: 72)
                 .foregroundStyle(Color.accentColor)
-            Text("Enable \(BiometricAuth.displayName)")
-                .font(.largeTitle.bold())
-                .multilineTextAlignment(.center)
-                .padding(.top, Space.gutter)
-            Text("Unlock your vault quickly with \(BiometricAuth.displayName). Your master password still works anytime.")
-                .font(.body)
-                .themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Space.s8)
-                .padding(.top, Space.s2)
+            OnboardingStepHeader(
+                "Enable \(BiometricAuth.displayName)",
+                subtitle: "Unlock your vault quickly with \(BiometricAuth.displayName). Your master password still works anytime.")
             Spacer()
             VStack(spacing: Space.s3) {
                 Button(action: onEnable) {
