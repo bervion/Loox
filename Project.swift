@@ -30,7 +30,9 @@ let project = Project(
             bundleId: "com.bervion.vaultify",
             deploymentTargets: .iOS("17.6"),
             infoPlist: .extendingDefault(with: [
-                "CFBundleDisplayName": "Vaultify",
+                // Brand: full name "Loox Password" (App Store listing), short display
+                // name "Loox" under the icon. Bundle ids/groups keep the vaultify names.
+                "CFBundleDisplayName": "Loox",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                 "CFBundleLocalizations": ["en", "vi"],
@@ -43,7 +45,7 @@ let project = Project(
                 "UTExportedTypeDeclarations": [
                     [
                         "UTTypeIdentifier": "com.bervion.vaultify.theme",
-                        "UTTypeDescription": "Vaultify Theme",
+                        "UTTypeDescription": "Loox Theme",
                         "UTTypeConformsTo": ["public.json"],
                         "UTTypeTagSpecification": [
                             "public.filename-extension": ["vaultheme"],
@@ -58,8 +60,8 @@ let project = Project(
                         "CFBundleURLSchemes": ["otpauth"],
                     ],
                 ],
-                "NSCameraUsageDescription": "Vaultify uses the camera to scan 2FA setup QR codes.",
-                "NSFaceIDUsageDescription": "Vaultify uses Face ID to unlock your vault.",
+                "NSCameraUsageDescription": "Loox uses the camera to scan 2FA setup QR codes.",
+                "NSFaceIDUsageDescription": "Loox uses Face ID to unlock your vault.",
                 "UIApplicationSupportsIndirectInputEvents": true,
                 "UIApplicationSceneManifest": [
                     "UIApplicationSupportsMultipleScenes": false,
@@ -110,10 +112,10 @@ let project = Project(
             bundleId: "com.bervion.vaultify.autofill",
             deploymentTargets: .iOS("17.6"),
             infoPlist: .extendingDefault(with: [
-                "CFBundleDisplayName": "Vaultify",
+                "CFBundleDisplayName": "Loox",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
-                "NSFaceIDUsageDescription": "Vaultify uses Face ID to unlock your vault.",
+                "NSFaceIDUsageDescription": "Loox uses Face ID to unlock your vault.",
                 "NSExtension": [
                     "NSExtensionPointIdentifier": "com.apple.authentication-services-credential-provider-ui",
                     "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).CredentialProviderViewController",

@@ -20,7 +20,7 @@ enum CredentialExchangeService {
         _ = try await manager.requestExport()
         let data = CredentialExchangeMapping.exportData(
             items: items, passkeys: passkeys,
-            exporterRelyingParty: "com.bervion.vaultify", exporterName: "Vaultify")
+            exporterRelyingParty: "com.bervion.vaultify", exporterName: "Loox Password")
         try await manager.exportCredentials(data)
     }
 

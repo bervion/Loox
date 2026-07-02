@@ -22,7 +22,7 @@ struct PasskeysScreen: View {
                             PolarisIcon(Icons.passkey, size: Metric.iconTileLarge)
                         }
                     } description: {
-                        Text("Passkeys you create with Vaultify will appear here.")
+                        Text("Passkeys you create with Loox will appear here.")
                     }
                 }
                 .listRowBackground(VaultColors.surface)

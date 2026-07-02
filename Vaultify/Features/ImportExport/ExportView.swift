@@ -90,9 +90,9 @@ struct ExportView: View {
                 let passkeys = env.session.vaultKey.map { PasskeyVault(store: env.store).secrets(key: $0) } ?? []
                 let data = try await VaultBackup.exportEncrypted(items, folderNames: folderNames,
                                                                  passkeys: passkeys, passphrase: passphrase)
-                exportURL = try write(data, name: "vaultify-backup.vaultify")
+                exportURL = try write(data, name: "loox-backup.vaultify")
             } else {
-                exportURL = try write(Data(VaultBackup.makeCSV(items, folderNames: folderNames).utf8), name: "vaultify-export.csv")
+                exportURL = try write(Data(VaultBackup.makeCSV(items, folderNames: folderNames).utf8), name: "loox-export.csv")
             }
         } catch {
             self.error = error.localizedDescription

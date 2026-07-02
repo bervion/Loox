@@ -82,21 +82,26 @@ private struct WelcomeStep: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            PolarisIcon(Icons.shield, size: 72)
-                .foregroundStyle(Color.accentColor)
+            // The brand mark used on splash/lock, so the first-run screen opens
+            // with the same Loox identity instead of a generic glyph.
+            BrandLogoMark(size: 44)
             OnboardingStepHeader(
-                "Vaultify",
+                "Loox Password",
                 subtitle: "A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
 
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(spacing: 0) {
                 FeatureRow(icon: Icons.lockFill, title: "End-to-end encryption",
                            detail: "Argon2id + AES-256-GCM, keys held only on this device.")
+                Divider().padding(.leading, 64)
                 FeatureRow(icon: Icons.key, title: "Logins, cards, notes & more",
                            detail: "Strong generator, one-time codes, and security checks.")
+                Divider().padding(.leading, 64)
                 FeatureRow(icon: Icons.person, title: "Unlock with Face ID / Touch ID",
                            detail: "Fast biometric access backed by the Secure Enclave.")
             }
-            .padding(.top, 36)
+            .background(VaultColors.surface)
+            .vaultCornerRadius(Radius.lg)
+            .padding(.top, Space.s8)
             .padding(.horizontal, Space.s6)
 
             Spacer()
@@ -115,15 +120,24 @@ private struct FeatureRow: View {
     let icon: String
     let title: LocalizedStringResource
     let detail: LocalizedStringResource
+    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            PolarisIcon(icon, size: Metric.iconUtility).foregroundStyle(Color.accentColor).frame(width: 28)
+        HStack(alignment: .center, spacing: Space.s3) {
+            PolarisIcon(icon, size: 18)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 36, height: 36)
+                .background(Color(rgb: env.theme.active.accentSoft),
+                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(title.inAppLocalized).font(.headline)
                 Text(detail.inAppLocalized).font(.subheadline).themedForeground(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, Space.gutter)
+        .padding(.vertical, Space.s3)
     }
 }
 
@@ -139,7 +153,7 @@ private struct OnboardingDoneStep: View {
                 subtitle: "Your vault is ready. Add your first item to get started.")
             Spacer()
             Button(action: onFinish) {
-                Text("Open Vaultify").frame(maxWidth: .infinity)
+                Text("Open Loox").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent).controlSize(.large)
             .padding(.horizontal, Space.s6).padding(.bottom, Space.s6)

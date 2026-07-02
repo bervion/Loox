@@ -13,7 +13,7 @@ struct ChooseThemeView: View {
             PolarisIcon(Icons.magic, size: 72).foregroundStyle(Color.accentColor)
             OnboardingStepHeader(
                 "Make it yours",
-                subtitle: "Choose how Vaultify looks. You can change this anytime in Settings.")
+                subtitle: "Choose how Loox looks. You can change this anytime in Settings.")
 
             VStack(spacing: Space.s3) {
                 ForEach(AppearanceMode.allCases) { mode in
