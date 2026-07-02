@@ -1,9 +1,8 @@
 {
   "images" : [
     {
-      "filename" : "loox-iOS-Default-512@1x.png",
-      "idiom" : "universal",
-      "scale" : "1x"
+      "filename" : "logo-light.svg",
+      "idiom" : "universal"
     },
     {
       "appearances" : [
@@ -12,41 +11,8 @@
           "value" : "dark"
         }
       ],
-      "filename" : "loox-iOS-Dark-512@1x.png",
-      "idiom" : "universal",
-      "scale" : "1x"
-    },
-    {
-      "filename" : "loox-iOS-Default-512@1x 1.png",
-      "idiom" : "universal",
-      "scale" : "2x"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "loox-iOS-Dark-512@1x 1.png",
-      "idiom" : "universal",
-      "scale" : "2x"
-    },
-    {
-      "filename" : "loox-iOS-Default-512@1x 2.png",
-      "idiom" : "universal",
-      "scale" : "3x"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "loox-iOS-Dark-512@1x 2.png",
-      "idiom" : "universal",
-      "scale" : "3x"
+      "filename" : "logo-dark.svg",
+      "idiom" : "universal"
     }
   ],
   "info" : {
