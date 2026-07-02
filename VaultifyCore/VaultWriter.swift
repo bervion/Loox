@@ -33,7 +33,8 @@ enum VaultWriter {
         }
 
         let id = UUID().uuidString
-        let title = trimmedSite.isEmpty ? (trimmedUser.isEmpty ? "Login" : trimmedUser) : trimmedSite
+        let title = trimmedSite.isEmpty ? (trimmedUser.isEmpty ? "Login" : trimmedUser)
+                                        : siteTitle(trimmedSite)
         let secret = ItemSecret(title: title, category: .login, fields: fields)
         let sealed = try AESGCM.seal(JSONEncoder().encode(secret), key: vaultKey)
 
@@ -43,5 +44,19 @@ enum VaultWriter {
         store.context.insert(record)
         try store.context.save()
         return id
+    }
+
+    /// Display title for a saved login: the bare host of a URL-ish site string
+    /// ("https://www.example.com/login" → "example.com"). The full value still
+    /// goes into the Website field — this only cleans the item title. Free-text
+    /// input (no parseable dotted host) passes through untouched so manually
+    /// typed names like "My Bank" survive.
+    nonisolated static func siteTitle(_ site: String) -> String {
+        let trimmed = site.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return trimmed }
+        let candidate = trimmed.contains("://") ? trimmed : "https://\(trimmed)"
+        guard let host = URL(string: candidate)?.host?.lowercased(),
+              host.contains(".") else { return trimmed }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
     }
 }
