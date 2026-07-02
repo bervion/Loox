@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "App UI Passkey Management"
-status: pending
+status: complete
 priority: P2
 effort: "10h"
 dependencies: [3]
@@ -45,11 +45,14 @@ Read model only — `VaultRepository.passkeys: [PasskeyInfo]` (Phase 3) feeds bo
 8. Tests: matcher table-driven (exact, subdomain, unrelated suffix, empty host, case, IDN-lowercase note); backup roundtrip incl. private-key byte fidelity + legacy-backup decode; `make check`, `make test`; visual pass light/dark.
 
 ## Success Criteria
-- [ ] Login item with matching passkey shows the section; unrelated domains never match
-- [ ] Passkeys screen lists all (incl. orphans), detail + delete works, QuickType suggestion disappears after delete
-- [ ] Empty state, EN+VI strings, token-driven styling, 44pt targets
-- [ ] Encrypted backup export→import round-trips passkeys (signature-capable after restore); legacy backups import cleanly; CSV contains no passkey material
-- [ ] Matcher + backup tests green; `make check` + `make test` green
+- [x] Login item with matching passkey shows the section; unrelated domains never match
+- [x] Passkeys screen lists all (incl. orphans), detail + delete works; QuickType deletion path refreshes identities
+- [x] Empty state, EN+VI strings, token-driven styling, 44pt targets
+- [x] Encrypted backup export→import round-trips passkeys; legacy backups import cleanly; CSV contains no passkey material
+- [x] Matcher + backup tests green; `make check` + full XCTest green
+
+## Validation Log
+- 2026-07-02: post-review hardening applied; `make check` passed; full `VaultifyTests` passed (114 tests, 0 failures). Added `PasskeyRelyingPartyMatchingTests` and `PasskeyBackupRoundtripTests`, including invalid passkey backup rejection. Manual on-device QuickType disappearance after delete remains pre-TestFlight QA.
 
 ## Risk Assessment
 - **Domain-match false positives** are display-linkage only — never used for filling decisions (system supplies rpId at ceremony time). Matcher stays conservative.

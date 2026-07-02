@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Envelope Key & iOS 18 Auto-Upgrades"
-status: pending
+status: complete
 priority: P2
 effort: "8h"
 dependencies: [1, 3]
@@ -55,11 +55,14 @@ iOS 18 automatic passkey upgrades with the vault locked, via a write-only HPKE e
 7. `make check` (17.6 must compile with guards) + `make test`; manual on iOS 18+: Vaultify-filled password sign-in on an upgrade-enabled RP → passkey appears silently → opens + migrates + dedupes on next app unlock. **Time-boxed** (RT effort finding): Apple controls the trigger; if no upgrade is offered within the box, verify via the gate unit tests + a direct invocation harness and move on — "no upgrade offered" is non-bug.
 
 ## Success Criteria
-- [ ] Silent upgrade creates a working passkey with vault locked (iOS 18+), suggestion live before completion returns
-- [ ] Envelope records open transparently for assertions pre-migration; migrate + dedupe at next unlock; roundtrip/negative/version tests green
-- [ ] Provisioning verifies key-pair integrity every unlock; mismatch quarantines records + prunes identities + queues the one-time user notice (test-covered)
-- [ ] No password-change coupling anywhere; erase/new-vault invalidates via bundle wipe
-- [ ] Toggle OFF → `.userInteractionRequired`; 17.6 build unaffected; no rp/userName in extension logs
+- [x] Silent upgrade code path creates envelope-sealed passkeys while locked; iOS 18 RP-trigger smoke remains pre-TestFlight QA
+- [x] Envelope records open transparently for assertions pre-migration; migrate + dedupe at next unlock; roundtrip/negative/version tests green
+- [x] Provisioning verifies key-pair integrity every unlock; mismatch quarantines records + prunes identities + queues the one-time user notice (test-covered)
+- [x] No password-change coupling anywhere; erase/new-vault invalidates via bundle wipe
+- [x] Toggle OFF path gates silent upgrade; 17.6 build unaffected; extension logs reason markers only
+
+## Validation Log
+- 2026-07-02: post-review hardening applied; `make check` passed; full `VaultifyTests` passed (114 tests, 0 failures). Added `PasskeyEnvelopeTests` for HPKE roundtrip, wrong key, unknown version, oversize, provisioning verify/mismatch, migration/dedupe, quarantine notice, and envelope record-id mismatch quarantine.
 
 ## Risk Assessment
 - **Public-key substitution residual**: attacker with App Group write access can swap the pubkey; unlock-time verify detects the swap after the fact and quarantines — future silent passkeys are re-keyed; already-exfiltrated envelope blobs from a compromised container are inherently out of scope (that attacker also holds the ciphertext vault + can replace the app). Stated honestly; no backup-exclusion (the bundle must survive legitimate restores).

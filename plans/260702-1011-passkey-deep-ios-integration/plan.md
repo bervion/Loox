@@ -27,8 +27,8 @@ Scope mode: **EXPANSION** (user-confirmed 2026-07-02). Design decisions D1–D3 
 | 1 | [Core WebAuthn Correctness & Data Model](./phase-01-core-webauthn-correctness-data-model.md) | P1 | 6h | — | Complete |
 | 2 | [Extension Face ID & Ceremony Hardening](./phase-02-extension-face-id-ceremony-hardening.md) | P1 | 6h | 1 | Complete |
 | 3 | [QuickType Passkey Identities](./phase-03-quicktype-passkey-identities.md) | P1 | 4h | 1, 2 | Complete |
-| 4 | [App UI Passkey Management](./phase-04-app-ui-passkey-management.md) | P2 | 10h | 3 | Pending |
-| 5 | [Envelope Key & iOS 18 Auto-Upgrades](./phase-05-envelope-key-ios-18-auto-upgrades.md) | P2 | 8h | 1, 3 | Pending |
+| 4 | [App UI Passkey Management](./phase-04-app-ui-passkey-management.md) | P2 | 10h | 3 | Complete |
+| 5 | [Envelope Key & iOS 18 Auto-Upgrades](./phase-05-envelope-key-ios-18-auto-upgrades.md) | P2 | 8h | 1, 3 | Complete |
 | 6 | [largeBlob & AAGUID Branding](./phase-06-largeblob-aaguid-branding.md) — *stretch* | P3 | 4h | 2 | Pending |
 | 7 | [Credential Exchange Import-Export](./phase-07-credential-exchange-import-export.md) — *stretch* | P3 | 2d | 1, 4 | Pending |
 
@@ -122,6 +122,12 @@ Ship cadence (validation session 1): **one TestFlight release after Phase 5** (`
 - Decision deltas checked: 4 (D6 backup, D7 notice, single-release cadence, stretch checkpoint)
 - Reconciled stale references: 0 stale claims found (backup/notice were previously unmentioned, not contradicted)
 - Unresolved contradictions: **0**
+
+### Session 2 — 2026-07-02
+**Trigger:** chunk 2 implementation (phases 4-5).
+**Completed:** in-app Passkeys management, login-detail passkey attachment, encrypted backup passkey roundtrip, HPKE envelope key, iOS 18 silent registration hook, unlock-time migration/dedupe/quarantine notice.
+**Validation:** post-review hardening applied; `make check` passed; full `VaultifyTests` passed (114 tests, 0 failures).
+**Manual pending before TestFlight:** on-device QuickType delete disappearance and iOS 18 RP-triggered automatic upgrade smoke test.
 
 ## References
 
