@@ -12,7 +12,7 @@ struct AboutView: View {
         Form {
             Section {
                 VStack(spacing: 10) {
-                    PolarisIcon(Icons.shield, size: 56).foregroundStyle(Color.accentColor)
+                    BrandLogoMark(size: 36)
                     Text("Loox Password").font(.title2.bold())
                     Text("Version \(version) (\(build))").font(.footnote).themedForeground(.secondary)
                 }
