@@ -59,18 +59,24 @@ final class PasskeyRecord {
     var relyingPartyHint: String?
     var userNameHint: String?
     var userHandleHint: Data?
+    /// WebAuthn `largeBlob` payload for this credential, sealed under the Vault
+    /// Key like the secret. Nil until a relying party writes one during an
+    /// assertion; interactive ceremonies only (never the locked silent path).
+    var largeBlobSealed: Data?
     var createdAt: Date
     var usedAt: Date?
 
     init(id: String, sealed: Data, envelopeSealed: Data? = nil,
          relyingPartyHint: String? = nil, userNameHint: String? = nil,
-         userHandleHint: Data? = nil, createdAt: Date = .now, usedAt: Date? = nil) {
+         userHandleHint: Data? = nil, largeBlobSealed: Data? = nil,
+         createdAt: Date = .now, usedAt: Date? = nil) {
         self.id = id
         self.sealed = sealed
         self.envelopeSealed = envelopeSealed
         self.relyingPartyHint = relyingPartyHint
         self.userNameHint = userNameHint
         self.userHandleHint = userHandleHint
+        self.largeBlobSealed = largeBlobSealed
         self.createdAt = createdAt
         self.usedAt = usedAt
     }

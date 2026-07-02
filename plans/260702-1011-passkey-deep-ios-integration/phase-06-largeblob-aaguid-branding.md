@@ -1,11 +1,14 @@
 ---
 phase: 6
 title: "largeBlob & AAGUID Branding"
-status: pending
+status: completed
 priority: P3
 effort: "4h"
 dependencies: [2]
 ---
+
+<!-- Done 2026-07-02: largeBlob provider I/O (iOS 18, sealed blob column) + version-agnostic directive; make check + 118 tests pass. AAGUID frozen 9078984A-…; community-registry PR is an external follow-up (documented in docs/codebase-summary.md). -->
+
 
 # Phase 6: largeBlob & AAGUID Branding — STRETCH
 

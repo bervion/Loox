@@ -72,9 +72,12 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
         if let passkey = credentialRequest as? ASPasskeyCredentialRequest,
            let identity = passkey.credentialIdentity as? ASPasskeyCredentialIdentity {
             guard let store = makePasskeyStore() else { cancel(code: .failed); return }
+            var largeBlob: PasskeyLargeBlobDirective = .none
+            if #available(iOS 18, *) { largeBlob = PasskeyLargeBlob.directive(passkey.extensionInput) }
             showPasskey(.assert(relyingParty: identity.relyingPartyIdentifier,
                                 allowedCredentialIDs: [identity.credentialID],
-                                clientDataHash: passkey.clientDataHash),
+                                clientDataHash: passkey.clientDataHash,
+                                largeBlob: largeBlob),
                         store: store)
         } else {
             let recordID = (credentialRequest.credentialIdentity as? ASPasswordCredentialIdentity)?.recordIdentifier
@@ -150,16 +153,22 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             cancel(code: .matchedExcludedCredential)
             return
         }
-        showPasskey(.register(identity: identity, clientDataHash: request.clientDataHash), store: store)
+        var largeBlob: PasskeyLargeBlobDirective = .none
+        if #available(iOS 18, *) { largeBlob = PasskeyLargeBlob.directive(request.extensionInput) }
+        showPasskey(.register(identity: identity, clientDataHash: request.clientDataHash, largeBlob: largeBlob),
+                    store: store)
     }
 
     /// Passkey assertion invoked from the QuickType bar.
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier],
                                         requestParameters: ASPasskeyCredentialRequestParameters) {
         guard let store = makePasskeyStore() else { cancel(code: .failed); return }
+        var largeBlob: PasskeyLargeBlobDirective = .none
+        if #available(iOS 18, *) { largeBlob = PasskeyLargeBlob.directive(assertion: requestParameters.extensionInput) }
         showPasskey(.assert(relyingParty: requestParameters.relyingPartyIdentifier,
                             allowedCredentialIDs: requestParameters.allowedCredentials,
-                            clientDataHash: requestParameters.clientDataHash),
+                            clientDataHash: requestParameters.clientDataHash,
+                            largeBlob: largeBlob),
                     store: store)
     }
 

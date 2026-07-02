@@ -88,6 +88,37 @@ struct PasskeyVault {
         record(credentialID: credentialID) != nil
     }
 
+    /// WebAuthn largeBlob read for a credential, unsealed with the Vault Key.
+    func largeBlob(credentialID: Data, key: [UInt8]) -> Data? {
+        guard let sealed = record(credentialID: credentialID)?.largeBlobSealed else { return nil }
+        return try? AESGCM.open(sealed, key: key)
+    }
+
+    func largeBlob(credentialID: Data, key: SecureBytes) -> Data? {
+        key.withUnsafeBytes { largeBlob(credentialID: credentialID, key: Array($0)) }
+    }
+
+    /// Persist a WebAuthn largeBlob for a credential, sealed under the Vault Key.
+    /// Returns false when the credential is unknown so the caller reports the
+    /// write as failed to the relying party.
+    @discardableResult
+    func setLargeBlob(_ data: Data, credentialID: Data, key: [UInt8]) -> Bool {
+        guard let record = record(credentialID: credentialID) else { return false }
+        do {
+            record.largeBlobSealed = try AESGCM.seal(data, key: key)
+            try store.context.save()
+            return true
+        } catch {
+            passkeyVaultLog.error("large-blob-write-failed")
+            return false
+        }
+    }
+
+    @discardableResult
+    func setLargeBlob(_ data: Data, credentialID: Data, key: SecureBytes) -> Bool {
+        key.withUnsafeBytes { setLargeBlob(data, credentialID: credentialID, key: Array($0)) }
+    }
+
     /// Non-fatal metadata touch after successful assertion.
     func touchLastUsed(credentialID: Data) {
         guard let record = record(credentialID: credentialID) else { return }

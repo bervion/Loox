@@ -17,7 +17,7 @@ struct PasskeyCeremonyView: View {
     var body: some View {
         Form {
             switch purpose {
-            case let .register(identity, _):
+            case let .register(identity, _, _):
                 registrationSection(identity: identity)
             case .assert:
                 assertionSection
@@ -79,7 +79,7 @@ struct PasskeyCeremonyView: View {
     }
 
     private func startAssertionIfNeeded() {
-        guard case let .assert(relyingParty, allowed, _) = purpose, !didStartAssertion else { return }
+        guard case let .assert(relyingParty, allowed, _, _) = purpose, !didStartAssertion else { return }
         didStartAssertion = true
         let vault = PasskeyVault(store: store)
         matches = vault.matching(relyingParty: relyingParty, allowedCredentialIDs: allowed, key: vaultKey)
@@ -95,7 +95,7 @@ struct PasskeyCeremonyView: View {
     }
 
     private func createPasskey() {
-        guard case let .register(identity, clientDataHash) = purpose else { return }
+        guard case let .register(identity, clientDataHash, _) = purpose else { return }
         working = true; errorMessage = nil
         Task {
             do {
@@ -110,12 +110,9 @@ struct PasskeyCeremonyView: View {
                                            flags: registration.flags)
                 let result = try PasskeyVault(store: store).save(secret, key: vaultKey)
                 try await syncRegistrationIdentity(new: secret, replaced: result.replaced)
-                let credential = ASPasskeyRegistrationCredential(
-                    relyingParty: identity.relyingPartyIdentifier,
-                    clientDataHash: clientDataHash,
-                    credentialID: registration.credentialID,
-                    attestationObject: registration.attestationObject)
-                onRegistration(credential)
+                onRegistration(registrationCredential(identity: identity,
+                                                      clientDataHash: clientDataHash,
+                                                      registration: registration))
             } catch {
                 errorMessage = appString("Couldn’t save the passkey.")
                 onCancel(.failed)
@@ -125,11 +122,12 @@ struct PasskeyCeremonyView: View {
     }
 
     private func sign(_ info: PasskeyInfo) {
-        guard case let .assert(relyingParty, _, clientDataHash) = purpose else { return }
+        guard case let .assert(relyingParty, _, clientDataHash, _) = purpose else { return }
         working = true; errorMessage = nil
         defer { working = false }
         do {
-            guard let secret = PasskeyVault(store: store).secret(credentialID: info.credentialID, key: vaultKey) else {
+            let vault = PasskeyVault(store: store)
+            guard let secret = vault.secret(credentialID: info.credentialID, key: vaultKey) else {
                 onCancel(.credentialIdentityNotFound)
                 return
             }
@@ -137,19 +135,70 @@ struct PasskeyCeremonyView: View {
                                                 clientDataHash: clientDataHash,
                                                 privateKeyRaw: secret.privateKeyRaw,
                                                 flags: secret.flags ?? WebAuthn.legacyAssertionFlags)
-            PasskeyVault(store: store).touchLastUsed(credentialID: secret.credentialID)
-            let credential = ASPasskeyAssertionCredential(
-                userHandle: secret.userHandle,
-                relyingParty: relyingParty,
-                signature: result.signature,
-                clientDataHash: clientDataHash,
-                authenticatorData: result.authenticatorData,
-                credentialID: secret.credentialID)
-            onAssertion(credential)
+            vault.touchLastUsed(credentialID: secret.credentialID)
+            onAssertion(assertionCredential(secret: secret, result: result,
+                                            relyingParty: relyingParty,
+                                            clientDataHash: clientDataHash, vault: vault))
         } catch {
             errorMessage = appString("Couldn’t sign in with this passkey.")
             onCancel(.failed)
         }
+    }
+
+    /// Registration credential, advertising largeBlob support when the RP asked (iOS 18+).
+    private func registrationCredential(identity: ASPasskeyCredentialIdentity,
+                                        clientDataHash: Data,
+                                        registration: WebAuthn.Registration) -> ASPasskeyRegistrationCredential {
+        if #available(iOS 18, *), case .registerSupport = purpose.largeBlob {
+            return ASPasskeyRegistrationCredential(
+                relyingParty: identity.relyingPartyIdentifier,
+                clientDataHash: clientDataHash,
+                credentialID: registration.credentialID,
+                attestationObject: registration.attestationObject,
+                extensionOutput: PasskeyLargeBlob.registrationOutput(supported: true))
+        }
+        return ASPasskeyRegistrationCredential(
+            relyingParty: identity.relyingPartyIdentifier,
+            clientDataHash: clientDataHash,
+            credentialID: registration.credentialID,
+            attestationObject: registration.attestationObject)
+    }
+
+    /// Assertion credential, servicing a largeBlob read/write when requested (iOS 18+).
+    private func assertionCredential(secret: PasskeySecret,
+                                     result: (authenticatorData: Data, signature: Data),
+                                     relyingParty: String, clientDataHash: Data,
+                                     vault: PasskeyVault) -> ASPasskeyAssertionCredential {
+        if #available(iOS 18, *) {
+            switch purpose.largeBlob {
+            case .read:
+                let blob = vault.largeBlob(credentialID: secret.credentialID, key: vaultKey)
+                return assertion(secret, result, relyingParty, clientDataHash,
+                                 output: PasskeyLargeBlob.assertionReadOutput(blob))
+            case .write(let data):
+                let ok = vault.setLargeBlob(data, credentialID: secret.credentialID, key: vaultKey)
+                return assertion(secret, result, relyingParty, clientDataHash,
+                                 output: PasskeyLargeBlob.assertionWriteOutput(success: ok))
+            case .none, .registerSupport:
+                break
+            }
+        }
+        return ASPasskeyAssertionCredential(
+            userHandle: secret.userHandle, relyingParty: relyingParty,
+            signature: result.signature, clientDataHash: clientDataHash,
+            authenticatorData: result.authenticatorData, credentialID: secret.credentialID)
+    }
+
+    @available(iOS 18, *)
+    private func assertion(_ secret: PasskeySecret,
+                           _ result: (authenticatorData: Data, signature: Data),
+                           _ relyingParty: String, _ clientDataHash: Data,
+                           output: ASPasskeyAssertionCredentialExtensionOutput) -> ASPasskeyAssertionCredential {
+        ASPasskeyAssertionCredential(
+            userHandle: secret.userHandle, relyingParty: relyingParty,
+            signature: result.signature, clientDataHash: clientDataHash,
+            authenticatorData: result.authenticatorData, credentialID: secret.credentialID,
+            extensionOutput: output)
     }
 
     private func syncRegistrationIdentity(new: PasskeySecret, replaced: [PasskeySecret]) async throws {
