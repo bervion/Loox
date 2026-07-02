@@ -11,15 +11,9 @@ struct ChooseThemeView: View {
         VStack(spacing: 0) {
             Spacer()
             PolarisIcon(Icons.magic, size: 72).foregroundStyle(Color.accentColor)
-            Text("Make it yours")
-                .font(.largeTitle.bold())
-                .padding(.top, Space.gutter)
-            Text("Choose how Vaultify looks. You can change this anytime in Settings.")
-                .font(.body)
-                .themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Space.s8)
-                .padding(.top, Space.s2)
+            OnboardingStepHeader(
+                "Make it yours",
+                subtitle: "Choose how Vaultify looks. You can change this anytime in Settings.")
 
             VStack(spacing: Space.s3) {
                 ForEach(AppearanceMode.allCases) { mode in

@@ -80,15 +80,9 @@ private struct WelcomeStep: View {
             Spacer()
             PolarisIcon(Icons.shield, size: 72)
                 .foregroundStyle(Color.accentColor)
-            Text("Vaultify")
-                .font(.largeTitle.bold())
-                .padding(.top, Space.gutter)
-            Text("A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
-                .font(.body)
-                .themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Space.s8)
-                .padding(.top, Space.s2)
+            OnboardingStepHeader(
+                "Vaultify",
+                subtitle: "A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
 
             VStack(alignment: .leading, spacing: 18) {
                 FeatureRow(icon: Icons.lockFill, title: "End-to-end encryption",
@@ -136,12 +130,9 @@ private struct OnboardingDoneStep: View {
         VStack(spacing: 0) {
             Spacer()
             PolarisIcon(Icons.checkCircle, size: 72).foregroundStyle(VaultColors.strengthStrong)
-            Text("You’re all set")
-                .font(.largeTitle.bold())
-                .padding(.top, Space.gutter)
-            Text("Your vault is ready. Add your first item to get started.")
-                .font(.body).themedForeground(.secondary)
-                .multilineTextAlignment(.center).padding(.horizontal, Space.s8).padding(.top, Space.s2)
+            OnboardingStepHeader(
+                "You’re all set",
+                subtitle: "Your vault is ready. Add your first item to get started.")
             Spacer()
             Button(action: onFinish) {
                 Text("Open Vaultify").frame(maxWidth: .infinity)
