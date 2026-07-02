@@ -35,6 +35,10 @@ struct OnboardingFlow: View {
             }
         }
         .animation(.smooth(duration: 0.35), value: step)
+        // Onboarding has no MainTabView, so it hosts its own copy-toast overlay
+        // (Emergency Kit's Copy button would otherwise give only a haptic).
+        .overlay(alignment: .bottom) { CopyToastOverlay() }
+        .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
         .task(id: step) {
             if step == .emergencyKit, recoveryKey.isEmpty {
                 recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""

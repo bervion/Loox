@@ -13,13 +13,10 @@ struct MainTabView: View {
     @State private var shakeDetector = ShakeToLockService()
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
-    /// Keeps transient toasts above the native tab bar without depending on custom bar metrics.
-    private var tabBarToastClearance: CGFloat { Metric.controlLarge + Space.s8 }
-
     var body: some View {
         tabContent
             .tint(env.theme.uiTint)
-            .overlay(alignment: .bottom) { copyToast }
+            .overlay(alignment: .bottom) { CopyToastOverlay() }
             .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
             .onChange(of: selection) { _, _ in
                 env.session.registerActivity()
@@ -105,19 +102,4 @@ struct MainTabView: View {
         return rendered.withRenderingMode(.alwaysTemplate)
     }
 
-    @ViewBuilder private var copyToast: some View {
-        if let label = env.clipboard.recentCopyLabel {
-            HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
-                    .foregroundStyle(Color(rgb: env.theme.active.success))
-                Text(appString("Copied \(label)")).vaultType(.subhead).fontWeight(.medium)
-            }
-            .padding(.horizontal, Space.s4)
-            .padding(.vertical, Space.s3)
-            .background(.regularMaterial, in: Capsule())
-            .elevation(.level2)
-            .padding(.bottom, tabBarToastClearance)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-    }
 }

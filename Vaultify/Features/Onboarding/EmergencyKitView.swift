@@ -19,7 +19,8 @@ struct EmergencyKitView: View {
                     .padding(.top, Space.s8)
                 OnboardingStepHeader(
                     "Save your Emergency Kit",
-                    subtitle: "This recovery key can restore your vault if you forget your master password. Store it somewhere safe and offline — it is shown only once.")
+                    subtitle: "This recovery key can restore your vault if you forget your master password.",
+                    style: .compact)
 
                 keyCard
                     .padding(.horizontal, Space.s6)
@@ -45,9 +46,19 @@ struct EmergencyKitView: View {
                 .padding(.horizontal, Space.s6)
                 .padding(.top, Space.s3)
 
-                Toggle(isOn: $confirmedSaved) {
-                    Text("I’ve saved my recovery key in a safe place")
-                        .font(.subheadline)
+                HStack(alignment: .center, spacing: Space.s3) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("I’ve saved my recovery key")
+                            .vaultType(.headline)
+                        Text("Store it somewhere safe and offline — it is shown only once.")
+                            .vaultType(.footnote)
+                            .themedForeground(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: Space.s2)
+                    Toggle("", isOn: $confirmedSaved)
+                        .labelsHidden()
+                        .accessibilityLabel(Text("I’ve saved my recovery key"))
                 }
                 .padding(Space.gutter)
                 .background(VaultColors.surface,
