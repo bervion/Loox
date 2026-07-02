@@ -52,10 +52,10 @@ fallback_notes() {
 
 generate_via_claude() {
   local VERSION="$1" CHANGES="$2"
-  local PROMPT="You are a professional App Store copywriter for Vaultify, a private password manager.
+  local PROMPT="You are a professional App Store copywriter for Loox Password (display name: Loox), a private password manager.
 
 App context:
-- Vaultify stores passwords and passkeys fully on-device. Zero backend, no account, no tracking.
+- Loox stores passwords and passkeys fully on-device. Zero backend, no account, no tracking.
 - Vault is encrypted with Argon2id; Face ID unlock; iOS AutoFill for passwords and passkeys.
 - Audience: privacy-conscious users. Markets: Vietnam primary, global secondary.
 

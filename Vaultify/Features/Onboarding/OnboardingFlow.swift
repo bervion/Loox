@@ -85,7 +85,7 @@ private struct WelcomeStep: View {
             PolarisIcon(Icons.shield, size: 72)
                 .foregroundStyle(Color.accentColor)
             OnboardingStepHeader(
-                "Vaultify",
+                "Loox Password",
                 subtitle: "A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
 
             VStack(alignment: .leading, spacing: 18) {
@@ -139,7 +139,7 @@ private struct OnboardingDoneStep: View {
                 subtitle: "Your vault is ready. Add your first item to get started.")
             Spacer()
             Button(action: onFinish) {
-                Text("Open Vaultify").frame(maxWidth: .infinity)
+                Text("Open Loox").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent).controlSize(.large)
             .padding(.horizontal, Space.s6).padding(.bottom, Space.s6)

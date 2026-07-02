@@ -1,5 +1,10 @@
 # Vaultify (iOS) — Codebase Summary
 
+> **Brand:** ships as **"Loox Password"** (display name **"Loox"**) since 2026-07. "Vaultify" remains
+> the internal codename everywhere the user can't see it: bundle ids (`com.bervion.vaultify*`),
+> App/keychain groups, scheme/target/module/folder names, log subsystems, the `.vaultify` backup
+> extension, and the HPKE envelope info string (crypto binding — must never change).
+
 Native **SwiftUI** rewrite of the Flutter Vaultify — a zero-backend, on-device password
 manager. **iPhone-only**, iOS 17.6+, Apple-native UI/UX, with the **Polaris SVG icon set**
 (vector-PDF template assets) instead of SF Symbols. ~17,000 LOC across ~200 Swift files.

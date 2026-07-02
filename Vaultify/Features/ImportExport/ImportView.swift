@@ -30,7 +30,7 @@ struct ImportView: View {
                     Label { Text("Choose File…") } icon: { PolarisIcon(Icons.importData) }
                 }
             } footer: {
-                Text("Supports CSV exports and Vaultify encrypted backups (.vaultify).")
+                Text("Supports CSV exports and Loox encrypted backups (.vaultify).")
             }
             .listRowBackground(VaultColors.surface)
 

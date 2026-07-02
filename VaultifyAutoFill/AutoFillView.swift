@@ -9,7 +9,7 @@ struct AutoFillView: View {
     let onCancel: () -> Void
 
     var body: some View {
-        UnlockGate(title: "Vaultify", onCancel: onCancel) { vaultKey in
+        UnlockGate(title: "Loox", onCancel: onCancel) { vaultKey in
             CredentialListView(serviceIdentifiers: serviceIdentifiers,
                                preferredRecordID: preferredRecordID,
                                vaultKey: vaultKey,

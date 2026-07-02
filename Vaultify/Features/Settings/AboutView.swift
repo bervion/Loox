@@ -13,7 +13,7 @@ struct AboutView: View {
             Section {
                 VStack(spacing: 10) {
                     PolarisIcon(Icons.shield, size: 56).foregroundStyle(Color.accentColor)
-                    Text("Vaultify").font(.title2.bold())
+                    Text("Loox Password").font(.title2.bold())
                     Text("Version \(version) (\(build))").font(.footnote).themedForeground(.secondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -34,7 +34,7 @@ struct AboutView: View {
             .listRowBackground(VaultColors.surface)
 
             Section {
-                Text("Vaultify collects no analytics and has no accounts. The only network request is the optional, anonymised breach check.")
+                Text("Loox collects no analytics and has no accounts. The only network request is the optional, anonymised breach check.")
                     .font(.footnote).themedForeground(.secondary)
             } header: {
                 Text("Privacy")
