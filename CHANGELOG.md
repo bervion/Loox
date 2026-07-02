@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.0] - 2026-07-02
+
+### Added
+- backup-status badge + favicon on passkey detail
+- credential exchange mapper + service (iOS 26.1, dormant)
+- largeBlob extension support (iOS 18) + AAGUID registry note
+- add management and silent upgrades
+- deepen ios passkey integration
+
+### Changed
+- add phase 1-5 implementation review report
+- mark chunk 2 complete
+- cover backup and envelope hardening
+
+
 ## [1.6.0] - 2026-06-25
 
 ### Added

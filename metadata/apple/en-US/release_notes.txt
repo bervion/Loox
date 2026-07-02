@@ -1,1 +1,1 @@
-Vaultify now stores your two-factor authentication codes alongside your passwords. Add an account by scanning or pasting a setup link, and your one-time codes appear automatically in AutoFill on iOS 18 — no separate authenticator app required.
+Passkeys are now clearer and more reliable. See backup status and site icons at a glance, plus smoother compatibility across your devices. Various under-the-hood improvements keep your vault running smoothly.
