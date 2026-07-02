@@ -50,12 +50,27 @@ nonisolated struct PasskeyInfo: Identifiable, Equatable, Sendable {
 final class PasskeyRecord {
     @Attribute(.unique) var id: String
     var sealed: Data
+    /// iOS 18 silent upgrades are written while the vault is locked. Those
+    /// records live here until unlock-time migration re-seals them under
+    /// `sealed`; old records keep this nil.
+    var envelopeSealed: Data?
+    /// Non-secret identity metadata used only to remove/quarantine envelope
+    /// records that cannot be opened after a bundle mismatch.
+    var relyingPartyHint: String?
+    var userNameHint: String?
+    var userHandleHint: Data?
     var createdAt: Date
     var usedAt: Date?
 
-    init(id: String, sealed: Data, createdAt: Date = .now, usedAt: Date? = nil) {
+    init(id: String, sealed: Data, envelopeSealed: Data? = nil,
+         relyingPartyHint: String? = nil, userNameHint: String? = nil,
+         userHandleHint: Data? = nil, createdAt: Date = .now, usedAt: Date? = nil) {
         self.id = id
         self.sealed = sealed
+        self.envelopeSealed = envelopeSealed
+        self.relyingPartyHint = relyingPartyHint
+        self.userNameHint = userNameHint
+        self.userHandleHint = userHandleHint
         self.createdAt = createdAt
         self.usedAt = usedAt
     }
@@ -76,5 +91,14 @@ extension Data {
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
+    }
+
+    init?(base64URLEncodedString string: String) {
+        var base64 = string.replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let padding = (4 - base64.count % 4) % 4
+        if padding > 0 { base64.append(String(repeating: "=", count: padding)) }
+        guard let data = Data(base64Encoded: base64) else { return nil }
+        self = data
     }
 }

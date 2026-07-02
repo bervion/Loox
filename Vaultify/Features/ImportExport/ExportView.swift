@@ -20,7 +20,7 @@ struct ExportView: View {
     @State private var error: String?
 
     private var canExport: Bool {
-        guard !env.repository.items.isEmpty else { return false }
+        guard !env.repository.items.isEmpty || !env.repository.passkeys.isEmpty else { return false }
         if mode == .encrypted { return passphrase.count >= 8 && passphrase == confirm }
         return true
     }
@@ -46,7 +46,7 @@ struct ExportView: View {
             } else {
                 Section {
                     Label {
-                        Text("A CSV export is **not encrypted**. Anyone with the file can read every password. Delete it after importing.")
+                        Text("A CSV export is **not encrypted**. Anyone with the file can read every password. Passkeys are never included in CSV.")
                     } icon: {
                         PolarisIcon(Icons.alert).foregroundStyle(VaultColors.strengthWeak)
                     }
@@ -87,7 +87,9 @@ struct ExportView: View {
             let folderNames = Dictionary(env.repository.folders.map { ($0.id, $0.name) },
                                          uniquingKeysWith: { a, _ in a })
             if mode == .encrypted {
-                let data = try await VaultBackup.exportEncrypted(items, folderNames: folderNames, passphrase: passphrase)
+                let passkeys = env.session.vaultKey.map { PasskeyVault(store: env.store).secrets(key: $0) } ?? []
+                let data = try await VaultBackup.exportEncrypted(items, folderNames: folderNames,
+                                                                 passkeys: passkeys, passphrase: passphrase)
                 exportURL = try write(data, name: "vaultify-backup.vaultify")
             } else {
                 exportURL = try write(Data(VaultBackup.makeCSV(items, folderNames: folderNames).utf8), name: "vaultify-export.csv")

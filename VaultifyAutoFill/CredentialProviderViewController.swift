@@ -183,7 +183,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             onCancel: { [weak self] code in self?.cancel(code: code) }))
     }
 
-    private func makePasskeyStore() -> VaultStore? {
+    func makePasskeyStore() -> VaultStore? {
         do { return try VaultStore(recoverable: false) }
         catch {
             autofillLog.error("passkey-store-open-failed")
@@ -192,7 +192,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     }
 
     @available(iOS 18, *)
-    private func hasExcludedCredential(_ request: ASPasskeyCredentialRequest, store: VaultStore) -> Bool {
+    func hasExcludedCredential(_ request: ASPasskeyCredentialRequest, store: VaultStore) -> Bool {
         guard let excluded = request.excludedCredentials else { return false }
         let vault = PasskeyVault(store: store)
         return excluded.contains { vault.hasRecord(credentialID: $0.credentialID) }
@@ -233,7 +233,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             withSelectedCredential: ASPasswordCredential(user: user, password: password))
     }
 
-    private func cancel(code: ASExtensionError.Code = .userCanceled) {
+    func cancel(code: ASExtensionError.Code = .userCanceled) {
         extensionContext.cancelRequest(
             withError: NSError(domain: ASExtensionErrorDomain, code: code.rawValue))
     }

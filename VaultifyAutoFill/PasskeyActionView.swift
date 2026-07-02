@@ -18,12 +18,45 @@ struct PasskeyActionView: View {
 
     var body: some View {
         UnlockGate(title: title, onCancel: { onCancel(.userCanceled) }) { vaultKey in
-            PasskeyCeremonyView(purpose: purpose,
-                                vaultKey: vaultKey,
-                                store: store,
-                                onAssertion: onAssertion,
-                                onRegistration: onRegistration,
-                                onCancel: onCancel)
+            PasskeyMigrationGate(vaultKey: vaultKey, store: store) {
+                PasskeyCeremonyView(purpose: purpose,
+                                    vaultKey: vaultKey,
+                                    store: store,
+                                    onAssertion: onAssertion,
+                                    onRegistration: onRegistration,
+                                    onCancel: onCancel)
+            }
         }
+    }
+}
+
+private struct PasskeyMigrationGate<Content: View>: View {
+    let vaultKey: [UInt8]
+    let store: VaultStore
+    @ViewBuilder var content: () -> Content
+    @State private var ready = false
+
+    var body: some View {
+        Group {
+            if ready {
+                content()
+            } else {
+                ProgressView().controlSize(.large).frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task { await prepare() }
+    }
+
+    private func prepare() async {
+        let result = PasskeyVault(store: store).prepareEnvelopeOnUnlock(key: vaultKey)
+        if !result.quarantinedSites.isEmpty {
+            SharedConfig.queuePasskeyQuarantineNotice(sites: result.quarantinedSites)
+        }
+        let replaced = result.replaced.map { $0.credentialIdentity() }
+        if !result.quarantinedIdentities.isEmpty || !replaced.isEmpty {
+            let identities = result.quarantinedIdentities.map { $0.credentialIdentity() } + replaced
+            try? await ASCredentialIdentityStore.shared.removeCredentialIdentities(identities)
+        }
+        ready = true
     }
 }

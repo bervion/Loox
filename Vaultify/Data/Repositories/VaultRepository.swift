@@ -53,7 +53,12 @@ import UserNotifications
         trashed = trash.sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
         archived = arch.sorted { $0.updatedAt > $1.updatedAt }
         folders = loadFolders(key: key)
-        passkeys = PasskeyVault(store: store).all(key: key)
+        let passkeyVault = PasskeyVault(store: store)
+        let migration = passkeyVault.prepareEnvelopeOnUnlock(key: key)
+        if !migration.quarantinedSites.isEmpty {
+            SharedConfig.queuePasskeyQuarantineNotice(sites: migration.quarantinedSites)
+        }
+        passkeys = passkeyVault.all(key: key)
         CredentialIdentityService.refresh(items: items, passkeys: passkeys)
         normalizeDefaultIdentity()
     }
@@ -211,6 +216,11 @@ import UserNotifications
         try store.context.save()
         reload()
         RotationNotificationService.shared.cancel(itemID: item.id)
+    }
+
+    func deletePasskey(credentialID: Data) throws {
+        try PasskeyVault(store: store).delete(credentialID: credentialID)
+        reload()
     }
 
     // MARK: Attention list
