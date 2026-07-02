@@ -14,12 +14,17 @@ struct UnlockGate<Content: View>: View {
     let onCancel: () -> Void
     @ViewBuilder let content: (_ vaultKey: [UInt8]) -> Content
 
+    @Environment(\.scenePhase) private var scenePhase
     @State private var masterPassword = ""
     @State private var unlocking = false
     @State private var errorMessage: String?
-    /// True while the initial Face ID attempt is in flight — shows a spinner instead of flashing
+    /// True while a Face ID attempt is in flight — shows a spinner instead of flashing
     /// the master-password form. Set false on any biometric failure or when not enrolled.
     @State private var biometricInProgress = true
+    /// The first attempt can fire before the extension scene is active (e.g. the iOS 26.2
+    /// save sheet appears mid-transition) and fail transiently. We retry once when the
+    /// scene becomes active instead of stranding the user on the password form.
+    @State private var didAutoRetry = false
     @State private var vaultKey: [UInt8]?
 
     var body: some View {
@@ -37,6 +42,13 @@ struct UnlockGate<Content: View>: View {
             }
         }
         .task { await attemptBiometricUnlock() }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, vaultKey == nil, !biometricInProgress, !didAutoRetry,
+                  BiometricKeyStore.isEnrolled else { return }
+            didAutoRetry = true
+            bioLog.log("scene became active after failed attempt — auto-retrying biometric unlock")
+            retryBiometricUnlock()
+        }
     }
 
     private var unlockForm: some View {
@@ -53,9 +65,25 @@ struct UnlockGate<Content: View>: View {
                 Button(action: unlockWithMaster) { HStack { Spacer(); Text("Unlock").bold(); Spacer() } }
                     .disabled(masterPassword.isEmpty || unlocking)
             }
+            // Manual escape hatch back to Face ID after a failed/cancelled first attempt —
+            // the password stays available below, biometrics is never the only path.
+            if BiometricKeyStore.isEnrolled {
+                Section {
+                    Button(action: retryBiometricUnlock) {
+                        HStack { Spacer(); Text("Unlock with \(BiometricAuth.displayName)"); Spacer() }
+                    }
+                    .disabled(unlocking)
+                }
+            }
         }
         .overlay { if unlocking { ProgressView().controlSize(.large) } }
         .disabled(unlocking)
+    }
+
+    private func retryBiometricUnlock() {
+        biometricInProgress = true
+        errorMessage = nil
+        Task { await attemptBiometricUnlock() }
     }
 
     /// Face ID unlock — no Argon2. Any failure (cancel, item-not-found, entitlement, biometrics
