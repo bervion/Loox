@@ -1,1 +1,1 @@
-Passkeys are now clearer and more reliable. See backup status and site icons at a glance, plus smoother compatibility across your devices. Various under-the-hood improvements keep your vault running smoothly.
+This update improves Face ID reliability when unlocking the app, so you're no longer sent to the password screen if Face ID needs another try.

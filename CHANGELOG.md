@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.7.1] - 2026-07-02
+
+### Fixed
+- retry Face ID in UnlockGate instead of stranding on password form
+
+
 ## [1.7.0] - 2026-07-02
 
 ### Added

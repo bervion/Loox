@@ -1,1 +1,1 @@
-Passkey giờ rõ ràng và ổn định hơn. Xem trạng thái sao lưu và biểu tượng trang web ngay trong danh sách, đồng thời tương thích mượt mà hơn trên các thiết bị. Nhiều cải tiến ngầm giúp ứng dụng hoạt động trơn tru hơn.
+Bản cập nhật này cải thiện độ ổn định của Face ID khi mở khóa ứng dụng, không còn bị chuyển sang màn hình nhập mật khẩu nếu Face ID cần thử lại.
