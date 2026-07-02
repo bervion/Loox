@@ -200,7 +200,8 @@ struct PasskeyVault {
                     userHandle: secret.userHandle,
                     credentialID: secret.credentialID,
                     createdAt: secret.createdAt,
-                    lastUsedAt: record.usedAt)
+                    lastUsedAt: record.usedAt,
+                    flags: secret.flags)
     }
 
     private func passkeySort(_ lhs: PasskeyInfo, _ rhs: PasskeyInfo) -> Bool {

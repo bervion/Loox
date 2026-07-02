@@ -38,9 +38,24 @@ nonisolated struct PasskeyInfo: Identifiable, Equatable, Sendable {
     var credentialID: Data
     var createdAt: Date
     var lastUsedAt: Date?
+    /// Public WebAuthn authenticator flags (BE/BS) — not secret, used only to
+    /// show backup/sync status. Nil for legacy credentials without stored flags.
+    var flags: UInt8?
+
+    init(relyingParty: String, userName: String, userHandle: Data, credentialID: Data,
+         createdAt: Date, lastUsedAt: Date? = nil, flags: UInt8? = nil) {
+        self.relyingParty = relyingParty
+        self.userName = userName
+        self.userHandle = userHandle
+        self.credentialID = credentialID
+        self.createdAt = createdAt
+        self.lastUsedAt = lastUsedAt
+        self.flags = flags
+    }
 
     var id: String { recordIdentifier }
     var recordIdentifier: String { credentialID.base64URLEncodedString() }
+    var backupStatus: PasskeyBackupStatus { .evaluate(flags: flags) }
 }
 
 /// Persistent record for one passkey. Content lives only in `sealed`
@@ -86,7 +101,7 @@ extension PasskeySecret {
     var info: PasskeyInfo {
         PasskeyInfo(relyingParty: relyingParty, userName: userName,
                     userHandle: userHandle, credentialID: credentialID,
-                    createdAt: createdAt, lastUsedAt: nil)
+                    createdAt: createdAt, lastUsedAt: nil, flags: flags)
     }
 }
 
