@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 /// The Settings tab.
 struct SettingsScreen: View {
@@ -19,6 +20,24 @@ struct SettingsScreen: View {
         Binding(
             get: { SharedConfig.automaticPasskeyUpgradesEnabled },
             set: { SharedConfig.automaticPasskeyUpgradesEnabled = $0 })
+    }
+
+    /// Ask iOS to turn Loox on as the AutoFill (password / passkey) provider. On iOS 18+
+    /// this shows the system turn-on prompt right in the app; earlier iOS deep-links to the
+    /// Settings AutoFill screen — either way the user skips hunting through Settings by hand.
+    private func setUpPasswordAutoFill() {
+        Task {
+            if #available(iOS 18.0, *) {
+                _ = await ASSettingsHelper.requestToTurnOnCredentialProviderExtension()
+            } else {
+                try? await ASSettingsHelper.openCredentialProviderAppSettings()
+            }
+        }
+    }
+
+    /// Deep-link straight to the Verification Codes (one-time code) provider settings.
+    private func setUpVerificationCodes() {
+        Task { try? await ASSettingsHelper.openVerificationCodeAppSettings() }
     }
 
     var body: some View {
@@ -66,6 +85,20 @@ struct SettingsScreen: View {
                     Text("Security")
                 } footer: {
                     Text("Automatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
+                }
+                .listRowBackground(VaultColors.surface)
+
+                Section {
+                    Button(action: setUpPasswordAutoFill) {
+                        Label { Text("Set up password AutoFill") } icon: { PolarisIcon(Icons.key) }
+                    }
+                    Button(action: setUpVerificationCodes) {
+                        Label { Text("Set up verification codes") } icon: { PolarisIcon(Icons.clock) }
+                    }
+                } header: {
+                    Text("AutoFill")
+                } footer: {
+                    Text("Use Loox to fill passwords and one-time codes in other apps and Safari.")
                 }
                 .listRowBackground(VaultColors.surface)
 
