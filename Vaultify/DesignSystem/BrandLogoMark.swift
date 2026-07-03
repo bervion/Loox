@@ -21,3 +21,12 @@ struct BrandLogoMark: View {
             .shadow(color: .black.opacity(0.12), radius: shadowRadius, y: shadowY)
     }
 }
+
+extension BrandLogoMark {
+    /// House wordmark heights — every logo display uses one of these so sizing stays
+    /// consistent app-wide. `hero` for brand-focal surfaces (launch, lock, privacy shield,
+    /// onboarding welcome, About); `compact` for the small tag above onboarding step titles.
+    /// The LaunchScreen storyboard mirrors `hero` manually (storyboards can't reference Swift).
+    static var hero: BrandLogoMark { BrandLogoMark(size: 40) }
+    static var compact: BrandLogoMark { BrandLogoMark(size: 24) }
+}

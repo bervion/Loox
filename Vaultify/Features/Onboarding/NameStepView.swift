@@ -17,7 +17,7 @@ struct NameStepView: View {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     // Loox brand mark instead of a generic person glyph (that icon now
                     // leads the field). Wide wordmark, so `size` is its height.
-                    BrandLogoMark(size: 24)
+                    BrandLogoMark.compact
                     Text("What should we call you?")
                         .vaultType(.screenTitle)
                     Text("We’ll set up your identity profile. You can edit it and add details anytime.")

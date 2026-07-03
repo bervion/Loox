@@ -12,7 +12,7 @@ struct AboutView: View {
         Form {
             Section {
                 VStack(spacing: 10) {
-                    BrandLogoMark(size: 36)
+                    BrandLogoMark.hero
                     Text("Loox Password").font(.title2.bold())
                     Text("Version \(version) (\(build))").font(.footnote).themedForeground(.secondary)
                 }

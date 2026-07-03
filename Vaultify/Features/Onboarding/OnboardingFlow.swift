@@ -90,7 +90,7 @@ private struct WelcomeStep: View {
                         Spacer(minLength: Space.s8)
                         // The brand mark used on splash/lock, so the first-run screen
                         // opens with the same Loox identity instead of a generic glyph.
-                        BrandLogoMark(size: 44)
+                        BrandLogoMark.hero
                         OnboardingStepHeader(
                             "Password Manager",
                             subtitle: "A private, zero-backend vault. Your secrets stay encrypted on-device and never leave unprotected.",

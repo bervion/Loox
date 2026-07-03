@@ -49,7 +49,7 @@ struct LockScreen: View {
             Spacer()
 
             VStack(spacing: Space.s8) {
-                BrandLogoMark(size: 48)
+                BrandLogoMark.hero
                     .overlay(alignment: .bottomTrailing) {
                         if mode == .biometric && !requireSlide {
                             BiometricBadge(authenticating: bioAuthenticating) {
