@@ -81,63 +81,120 @@ private struct WelcomeStep: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-            // The brand mark used on splash/lock, so the first-run screen opens
-            // with the same Loox identity instead of a generic glyph.
-            BrandLogoMark(size: 44)
-            OnboardingStepHeader(
-                "Loox Password",
-                subtitle: "A zero-backend password manager. Your secrets are encrypted on-device and never leave it unencrypted.")
+            // Center the hero on tall phones, but let it scroll on short screens /
+            // large Dynamic Type so the CTA never clips (minHeight fills the viewport;
+            // the flanking Spacers center when it fits and collapse when it doesn't).
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: Space.s8)
+                        // The brand mark used on splash/lock, so the first-run screen
+                        // opens with the same Loox identity instead of a generic glyph.
+                        BrandLogoMark(size: 44)
+                        OnboardingStepHeader(
+                            "Password Manager",
+                            subtitle: "A private, zero-backend vault. Your secrets stay encrypted on-device and never leave unprotected.",
+                            // Content-heavy hero (logo + 3 cards): the compact ramp
+                            // (screenTitle + subhead) reads cleaner than the largeTitle hero.
+                            style: .compact)
 
-            VStack(spacing: 0) {
-                FeatureRow(icon: Icons.lockFill, title: "End-to-end encryption",
-                           detail: "Argon2id + AES-256-GCM, keys held only on this device.")
-                Divider().padding(.leading, 64)
-                FeatureRow(icon: Icons.key, title: "Logins, cards, notes & more",
-                           detail: "Strong generator, one-time codes, and security checks.")
-                Divider().padding(.leading, 64)
-                FeatureRow(icon: Icons.person, title: "Unlock with Face ID / Touch ID",
-                           detail: "Fast biometric access backed by the Secure Enclave.")
+                        VStack(spacing: Space.s3) {
+                            FeatureCard(icon: .polaris(Icons.lockFill), title: "End-to-end encryption",
+                                        detail: "Argon2id + AES-256-GCM, keys stay only on this device.")
+                            FeatureCard(icon: .polaris(Icons.creditCard), title: "Passwords, cards, notes & more",
+                                        detail: "Store essentials, generate strong passwords, and use one-time codes.")
+                            FeatureCard(icon: .system("faceid"), title: "Unlock with Face ID / Touch ID",
+                                        detail: "Fast biometric access protected by the Secure Enclave.")
+                        }
+                        .padding(.top, Space.s7)
+                        .padding(.horizontal, Space.s6)
+                        Spacer(minLength: Space.s6)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: proxy.size.height)
+                }
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .background(VaultColors.surface)
-            .vaultCornerRadius(Radius.lg)
-            .padding(.top, Space.s8)
-            .padding(.horizontal, Space.s6)
 
-            Spacer()
             Button(action: onContinue) {
                 Text("Get Started").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
             .controlSize(.large)
             .padding(.horizontal, Space.s6)
+            .padding(.top, Space.s3)
             .padding(.bottom, Space.s6)
         }
+        .background(alignment: .top) { WelcomeBackdrop() }
     }
 }
 
-private struct FeatureRow: View {
-    let icon: String
+/// Icon source for a `FeatureCard`. Polaris SVG is the house set; `.system` is a
+/// deliberate SF Symbol exception for glyphs Polaris doesn't ship — currently only
+/// Apple's `faceid` mark, the platform-authentic cue for biometric unlock.
+private enum FeatureIcon {
+    case polaris(String)
+    case system(String)
+}
+
+/// One feature presented as a standalone card: an accent-tinted icon tile beside a
+/// title + supporting line. Cards stack with a gap (vs. a single divided list) for a
+/// lighter, more premium first-run hero.
+private struct FeatureCard: View {
+    let icon: FeatureIcon
     let title: LocalizedStringResource
     let detail: LocalizedStringResource
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        HStack(alignment: .center, spacing: Space.s3) {
-            PolarisIcon(icon, size: 18)
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 36, height: 36)
+        HStack(alignment: .center, spacing: Space.s4) {
+            iconView
+                // True accent (stays blue in dark mode, unlike the global control tint).
+                .foregroundStyle(VaultColors.accent)
+                .frame(width: Metric.controlLarge, height: Metric.controlLarge)
                 .background(Color(rgb: env.theme.active.accentSoft),
-                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title.inAppLocalized).font(.headline)
-                Text(detail.inAppLocalized).font(.subheadline).themedForeground(.secondary)
+                            in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text(title.inAppLocalized).vaultType(.callout).fontWeight(.semibold)
+                Text(detail.inAppLocalized).vaultType(.subhead).themedForeground(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, Space.gutter)
-        .padding(.vertical, Space.s3)
+        .padding(Space.s4)
+        // Borderless white card lifted by a soft ambient shadow only — the light
+        // theme's surface matches the page (both 0xFFFFFF), so the shadow (not a
+        // hairline) does the separation; dark themes separate by surface contrast.
+        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .elevation(.level2)
+    }
+
+    @ViewBuilder private var iconView: some View {
+        switch icon {
+        case .polaris(let name):
+            PolarisIcon(name, size: Metric.iconUtility)
+        case .system(let name):
+            // Decorative — the card title carries the accessibility label (matches PolarisIcon).
+            Image(systemName: name)
+                .font(.system(size: Metric.iconUtility))
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Subtle brand halo behind the hero: a soft accent tint at the top that fades to
+/// clear. A per-screen accent (kept legible in light + dark), not the decorative
+/// wallpaper engine — which stays gated off.
+private struct WelcomeBackdrop: View {
+    @Environment(AppEnvironment.self) private var env
+
+    var body: some View {
+        LinearGradient(
+            colors: [Color(rgb: env.theme.active.accent, opacity: 0.10), .clear],
+            startPoint: .top,
+            endPoint: .center)
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }
 

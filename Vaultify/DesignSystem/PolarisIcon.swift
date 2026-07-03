@@ -51,6 +51,7 @@ enum Icons {
     static let lock = "ic_lock"
     static let lockFill = "ic_lock_filled"
     static let key = "ic_key"
+    static let creditCard = "ic_credit_card"
     static let shield = "ic_shield_check_mark"
     static let shieldAlert = "ic_shield_none"
     static let alert = "ic_alert_triangle"

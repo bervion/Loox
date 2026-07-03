@@ -13,14 +13,19 @@ struct ThemedProminentButtonStyle: ButtonStyle {
         @Environment(\.isEnabled) private var isEnabled
         var body: some View {
             let theme = env.theme.active
+            // Disabled state uses an OPAQUE muted fill (blend toward background), never
+            // `.opacity` — a translucent CTA lets content scrolling behind a pinned button
+            // show through. Only the momentary pressed state dims.
+            let bg = isEnabled ? theme.accent : RGBMath.blend(theme.accent, theme.background, 0.55)
+            let fg = isEnabled ? theme.accentForeground : RGBMath.blend(theme.accentForeground, bg, 0.4)
             configuration.label
                 .font(.headline)
-                .foregroundStyle(Color(rgb: theme.accentForeground))
+                .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(Color(rgb: theme.accent))
+                .background(Color(rgb: bg))
                 .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.5)
+                .opacity(configuration.isPressed ? 0.85 : 1)
         }
     }
 }
@@ -32,11 +37,14 @@ struct ThemedTintedButtonStyle: ButtonStyle {
     private struct StyledButton: View {
         let configuration: ButtonStyleConfiguration
         @Environment(AppEnvironment.self) private var env
+        @Environment(\.isEnabled) private var isEnabled
         var body: some View {
             let theme = env.theme.active
+            // Opaque control surface stays; disabled only mutes the label colour.
+            let fg = isEnabled ? theme.accent : theme.textDisabled
             configuration.label
                 .font(.headline)
-                .foregroundStyle(Color(rgb: theme.accent))
+                .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color(rgb: theme.controlBackground))
@@ -53,14 +61,18 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
     private struct StyledButton: View {
         let configuration: ButtonStyleConfiguration
         @Environment(AppEnvironment.self) private var env
+        @Environment(\.isEnabled) private var isEnabled
         var body: some View {
             let theme = env.theme.active
+            // Opaque muted fill when disabled (blend toward background), never `.opacity`.
+            let bg = isEnabled ? theme.destructive : RGBMath.blend(theme.destructive, theme.background, 0.55)
+            let fg = isEnabled ? RGBMath.onColor(theme.destructive) : RGBMath.blend(RGBMath.onColor(theme.destructive), bg, 0.4)
             configuration.label
                 .font(.headline)
-                .foregroundStyle(Color(rgb: RGBMath.onColor(theme.destructive)))
+                .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(Color(rgb: theme.destructive))
+                .background(Color(rgb: bg))
                 .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                 .opacity(configuration.isPressed ? 0.85 : 1)
         }
