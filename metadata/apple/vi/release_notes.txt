@@ -1,1 +1,1 @@
-Phiên bản 1.8.0: Cải thiện hiệu suất và sửa lỗi.
+Loox có trải nghiệm khởi động mới với nhận diện thương hiệu được làm mới, giúp bạn dễ dàng bắt đầu và thiết lập kho mật khẩu hơn.

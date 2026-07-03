@@ -1,1 +1,1 @@
-Version 1.8.0: Performance improvements and bug fixes.
+Loox has a fresh first-run experience with refreshed branding, making it easier to get started and set up your vault.

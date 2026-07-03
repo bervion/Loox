@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.0] - 2026-07-03
+
+### Added
+- redesign first-run flow with Loox branding
+
+
 ## [1.8.0] - 2026-07-02
 
 ### Added
