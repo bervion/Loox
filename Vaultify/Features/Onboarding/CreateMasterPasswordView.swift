@@ -1,10 +1,12 @@
 import SwiftUI
+import UIKit
 
 /// Master-password creation step. Enforces a minimum length and confirmation,
 /// shows live strength, and warns that the password cannot be recovered.
 struct CreateMasterPasswordView: View {
     /// Returns an error message, or `nil` on success (parent then advances).
     let onSubmit: (String) async -> String?
+    @Environment(\.appTheme) private var theme
 
     @State private var password = ""
     @State private var confirm = ""
@@ -17,42 +19,60 @@ struct CreateMasterPasswordView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                VStack(alignment: .leading, spacing: 6) {
-                    PolarisIcon(Icons.lockFill, size: Metric.controlMedium).foregroundStyle(Color.accentColor)
-                    Text("Create your master password")
-                        .font(.title.bold())
+            VStack(alignment: .leading, spacing: Space.s5) {
+                VStack(alignment: .leading, spacing: Space.s3) {
+                    // Loox brand mark instead of a generic lock — same identity as the
+                    // welcome/lock screens. Wide wordmark, so `size` is its height.
+                    BrandLogoMark(size: 24)
+                    Text("Create your Loox Password")
+                        .vaultType(.screenTitle)
                     Text("This is the only password you’ll need to remember. It unlocks everything.")
-                        .font(.subheadline).themedForeground(.secondary)
+                        .vaultType(.subhead).themedForeground(.secondary)
                 }
                 .padding(.top, Space.s2)
 
-                VStack(alignment: .leading, spacing: Space.s3) {
-                    RevealableSecureField(title: "Master password", text: $password)
-                    PasswordStrengthMeter(password: password)
-                    RevealableSecureField(title: "Confirm password", text: $confirm)
-                    if !confirm.isEmpty && !matches {
-                        Text("Passwords don’t match")
-                            .font(.caption).foregroundStyle(VaultColors.strengthWeak)
+                VStack(alignment: .leading, spacing: Space.s6) {
+                    // Password + its strength meter form one tight group; the confirm field
+                    // sits a full step below so the strength label doesn't crowd it.
+                    VStack(alignment: .leading, spacing: Space.s3) {
+                        RevealableSecureField(title: "Loox Password", text: $password, icon: Icons.lockFill, prominent: true)
+                        PasswordStrengthMeter(password: password, emptyLabel: "Choose a strong password")
+                    }
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        RevealableSecureField(title: "Confirm Loox Password", text: $confirm, icon: Icons.lockFill, prominent: true)
+                        if !confirm.isEmpty && !matches {
+                            Text("Passwords don’t match")
+                                .vaultType(.caption).foregroundStyle(VaultColors.strengthWeak)
+                        }
                     }
                 }
 
-                Label {
+                // Amber caution card — the vault is unrecoverable without the Emergency Kit,
+                // so this warning carries a warning tint (not a neutral surface).
+                // Custom HStack (not Label) so the icon stays vertically centred against
+                // the multi-line text instead of riding the first baseline.
+                HStack(alignment: .center, spacing: Space.s3) {
+                    PolarisIcon(Icons.alert, size: Metric.iconUtility)
+                        .foregroundStyle(Color(rgb: theme.warning))
                     Text("If you forget this password, only your Emergency Kit can recover the vault. There is no reset.")
-                        .font(.footnote).themedForeground(.secondary)
-                } icon: {
-                    PolarisIcon(Icons.alert, size: 18).foregroundStyle(VaultColors.strengthMedium)
+                        .vaultType(.footnote).themedForeground(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(Space.s3)
-                .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .padding(Space.s4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(rgb: theme.warningSoft), in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
 
                 if let error {
-                    Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                    Text(error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
                 }
             }
             .padding(Space.s6)
         }
-        .scrollDismissesKeyboard(.interactively)
+        // Dismiss the keyboard on scroll or when an empty area is tapped
+        // (field/button taps keep their own handling — children win over this gesture).
+        .scrollDismissesKeyboard(.immediately)
+        .onTapGesture { dismissKeyboard() }
         .safeAreaInset(edge: .bottom) {
             Button {
                 Task { await submit() }
@@ -65,6 +85,12 @@ struct CreateMasterPasswordView: View {
             .padding(.horizontal, Space.s6)
             .padding(.bottom, Space.gutter)
         }
+    }
+
+    /// Resign the first responder so the keyboard hides (on scroll / tap-outside).
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private func submit() async {
