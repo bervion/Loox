@@ -81,6 +81,7 @@ let project = Project(
             sources: ["Vaultify/**", "VaultifyCore/**"],
             resources: [
                 "Vaultify/Assets.xcassets",
+                "VaultifyCore/SharedAssets.xcassets",
                 "Vaultify/vaultify.icon",
                 "Vaultify/Localizable.xcstrings",
                 "Vaultify/LaunchScreen.storyboard",
@@ -144,6 +145,7 @@ let project = Project(
             resources: [
                 "Vaultify/Localizable.xcstrings",
                 "Vaultify/Resources/eff_large_wordlist.txt",
+                "VaultifyCore/SharedAssets.xcassets",
             ],
             entitlements: "VaultifyAutoFill/VaultifyAutoFill.entitlements",
             settings: .settings(base: [
