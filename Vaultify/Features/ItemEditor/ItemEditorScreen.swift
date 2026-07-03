@@ -153,8 +153,9 @@ struct ItemEditorScreen: View {
                     }
                 }
             }
-            .sheet(item: Binding(get: { scanningFieldID.map { GeneratorRequest(id: $0) } },
-                                 set: { scanningFieldID = $0?.id })) { request in
+            // Full-screen (not a sheet): the camera preview deserves the whole screen.
+            .fullScreenCover(item: Binding(get: { scanningFieldID.map { GeneratorRequest(id: $0) } },
+                                           set: { scanningFieldID = $0?.id })) { request in
                 TOTPScannerSheet { secret in
                     if let index = draft.fields.firstIndex(where: { $0.id == request.id }) {
                         draft.fields[index].value = secret
