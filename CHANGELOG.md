@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.10.0] - 2026-07-03
+
+### Added
+- in-app shortcut to enable Loox for AutoFill
+- present the QR scanner full-screen
+- brand the AutoFill unlock + recovery screens
+
+### Fixed
+- consistent logo sizes + instant unlock transition
+
+
 ## [1.9.0] - 2026-07-03
 
 ### Added

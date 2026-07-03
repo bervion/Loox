@@ -1,1 +1,1 @@
-Loox has a fresh first-run experience with refreshed branding, making it easier to get started and set up your vault.
+This update adds a quick shortcut to enable Loox for AutoFill, a full-screen QR scanner, and a branded look for AutoFill unlock and recovery screens. Also fixed logo sizing and made unlock feel instant.

@@ -1,1 +1,1 @@
-Loox có trải nghiệm khởi động mới với nhận diện thương hiệu được làm mới, giúp bạn dễ dàng bắt đầu và thiết lập kho mật khẩu hơn.
+Bản cập nhật này thêm lối tắt bật Loox cho AutoFill, trình quét mã QR toàn màn hình, và giao diện thương hiệu cho màn hình mở khóa và khôi phục AutoFill. Đã sửa kích thước logo và giúp mở khóa mượt hơn.
