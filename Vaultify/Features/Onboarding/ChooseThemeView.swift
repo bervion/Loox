@@ -15,7 +15,7 @@ struct ChooseThemeView: View {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     // Brand mark ships light + dark variants, so it flips live as the
                     // user previews System/Light/Dark. Wide wordmark → `size` is height.
-                    BrandLogoMark(size: 24)
+                    BrandLogoMark.compact
                     Text("Make it yours")
                         .vaultType(.screenTitle)
                     Text("Choose how Loox looks. You can change this anytime in Settings.")

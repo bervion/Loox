@@ -18,7 +18,7 @@ struct EmergencyKitView: View {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     // Loox brand mark instead of a generic shield — same identity as the
                     // other onboarding steps. Wide wordmark, so `size` is its height.
-                    BrandLogoMark(size: 24)
+                    BrandLogoMark.compact
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
                     Text("This recovery key can restore your vault if you forget your master password.")

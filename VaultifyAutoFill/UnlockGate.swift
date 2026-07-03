@@ -32,7 +32,12 @@ struct UnlockGate<Content: View>: View {
             Group {
                 if let vaultKey { content(vaultKey) }
                 else if biometricInProgress {
-                    ProgressView().controlSize(.large).frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Brand mark while Face ID runs (auto-triggered), not a bare spinner.
+                    VStack(spacing: 20) {
+                        BrandLogoMark.hero
+                        ProgressView().controlSize(.large)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else { unlockForm }
             }
             .navigationTitle(title)
@@ -51,31 +56,48 @@ struct UnlockGate<Content: View>: View {
         }
     }
 
+    /// Password fallback — mirrors the main-app login screen (brand mark + rounded
+    /// secure field). No design-system tokens here: the extension only links
+    /// VaultifyCore, so this uses system materials/styles.
     private var unlockForm: some View {
-        Form {
-            Section {
+        VStack(spacing: 20) {
+            BrandLogoMark.hero
+                .padding(.top, 32)
+
+            VStack(spacing: 12) {
                 SecureField("Master password", text: $masterPassword)
                     .textContentType(.password).submitLabel(.go).onSubmit(unlockWithMaster)
-            } header: {
-                Text("Unlock your vault")
-            } footer: {
-                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-            }
-            Section {
-                Button(action: unlockWithMaster) { HStack { Spacer(); Text("Unlock").bold(); Spacer() } }
-                    .disabled(masterPassword.isEmpty || unlocking)
-            }
-            // Manual escape hatch back to Face ID after a failed/cancelled first attempt —
-            // the password stays available below, biometrics is never the only path.
-            if BiometricKeyStore.isEnrolled {
-                Section {
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .background(Color(.secondarySystemBackground),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                if let errorMessage {
+                    Text(errorMessage).font(.footnote).foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Button(action: unlockWithMaster) {
+                    Text("Unlock").fontWeight(.semibold).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent).controlSize(.large)
+                .disabled(masterPassword.isEmpty || unlocking)
+
+                // Manual escape hatch back to Face ID after a failed/cancelled auto-prompt —
+                // the password stays available above, biometrics is never the only path.
+                if BiometricKeyStore.isEnrolled {
                     Button(action: retryBiometricUnlock) {
-                        HStack { Spacer(); Text("Unlock with \(BiometricAuth.displayName)"); Spacer() }
+                        Label("Unlock with \(BiometricAuth.displayName)", systemImage: "faceid")
+                            .frame(maxWidth: .infinity)
                     }
+                    .controlSize(.large)
                     .disabled(unlocking)
                 }
             }
+            .padding(.horizontal, 24)
+
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay { if unlocking { ProgressView().controlSize(.large) } }
         .disabled(unlocking)
     }
@@ -92,6 +114,10 @@ struct UnlockGate<Content: View>: View {
         let enrolled = BiometricKeyStore.isEnrolled
         bioLog.log("attemptBiometricUnlock: isEnrolled(shared group)=\(enrolled, privacy: .public)")
         guard enrolled else { biometricInProgress = false; return }
+        // Let the extension scene settle before prompting, so iOS doesn't auto-dismiss the
+        // Face ID sheet mid-transition (mirrors the main-app lock screen). Makes the
+        // auto-prompt reliable enough that the manual fallback button is rarely needed.
+        try? await Task.sleep(for: .milliseconds(250))
         do {
             let key = try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
             bioLog.log("biometric retrieve OK — unlocking via Face ID")

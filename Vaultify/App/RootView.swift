@@ -27,7 +27,10 @@ struct RootView: View {
                 PrivacyShield().transition(.opacity)
             }
         }
-        .animation(.smooth(duration: 0.3), value: route)
+        // Unlocking should reveal the app immediately — a cross-fade flicks the lock
+        // screen out over the app (most visible right after a Face ID success). Other
+        // route changes (e.g. auto-lock while active) keep the smooth transition.
+        .animation(route == .unlocked ? nil : .smooth(duration: 0.3), value: route)
         .animation(.easeInOut(duration: 0.3), value: env.theme.active)
         .onChange(of: env.session.state) { _, newState in
             if newState == .unlocked {
@@ -84,7 +87,7 @@ private struct PrivacyShield: View {
     var body: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
-            BrandLogoMark(size: 48)
+            BrandLogoMark.hero
         }
     }
 }

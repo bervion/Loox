@@ -23,7 +23,7 @@ struct CreateMasterPasswordView: View {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     // Loox brand mark instead of a generic lock — same identity as the
                     // welcome/lock screens. Wide wordmark, so `size` is its height.
-                    BrandLogoMark(size: 24)
+                    BrandLogoMark.compact
                     Text("Create your Loox Password")
                         .vaultType(.screenTitle)
                     Text("This is the only password you’ll need to remember. It unlocks everything.")
