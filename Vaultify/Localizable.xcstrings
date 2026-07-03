@@ -1,6 +1,46 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "AutoFill" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tự động điền"
+          }
+        }
+      }
+    },
+    "Set up password AutoFill" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết lập Tự động điền mật khẩu"
+          }
+        }
+      }
+    },
+    "Set up verification codes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết lập mã xác minh"
+          }
+        }
+      }
+    },
+    "Use Loox to fill passwords and one-time codes in other apps and Safari." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng Loox để điền mật khẩu và mã một lần trong ứng dụng khác và Safari."
+          }
+        }
+      }
+    },
     "" : {
 
     },
