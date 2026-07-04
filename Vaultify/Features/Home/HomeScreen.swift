@@ -14,9 +14,9 @@ struct HomeScreen: View {
     #endif
     @State private var editorTarget: EditorTarget?
     @State private var showSettings = false
-    @State private var showProfile = false
     @State private var showGenerator = false
     @State private var showTotpList = false
+    @State private var showFolderPicker = false
     @State private var selectedFolderId: String?
     @State private var sortOrder: VaultSort = .updated
     @State private var scrolledUnder = false
@@ -52,6 +52,14 @@ struct HomeScreen: View {
         watchtowerIssueCount = health.weak.count + health.reused.count + health.missing2FA.count
     }
 
+    /// With exactly one Space, default the filter to that Space (not "All Spaces") so its name
+    /// shows in the "All" section title. Only fills an unset selection — never overrides a
+    /// choice the user made, and stays out of the way once a second Space exists.
+    private func autoSelectSingleSpace() {
+        guard selectedFolderId == nil, env.repository.folders.count == 1 else { return }
+        selectedFolderId = env.repository.folders.first?.id
+    }
+
     var body: some View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.homePath) {
@@ -67,7 +75,6 @@ struct HomeScreen: View {
 
                 // Header overlays the scroll content — glass blurs whatever scrolls beneath.
                 HomeHeaderBar(
-                    selectedFolderId: $selectedFolderId,
                     onAddCategory: { editorTarget = .new($0) },
                     onSettings: {
                         // macOS opens the native Settings window (⌘,) instead of the
@@ -77,22 +84,23 @@ struct HomeScreen: View {
                         #else
                         showSettings = true
                         #endif
-                    },
-                    onProfile: { showProfile = true }
+                    }
                 )
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
-            .task { recomputeWatchtowerCount() }
+            .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
+            .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
+            .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
             // New items inherit the Space currently selected on Home (nil = All Spaces →
             // editor falls back to the primary Space).
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
             .sheet(isPresented: $showSettings) { SettingsScreen() }
-            .sheet(isPresented: $showProfile) { ProfileScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
+            .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
         }
     }
 
@@ -106,6 +114,9 @@ struct HomeScreen: View {
                 VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
+                    // 2. Profile entry (avatar + name + email) → opens the Profile sheet.
+                    profileRow
+
                     // 3. Quick actions grid (Reminders-style colour cards)
                     quickActionsGrid
 
@@ -133,6 +144,71 @@ struct HomeScreen: View {
             }
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: Profile row
+
+    private var profileEmail: String? {
+        guard let value = env.repository.defaultIdentity?.fields.first(where: { $0.kind == .email })?.value,
+              !value.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        return value
+    }
+
+    /// "Name · email" on one line; falls back to whichever part exists.
+    private func profileSubtitle(name: String) -> String {
+        [name, profileEmail].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: ", ")
+    }
+
+    /// Profile entry row above the quick actions: avatar + "Profile" title + the default
+    /// identity's name & email. Tapping opens the Profile sheet (same as the old header icon).
+    private var profileRow: some View {
+        Button { uiState.homePath.append(ProfileRoute()) } label: {
+            HStack(spacing: Space.s3) {
+                profileAvatar
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Profile").vaultType(.headline).themedForeground()
+                    if let identity = env.repository.defaultIdentity {
+                        // Name + email on a single line (email appended after the name).
+                        Text(verbatim: profileSubtitle(name: identity.title))
+                            .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
+                    } else {
+                        Text("Set up your identity")
+                            .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: Space.s2)
+                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            }
+            .padding(Space.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(rgb: env.theme.active.elevatedBackground))
+            .vaultCornerRadius(Radius.lg)
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
+            )
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 44pt circular avatar — stored image, letter-avatar, or a person glyph when no identity.
+    @ViewBuilder private var profileAvatar: some View {
+        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        if let identity = env.repository.defaultIdentity {
+            if let image = env.repository.avatarImage(for: identity.id) {
+                Image(platformImage: image).resizable().scaledToFill()
+                    .frame(width: 44, height: 44).clipShape(shape)
+            } else {
+                ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: 44)
+                    .clipShape(shape)
+            }
+        } else {
+            PolarisIcon(Icons.person, size: Metric.iconUtility)
+                .themedForeground(.accent)
+                .frame(width: 44, height: 44)
+                .background(Color(rgb: env.theme.active.accentSoft), in: shape)
+        }
     }
 
     // MARK: Quick actions
@@ -248,13 +324,7 @@ struct HomeScreen: View {
 
     private var allItemsSection: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            homeSectionHeader(
-                title: LocalizedStringResource("All · \(allItems.count)").inAppLocalized,
-                action: LocalizedStringResource("Sort").inAppLocalized
-            ) {
-                // Cycle through sort modes on tap.
-                sortOrder = sortOrder == .updated ? .title : .updated
-            }
+            allItemsHeader
 
             groupedCard {
                 ForEach(Array(allItems.enumerated()), id: \.element.id) { idx, item in
@@ -262,6 +332,43 @@ struct HomeScreen: View {
                 }
             }
         }
+    }
+
+    /// "All" section header — the Space switcher (name + item count + chevron) opening the
+    /// picker, with the Sort action trailing. The switcher moved here from the top header bar.
+    private var allItemsHeader: some View {
+        HStack(alignment: .lastTextBaseline) {
+            Button { showFolderPicker = true } label: {
+                HStack(spacing: Space.s1) {
+                    spaceTitleText.vaultType(.sectionLabel)
+                    Text(verbatim: "· \(allItems.count)").vaultType(.sectionLabel)
+                    PolarisIcon(Icons.chevronDown, size: 12).themedForeground(.tertiary)
+                }
+                .themedForeground(.tertiary)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            Button {
+                sortOrder = sortOrder == .updated ? .title : .updated
+            } label: {
+                Text(LocalizedStringResource("Sort").inAppLocalized)
+                    .vaultType(.sectionLabel)
+                    .foregroundStyle(env.theme.uiTint)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.bottom, Space.s1)
+    }
+
+    /// Selected Space name, or the localized "All Spaces" fallback (nil filter).
+    private var spaceTitleText: Text {
+        if let id = selectedFolderId, let folder = env.repository.folders.first(where: { $0.id == id }) {
+            return Text(verbatim: folder.name)
+        }
+        return Text("All Spaces")
     }
 
     // MARK: Empty vault state

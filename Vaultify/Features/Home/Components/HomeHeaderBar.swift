@@ -1,95 +1,28 @@
 import SwiftUI
 
-/// Home header: folder-switcher title on the left (plain, no glass pill) +
-/// glass action cluster on the right (search · add · settings).
+/// Home header: the Loox wordmark on the left + glass action cluster on the right
+/// (search · add · settings). The Space switcher now lives in the "All" section title.
 ///
 /// Composes `VaultScreenHeader` so the overlay positioning, padding, and glass
 /// logic all live in one shared place.
 struct HomeHeaderBar: View {
-    /// nil = "All Spaces" (no folder filter).
-    @Binding var selectedFolderId: String?
     /// Called with the chosen item category when the user picks from the Add menu.
     let onAddCategory: (ItemCategory) -> Void
     let onSettings: () -> Void
-    let onProfile: () -> Void
 
     @Environment(AppEnvironment.self) private var env
-    @State private var showFolderPicker = false
-
-    /// Circular avatar button → Profile. Shows the default identity's avatar (or its
-    /// letter-avatar), falling back to a person glyph when no identity exists yet.
-    @ViewBuilder private var profileButton: some View {
-        Button(action: onProfile) {
-            Group {
-                if let identity = env.repository.defaultIdentity {
-                    if let image = env.repository.avatarImage(for: identity.id) {
-                        Image(platformImage: image).resizable().scaledToFill()
-                    } else {
-                        ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: 28)
-                    }
-                } else {
-                    PolarisIcon(Icons.person, size: Metric.iconUtility).themedForeground()
-                }
-            }
-            .frame(width: 28, height: 28)
-            .clipShape(Circle())
-            .frame(width: Metric.hitMin, height: Metric.hitMin)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Profile"))
-    }
-
-    private var selectedFolder: Folder? {
-        guard let id = selectedFolderId else { return nil }
-        return env.repository.folders.first { $0.id == id }
-    }
-
-    /// Title shown in the header. A selected folder's name is verbatim (user data);
-    /// the "All Spaces" fallback is a SwiftUI `Text` literal so it localizes via the
-    /// environment locale (the in-app language) — `appString` can't switch the string
-    /// table when the device language differs from the in-app choice.
-    private var folderTitle: Text {
-        if let folder = selectedFolder { return Text(verbatim: folder.name) }
-        return Text("All Spaces")
-    }
-
-    private var folderDotColor: Color {
-        selectedFolder?.color.tint ?? env.theme.active.color(.iconSecondary)
-    }
 
     var body: some View {
         VaultScreenHeader(
             leading: {
-                // Plain button — the title is NOT wrapped in a glass pill;
-                // only the right cluster receives the glass treatment.
-                Button {
-                    showFolderPicker = true
-                } label: {
-                    HStack(spacing: Space.s2) {
-                        Circle()
-                            .fill(folderDotColor)
-                            .frame(width: 10, height: 10)
-
-                        folderTitle
-                            .vaultType(.screenTitle)
-                            .themedForeground()
-                            .lineLimit(1)
-
-                        PolarisIcon(Icons.chevronDown, size: 15)
-                            .themedForeground(.secondary)
-                    }
-                    .padding(.trailing, Space.s1)
-                    .frame(minHeight: Metric.hitMin)
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
+                // Brand wordmark instead of the old folder-switcher title (no glass pill;
+                // only the right cluster receives the glass treatment).
+                BrandLogoMark(size: 20, shadowRadius: 0, shadowY: 0)
+                    .frame(minHeight: Metric.hitMin, alignment: .leading)
+                    .accessibilityLabel(Text("Loox"))
             },
             trailing: {
                 HeaderActionCluster {
-                    // Profile — default identity avatar
-                    profileButton
-
                     // Search — switches to the Search tab via notification
                     HeaderIconButton(
                         Icons.search,
@@ -136,17 +69,14 @@ struct HomeHeaderBar: View {
                 }
             }
         )
-        .sheet(isPresented: $showFolderPicker) {
-            HomeFolderPickerSheet(selectedFolderId: $selectedFolderId)
-        }
     }
 }
 
-// MARK: - Folder picker sheet
+// MARK: - Space picker sheet
 
-/// Folder picker for the Home header. Lets the user pick "All Spaces" (nil) or a
-/// specific folder to filter the Home feed, plus create/manage spaces.
-private struct HomeFolderPickerSheet: View {
+/// Space picker for Home. Lets the user pick "All Spaces" (nil) or a specific folder to
+/// filter the Home feed, plus create/manage spaces. Presented from the "All" section title.
+struct HomeFolderPickerSheet: View {
     @Binding var selectedFolderId: String?
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss

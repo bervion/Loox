@@ -284,13 +284,14 @@ private struct JoinByRecoveryView: View {
     @State private var recoveryKey = ""
     @State private var busy = false
     @State private var errorMessage: String?
+    @State private var showScanner = false
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: Space.s8)
             OnboardingStepHeader(
                 "Use Recovery Key",
-                subtitle: "Enter the recovery key from your Emergency Kit. Your vault will download from iCloud.",
+                subtitle: "Scan the Setup Code on your Emergency Kit, or type the recovery key. Your vault will download from iCloud.",
                 style: .compact)
 
             HStack(spacing: Space.s2) {
@@ -324,6 +325,16 @@ private struct JoinByRecoveryView: View {
 
             Spacer()
             VStack(spacing: Space.s3) {
+                #if os(iOS)
+                Button { showScanner = true } label: {
+                    Label { Text("Scan Setup Code") } icon: { PolarisIcon(Icons.scanCode, size: Metric.iconInline) }
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.themedTinted)
+                .controlSize(.large)
+                .disabled(busy)
+                #endif
+
                 Button(action: submit) {
                     Group {
                         if busy { ProgressView() } else { Text("Continue") }
@@ -343,6 +354,14 @@ private struct JoinByRecoveryView: View {
             .padding(.horizontal, Space.s6)
             .padding(.bottom, Space.s6)
         }
+        #if os(iOS)
+        .sheet(isPresented: $showScanner) {
+            RecoveryScannerSheet { scanned in
+                recoveryKey = scanned
+                showScanner = false
+            } onCancel: { showScanner = false }
+        }
+        #endif
     }
 
     private func submit() {
@@ -373,3 +392,40 @@ private struct JoinByRecoveryView: View {
         }
     }
 }
+
+#if os(iOS)
+/// Full-screen camera sheet that reads the Emergency Kit's Setup Code (a QR of the recovery
+/// key) and hands the decoded string back to the recovery-entry field. Reuses the shared
+/// `QRScannerView` (also used for TOTP import); the payload is the recovery key verbatim.
+private struct RecoveryScannerSheet: View {
+    let onScan: (String) -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            QRScannerView { payload in
+                let key = payload.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !key.isEmpty else { return }
+                onScan(key)
+            }
+            .ignoresSafeArea()
+
+            HStack {
+                Button(action: onCancel) {
+                    Text("Cancel").padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .background(.black.opacity(0.35), in: Capsule())
+                Spacer()
+                Text("Scan Setup Code")
+                    .vaultType(.headline).foregroundStyle(.white)
+                Spacer()
+                // Balances the leading Cancel so the title stays centered.
+                Text("Cancel").padding(.horizontal, Space.s3).padding(.vertical, Space.s2).opacity(0)
+            }
+            .padding(Space.s4)
+        }
+    }
+}
+#endif

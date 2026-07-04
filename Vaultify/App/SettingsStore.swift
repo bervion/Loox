@@ -60,6 +60,9 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
     var clipboardClearSeconds: Int { didSet { defaults.set(clipboardClearSeconds, forKey: Key.clipboard) } }
     var hideInAppSwitcher: Bool { didSet { defaults.set(hideInAppSwitcher, forKey: Key.privacyScreen) } }
+    /// Which payment card the Profile screen shows as "your" card. Device-local (not synced) —
+    /// a display preference, unlike the synced default identity. nil = fall back to the first card.
+    var selectedPaymentCardId: String? { didSet { defaults.set(selectedPaymentCardId, forKey: Key.selectedCard) } }
     var preferredLanguage: String {
         didSet {
             defaults.set(preferredLanguage, forKey: Key.language)
@@ -82,6 +85,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
+        selectedPaymentCardId = d.string(forKey: Key.selectedCard)
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
         SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
         appResourceLocale = appLocale(forCode: preferredLanguage)
@@ -99,6 +103,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let favicons = "show_website_icons"
         static let clipboard = "clipboard_clear_seconds"
         static let privacyScreen = "hide_in_app_switcher"
+        static let selectedCard = "profile_selected_payment_card_id"
         static let language = "preferred_language"
     }
 }

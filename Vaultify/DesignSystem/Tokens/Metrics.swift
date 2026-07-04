@@ -30,6 +30,8 @@ nonisolated enum TabBarMetric {
     static var cornerRadius: CGFloat { height / 2 }
     static let indicatorSize: CGFloat = 46     // selected pill behind the icon
     static let badgeDot: CGFloat = 8
-    /// Bottom padding scrollable content must reserve so the bar never covers rows.
-    static let contentBottomInset: CGFloat = 110
+    /// Bottom breathing space below the last row. The native `TabView` bar already reserves
+    /// its own safe-area inset, so this is just a small margin — not the full bar height
+    /// (the old floating-overlay bar needed ~110; the system bar does not).
+    static let contentBottomInset: CGFloat = 24
 }

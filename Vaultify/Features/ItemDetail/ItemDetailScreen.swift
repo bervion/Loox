@@ -42,10 +42,18 @@ struct ItemDetailScreen: View {
         // `appBackground` uses the plain background, which equals the card color in light mode
         // (both white), making the cards invisible.
         .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-        .navigationTitle(item?.title ?? "")
+        // No nav-bar title — the big title in the header below is the item's identity.
+        .navigationTitle("")
         .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let item {
+                // Share — a separate button beside the "…" menu (not grouped). Shares the
+                // website URL when present, else the title; never a secret value.
+                ToolbarItem(placement: .platformPrimaryAction) {
+                    ShareLink(item: shareText(item)) {
+                        PolarisIcon(Icons.share, size: Metric.iconInline)
+                    }
+                }
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
@@ -104,26 +112,39 @@ struct ItemDetailScreen: View {
         try? env.repository.update(updated)
     }
 
+    /// Non-secret text for the Share button: the website URL if present, else the title.
+    private func shareText(_ item: VaultItem) -> String {
+        if let url = item.urlField?.value, !url.isEmpty { return url }
+        return item.title.isEmpty ? appString("Untitled") : item.title
+    }
+
     private func header(_ item: VaultItem) -> some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            // Space pill (left-aligned) → tap opens the "Located In" sheet (move / view Space).
-            Button { showLocatedIn = true } label: {
-                HStack(spacing: Space.s2) {
-                    if let folder = folder(for: item) {
-                        FolderBadge(icon: folder.iconAsset, color: folder.color, size: 20)
-                        Text(folder.name)
-                            .vaultType(.subhead).fontWeight(.semibold).themedForeground()
-                            .lineLimit(1).truncationMode(.tail)
-                    } else {
-                        Text("No Space").vaultType(.subhead).themedForeground(.secondary)
+            // Space pill + pin/favorite share one row, so the controls sit at the Space row's
+            // vertical center. Tap the pill → "Located In" sheet (move / view Space).
+            HStack(spacing: Space.s3) {
+                Button { showLocatedIn = true } label: {
+                    HStack(spacing: Space.s2) {
+                        if let folder = folder(for: item) {
+                            FolderBadge(icon: folder.iconAsset, color: folder.color, size: 20)
+                            Text(folder.name)
+                                .vaultType(.subhead).fontWeight(.semibold).themedForeground()
+                                .lineLimit(1).truncationMode(.tail)
+                        } else {
+                            Text("No Space").vaultType(.subhead).themedForeground(.secondary)
+                        }
+                        PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
                     }
-                    PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
+                    .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+                    .background(VaultColors.surface,
+                                in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                 }
-                .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
-                .background(VaultColors.surface,
-                            in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 8)
+
+                pinFavoriteControls(item)
             }
-            .buttonStyle(.plain)
 
             HStack(spacing: Space.s3) {
                 // Favicon wins when the item has a website; otherwise the custom icon / avatar.
@@ -135,23 +156,29 @@ struct ItemDetailScreen: View {
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.title.isEmpty ? "Untitled" : item.title)
-                        .font(.title2.bold()).lineLimit(2)
+                        .font(.title2.bold()).lineLimit(1).truncationMode(.tail)
                     Text(item.category.title).font(.subheadline).themedForeground(.secondary)
                 }
-                Spacer(minLength: 8)
-                Button { env.repository.togglePin(item) } label: {
-                    PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
-                        .foregroundStyle(item.pinned ? env.theme.active.color(.accent) : env.theme.active.color(.secondary))
-                }
-                .buttonStyle(.plain)
-                Button { try? env.repository.toggleFavorite(item) } label: {
-                    PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: Metric.iconUtility)
-                        .foregroundStyle(item.favorite ? VaultColors.strengthMedium : env.theme.active.color(.secondary))
-                }
-                .buttonStyle(.plain)
+                Spacer(minLength: 0)
             }
         }
         .padding(.vertical, Space.s1)
+    }
+
+    /// Pin + favorite toggles, grouped with spacing — shown at the Space row's vertical center.
+    @ViewBuilder private func pinFavoriteControls(_ item: VaultItem) -> some View {
+        HStack(spacing: Space.s4) {
+            Button { env.repository.togglePin(item) } label: {
+                PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
+                    .foregroundStyle(item.pinned ? env.theme.active.color(.accent) : env.theme.active.color(.secondary))
+            }
+            .buttonStyle(.plain)
+            Button { try? env.repository.toggleFavorite(item) } label: {
+                PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: Metric.iconUtility)
+                    .foregroundStyle(item.favorite ? VaultColors.favoriteStar : env.theme.active.color(.secondary))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     /// Item tags. The Space now lives in the header pill, so this is tags-only.

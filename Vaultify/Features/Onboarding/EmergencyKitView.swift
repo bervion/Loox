@@ -1,27 +1,37 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// Shows the generated recovery key once. The user must confirm they saved it
-/// before continuing — it is the only way to recover a forgotten master password.
-/// Layout mirrors the other onboarding steps: top-aligned, left-aligned, Loox brand
-/// mark, the key as the focal card, soft tinted actions, and a tappable confirm card.
+/// Shows the generated recovery key once and requires the user to SAVE the Emergency Kit
+/// PDF before continuing — it is the only way to recover a forgotten master password / set
+/// up a new device. Layout mirrors the other onboarding steps: top-aligned, left-aligned,
+/// Loox brand mark, the key as the focal card, soft tinted actions.
 struct EmergencyKitView: View {
     let recoveryKey: String
+    /// Printed on the kit ("Created for …" + iCloud reminder). Threaded from the name step.
+    var ownerName: String = ""
+    var iCloudAccount: String = ""
     let onContinue: () -> Void
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.appTheme) private var theme
-    @State private var confirmedSaved = false
+    @State private var savedPDF = false
+    @State private var showExporter = false
+    @State private var pdfFile: EmergencyKitPDFFile?
+    @State private var exportError: String?
+
+    private var info: EmergencyKitInfo {
+        EmergencyKitInfo(recoveryKey: recoveryKey, ownerName: ownerName,
+                         iCloudAccount: iCloudAccount, createdAt: .now)
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    // Loox brand mark instead of a generic shield — same identity as the
-                    // other onboarding steps. Wide wordmark, so `size` is its height.
                     BrandLogoMark.compact
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
-                    Text("This recovery key can restore your vault if you forget your master password.")
+                    Text("This recovery key can restore your vault if you forget your master password or set up a new device. Save the PDF to continue.")
                         .vaultType(.subhead).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -46,7 +56,13 @@ struct EmergencyKitView: View {
                     }
                 }
 
-                confirmationCard
+                savePDFCard
+
+                if let exportError {
+                    Text(exportError)
+                        .vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
@@ -57,10 +73,35 @@ struct EmergencyKitView: View {
             }
             .buttonStyle(.themedProminent)
             .controlSize(.large)
-            .disabled(!confirmedSaved || recoveryKey.isEmpty)
+            .disabled(!savedPDF || recoveryKey.isEmpty)
             .padding(.horizontal, Space.s6)
             .padding(.bottom, Space.gutter)
         }
+        .fileExporter(isPresented: $showExporter,
+                      document: pdfFile,
+                      contentType: .pdf,
+                      defaultFilename: info.suggestedFilename) { result in
+            switch result {
+            case .success:
+                savedPDF = true
+                exportError = nil
+                Haptics.success()
+            case .failure(let error):
+                // A user cancel also lands here as CocoaError.userCancelled — not a real error.
+                if (error as NSError).code != NSUserCancelledError {
+                    exportError = appString("Couldn’t save the Emergency Kit. Please try again.")
+                }
+            }
+        }
+    }
+
+    private func presentExporter() {
+        guard let data = EmergencyKitPDF.makeData(info) else {
+            exportError = appString("Couldn’t build the Emergency Kit PDF. Please try again.")
+            return
+        }
+        pdfFile = EmergencyKitPDFFile(data: data)
+        showExporter = true
     }
 
     private func tintedActionLabel(_ title: LocalizedStringKey, icon: String) -> some View {
@@ -89,24 +130,28 @@ struct EmergencyKitView: View {
         .elevation(.level2)
     }
 
-    /// Tappable confirmation card — the whole card toggles the checkbox (a checkbox,
-    /// not a switch, keeps a fixed footprint so long labels never break the layout).
-    private var confirmationCard: some View {
-        Button {
-            confirmedSaved.toggle()
-            Haptics.tap()
-        } label: {
+    /// Required action: build + save the kit PDF. Once saved, the card confirms and the
+    /// bottom Continue button unlocks. A checkbox alone can't prove the key was preserved;
+    /// a successful file save can.
+    private var savePDFCard: some View {
+        Button(action: presentExporter) {
             HStack(alignment: .center, spacing: Space.s3) {
+                PolarisIcon(savedPDF ? Icons.checkCircle : Icons.shield, size: Metric.iconUtility)
+                    .foregroundStyle(savedPDF ? VaultColors.strengthStrong : Color(rgb: theme.accent))
+                    .frame(width: Metric.controlLarge, height: Metric.controlLarge)
+                    .background(Color(rgb: theme.accentSoft),
+                                in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                 VStack(alignment: .leading, spacing: Space.s1) {
-                    Text("I’ve saved my recovery key")
+                    Text(savedPDF ? "Emergency Kit saved" : "Save Emergency Kit (PDF)")
                         .vaultType(.headline)
-                    Text("Store it somewhere safe and offline — it is shown only once.")
+                    Text(savedPDF
+                         ? "Keep it somewhere safe and offline."
+                         : "Save the printable PDF with your recovery key and Setup Code.")
                         .vaultType(.footnote).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: Space.s2)
-                checkbox
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -115,29 +160,11 @@ struct EmergencyKitView: View {
             .elevation(.level2)
         }
         .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(confirmedSaved ? [.isSelected] : [])
+        .disabled(recoveryKey.isEmpty)
     }
 
-    private var checkbox: some View {
-        RoundedRectangle(cornerRadius: Radius.xs, style: .continuous)
-            .fill(confirmedSaved ? Color(rgb: theme.accent) : .clear)
-            .overlay {
-                if confirmedSaved {
-                    PolarisIcon(Icons.check, size: 15)
-                        .foregroundStyle(Color(rgb: theme.accentForeground))
-                } else {
-                    RoundedRectangle(cornerRadius: Radius.xs, style: .continuous)
-                        .strokeBorder(Color(rgb: theme.separator), lineWidth: 1.5)
-                }
-            }
-            .frame(width: 26, height: 26)
-            .animation(.easeInOut(duration: 0.15), value: confirmedSaved)
-    }
-
-    /// Split the hyphenated key into two balanced lines so it reads as a block
-    /// instead of wrapping wherever the screen width happens to break it. The
-    /// Copy button always uses the original single-line value.
+    /// Split the hyphenated key into two balanced lines so it reads as a block instead of
+    /// wrapping wherever the screen width happens to break it. Copy always uses the raw value.
     private var displayKey: String {
         let groups = recoveryKey.split(separator: "-")
         guard groups.count >= 4 else { return recoveryKey }

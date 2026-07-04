@@ -20,6 +20,9 @@ enum VaultColors {
     static let strengthWeak = dynamic(light: 0xD72C0D, dark: 0xFF6B5B)
     static let strengthMedium = dynamic(light: 0xB98900, dark: 0xE3B341)
     static let strengthStrong = dynamic(light: 0x1A8B5E, dark: 0x34C789)
+    /// Favorite-star gold — brighter than the amber strength color; shared by the item rows
+    /// and the detail header so the star reads the same everywhere.
+    static let favoriteStar = Color(red: 1.0, green: 0.78, blue: 0.13)
 
     static func strength(_ strength: PasswordStrength) -> Color {
         switch strength {

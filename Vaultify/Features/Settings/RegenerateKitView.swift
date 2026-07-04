@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// View / regenerate the Emergency Kit recovery key. Generating a new key
 /// invalidates the previous one.
@@ -7,6 +8,9 @@ struct RegenerateKitView: View {
     @State private var newKey = ""
     @State private var busy = false
     @State private var confirmRegenerate = false
+    @State private var showExporter = false
+    @State private var pdfFile: EmergencyKitPDFFile?
+    @State private var exportError: String?
 
     var body: some View {
         Form {
@@ -34,6 +38,12 @@ struct RegenerateKitView: View {
                         Label { Text("Copy") } icon: { PolarisIcon(Icons.copy) }
                     }
                     ShareLink(item: newKey) { Label { Text("Share") } icon: { PolarisIcon(Icons.share) } }
+                    Button(action: presentExporter) {
+                        Label { Text("Save Emergency Kit (PDF)") } icon: { PolarisIcon(Icons.shield) }
+                    }
+                    if let exportError {
+                        Text(exportError).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                    }
                 } header: {
                     Text("Your new recovery key")
                 } footer: {
@@ -61,6 +71,28 @@ struct RegenerateKitView: View {
         } message: {
             Text("Your previous recovery key will stop working.")
         }
+        .fileExporter(isPresented: $showExporter, document: pdfFile, contentType: .pdf,
+                      defaultFilename: "Loox Emergency Kit") { result in
+            if case .failure(let error) = result, (error as NSError).code != NSUserCancelledError {
+                exportError = appString("Couldn’t save the Emergency Kit. Please try again.")
+            } else {
+                exportError = nil
+                if case .success = result { Haptics.success() }
+            }
+        }
+    }
+
+    /// Build the kit PDF from the just-shown key and present the save sheet. Owner name /
+    /// iCloud account are left blank here (those rows are omitted) — the recovery key, Setup
+    /// Code, warning, and instructions are what matter for a re-print.
+    private func presentExporter() {
+        let info = EmergencyKitInfo(recoveryKey: newKey, ownerName: "", iCloudAccount: "", createdAt: .now)
+        guard let data = EmergencyKitPDF.makeData(info) else {
+            exportError = appString("Couldn’t build the Emergency Kit PDF. Please try again.")
+            return
+        }
+        pdfFile = EmergencyKitPDFFile(data: data)
+        showExporter = true
     }
 
     private func regenerate() async {
