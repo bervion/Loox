@@ -9,6 +9,7 @@ struct ItemDetailScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editing: EditorTarget?
     @State private var confirmTrash = false
+    @State private var confirmDelete = false
     @State private var showLocatedIn = false
     @State private var showLastIdentityBlock = false
 
@@ -45,16 +46,20 @@ struct ItemDetailScreen: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
-                        if item.archived {
-                            Button { env.repository.unarchive(item) } label: { Label("Unarchive", image: Icons.archive) }
-                        } else {
-                            Button {
-                                if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
-                                    showLastIdentityBlock = true
-                                } else {
-                                    env.repository.archive(item); dismiss()
-                                }
-                            } label: { Label("Archive", image: Icons.archive) }
+                        // Archiving only applies to live items; a trashed item is
+                        // restored/deleted from the card below instead.
+                        if !item.isTrashed {
+                            if item.archived {
+                                Button { env.repository.unarchive(item) } label: { Label("Unarchive", image: Icons.archive) }
+                            } else {
+                                Button {
+                                    if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
+                                        showLastIdentityBlock = true
+                                    } else {
+                                        env.repository.archive(item); dismiss()
+                                    }
+                                } label: { Label("Archive", image: Icons.archive) }
+                            }
                         }
                     } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
                 }
@@ -66,6 +71,13 @@ struct ItemDetailScreen: View {
             Button("Move to Trash", role: .destructive) {
                 if let item { try? env.repository.moveToTrash(item); dismiss() }
             }
+        }
+        .confirmationDialog("Permanently delete this item?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete Permanently", role: .destructive) {
+                if let item { try? env.repository.delete(item); dismiss() }
+            }
+        } message: {
+            Text("This can’t be undone.")
         }
         .alert("Keep at least one identity", isPresented: $showLastIdentityBlock) {
             Button("OK", role: .cancel) {}
@@ -173,17 +185,35 @@ struct ItemDetailScreen: View {
         .vaultCornerRadius(Radius.md)
     }
 
+    /// Trashed items can be restored or purged; live items can be moved to Trash.
+    @ViewBuilder
     private func trashCard(_ item: VaultItem) -> some View {
-        Button(role: .destructive) {
-            if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
-                showLastIdentityBlock = true
-            } else {
-                confirmTrash = true
+        if item.isTrashed {
+            VStack(spacing: Space.s3) {
+                actionRow("Restore", icon: Icons.refresh, color: env.theme.active.color(.success)) {
+                    try? env.repository.restore(item); dismiss()
+                }
+                actionRow("Delete Permanently", icon: Icons.delete, color: env.theme.active.color(.destructive)) {
+                    confirmDelete = true
+                }
             }
-        } label: {
+        } else {
+            actionRow("Move to Trash", icon: Icons.trash, color: env.theme.active.color(.destructive)) {
+                if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
+                    showLastIdentityBlock = true
+                } else {
+                    confirmTrash = true
+                }
+            }
+        }
+    }
+
+    private func actionRow(_ label: LocalizedStringKey, icon: String, color: Color,
+                           action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 12) {
-                PolarisIcon(Icons.trash, size: Metric.iconInline).foregroundStyle(env.theme.active.color(.destructive))
-                Text("Move to Trash").foregroundStyle(env.theme.active.color(.destructive))
+                PolarisIcon(icon, size: Metric.iconInline).foregroundStyle(color)
+                Text(label).foregroundStyle(color)
                 Spacer()
             }
             .padding(.horizontal, Space.gutter).padding(.vertical, 14)
