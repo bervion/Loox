@@ -44,21 +44,42 @@ struct LockScreen: View {
     /// can't be instantly re-opened before the user puts the phone away.
     private var requireSlide: Bool { env.session.shakeLocked && !slideConfirmed }
 
+    /// Sub-header under the logo — names the biometric option when it's available,
+    /// otherwise points straight at the password.
+    private var subtitleText: LocalizedStringKey {
+        if mode == .biometric && canUseBiometrics {
+            return "Sign in with \(BiometricAuth.displayName) or enter your Loox Password."
+        }
+        return "Enter your Loox Password to unlock."
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: Space.s8) {
-                BrandLogoMark.hero
-                    .overlay(alignment: .bottomTrailing) {
-                        if mode == .biometric && !requireSlide {
-                            BiometricBadge(authenticating: bioAuthenticating) {
-                                triggerBiometric()
+            VStack(spacing: Space.s7) {
+                VStack(spacing: Space.s4) {
+                    BrandLogoMark.hero
+                        .overlay(alignment: .bottomTrailing) {
+                            if mode == .biometric && !requireSlide {
+                                BiometricBadge(authenticating: bioAuthenticating) {
+                                    triggerBiometric()
+                                }
+                                .offset(x: 6, y: 6)
+                                .transition(.scale.combined(with: .opacity))
                             }
-                            .offset(x: 6, y: 6)
-                            .transition(.scale.combined(with: .opacity))
                         }
+
+                    VStack(spacing: Space.s2) {
+                        Text("Unlock your vault")
+                            .vaultType(.screenTitle)
+                        Text(subtitleText)
+                            .vaultType(.subhead)
+                            .themedForeground(.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
+                }
 
                 if requireSlide {
                     // Shake-locked → confirm by sliding before any Face ID prompt.

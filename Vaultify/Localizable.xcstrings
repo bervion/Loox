@@ -1,6 +1,26 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Sign in with %@ or enter your Loox Password." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng nhập bằng %@ hoặc nhập Loox Password của bạn."
+          }
+        }
+      }
+    },
+    "Enter your Loox Password to unlock." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhập Loox Password để mở khóa."
+          }
+        }
+      }
+    },
     "Starter Kit" : {
       "localizations" : {
         "vi" : {
