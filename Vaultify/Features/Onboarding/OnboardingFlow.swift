@@ -7,6 +7,10 @@ struct OnboardingFlow: View {
     @Environment(AppEnvironment.self) private var env
     @State private var step: Step = .welcome
     @State private var recoveryKey = ""
+    /// Captured at the name step so the Emergency Kit PDF can print "Created for {name}"
+    /// and remind which iCloud account holds the synced vault.
+    @State private var userName = ""
+    @State private var userEmail = ""
 
     /// Id of the default "My Vault" Space seeded in `createVault`, threaded into the
     /// item seeds so they get a home (otherwise they'd land in Unfiled).
@@ -26,13 +30,17 @@ struct OnboardingFlow: View {
                 CreateMasterPasswordView(onSubmit: createVault)
             case .name:
                 NameStepView { name, email in
+                    userName = name
+                    userEmail = email
                     let starterTag = appString("Starter Kit")
                     seedIdentity(name, email: email, tag: starterTag)
                     seedLooxAccount(name: name, email: email, tag: starterTag)
                     step = .emergencyKit
                 }
             case .emergencyKit:
-                EmergencyKitView(recoveryKey: recoveryKey) { step = .theme }
+                EmergencyKitView(recoveryKey: recoveryKey,
+                                 ownerName: userName,
+                                 iCloudAccount: userEmail) { step = .theme }
             case .theme:
                 ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
                     step = BiometricAuth.isAvailable ? .biometric : .done
@@ -59,6 +67,11 @@ struct OnboardingFlow: View {
     private func createVault(_ password: String) async -> String? {
         do {
             try await env.session.createVault(masterPassword: password)
+            // Turn on iCloud sync by default for new vaults — the Emergency Kit / recovery
+            // path restores from the synced copy, so a fresh user gets multi-device recovery
+            // without hunting through Settings. No-op unless the build is iCloud-configured
+            // (`CloudSyncService.isConfigured`), so it never touches an unprovisioned container.
+            env.settings.iCloudSyncEnabled = true
             // Seed a default Space ("My Vault") so new items have a home; the user
             // can rename it or add more later. Best-effort — never block setup.
             // Keep the id so the item seeds file into it (else they'd be Unfiled).

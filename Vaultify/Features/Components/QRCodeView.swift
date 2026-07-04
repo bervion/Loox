@@ -28,6 +28,12 @@ struct QRCodeView: View {
         filter.message = Data(payload.utf8)
         filter.correctionLevel = "M"
         guard let output = filter.outputImage else { return nil }
-        return CIContext().createCGImage(output, from: output.extent)
+        // The generator emits ~1px per module (a tiny bitmap). Upscale it to a high-res
+        // image with nearest-neighbor (hard module edges) so it stays crisp when zoomed —
+        // critical for the Emergency Kit PDF, where the small source would otherwise blur.
+        let targetSide: CGFloat = 1024
+        let scale = max(1, targetSide / max(output.extent.width, 1))
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        return CIContext().createCGImage(scaled, from: scaled.extent)
     }
 }
