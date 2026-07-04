@@ -25,6 +25,10 @@ nonisolated struct PassphraseOptions: Equatable, Sendable {
     var includeNumber = true
 }
 
+nonisolated struct PinOptions: Equatable, Sendable {
+    var length: Int = 6
+}
+
 /// Cryptographically secure password and passphrase generation.
 nonisolated enum PasswordGenerator {
     private static let lower = "abcdefghijkmnpqrstuvwxyz"
@@ -43,6 +47,13 @@ nonisolated enum PasswordGenerator {
         if options.symbols { pool += symbols }
         let chars = Array(pool.isEmpty ? lowerFull : pool)
         guard options.length > 0 else { return "" }
+        let result = (0..<options.length).map { _ in chars[CryptoRandom.int(upperBound: chars.count)] }
+        return String(result)
+    }
+
+    static func pin(_ options: PinOptions) -> String {
+        guard options.length > 0 else { return "" }
+        let chars = Array(digitsFull)
         let result = (0..<options.length).map { _ in chars[CryptoRandom.int(upperBound: chars.count)] }
         return String(result)
     }

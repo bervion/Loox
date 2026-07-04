@@ -172,9 +172,13 @@ struct ItemDetailScreen: View {
 
     private func fieldsCard(_ item: VaultItem) -> some View {
         let fields = item.fields.filter { !$0.isEmpty }
+        // Item's 2FA secret (if any) so the Large Type viewer can float the live
+        // code — handy when typing the password for a site that also needs 2FA.
+        let totpSecret = item.totpField?.value
         return VStack(spacing: 0) {
             ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
                 DetailFieldRow(field: field,
+                               totpSecret: field.kind == .totp ? nil : totpSecret,
                                onChange: { update($0, in: item) },
                                onRemove: { remove(field, in: item) },
                                onUsed: { env.repository.markUsed(item) })

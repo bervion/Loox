@@ -55,13 +55,15 @@ struct EditorFieldRow: View {
                 ZStack(alignment: .leading) {
                     TextField(valuePlaceholder, text: $field.value)
                         .focused($valueFocused)
-                        .font(.vaultCode())
+                        // MonoLisa for a typed password value; SF for the empty
+                        // placeholder and for TOTP secrets.
+                        .font(field.value.isEmpty || field.kind == .totp ? .body : .vaultCode())
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .opacity(showsPlaintext ? 1 : 0)
                     if !showsPlaintext {
                         Text(maskedValue)
-                            .font(.vaultCode())
+                            .font(field.kind == .totp ? .body : .vaultCode())
                             .themedForeground(.primary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)

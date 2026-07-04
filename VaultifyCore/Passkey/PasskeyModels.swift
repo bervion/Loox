@@ -107,14 +107,14 @@ extension PasskeySecret {
 
 extension Data {
     /// base64url (no padding) — used for credential ids and WebAuthn fields.
-    func base64URLEncodedString() -> String {
+    nonisolated func base64URLEncodedString() -> String {
         base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
     }
 
-    init?(base64URLEncodedString string: String) {
+    nonisolated init?(base64URLEncodedString string: String) {
         var base64 = string.replacingOccurrences(of: "-", with: "+")
             .replacingOccurrences(of: "_", with: "/")
         let padding = (4 - base64.count % 4) % 4

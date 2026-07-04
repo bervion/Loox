@@ -177,7 +177,13 @@ struct ItemEditorScreen: View {
             GeometryReader { proxy in
                 if let value {
                     let rect = proxy[value.bounds]
-                    GenerateChip { generatingFieldID = value.fieldID }
+                    GenerateChip {
+                        // Resign the focused field before presenting the generator
+                        // sheet. Otherwise it stays first responder behind the sheet
+                        // and re-raises the keyboard when a menu opens inside it.
+                        dismissKeyboard()
+                        generatingFieldID = value.fieldID
+                    }
                         .offset(x: rect.minX, y: rect.maxY + 4)
                         .transition(.scale(scale: 0.9, anchor: .topLeading).combined(with: .opacity))
                 }

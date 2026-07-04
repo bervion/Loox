@@ -50,7 +50,7 @@ struct TotpCardView: View {
                                 .foregroundStyle(Color(rgb: theme.primaryText))
                         }
                     }
-                    .font(.vaultCode(.title3, weight: .semibold))
+                    .font(.title3.weight(.bold))
                     .monospacedDigit()
                     .animation(reduceMotion ? nil : .easeInOut(duration: Motion.fast), value: copied)
 
