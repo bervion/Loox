@@ -23,6 +23,9 @@ struct VaultShellBehaviors: ViewModifier {
             .onChange(of: uiState.selectedTab) { _, _ in
                 env.session.registerActivity()
             }
+            // Any touch anywhere in the unlocked app refreshes the idle baseline, so active
+            // use (scrolling, reading, editing a single screen) no longer trips the auto-lock.
+            .userActivityMonitor { env.session.registerActivity() }
             .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
             .onAppear { env.theme.morphMesh(); updateShakeDetector() }
             .onDisappear { shakeDetector.stop() }
