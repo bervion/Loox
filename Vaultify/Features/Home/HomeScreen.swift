@@ -8,7 +8,7 @@ import SwiftUI
 /// filtered by the selected folder and renders only when non-empty.
 struct HomeScreen: View {
     @Environment(AppEnvironment.self) private var env
-    @State private var path = NavigationPath()
+    @Environment(UIStateStore.self) private var uiState
     @State private var editorTarget: EditorTarget?
     @State private var showSettings = false
     @State private var showProfile = false
@@ -50,7 +50,8 @@ struct HomeScreen: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        @Bindable var uiState = uiState
+        return NavigationStack(path: $uiState.homePath) {
             // ZStack lets the header float over scroll content so glass blurs it.
             ZStack(alignment: .top) {
                 Group {
@@ -203,7 +204,7 @@ struct HomeScreen: View {
                     AttentionCell(
                         item: item,
                         onEdit: { editorTarget = .edit($0) },
-                        onOpen: { path.append($0.id) },
+                        onOpen: { uiState.homePath.append($0.id) },
                         showDivider: idx < attentionItems.count - 1
                     )
                 }
@@ -347,7 +348,7 @@ struct HomeScreen: View {
     @ViewBuilder
     private func itemRow(_ item: VaultItem, showDivider: Bool) -> some View {
         Button {
-            path.append(item.id)
+            uiState.homePath.append(item.id)
         } label: {
             VaultItemRow(item: item, showSpace: selectedFolderId == nil)
                 .padding(.horizontal, Space.s4)

@@ -21,12 +21,8 @@ struct AttentionCell: View {
             createdAt: item.createdAt)
     }
 
-    private var isWeak: Bool {
-        (item.passwordField.map { PasswordStrength.evaluate($0.value) } ?? .strong) == .weak
-    }
-
     private var reason: AttentionReason? {
-        RotationStatus.attentionReason(status: rotationStatus, isWeak: isWeak)
+        RotationStatus.attentionReason(status: rotationStatus, isWeak: item.hasWeakPassword)
     }
 
     private var reasonLabel: LocalizedStringResource {

@@ -20,6 +20,7 @@ struct VaultifyApp: App {
                     if let draft = TOTPImport.draftLogin(from: url) { env.pendingTOTPImport = draft }
                 }
                 .environment(env)
+                .environment(env.uiState)
                 .environment(\.locale, locale)
                 .environment(\.appTheme, env.theme.active)
                 .toggleStyle(.themed)

@@ -8,6 +8,10 @@ struct OnboardingFlow: View {
     @State private var step: Step = .welcome
     @State private var recoveryKey = ""
 
+    /// Id of the default "My Vault" Space seeded in `createVault`, threaded into the
+    /// item seeds so they get a home (otherwise they'd land in Unfiled).
+    @State private var defaultFolderId: String?
+
     enum Step: Equatable { case welcome, create, name, emergencyKit, theme, biometric, done }
 
     var body: some View {
@@ -54,7 +58,8 @@ struct OnboardingFlow: View {
             try await env.session.createVault(masterPassword: password)
             // Seed a default Space ("My Vault") so new items have a home; the user
             // can rename it or add more later. Best-effort — never block setup.
-            _ = try? env.repository.addFolder(name: appString("My Vault"), icon: Icons.lockFill, color: .blue)
+            // Keep the id so the item seeds file into it (else they'd be Unfiled).
+            defaultFolderId = try? env.repository.addFolder(name: appString("My Vault"), icon: Icons.lockFill, color: .blue)
             step = .name
             return nil
         } catch {
@@ -68,9 +73,12 @@ struct OnboardingFlow: View {
     private func seedIdentity(_ displayName: String, email: String, tag: String) {
         guard env.repository.activeIdentities.isEmpty else { return }
         let note = appString("Welcome to Loox! This is your identity — it autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.")
-        try? env.repository.add(IdentitySeed.make(
+        var identity = IdentitySeed.make(
             displayName: displayName, email: email, fallback: appString("Me"),
-            note: note, tag: tag))
+            note: note, tag: tag)
+        // File the seed into "My Vault" (matches the editor's default) so it isn't Unfiled.
+        identity.folderId = defaultFolderId ?? env.repository.folders.first?.id
+        try? env.repository.add(identity)
     }
 
     /// Seed a "Loox Account (Name)" login holding the user's email + an importance note.
@@ -91,6 +99,7 @@ struct OnboardingFlow: View {
 
         let item = VaultItem(category: .login,
                              title: "\(appString("Loox Account")) (\(displayName))",
+                             folderId: defaultFolderId ?? env.repository.folders.first?.id,
                              fields: fields, tags: [tag])
         try? env.repository.add(item)
     }

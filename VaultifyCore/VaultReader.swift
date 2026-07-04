@@ -76,29 +76,48 @@ enum VaultReader {
 }
 
 extension VaultItem {
-    /// Best host string for matching against an AutoFill service identifier.
-    var autofillHost: String? {
-        guard let raw = urlField?.value, !raw.isEmpty else { return nil }
-        let withScheme = raw.contains("://") ? raw : "https://\(raw)"
-        return URL(string: withScheme)?.host?.lowercased()
+    /// Every non-empty website field value. An item may carry several websites so a
+    /// single login autofills across all of a service's domains.
+    var urlValues: [String] {
+        fields.filter { $0.kind == .url && !$0.isEmpty }.map(\.value)
     }
 
-    /// Whether this item is relevant to any of the requested service domains.
+    /// All matchable hosts derived from every website field (deduped, lowercased),
+    /// preserving field order. Drives multi-site AutoFill + passkey attachment.
+    var autofillHosts: [String] {
+        var seen = Set<String>()
+        var hosts: [String] = []
+        for raw in urlValues {
+            let withScheme = raw.contains("://") ? raw : "https://\(raw)"
+            guard let host = URL(string: withScheme)?.host?.lowercased() else { continue }
+            if seen.insert(host).inserted { hosts.append(host) }
+        }
+        return hosts
+    }
+
+    /// Best single host (first website). Kept for callers that need one host.
+    var autofillHost: String? { autofillHosts.first }
+
+    /// Whether this item is relevant to any of the requested service domains —
+    /// true if ANY of the item's websites matches.
     func matchesAutoFill(serviceIdentifiers: [String]) -> Bool {
         guard !serviceIdentifiers.isEmpty else { return true }
-        guard let host = autofillHost else { return false }
+        let hosts = autofillHosts
+        guard !hosts.isEmpty else { return false }
         return serviceIdentifiers.contains { id in
             let other = id.lowercased()
-            return host == other || host.hasSuffix(".\(other)") || other.hasSuffix(".\(host)") || other.contains(host)
+            return hosts.contains { host in
+                host == other || host.hasSuffix(".\(other)") || other.hasSuffix(".\(host)") || other.contains(host)
+            }
         }
     }
 
-    /// Whether this login's host belongs to a WebAuthn relying-party id.
+    /// Whether ANY of this login's hosts belongs to a WebAuthn relying-party id.
     /// Unlike the looser password AutoFill matcher above, passkey attachment is
     /// display-only and conservative: exact host or true subdomain only.
     func matchesRelyingParty(_ relyingParty: String) -> Bool {
         let rp = relyingParty.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !rp.isEmpty, let host = autofillHost else { return false }
-        return host == rp || host.hasSuffix(".\(rp)")
+        guard !rp.isEmpty else { return false }
+        return autofillHosts.contains { host in host == rp || host.hasSuffix(".\(rp)") }
     }
 }

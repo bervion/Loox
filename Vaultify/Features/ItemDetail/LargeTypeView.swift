@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// Full-screen "Large Type" grid: each character sits in its own numbered cell
 /// (digits / letters / symbols color-coded) so a long secret is easy to read out
@@ -9,6 +10,9 @@ struct LargeTypeView: View {
     let text: String
     /// The item's 2FA secret, if any — surfaced as a floating tap-to-copy code.
     var totpSecret: String? = nil
+    /// When set, the displayed value ITSELF is this live 2FA code: the grid recomputes
+    /// every second and the header shows a countdown ring next to Copy.
+    var liveTOTPSecret: String? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var env
     @ScaledMetric(relativeTo: .largeTitle) private var fontSize: CGFloat = 30
@@ -16,9 +20,16 @@ struct LargeTypeView: View {
     @State private var entered: Set<Int> = []
     @State private var copied = false
     @State private var totpCopied = false
+    /// Live 2FA code + seconds left, refreshed each tick when `liveTOTPSecret` is set.
+    @State private var liveCode = ""
+    @State private var liveRemaining = 30
+    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var theme: AppTheme { env.theme.active }
-    private var characters: [Character] { Array(text) }
+    private var isLiveTOTP: Bool { !(liveTOTPSecret ?? "").isEmpty }
+    /// The value shown in the grid — the live code once available, else the initial `text`.
+    private var displayText: String { isLiveTOTP && !liveCode.isEmpty ? liveCode : text }
+    private var characters: [Character] { Array(displayText) }
     private var hasTOTP: Bool { !(totpSecret ?? "").isEmpty }
     private let columns = [GridItem(.adaptive(minimum: 46), spacing: Space.s2)]
 
@@ -32,7 +43,18 @@ struct LargeTypeView: View {
                 Button { dismiss() } label: { PolarisIcon(Icons.close, size: 18) }
                     .accessibilityLabel(Text("Close"))
             },
-            trailing: { copyButton }
+            trailing: {
+                HStack(spacing: Space.s2) {
+                    // Countdown ring so you can see when a live 2FA code is about to rotate.
+                    // Centred in a square the size of the pill's height so its left / top /
+                    // bottom margins come out equal (padding-guessing never balanced cleanly).
+                    if isLiveTOTP {
+                        CountdownRing(remaining: liveRemaining, period: 30)
+                            .frame(width: Metric.hitMin, height: Metric.hitMin)
+                    }
+                    copyButton
+                }
+            }
         ) {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: Space.s2) {
@@ -49,22 +71,30 @@ struct LargeTypeView: View {
                     totpPill(secret)
                 }
             }
+            .onAppear { refreshTOTP() }
+            .onReceive(ticker) { _ in refreshTOTP() }
         }
+    }
+
+    /// Recompute the live 2FA code + seconds remaining (no-op unless `liveTOTPSecret` is set).
+    private func refreshTOTP() {
+        guard let secret = liveTOTPSecret, !secret.isEmpty else { return }
+        liveCode = TOTPGenerator.code(forStoredValue: secret) ?? ""
+        liveRemaining = TOTPGenerator.secondsRemaining(period: 30)
     }
 
     private var copyButton: some View {
         Button { copy() } label: {
-            HStack(spacing: Space.s1) {
-                PolarisIcon(copied ? Icons.copyDone : Icons.copy, size: Metric.iconInline)
-                Text(copied ? "Copied" : "Copy")
-            }
-            .foregroundStyle(theme.color(copied ? .accent : .primary))
+            // Text only (no icon), in SF — not the MonoLisa code font.
+            Text(copied ? "Copied" : "Copy")
+                .font(.body)
+                .foregroundStyle(theme.color(copied ? .accent : .primary))
         }
         .accessibilityLabel(Text("Copy"))
     }
 
     private func copy() {
-        env.clipboard.copy(text, label: "Password")
+        env.clipboard.copy(displayText, label: isLiveTOTP ? "2FA code" : "Password")
         copied = true
         Task {
             try? await Task.sleep(for: .seconds(1.2))

@@ -24,16 +24,32 @@ struct TOTPCodeView: View {
 struct CountdownRing: View {
     let remaining: Int
     let period: Int
+    /// When drawn over the accent "copied" flash, switch to on-accent colours so the ring
+    /// stays visible instead of blending into the accent background.
+    var onAccent: Bool = false
+    @Environment(AppEnvironment.self) private var env
+
+    private var trackColor: Color {
+        onAccent ? env.theme.active.color(.onAccent).opacity(0.3) : Color(.systemGray5)
+    }
+    private var progressColor: Color {
+        if onAccent { return env.theme.active.color(.onAccent) }
+        if remaining <= 5 { return VaultColors.strengthWeak }     // red — about to expire
+        if remaining <= 10 { return VaultColors.strengthMedium }  // yellow — running low
+        return Color.accentColor                                  // blue — plenty of time
+    }
+    private var textColor: Color {
+        onAccent ? env.theme.active.color(.onAccent) : env.theme.active.color(.secondary)
+    }
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color(.systemGray5), lineWidth: 3.5)
+            Circle().stroke(trackColor, lineWidth: 3.5)
             Circle()
                 .trim(from: 0, to: CGFloat(remaining) / CGFloat(max(period, 1)))
-                .stroke(remaining <= 5 ? VaultColors.strengthWeak : Color.accentColor,
-                        style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .stroke(progressColor, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text("\(remaining)").font(.caption2.monospacedDigit()).themedForeground(.secondary)
+            Text("\(remaining)").font(.caption2.monospacedDigit()).foregroundStyle(textColor)
         }
         .frame(width: 26, height: 26)
         .animation(.linear(duration: 0.5), value: remaining)

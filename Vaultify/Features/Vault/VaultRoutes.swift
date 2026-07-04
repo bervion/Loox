@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Push destinations shared by the Home / Items / Search NavigationStacks. Item
 /// detail is keyed separately by the item id (`String`).
-enum VaultRoute: Hashable {
+enum VaultRoute: Hashable, Codable {
     case folder(String?)            // nil = Unfiled
     case tag(String)
     case category(ItemCategory)

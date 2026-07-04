@@ -11,7 +11,7 @@ struct SpoilerText: View {
     var font: Font = .vaultCode()
 
     /// Fixed number of masking dots, independent of the real value length.
-    private let dotCount = 8
+    private let dotCount = 16
 
     var body: some View {
         Text(String(repeating: "•", count: dotCount))
