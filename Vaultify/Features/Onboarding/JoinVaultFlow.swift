@@ -10,7 +10,7 @@ struct JoinVaultFlow: View {
     @Environment(AppEnvironment.self) private var env
     let onCancel: () -> Void
 
-    private enum Step: Equatable { case choice, qrPairing, recoveryEntry, password }
+    private enum Step: Equatable { case choice, qrPairing, recoveryEntry, password, biometric }
 
     @State private var step: Step = .choice
     /// The received Vault Key, held only between hand-off and `joinVault`. Kept as
@@ -42,7 +42,15 @@ struct JoinVaultFlow: View {
                     },
                     onBack: { step = .choice })
             case .password:
-                CreateMasterPasswordView(onSubmit: completeJoin)
+                // Join-specific copy: the vault EXISTS and was just received — without
+                // this context the reused creation screen reads like "pairing failed,
+                // a brand-new vault is being made".
+                CreateMasterPasswordView(
+                    onSubmit: completeJoin,
+                    title: "Vault received — protect this device",
+                    subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device — it can match your other device or be different, and it never syncs.")
+            case .biometric:
+                EnableBiometricView(onEnable: enableBiometricAndFinish) { finish() }
             }
         }
         .animation(.smooth(duration: 0.35), value: step)
@@ -77,14 +85,31 @@ struct JoinVaultFlow: View {
             try await env.session.joinVault(vaultKey: bytes, masterPassword: password,
                                             recoveryKey: usedRecoveryKey)
             clearReceivedKey()
-            // Joining is an explicit iCloud action — turn sync on and pull the vault.
+            // Joining is an explicit iCloud action — turn sync on and start pulling
+            // right away (the vault downloads while the user finishes the last step).
             env.settings.iCloudSyncEnabled = true
-            env.settings.onboardingCompleted = true
             env.syncNow()
+            if BiometricAuth.isAvailable {
+                step = .biometric
+            } else {
+                finish()
+            }
             return nil
         } catch {
             return error.localizedDescription
         }
+    }
+
+    private func enableBiometricAndFinish() {
+        Task {
+            try? await env.session.enableBiometricUnlock()
+            finish()
+        }
+    }
+
+    /// Leave onboarding — the unlocked app takes over (content arrives via sync).
+    private func finish() {
+        env.settings.onboardingCompleted = true
     }
 }
 

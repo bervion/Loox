@@ -5,6 +5,10 @@ import SwiftUI
 struct CreateMasterPasswordView: View {
     /// Returns an error message, or `nil` on success (parent then advances).
     let onSubmit: (String) async -> String?
+    /// Header copy. Defaults fit first-run vault creation; the join-existing-vault
+    /// flow overrides them (same fields, different context — the vault already exists).
+    var title: LocalizedStringKey = "Create your Loox Password"
+    var subtitle: LocalizedStringKey = "This is the only password you’ll need to remember. It unlocks everything."
     @Environment(\.appTheme) private var theme
 
     @State private var password = ""
@@ -23,9 +27,9 @@ struct CreateMasterPasswordView: View {
                     // Loox brand mark instead of a generic lock — same identity as the
                     // welcome/lock screens. Wide wordmark, so `size` is its height.
                     BrandLogoMark.compact
-                    Text("Create your Loox Password")
+                    Text(title)
                         .vaultType(.screenTitle)
-                    Text("This is the only password you’ll need to remember. It unlocks everything.")
+                    Text(subtitle)
                         .vaultType(.subhead).themedForeground(.secondary)
                 }
                 .padding(.top, Space.s2)
