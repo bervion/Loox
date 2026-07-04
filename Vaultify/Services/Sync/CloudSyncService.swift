@@ -72,6 +72,8 @@ import CloudKit
     func eraseRemote() async {
         guard Self.isConfigured else { return }
         _ = try? await database.modifyRecordZones(saving: [], deleting: [zone.zoneID])
+        // The delta cursor died with the zone — a future vault must full-fetch.
+        savedChangeToken = nil
     }
 
     private func push() async throws {
@@ -117,26 +119,66 @@ import CloudKit
         }
     }
 
+    /// Pull via zone-changes delta fetch — the canonical CloudKit sync primitive.
+    /// Deliberately NOT `CKQuery`: a TRUEPREDICATE query needs the `recordName`
+    /// system field marked Queryable in the CloudKit schema (a manual console index
+    /// that must be re-added per environment; missing it fails every pull with
+    /// "Field 'recordName' is not marked queryable"). Zone changes need no index,
+    /// page via `moreComing`, and the persisted server change token means later
+    /// syncs download only what actually changed.
     private func pull() async throws {
-        try await pull(recordType: recordType, apply: apply)
-        try await pull(recordType: folderRecordType, apply: applyFolder)
+        var token = savedChangeToken
+        var didResetToken = false
+        while true {
+            let changes: (modificationResultsByID: [CKRecord.ID: Result<CKDatabase.RecordZoneChange.Modification, any Error>],
+                          deletions: [CKDatabase.RecordZoneChange.Deletion],
+                          changeToken: CKServerChangeToken,
+                          moreComing: Bool)
+            do {
+                changes = try await database.recordZoneChanges(inZoneWith: zone.zoneID, since: token)
+            } catch let error as CKError where error.code == .changeTokenExpired && !didResetToken {
+                // Stale token (e.g. the zone was erased + recreated) → one full refetch.
+                token = nil
+                savedChangeToken = nil
+                didResetToken = true
+                continue
+            }
+            for (_, result) in changes.modificationResultsByID {
+                guard case .success(let modification) = result else { continue }
+                let record = modification.record
+                switch record.recordType {
+                case recordType: apply(record)
+                case folderRecordType: applyFolder(record)
+                // Key-escrow records share the zone but aren't vault data.
+                default: break
+                }
+            }
+            // `deletions` is unused by design: vault deletions travel as soft
+            // tombstones (deletedAt) on modified records, never as CK deletes.
+            token = changes.changeToken
+            savedChangeToken = changes.changeToken
+            guard changes.moreComing else { break }
+        }
     }
 
-    /// Fetch ALL records of a type, following the query cursor to completion.
-    /// `maximumResults` is a per-request page ceiling, not "fetch everything" — a
-    /// single query silently truncates large vaults (perceived data loss on device B).
-    private func pull(recordType: String, apply: (CKRecord) -> Void) async throws {
-        let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
-        var (matches, cursor) = try await database.records(
-            matching: query, inZoneWith: zone.zoneID,
-            desiredKeys: nil, resultsLimit: CKQueryOperation.maximumResults)
-        while true {
-            for (_, recordResult) in matches {
-                guard case .success(let record) = recordResult else { continue }
-                apply(record)
+    // MARK: Server change token (delta-pull cursor, device-local)
+
+    private static let changeTokenKey = "cloudkit_vault_zone_change_token"
+
+    private var savedChangeToken: CKServerChangeToken? {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: Self.changeTokenKey) else { return nil }
+            return try? NSKeyedUnarchiver.unarchivedObject(ofClass: CKServerChangeToken.self, from: data)
+        }
+        set {
+            let defaults = UserDefaults.standard
+            guard let newValue,
+                  let data = try? NSKeyedArchiver.archivedData(withRootObject: newValue,
+                                                               requiringSecureCoding: true) else {
+                defaults.removeObject(forKey: Self.changeTokenKey)
+                return
             }
-            guard let next = cursor else { break }
-            (matches, cursor) = try await database.records(continuingMatchFrom: next)
+            defaults.set(data, forKey: Self.changeTokenKey)
         }
     }
 
