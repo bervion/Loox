@@ -71,7 +71,7 @@ struct AttentionCell: View {
             // Leading: favicon/category tile (40pt)
             FaviconView(urlString: item.urlField?.value,
                         category: item.category,
-                        size: 40)
+                        size: 40, title: item.title)
 
             // Name + reason row
             VStack(alignment: .leading, spacing: 2) {

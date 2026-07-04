@@ -17,7 +17,7 @@ struct VaultItemRow: View {
 
     var body: some View {
         HStack(spacing: Space.s3) {
-            FaviconView(urlString: item.urlField?.value, category: item.category, size: 40)
+            FaviconView(urlString: item.urlField?.value, category: item.category, size: 40, title: item.title)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title.isEmpty ? "Untitled" : item.title)
                     .font(.body)

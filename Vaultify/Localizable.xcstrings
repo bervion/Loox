@@ -1,6 +1,36 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Loox Account" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản Loox"
+          }
+        }
+      }
+    },
+    "Email (optional)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email (không bắt buộc)"
+          }
+        }
+      }
+    },
+    "This is your Loox account — the identity for this vault. Keep the email safe; you may need it to set up sync or recover access." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đây là tài khoản Loox của bạn — danh tính cho két này. Giữ email an toàn; bạn có thể cần đến khi thiết lập đồng bộ hoặc khôi phục truy cập."
+          }
+        }
+      }
+    },
     "Delete Permanently" : {
       "localizations" : {
         "vi" : {
