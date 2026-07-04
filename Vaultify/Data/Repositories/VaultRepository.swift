@@ -61,6 +61,80 @@ import UserNotifications
         passkeys = passkeyVault.all(key: key)
         CredentialIdentityService.refresh(items: items, passkeys: passkeys)
         normalizeDefaultIdentity()
+        // Seed-folder convergence runs ONLY after a remote pull: two locally-created
+        // identical-looking folders are a deliberate user choice, but the same pair
+        // arriving via sync is the two-device double-seed to converge.
+        if pendingSeedFolderMerge {
+            pendingSeedFolderMerge = false
+            mergeDuplicateSeedFolders(key: key)
+        }
+    }
+
+    /// Reload after a CloudKit pull — same as `reload()` plus the duplicate
+    /// seed-folder convergence pass (see above). Used by the sync callback.
+    func reloadAfterRemoteSync() {
+        pendingSeedFolderMerge = true
+        reload()
+    }
+
+    private var pendingSeedFolderMerge = false
+
+    /// Signal that local vault data changed so the sync coordinator can schedule a
+    /// debounced push. Internal so the `+Folders` extension can post it too.
+    func noteLocalMutation() {
+        NotificationCenter.default.post(name: .vaultLocalMutation, object: nil)
+    }
+
+    // MARK: Duplicate seed-folder convergence
+
+    /// Two devices that each ran first-run onboarding both seed a "My Vault" folder with
+    /// fresh UUIDs; merging vaults by record id leaves BOTH folders. Converge: among
+    /// duplicates carrying the EXACT untouched seed signature (localized "My Vault" name
+    /// + seed icon + seed color — deliberately narrow so a user's own identical-looking
+    /// folders are never collapsed), keep the earliest-created, re-point the losers'
+    /// items at it (re-sealed, `updatedAt` bumped so the move propagates), and tombstone
+    /// the losers. Patches the freshly-built in-memory state in place — never `reload()`.
+    private func mergeDuplicateSeedFolders(key: SecureBytes) {
+        guard folders.count > 1 else { return }
+        let seedSignature = "\(appString("My Vault"))|\(Icons.lockFill)|\(FolderColor.blue.rawValue)"
+        let groups = Dictionary(grouping: folders) { "\($0.name)|\($0.iconAsset)|\($0.color.rawValue)" }
+        var loserIds: Set<String> = []
+        for (signature, group) in groups where group.count > 1 && signature == seedSignature {
+            let ordered = group.sorted { ($0.createdAt, $0.id) < ($1.createdAt, $1.id) }
+            guard let winner = ordered.first else { continue }
+            for loser in ordered.dropFirst() {
+                repointItems(fromFolder: loser.id, to: winner.id, key: key)
+                if let record = store.folderRecord(id: loser.id) {
+                    record.deletedAt = .now
+                    record.updatedAt = .now
+                    record.dirty = true
+                }
+                loserIds.insert(loser.id)
+            }
+        }
+        guard !loserIds.isEmpty else { return }
+        folders.removeAll { loserIds.contains($0.id) }
+        try? store.context.save()
+        noteLocalMutation()
+    }
+
+    /// Re-seal every cached item filed under `fromFolder` with `to` as its folder.
+    /// Covers active, trashed, and archived caches (all carry `folderId`).
+    private func repointItems(fromFolder: String, to winnerId: String, key: SecureBytes) {
+        func repoint(_ cache: inout [VaultItem]) {
+            for index in cache.indices where cache[index].folderId == fromFolder {
+                cache[index].folderId = winnerId
+                cache[index].updatedAt = .now
+                guard let record = store.record(id: cache[index].id),
+                      let sealed = try? seal(cache[index], key: key) else { continue }
+                record.sealed = sealed
+                record.updatedAt = cache[index].updatedAt
+                record.dirty = true
+            }
+        }
+        repoint(&items)
+        repoint(&trashed)
+        repoint(&archived)
     }
 
     // MARK: Default identity (single-active invariant)
@@ -124,6 +198,7 @@ import UserNotifications
         store.context.insert(record)
         try store.context.save()
         reload()
+        noteLocalMutation()
         RotationNotificationService.shared.schedule(item: item, passwordChangedAt: record.passwordChangedAt)
     }
 
@@ -152,6 +227,7 @@ import UserNotifications
 
         try store.context.save()
         reload()
+        noteLocalMutation()
         RotationNotificationService.shared.schedule(
             item: updated, passwordChangedAt: record.passwordChangedAt)
     }
@@ -172,13 +248,17 @@ import UserNotifications
     func unarchive(_ item: VaultItem) { setColumn(item.id) { $0.archived = false } }
 
     /// Mutate a plaintext metadata column, mark dirty for sync, and reload —
-    /// without re-sealing or bumping `updatedAt`.
+    /// without re-sealing or bumping `updatedAt` (keeps "Recently Modified" clean).
+    /// Bumps `metaUpdatedAt` instead: the pull merge applies pinned/archived by that
+    /// separate timestamp, so column-only toggles still propagate across devices.
     private func setColumn(_ id: String, _ mutate: (ItemRecord) -> Void) {
         guard let record = store.record(id: id) else { return }
         mutate(record)
+        record.metaUpdatedAt = .now
         record.dirty = true
         try? store.context.save()
         reload()
+        noteLocalMutation()
     }
 
     /// Record an in-app use (copy/reveal) for Recents + Frequently Used. Writes
@@ -208,13 +288,17 @@ import UserNotifications
         try update(updated)
     }
 
-    /// Soft-delete (tombstone) so sync can propagate the deletion.
+    /// Soft-delete (tombstone) so sync can propagate the deletion. Bumps `updatedAt` —
+    /// the pull merge gates on it, so a tombstone that doesn't bump would be dropped on
+    /// the other device and a later edit there would resurrect the "deleted" secret.
     func delete(_ item: VaultItem) throws {
         guard let record = try record(id: item.id) else { return }
         record.deletedAt = .now
+        record.updatedAt = .now
         record.dirty = true
         try store.context.save()
         reload()
+        noteLocalMutation()
         RotationNotificationService.shared.cancel(itemID: item.id)
     }
 
@@ -298,4 +382,10 @@ import UserNotifications
         descriptor.fetchLimit = 1
         return try store.context.fetch(descriptor).first
     }
+}
+
+extension Notification.Name {
+    /// Posted after any local vault mutation so the sync coordinator can schedule a
+    /// debounced push (see `SyncCoordinator`).
+    static let vaultLocalMutation = Notification.Name("vaultLocalMutation")
 }

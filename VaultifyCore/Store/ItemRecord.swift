@@ -38,6 +38,12 @@ final class ItemRecord {
     /// `.identity` category). Synced; the app enforces a single active default.
     /// Changing it bumps `updatedAt` so the whole-record LWW sync propagates it.
     var isDefaultIdentity: Bool = false
+    /// LWW timestamp for the column-only metadata (`pinned`/`archived`). Those toggles
+    /// deliberately do NOT bump `updatedAt` (so they never pollute "Recently Modified"),
+    /// which would make the content-LWW gate drop them on pull — so they carry their own
+    /// timestamp and sync merges content and meta independently. `.distantPast` default
+    /// keeps pre-existing rows migration-safe (any real change wins).
+    var metaUpdatedAt: Date = Date.distantPast
     /// AES-256-GCM-sealed (Vault Key) downscaled avatar JPEG for an identity.
     /// Synced as a CKRecord Data field — zero-knowledge (iCloud sees ciphertext).
     /// Nil → the UI shows the letter-avatar fallback.

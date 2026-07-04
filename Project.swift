@@ -112,6 +112,9 @@ let project = Project(
                 "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
                 "SWIFT_EMIT_LOC_STRINGS": "YES",
                 "STRING_CATALOG_GENERATE_SYMBOLS": "YES",
+                // iCloud sync gate: the CloudKit code paths compile only with this flag,
+                // matching the iCloud entitlement (container provisioned in the portal).
+                "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "$(inherited) VAULTIFY_ICLOUD",
                 // iPhone + iPad (macOS ignores this key).
                 "TARGETED_DEVICE_FAMILY": "1,2",
                 // Per-SDK entitlements: iOS keeps its file; macOS gets the App-Sandbox

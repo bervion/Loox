@@ -10,6 +10,8 @@ import SwiftUI
     let repository: VaultRepository
     let clipboard: ClipboardService
     let cloudSync: CloudSyncService
+    /// Schedules sync runs (immediate on unlock/activate, debounced after mutations).
+    let syncCoordinator: SyncCoordinator
     let faviconService: FaviconService
     let attachmentStore: AttachmentStore
     /// Restorable UI state (selected tab, per-tab nav depth, in-progress editor draft),
@@ -28,21 +30,35 @@ import SwiftUI
         self.theme = ThemeStore()
         self.session = session
         self.store = store
-        self.repository = VaultRepository(store: store, session: session)
+        let repository = VaultRepository(store: store, session: session)
+        self.repository = repository
         self.clipboard = ClipboardService(settings: settings)
-        self.cloudSync = CloudSyncService(store: store, settings: settings)
+        let cloudSync = CloudSyncService(store: store, settings: settings)
+        self.cloudSync = cloudSync
+        self.syncCoordinator = SyncCoordinator(
+            cloudSync: cloudSync,
+            repository: repository,
+            settings: settings)
         self.faviconService = FaviconService()
         self.attachmentStore = AttachmentStore(session: session)
         self.uiState = UIStateStore(session: session)
     }
 
-    /// Sync with iCloud if enabled, then refresh the decrypted cache.
+    /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
+    /// the coordinator so manual/lifecycle syncs and debounced mutation syncs never
+    /// overlap (single-flight + follow-up).
     func syncNow() {
-        Task { await cloudSync.sync(reload: { [repository] in repository.reload() }) }
+        syncCoordinator.syncNow()
     }
 
-    /// Wipe all data and key material (Settings → Erase Vault).
+    /// Wipe all data and key material (Settings → Erase Vault). Also best-effort
+    /// deletes the CloudKit copy (sealed records + recovery envelope) — otherwise the
+    /// printed Emergency Kit could resurrect the "erased" vault from iCloud, and a
+    /// future vault would pull ghosts sealed under the old key.
     func eraseEverything() {
+        Task { [cloudSync] in await cloudSync.eraseRemote() }
+        VaultKeyEscrowService.clearPushedFingerprint()
+        settings.iCloudSyncEnabled = false
         repository.clear()
         try? store.eraseAll()
         uiState.wipe()
