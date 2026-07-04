@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.14.0] - 2026-07-05
+
+### Added
+- redesign Profile into Identity and Payment sections
+- Home profile row, Loox wordmark header, Space switcher in All section
+- printable Emergency Kit PDF with scan-to-recover
+- unified Mac header band spanning list and detail columns
+- three-column Mac shell with toolbar search and suggestions
+- native macOS Settings window with sidebar navigation
+
+### Fixed
+- reset foreground auto-lock timer on any user activity
+- search and New Item join the system unified toolbar
+- header band is the Mac window's top chrome; detail gets its own header
+- search suggestions keyed to query, not field focus
+- Mac shell polish — toolbar search, white detail, Space dropdown
+- macOS Settings — dead band, broken pickers, action buttons
+- grouped form style on macOS — no more centered gray slabs
+
+### Changed
+- add EN/VI localizations for new profile and emergency-kit strings
+- item detail header, editor Space pill, passkey border
+- add localize
+
+
 ## [1.13.0] - 2026-07-04
 
 ### Added

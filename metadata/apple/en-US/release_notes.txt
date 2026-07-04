@@ -1,1 +1,1 @@
-Version 1.13.0: Performance improvements and bug fixes.
+Your profile is now organized into Identity and Payment sections for quicker access. Print an Emergency Kit to safely store your recovery key on paper. The Mac experience is refined with a cleaner three-column layout, unified search, and a redesigned Settings window. We also fixed auto-lock timing and search behavior for a smoother experience.

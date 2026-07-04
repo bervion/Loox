@@ -1,1 +1,1 @@
-Phiên bản 1.13.0: Cải thiện hiệu suất và sửa lỗi.
+Hồ sơ cá nhân được sắp xếp lại thành hai mục Định danh và Thanh toán, dễ tìm hơn. Bạn có thể in Bộ khôi phục khẩn cấp để lưu khóa khôi phục trên giấy. Trải nghiệm trên Mac được cải tiến với bố cục ba cột gọn gàng, tìm kiếm hợp nhất và cửa sổ Cài đặt được thiết kế lại. Ngoài ra, đã khắc phục lỗi khóa tự động và hành vi tìm kiếm để mượt mà hơn.
