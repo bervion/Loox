@@ -34,7 +34,7 @@ struct TotpCardView: View {
                 HStack {
                     FaviconView(urlString: item.urlField?.value,
                                 category: item.category,
-                                size: 26)
+                                size: 26, title: item.title)
                     Spacer()
                     TotpRingView(progress: progress, remaining: remaining)
                 }

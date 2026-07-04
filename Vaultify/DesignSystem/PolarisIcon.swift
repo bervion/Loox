@@ -82,6 +82,7 @@ enum Icons {
     static let passkey = "ic_passkey"
     static let sync = "ic_refresh"
     static let person = "ic_person"
+    static let mail = "ic_mail"
     static let camera = "ic_camera"
     static let image = "ic_image"
     /// Document with a plus badge — used on the Add quick-action tile and header cluster.

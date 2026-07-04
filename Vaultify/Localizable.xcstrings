@@ -1,6 +1,56 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Starter Kit" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ khởi đầu"
+          }
+        }
+      }
+    },
+    "Welcome to Loox! This is your identity — it autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chào mừng đến với Loox! Đây là danh tính của bạn — tự động điền tên, email và thông tin vào biểu mẫu. Mọi thứ luôn được mã hóa trên thiết bị này; chỉnh sửa hoặc thêm bất cứ lúc nào."
+          }
+        }
+      }
+    },
+    "Loox Account" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản Loox"
+          }
+        }
+      }
+    },
+    "Email (optional)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email (không bắt buộc)"
+          }
+        }
+      }
+    },
+    "This is your Loox account — the identity for this vault. Keep the email safe; you may need it to set up sync or recover access." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đây là tài khoản Loox của bạn — danh tính cho két này. Giữ email an toàn; bạn có thể cần đến khi thiết lập đồng bộ hoặc khôi phục truy cập."
+          }
+        }
+      }
+    },
     "Delete Permanently" : {
       "localizations" : {
         "vi" : {

@@ -1,15 +1,18 @@
 import SwiftUI
 import UIKit
 
-/// First-run step that collects a display name. The flow seeds the mandatory default
-/// identity from it (blank → a localized fallback, so the invariant always holds).
+/// First-run step that collects a display name + optional email. The flow seeds the
+/// mandatory default identity and a "Loox Account" login from them.
 /// Layout mirrors `CreateMasterPasswordView`: top-aligned, left-aligned, Loox brand
-/// mark, and a prominent field with a leading icon tile.
+/// mark, and prominent fields with a leading icon tile.
 struct NameStepView: View {
-    let onContinue: (String) -> Void
+    let onContinue: (_ name: String, _ email: String) -> Void
     @State private var name = ""
-    @FocusState private var focused: Bool
+    @State private var email = ""
+    @FocusState private var focus: FieldID?
     @Environment(\.appTheme) private var theme
+
+    private enum FieldID { case name, email }
 
     var body: some View {
         ScrollView {
@@ -26,7 +29,12 @@ struct NameStepView: View {
                 }
                 .padding(.top, Space.s2)
 
-                nameField
+                VStack(spacing: Space.s3) {
+                    field(Icons.person, "Your name", text: $name, id: .name,
+                          contentType: .name, keyboard: .default, submit: .next)
+                    field(Icons.mail, "Email (optional)", text: $email, id: .email,
+                          contentType: .emailAddress, keyboard: .emailAddress, submit: .continue)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
@@ -36,7 +44,7 @@ struct NameStepView: View {
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
         .safeAreaInset(edge: .bottom) {
-            Button { onContinue(name) } label: {
+            Button { onContinue(name, email) } label: {
                 Text("Continue").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
@@ -44,25 +52,30 @@ struct NameStepView: View {
             .padding(.horizontal, Space.s6)
             .padding(.bottom, Space.s6)
         }
-        .onAppear { focused = true }
+        .onAppear { focus = .name }
     }
 
-    /// Prominent name field — mirrors `RevealableSecureField`'s onboarding style
+    /// Prominent field — mirrors `RevealableSecureField`'s onboarding style
     /// (accent icon tile + white card + soft shadow), but plain (non-secure) text.
-    private var nameField: some View {
+    private func field(_ icon: String, _ placeholder: LocalizedStringKey, text: Binding<String>,
+                       id: FieldID, contentType: UITextContentType, keyboard: UIKeyboardType,
+                       submit: SubmitLabel) -> some View {
         HStack(spacing: Space.s2) {
-            PolarisIcon(Icons.person, size: Metric.iconInline)
+            PolarisIcon(icon, size: Metric.iconInline)
                 .foregroundStyle(Color(rgb: theme.accent))
                 .frame(width: Metric.controlSmall, height: Metric.controlSmall)
                 .background(Color(rgb: theme.accentSoft),
                             in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-            TextField("Your name", text: $name)
-                .textContentType(.name)
-                .submitLabel(.continue)
-                .focused($focused)
+            TextField(placeholder, text: text)
+                .textContentType(contentType)
+                .keyboardType(keyboard)
+                .textInputAutocapitalization(id == .email ? .never : .words)
+                .autocorrectionDisabled(id == .email)
+                .submitLabel(submit)
+                .focused($focus, equals: id)
                 .font(.body)
                 .foregroundStyle(Color(rgb: theme.primaryText))
-                .onSubmit { onContinue(name) }
+                .onSubmit { id == .name ? (focus = .email) : onContinue(name, email) }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, Space.s3)
