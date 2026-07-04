@@ -18,24 +18,7 @@ struct VaultifyApp: App {
     private var locale: Locale { appLocale(forCode: env.settings.preferredLanguage) }
 
     var body: some Scene {
-        WindowGroup {
-            RootView()
-                .onOpenURL { url in
-                    // 2FA setup from an otpauth:// link/QR → stash a draft login; presented once
-                    // the vault is unlocked (see MainTabView).
-                    if let draft = TOTPImport.draftLogin(from: url) { env.pendingTOTPImport = draft }
-                }
-                .environment(env)
-                .environment(env.uiState)
-                .environment(\.locale, locale)
-                .environment(\.appTheme, env.theme.active)
-                .toggleStyle(.themed)
-                .tint(env.theme.uiTint)
-                .preferredColorScheme(env.theme.preferredColorScheme)
-                .appFontScale(env.theme.settings.fontScale)
-                .environment(\.meshPhase, env.theme.meshPhase)
-                .environment(\.meshAnimated, !env.theme.settings.reduceMotion)
-        }
+        mainWindow
 
         #if os(macOS)
         // Native Settings window (App menu → Settings…, ⌘,) — sidebar + detail panes.
@@ -53,5 +36,34 @@ struct VaultifyApp: App {
                 .appFontScale(env.theme.settings.fontScale)
         }
         #endif
+    }
+
+    private var mainWindow: some Scene {
+        #if os(macOS)
+        // Hidden title bar: the shell's own header band is the top chrome and the
+        // traffic lights float over the sidebar (reference password-manager look).
+        return WindowGroup { rootContent }.windowStyle(.hiddenTitleBar)
+        #else
+        return WindowGroup { rootContent }
+        #endif
+    }
+
+    private var rootContent: some View {
+        RootView()
+                .onOpenURL { url in
+                    // 2FA setup from an otpauth:// link/QR → stash a draft login; presented once
+                    // the vault is unlocked (see MainTabView).
+                    if let draft = TOTPImport.draftLogin(from: url) { env.pendingTOTPImport = draft }
+                }
+                .environment(env)
+                .environment(env.uiState)
+                .environment(\.locale, locale)
+                .environment(\.appTheme, env.theme.active)
+                .toggleStyle(.themed)
+                .tint(env.theme.uiTint)
+                .preferredColorScheme(env.theme.preferredColorScheme)
+                .appFontScale(env.theme.settings.fontScale)
+                .environment(\.meshPhase, env.theme.meshPhase)
+                .environment(\.meshAnimated, !env.theme.settings.reduceMotion)
     }
 }

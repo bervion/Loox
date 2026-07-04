@@ -29,16 +29,22 @@ struct MacRootView: View {
     @FocusState private var searchFocused: Bool
     @State private var editorTarget: EditorTarget?
     @State private var showProfile = false
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showLastIdentityBlock = false
 
     private var isSearching: Bool { !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             MacSidebarList(filter: $filter, onProfile: { showProfile = true })
                 .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 300)
         } detail: {
             rightSide
         }
+        // The header band IS the top chrome: hide the system window toolbar so
+        // nested screens' titles/menus can't leak into an extra bar above it
+        // (the sidebar toggle is re-provided in the header).
+        .toolbar(.hidden, for: .windowToolbar)
         .tint(env.theme.uiTint)
         .vaultShellBehaviors()
         .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: currentSpaceId) }
@@ -48,6 +54,11 @@ struct MacRootView: View {
             selectedItemID = nil
             env.session.registerActivity()
         }
+        .alert("Keep at least one identity", isPresented: $showLastIdentityBlock) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This is your only identity. Add another before removing this one.")
+        }
     }
 
     // MARK: Right side (header band + columns 2/3)
@@ -56,6 +67,11 @@ struct MacRootView: View {
         VStack(spacing: 0) {
             MacHeaderBar(searchQuery: $searchQuery,
                          searchFocus: $searchFocused,
+                         onToggleSidebar: {
+                             withAnimation {
+                                 columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                             }
+                         },
                          onNewItem: { editorTarget = .new($0) })
             Divider()
             HSplitView {
@@ -165,15 +181,35 @@ struct MacRootView: View {
     // MARK: Column 3 (detail)
 
     @ViewBuilder private var detailColumn: some View {
-        if let selectedItemID, env.repository.item(id: selectedItemID) != nil {
-            NavigationStack {
-                ItemDetailScreen(itemID: selectedItemID)
-                    .vaultNavigationDestinations()
+        if let selectedItemID, let item = env.repository.item(id: selectedItemID) {
+            VStack(spacing: 0) {
+                // Column-3 header: Edit + the archive menu (the screen's own toolbar
+                // is hidden along with the window toolbar).
+                MacDetailHeader(item: item,
+                                onEdit: { editorTarget = .edit(item) },
+                                onArchiveToggle: { toggleArchive(item) })
+                Divider()
+                NavigationStack {
+                    ItemDetailScreen(itemID: selectedItemID)
+                        .vaultNavigationDestinations()
+                }
+                .id(selectedItemID) // fresh stack per item — no stale pushed state
             }
-            .id(selectedItemID) // fresh stack per item — no stale pushed state
             .environment(\.themedSurfaceStyle, .plain)
         } else {
             emptyDetail
+        }
+    }
+
+    /// Archive/unarchive with the same last-identity gate the detail screen applies.
+    private func toggleArchive(_ item: VaultItem) {
+        if item.archived {
+            env.repository.unarchive(item)
+        } else if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
+            showLastIdentityBlock = true
+        } else {
+            env.repository.archive(item)
+            selectedItemID = nil
         }
     }
 

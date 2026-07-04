@@ -9,10 +9,17 @@ struct MacHeaderBar: View {
     @Environment(AppEnvironment.self) private var env
     @Binding var searchQuery: String
     var searchFocus: FocusState<Bool>.Binding
+    let onToggleSidebar: () -> Void
     let onNewItem: (ItemCategory) -> Void
 
     var body: some View {
         HStack(spacing: Space.s4) {
+            // The system window toolbar (and its toggle) is hidden — re-provide it here.
+            Button(action: onToggleSidebar) {
+                PolarisIcon(Icons.layoutSection, size: 16).themedForeground(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Toggle Sidebar"))
             searchField
             newItemMenu
         }
@@ -63,6 +70,40 @@ struct MacHeaderBar: View {
         .buttonStyle(.borderedProminent)
         .tint(env.theme.accentColor)
         .accessibilityLabel(Text("New Item"))
+    }
+}
+
+/// Column-3 header above the item detail: primary Edit action plus the overflow
+/// menu (archive) — replaces the detail screen's toolbar, which is hidden along
+/// with the window toolbar on the Mac.
+struct MacDetailHeader: View {
+    @Environment(AppEnvironment.self) private var env
+    let item: VaultItem
+    let onEdit: () -> Void
+    let onArchiveToggle: () -> Void
+
+    var body: some View {
+        HStack(spacing: Space.s3) {
+            Spacer(minLength: 0)
+            Button(action: onEdit) {
+                Label { Text("Edit") } icon: { PolarisIcon(Icons.edit, size: 13) }
+            }
+            .buttonStyle(.bordered)
+            Menu {
+                Button(action: onArchiveToggle) {
+                    Label(item.archived ? "Unarchive" : "Archive", image: Icons.archive)
+                }
+            } label: {
+                PolarisIcon(Icons.moreHorizontal, size: 16).themedForeground(.secondary)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .accessibilityLabel(Text("More"))
+        }
+        .padding(.horizontal, Space.s4)
+        .padding(.vertical, Space.s2)
+        .background(Color(rgb: env.theme.active.background))
     }
 }
 

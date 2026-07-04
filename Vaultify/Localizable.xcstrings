@@ -3588,6 +3588,16 @@
         }
       }
     },
+    "More": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm"
+          }
+        }
+      }
+    },
     "More options": {
       "extractionState": "stale",
       "localizations": {
@@ -6106,6 +6116,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Để dùng Đồng bộ iCloud, hãy bật khả năng iCloud (CloudKit) cho app target trong Xcode và đăng nhập iCloud trên thiết bị này."
+          }
+        }
+      }
+    },
+    "Toggle Sidebar": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ẩn/hiện thanh bên"
           }
         }
       }
