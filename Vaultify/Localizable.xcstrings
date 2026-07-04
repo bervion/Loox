@@ -132,6 +132,16 @@
         }
       }
     },
+    "1 min": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 phút"
+          }
+        }
+      }
+    },
     "15 days": {
       "comment": "Rotation cadence option: remind every 15 days.",
       "localizations": {
@@ -139,6 +149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "15 ngày"
+          }
+        }
+      }
+    },
+    "15s": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 giây"
           }
         }
       }
@@ -160,6 +180,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "30 ngày"
+          }
+        }
+      }
+    },
+    "30s": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 giây"
           }
         }
       }

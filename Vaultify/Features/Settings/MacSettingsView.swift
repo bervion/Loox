@@ -52,32 +52,35 @@ struct MacSettingsView: View {
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 230)
         } detail: {
-            // Most panes read or mutate vault state — while locked, ask for an unlock
-            // instead of exposing half-working screens.
-            if env.session.state == .unlocked {
-                detail(for: pane ?? .general)
-            } else {
-                lockedPlaceholder
+            // ONE NavigationStack for the whole detail column: a per-pane stack
+            // stacked a second toolbar under the window's title bar, leaving a wide
+            // dead band above every pane. Drill-ins (Change Master Password,
+            // Auto-Night…) push inside this shared stack.
+            NavigationStack {
+                // Most panes read or mutate vault state — while locked, ask for an
+                // unlock instead of exposing half-working screens.
+                if env.session.state == .unlocked {
+                    detail(for: pane ?? .general)
+                } else {
+                    lockedPlaceholder
+                }
             }
         }
         .frame(minWidth: 760, idealWidth: 820, minHeight: 520, idealHeight: 600)
-        .themedColorScheme()
         .tint(env.theme.uiTint)
     }
 
-    /// Each pane hosts its own stack so drill-ins (Change Master Password,
-    /// Auto-Night…) push within the detail column, like System Settings.
     @ViewBuilder private func detail(for pane: Pane) -> some View {
         switch pane {
-        case .general: NavigationStack { MacGeneralSettingsPane() }
-        case .security: NavigationStack { MacSecuritySettingsPane() }
-        case .appearance: NavigationStack { AppearanceSettingsView() }
-        case .spaces: NavigationStack { ManageFoldersScreen() }
-        case .sync: NavigationStack { SyncSettingsView() }
-        case .passkeys: NavigationStack { PasskeysScreen() }
-        case .importData: NavigationStack { ImportView() }
-        case .exportData: NavigationStack { ExportView() }
-        case .about: NavigationStack { AboutView() }
+        case .general: MacGeneralSettingsPane()
+        case .security: MacSecuritySettingsPane()
+        case .appearance: AppearanceSettingsView()
+        case .spaces: ManageFoldersScreen()
+        case .sync: SyncSettingsView()
+        case .passkeys: PasskeysScreen()
+        case .importData: ImportView()
+        case .exportData: ExportView()
+        case .about: AboutView()
         }
     }
 
@@ -105,6 +108,10 @@ private struct MacGeneralSettingsPane: View {
         @Bindable var settings = env.settings
         Form {
             Section("Appearance") {
+                // Segmented (inline) pickers: SwiftUI's menu-popup bridge misrenders
+                // inside the macOS Settings window (washed-out, unselectable items),
+                // and with 3–4 short options segmented is the System Settings idiom
+                // anyway.
                 Picker(selection: $settings.preferredLanguage) {
                     Text("System").tag("system")
                     Text("English").tag("en")
@@ -112,6 +119,7 @@ private struct MacGeneralSettingsPane: View {
                 } label: {
                     Label { Text("Language") } icon: { PolarisIcon(Icons.language) }
                 }
+                .pickerStyle(.segmented)
             }
 
             Section {
@@ -127,23 +135,26 @@ private struct MacGeneralSettingsPane: View {
 
             Section("Privacy") {
                 Picker(selection: $settings.clipboardClearSeconds) {
-                    Text("After 15s").tag(15)
-                    Text("After 30s").tag(30)
-                    Text("After 1 min").tag(60)
+                    Text("15s").tag(15)
+                    Text("30s").tag(30)
+                    Text("1 min").tag(60)
                     Text("Never").tag(0)
                 } label: {
                     Label { Text("Clear clipboard") } icon: { PolarisIcon(Icons.copy) }
                 }
+                .pickerStyle(.segmented)
             }
 
             Section {
                 Button { env.session.lock() } label: {
                     Label { Text("Lock Now") } icon: { PolarisIcon(Icons.lockFill) }
                 }
+                .buttonStyle(.borderless)
                 Button(role: .destructive) { confirmErase = true } label: {
                     Label { Text("Erase Vault").foregroundStyle(env.theme.active.color(.destructive)) }
                         icon: { PolarisIcon(Icons.delete).foregroundStyle(env.theme.active.color(.destructive)) }
                 }
+                .buttonStyle(.borderless)
             }
         }
         .themedFormBackground()
@@ -192,6 +203,8 @@ private struct MacSecuritySettingsPane: View {
                 } label: {
                     Label { Text("Auto-Lock") } icon: { PolarisIcon(Icons.clock) }
                 }
+                // Inline picker — see the menu-popup bridge note in the General pane.
+                .pickerStyle(.segmented)
                 Toggle(isOn: $settings.lockOnBackground) {
                     Label { Text("Lock when backgrounded") } icon: { PolarisIcon(Icons.lock) }
                 }
