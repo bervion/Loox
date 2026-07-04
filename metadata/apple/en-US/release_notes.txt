@@ -1,1 +1,1 @@
-This update polishes how you view and manage your logins, with a clearer layout and the app remembering right where you left off. The password generator has been refreshed, and passwords now appear in a clean, easy-to-read font. You can also enlarge any password or code to fill the screen for easier reading.
+Version 1.13.0: Performance improvements and bug fixes.

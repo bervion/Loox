@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.13.0] - 2026-07-04
+
+### Added
+- near-real-time sync via silent CloudKit push
+- multi-device CloudKit sync with vault-key provisioning
+- iPad/Mac adaptive sidebar (NavigationSplitView)
+- compile for iPad + macOS via platform-abstraction shim layer
+
+### Fixed
+- join-flow password step reads as vault-received, not new-vault
+- pull via zone-changes delta fetch instead of CKQuery
+- macOS/iPad UI conformance — sheets, buttons, sidebar
+- launch crash — disable SwiftData's automatic CloudKit mirroring
+
+### Changed
+- fix some issue sync data
+
+
 ## [1.12.0] - 2026-07-04
 
 ### Added

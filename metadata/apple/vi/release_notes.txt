@@ -1,1 +1,1 @@
-Bản cập nhật này cải tiến giao diện xem và chỉnh sửa thông tin đăng nhập, rõ ràng hơn, và ứng dụng sẽ ghi nhớ đúng nơi bạn dừng lại. Công cụ tạo mật khẩu được làm mới, mật khẩu hiển thị bằng phông chữ dễ đọc hơn. Bạn cũng có thể phóng to mật khẩu hoặc mã để xem toàn màn hình.
+Phiên bản 1.13.0: Cải thiện hiệu suất và sửa lỗi.
