@@ -19,7 +19,13 @@ struct ProfileAvatarView: View {
                 PolarisIcon(Icons.camera, size: 15)
                     .foregroundStyle(badgeForeground)
                     .frame(width: 30, height: 30)
-                    .background(badgeBackground, in: Circle())
+                    .background(badgeBackground,
+                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    // Ring in the page color so the badge reads as a separate chip.
+                    .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Color(rgb: env.theme.active.groupedBackground), lineWidth: 2))
+                    // Nudge past the avatar's bottom-right corner for a lifted look.
+                    .offset(x: 6, y: 6)
             }
         }
         .onChange(of: picked) { _, newItem in
@@ -28,9 +34,17 @@ struct ProfileAvatarView: View {
                 if let data = try? await newItem.loadTransferable(type: Data.self),
                    let image = PlatformImage.fromData(data) {
                     env.repository.setAvatar(image, for: identity.id)
+                    // Avatar is a synced column (sealed) — push the change to iCloud now so it
+                    // reaches other devices immediately instead of on the next sync cycle.
+                    env.syncNow()
                 }
             }
         }
+    }
+
+    /// Rounded-square (not circular) avatar — a gentle corner proportional to the size.
+    private var avatarShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: size * 0.2, style: .continuous)
     }
 
     @ViewBuilder private var avatar: some View {
@@ -39,10 +53,10 @@ struct ProfileAvatarView: View {
                 .resizable()
                 .scaledToFill()
                 .frame(width: size, height: size)
-                .clipShape(Circle())
+                .clipShape(avatarShape)
         } else {
             ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: size)
-                .clipShape(Circle())
+                .clipShape(avatarShape)
         }
     }
 }

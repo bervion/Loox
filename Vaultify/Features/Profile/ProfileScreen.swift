@@ -1,7 +1,14 @@
 import SwiftUI
 
-/// The user's identity profile: avatar, default-identity fields with quick-copy, a default
-/// switcher across identities, and a payment-cards section. Presented as a sheet from Home.
+/// Navigation route that pushes the Profile screen (kept distinct from the `String`
+/// item-detail route). Codable so it survives `homePath` state restoration.
+struct ProfileRoute: Hashable, Codable {}
+
+/// The user's profile as two vault-backed sections: their Identity and their Payment card.
+/// Each shows the selected item's tap-to-copy fields (or an empty state), an Edit button that
+/// opens the item editor, and a picker row to choose which vault item of that type to show.
+/// Pushed onto the Home stack (not a sheet); all data mirrors the vault, so there is no
+/// separate "edit profile" — editing happens on the underlying items.
 struct ProfileScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var editing: EditorTarget?
@@ -10,137 +17,60 @@ struct ProfileScreen: View {
     private var identities: [VaultItem] { env.repository.activeIdentities }
     private var cards: [VaultItem] { env.repository.items.filter { $0.category == .card } }
 
-    var body: some View {
-        VaultSheetScaffold(title: "Profile") {
-            Group {
-                if let identity {
-                    profile(identity)
-                } else {
-                    emptyState
-                }
-            }
+    /// The card shown in the Payment section: the device-local pick, else the first card.
+    private var selectedCard: VaultItem? {
+        if let id = env.settings.selectedPaymentCardId, let card = cards.first(where: { $0.id == id }) {
+            return card
         }
+        return cards.first
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 22) {
+                if let identity { avatarHeader(identity) }
+                identitySection
+                paymentSection
+            }
+            .padding(Space.gutter)
+        }
+        .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
+        .navigationTitle("Profile")
+        .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(item: $editing) { ItemEditorScreen(target: $0) }
     }
 
-    // MARK: Populated profile
-
-    @ViewBuilder private func profile(_ identity: VaultItem) -> some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                ProfileAvatarView(identity: identity)
-                    .padding(.top, Space.s4)
-                Text(verbatim: identity.title).vaultType(.section).themedForeground()
-
-                if identities.count > 1 { switcher(identity) }
-                fieldsCard(identity)
-                if !cards.isEmpty { cardsCard }
-
-                Button { editing = .edit(identity) } label: {
-                    Text("Edit profile").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.themedProminent)
-                .controlSize(.large)
-            }
-            .padding(Space.gutter)
-        }
+    /// Avatar header — the tap-badge lets the user change the photo. No name here: the
+    /// Identity section below already shows it (and the rest of the vault fields).
+    @ViewBuilder private func avatarHeader(_ identity: VaultItem) -> some View {
+        ProfileAvatarView(identity: identity)
+            .frame(maxWidth: .infinity)
+            .padding(.top, Space.s2)
     }
 
-    /// Switch which identity is the default (only shown with 2+ identities).
-    @ViewBuilder private func switcher(_ current: VaultItem) -> some View {
-        Menu {
-            ForEach(identities) { id in
-                Button { env.repository.setDefaultIdentity(id) } label: {
-                    Label {
-                        Text(verbatim: id.title)
-                    } icon: {
-                        if id.id == current.id { PolarisIcon(Icons.checkCircle) }
-                    }
-                }
-            }
-        } label: {
-            row {
-                Text("Default identity").vaultType(.body).themedForeground()
-                Spacer()
-                Text(verbatim: current.title).vaultType(.body).themedForeground(.secondary)
-                PolarisIcon(Icons.chevronDown, size: 14).themedForeground(.secondary)
-            }
-        }
-        .buttonStyle(.plain)
+    private var identitySection: some View {
+        ProfileSectionCard(
+            title: "Identity",
+            emptyTitle: "No identity yet",
+            chooseLabel: identity == nil ? "Choose identity" : "Change identity",
+            icon: Icons.person,
+            selected: identity,
+            pool: identities,
+            onEdit: { if let identity { editing = .edit(identity) } },
+            onChoose: { env.repository.setDefaultIdentity($0) },
+            onCreate: { editing = .new(.identity) })
     }
 
-    /// Each non-empty field as a tap-to-copy row (protected values stay masked).
-    @ViewBuilder private func fieldsCard(_ identity: VaultItem) -> some View {
-        let fields = identity.fields.filter { !$0.isEmpty }
-        VStack(spacing: 0) {
-            ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
-                if index > 0 { Divider().background(Color(rgb: env.theme.active.separatorOpaque)) }
-                Button {
-                    env.clipboard.copy(field.value, label: appLabel(field.label))
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(verbatim: appLabel(field.label)).vaultType(.caption).themedForeground(.secondary)
-                            Text(verbatim: field.protected ? "••••••••" : field.value)
-                                .vaultType(.body).themedForeground().lineLimit(1)
-                        }
-                        Spacer()
-                        PolarisIcon(Icons.copy, size: 18).themedForeground(.secondary)
-                    }
-                    .padding(Space.gutter)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-    }
-
-    /// Payment cards in the vault — tap to edit, plus an add affordance.
-    @ViewBuilder private var cardsCard: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text("Payment cards").vaultType(.sectionLabel).themedForeground(.secondary)
-            VStack(spacing: 0) {
-                ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
-                    if index > 0 { Divider().background(Color(rgb: env.theme.active.separatorOpaque)) }
-                    Button { editing = .edit(card) } label: {
-                        HStack(spacing: Space.s3) {
-                            ItemThumbnail(title: card.title, category: .card, iconAsset: card.iconAsset, size: 32)
-                            Text(verbatim: card.title).vaultType(.body).themedForeground()
-                            Spacer()
-                            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
-                        }
-                        .padding(Space.gutter)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        }
-    }
-
-    // MARK: Zero-identity state
-
-    @ViewBuilder private var emptyState: some View {
-        VStack(spacing: 18) {
-            Spacer()
-            PolarisIcon(Icons.person, size: 64).foregroundStyle(Color(rgb: env.theme.active.accent))
-            Text("No identity yet").vaultType(.section).themedForeground()
-            Text("Create your identity to fill your details faster.")
-                .vaultType(.body).themedForeground(.secondary)
-                .multilineTextAlignment(.center).padding(.horizontal, Space.s8)
-            Spacer()
-            Button { editing = .new(.identity) } label: {
-                Text("Create identity").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-            .controlSize(.large)
-            .padding(Space.gutter)
-        }
-    }
-
-    @ViewBuilder private func row<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        HStack(content: content)
-            .padding(Space.gutter)
-            .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+    private var paymentSection: some View {
+        ProfileSectionCard(
+            title: "Payment",
+            emptyTitle: "No payment card yet",
+            chooseLabel: selectedCard == nil ? "Choose a card" : "Change card",
+            icon: Icons.creditCard,
+            selected: selectedCard,
+            pool: cards,
+            onEdit: { if let selectedCard { editing = .edit(selectedCard) } },
+            onChoose: { env.settings.selectedPaymentCardId = $0.id },
+            onCreate: { editing = .new(.card) })
     }
 }
