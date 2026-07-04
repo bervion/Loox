@@ -146,7 +146,7 @@ private struct MacGeneralSettingsPane: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .themedFormBackground()
         .navigationTitle("General")
         .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
             Button("Erase Everything", role: .destructive) { env.eraseEverything() }
@@ -223,7 +223,7 @@ private struct MacSecuritySettingsPane: View {
                 Text("Automatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
             }
         }
-        .formStyle(.grouped)
+        .themedFormBackground()
         .navigationTitle("Security")
     }
 }

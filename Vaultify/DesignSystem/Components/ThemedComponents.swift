@@ -98,6 +98,11 @@ private struct ThemedFormBackgroundModifier: ViewModifier {
     @Environment(AppEnvironment.self) private var env
     func body(content: Content) -> some View {
         content
+            // macOS's DEFAULT form style is "columns": the form hugs its content and
+            // floats centred in the column, so the themed background became a gray
+            // slab in a white void. Grouped matches iOS's default (full-height list)
+            // on both platforms — set it here so every themed form gets it.
+            .formStyle(.grouped)
             .scrollContentBackground(.hidden)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
     }
