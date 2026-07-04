@@ -1,1 +1,1 @@
-Bản cập nhật này giúp trải nghiệm ban đầu với Loox mượt mà hơn: màn hình khóa gọn gàng hơn, thiết lập có sẵn vài mục mẫu hữu ích, và dễ dàng tìm lại các mục đã lưu trữ hoặc xóa.
+Bản cập nhật này cải tiến giao diện xem và chỉnh sửa thông tin đăng nhập, rõ ràng hơn, và ứng dụng sẽ ghi nhớ đúng nơi bạn dừng lại. Công cụ tạo mật khẩu được làm mới, mật khẩu hiển thị bằng phông chữ dễ đọc hơn. Bạn cũng có thể phóng to mật khẩu hoặc mã để xem toàn màn hình.

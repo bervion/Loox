@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0] - 2026-07-04
+
+### Added
+- login editor redesign, UI state restoration, and detail polish
+- generator UX overhaul, MonoLisa secret typography, Large Type reader
+
+
 ## [1.11.0] - 2026-07-04
 
 ### Added
