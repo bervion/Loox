@@ -119,6 +119,11 @@ struct HomeHeaderBar: View {
                             .frame(width: Metric.hitMin, height: Metric.hitMin)
                             .contentShape(.rect)
                     }
+                    // Plain glyph menu — macOS would otherwise draw a bordered
+                    // pull-down button (gray box + chevron) around the icon.
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
                     .accessibilityLabel(Text("Add Item"))
 
                     // Settings — direct, no "more" indirection

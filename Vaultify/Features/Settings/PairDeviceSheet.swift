@@ -8,7 +8,6 @@ import SwiftUI
 /// iPhone (pairing approval needs a camera — the Mac is usually the NEW device).
 struct PairDeviceSheet: View {
     @Environment(AppEnvironment.self) private var env
-    @Environment(\.dismiss) private var dismiss
 
     private enum Phase: Equatable {
         case scanning
@@ -21,15 +20,10 @@ struct PairDeviceSheet: View {
     @State private var phase: Phase = .scanning
 
     var body: some View {
-        NavigationStack {
+        // macOS-safe: own NavigationStack+toolbar Cancel could render unreliably on macOS
+        // sheets (dismiss button could vanish) — use the shared scaffold instead.
+        VaultSheetScaffold(title: "Pair New Device") {
             content
-                .navigationTitle("Pair New Device")
-                .platformNavigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
-                    }
-                }
         }
     }
 

@@ -42,6 +42,18 @@ struct TOTPScannerSheet: View {
             }
             .onChange(of: photoItem) { _, item in Task { await loadPhoto(item) } }
         }
+        #if os(macOS)
+        // NavigationStack toolbar Cancel can fail to render on macOS sheets — guarantee
+        // a working close control plus a non-collapsed sheet size.
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: { PolarisIcon(Icons.close, size: 16) }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.cancelAction)
+                .accessibilityLabel(Text("Close"))
+                .padding(Space.s4)
+        }
+        .frame(minWidth: 460, idealWidth: 520, minHeight: 460, idealHeight: 620)
+        #endif
     }
 
     private var controls: some View {

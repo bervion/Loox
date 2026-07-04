@@ -116,10 +116,14 @@ struct ItemEditorScreen: View {
                         } label: {
                             Label { Text("Add Field") } icon: { PolarisIcon(Icons.addCircle) }
                         }
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .menuIndicator(.hidden)
 
                         Button { showAttachmentPicker = true } label: {
                             Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
                         }
+                        .buttonStyle(.plain)
                     }
                     .listRowBackground(VaultColors.surface)
                 }

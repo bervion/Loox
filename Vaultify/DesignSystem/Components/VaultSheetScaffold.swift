@@ -27,6 +27,23 @@ struct VaultSheetScaffold<Leading: View, Trailing: View, Content: View>: View {
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
+        #if os(macOS)
+        // macOS: sheets size to their content's ideal size (a bare List collapses to a
+        // sliver) and `NavigationStack` toolbars inside sheets render unreliably — the
+        // dismiss button can simply not appear, leaving the sheet impossible to close.
+        // Render an explicit header row + an explicit frame instead; Esc also closes
+        // via `SheetDismissButton`'s cancel shortcut.
+        VStack(spacing: 0) {
+            macHeader
+            Divider()
+            content()
+                .themedFormBackground()
+        }
+        .background(Color(rgb: env.theme.active.groupedBackground))
+        .themedColorScheme()
+        .tint(env.theme.uiTint)
+        .frame(minWidth: 460, idealWidth: 520, minHeight: 460, idealHeight: 620)
+        #else
         NavigationStack {
             content()
                 .themedFormBackground()
@@ -41,7 +58,30 @@ struct VaultSheetScaffold<Leading: View, Trailing: View, Content: View>: View {
                     ToolbarItemGroup(placement: .platformPrimaryAction) { trailing() }
                 }
         }
+        #endif
     }
+
+    #if os(macOS)
+    /// Explicit sheet header: leading actions — centred title — trailing actions.
+    /// Borderless buttons (accent text / clean glyphs) match macOS sheet-bar idiom.
+    private var macHeader: some View {
+        ZStack {
+            titleText
+                .vaultType(.headline)
+                .themedForeground()
+                .lineLimit(1)
+            HStack {
+                HStack(spacing: Space.s2) { leading() }
+                Spacer()
+                HStack(spacing: Space.s2) { trailing() }
+            }
+        }
+        .buttonStyle(.borderless)
+        .padding(.horizontal, Space.s4)
+        .frame(height: 44)
+        .background(Color(rgb: env.theme.active.groupedBackground))
+    }
+    #endif
 
     private var titleText: Text {
         guard let title else { return Text(verbatim: "") }
@@ -84,5 +124,7 @@ struct SheetDismissButton: View {
 
     var body: some View {
         Button { dismiss() } label: { Text(label) }
+            // Esc closes the sheet (macOS convention; also hardware keyboards on iPad).
+            .keyboardShortcut(.cancelAction)
     }
 }

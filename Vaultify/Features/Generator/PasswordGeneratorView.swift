@@ -59,6 +59,11 @@ struct PasswordGeneratorView: View {
                     }
                     .contentShape(Rectangle())
                 }
+                // Plain row menu (own chevron already drawn) — macOS would otherwise
+                // draw a bordered pull-down button around the whole row.
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
 
                 switch mode {
                 case .password:   passwordControls

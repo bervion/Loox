@@ -272,6 +272,9 @@ struct HeaderIconButton: View {
                 .frame(width: Metric.hitMin, height: Metric.hitMin)
                 .contentShape(.rect)
         }
+        // Explicit plain style: macOS's default bordered button style would wrap the
+        // glyph in a gray push-button box (iOS's default is already borderless).
+        .buttonStyle(.plain)
         .accessibilityLabel(Text(accessibilityLabel))
     }
 }

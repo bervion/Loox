@@ -139,6 +139,10 @@ struct DetailFieldRow: View {
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
         }
+        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
     }
 
     /// Color a URL: the `http://` / `https://` scheme in secondary grey, the rest

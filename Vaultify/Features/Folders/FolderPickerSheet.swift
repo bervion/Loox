@@ -39,6 +39,7 @@ struct FolderPickerSheet: View {
                     Button { creating = true } label: {
                         Label { Text("New Space…") } icon: { PolarisIcon(Icons.addCircle) }
                     }
+                    .buttonStyle(.plain)
                 }
                 .listRowBackground(VaultColors.surface)
             }

@@ -21,6 +21,8 @@ struct VaultSidebarView: View {
                 set: { uiState.sidebarSelection = $0 ?? .section(.home) }
             ))
             .navigationTitle("Loox")
+            // Apple-standard sidebar proportions (default collapses too narrow on macOS).
+            .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 320)
         } detail: {
             detail(for: uiState.sidebarSelection)
         }

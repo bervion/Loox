@@ -60,6 +60,7 @@ struct LoginEditorSections: View {
             } label: {
                 actionRowLabel("Add Website", icon: Icons.addCircle)
             }
+            .buttonStyle(.plain)
         }
         .listRowBackground(VaultColors.surface)
     }
@@ -86,10 +87,14 @@ struct LoginEditorSections: View {
             } label: {
                 actionRowLabel("Add Field", icon: Icons.addCircle)
             }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
 
             Button { onAddAttachment() } label: {
                 actionRowLabel("Add Attachment", icon: "ic_attachment")
             }
+            .buttonStyle(.plain)
         }
         .listRowBackground(VaultColors.surface)
     }
