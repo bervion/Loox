@@ -9,39 +9,35 @@ enum MacVaultFilter: Hashable {
     case tag(String)
 }
 
-/// The macOS unlocked shell: a 1Password-style three-column split —
-/// sidebar (filters/Spaces/tags) · item list · item detail — with an always-visible
-/// toolbar search field whose suggestions jump straight to an item. The iPhone Home
-/// and Search screens don't exist on the Mac; search lives in the toolbar and the
-/// list column IS the browsing surface.
+/// The macOS unlocked shell, laid out like the reference password manager:
+///
+///     ┌─────────┬──────────────────────────────┐
+///     │         │  HEADER (search · New Item)  │   ← spans columns 2+3
+///     │ Sidebar ├───────────┬──────────────────┤
+///     │         │  Column 2 │     Column 3     │
+///     └─────────┴───────────┴──────────────────┘
+///
+/// `NavigationSplitView` can't span a toolbar across its columns, so the right
+/// side is hand-built: a custom header band over an `HSplitView` of list and
+/// detail. Search lives in that header with a floating suggestions panel.
 struct MacRootView: View {
     @Environment(AppEnvironment.self) private var env
 
     @State private var filter: MacVaultFilter = .allItems
     @State private var selectedItemID: String?
     @State private var searchQuery = ""
+    @FocusState private var searchFocused: Bool
     @State private var editorTarget: EditorTarget?
     @State private var showProfile = false
+
+    private var isSearching: Bool { !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         NavigationSplitView {
             MacSidebarList(filter: $filter, onProfile: { showProfile = true })
                 .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 300)
-        } content: {
-            listColumn
-                .safeAreaInset(edge: .top, spacing: 0) { spaceFilterBar }
-                .environment(\.themedSurfaceStyle, .plain)
-                .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 420)
         } detail: {
-            detailColumn
-                // White-canvas detail (password-manager idiom) — grouped gray stays
-                // for Settings; the environment flips only these columns.
-                .environment(\.themedSurfaceStyle, .plain)
-        }
-        .searchable(text: $searchQuery, placement: .toolbar, prompt: Text("Search vault"))
-        .searchSuggestions { MacSearchSuggestions(query: searchQuery) { select($0) } }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) { newItemMenu }
+            rightSide
         }
         .tint(env.theme.uiTint)
         .vaultShellBehaviors()
@@ -54,30 +50,91 @@ struct MacRootView: View {
         }
     }
 
-    // MARK: Columns
+    // MARK: Right side (header band + columns 2/3)
 
-    @ViewBuilder private var listColumn: some View {
-        if !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty {
+    private var rightSide: some View {
+        VStack(spacing: 0) {
+            MacHeaderBar(searchQuery: $searchQuery,
+                         searchFocus: $searchFocused,
+                         onNewItem: { editorTarget = .new($0) })
+            Divider()
+            HSplitView {
+                listPane
+                    .frame(minWidth: 260, idealWidth: 300, maxWidth: 420)
+                detailColumn
+                    .frame(minWidth: 380, maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        // Floating search suggestions over both columns, anchored under the field.
+        .overlay(alignment: .topLeading) {
+            if searchFocused, isSearching {
+                MacSearchSuggestionsPanel(query: searchQuery) { id in
+                    selectedItemID = id
+                    searchQuery = ""
+                    searchFocused = false
+                }
+                .padding(.leading, Space.s4)
+                .offset(y: 56)
+                .zIndex(1)
+            }
+        }
+    }
+
+    // MARK: Column 2 (list)
+
+    private var listPane: some View {
+        VStack(spacing: 0) {
+            listHeader
+            Divider()
+            listContent
+        }
+        .background(Color(rgb: env.theme.active.background))
+    }
+
+    /// Column-2 header: the context title, plus the Space dropdown when browsing items.
+    private var listHeader: some View {
+        VStack(alignment: .leading, spacing: Space.s1) {
+            Text(listTitle).vaultType(.headline)
+            if isSpaceFilterable, !isSearching {
+                Menu {
+                    Button { filter = .allItems } label: { Text("All Spaces") }
+                    ForEach(env.repository.folders) { folder in
+                        Button { filter = .space(folder.id) } label: {
+                            Label { Text(verbatim: folder.name) } icon: { PolarisIcon(folder.iconAsset) }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: Space.s1) {
+                        Text(currentSpaceName).vaultType(.subhead).themedForeground(.secondary)
+                        PolarisIcon(Icons.chevronDown, size: 10).themedForeground(.secondary)
+                    }
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, Space.s4)
+        .padding(.vertical, Space.s3)
+    }
+
+    @ViewBuilder private var listContent: some View {
+        if isSearching {
             MacItemListColumn(items: env.repository.search(searchQuery), selection: $selectedItemID)
-                .navigationTitle(Text("Search"))
         } else {
             switch filter {
             case .allItems:
                 MacItemListColumn(items: env.repository.items, selection: $selectedItemID)
-                    .navigationTitle(Text("All Items"))
             case .favorites:
                 MacItemListColumn(items: env.repository.items.filter(\.favorite), selection: $selectedItemID)
-                    .navigationTitle(Text("Favorites"))
             case .space(let id):
                 MacItemListColumn(items: env.repository.items.filter { $0.folderId == id }, selection: $selectedItemID)
-                    .navigationTitle(spaceTitle(id))
             case .tag(let tag):
                 MacItemListColumn(items: env.repository.items.filter { item in
                     item.tags.contains { $0.lowercased() == tag.lowercased() }
                 }, selection: $selectedItemID)
-                .navigationTitle(Text(verbatim: "#\(tag)"))
             case .watchtower:
-                // Report screen — self-contained stack; detail stays on the empty state.
                 WatchtowerScreen()
             case .archive:
                 NavigationStack { ArchiveScreen().vaultNavigationDestinations() }
@@ -87,6 +144,24 @@ struct MacRootView: View {
         }
     }
 
+    private var listTitle: LocalizedStringResource {
+        if isSearching { return "Search" }
+        switch filter {
+        case .allItems: return "All Items"
+        case .favorites: return "Favorites"
+        case .watchtower: return "Watchtower"
+        case .archive: return "Archive"
+        case .trash: return "Recently Deleted"
+        case .space(let id):
+            let name = env.repository.folders.first { $0.id == id }?.name ?? ""
+            return LocalizedStringResource(stringLiteral: name)
+        case .tag(let tag):
+            return LocalizedStringResource(stringLiteral: "#\(tag)")
+        }
+    }
+
+    // MARK: Column 3 (detail)
+
     @ViewBuilder private var detailColumn: some View {
         if let selectedItemID, env.repository.item(id: selectedItemID) != nil {
             NavigationStack {
@@ -94,13 +169,13 @@ struct MacRootView: View {
                     .vaultNavigationDestinations()
             }
             .id(selectedItemID) // fresh stack per item — no stale pushed state
+            .environment(\.themedSurfaceStyle, .plain)
         } else {
             emptyDetail
         }
     }
 
-    /// Blank-slate detail on a plain (non-grouped) background — the wide right
-    /// column reads as canvas, not as another gray settings pane.
+    /// Blank-slate detail on the plain background — canvas, not a gray pane.
     private var emptyDetail: some View {
         VStack(spacing: Space.s4) {
             PolarisIcon(Icons.lockFill, size: 56).themedForeground(.disabled)
@@ -111,62 +186,16 @@ struct MacRootView: View {
         .background(Color(rgb: env.theme.active.background))
     }
 
-    // MARK: Toolbar
-
-    private var newItemMenu: some View {
-        Menu {
-            ForEach(ItemCategory.allCases) { category in
-                Button { editorTarget = .new(category) } label: {
-                    Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
-                }
-            }
-        } label: {
-            Label { Text("New Item") } icon: { PolarisIcon(Icons.add) }
-        }
-        // Prominent (accent-filled) create button, like the reference app's
-        // blue "+ New Item" at the toolbar's trailing edge.
-        .buttonStyle(.borderedProminent)
-        .tint(env.theme.accentColor)
-        .accessibilityLabel(Text("New Item"))
-    }
-
-    /// Space filter dropdown pinned above the item list (column 2): the quick way
-    /// to scope All Items to one Space without hunting the sidebar.
-    @ViewBuilder private var spaceFilterBar: some View {
-        if isSpaceFilterable {
-            HStack {
-                Menu {
-                    Button { filter = .allItems } label: { Text("All Spaces") }
-                    ForEach(env.repository.folders) { folder in
-                        Button { filter = .space(folder.id) } label: {
-                            Label {
-                                Text(verbatim: folder.name)
-                            } icon: {
-                                PolarisIcon(folder.iconAsset)
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: Space.s1) {
-                        Text(currentSpaceName).fontWeight(.semibold)
-                        PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
-                    }
-                }
-                .menuStyle(.button)
-                .buttonStyle(.plain)
-                .menuIndicator(.hidden)
-                Spacer()
-            }
-            .padding(.horizontal, Space.s4)
-            .padding(.vertical, Space.s3)
-            .background(Color(rgb: env.theme.active.background))
-            .overlay(alignment: .bottom) { Divider() }
-        }
-    }
+    // MARK: Helpers
 
     private var isSpaceFilterable: Bool {
         if case .space = filter { return true }
         return filter == .allItems
+    }
+
+    private var currentSpaceId: String? {
+        if case .space(let id) = filter { return id }
+        return nil
     }
 
     private var currentSpaceName: String {
@@ -175,51 +204,6 @@ struct MacRootView: View {
             return name
         }
         return appString("All Spaces")
-    }
-
-    // MARK: Helpers
-
-    private var currentSpaceId: String? {
-        if case .space(let id) = filter { return id }
-        return nil
-    }
-
-    private func spaceTitle(_ id: String) -> Text {
-        Text(verbatim: env.repository.folders.first { $0.id == id }?.name ?? "")
-    }
-
-    private func select(_ itemID: String) {
-        selectedItemID = itemID
-    }
-}
-
-/// Toolbar-search dropdown: top item hits (thumbnail · bold title — subtitle),
-/// like the reference password-manager suggest list. Selecting one opens it in
-/// the detail column; the full result list is already live in the list column.
-private struct MacSearchSuggestions: View {
-    @Environment(AppEnvironment.self) private var env
-    let query: String
-    let onSelect: (String) -> Void
-
-    private var hits: [VaultItem] {
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return [] }
-        return Array(env.repository.search(trimmed).prefix(8))
-    }
-
-    var body: some View {
-        ForEach(hits) { item in
-            Button { onSelect(item.id) } label: {
-                HStack(spacing: Space.s3) {
-                    ItemThumbnail(title: item.title, category: item.category,
-                                  iconAsset: item.iconAsset, size: 20)
-                    Text(item.title).fontWeight(.semibold)
-                    if let subtitle = item.subtitle {
-                        Text(subtitle).themedForeground(.secondary).lineLimit(1)
-                    }
-                }
-            }
-        }
     }
 }
 #endif
