@@ -49,11 +49,13 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
     var fieldTemplate: [DynamicField] {
         switch self {
         case .login:
+            // Username + Password only. No Website and no One-time Code by default — the
+            // Websites section starts as just an "Add Website" button (tapping it adds the
+            // first field), and TOTP is added explicitly via Add Field (several allowed).
+            // TOTP import appends its own totp field.
             return [
                 DynamicField(label: "Username", kind: .username),
                 DynamicField(label: "Password", kind: .password, protected: true),
-                DynamicField(label: "Website", kind: .url),
-                DynamicField(label: "One-time Code", kind: .totp, protected: true),
             ]
         case .note:
             return [DynamicField(label: "Note", kind: .multiline)]

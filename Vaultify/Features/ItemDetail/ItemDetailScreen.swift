@@ -38,7 +38,10 @@ struct ItemDetailScreen: View {
                 .padding(.top, 80)
             }
         }
-        .appBackground()
+        // Grouped (gray) page background so the white surface cards read as cards — like Home.
+        // `appBackground` uses the plain background, which equals the card color in light mode
+        // (both white), making the cards invisible.
+        .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle(item?.title ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -187,6 +190,10 @@ struct ItemDetailScreen: View {
         }
         .background(VaultColors.surface)
         .vaultCornerRadius(Radius.md)
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
+        )
     }
 
     /// Trashed items can be restored or purged; live items can be moved to Trash.
@@ -224,6 +231,10 @@ struct ItemDetailScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(VaultColors.surface,
                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
+            )
         }
         .buttonStyle(.plain)
     }

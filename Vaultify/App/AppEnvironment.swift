@@ -12,6 +12,9 @@ import SwiftUI
     let cloudSync: CloudSyncService
     let faviconService: FaviconService
     let attachmentStore: AttachmentStore
+    /// Restorable UI state (selected tab, per-tab nav depth, in-progress editor draft),
+    /// sealed under the Vault Key. Saved on background, re-applied after unlock.
+    let uiState: UIStateStore
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
@@ -30,6 +33,7 @@ import SwiftUI
         self.cloudSync = CloudSyncService(store: store, settings: settings)
         self.faviconService = FaviconService()
         self.attachmentStore = AttachmentStore(session: session)
+        self.uiState = UIStateStore(session: session)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache.
@@ -41,6 +45,7 @@ import SwiftUI
     func eraseEverything() {
         repository.clear()
         try? store.eraseAll()
+        uiState.wipe()
         session.resetVault()
     }
 }

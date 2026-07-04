@@ -9,6 +9,7 @@ struct ItemEditorScreen: View {
     /// Space selected on Home). `nil` → fall back to the primary Space.
     let preselectedFolderId: String?
     @Environment(AppEnvironment.self) private var env
+    @Environment(UIStateStore.self) private var uiState
     @Environment(\.dismiss) private var dismiss
 
     @State private var draft: VaultItem
@@ -88,31 +89,40 @@ struct ItemEditorScreen: View {
                 // row width), so zero horizontal inset lines the avatar/title up with them.
                 .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s4, trailing: 0))
 
-                Section("Fields") {
-                    ForEach($draft.fields) { $field in
-                        EditorFieldRow(field: $field,
-                                       onScanTOTP: { scanningFieldID = field.id })
-                    }
-                    .onDelete { draft.fields.remove(atOffsets: $0) }
-                    .onMove { draft.fields.move(fromOffsets: $0, toOffset: $1) }
-
-                    Menu {
-                        ForEach(FieldKind.allCases.filter { $0 != .fileRef }, id: \.self) { kind in
-                            Button {
-                                draft.fields.append(DynamicField(label: kind.defaultLabel, kind: kind))
-                            } label: {
-                                Label { Text(kind.title) } icon: { PolarisIcon(kind.iconAsset) }
-                            }
+                // Login gets grouped sections (Credentials · Websites · Custom · Notes);
+                // other categories keep one flat, reorderable field list.
+                if draft.category == .login {
+                    LoginEditorSections(
+                        draft: $draft,
+                        onScanTOTP: { scanningFieldID = $0 },
+                        onAddAttachment: { showAttachmentPicker = true })
+                } else {
+                    Section("Fields") {
+                        ForEach($draft.fields) { $field in
+                            EditorFieldRow(field: $field,
+                                           onScanTOTP: { scanningFieldID = field.id })
                         }
-                    } label: {
-                        Label { Text("Add Field") } icon: { PolarisIcon(Icons.addCircle) }
-                    }
+                        .onDelete { draft.fields.remove(atOffsets: $0) }
+                        .onMove { draft.fields.move(fromOffsets: $0, toOffset: $1) }
 
-                    Button { showAttachmentPicker = true } label: {
-                        Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
+                        Menu {
+                            ForEach(FieldKind.allCases.filter { $0 != .fileRef }, id: \.self) { kind in
+                                Button {
+                                    draft.fields.append(DynamicField(label: kind.defaultLabel, kind: kind))
+                                } label: {
+                                    Label { Text(kind.title) } icon: { PolarisIcon(kind.iconAsset) }
+                                }
+                            }
+                        } label: {
+                            Label { Text("Add Field") } icon: { PolarisIcon(Icons.addCircle) }
+                        }
+
+                        Button { showAttachmentPicker = true } label: {
+                            Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
+                        }
                     }
+                    .listRowBackground(VaultColors.surface)
                 }
-                .listRowBackground(VaultColors.surface)
 
                 Section("Tags") {
                     TagChipEditor(tags: $draft.tags)
@@ -121,10 +131,11 @@ struct ItemEditorScreen: View {
 
                 RotationReminderSection(rotateDays: $draft.rotateDays)
             }
-            // Dismiss the keyboard when the form is scrolled or an empty area is tapped.
-            // (Field/button taps keep their own handling — children win over this gesture.)
+            // Dismiss the keyboard on scroll. (A Form-level `.onTapGesture` was removed: it
+            // swallowed taps on in-row Buttons — e.g. "Add Website" — so their action never
+            // fired. TextFields/Menus have their own UIKit gestures and still work; scroll
+            // dismissal covers the keyboard.)
             .scrollDismissesKeyboard(.immediately)
-            .onTapGesture { dismissKeyboard() }
             .onAppear {
                 // New items default to the primary Space ("My Vault") so they have
                 // a home; applied once so it never overrides a user's own pick.
@@ -139,8 +150,14 @@ struct ItemEditorScreen: View {
                         original.folderId = target
                     }
                 }
+                ensureLoginNoteField()
                 didApplyDefaultFolder = true
+                captureDraftForRestore()
             }
+            // Keep the restorable snapshot in sync so a kill mid-edit can resume this draft
+            // (sealed under the Vault Key when the app backgrounds). Cleared on dismiss.
+            .onChange(of: draft) { captureDraftForRestore() }
+            .onDisappear { uiState.editorDraft = nil }
             .interactiveDismissDisabled(hasChanges)
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Discard", role: .destructive) { dismiss() }
@@ -286,10 +303,36 @@ struct ItemEditorScreen: View {
         Haptics.success()
     }
 
+    /// Login always shows a Notes section, so guarantee the single `.multiline` note
+    /// field exists. Folds the same instance into `original` too, so opening the editor
+    /// on a note-less login isn't counted as an unsaved change. Idempotent.
+    private func ensureLoginNoteField() {
+        guard draft.category == .login,
+              !draft.fields.contains(where: { $0.kind == .multiline }) else { return }
+        let note = DynamicField(label: "Note", kind: .multiline)
+        draft.fields.append(note)
+        original.fields.append(note)
+    }
+
+    /// Stash the in-progress draft for cross-launch restoration. Only when there's
+    /// something worth resuming (a saveable new item, or any edit of an existing one),
+    /// so a freshly-opened empty "new item" editor isn't re-presented on relaunch.
+    private func captureDraftForRestore() {
+        uiState.editorDraft = (canSave || !isNew)
+            ? UIStateStore.DraftState(item: draft, isNew: isNew)
+            : nil
+    }
+
     private func save() {
         draft.fields.removeAll { $0.isEmpty && $0.label.isEmpty }
         if draft.title.trimmingCharacters(in: .whitespaces).isEmpty {
-            draft.title = draft.fields.first { !$0.isEmpty }?.value ?? String(localized: draft.category.title)
+            if let field = draft.fields.first(where: { !$0.isEmpty }) {
+                // Fall back to the first field's value — but if that's a website, use just the
+                // domain (no scheme/path/www) so the title reads "google.com", not the full URL.
+                draft.title = (field.kind == .url ? FaviconService.host(from: field.value) : nil) ?? field.value
+            } else {
+                draft.title = String(localized: draft.category.title)
+            }
         }
         do {
             if isNew { try env.repository.add(draft) } else { try env.repository.update(draft) }

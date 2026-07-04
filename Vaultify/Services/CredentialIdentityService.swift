@@ -45,14 +45,17 @@ enum CredentialIdentityService {
     static func refresh(items: [VaultItem], passkeys: [PasskeyInfo]) {
         guard !isRunningUnitTests else { return }
         let token = CredentialIdentityRefreshGate.next()
-        let passwordIdentities: [ASPasswordCredentialIdentity] = items.compactMap { item in
+        // One identity per website host, so a login with several websites is suggested
+        // on every one of its domains.
+        let passwordIdentities: [ASPasswordCredentialIdentity] = items.flatMap { item -> [ASPasswordCredentialIdentity] in
             guard item.passwordField?.value.isEmpty == false,
-                  let user = item.usernameField?.value, !user.isEmpty,
-                  let host = item.autofillHost else { return nil }
-            return ASPasswordCredentialIdentity(
-                serviceIdentifier: ASCredentialServiceIdentifier(identifier: host, type: .domain),
-                user: user,
-                recordIdentifier: item.id)
+                  let user = item.usernameField?.value, !user.isEmpty else { return [] }
+            return item.autofillHosts.map { host in
+                ASPasswordCredentialIdentity(
+                    serviceIdentifier: ASCredentialServiceIdentifier(identifier: host, type: .domain),
+                    user: user,
+                    recordIdentifier: item.id)
+            }
         }
         let passkeyIdentities = passkeys.map { $0.credentialIdentity() }
         CredentialIdentityRefreshGate.enqueue {
@@ -77,14 +80,16 @@ enum CredentialIdentityService {
     /// One-time-code identities for items that carry a TOTP secret + a matchable host.
     @available(iOS 18, *)
     private static func oneTimeCodeIdentities(_ items: [VaultItem]) -> [ASOneTimeCodeCredentialIdentity] {
-        items.compactMap { item in
-            guard item.totpField != nil, let host = item.autofillHost else { return nil }
+        items.flatMap { item -> [ASOneTimeCodeCredentialIdentity] in
+            guard item.totpField != nil else { return [] }
             let user = item.usernameField?.value
-            let label = (user?.isEmpty == false) ? user! : (item.title.isEmpty ? host : item.title)
-            return ASOneTimeCodeCredentialIdentity(
-                serviceIdentifier: ASCredentialServiceIdentifier(identifier: host, type: .domain),
-                label: label,
-                recordIdentifier: item.id)
+            return item.autofillHosts.map { host in
+                let label = (user?.isEmpty == false) ? user! : (item.title.isEmpty ? host : item.title)
+                return ASOneTimeCodeCredentialIdentity(
+                    serviceIdentifier: ASCredentialServiceIdentifier(identifier: host, type: .domain),
+                    label: label,
+                    recordIdentifier: item.id)
+            }
         }
     }
 

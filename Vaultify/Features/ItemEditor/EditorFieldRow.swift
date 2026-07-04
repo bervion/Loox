@@ -6,26 +6,18 @@ struct EditorFieldRow: View {
     @Binding var field: DynamicField
     var onScanTOTP: () -> Void = {}
     @FocusState private var valueFocused: Bool
+    @Environment(\.editMode) private var editMode
+
+    private var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
 
     var body: some View {
+        // The field's kind is fixed at creation (chosen from the Add Field popup) — no
+        // in-row type switcher or type icon. Just the (editable) label + the value.
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                TextField("Label", text: localizedLabel)
-                    .font(.caption)
-                    .themedForeground(.secondary)
-                    .textInputAutocapitalization(.words)
-                Spacer()
-                Menu {
-                    Picker("Type", selection: $field.kind) {
-                        ForEach(FieldKind.allCases, id: \.self) { kind in
-                            Label { Text(kind.title) } icon: { PolarisIcon(kind.iconAsset) }.tag(kind)
-                        }
-                    }
-                    Toggle(isOn: $field.protected) { Text("Hidden value") }
-                } label: {
-                    PolarisIcon(field.kind.iconAsset, size: 18).themedForeground(.secondary)
-                }
-            }
+            TextField("Label", text: localizedLabel)
+                .font(.caption)
+                .themedForeground(.secondary)
+                .textInputAutocapitalization(.words)
             valueEditor
         }
         .padding(.vertical, 2)
@@ -62,8 +54,11 @@ struct EditorFieldRow: View {
                         .autocorrectionDisabled()
                         .opacity(showsPlaintext ? 1 : 0)
                     if !showsPlaintext {
+                        // Fixed 16 bullets, identical for password + TOTP, matching the detail
+                        // view's SpoilerText (same count + `.vaultCode()` size) so the mask is
+                        // consistent and never leaks the real length.
                         Text(maskedValue)
-                            .font(field.kind == .totp ? .body : .vaultCode())
+                            .font(.vaultCode())
                             .themedForeground(.primary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -72,9 +67,17 @@ struct EditorFieldRow: View {
                             .accessibilityHidden(true)
                     }
                 }
-                if field.kind == .totp {
+                // Hide the scan-QR button while reordering (edit mode). Large glyph + a full
+                // 44pt hit target so it's easy to tap.
+                if field.kind == .totp && !isEditing {
                     Button(action: onScanTOTP) {
-                        PolarisIcon(Icons.camera, size: 18).foregroundStyle(Color.accentColor)
+                        PolarisIcon(Icons.scanCode, size: 26)
+                            .foregroundStyle(Color.accentColor)
+                            // Trailing-align the glyph inside the 44pt hit target so it sits at
+                            // the row's right edge (lined up with the passkey glyph below), while
+                            // the tap area still extends left.
+                            .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .trailing)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -121,7 +124,7 @@ struct EditorFieldRow: View {
 
     /// Bullet-masked rendering shown when the secret field isn't focused. Capped so a long
     /// secret can't overflow the row.
-    private var maskedValue: String { String(repeating: "•", count: min(field.value.count, 20)) }
+    private var maskedValue: String { String(repeating: "•", count: 16) }
 
     /// Field-specific value placeholder (e.g. password → "Enter password") instead of a
     /// generic "Value", so the empty field hints what to type.

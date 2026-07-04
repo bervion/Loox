@@ -8,17 +8,18 @@ import Combine
 /// bar remains icon-only while VoiceOver still gets localized labels.
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(UIStateStore.self) private var uiState
     @Environment(\.scenePhase) private var scenePhase
-    @State private var selection: VaultTab = .home
     @State private var shakeDetector = ShakeToLockService()
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        tabContent
+        @Bindable var uiState = uiState
+        return tabContent
             .tint(env.theme.uiTint)
             .overlay(alignment: .bottom) { CopyToastOverlay() }
             .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
-            .onChange(of: selection) { _, _ in
+            .onChange(of: uiState.selectedTab) { _, _ in
                 env.session.registerActivity()
             }
             .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
@@ -27,18 +28,25 @@ struct MainTabView: View {
             .onChange(of: env.settings.shakeToLock) { _, _ in updateShakeDetector() }
             .onChange(of: scenePhase) { _, _ in updateShakeDetector() }
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToSearch)) { _ in
-                selection = .search
+                uiState.selectedTab = .search
             }
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
-                selection = .watchtower
+                uiState.selectedTab = .watchtower
             }
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToItems)) { _ in
-                selection = .items
+                uiState.selectedTab = .items
             }
             // Present the editor for a 2FA login imported via otpauth:// (now that we're unlocked).
             .sheet(item: Binding(get: { env.pendingTOTPImport },
                                  set: { env.pendingTOTPImport = $0 })) { item in
                 ItemEditorScreen(target: .draft(item))
+            }
+            // Re-present an unsaved editor draft recovered from a previous launch (one-shot,
+            // separate from the live `editorDraft` capture so a normally-opened editor is never
+            // duplicated). `.edit` preserves the existing item id (a save updates, not
+            // duplicates); `.draft` continues a new item.
+            .sheet(item: $uiState.restoredDraft) { draft in
+                ItemEditorScreen(target: draft.isNew ? .draft(draft.item) : .edit(draft.item))
             }
     }
 
@@ -59,15 +67,16 @@ struct MainTabView: View {
     /// search field lives in the tab bar / above the keyboard). iOS 17.6 falls back
     /// to the classic `.tabItem` bar with Search as an ordinary tab.
     @ViewBuilder private var tabContent: some View {
+        @Bindable var uiState = uiState
         if #available(iOS 18.0, *) {
-            TabView(selection: $selection) {
+            TabView(selection: $uiState.selectedTab) {
                 Tab(value: VaultTab.home) { HomeScreen() } label: { tabIcon(.home) }
                 Tab(value: VaultTab.items) { ItemsScreen() } label: { tabIcon(.items) }
                 Tab(value: VaultTab.watchtower) { WatchtowerScreen() } label: { tabIcon(.watchtower) }
                 Tab(value: VaultTab.search, role: .search) { SearchScreen() } label: { tabIcon(.search) }
             }
         } else {
-            TabView(selection: $selection) {
+            TabView(selection: $uiState.selectedTab) {
                 legacyTab(.home) { HomeScreen() }
                 legacyTab(.items) { ItemsScreen() }
                 legacyTab(.watchtower) { WatchtowerScreen() }
@@ -84,7 +93,7 @@ struct MainTabView: View {
     }
 
     @ViewBuilder private func tabIcon(_ tab: VaultTab) -> some View {
-        Image(uiImage: tabImage(selection == tab ? tab.iconSelected : tab.icon))
+        Image(uiImage: tabImage(uiState.selectedTab == tab ? tab.iconSelected : tab.icon))
             .renderingMode(.template)
             .accessibilityLabel(Text(tab.accessibilityLabel))
     }

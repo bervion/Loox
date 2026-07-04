@@ -20,6 +20,10 @@ nonisolated enum TOTPImport {
 
         var fields = ItemCategory.login.fieldTemplate
         if let i = fields.firstIndex(where: { $0.kind == .username }) { fields[i].value = account }
+        // The login template no longer carries a TOTP field by default — add one for the import.
+        if !fields.contains(where: { $0.kind == .totp }) {
+            fields.append(DynamicField(label: "One-time Code", kind: .totp, protected: true))
+        }
         if let i = fields.firstIndex(where: { $0.kind == .totp }) { fields[i].value = url.absoluteString }
 
         // Issuer is the natural title; fall back to the account. If both are empty (rare malformed

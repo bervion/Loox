@@ -7,7 +7,7 @@ import SwiftUI
 /// and Watchtower) so the glass blurs whatever scrolls beneath it.
 struct ItemsScreen: View {
     @Environment(AppEnvironment.self) private var env
-    @State private var path = NavigationPath()
+    @Environment(UIStateStore.self) private var uiState
     @State private var creatingSpace = false
     @State private var editorTarget: EditorTarget?
     @State private var scrolledUnder = false
@@ -18,7 +18,8 @@ struct ItemsScreen: View {
     private var tags: [(tag: String, count: Int)] { env.repository.allTags() }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        @Bindable var uiState = uiState
+        return NavigationStack(path: $uiState.itemsPath) {
             ZStack(alignment: .top) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s6) {

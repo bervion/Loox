@@ -1,0 +1,127 @@
+import SwiftUI
+
+/// Live source of truth for restorable UI state — the selected tab, each tab's
+/// navigation depth, and any in-progress (unsaved) editor draft.
+///
+/// The snapshot is sealed with the **Vault Key** (AES-256-GCM) and written to the
+/// app's Documents directory with complete file protection, so nav metadata (item
+/// ids, folder ids) and unsaved secret drafts never touch plaintext storage. It is
+/// saved on background (before the vault locks, while the key is still in memory)
+/// and re-applied after the next unlock.
+@MainActor @Observable final class UIStateStore {
+    /// A pending editor draft captured while the item editor was open. `isNew`
+    /// distinguishes a create (→ `.draft`) from an edit of an existing item (→ `.edit`).
+    struct DraftState: Codable, Identifiable, Equatable {
+        var item: VaultItem
+        var isNew: Bool
+        var id: String { item.id }
+    }
+
+    var selectedTab: VaultTab = .home
+    var homePath = NavigationPath()
+    var itemsPath = NavigationPath()
+    var searchPath = NavigationPath()
+    var watchtowerPath = NavigationPath()
+    /// Live capture of the currently-open editor's draft, for the snapshot only.
+    /// NOT a presentation trigger — the editor is already on screen when this is set.
+    var editorDraft: DraftState?
+    /// One-shot presentation trigger for a draft recovered from a previous launch.
+    /// Set only by `restore()`; `MainTabView` binds a sheet to it. Kept separate from
+    /// `editorDraft` so capturing a normally-opened editor never re-presents a duplicate.
+    var restoredDraft: DraftState?
+
+    private let session: VaultSession
+    /// Restore runs at most once per process launch. A warm re-lock (foreground
+    /// inactivity / shake) leaves this store's live values intact, so re-applying the
+    /// on-disk snapshot there would wrongly rewind the user; only a cold launch (fresh
+    /// store, default values) should adopt the snapshot.
+    private var hasRestored = false
+
+    init(session: VaultSession) {
+        self.session = session
+    }
+
+    // MARK: Snapshot model
+
+    /// Codable on-disk form. Each path is the JSON of `NavigationPath.CodableRepresentation`
+    /// (nil when the path holds a non-Codable element, e.g. Watchtower's category — that
+    /// depth simply isn't restored, which is acceptable for a report screen).
+    private struct Snapshot: Codable {
+        var selectedTab: Int
+        var homePath: Data?
+        var itemsPath: Data?
+        var searchPath: Data?
+        var watchtowerPath: Data?
+        var draft: DraftState?
+    }
+
+    // MARK: Persist / restore
+
+    /// Seal the current UI state under the Vault Key. No-op when locked (no key).
+    /// Call this BEFORE `session.lock()` on background so the key is still present.
+    func persist() {
+        guard let key = session.vaultKey else { return }
+        let snapshot = Snapshot(
+            selectedTab: selectedTab.rawValue,
+            homePath: Self.encode(homePath),
+            itemsPath: Self.encode(itemsPath),
+            searchPath: Self.encode(searchPath),
+            watchtowerPath: Self.encode(watchtowerPath),
+            draft: editorDraft)
+        guard let plaintext = try? JSONEncoder().encode(snapshot),
+              let sealed = try? AESGCM.seal(plaintext, key: key) else { return }
+        try? sealed.write(to: Self.fileURL, options: [.atomic, .completeFileProtection])
+    }
+
+    /// Decrypt and apply the last snapshot. No-op when locked or when nothing was saved.
+    func restore() {
+        guard !hasRestored else { return }
+        hasRestored = true
+        guard let key = session.vaultKey,
+              let sealed = try? Data(contentsOf: Self.fileURL),
+              let plaintext = try? AESGCM.open(sealed, key: key),
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: plaintext) else { return }
+        selectedTab = VaultTab(rawValue: snapshot.selectedTab) ?? .home
+        homePath = Self.decode(snapshot.homePath)
+        itemsPath = Self.decode(snapshot.itemsPath)
+        searchPath = Self.decode(snapshot.searchPath)
+        watchtowerPath = Self.decode(snapshot.watchtowerPath)
+        // Present via the one-shot trigger; the presented editor re-populates
+        // `editorDraft` (via its capture) so a re-background keeps persisting it.
+        editorDraft = snapshot.draft
+        restoredDraft = snapshot.draft
+    }
+
+    /// Drop in-memory state and delete the on-disk snapshot (vault erase / reset).
+    func wipe() {
+        selectedTab = .home
+        homePath = NavigationPath()
+        itemsPath = NavigationPath()
+        searchPath = NavigationPath()
+        watchtowerPath = NavigationPath()
+        editorDraft = nil
+        restoredDraft = nil
+        try? FileManager.default.removeItem(at: Self.fileURL)
+    }
+
+    // MARK: Helpers
+
+    private static let fileURL: URL = {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return docs.appendingPathComponent("ui-state.enc")
+    }()
+
+    private static func encode(_ path: NavigationPath) -> Data? {
+        guard let representation = path.codable else { return nil }
+        return try? JSONEncoder().encode(representation)
+    }
+
+    private static func decode(_ data: Data?) -> NavigationPath {
+        guard let data,
+              let representation = try? JSONDecoder().decode(
+                NavigationPath.CodableRepresentation.self, from: data) else {
+            return NavigationPath()
+        }
+        return NavigationPath(representation)
+    }
+}

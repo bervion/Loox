@@ -18,6 +18,7 @@ enum WatchtowerCategory: Hashable {
 ///   → All-clear state when issueCount == 0
 struct WatchtowerScreen: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(UIStateStore.self) private var uiState
 
     @State private var health = VaultHealth.empty
     @State private var pwned: [VaultIssue] = []
@@ -43,7 +44,8 @@ struct WatchtowerScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        @Bindable var uiState = uiState
+        return NavigationStack(path: $uiState.watchtowerPath) {
             ZStack(alignment: .top) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {

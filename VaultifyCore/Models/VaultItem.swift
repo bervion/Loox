@@ -1,7 +1,7 @@
 import Foundation
 
 /// Fully-decoded vault item held in memory while the vault is unlocked.
-nonisolated struct VaultItem: Identifiable, Equatable, Sendable {
+nonisolated struct VaultItem: Identifiable, Equatable, Codable, Sendable {
     var id: String
     var category: ItemCategory
     var title: String

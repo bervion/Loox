@@ -236,8 +236,7 @@ import UserNotifications
                 rotateDays: item.rotateDays,
                 passwordChangedAt: item.passwordChangedAt,
                 createdAt: item.createdAt)
-            let isWeak = (item.passwordField.map { PasswordStrength.evaluate($0.value) } ?? .strong) == .weak
-            let reason = RotationStatus.attentionReason(status: status, isWeak: isWeak)
+            let reason = RotationStatus.attentionReason(status: status, isWeak: item.hasWeakPassword)
             switch reason {
             case .overdue:  ranked.append((item, 0))
             case .weak:     ranked.append((item, 1))

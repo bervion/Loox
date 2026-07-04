@@ -55,7 +55,9 @@ struct DetailFieldRow: View {
         .onTapGesture { copy() }
         .animation(.easeOut(duration: 0.18), value: copied)
         .fullScreenCover(isPresented: $showLargeType) {
-            LargeTypeView(text: copyValue, totpSecret: totpSecret)
+            // For a TOTP field, drive the grid live from the secret + show a header ring.
+            LargeTypeView(text: copyValue, totpSecret: totpSecret,
+                          liveTOTPSecret: field.kind == .totp ? field.value : nil)
         }
         .sheet(isPresented: $showProtect) {
             ProtectFieldSheet(field: field, onProtected: onChange)
@@ -96,7 +98,8 @@ struct DetailFieldRow: View {
             }
             if field.kind == .totp {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    CountdownRing(remaining: TOTPGenerator.secondsRemaining(date: context.date), period: 30)
+                    CountdownRing(remaining: TOTPGenerator.secondsRemaining(date: context.date),
+                                  period: 30, onAccent: copied)
                 }
             }
             menu

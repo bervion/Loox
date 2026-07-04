@@ -35,6 +35,9 @@ struct RootView: View {
         .onChange(of: env.session.state) { _, newState in
             if newState == .unlocked {
                 env.repository.reload()
+                // Re-apply the last screen/tab/draft now that the vault (and its key) is
+                // available — after reload so restored nav can resolve item ids.
+                env.uiState.restore()
                 env.syncNow()
             } else {
                 env.repository.clear()
@@ -66,6 +69,9 @@ struct RootView: View {
         case .background:
             obscured = true
             env.session.markBackgrounded()
+            // Save the last screen/tab/draft while the Vault Key is still in memory —
+            // MUST run before the lock below drops it (and tears down the UI).
+            env.uiState.persist()
             // Lock instantly (no animation): the app is backgrounded and covered, so the
             // lock screen should simply *be there* on return — not visibly cross-fade in from
             // the unlocked UI. Animating this route change is what made the return to the

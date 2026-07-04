@@ -49,3 +49,14 @@ nonisolated enum PasswordStrength: Int, Sendable, Comparable, CaseIterable {
         return .strong
     }
 }
+
+extension VaultItem {
+    /// True only when the item has a real (non-empty) password that scores weak.
+    /// An empty or absent password is NOT weak — there's nothing to strengthen yet, so
+    /// it must not raise a "weak password" flag on Home / Watchtower. (`evaluate("")`
+    /// returns `.weak` for zero entropy, hence the explicit empty check here.)
+    var hasWeakPassword: Bool {
+        guard let value = passwordField?.value, !value.isEmpty else { return false }
+        return PasswordStrength.evaluate(value) == .weak
+    }
+}

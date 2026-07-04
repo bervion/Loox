@@ -82,6 +82,8 @@ enum Icons {
     static let exportData = "ic_export"
     static let language = "ic_language"
     static let passkey = "ic_passkey"
+    static let personLockFilled = "ic_person_lock_filled"
+    static let scanCode = "ic_shopcodes"
     static let sync = "ic_refresh"
     static let person = "ic_person"
     static let mail = "ic_mail"

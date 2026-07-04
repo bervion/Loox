@@ -5,11 +5,13 @@ import SwiftUI
 /// above the keyboard on iOS 26). Activating the search field on appear means both
 /// the tab-bar search and the Home header magnifier drop straight into search.
 struct SearchScreen: View {
+    @Environment(UIStateStore.self) private var uiState
     @State private var search = ""
     @State private var searchPresented = false
 
     var body: some View {
-        NavigationStack {
+        @Bindable var uiState = uiState
+        return NavigationStack(path: $uiState.searchPath) {
             SearchResultsList(query: search)
                 .navigationTitle("Search")
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")

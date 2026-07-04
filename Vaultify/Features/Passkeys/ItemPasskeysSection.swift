@@ -30,6 +30,10 @@ struct ItemPasskeysSection: View {
                 }
                 .background(VaultColors.surface)
                 .vaultCornerRadius(Radius.md)
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .strokeBorder(Color.white, lineWidth: 1)
+                )
             }
             .sheet(item: $selected) { PasskeyDetailSheet(passkey: $0) }
         }
@@ -37,24 +41,30 @@ struct ItemPasskeysSection: View {
 
     private func row(_ passkey: PasskeyInfo) -> some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(Icons.passkey, size: Metric.iconInline)
-                .themedForeground(.secondary)
-                .frame(width: Metric.iconUtility, height: Metric.iconUtility)
             VStack(alignment: .leading, spacing: 2) {
                 Text(passkey.userName)
                     .vaultType(.body)
                     .themedForeground()
                     .lineLimit(1)
-                Text(passkey.relyingParty)
+                Text("Created \(passkey.createdAt.formatted(date: .abbreviated, time: .omitted))")
                     .vaultType(.caption)
                     .themedForeground(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: Space.s2)
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            PolarisIcon(Icons.personLockFilled, size: 22).foregroundStyle(Self.passkeyPurple)
         }
         .padding(.horizontal, Space.gutter)
         .padding(.vertical, Space.s3)
+        // Soft purple wash toward the trailing glyph (detail view only).
+        .background(
+            LinearGradient(
+                colors: [.clear, Self.passkeyPurple.opacity(0.22)],
+                startPoint: .center, endPoint: .trailing)
+        )
         .contentShape(.rect)
     }
+
+    /// Conventional passkey purple (violet), used only in the detail view.
+    private static let passkeyPurple = Color(rgb: 0x8B5CF6)
 }
