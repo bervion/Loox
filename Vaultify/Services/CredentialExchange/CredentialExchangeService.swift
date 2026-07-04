@@ -1,4 +1,5 @@
-#if compiler(>=6.2)
+// See CredentialExchangeMapping: this dormant feature stays iOS-only (macOS needs macOS 26).
+#if compiler(>=6.2) && os(iOS)
 import AuthenticationServices
 import Foundation
 

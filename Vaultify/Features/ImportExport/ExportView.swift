@@ -76,7 +76,7 @@ struct ExportView: View {
         }
         .themedFormBackground()
         .navigationTitle("Export")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .overlay { if working { ProgressView().controlSize(.large) } }
     }
 

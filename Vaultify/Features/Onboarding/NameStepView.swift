@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// First-run step that collects a display name + optional email. The flow seeds the
 /// mandatory default identity and a "Loox Account" login from them.
@@ -58,7 +57,7 @@ struct NameStepView: View {
     /// Prominent field — mirrors `RevealableSecureField`'s onboarding style
     /// (accent icon tile + white card + soft shadow), but plain (non-secure) text.
     private func field(_ icon: String, _ placeholder: LocalizedStringKey, text: Binding<String>,
-                       id: FieldID, contentType: UITextContentType, keyboard: UIKeyboardType,
+                       id: FieldID, contentType: PlatformTextContentType, keyboard: PlatformKeyboardType,
                        submit: SubmitLabel) -> some View {
         HStack(spacing: Space.s2) {
             PolarisIcon(icon, size: Metric.iconInline)
@@ -67,9 +66,9 @@ struct NameStepView: View {
                 .background(Color(rgb: theme.accentSoft),
                             in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
             TextField(placeholder, text: text)
-                .textContentType(contentType)
-                .keyboardType(keyboard)
-                .textInputAutocapitalization(id == .email ? .never : .words)
+                .platformTextContentType(contentType)
+                .platformKeyboardType(keyboard)
+                .platformAutocapitalization(id == .email ? .never : .words)
                 .autocorrectionDisabled(id == .email)
                 .submitLabel(submit)
                 .focused($focus, equals: id)
@@ -86,7 +85,6 @@ struct NameStepView: View {
 
     /// Resign the first responder so the keyboard hides (on scroll / tap-outside).
     private func dismissKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        PlatformAppearance.dismissKeyboard()
     }
 }

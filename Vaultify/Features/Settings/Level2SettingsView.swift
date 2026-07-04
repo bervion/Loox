@@ -47,7 +47,7 @@ struct Level2SettingsView: View {
         }
         .themedFormBackground()
         .navigationTitle("Extra Protection")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(hasLevel2 ? "Change" : "Set") { Task { await submit() } }.disabled(!canSubmit)

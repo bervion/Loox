@@ -49,7 +49,7 @@ struct SyncSettingsView: View {
         }
         .themedFormBackground()
         .navigationTitle("iCloud Sync")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 
     @ViewBuilder private var statusRow: some View {

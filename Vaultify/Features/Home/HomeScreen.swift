@@ -72,7 +72,7 @@ struct HomeScreen: View {
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .task { recomputeWatchtowerCount() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }

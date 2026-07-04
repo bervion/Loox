@@ -42,7 +42,7 @@ struct PasskeysScreen: View {
         }
         .themedFormBackground()
         .navigationTitle("Passkeys")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(item: $selected) { PasskeyDetailSheet(passkey: $0) }
     }
 

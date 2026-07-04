@@ -1,4 +1,4 @@
-import UIKit
+import CoreGraphics
 
 /// CPU rasterizer for the mesh gradient — ported faithfully from Telegram's
 /// `generateGradient` (swirl transform + radial-basis cubic weighting + optional
@@ -8,7 +8,7 @@ import UIKit
 nonisolated enum MeshGradientRenderer {
     /// Render one mesh frame. `colors` and `positions` must be the same count
     /// (typically 4). `saturation` is a multiplier (1.0 = unchanged, ~1.7 = boosted).
-    static func image(size: Int = 80, colors: [UInt32], positions: [CGPoint], saturation: Double = 1.0) -> UIImage? {
+    static func image(size: Int = 80, colors: [UInt32], positions: [CGPoint], saturation: Double = 1.0) -> PlatformImage? {
         guard !colors.isEmpty, colors.count == positions.count else { return nil }
 
         let width = size, height = size
@@ -63,7 +63,9 @@ nonisolated enum MeshGradientRenderer {
             }
         }
 
-        return ctx.makeImage().map { UIImage(cgImage: $0) }
+        return ctx.makeImage().map {
+            PlatformImage.fromCGImage($0, pixelSize: CGSize(width: width, height: height))
+        }
     }
 
     private static func clamp(_ v: Double) -> Double { min(1.0, max(0.0, v)) }

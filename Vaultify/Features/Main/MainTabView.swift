@@ -1,5 +1,8 @@
 import SwiftUI
 import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// The unlocked app shell: Home · Items · Watchtower · Search.
 ///
@@ -93,11 +96,21 @@ struct MainTabView: View {
     }
 
     @ViewBuilder private func tabIcon(_ tab: VaultTab) -> some View {
-        Image(uiImage: tabImage(uiState.selectedTab == tab ? tab.iconSelected : tab.icon))
+        let name = uiState.selectedTab == tab ? tab.iconSelected : tab.icon
+        #if canImport(UIKit)
+        Image(uiImage: tabImage(name))
             .renderingMode(.template)
             .accessibilityLabel(Text(tab.accessibilityLabel))
+        #else
+        // macOS sizes the native TabView icon from the SwiftUI Image directly (no
+        // intrinsic-size rasterization quirk like iOS's UIKit-backed tab bar).
+        Image(name)
+            .renderingMode(.template)
+            .accessibilityLabel(Text(tab.accessibilityLabel))
+        #endif
     }
 
+    #if canImport(UIKit)
     /// The native tab bar sizes a custom template image by its **intrinsic** size and ignores
     /// any SwiftUI `.frame`. The Polaris assets are a 20pt square, so re-render each into a
     /// UIImage at `Metric.iconTab` — the size the bar actually honours (verified: an SF Symbol
@@ -110,5 +123,6 @@ struct MainTabView: View {
         }
         return rendered.withRenderingMode(.alwaysTemplate)
     }
+    #endif
 
 }

@@ -37,7 +37,7 @@ struct ChangeMasterPasswordView: View {
         }
         .themedFormBackground()
         .navigationTitle("Change Master Password")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { Task { await change() } }.disabled(!canSubmit)

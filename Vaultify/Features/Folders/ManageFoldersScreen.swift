@@ -34,14 +34,17 @@ struct ManageFoldersScreen: View {
         }
         .themedFormBackground()
         .navigationTitle("Spaces")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .platformPrimaryAction) {
                 Button { creating = true } label: { PolarisIcon(Icons.add, size: Metric.iconUtility) }
             }
+            #if os(iOS)
+            // EditButton drives list edit mode (reorder) — iOS-only; macOS has no edit mode.
             if !env.repository.folders.isEmpty {
                 ToolbarItem(placement: .topBarLeading) { EditButton() }
             }
+            #endif
         }
         .sheet(isPresented: $creating) { FolderEditorSheet(folder: nil) }
         .sheet(item: $editorFolder) { FolderEditorSheet(folder: $0) }

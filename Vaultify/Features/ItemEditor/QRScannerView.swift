@@ -1,4 +1,6 @@
 import SwiftUI
+
+#if os(iOS)
 import UIKit
 import AVFoundation
 
@@ -100,3 +102,28 @@ final class QRScannerController: UIViewController, AVCaptureMetadataOutputObject
         }
     }
 }
+
+#else
+
+/// macOS has no camera scanner in this app (iPad/iPhone-only capture flow).
+/// Callers (`TOTPScannerSheet`) still offer photo import + manual paste on macOS,
+/// so this is a simple placeholder over the same black backdrop the iOS camera
+/// preview uses — not a functional gap, since the manual paths remain live.
+struct QRScannerView: View {
+    var onFound: (String) -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Scan on iPhone")
+                .font(.headline)
+                .foregroundStyle(.white)
+            Text("Use a photo or paste the setup key below instead.")
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+    }
+}
+
+#endif

@@ -19,13 +19,13 @@ struct FolderItemsScreen: View {
         List {
             ForEach(items) { VaultItemRowLink(item: $0, showSpace: false) }
         }
-        .listStyle(.insetGrouped)
+        .platformInsetGroupedListStyle()
         .themedFormBackground()
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .tint(folder?.color.tint)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .platformPrimaryAction) {
                 Menu {
                     Picker("Sort", selection: $sort) {
                         ForEach(VaultSort.allCases) { Text($0.label).tag($0) }

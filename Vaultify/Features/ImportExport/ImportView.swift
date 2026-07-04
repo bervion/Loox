@@ -70,7 +70,7 @@ struct ImportView: View {
         }
         .themedFormBackground()
         .navigationTitle("Import")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .overlay { if working { ProgressView().controlSize(.large) } }
         .fileImporter(isPresented: $showPicker,
                       allowedContentTypes: [.commaSeparatedText, .json, .plainText, .data],

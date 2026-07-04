@@ -85,7 +85,7 @@ struct WatchtowerScreen: View {
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .themedWallpaper(env.theme.wallpaper,
                              fallback: Color(rgb: env.theme.active.groupedBackground))
-            .toolbar(.hidden, for: .navigationBar)
+            .platformHiddenNavigationBar()
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
             .navigationDestination(for: String.self) { itemID in

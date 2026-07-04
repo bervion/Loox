@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 // Small UI helpers bridging the theme core to SwiftUI controls.
 
@@ -8,7 +7,12 @@ extension Color {
     /// `ColorPicker`).
     var themeRGB: UInt32 {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
+        #if canImport(UIKit)
+        PlatformColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
+        #elseif canImport(AppKit)
+        (PlatformColor(self).usingColorSpace(.deviceRGB) ?? PlatformColor(self))
+            .getRed(&r, green: &g, blue: &b, alpha: &a)
+        #endif
         func ch(_ v: CGFloat) -> UInt32 { UInt32((max(0, min(1, v)) * 255).rounded()) }
         return (ch(r) << 16) | (ch(g) << 8) | ch(b)
     }

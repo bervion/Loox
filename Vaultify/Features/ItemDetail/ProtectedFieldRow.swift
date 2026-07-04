@@ -46,7 +46,7 @@ struct ProtectedFieldRow: View {
             CodePromptSheet(title: "Field Code", message: "Enter this field's code to reveal it.",
                             confirmLabel: "Reveal", onSubmit: revealCustom)
         }
-        .fullScreenCover(isPresented: $showLargeType) { LargeTypeView(text: plaintext ?? "") }
+        .platformFullScreenCover(isPresented: $showLargeType) { LargeTypeView(text: plaintext ?? "") }
     }
 
     @ViewBuilder private var value: some View {

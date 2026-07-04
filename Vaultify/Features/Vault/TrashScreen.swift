@@ -40,10 +40,10 @@ struct TrashScreen: View {
         }
         .themedFormBackground()
         .navigationTitle("Recently Deleted")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !env.repository.trashed.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .platformPrimaryAction) {
                     Button("Empty", role: .destructive) { confirmEmpty = true }
                 }
             }

@@ -63,7 +63,7 @@ struct ItemsScreen: View {
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }

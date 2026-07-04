@@ -12,12 +12,12 @@ struct TagItemsScreen: View {
         List {
             ForEach(items) { VaultItemRowLink(item: $0) }
         }
-        .listStyle(.insetGrouped)
+        .platformInsetGroupedListStyle()
         .themedFormBackground()
         .navigationTitle("#\(tag)")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .platformPrimaryAction) {
                 Menu {
                     Picker("Sort", selection: $sort) {
                         ForEach(VaultSort.allCases) { Text($0.label).tag($0) }

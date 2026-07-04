@@ -81,7 +81,7 @@ private struct QuickActionCardSurface: ViewModifier {
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(.regular.tint(fill).interactive(), in: shape)
         } else {
             content.background(fill, in: shape)
@@ -100,7 +100,7 @@ private struct GlyphBadgeSurface: ViewModifier {
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(.regular, in: shape)
         } else {
             content.background(Color.black.opacity(0.18), in: shape)
@@ -122,7 +122,7 @@ struct VaultGlassGroup<Content: View>: View {
 
     var body: some View {
         #if compiler(>=6.2)
-        if #available(iOS 26, *) {
+        if #available(iOS 26, macOS 26, *) {
             GlassEffectContainer { content }
         } else {
             content

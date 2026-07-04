@@ -18,6 +18,6 @@ struct WatchtowerCategoryScreen: View {
         .scrollContentBackground(.hidden)
         .themedFormBackground()
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 }

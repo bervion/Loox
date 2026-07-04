@@ -1,11 +1,10 @@
 import SwiftUI
-import UIKit
 
-/// Copies values to the system pasteboard. Sensitive values auto-expire after
-/// the user's configured delay using the pasteboard's own `expirationDate` —
-/// the OS removes the item even if the app is suspended or killed, and only the
-/// item we set is affected. Universal Clipboard is allowed so paste works on the
-/// user's other devices; the auto-expiry still bounds exposure.
+/// Copies values to the system pasteboard via `PlatformPasteboard`. Sensitive values
+/// auto-expire after the user's configured delay: on iOS the OS removes the item even
+/// if the app is suspended or killed (`UIPasteboard.expirationDate`); on macOS the item
+/// is marked concealed and cleared on a timer / app resign / terminate (best-effort,
+/// see `PlatformPasteboard`).
 @MainActor @Observable final class ClipboardService {
     private let settings: SettingsStore
     @ObservationIgnored private var toastTask: Task<Void, Never>?
@@ -17,11 +16,11 @@ import UIKit
 
     func copy(_ value: String, label: String? = nil, sensitive: Bool = true) {
         let seconds = settings.clipboardClearSeconds
-        var options: [UIPasteboard.OptionsKey: Any] = [:]
-        if sensitive, seconds > 0 {
-            options[.expirationDate] = Date().addingTimeInterval(TimeInterval(seconds))
+        if sensitive {
+            PlatformPasteboard.copySensitive(value, clearAfter: seconds > 0 ? TimeInterval(seconds) : 0)
+        } else {
+            PlatformPasteboard.copyPlain(value)
         }
-        UIPasteboard.general.setItems([["public.utf8-plain-text": value]], options: options)
 
         recentCopyLabel = label ?? "Copied"
         scheduleToastDismiss()

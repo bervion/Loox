@@ -1,5 +1,10 @@
 import SwiftUI
+import Foundation
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Observable, UI-facing wrapper over the shared theme core. Owns the live
 /// `ThemeSettings`, resolves the active `AppTheme`, and persists changes to the App
@@ -28,7 +33,11 @@ import UIKit
             loaded.autoNight = .off
             ThemeReader.save(loaded)
         }
+        #if canImport(UIKit)
         let dark = UITraitCollection.current.userInterfaceStyle == .dark
+        #elseif canImport(AppKit)
+        let dark = NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        #endif
         self.settings = loaded
         self.systemIsDark = dark
         self.active = ThemePalette.resolve(loaded, systemIsDark: dark, brightness: 1.0)
@@ -65,23 +74,21 @@ import UIKit
     /// explicitly (toggles via `.tint(VaultColors.accent)`).
     var uiTint: Color { Color(rgb: active.isDark ? active.primaryText : active.accent) }
 
-    /// UIKit interface style for the whole window — incl. presented sheets, which a
+    /// Cross-platform interface style for the whole app — incl. presented sheets, which a
     /// SwiftUI `.preferredColorScheme` on the root does NOT reliably reach (so a sheet
     /// can stay dark on a light theme → invisible system text + dark sheet background).
-    var interfaceStyle: UIUserInterfaceStyle {
+    var interfaceStyle: PlatformAppearance.Style {
         switch settings.autoNight {
         case .system: return .unspecified
         case .off, .time, .brightness: return active.isDark ? .dark : .light
         }
     }
 
-    /// Force every window in the active scene to the theme's light/dark, so sheets and
-    /// the system chrome match the rendered theme. Called on theme change + on appear.
+    /// Force every window (iOS) / the whole app (macOS) to the theme's light/dark, so
+    /// sheets and the system chrome match the rendered theme. Called on theme change +
+    /// on appear.
     func applyInterfaceStyle() {
-        let style = interfaceStyle
-        for scene in UIApplication.shared.connectedScenes {
-            (scene as? UIWindowScene)?.windows.forEach { $0.overrideUserInterfaceStyle = style }
-        }
+        PlatformAppearance.forceInterfaceStyle(interfaceStyle)
     }
 
     // MARK: - System input

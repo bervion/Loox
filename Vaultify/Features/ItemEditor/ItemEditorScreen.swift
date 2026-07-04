@@ -1,5 +1,5 @@
 import SwiftUI
-import UIKit
+import Foundation
 
 /// Create or edit an item: title + dynamic fields (add/remove/reorder, change
 /// kind, toggle protection, generate passwords). Presented as a sheet.
@@ -171,7 +171,7 @@ struct ItemEditorScreen: View {
                 }
             }
             // Full-screen (not a sheet): the camera preview deserves the whole screen.
-            .fullScreenCover(item: Binding(get: { scanningFieldID.map { GeneratorRequest(id: $0) } },
+            .platformFullScreenCover(item: Binding(get: { scanningFieldID.map { GeneratorRequest(id: $0) } },
                                            set: { scanningFieldID = $0?.id })) { request in
                 TOTPScannerSheet { secret in
                     if let index = draft.fields.firstIndex(where: { $0.id == request.id }) {
@@ -283,8 +283,7 @@ struct ItemEditorScreen: View {
 
     /// Resign the first responder so the keyboard hides (on scroll / tap-outside).
     private func dismissKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        PlatformAppearance.dismissKeyboard()
     }
 
     /// The folder the draft item currently belongs to, if any.
@@ -387,17 +386,21 @@ private struct GeneratorRequest: Identifiable { let id: String }
 private struct EditorHeaderActions: View {
     let canSave: Bool
     let save: () -> Void
+    #if os(iOS)
     @Environment(\.editMode) private var editMode
-
     private var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
+    #endif
 
     var body: some View {
         HStack(spacing: 0) {
+            #if os(iOS)
+            // Field reorder is driven by list edit mode — iOS-only (macOS has no edit mode).
             HeaderIconButton(Icons.layoutSection,
                              role: isEditing ? .accent : .iconPrimary,
                              accessibilityLabel: "Edit") {
                 withAnimation { editMode?.wrappedValue = isEditing ? .inactive : .active }
             }
+            #endif
             HeaderIconButton(Icons.check, role: .accent, accessibilityLabel: "Save", action: save)
                 .disabled(!canSave)
                 .opacity(canSave ? 1 : 0.4)

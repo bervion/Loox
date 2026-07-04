@@ -53,7 +53,7 @@ struct ThemeEditorView: View {
         .themedFormBackground()
         .navigationTitle(editingID == nil ? "New Theme" : "Edit Theme")
         .themedColorScheme()
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button { dismiss() } label: { Text("Cancel") }

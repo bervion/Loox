@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// Master-password creation step. Enforces a minimum length and confirmation,
 /// shows live strength, and warns that the password cannot be recovered.
@@ -89,8 +88,7 @@ struct CreateMasterPasswordView: View {
 
     /// Resign the first responder so the keyboard hides (on scroll / tap-outside).
     private func dismissKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        PlatformAppearance.dismissKeyboard()
     }
 
     private func submit() async {

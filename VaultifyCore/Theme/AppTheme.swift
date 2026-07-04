@@ -2,7 +2,7 @@ import Foundation
 
 /// Resolved, immutable semantic palette for one active appearance. Generic app
 /// chrome only — no chat. Colors are packed `0xRRGGBB`; convert at the UI edge with
-/// `Color(rgb:)` / `UIColor(rgb:)`. Built by `BuiltinThemes`, recolored by accent.
+/// `Color(rgb:)` / `PlatformColor(rgb:)`. Built by `BuiltinThemes`, recolored by accent.
 nonisolated struct AppTheme: Sendable, Equatable {
     var reference: AppThemeReference
     var isDark: Bool

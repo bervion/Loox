@@ -1,5 +1,5 @@
 import SwiftUI
-import UIKit
+import Foundation
 
 /// Shows a website's favicon (login item avatar) when available + enabled,
 /// falling back to the tinted category badge.
@@ -12,7 +12,7 @@ struct FaviconView: View {
     var title: String? = nil
 
     @Environment(AppEnvironment.self) private var env
-    @State private var image: UIImage?
+    @State private var image: PlatformImage?
 
     private var isBrandLoox: Bool {
         title?.range(of: "loox", options: .caseInsensitive) != nil
@@ -24,13 +24,13 @@ struct FaviconView: View {
                 LooxAppIcon(size: size)
             } else if let image {
                 let shape = RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                Image(uiImage: image)
+                Image(platformImage: image)
                     .resizable()
                     .scaledToFit()
                     .padding(size * 0.16)
                     .frame(width: size, height: size)
                     .background(Self.tileColor, in: shape)
-                    .overlay(shape.strokeBorder(Color(.separator).opacity(0.6), lineWidth: 0.5))
+                    .overlay(shape.strokeBorder(Color.platformSeparator.opacity(0.6), lineWidth: 0.5))
                     // Soft shadow lifts the white tile off the near-white card in light mode;
                     // invisible (and harmless) on the dark card. compositingGroup so the shadow
                     // traces the tile silhouette, not each child view.
@@ -48,9 +48,7 @@ struct FaviconView: View {
     /// off-white to tame the glare; light mode keeps pure white and leans on the border +
     /// shadow to separate from the near-white card. (Favicon surfaces are exempt from the
     /// no-raw-white rule by design.)
-    private static let tileColor = Color(uiColor: UIColor { trait in
-        trait.userInterfaceStyle == .dark ? UIColor(white: 0.90, alpha: 1) : .white
-    })
+    private static let tileColor = Color.platformDynamic(light: 0xFFFFFF, dark: 0xE6E6E6)
 
     private func load() async {
         guard env.settings.showWebsiteIcons,
@@ -76,6 +74,6 @@ struct LooxAppIcon: View {
                 LinearGradient(colors: [Color(rgb: 0x1544FD), Color(rgb: 0x20BDFD)],
                                startPoint: .topLeading, endPoint: .bottomTrailing),
                 in: shape)
-            .overlay(shape.strokeBorder(Color(.separator).opacity(0.5), lineWidth: 0.5))
+            .overlay(shape.strokeBorder(Color.platformSeparator.opacity(0.5), lineWidth: 0.5))
     }
 }

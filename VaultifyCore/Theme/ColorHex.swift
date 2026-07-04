@@ -1,19 +1,9 @@
 import SwiftUI
-import UIKit
 
 // Packed 0xRRGGBB color helpers + pure color math shared by the theme engine
 // (compiled into both the app and the AutoFill extension). Theme colors are stored
-// as `UInt32` (Sendable, Codable) and converted to UIColor/Color at the UI edge.
-
-extension UIColor {
-    nonisolated convenience init(rgb: UInt32, alpha: CGFloat = 1) {
-        self.init(
-            red: CGFloat((rgb >> 16) & 0xFF) / 255,
-            green: CGFloat((rgb >> 8) & 0xFF) / 255,
-            blue: CGFloat(rgb & 0xFF) / 255,
-            alpha: alpha)
-    }
-}
+// as `UInt32` (Sendable, Codable) and converted to Color/PlatformColor at the UI edge.
+// The `PlatformColor(rgb:)` bridge lives in `Platform/PlatformColor.swift`.
 
 /// Color math used by accent recolor. Pure + off-main safe.
 nonisolated enum RGBMath {

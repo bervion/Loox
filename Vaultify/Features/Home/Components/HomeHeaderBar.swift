@@ -23,7 +23,7 @@ struct HomeHeaderBar: View {
             Group {
                 if let identity = env.repository.defaultIdentity {
                     if let image = env.repository.avatarImage(for: identity.id) {
-                        Image(uiImage: image).resizable().scaledToFill()
+                        Image(platformImage: image).resizable().scaledToFill()
                     } else {
                         ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: 28)
                     }

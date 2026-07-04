@@ -14,8 +14,8 @@ struct WebsiteFieldRow: View {
             // picks up the app accent tint (shows blue), so draw our own neutral one.
             TextField("", text: $field.value)
                 .font(.body)
-                .keyboardType(.URL)
-                .textInputAutocapitalization(.never)
+                .platformKeyboardType(.url)
+                .platformAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .overlay(alignment: .leading) {
                     if field.value.isEmpty {

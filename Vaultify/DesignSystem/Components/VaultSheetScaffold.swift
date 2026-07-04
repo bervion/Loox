@@ -35,10 +35,10 @@ struct VaultSheetScaffold<Leading: View, Trailing: View, Content: View>: View {
                 // control tint here (accent in light, white in dark) for sheet content too.
                 .tint(env.theme.uiTint)
                 .navigationTitle(titleText)
-                .navigationBarTitleDisplayMode(.inline)
+                .platformNavigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItemGroup(placement: .topBarLeading) { leading() }
-                    ToolbarItemGroup(placement: .topBarTrailing) { trailing() }
+                    ToolbarItemGroup(placement: .platformTopBarLeading) { leading() }
+                    ToolbarItemGroup(placement: .platformPrimaryAction) { trailing() }
                 }
         }
     }

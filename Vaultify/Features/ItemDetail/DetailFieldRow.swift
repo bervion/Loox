@@ -1,5 +1,5 @@
 import SwiftUI
-import UIKit
+import Foundation
 
 /// One field in the item-detail card, 1Password-style: tap anywhere to copy
 /// (the row flashes the accent color and shows "Copied"), with a per-field "•••"
@@ -54,7 +54,7 @@ struct DetailFieldRow: View {
         .contentShape(.rect)
         .onTapGesture { copy() }
         .animation(.easeOut(duration: 0.18), value: copied)
-        .fullScreenCover(isPresented: $showLargeType) {
+        .platformFullScreenCover(isPresented: $showLargeType) {
             // For a TOTP field, drive the grid live from the secret + show a header ring.
             LargeTypeView(text: copyValue, totpSecret: totpSecret,
                           liveTOTPSecret: field.kind == .totp ? field.value : nil)
@@ -127,7 +127,7 @@ struct DetailFieldRow: View {
                 }
             }
             if field.kind == .url, let url = Self.normalized(field.value) {
-                Button { UIApplication.shared.open(url) } label: { Label("Open Website", image: Icons.globe) }
+                Button { PlatformAppearance.open(url) } label: { Label("Open Website", image: Icons.globe) }
             }
             if !field.value.isEmpty {
                 Divider()

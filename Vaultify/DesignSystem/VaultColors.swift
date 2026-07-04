@@ -1,5 +1,5 @@
 import SwiftUI
-import UIKit
+import Foundation
 
 /// Semantic colors adapted from the Polaris palette, resolved per light/dark
 /// trait at render time so they track the system appearance.
@@ -29,7 +29,7 @@ enum VaultColors {
         }
     }
 
-    // Theme-driven surfaces. Resolved through a *dynamic* UIColor so SwiftUI re-resolves
+    // Theme-driven surfaces. Resolved through a *dynamic* platform color so SwiftUI re-resolves
     // them whenever the color scheme flips (day↔night) — keeping these backgrounds in
     // lock-step with trait-driven foregrounds (.primary/.secondary) instead of lagging a
     // frame behind a static snapshot (which left text mismatched until an app restart).
@@ -43,22 +43,13 @@ enum VaultColors {
     static var separatorColor: Color { themed(\.separator) }
 
     private static func themed(_ key: KeyPath<AppTheme, UInt32>) -> Color {
-        Color(uiColor: UIColor { _ in UIColor(hex: ThemeHolder.current[keyPath: key]) })
+        // The theme value doesn't depend on light/dark — `platformThemed` re-evaluates
+        // on appearance change (and app re-renders on theme mutation), which is all
+        // this needs to stay live.
+        Color.platformThemed { _ in ThemeHolder.current[keyPath: key] }
     }
 
     static func dynamic(light: UInt32, dark: UInt32) -> Color {
-        Color(uiColor: UIColor { traits in
-            UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
-        })
-    }
-}
-
-extension UIColor {
-    convenience init(hex: UInt32, alpha: CGFloat = 1) {
-        self.init(
-            red: CGFloat((hex >> 16) & 0xFF) / 255,
-            green: CGFloat((hex >> 8) & 0xFF) / 255,
-            blue: CGFloat(hex & 0xFF) / 255,
-            alpha: alpha)
+        Color.platformDynamic(light: light, dark: dark)
     }
 }

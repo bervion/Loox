@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Mac App Store distribution requires the App Sandbox. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Shared container for the encrypted vault store + wrapped key bundle,
+	     read by the (future) macOS AutoFill extension. Mirrors the iOS App Group. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.bervion.vaultify</string>
+	</array>
+	<!-- Shared keychain group for the biometric-gated Vault Key. Team-prefixed at build. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.bervion.vaultify.shared</string>
+	</array>
+	<!-- Outbound network for favicon fetch (sandbox blocks all network by default). -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- User-selected file access for theme / Emergency-Kit import & export and the photo picker. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- NOTE: iCloud/CloudKit entitlement is intentionally OMITTED here. It is added in
+	     Phase 3 (behind the VAULTIFY_ICLOUD flag) only once provisioning is confirmed —
+	     an unprovisioned iCloud container crashes the app at launch. -->
+</dict>
+</plist>

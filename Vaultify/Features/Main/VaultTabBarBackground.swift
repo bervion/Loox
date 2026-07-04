@@ -21,7 +21,7 @@ private struct VaultTabBarSurface: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(.regular.interactive(), in: shape)
         } else {
             fallback(content)
@@ -49,7 +49,7 @@ private struct VaultTabSelectionSurface: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(
                 .regular
                     .tint(Color(rgb: env.theme.active.accentSoft))
