@@ -3,6 +3,7 @@ import SwiftUI
 struct ItemPasskeysSection: View {
     let item: VaultItem
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selected: PasskeyInfo?
 
     private var matches: [PasskeyInfo] {
@@ -31,8 +32,10 @@ struct ItemPasskeysSection: View {
                 .background(VaultColors.surface)
                 .vaultCornerRadius(Radius.md)
                 .overlay(
+                    // Bright edge in light mode, dark edge in dark mode (a plain white ring
+                    // stays white and glares in dark mode).
                     RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .strokeBorder(Color.white, lineWidth: 1)
+                        .strokeBorder(colorScheme == .dark ? Color.black : Color.white, lineWidth: 1)
                 )
             }
             .sheet(item: $selected) { PasskeyDetailSheet(passkey: $0) }

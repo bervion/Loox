@@ -65,15 +65,14 @@ struct ItemEditorScreen: View {
             }
         ) {
             Form {
-                // Space pill (centred) directly above the thumbnail + title, all in one
-                // section so they stay close (no inter-section gap). No card — the title field
-                // carries its own elevated surface so it reads on the grouped backdrop.
+                // Space pill (left-aligned, matching the detail screen) directly above the
+                // thumbnail + title, all in one section so they stay close (no inter-section
+                // gap). No card — the title field carries its own elevated surface.
                 Section {
-                    VStack(spacing: Space.s4) {
-                        // Centred pill that hugs its text (Spacers collapse for short names and
-                        // let it truncate at the row width for long ones).
+                    VStack(alignment: .leading, spacing: Space.s4) {
+                        // Left-aligned pill that hugs its text (trailing Spacer pushes it left;
+                        // it truncates at the row width for long names).
                         HStack(spacing: 0) {
-                            Spacer(minLength: 0)
                             spaceDropdown
                             Spacer(minLength: 0)
                         }
