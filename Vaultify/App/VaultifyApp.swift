@@ -36,5 +36,22 @@ struct VaultifyApp: App {
                 .environment(\.meshPhase, env.theme.meshPhase)
                 .environment(\.meshAnimated, !env.theme.settings.reduceMotion)
         }
+
+        #if os(macOS)
+        // Native Settings window (App menu → Settings…, ⌘,) — sidebar + detail panes.
+        // Mirrors the main window's environment so themed controls and the in-app
+        // language behave identically in both windows.
+        Settings {
+            MacSettingsView()
+                .environment(env)
+                .environment(env.uiState)
+                .environment(\.locale, locale)
+                .environment(\.appTheme, env.theme.active)
+                .toggleStyle(.themed)
+                .tint(env.theme.uiTint)
+                .preferredColorScheme(env.theme.preferredColorScheme)
+                .appFontScale(env.theme.settings.fontScale)
+        }
+        #endif
     }
 }
