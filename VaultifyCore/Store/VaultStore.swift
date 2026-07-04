@@ -23,9 +23,14 @@ final class VaultStore {
     }
 
     private static func makeContainer(inMemory: Bool) throws -> ModelContainer {
+        // `cloudKitDatabase: .none` is REQUIRED, not cosmetic: the default `.automatic`
+        // detects the app's iCloud entitlement and silently enables SwiftData↔CloudKit
+        // mirroring, whose schema rules (all attributes optional-or-default, no unique
+        // constraints) our records don't meet → the container fails to load and the app
+        // crashes at launch. Sync is done manually by `CloudSyncService` instead.
         let configuration = inMemory
-            ? ModelConfiguration(isStoredInMemoryOnly: true)
-            : ModelConfiguration(url: SharedConfig.storeURL)
+            ? ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+            : ModelConfiguration(url: SharedConfig.storeURL, cloudKitDatabase: .none)
         return try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self,
                                   configurations: configuration)
     }
