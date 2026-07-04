@@ -66,6 +66,9 @@ let project = Project(
                         "CFBundleURLSchemes": ["otpauth"],
                     ],
                 ],
+                // Wake on silent CloudKit pushes so cross-device changes pull promptly
+                // even when backgrounded (near-real-time sync).
+                "UIBackgroundModes": ["remote-notification"],
                 "NSCameraUsageDescription": "Loox uses the camera to scan 2FA setup QR codes.",
                 "NSFaceIDUsageDescription": "Loox uses Face ID to unlock your vault.",
                 "UIApplicationSupportsIndirectInputEvents": true,

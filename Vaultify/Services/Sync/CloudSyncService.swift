@@ -72,6 +72,10 @@ import CloudKit
     func eraseRemote() async {
         guard Self.isConfigured else { return }
         _ = try? await database.modifyRecordZones(saving: [], deleting: [zone.zoneID])
+        // The push subscription pointed at the deleted zone; drop it and forget the
+        // local marker so a future vault re-subscribes cleanly.
+        _ = try? await database.modifySubscriptions(saving: [], deleting: [SyncPushService.subscriptionID])
+        SyncPushService.clearLocalFlag()
         // The delta cursor died with the zone — a future vault must full-fetch.
         savedChangeToken = nil
     }

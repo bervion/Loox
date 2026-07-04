@@ -8,6 +8,12 @@ import SwiftUI
 @main
 struct VaultifyApp: App {
     @State private var env = AppEnvironment()
+    // Receives CloudKit silent pushes for near-real-time sync (see AppPushDelegate).
+    #if canImport(UIKit)
+    @UIApplicationDelegateAdaptor(AppPushDelegate.self) private var pushDelegate
+    #elseif canImport(AppKit)
+    @NSApplicationDelegateAdaptor(AppPushDelegate.self) private var pushDelegate
+    #endif
 
     private var locale: Locale { appLocale(forCode: env.settings.preferredLanguage) }
 

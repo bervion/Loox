@@ -16,11 +16,13 @@ import Foundation
     /// Mirrors the recovery-wrapped Vault Key to CloudKit after each sync (cheap
     /// fingerprint no-op when unchanged) so a new device can join by Emergency Kit.
     private let escrow = VaultKeyEscrowService()
+    /// Registers the silent-push zone subscription (near-real-time sync).
+    private let pushService = SyncPushService()
 
     private var debounceTask: Task<Void, Never>?
     private var inFlight = false
     private var followUpRequested = false
-    private var observer: NSObjectProtocol?
+    private var observers: [NSObjectProtocol] = []
 
     /// Delay after the last local mutation before pushing (batches edit bursts).
     private static let mutationDebounce: Duration = .seconds(3)
@@ -29,11 +31,22 @@ import Foundation
         self.cloudSync = cloudSync
         self.repository = repository
         self.settings = settings
-        observer = NotificationCenter.default.addObserver(
+        let center = NotificationCenter.default
+        observers.append(center.addObserver(
             forName: .vaultLocalMutation, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.scheduleDebouncedSync() }
-        }
+        })
+        // A silent CloudKit push means another device already changed the vault —
+        // pull immediately (single-flight coalesces push bursts into one run).
+        observers.append(center.addObserver(
+            forName: .vaultRemoteChangePush, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.settings.iCloudSyncEnabled else { return }
+                self.syncNow()
+            }
+        })
     }
 
     /// Immediate sync — unlock, return-to-foreground, or the manual settings button.
@@ -64,6 +77,7 @@ import Foundation
         } while followUpRequested
         if settings.iCloudSyncEnabled, case .success = cloudSync.status {
             await escrow.pushRecoveryEnvelopeIfNeeded()
+            await pushService.ensureSubscribedIfNeeded()
         }
     }
 }
