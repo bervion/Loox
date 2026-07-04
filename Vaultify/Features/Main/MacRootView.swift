@@ -29,11 +29,16 @@ struct MacRootView: View {
                 .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 300)
         } content: {
             listColumn
+                .safeAreaInset(edge: .top, spacing: 0) { spaceFilterBar }
+                .environment(\.themedSurfaceStyle, .plain)
                 .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 420)
         } detail: {
             detailColumn
+                // White-canvas detail (password-manager idiom) — grouped gray stays
+                // for Settings; the environment flips only these columns.
+                .environment(\.themedSurfaceStyle, .plain)
         }
-        .searchable(text: $searchQuery, placement: .sidebar, prompt: Text("Search vault"))
+        .searchable(text: $searchQuery, placement: .toolbar, prompt: Text("Search vault"))
         .searchSuggestions { MacSearchSuggestions(query: searchQuery) { select($0) } }
         .toolbar {
             ToolbarItem(placement: .primaryAction) { newItemMenu }
@@ -118,7 +123,58 @@ struct MacRootView: View {
         } label: {
             Label { Text("New Item") } icon: { PolarisIcon(Icons.add) }
         }
+        // Prominent (accent-filled) create button, like the reference app's
+        // blue "+ New Item" at the toolbar's trailing edge.
+        .buttonStyle(.borderedProminent)
+        .tint(env.theme.accentColor)
         .accessibilityLabel(Text("New Item"))
+    }
+
+    /// Space filter dropdown pinned above the item list (column 2): the quick way
+    /// to scope All Items to one Space without hunting the sidebar.
+    @ViewBuilder private var spaceFilterBar: some View {
+        if isSpaceFilterable {
+            HStack {
+                Menu {
+                    Button { filter = .allItems } label: { Text("All Spaces") }
+                    ForEach(env.repository.folders) { folder in
+                        Button { filter = .space(folder.id) } label: {
+                            Label {
+                                Text(verbatim: folder.name)
+                            } icon: {
+                                PolarisIcon(folder.iconAsset)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: Space.s1) {
+                        Text(currentSpaceName).fontWeight(.semibold)
+                        PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
+                    }
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                Spacer()
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s3)
+            .background(Color(rgb: env.theme.active.background))
+            .overlay(alignment: .bottom) { Divider() }
+        }
+    }
+
+    private var isSpaceFilterable: Bool {
+        if case .space = filter { return true }
+        return filter == .allItems
+    }
+
+    private var currentSpaceName: String {
+        if case .space(let id) = filter,
+           let name = env.repository.folders.first(where: { $0.id == id })?.name {
+            return name
+        }
+        return appString("All Spaces")
     }
 
     // MARK: Helpers

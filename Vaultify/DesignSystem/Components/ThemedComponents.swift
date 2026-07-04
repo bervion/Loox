@@ -94,8 +94,31 @@ extension View {
     func themedFormBackground() -> some View { modifier(ThemedFormBackgroundModifier()) }
 }
 
+/// Which theme token backs a themed form/list surface. `.grouped` (default) is the
+/// iOS-style gray canvas behind white cards; `.plain` uses the base background —
+/// the Mac shell's list/detail columns set it so they read as white canvas
+/// (password-manager idiom) while Settings keeps the grouped look.
+enum ThemedSurfaceStyle { case grouped, plain }
+
+private struct ThemedSurfaceStyleKey: EnvironmentKey {
+    static let defaultValue = ThemedSurfaceStyle.grouped
+}
+
+extension EnvironmentValues {
+    var themedSurfaceStyle: ThemedSurfaceStyle {
+        get { self[ThemedSurfaceStyleKey.self] }
+        set { self[ThemedSurfaceStyleKey.self] = newValue }
+    }
+}
+
 private struct ThemedFormBackgroundModifier: ViewModifier {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.themedSurfaceStyle) private var surfaceStyle
+
+    private var backdrop: UInt32 {
+        surfaceStyle == .plain ? env.theme.active.background : env.theme.active.groupedBackground
+    }
+
     func body(content: Content) -> some View {
         content
             // macOS's DEFAULT form style is "columns": the form hugs its content and
@@ -104,7 +127,7 @@ private struct ThemedFormBackgroundModifier: ViewModifier {
             // on both platforms — set it here so every themed form gets it.
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
-            .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
+            .background(Color(rgb: backdrop).ignoresSafeArea())
     }
 }
 
