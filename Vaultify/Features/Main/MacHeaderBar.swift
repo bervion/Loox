@@ -1,34 +1,16 @@
 #if os(macOS)
 import SwiftUI
 
-/// The Mac shell's unified header band: spans columns 2+3 (the sidebar keeps its
-/// own full-height lane), holding the full-width search field and the prominent
-/// New Item button — the reference password-manager layout. Suggestions render
-/// from `MacRootView` as an overlay so they can float over both columns.
-struct MacHeaderBar: View {
+/// The Mac shell's toolbar search field — installed as a `.principal` item in the
+/// system unified toolbar, so search shares one row with the traffic lights, the
+/// native sidebar toggle, and the New Item button (the reference layout).
+/// Suggestions render from `MacRootView` as an overlay under the toolbar.
+struct MacToolbarSearchField: View {
     @Environment(AppEnvironment.self) private var env
     @Binding var searchQuery: String
     var searchFocus: FocusState<Bool>.Binding
-    let onToggleSidebar: () -> Void
-    let onNewItem: (ItemCategory) -> Void
 
     var body: some View {
-        HStack(spacing: Space.s4) {
-            // The system window toolbar (and its toggle) is hidden — re-provide it here.
-            Button(action: onToggleSidebar) {
-                PolarisIcon(Icons.layoutSection, size: 16).themedForeground(.secondary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Toggle Sidebar"))
-            searchField
-            newItemMenu
-        }
-        .padding(.horizontal, Space.s4)
-        .padding(.vertical, Space.s3)
-        .background(Color(rgb: env.theme.active.background))
-    }
-
-    private var searchField: some View {
         HStack(spacing: Space.s2) {
             PolarisIcon(Icons.search, size: 14).themedForeground(.secondary)
             TextField("Search vault", text: $searchQuery)
@@ -45,8 +27,9 @@ struct MacHeaderBar: View {
             }
         }
         .padding(.horizontal, Space.s3)
-        .frame(height: 30)
-        .frame(maxWidth: .infinity)
+        .frame(height: 28)
+        // Wide, flexible field: the principal toolbar slot grants what the window allows.
+        .frame(minWidth: 280, idealWidth: 560, maxWidth: 720)
         .background(Color(rgb: env.theme.active.controlBackground),
                     in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         // Esc clears + defocuses the search, mirroring the native field.
@@ -55,21 +38,6 @@ struct MacHeaderBar: View {
             searchFocus.wrappedValue = false
             return .handled
         }
-    }
-
-    private var newItemMenu: some View {
-        Menu {
-            ForEach(ItemCategory.allCases) { category in
-                Button { onNewItem(category) } label: {
-                    Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
-                }
-            }
-        } label: {
-            Label { Text("New Item") } icon: { PolarisIcon(Icons.add) }
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(env.theme.accentColor)
-        .accessibilityLabel(Text("New Item"))
     }
 }
 

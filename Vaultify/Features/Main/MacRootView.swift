@@ -29,22 +29,17 @@ struct MacRootView: View {
     @FocusState private var searchFocused: Bool
     @State private var editorTarget: EditorTarget?
     @State private var showProfile = false
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showLastIdentityBlock = false
 
     private var isSearching: Bool { !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
+        NavigationSplitView {
             MacSidebarList(filter: $filter, onProfile: { showProfile = true })
                 .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 300)
         } detail: {
             rightSide
         }
-        // The header band IS the top chrome: hide the system window toolbar so
-        // nested screens' titles/menus can't leak into an extra bar above it
-        // (the sidebar toggle is re-provided in the header).
-        .toolbar(.hidden, for: .windowToolbar)
         .tint(env.theme.uiTint)
         .vaultShellBehaviors()
         .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: currentSpaceId) }
@@ -64,24 +59,21 @@ struct MacRootView: View {
     // MARK: Right side (header band + columns 2/3)
 
     private var rightSide: some View {
-        VStack(spacing: 0) {
-            MacHeaderBar(searchQuery: $searchQuery,
-                         searchFocus: $searchFocused,
-                         onToggleSidebar: {
-                             withAnimation {
-                                 columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-                             }
-                         },
-                         onNewItem: { editorTarget = .new($0) })
-            Divider()
-            HSplitView {
-                listPane
-                    .frame(minWidth: 260, idealWidth: 300, maxWidth: 420)
-                detailColumn
-                    .frame(minWidth: 380, maxWidth: .infinity, maxHeight: .infinity)
-            }
+        HSplitView {
+            listPane
+                .frame(minWidth: 260, idealWidth: 300, maxWidth: 420)
+            detailColumn
+                .frame(minWidth: 380, maxWidth: .infinity, maxHeight: .infinity)
         }
-        // Floating search suggestions over both columns, anchored under the field.
+        // Search + New Item live in the system unified toolbar — one row with the
+        // traffic lights and the native sidebar toggle, like the reference app.
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                MacToolbarSearchField(searchQuery: $searchQuery, searchFocus: $searchFocused)
+            }
+            ToolbarItem(placement: .primaryAction) { newItemMenu }
+        }
+        // Floating search suggestions over both columns, anchored under the toolbar.
         // Visibility keys off the QUERY, not field focus: on macOS a mousedown on the
         // panel defocuses the field first, which would tear the button out from under
         // the click. Esc / the clear button / selecting all empty the query to hide it.
@@ -93,10 +85,25 @@ struct MacRootView: View {
                     searchFocused = false
                 }
                 .padding(.leading, Space.s4)
-                .offset(y: 56)
+                .padding(.top, Space.s2)
                 .zIndex(1)
             }
         }
+    }
+
+    private var newItemMenu: some View {
+        Menu {
+            ForEach(ItemCategory.allCases) { category in
+                Button { editorTarget = .new(category) } label: {
+                    Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
+                }
+            }
+        } label: {
+            Label { Text("New Item") } icon: { PolarisIcon(Icons.add) }
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(env.theme.accentColor)
+        .accessibilityLabel(Text("New Item"))
     }
 
     // MARK: Column 2 (list)

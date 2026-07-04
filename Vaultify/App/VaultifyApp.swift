@@ -39,13 +39,11 @@ struct VaultifyApp: App {
     }
 
     private var mainWindow: some Scene {
-        #if os(macOS)
-        // Hidden title bar: the shell's own header band is the top chrome and the
-        // traffic lights float over the sidebar (reference password-manager look).
-        return WindowGroup { rootContent }.windowStyle(.hiddenTitleBar)
-        #else
-        return WindowGroup { rootContent }
-        #endif
+        // NOTE: no hiddenTitleBar — combined with a hidden window toolbar it took the
+        // traffic lights down with it. The Mac shell puts search/New Item INTO the
+        // system unified toolbar instead (see MacRootView), which is also how the
+        // reference app builds its header row.
+        WindowGroup { rootContent }
     }
 
     private var rootContent: some View {

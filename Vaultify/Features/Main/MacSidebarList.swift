@@ -64,9 +64,6 @@ struct MacSidebarList: View {
             }
         }
         .listStyle(.sidebar)
-        // With the hidden title bar the traffic lights float over the sidebar —
-        // keep the first row clear of them.
-        .safeAreaInset(edge: .top, spacing: 0) { Color.clear.frame(height: 30) }
         .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
     }
 
