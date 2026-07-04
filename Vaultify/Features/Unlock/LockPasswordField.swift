@@ -13,6 +13,8 @@ struct LockPasswordField: View {
 
     var body: some View {
         HStack(spacing: Space.s2) {
+            PolarisIcon(Icons.lock, size: Metric.iconInline)
+                .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     Text("Enter password")
