@@ -17,8 +17,9 @@ struct LockPasswordField: View {
                 .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
             ZStack(alignment: .leading) {
                 if text.isEmpty {
+                    // Placeholder → SF; the typed value keeps MonoLisa below.
                     Text("Enter password")
-                        .font(.vaultCode())
+                        .font(.body)
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
                 }
                 SecureField("", text: $text)

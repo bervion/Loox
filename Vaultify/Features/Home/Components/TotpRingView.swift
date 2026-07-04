@@ -25,7 +25,7 @@ struct TotpRingView: View {
         if reduceMotion {
             // Plain numeric fallback — no ring, just the countdown digit.
             Text("\(remaining)")
-                .font(.vaultCode(.caption2, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(tintColor)
                 .monospacedDigit()
                 .frame(width: size, height: size)
@@ -44,21 +44,21 @@ struct TotpRingView: View {
             Circle()
                 .stroke(
                     tintColor.opacity(0.15),
-                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
 
             // Progress arc — rotated so 12 o'clock is the start.
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
                     tintColor,
-                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 // Smooth sweep every second.
                 .animation(.linear(duration: 1), value: dashOffset)
 
             // Remaining seconds centred in the ring.
             Text("\(remaining)")
-                .font(.vaultCode(.caption2, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(tintColor)
                 .monospacedDigit()
         }

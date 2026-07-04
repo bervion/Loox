@@ -2,12 +2,20 @@ import SwiftUI
 
 /// The Generator tab.
 struct GeneratorScreen: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var output = ""
 
     var body: some View {
-        VaultSheetScaffold(title: "Generator",
-                           leading: { EmptyView() },
-                           trailing: { SheetDismissButton("Done") }) {
+        // No title; leading = X dismiss. The trailing regenerate button comes
+        // from PasswordGeneratorView's own toolbar (no "use" action on this tab).
+        VaultSheetScaffold(
+            title: nil,
+            leading: {
+                Button { dismiss() } label: { PolarisIcon(Icons.close, size: 18) }
+                    .accessibilityLabel(Text("Close"))
+            },
+            trailing: { EmptyView() }
+        ) {
             PasswordGeneratorView(output: $output)
         }
     }
@@ -21,16 +29,17 @@ struct PasswordGeneratorSheet: View {
     @State private var output = ""
 
     var body: some View {
-        VaultSheetScaffold(title: "Generate Password", trailing: {
-            Button {
-                onUse(output)
-                dismiss()
-            } label: {
-                Text("Use Password").fontWeight(.semibold)
-            }
-            .disabled(output.isEmpty)
-        }) {
-            PasswordGeneratorView(output: $output)
+        // Leading = an X (icon) dismiss; the regenerate + use (checkmark) group
+        // lives in PasswordGeneratorView's own trailing toolbar.
+        VaultSheetScaffold(
+            title: nil,
+            leading: {
+                Button { dismiss() } label: { PolarisIcon(Icons.close, size: 18) }
+                    .accessibilityLabel(Text("Cancel"))
+            },
+            trailing: { EmptyView() }
+        ) {
+            PasswordGeneratorView(output: $output, onUse: onUse)
         }
     }
 }

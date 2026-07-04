@@ -58,11 +58,11 @@ enum CredentialIdentityService {
         CredentialIdentityRefreshGate.enqueue {
             let store = ASCredentialIdentityStore.shared
             guard await store.state().isEnabled,
-                  await CredentialIdentityRefreshGate.isCurrent(token) else { return }
+                  CredentialIdentityRefreshGate.isCurrent(token) else { return }
             // Replace clears all types, so re-add OTP identities afterwards (ordered).
             let passwordEntries = passwordIdentities.map { $0 as any ASCredentialIdentity }
             try? await store.replaceCredentialIdentities(passwordEntries)
-            guard await CredentialIdentityRefreshGate.isCurrent(token) else { return }
+            guard CredentialIdentityRefreshGate.isCurrent(token) else { return }
             var secondary = passkeyIdentities.map { $0 as any ASCredentialIdentity }
             if #available(iOS 18, *) {
                 let otp = oneTimeCodeIdentities(items)
@@ -96,7 +96,7 @@ enum CredentialIdentityService {
         CredentialIdentityRefreshGate.enqueue {
             let store = ASCredentialIdentityStore.shared
             guard await store.state().isEnabled,
-                  await CredentialIdentityRefreshGate.isCurrent(token) else { return }
+                  CredentialIdentityRefreshGate.isCurrent(token) else { return }
             try? await store.removeAllCredentialIdentities()
         }
     }

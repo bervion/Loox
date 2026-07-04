@@ -7,7 +7,9 @@ struct TOTPCodeView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             Text(TOTPGenerator.code(forStoredValue: secret, date: context.date).map(Self.format) ?? "Invalid secret")
-                .font(.vaultCode(.body, weight: .medium))
+                // Verification code → SF, bold, tabular digits.
+                .font(.body.weight(.bold))
+                .monospacedDigit()
         }
     }
 
@@ -25,11 +27,11 @@ struct CountdownRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color(.systemGray5), lineWidth: 2.5)
+            Circle().stroke(Color(.systemGray5), lineWidth: 3.5)
             Circle()
                 .trim(from: 0, to: CGFloat(remaining) / CGFloat(max(period, 1)))
                 .stroke(remaining <= 5 ? VaultColors.strengthWeak : Color.accentColor,
-                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                        style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text("\(remaining)").font(.caption2.monospacedDigit()).themedForeground(.secondary)
         }

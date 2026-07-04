@@ -6,6 +6,8 @@ import UIKit
 /// menu (Copy / Reveal / Open) and, for passwords, a strength badge.
 struct DetailFieldRow: View {
     let field: DynamicField
+    /// The item's 2FA secret, surfaced as a floating code in the Large Type viewer.
+    var totpSecret: String? = nil
     var onChange: (DynamicField) -> Void = { _ in }
     var onRemove: () -> Void = {}
     var onUsed: () -> Void = {}
@@ -53,7 +55,7 @@ struct DetailFieldRow: View {
         .onTapGesture { copy() }
         .animation(.easeOut(duration: 0.18), value: copied)
         .fullScreenCover(isPresented: $showLargeType) {
-            LargeTypeView(text: copyValue)
+            LargeTypeView(text: copyValue, totpSecret: totpSecret)
         }
         .sheet(isPresented: $showProtect) {
             ProtectFieldSheet(field: field, onProtected: onChange)
@@ -68,15 +70,19 @@ struct DetailFieldRow: View {
             case .totp:
                 TOTPCodeView(secret: field.value)
             case .url:
-                Text(field.value).font(.body).foregroundStyle(theme.color(.accent))
-                    .lineLimit(1).truncationMode(.middle)
+                // Website → SF, scheme greyed, domain/path in accent, tail-truncated.
+                Text(urlColored(field.value)).font(.body)
+                    .lineLimit(1).truncationMode(.tail)
             default:
                 if isSecret && !revealed {
                     SpoilerText(text: field.value)
                 } else {
+                    // Secret values use MonoLisa; free-text notes stay SF. Notes
+                    // and revealed secrets wrap to multiple lines; other values
+                    // (username, etc.) stay single-line.
                     Text(field.value)
-                        .font(.body)
-                        .lineLimit(field.kind == .multiline ? nil : 1)
+                        .font(field.kind == .multiline ? .body : .vaultCode())
+                        .lineLimit(field.kind == .multiline || isSecret ? nil : 1)
                         .textSelection(.enabled)
                 }
             }
@@ -130,6 +136,27 @@ struct DetailFieldRow: View {
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
         }
+    }
+
+    /// Color a URL: the `http://` / `https://` scheme in secondary grey, the rest
+    /// (domain + path) in accent.
+    private func urlColored(_ value: String) -> AttributedString {
+        let schemeLength: Int
+        let lower = value.lowercased()
+        if lower.hasPrefix("https://") { schemeLength = 8 }
+        else if lower.hasPrefix("http://") { schemeLength = 7 }
+        else { schemeLength = 0 }
+
+        var result = AttributedString()
+        if schemeLength > 0 {
+            var scheme = AttributedString(String(value.prefix(schemeLength)))
+            scheme.foregroundColor = theme.color(.secondary)
+            result.append(scheme)
+        }
+        var rest = AttributedString(String(value.dropFirst(schemeLength)))
+        rest.foregroundColor = theme.color(.accent)
+        result.append(rest)
+        return result
     }
 
     private func copy() {

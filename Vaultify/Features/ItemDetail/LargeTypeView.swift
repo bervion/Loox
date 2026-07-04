@@ -1,57 +1,148 @@
 import SwiftUI
 
-/// Full-screen "Large Type" display: shows a value in large SF text with
-/// digits / letters / symbols color-coded for easy reading aloud. Tap to dismiss.
+/// Full-screen "Large Type" grid: each character sits in its own numbered cell
+/// (digits / letters / symbols color-coded) so a long secret is easy to read out
+/// or type elsewhere. Tap a cell to mark that character "entered" — it highlights
+/// with a haptic, so you never lose your place in a long password. Scrolls when
+/// the value is long. The X (top-right) dismisses.
 struct LargeTypeView: View {
     let text: String
+    /// The item's 2FA secret, if any — surfaced as a floating tap-to-copy code.
+    var totpSecret: String? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var env
-    @ScaledMetric(relativeTo: .largeTitle) private var fontSize: CGFloat = 38
+    @ScaledMetric(relativeTo: .largeTitle) private var fontSize: CGFloat = 30
+    /// Indices the user has ticked off as already entered.
+    @State private var entered: Set<Int> = []
+    @State private var copied = false
+    @State private var totpCopied = false
+
+    private var theme: AppTheme { env.theme.active }
+    private var characters: [Character] { Array(text) }
+    private var hasTOTP: Bool { !(totpSecret ?? "").isEmpty }
+    private let columns = [GridItem(.adaptive(minimum: 46), spacing: Space.s2)]
 
     var body: some View {
-        ZStack {
-            VaultColors.surface.ignoresSafeArea()
-
+        // Reuse the app's sheet scaffold so the header is the native, translucent
+        // nav bar (iOS 26 liquid glass that reveals as content scrolls under it) —
+        // matching every other bottom sheet. X (left), Copy (right), no title.
+        VaultSheetScaffold(
+            title: nil,
+            leading: {
+                Button { dismiss() } label: { PolarisIcon(Icons.close, size: 18) }
+                    .accessibilityLabel(Text("Close"))
+            },
+            trailing: { copyButton }
+        ) {
             ScrollView {
-                Text(colorCoded)
-                    .font(.system(size: fontSize, weight: .semibold))
-                    .monospacedDigit()
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(8)
-                    .padding(.horizontal, Space.s6)
-                    .padding(.vertical, 60)
-                    .frame(maxWidth: .infinity)
-                    .textSelection(.enabled)
+                LazyVGrid(columns: columns, spacing: Space.s2) {
+                    ForEach(Array(characters.enumerated()), id: \.offset) { index, character in
+                        cell(index: index, character: character)
+                    }
+                }
+                .padding(Space.gutter)
+                // Clear the floating 2FA pill so the last row isn't hidden.
+                .padding(.bottom, hasTOTP ? Space.s10 : 0)
+            }
+            .overlay(alignment: .bottom) {
+                if let secret = totpSecret, hasTOTP {
+                    totpPill(secret)
+                }
             }
         }
-        .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: {
-                PolarisIcon(Icons.close, size: 22)
-                    .themedForeground(.secondary)
-                    .padding(10)
-                    .background(Circle().fill(VaultColors.fill))
-            }
-            .padding(Space.gutter)
-        }
-        .contentShape(.rect)
-        .onTapGesture { dismiss() }
     }
 
-    /// Digits in blue, symbols in red, letters in the primary color — the
-    /// standard "readable password" coloring.
-    private var colorCoded: AttributedString {
-        var result = AttributedString()
-        for character in text {
-            var piece = AttributedString(String(character))
-            if character.isNumber {
-                piece.foregroundColor = VaultColors.category(.login)
-            } else if character.isLetter {
-                piece.foregroundColor = env.theme.active.color(.primary)
-            } else {
-                piece.foregroundColor = env.theme.active.color(.destructive)
+    private var copyButton: some View {
+        Button { copy() } label: {
+            HStack(spacing: Space.s1) {
+                PolarisIcon(copied ? Icons.copyDone : Icons.copy, size: Metric.iconInline)
+                Text(copied ? "Copied" : "Copy")
             }
-            result.append(piece)
+            .foregroundStyle(theme.color(copied ? .accent : .primary))
         }
-        return result
+        .accessibilityLabel(Text("Copy"))
+    }
+
+    private func copy() {
+        env.clipboard.copy(text, label: "Password")
+        copied = true
+        Task {
+            try? await Task.sleep(for: .seconds(1.2))
+            withAnimation(.easeOut(duration: 0.3)) { copied = false }
+        }
+    }
+
+    /// Floating 2FA code (center-bottom, liquid glass): live code + countdown ring,
+    /// tap to copy. On copy the pill flashes its accent background with "Copied".
+    /// Lets the user grab the OTP without leaving the password view.
+    private func totpPill(_ secret: String) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let code = TOTPGenerator.code(forStoredValue: secret, date: context.date) ?? ""
+            let remaining = TOTPGenerator.secondsRemaining(period: 30, date: context.date)
+            Button { copyTOTP(code) } label: {
+                Group {
+                    if totpCopied {
+                        Text("Copied")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(theme.color(.onAccent))
+                    } else {
+                        HStack(spacing: Space.s3) {
+                            Text(TOTPCodeView.format(code))
+                                .font(.title3.weight(.bold)).monospacedDigit()
+                                .themedForeground(.primary)
+                            CountdownRing(remaining: remaining, period: 30)
+                        }
+                    }
+                }
+                .frame(minWidth: 150)
+                .padding(.horizontal, Space.s4)
+                .padding(.vertical, Space.s3)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .background { if totpCopied { Capsule().fill(theme.color(.accent)) } }
+            .headerGlassCapsule()
+            .animation(.easeOut(duration: 0.18), value: totpCopied)
+        }
+        .padding(.bottom, Space.s6)
+    }
+
+    private func copyTOTP(_ code: String) {
+        guard !code.isEmpty else { return }
+        env.clipboard.copy(code, label: "2FA code")
+        totpCopied = true
+        Task {
+            try? await Task.sleep(for: .seconds(1.2))
+            withAnimation(.easeOut(duration: 0.3)) { totpCopied = false }
+        }
+    }
+
+    /// One character cell: the glyph, a 1-based index below, tap to toggle "entered".
+    private func cell(index: Int, character: Character) -> some View {
+        let isEntered = entered.contains(index)
+        return VStack(spacing: 2) {
+            Text(String(character))
+                .font(.vaultCode(size: fontSize))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundStyle(isEntered ? theme.color(.onAccent)
+                                           : SecretColoring.color(for: character, theme: theme))
+                .frame(maxWidth: .infinity)
+            Text("\(index + 1)")
+                .font(.caption2)
+                .foregroundStyle(isEntered ? theme.color(.onAccent).opacity(0.85)
+                                           : theme.color(.secondary))
+        }
+        .padding(.vertical, Space.s2)
+        .frame(maxWidth: .infinity)
+        .background(isEntered ? AnyShapeStyle(theme.color(.accent))
+                              : AnyShapeStyle(VaultColors.fill),
+                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            Haptics.tap()
+            if isEntered { entered.remove(index) } else { entered.insert(index) }
+        }
+        .animation(.easeOut(duration: 0.12), value: isEntered)
     }
 }

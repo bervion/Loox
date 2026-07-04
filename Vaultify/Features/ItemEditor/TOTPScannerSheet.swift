@@ -58,7 +58,7 @@ struct TOTPScannerSheet: View {
 
             HStack {
                 TextField("Or paste setup key", text: $manual)
-                    .font(.vaultCode())
+                    .font(.body)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                 Button("Add") { handle(manual) }.disabled(manual.isEmpty)

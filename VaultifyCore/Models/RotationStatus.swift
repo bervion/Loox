@@ -117,7 +117,7 @@ nonisolated struct RotationStatus: Sendable {
 
 // MARK: - Shared label constants (avoid repeated allocations)
 
-private let okLabelFull: LocalizedStringResource  = LocalizedStringResource("Healthy").inAppLocalized
-private let okLabelShort: LocalizedStringResource = LocalizedStringResource("Good").inAppLocalized
-private let staleLabelShort: LocalizedStringResource = LocalizedStringResource("Stale").inAppLocalized
-private let overdueLabelShort: LocalizedStringResource = LocalizedStringResource("Overdue").inAppLocalized
+private nonisolated let okLabelFull: LocalizedStringResource  = LocalizedStringResource("Healthy").inAppLocalized
+private nonisolated let okLabelShort: LocalizedStringResource = LocalizedStringResource("Good").inAppLocalized
+private nonisolated let staleLabelShort: LocalizedStringResource = LocalizedStringResource("Stale").inAppLocalized
+private nonisolated let overdueLabelShort: LocalizedStringResource = LocalizedStringResource("Overdue").inAppLocalized

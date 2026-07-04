@@ -14,7 +14,7 @@ import Foundation
 /// PKCS#8 DER (`P256` round-trips it natively), which is lossless for Vaultify's
 /// own export→import; interop with other managers needs iOS 26 device QA.
 @available(iOS 26.1, *)
-enum CredentialExchangeMapping {
+nonisolated enum CredentialExchangeMapping {
 
     struct ImportResult {
         var items: [VaultItem] = []
