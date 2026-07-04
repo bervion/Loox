@@ -18,8 +18,10 @@ struct OnboardingFlow: View {
             case .create:
                 CreateMasterPasswordView(onSubmit: createVault)
             case .name:
-                NameStepView { displayName in
-                    seedIdentity(displayName)
+                NameStepView { name, email in
+                    let starterTag = appString("Starter Kit")
+                    seedIdentity(name, email: email, tag: starterTag)
+                    seedLooxAccount(name: name, email: email, tag: starterTag)
                     step = .emergencyKit
                 }
             case .emergencyKit:
@@ -63,9 +65,34 @@ struct OnboardingFlow: View {
     /// Seed the mandatory default identity from the onboarding display name. Best-effort,
     /// like the "My Vault" folder seed. Skips if an identity already exists (e.g. re-running
     /// onboarding after a recovery reset), so it never creates a duplicate default.
-    private func seedIdentity(_ displayName: String) {
+    private func seedIdentity(_ displayName: String, email: String, tag: String) {
         guard env.repository.activeIdentities.isEmpty else { return }
-        try? env.repository.add(IdentitySeed.make(displayName: displayName, fallback: appString("Me")))
+        let note = appString("Welcome to Loox! This is your identity — it autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.")
+        try? env.repository.add(IdentitySeed.make(
+            displayName: displayName, email: email, fallback: appString("Me"),
+            note: note, tag: tag))
+    }
+
+    /// Seed a "Loox Account (Name)" login holding the user's email + an importance note.
+    /// No website — its title carries "Loox", which the row avatar renders as the app icon.
+    /// Best-effort; the email field is added only when one was entered.
+    private func seedLooxAccount(name: String, email: String, tag: String) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = trimmedName.isEmpty ? appString("Me") : trimmedName
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        var fields: [DynamicField] = []
+        if !trimmedEmail.isEmpty {
+            fields.append(DynamicField(label: "Email", kind: .email, value: trimmedEmail))
+        }
+        fields.append(DynamicField(
+            label: "Note", kind: .multiline,
+            value: appString("This is your Loox account — the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.")))
+
+        let item = VaultItem(category: .login,
+                             title: "\(appString("Loox Account")) (\(displayName))",
+                             fields: fields, tags: [tag])
+        try? env.repository.add(item)
     }
 
     private func enableBiometric() {

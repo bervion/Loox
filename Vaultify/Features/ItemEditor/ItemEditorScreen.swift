@@ -220,7 +220,7 @@ struct ItemEditorScreen: View {
     /// chevron badge); otherwise a custom icon / letter-avatar can be chosen via the menu.
     @ViewBuilder private var editorThumbnail: some View {
         if let website = draft.urlField?.value, !website.isEmpty {
-            FaviconView(urlString: website, category: draft.category, size: 56)
+            FaviconView(urlString: website, category: draft.category, size: 56, title: draft.title)
         } else {
             Menu {
                 Button { showIconPicker = true } label: {

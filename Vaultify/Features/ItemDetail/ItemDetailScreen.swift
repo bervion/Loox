@@ -125,7 +125,7 @@ struct ItemDetailScreen: View {
             HStack(spacing: Space.s3) {
                 // Favicon wins when the item has a website; otherwise the custom icon / avatar.
                 if let url = item.urlField?.value, !url.isEmpty {
-                    FaviconView(urlString: url, category: item.category, size: 56)
+                    FaviconView(urlString: url, category: item.category, size: 56, title: item.title)
                 } else {
                     ItemThumbnail(title: item.title, category: item.category,
                                   iconAsset: item.iconAsset, size: 56)
