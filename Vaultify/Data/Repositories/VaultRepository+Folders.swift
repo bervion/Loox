@@ -217,7 +217,9 @@ extension VaultRepository {
 
     /// Live + archived lookup (so an item opened from Archive still resolves).
     func item(id: String) -> VaultItem? {
-        items.first { $0.id == id } ?? archived.first { $0.id == id }
+        items.first { $0.id == id }
+            ?? archived.first { $0.id == id }
+            ?? trashed.first { $0.id == id }
     }
 
     /// Smart search: every space-separated token must appear in the item's

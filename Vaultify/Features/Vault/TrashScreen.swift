@@ -21,7 +21,7 @@ struct TrashScreen: View {
                     }
                     .listRowBackground(VaultColors.surface)
                     ForEach(env.repository.trashed) { item in
-                        VaultItemRow(item: item)
+                        NavigationLink(value: item.id) { VaultItemRow(item: item) }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) { try? env.repository.delete(item) } label: {
                                     Label("Delete", image: Icons.delete)
