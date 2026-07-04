@@ -66,8 +66,11 @@ struct MacRootView: View {
             }
         }
         // Floating search suggestions over both columns, anchored under the field.
+        // Visibility keys off the QUERY, not field focus: on macOS a mousedown on the
+        // panel defocuses the field first, which would tear the button out from under
+        // the click. Esc / the clear button / selecting all empty the query to hide it.
         .overlay(alignment: .topLeading) {
-            if searchFocused, isSearching {
+            if isSearching {
                 MacSearchSuggestionsPanel(query: searchQuery) { id in
                     selectedItemID = id
                     searchQuery = ""
@@ -95,7 +98,7 @@ struct MacRootView: View {
     private var listHeader: some View {
         VStack(alignment: .leading, spacing: Space.s1) {
             Text(listTitle).vaultType(.headline)
-            if isSpaceFilterable, !isSearching {
+            if isSpaceFilterable {
                 Menu {
                     Button { filter = .allItems } label: { Text("All Spaces") }
                     ForEach(env.repository.folders) { folder in
@@ -120,9 +123,9 @@ struct MacRootView: View {
     }
 
     @ViewBuilder private var listContent: some View {
-        if isSearching {
-            MacItemListColumn(items: env.repository.search(searchQuery), selection: $selectedItemID)
-        } else {
+        // While typing, results live in the floating panel (reference behavior);
+        // the list keeps showing the current sidebar context underneath.
+        Group {
             switch filter {
             case .allItems:
                 MacItemListColumn(items: env.repository.items, selection: $selectedItemID)
@@ -145,7 +148,6 @@ struct MacRootView: View {
     }
 
     private var listTitle: LocalizedStringResource {
-        if isSearching { return "Search" }
         switch filter {
         case .allItems: return "All Items"
         case .favorites: return "Favorites"
