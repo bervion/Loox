@@ -54,7 +54,7 @@ struct RegenerateKitView: View {
         }
         .themedFormBackground()
         .navigationTitle("Emergency Kit")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .overlay { if busy { ProgressView().controlSize(.large) } }
         .confirmationDialog("Regenerate recovery key?", isPresented: $confirmRegenerate, titleVisibility: .visible) {
             Button("Regenerate", role: .destructive) { Task { await regenerate() } }

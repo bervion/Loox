@@ -37,9 +37,9 @@ struct RevealableSecureField: View {
                         SecureField("", text: $text)
                     }
                 }
-                .textInputAutocapitalization(.never)
+                .platformAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .textContentType(.password)
+                .platformTextContentType(.password)
                 .font(.body)
                 .focused($focused)
                 .foregroundStyle(Color(rgb: theme.primaryText))

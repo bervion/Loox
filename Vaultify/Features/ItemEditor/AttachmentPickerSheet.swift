@@ -13,7 +13,9 @@ struct AttachmentPickerSheet: View {
     @State private var error: String?
 
     var body: some View {
-        NavigationStack {
+        // Own NavigationStack+toolbar Cancel could render unreliably on macOS sheets —
+        // use the shared scaffold instead (guarantees a working close control + sizing).
+        VaultSheetScaffold(title: "Add Attachment") {
             List {
                 Section {
                     Button { showFileImporter = true } label: {
@@ -26,11 +28,6 @@ struct AttachmentPickerSheet: View {
                 }
                 .listRowBackground(VaultColors.surface)
             }
-            .themedFormBackground()
-            .navigationTitle("Add Attachment")
-            .themedColorScheme()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             .fileImporter(isPresented: $showFileImporter,
                           allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
                 handleFile(result)

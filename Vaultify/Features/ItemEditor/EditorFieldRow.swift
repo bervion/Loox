@@ -6,9 +6,13 @@ struct EditorFieldRow: View {
     @Binding var field: DynamicField
     var onScanTOTP: () -> Void = {}
     @FocusState private var valueFocused: Bool
+    #if os(iOS)
     @Environment(\.editMode) private var editMode
-
     private var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
+    #else
+    // macOS has no `editMode` environment (no list edit mode) → never "editing".
+    private var isEditing: Bool { false }
+    #endif
 
     var body: some View {
         // The field's kind is fixed at creation (chosen from the Add Field popup) — no
@@ -17,7 +21,7 @@ struct EditorFieldRow: View {
             TextField("Label", text: localizedLabel)
                 .font(.caption)
                 .themedForeground(.secondary)
-                .textInputAutocapitalization(.words)
+                .platformAutocapitalization(.words)
             valueEditor
         }
         .padding(.vertical, 2)
@@ -50,7 +54,7 @@ struct EditorFieldRow: View {
                         // MonoLisa for a typed password value; SF for the empty
                         // placeholder and for TOTP secrets.
                         .font(field.value.isEmpty || field.kind == .totp ? .body : .vaultCode())
-                        .textInputAutocapitalization(.never)
+                        .platformAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .opacity(showsPlaintext ? 1 : 0)
                     if !showsPlaintext {
@@ -102,8 +106,8 @@ struct EditorFieldRow: View {
         default:
             TextField(valuePlaceholder, text: $field.value)
                 .font(.body)
-                .keyboardType(keyboardType)
-                .textInputAutocapitalization(autocapitalization)
+                .platformKeyboardType(keyboardType)
+                .platformAutocapitalization(autocapitalization)
                 .autocorrectionDisabled(noAutocorrect)
         }
     }
@@ -140,16 +144,16 @@ struct EditorFieldRow: View {
         }
     }
 
-    private var keyboardType: UIKeyboardType {
+    private var keyboardType: PlatformKeyboardType {
         switch field.kind {
         case .email: return .emailAddress
-        case .url: return .URL
+        case .url: return .url
         case .number: return .numberPad
         default: return .default
         }
     }
 
-    private var autocapitalization: TextInputAutocapitalization {
+    private var autocapitalization: PlatformAutocapitalization {
         switch field.kind {
         case .email, .url, .username, .monospace: return .never
         default: return .sentences
@@ -220,7 +224,7 @@ private struct GenerateChipSurface: ViewModifier {
     func body(content: Content) -> some View {
         let shape = Capsule()
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(.regular.interactive(), in: shape)
         } else {
             content

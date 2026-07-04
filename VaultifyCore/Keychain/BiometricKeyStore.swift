@@ -21,6 +21,7 @@ nonisolated enum BiometricKeyStore {
         context.interactionNotAllowed = true
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
             kSecAttrService as String: KeychainStore.service,
             kSecAttrAccount as String: account,
             kSecAttrAccessGroup as String: accessGroup,
@@ -38,6 +39,7 @@ nonisolated enum BiometricKeyStore {
         else { throw Failure.accessControl }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
             kSecAttrService as String: KeychainStore.service,
             kSecAttrAccount as String: account,
             kSecAttrAccessGroup as String: accessGroup,
@@ -54,6 +56,7 @@ nonisolated enum BiometricKeyStore {
         context.localizedReason = reason
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
             kSecAttrService as String: KeychainStore.service,
             kSecAttrAccount as String: account,
             kSecAttrAccessGroup as String: accessGroup,

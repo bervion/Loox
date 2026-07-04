@@ -43,10 +43,10 @@ struct ItemDetailScreen: View {
         // (both white), making the cards invisible.
         .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle(item?.title ?? "")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let item {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
                         // Archiving only applies to live items; a trashed item is

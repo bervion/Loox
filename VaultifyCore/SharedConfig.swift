@@ -54,11 +54,21 @@ nonisolated enum SharedConfig {
         quarantinedPasskeySites = merged.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
-    /// App Group container, or the app's Application Support dir as a fallback
-    /// (keeps the app fully functional even if the group entitlement is absent).
+    /// App Group container. On iOS, falls back to the app's Application Support dir
+    /// (keeps the app functional even if the group entitlement is momentarily absent).
+    /// On macOS the container MUST resolve — a silent fallback would partition the vault
+    /// from the AutoFill extension and mask a sandbox/entitlement misconfig, so we fail loud.
     static var containerURL: URL {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)
-            ?? URL.applicationSupportDirectory
+        if let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) {
+            return url
+        }
+        #if os(macOS)
+        preconditionFailure(
+            "App Group container \(appGroup) unavailable — verify the macOS App Sandbox "
+            + "+ application-groups entitlement are provisioned.")
+        #else
+        return URL.applicationSupportDirectory
+        #endif
     }
 
     /// SwiftData store location (shared).

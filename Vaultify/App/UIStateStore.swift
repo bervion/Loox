@@ -17,7 +17,22 @@ import SwiftUI
         var id: String { item.id }
     }
 
+    /// iPad/Mac sidebar selection. A section mirrors `selectedTab`; a space points at a
+    /// folder id; profile opens the profile/settings detail.
+    enum SidebarSelection: Hashable {
+        case section(VaultTab)
+        case space(String)
+        case profile
+    }
+
     var selectedTab: VaultTab = .home
+
+    /// Live sidebar selection (iPad/Mac). Deliberately NOT part of the on-disk `Snapshot`:
+    /// it's derived from `selectedTab` and reconstructed on every layout appearance, so a
+    /// Stage-Manager size-class flip never leaves the detail column empty (decoupled from the
+    /// once-per-launch cold restore). Seeded from the restored `selectedTab` on cold launch.
+    var sidebarSelection: SidebarSelection = .section(.home)
+
     var homePath = NavigationPath()
     var itemsPath = NavigationPath()
     var searchPath = NavigationPath()
@@ -82,6 +97,7 @@ import SwiftUI
               let plaintext = try? AESGCM.open(sealed, key: key),
               let snapshot = try? JSONDecoder().decode(Snapshot.self, from: plaintext) else { return }
         selectedTab = VaultTab(rawValue: snapshot.selectedTab) ?? .home
+        sidebarSelection = .section(selectedTab)
         homePath = Self.decode(snapshot.homePath)
         itemsPath = Self.decode(snapshot.itemsPath)
         searchPath = Self.decode(snapshot.searchPath)
@@ -95,6 +111,7 @@ import SwiftUI
     /// Drop in-memory state and delete the on-disk snapshot (vault erase / reset).
     func wipe() {
         selectedTab = .home
+        sidebarSelection = .section(.home)
         homePath = NavigationPath()
         itemsPath = NavigationPath()
         searchPath = NavigationPath()

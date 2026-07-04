@@ -1,5 +1,7 @@
-import CoreMotion
 import Foundation
+#if os(iOS)
+import CoreMotion
+#endif
 
 /// Detects a deliberate device shake (privacy "panic" gesture) and fires `onShake` so the app
 /// can lock the vault. Tuned to ignore everyday motion (walking, lifting, glancing): it needs
@@ -8,6 +10,10 @@ import Foundation
 ///
 /// Lifecycle is caller-driven: `start` while unlocked + foreground, `stop` otherwise — the
 /// accelerometer only runs when it's actually useful, so there's no idle battery cost.
+///
+/// macOS has no accelerometer → the service compiles to a no-op, keeping call sites
+/// (`MainTabView`) platform-agnostic.
+#if os(iOS)
 @MainActor final class ShakeToLockService {
     private let motion = CMMotionManager()
 
@@ -54,3 +60,10 @@ import Foundation
         }
     }
 }
+#else
+@MainActor final class ShakeToLockService {
+    var isRunning: Bool { false }
+    func start(onShake: @escaping () -> Void) {}
+    func stop() {}
+}
+#endif

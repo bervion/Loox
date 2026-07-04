@@ -77,6 +77,10 @@ struct WatchtowerScreen: View {
                             PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
                         }
+                        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .menuIndicator(.hidden)
                         .frame(width: Metric.hitMin, height: Metric.hitMin)
                         .accessibilityLabel(Text("Add Item"))
                     }
@@ -85,7 +89,7 @@ struct WatchtowerScreen: View {
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .themedWallpaper(env.theme.wallpaper,
                              fallback: Color(rgb: env.theme.active.groupedBackground))
-            .toolbar(.hidden, for: .navigationBar)
+            .platformHiddenNavigationBar()
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
             .navigationDestination(for: String.self) { itemID in

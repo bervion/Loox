@@ -45,7 +45,7 @@ struct AboutView: View {
         }
         .themedFormBackground()
         .navigationTitle("About")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 
     private func aboutRow(_ icon: String, _ title: LocalizedStringResource, _ detail: LocalizedStringResource) -> some View {

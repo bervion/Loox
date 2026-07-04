@@ -1,3 +1,4 @@
+#if os(iOS)
 import UIKit
 
 /// Telegram-style scanner overlay: a dimmed surround with a centered focus hole
@@ -160,3 +161,4 @@ final class QRScannerOverlayView: UIView {
         return animation
     }
 }
+#endif

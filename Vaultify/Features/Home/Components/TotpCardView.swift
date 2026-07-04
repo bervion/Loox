@@ -78,8 +78,7 @@ struct TotpCardView: View {
     private func copyCode(_ code: String?) {
         guard let code, !copied else { return }
         env.clipboard.copy(code, label: "2FA code")
-        let impact = UIImpactFeedbackGenerator(style: .light)
-        impact.impactOccurred()
+        Haptics.tap()
         copied = true
         // Flash duration matches DS: 1100 ms.
         Task {

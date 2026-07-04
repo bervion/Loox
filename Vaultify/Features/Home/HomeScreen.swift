@@ -72,7 +72,7 @@ struct HomeScreen: View {
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .task { recomputeWatchtowerCount() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
@@ -147,6 +147,11 @@ struct HomeScreen: View {
                     fill: Color(rgb: env.theme.active.accent)
                 )
             }
+            // Plain card menu — macOS would otherwise draw a bordered pull-down button
+            // around the whole card, breaking the 2-up grid's visual consistency.
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
             .accessibilityLabel(Text("Add Item"))
 
             QuickActionCard.generate {

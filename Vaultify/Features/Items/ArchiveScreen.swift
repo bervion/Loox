@@ -35,6 +35,6 @@ struct ArchiveScreen: View {
         }
         .themedFormBackground()
         .navigationTitle("Archive")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 }

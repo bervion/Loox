@@ -23,7 +23,7 @@ struct HomeHeaderBar: View {
             Group {
                 if let identity = env.repository.defaultIdentity {
                     if let image = env.repository.avatarImage(for: identity.id) {
-                        Image(uiImage: image).resizable().scaledToFill()
+                        Image(platformImage: image).resizable().scaledToFill()
                     } else {
                         ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: 28)
                     }
@@ -119,6 +119,11 @@ struct HomeHeaderBar: View {
                             .frame(width: Metric.hitMin, height: Metric.hitMin)
                             .contentShape(.rect)
                     }
+                    // Plain glyph menu — macOS would otherwise draw a bordered
+                    // pull-down button (gray box + chevron) around the icon.
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
                     .accessibilityLabel(Text("Add Item"))
 
                     // Settings — direct, no "more" indirection

@@ -30,7 +30,7 @@ struct CountdownRing: View {
     @Environment(AppEnvironment.self) private var env
 
     private var trackColor: Color {
-        onAccent ? env.theme.active.color(.onAccent).opacity(0.3) : Color(.systemGray5)
+        onAccent ? env.theme.active.color(.onAccent).opacity(0.3) : Color.platformSystemGray5
     }
     private var progressColor: Color {
         if onAccent { return env.theme.active.color(.onAccent) }

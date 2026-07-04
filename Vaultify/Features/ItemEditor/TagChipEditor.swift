@@ -29,7 +29,7 @@ struct TagChipEditor: View {
             }
             TextField("Add tag", text: $entry)
                 .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
+                .platformAutocapitalization(.never)
                 .submitLabel(.done)
                 .onSubmit(commit)
                 .onChange(of: entry) { _, newValue in

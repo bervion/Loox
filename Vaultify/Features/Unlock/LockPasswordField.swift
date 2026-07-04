@@ -23,9 +23,9 @@ struct LockPasswordField: View {
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
                 }
                 SecureField("", text: $text)
-                    .textInputAutocapitalization(.never)
+                    .platformAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .textContentType(.password)
+                    .platformTextContentType(.password)
                     .font(.vaultCode())
                     .focused($focused)
                     .submitLabel(.go)

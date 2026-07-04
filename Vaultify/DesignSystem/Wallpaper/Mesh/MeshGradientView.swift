@@ -1,4 +1,6 @@
 import SwiftUI
+
+#if canImport(UIKit)
 import UIKit
 
 /// Animated multi-point mesh gradient — Telegram's technique without Metal: a static
@@ -57,7 +59,7 @@ final class MeshHostView: UIView {
         layer.contents = MeshGradientRenderer.image(colors: colors, positions: MeshMath.positions(phase: phase))?.cgImage
     }
 
-    /// Bake the interpolated frames (80×80, cheap) and play them via Core Animation.
+    /// Bake the interpolated frames (80x80, cheap) and play them via Core Animation.
     private func morph(from: Int, to: Int) {
         guard !colors.isEmpty else { renderStatic(); return }
         let duration = 0.5
@@ -86,3 +88,22 @@ final class MeshHostView: UIView {
         layer.add(animation, forKey: "contents")
     }
 }
+
+#elseif canImport(AppKit)
+
+/// Decorative wallpapers are gated off (`WallpaperFeature.decorativeEnabled == false`),
+/// so this animated CALayer-driven mesh has no reachable macOS UI surface today. Rather
+/// than port the full `CAKeyframeAnimation` bake (real work, zero current payoff), render
+/// a flat solid fallback from the first anchor color — compiles clean, and picks up the
+/// full port whenever `WallpaperFeature.decorativeEnabled` is flipped on for macOS.
+struct MeshGradientView: View {
+    let colors: [UInt32]
+    let phase: Int
+    var animated: Bool = true
+
+    var body: some View {
+        Color(rgb: colors.first ?? 0x000000)
+    }
+}
+
+#endif

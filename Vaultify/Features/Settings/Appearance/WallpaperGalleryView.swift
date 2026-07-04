@@ -1,6 +1,6 @@
 import SwiftUI
 import PhotosUI
-import UIKit
+import Foundation
 
 /// Pick the background for the current theme: built-in default, none, a curated
 /// preset (gradient / animated mesh), or a photo from the library (`PhotosPicker`,
@@ -41,7 +41,7 @@ struct WallpaperGalleryView: View {
         }
         .themedFormBackground()
         .navigationTitle("Background")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem) { _, item in importPhoto(item) }
     }
 
@@ -97,7 +97,7 @@ struct WallpaperGalleryView: View {
         guard let item else { return }
         Task {
             guard let data = try? await item.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data) else { return }
+                  let image = PlatformImage.fromData(data) else { return }
             let scaled = WallpaperStorage.downscale(image)
             if let name = WallpaperStorage.save(scaled) {
                 env.theme.setWallpaper(.image(fileName: name, settings: WallpaperSettings(dimAlpha: 0.15)), for: ref)

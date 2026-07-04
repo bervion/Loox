@@ -3,6 +3,11 @@ import Security
 
 /// Thin wrapper over the Keychain (generic-password class). All items are
 /// `WhenUnlockedThisDeviceOnly` — never synced to iCloud Keychain or backups.
+///
+/// Every query sets `kSecUseDataProtectionKeychain = true`: on iOS this is the
+/// existing behavior, but on macOS it opts into the iOS-style data-protection
+/// keychain (instead of the legacy file keychain), so `kSecAttrAccessGroup`
+/// sharing and `…ThisDeviceOnly` accessibility behave the same across platforms.
 nonisolated enum KeychainStore {
     static let service = "com.bervion.vaultify"
 
@@ -11,6 +16,7 @@ nonisolated enum KeychainStore {
     static func set(_ data: Data, account: String, accessGroup: String? = nil) throws {
         var match: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
@@ -35,6 +41,7 @@ nonisolated enum KeychainStore {
     static func get(account: String, accessGroup: String? = nil) throws -> Data? {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
@@ -52,6 +59,7 @@ nonisolated enum KeychainStore {
     static func delete(account: String, accessGroup: String? = nil) -> OSStatus {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]

@@ -3,6 +3,7 @@ import SwiftUI
 /// iCloud sync controls. Sync is opt-in; it uploads only sealed ciphertext.
 struct SyncSettingsView: View {
     @Environment(AppEnvironment.self) private var env
+    @State private var showPairSheet = false
 
     private var syncBinding: Binding<Bool> {
         Binding(
@@ -20,7 +21,9 @@ struct SyncSettingsView: View {
                     Label { Text("iCloud Sync") } icon: { PolarisIcon(Icons.sync) }
                 }
             } footer: {
-                Text("Items are end-to-end encrypted before they sync. iCloud stores only ciphertext — neither Apple nor anyone else can read your vault.")
+                // Honest scope: secrets are sealed; a small set of organizational
+                // metadata (folder icon/color/order, flags, timestamps) is not.
+                Text("Your items are end-to-end encrypted before they sync — iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata.")
             }
             .listRowBackground(VaultColors.surface)
 
@@ -45,11 +48,24 @@ struct SyncSettingsView: View {
                     statusRow
                 }
                 .listRowBackground(VaultColors.surface)
+
+                if CloudSyncService.isConfigured {
+                    Section {
+                        Button { showPairSheet = true } label: {
+                            Label { Text("Pair New Device") } icon: { PolarisIcon(Icons.scanCode) }
+                        }
+                        .disabled(env.session.state != .unlocked)
+                    } footer: {
+                        Text("Scan the QR code on a new iPhone, iPad, or Mac to give it access to this vault. The key transfers end-to-end encrypted.")
+                    }
+                    .listRowBackground(VaultColors.surface)
+                }
             }
         }
         .themedFormBackground()
         .navigationTitle("iCloud Sync")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showPairSheet) { PairDeviceSheet() }
     }
 
     @ViewBuilder private var statusRow: some View {

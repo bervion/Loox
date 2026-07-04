@@ -26,7 +26,7 @@ struct ProfileAvatarView: View {
             guard let newItem else { return }
             Task {
                 if let data = try? await newItem.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data) {
+                   let image = PlatformImage.fromData(data) {
                     env.repository.setAvatar(image, for: identity.id)
                 }
             }
@@ -35,7 +35,7 @@ struct ProfileAvatarView: View {
 
     @ViewBuilder private var avatar: some View {
         if let image = env.repository.avatarImage(for: identity.id) {
-            Image(uiImage: image)
+            Image(platformImage: image)
                 .resizable()
                 .scaledToFill()
                 .frame(width: size, height: size)

@@ -57,6 +57,7 @@ extension VaultRepository {
         store.context.insert(record)
         try store.context.save()
         reload()
+        noteLocalMutation()
         return folder.id
     }
 
@@ -71,6 +72,7 @@ extension VaultRepository {
         record.dirty = true
         try store.context.save()
         reload()
+        noteLocalMutation()
     }
 
     /// Delete a folder. Member items are reassigned to Unfiled (folderId = nil,
@@ -83,9 +85,13 @@ extension VaultRepository {
         }
         guard let record = folderRecord(id: folder.id) else { return }
         record.deletedAt = .now
+        // Tombstone must bump `updatedAt` or the pull LWW gate drops the deletion on
+        // the other device (and a later edit there resurrects the folder).
+        record.updatedAt = .now
         record.dirty = true
         try store.context.save()
         reload()
+        noteLocalMutation()
     }
 
     /// Move an item into a folder (or out, with `nil`). Re-seals the item.

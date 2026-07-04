@@ -12,13 +12,16 @@ struct OnboardingFlow: View {
     /// item seeds so they get a home (otherwise they'd land in Unfiled).
     @State private var defaultFolderId: String?
 
-    enum Step: Equatable { case welcome, create, name, emergencyKit, theme, biometric, done }
+    enum Step: Equatable { case welcome, join, create, name, emergencyKit, theme, biometric, done }
 
     var body: some View {
         ZStack {
             switch step {
             case .welcome:
-                WelcomeStep { step = .create }
+                WelcomeStep(onContinue: { step = .create },
+                            onJoin: CloudSyncService.isConfigured ? { step = .join } : nil)
+            case .join:
+                JoinVaultFlow(onCancel: { step = .welcome })
             case .create:
                 CreateMasterPasswordView(onSubmit: createVault)
             case .name:
@@ -114,6 +117,8 @@ struct OnboardingFlow: View {
 
 private struct WelcomeStep: View {
     let onContinue: () -> Void
+    /// Present when this build can join an existing vault over iCloud (sync configured).
+    var onJoin: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -152,11 +157,21 @@ private struct WelcomeStep: View {
                 .scrollBounceBehavior(.basedOnSize)
             }
 
-            Button(action: onContinue) {
-                Text("Get Started").frame(maxWidth: .infinity)
+            VStack(spacing: Space.s3) {
+                Button(action: onContinue) {
+                    Text("Get Started").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.themedProminent)
+                .controlSize(.large)
+
+                if let onJoin {
+                    Button(action: onJoin) {
+                        Text("Sync from another device").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
             }
-            .buttonStyle(.themedProminent)
-            .controlSize(.large)
             .padding(.horizontal, Space.s6)
             .padding(.top, Space.s3)
             .padding(.bottom, Space.s6)

@@ -52,6 +52,10 @@ struct AttachmentFieldRow: View {
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(VaultColors.fill))
         }
+        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
     }
 
     private func preview() {

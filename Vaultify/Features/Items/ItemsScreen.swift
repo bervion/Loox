@@ -56,6 +56,10 @@ struct ItemsScreen: View {
                             PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
                         }
+                        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .menuIndicator(.hidden)
                         .frame(width: Metric.hitMin, height: Metric.hitMin)
                         .accessibilityLabel(Text("Add Item"))
                     }
@@ -63,7 +67,7 @@ struct ItemsScreen: View {
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }

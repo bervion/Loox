@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Mac App Store distribution requires the App Sandbox. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Shared container for the encrypted vault store + wrapped key bundle,
+	     read by the (future) macOS AutoFill extension. Mirrors the iOS App Group. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.bervion.vaultify</string>
+	</array>
+	<!-- Shared keychain group for the biometric-gated Vault Key. Team-prefixed at build. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.bervion.vaultify.shared</string>
+	</array>
+	<!-- Outbound network for favicon fetch (sandbox blocks all network by default). -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- User-selected file access for theme / Emergency-Kit import & export and the photo picker. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- iCloud (CloudKit) sync — container provisioned in the developer portal.
+	     Code paths stay behind the VAULTIFY_ICLOUD compile flag. -->
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.bervion.vaultify</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<!-- Silent CloudKit pushes (near-real-time sync); macOS uses the prefixed key. -->
+	<key>com.apple.developer.aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

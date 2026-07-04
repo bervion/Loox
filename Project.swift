@@ -25,10 +25,10 @@ let project = Project(
     targets: [
         .target(
             name: "Vaultify",
-            destinations: [.iPhone],
+            destinations: [.iPhone, .iPad, .mac],
             product: .app,
             bundleId: "com.bervion.vaultify",
-            deploymentTargets: .iOS("17.6"),
+            deploymentTargets: .multiplatform(iOS: "17.6", macOS: "15.0"),
             infoPlist: .extendingDefault(with: [
                 // Brand: full name "Loox Password" (App Store listing), short display
                 // name "Loox" under the icon. Bundle ids/groups keep the vaultify names.
@@ -66,6 +66,9 @@ let project = Project(
                         "CFBundleURLSchemes": ["otpauth"],
                     ],
                 ],
+                // Wake on silent CloudKit pushes so cross-device changes pull promptly
+                // even when backgrounded (near-real-time sync).
+                "UIBackgroundModes": ["remote-notification"],
                 "NSCameraUsageDescription": "Loox uses the camera to scan 2FA setup QR codes.",
                 "NSFaceIDUsageDescription": "Loox uses Face ID to unlock your vault.",
                 "UIApplicationSupportsIndirectInputEvents": true,
@@ -93,9 +96,12 @@ let project = Project(
                 "Vaultify/LaunchScreen.storyboard",
                 "Vaultify/Resources/**",
             ],
-            entitlements: "Vaultify/Vaultify.entitlements",
             dependencies: [
-                .target(name: "VaultifyAutoFill"),
+                // Embed the iOS AutoFill extension only on iOS destinations — a single
+                // multiplatform target applies its dependency graph to the macOS slice
+                // too, and macOS cannot link an iOS-only appExtension. The macOS AutoFill
+                // extension is a separate target added in a later phase.
+                .target(name: "VaultifyAutoFill", condition: .when([.ios])),
             ],
             settings: .settings(base: [
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "vaultify",
@@ -109,7 +115,21 @@ let project = Project(
                 "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
                 "SWIFT_EMIT_LOC_STRINGS": "YES",
                 "STRING_CATALOG_GENERATE_SYMBOLS": "YES",
-                "TARGETED_DEVICE_FAMILY": "1",
+                // iCloud sync gate: the CloudKit code paths compile only with this flag,
+                // matching the iCloud entitlement (container provisioned in the portal).
+                "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "$(inherited) VAULTIFY_ICLOUD",
+                // iPhone + iPad (macOS ignores this key).
+                "TARGETED_DEVICE_FAMILY": "1,2",
+                // Per-SDK entitlements: iOS keeps its file; macOS gets the App-Sandbox
+                // variant (Mac App Store requires the sandbox).
+                "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": "Vaultify/Vaultify.entitlements",
+                "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": "Vaultify/Vaultify.entitlements",
+                "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": "Vaultify/Vaultify-macOS.entitlements",
+                // Hardened runtime is required for Mac App Store distribution (no-op on iOS).
+                "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": "YES",
+                // The iOS launch storyboard can't be compiled for macOS (and macOS ignores
+                // UILaunchStoryboardName) — exclude it from the mac slice.
+                "EXCLUDED_SOURCE_FILE_NAMES[sdk=macosx*]": "LaunchScreen.storyboard",
             ])
         ),
         .target(

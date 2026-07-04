@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 import PhotosUI
 import CoreImage
 import CoreImage.CIFilterBuiltins
@@ -37,12 +36,24 @@ struct TOTPScannerSheet: View {
             // chrome light regardless of the app theme — themed light here would make
             // the title invisible over the black camera feed.
             .preferredColorScheme(.dark)
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
             .onChange(of: photoItem) { _, item in Task { await loadPhoto(item) } }
         }
+        #if os(macOS)
+        // NavigationStack toolbar Cancel can fail to render on macOS sheets — guarantee
+        // a working close control plus a non-collapsed sheet size.
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: { PolarisIcon(Icons.close, size: 16) }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.cancelAction)
+                .accessibilityLabel(Text("Close"))
+                .padding(Space.s4)
+        }
+        .frame(minWidth: 460, idealWidth: 520, minHeight: 460, idealHeight: 620)
+        #endif
     }
 
     private var controls: some View {
@@ -59,7 +70,7 @@ struct TOTPScannerSheet: View {
             HStack {
                 TextField("Or paste setup key", text: $manual)
                     .font(.body)
-                    .textInputAutocapitalization(.never)
+                    .platformAutocapitalization(.never)
                     .autocorrectionDisabled()
                 Button("Add") { handle(manual) }.disabled(manual.isEmpty)
             }
@@ -81,17 +92,18 @@ struct TOTPScannerSheet: View {
 
     private func loadPhoto(_ item: PhotosPickerItem?) async {
         guard let item,
-              let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else { return }
-        if let code = Self.decodeQR(from: image) {
+              let data = try? await item.loadTransferable(type: Data.self) else { return }
+        if let code = Self.decodeQR(from: data) {
             handle(code)
         } else {
             error = appString("No QR code found in that image.")
         }
     }
 
-    static func decodeQR(from image: UIImage) -> String? {
-        guard let ciImage = CIImage(image: image) else { return nil }
+    /// Decode a QR code from raw image bytes (`CIImage(data:)` reads the encoded
+    /// bytes directly — cross-platform, no `UIImage`/`NSImage` round-trip needed).
+    static func decodeQR(from data: Data) -> String? {
+        guard let ciImage = CIImage(data: data) else { return nil }
         let detector = CIDetector(ofType: CIDetectorTypeQRCode, context: nil,
                                   options: [CIDetectorAccuracy: CIDetectorAccuracyHigh])
         let features = (detector?.features(in: ciImage) as? [CIQRCodeFeature]) ?? []

@@ -1,9 +1,12 @@
 import Foundation
 import CloudKit
 
-/// Zero-knowledge CloudKit sync: only the already-sealed (AES-256-GCM) item
-/// blobs and non-secret metadata are uploaded to the user's private database.
-/// CloudKit never sees plaintext or the Vault Key. Last-writer-wins by `updatedAt`.
+/// CloudKit sync of the user's private database. **Secrets are sealed** (AES-256-GCM
+/// item/folder blobs; CloudKit never sees plaintext or the Vault Key), while a small
+/// set of *organizational* metadata rides in cleartext columns so devices can merge
+/// without unsealing: timestamps, favorite/pinned/archived flags, folder icon/color/
+/// sort order. Content merges last-writer-wins by `updatedAt`; the column-only
+/// pinned/archived toggles merge by their own `metaUpdatedAt` (see `VaultStore`).
 @MainActor @Observable final class CloudSyncService {
     enum Status: Equatable {
         case idle, syncing, success(Date), error(String)
@@ -60,6 +63,23 @@ import CloudKit
         }
     }
 
+    /// Best-effort remote wipe for "Erase Vault": deleting the zone drops every
+    /// synced record — sealed items/folders, the recovery-key envelope, and any
+    /// pairing hand-offs — so the printed Emergency Kit can no longer resurrect an
+    /// "erased" vault from iCloud, and a re-created vault never pulls undecryptable
+    /// ghosts sealed under the old key. Offline/erased-signed-out is tolerated (the
+    /// local wipe still proceeds; the cloud copy then outlives until next sign-in).
+    func eraseRemote() async {
+        guard Self.isConfigured else { return }
+        _ = try? await database.modifyRecordZones(saving: [], deleting: [zone.zoneID])
+        // The push subscription pointed at the deleted zone; drop it and forget the
+        // local marker so a future vault re-subscribes cleanly.
+        _ = try? await database.modifySubscriptions(saving: [], deleting: [SyncPushService.subscriptionID])
+        SyncPushService.clearLocalFlag()
+        // The delta cursor died with the zone — a future vault must full-fetch.
+        savedChangeToken = nil
+    }
+
     private func push() async throws {
         try await pushItems()
         try await pushFolders()
@@ -68,11 +88,21 @@ import CloudKit
     private func pushItems() async throws {
         let dirty = store.allRecords().filter(\.dirty)
         guard !dirty.isEmpty else { return }
+        // Snapshot each record's timestamps BEFORE the await: `modifyRecords` is a
+        // suspension point, and an edit made mid-flight must stay dirty (markSynced
+        // clears the flag only when the record is unchanged since this snapshot).
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map {
+            ($0.id, (updatedAt: $0.updatedAt, metaUpdatedAt: $0.metaUpdatedAt))
+        })
         let records = dirty.map(ckRecord(from:))
         let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
         for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult, let local = store.record(id: recordID.recordName) {
-                store.markSynced(local, changeTag: saved.recordChangeTag)
+            if case .success(let saved) = saveResult,
+               let local = store.record(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markSynced(local, changeTag: saved.recordChangeTag,
+                                 snapshotUpdatedAt: snapshot.updatedAt,
+                                 snapshotMetaUpdatedAt: snapshot.metaUpdatedAt)
             }
         }
     }
@@ -80,28 +110,79 @@ import CloudKit
     private func pushFolders() async throws {
         let dirty = store.allFolderRecords().filter(\.dirty)
         guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckFolderRecord(from:))
         let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
         for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult, let local = store.folderRecord(id: recordID.recordName) {
-                store.markFolderSynced(local, changeTag: saved.recordChangeTag)
+            if case .success(let saved) = saveResult,
+               let local = store.folderRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markFolderSynced(local, changeTag: saved.recordChangeTag,
+                                       snapshotUpdatedAt: snapshot)
             }
         }
     }
 
+    /// Pull via zone-changes delta fetch — the canonical CloudKit sync primitive.
+    /// Deliberately NOT `CKQuery`: a TRUEPREDICATE query needs the `recordName`
+    /// system field marked Queryable in the CloudKit schema (a manual console index
+    /// that must be re-added per environment; missing it fails every pull with
+    /// "Field 'recordName' is not marked queryable"). Zone changes need no index,
+    /// page via `moreComing`, and the persisted server change token means later
+    /// syncs download only what actually changed.
     private func pull() async throws {
-        try await pull(recordType: recordType, apply: apply)
-        try await pull(recordType: folderRecordType, apply: applyFolder)
+        var token = savedChangeToken
+        var didResetToken = false
+        while true {
+            let changes: (modificationResultsByID: [CKRecord.ID: Result<CKDatabase.RecordZoneChange.Modification, any Error>],
+                          deletions: [CKDatabase.RecordZoneChange.Deletion],
+                          changeToken: CKServerChangeToken,
+                          moreComing: Bool)
+            do {
+                changes = try await database.recordZoneChanges(inZoneWith: zone.zoneID, since: token)
+            } catch let error as CKError where error.code == .changeTokenExpired && !didResetToken {
+                // Stale token (e.g. the zone was erased + recreated) → one full refetch.
+                token = nil
+                savedChangeToken = nil
+                didResetToken = true
+                continue
+            }
+            for (_, result) in changes.modificationResultsByID {
+                guard case .success(let modification) = result else { continue }
+                let record = modification.record
+                switch record.recordType {
+                case recordType: apply(record)
+                case folderRecordType: applyFolder(record)
+                // Key-escrow records share the zone but aren't vault data.
+                default: break
+                }
+            }
+            // `deletions` is unused by design: vault deletions travel as soft
+            // tombstones (deletedAt) on modified records, never as CK deletes.
+            token = changes.changeToken
+            savedChangeToken = changes.changeToken
+            guard changes.moreComing else { break }
+        }
     }
 
-    private func pull(recordType: String, apply: (CKRecord) -> Void) async throws {
-        let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
-        let (matches, _) = try await database.records(
-            matching: query, inZoneWith: zone.zoneID,
-            desiredKeys: nil, resultsLimit: CKQueryOperation.maximumResults)
-        for (_, recordResult) in matches {
-            guard case .success(let record) = recordResult else { continue }
-            apply(record)
+    // MARK: Server change token (delta-pull cursor, device-local)
+
+    private static let changeTokenKey = "cloudkit_vault_zone_change_token"
+
+    private var savedChangeToken: CKServerChangeToken? {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: Self.changeTokenKey) else { return nil }
+            return try? NSKeyedUnarchiver.unarchivedObject(ofClass: CKServerChangeToken.self, from: data)
+        }
+        set {
+            let defaults = UserDefaults.standard
+            guard let newValue,
+                  let data = try? NSKeyedArchiver.archivedData(withRootObject: newValue,
+                                                               requiringSecureCoding: true) else {
+                defaults.removeObject(forKey: Self.changeTokenKey)
+                return
+            }
+            defaults.set(data, forKey: Self.changeTokenKey)
         }
     }
 
@@ -114,7 +195,10 @@ import CloudKit
         ck["favorite"] = (record.favorite ? 1 : 0) as CKRecordValue
         ck["pinned"] = (record.pinned ? 1 : 0) as CKRecordValue
         ck["archived"] = (record.archived ? 1 : 0) as CKRecordValue
-        ck["useCount"] = record.useCount as CKRecordValue
+        ck["metaUpdatedAt"] = record.metaUpdatedAt as CKRecordValue
+        // `useCount`/`lastUsedAt` are deliberately NOT uploaded: they're device-local
+        // usage telemetry (Recents / Frequently Used), and keeping them off CloudKit
+        // also removes a plaintext usage-frequency signal from the cloud record.
         ck["isDefaultIdentity"] = (record.isDefaultIdentity ? 1 : 0) as CKRecordValue
         if let avatarSealed = record.avatarSealed { ck["avatarSealed"] = avatarSealed as CKRecordValue }
         if let trashedAt = record.trashedAt { ck["trashedAt"] = trashedAt as CKRecordValue }
@@ -134,7 +218,9 @@ import CloudKit
             createdAt: createdAt, updatedAt: updatedAt,
             pinned: (record["pinned"] as? Int ?? 0) == 1,
             archived: (record["archived"] as? Int ?? 0) == 1,
-            useCount: record["useCount"] as? Int ?? 0,
+            // Records written before the meta timestamp existed carry none — treat as
+            // ancient so any local toggle wins.
+            metaUpdatedAt: record["metaUpdatedAt"] as? Date ?? .distantPast,
             isDefaultIdentity: (record["isDefaultIdentity"] as? Int ?? 0) == 1,
             avatarSealed: record["avatarSealed"] as? Data,
             changeTag: record.recordChangeTag)

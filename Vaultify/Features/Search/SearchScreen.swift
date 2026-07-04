@@ -16,7 +16,7 @@ struct SearchScreen: View {
                 .navigationTitle("Search")
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
+                .platformAutocapitalization(.never)
                 .vaultNavigationDestinations()
         }
         .onAppear { searchPresented = true }
@@ -44,7 +44,7 @@ struct SearchResultsList: View {
                 ContentUnavailableView.search(text: query)
             } else {
                 List(results) { VaultItemRowLink(item: $0) }
-                    .listStyle(.insetGrouped)
+                    .platformInsetGroupedListStyle()
                     .scrollContentBackground(.hidden)
                     .scrollIndicators(.hidden)
             }

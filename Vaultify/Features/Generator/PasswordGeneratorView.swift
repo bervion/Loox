@@ -59,6 +59,11 @@ struct PasswordGeneratorView: View {
                     }
                     .contentShape(Rectangle())
                 }
+                // Plain row menu (own chevron already drawn) — macOS would otherwise
+                // draw a bordered pull-down button around the whole row.
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
 
                 switch mode {
                 case .password:   passwordControls
@@ -89,7 +94,7 @@ struct PasswordGeneratorView: View {
             // HeaderIconButton (44pt hit target, utility-sized glyph, themed) in a
             // tight HStack. iOS 26 groups the single toolbar item into one glass
             // pill. `checkCircle` reads bolder than a bare check for the confirm.
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .platformPrimaryAction) {
                 HStack(spacing: 0) {
                     HeaderIconButton(Icons.replay, accessibilityLabel: "Regenerate") {
                         Haptics.tap(); regenerate()

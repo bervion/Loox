@@ -1,4 +1,7 @@
-#if compiler(>=6.2)
+// Credential Exchange (ASImportable*/ASExported* + ASCredentialImport/ExportManager) is an
+// iOS-focused API surface; the macOS equivalents require macOS 26 (deployment is macOS 15),
+// so this dormant feature stays iOS-only for now. No macOS callers exist.
+#if compiler(>=6.2) && os(iOS)
 import AuthenticationServices
 import CryptoKit
 import Foundation

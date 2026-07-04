@@ -20,7 +20,7 @@ struct AppearanceSettingsView: View {
         }
         .themedFormBackground()
         .navigationTitle("Appearance")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 
     // MARK: Theme

@@ -57,7 +57,7 @@ struct WallpaperView: View {
 
     @ViewBuilder private func imageView(_ fileName: String, _ settings: WallpaperSettings) -> some View {
         if let image = WallpaperStorage.loadImage(named: fileName) {
-            Image(uiImage: image)
+            Image(platformImage: image)
                 .resizable()
                 .scaledToFill()
                 .modifier(WallpaperEffects(settings: settings))

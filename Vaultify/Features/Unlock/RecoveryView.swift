@@ -66,7 +66,7 @@ struct RecoveryView: View {
                             in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
             TextField("Recovery key", text: $recoveryKey, axis: .vertical)
                 .font(recoveryKey.isEmpty ? .body : .vaultCode())
-                .textInputAutocapitalization(.characters)
+                .platformAutocapitalization(.characters)
                 .autocorrectionDisabled()
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

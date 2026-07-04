@@ -62,7 +62,7 @@ private struct VaultScreenHeaderBackground: View {
 
     var body: some View {
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             glassReveal
         } else {
             materialReveal
@@ -73,7 +73,7 @@ private struct VaultScreenHeaderBackground: View {
     }
 
     #if compiler(>=6.2)
-    @available(iOS 26, *)
+    @available(iOS 26, macOS 26, *)
     private var glassReveal: some View {
         ZStack {
             Color.clear
@@ -203,7 +203,7 @@ struct HeaderActionCluster<Content: View>: View {
 ///
 /// Guard strategy mirrors VaultTabBarBackground:
 ///   - `#if compiler(>=6.2)` keeps the `glassEffect` symbol hidden from pre-Xcode-26 CI
-///   - `#available(iOS 26, *)` ensures it only runs on the OS that ships the API
+///   - `#available(iOS 26, macOS 26, *)` ensures it only runs on the OS that ships the API
 ///   - `!reduceTransparency` honours the Accessibility setting
 private struct HeaderGlassCapsule: ViewModifier {
     @Environment(AppEnvironment.self) private var env
@@ -212,7 +212,7 @@ private struct HeaderGlassCapsule: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(.regular.interactive(), in: Capsule())
         } else {
             fallback(content)
@@ -272,6 +272,9 @@ struct HeaderIconButton: View {
                 .frame(width: Metric.hitMin, height: Metric.hitMin)
                 .contentShape(.rect)
         }
+        // Explicit plain style: macOS's default bordered button style would wrap the
+        // glyph in a gray push-button box (iOS's default is already borderless).
+        .buttonStyle(.plain)
         .accessibilityLabel(Text(accessibilityLabel))
     }
 }
