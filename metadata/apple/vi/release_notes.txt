@@ -1,1 +1,1 @@
-Bản cập nhật này thêm lối tắt bật Loox cho AutoFill, trình quét mã QR toàn màn hình, và giao diện thương hiệu cho màn hình mở khóa và khôi phục AutoFill. Đã sửa kích thước logo và giúp mở khóa mượt hơn.
+Bản cập nhật này giúp trải nghiệm ban đầu với Loox mượt mà hơn: màn hình khóa gọn gàng hơn, thiết lập có sẵn vài mục mẫu hữu ích, và dễ dàng tìm lại các mục đã lưu trữ hoặc xóa.

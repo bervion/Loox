@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0] - 2026-07-04
+
+### Added
+- title + description under the logo, lock icon in the field
+- pre-fill identity email + welcome note, tag starter items
+- collect email + seed a branded "Loox Account" item
+- make restoring trashed/archived items discoverable
+
+### Fixed
+- update IdentitySeedTests for the new make(...) signature
+
+
 ## [1.10.0] - 2026-07-03
 
 ### Added

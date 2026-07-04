@@ -1,1 +1,1 @@
-This update adds a quick shortcut to enable Loox for AutoFill, a full-screen QR scanner, and a branded look for AutoFill unlock and recovery screens. Also fixed logo sizing and made unlock feel instant.
+This update polishes your first experience with Loox: a cleaner lock screen, a guided setup with helpful starter items already in place, and an easier way to find and restore anything you've archived or deleted.
