@@ -20,7 +20,7 @@ struct RootView: View {
             switch route {
             case .onboarding: OnboardingFlow()
             case .locked: LockScreen()
-            case .unlocked: MainTabView()
+            case .unlocked: AdaptiveRootView()
             }
 
             if obscured && env.settings.hideInAppSwitcher && route == .unlocked {

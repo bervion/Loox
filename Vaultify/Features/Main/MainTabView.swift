@@ -1,68 +1,23 @@
 import SwiftUI
-import Combine
 #if canImport(UIKit)
 import UIKit
 #endif
 
-/// The unlocked app shell: Home · Items · Watchtower · Search.
+/// The compact (iPhone) unlocked app shell: Home · Items · Watchtower · Search.
 ///
 /// Uses the system `TabView` tab bar for native switching performance and iOS 26 Liquid
 /// Glass. Each tab item intentionally provides only a Polaris icon asset, so the visual
-/// bar remains icon-only while VoiceOver still gets localized labels.
+/// bar remains icon-only while VoiceOver still gets localized labels. Shared shell
+/// behaviors (toast, sheets, auto-lock, section notifications) come from
+/// `vaultShellBehaviors()` — the same modifier the iPad/Mac sidebar applies.
 struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var shakeDetector = ShakeToLockService()
-    private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        @Bindable var uiState = uiState
-        return tabContent
+        tabContent
             .tint(env.theme.uiTint)
-            .overlay(alignment: .bottom) { CopyToastOverlay() }
-            .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
-            .onChange(of: uiState.selectedTab) { _, _ in
-                env.session.registerActivity()
-            }
-            .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
-            .onAppear { env.theme.morphMesh(); updateShakeDetector() }
-            .onDisappear { shakeDetector.stop() }
-            .onChange(of: env.settings.shakeToLock) { _, _ in updateShakeDetector() }
-            .onChange(of: scenePhase) { _, _ in updateShakeDetector() }
-            .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToSearch)) { _ in
-                uiState.selectedTab = .search
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
-                uiState.selectedTab = .watchtower
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToItems)) { _ in
-                uiState.selectedTab = .items
-            }
-            // Present the editor for a 2FA login imported via otpauth:// (now that we're unlocked).
-            .sheet(item: Binding(get: { env.pendingTOTPImport },
-                                 set: { env.pendingTOTPImport = $0 })) { item in
-                ItemEditorScreen(target: .draft(item))
-            }
-            // Re-present an unsaved editor draft recovered from a previous launch (one-shot,
-            // separate from the live `editorDraft` capture so a normally-opened editor is never
-            // duplicated). `.edit` preserves the existing item id (a save updates, not
-            // duplicates); `.draft` continues a new item.
-            .sheet(item: $uiState.restoredDraft) { draft in
-                ItemEditorScreen(target: draft.isNew ? .draft(draft.item) : .edit(draft.item))
-            }
-    }
-
-    /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).
-    private func updateShakeDetector() {
-        if env.settings.shakeToLock, scenePhase == .active {
-            shakeDetector.start {
-                Haptics.success()
-                env.session.lock(viaShake: true)
-            }
-        } else {
-            shakeDetector.stop()
-        }
+            .vaultShellBehaviors()
     }
 
     /// Tab list. iOS 18+ uses the `Tab` builder so the Search tab can carry
