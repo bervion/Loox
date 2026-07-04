@@ -9,6 +9,9 @@ import SwiftUI
 struct HomeScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
+    #if os(macOS)
+    @Environment(\.openSettings) private var openSettings
+    #endif
     @State private var editorTarget: EditorTarget?
     @State private var showSettings = false
     @State private var showProfile = false
@@ -66,7 +69,15 @@ struct HomeScreen: View {
                 HomeHeaderBar(
                     selectedFolderId: $selectedFolderId,
                     onAddCategory: { editorTarget = .new($0) },
-                    onSettings: { showSettings = true },
+                    onSettings: {
+                        // macOS opens the native Settings window (⌘,) instead of the
+                        // iOS-style sheet — the platform-idiomatic home for settings.
+                        #if os(macOS)
+                        openSettings()
+                        #else
+                        showSettings = true
+                        #endif
+                    },
                     onProfile: { showProfile = true }
                 )
             }

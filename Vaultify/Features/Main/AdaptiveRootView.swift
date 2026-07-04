@@ -11,10 +11,16 @@ struct AdaptiveRootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
+        #if os(macOS)
+        // The Mac gets its own three-column shell (sidebar · list · detail) with
+        // toolbar search — no Home or Search screens on this platform.
+        MacRootView()
+        #else
         if horizontalSizeClass == .compact {
             MainTabView()
         } else {
             VaultSidebarView()
         }
+        #endif
     }
 }
