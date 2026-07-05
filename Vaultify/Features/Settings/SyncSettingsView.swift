@@ -4,6 +4,9 @@ import SwiftUI
 struct SyncSettingsView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var showPairSheet = false
+    #if DEBUG
+    @State private var spikeEmail = ""
+    #endif
 
     private var syncBinding: Binding<Bool> {
         Binding(
@@ -61,12 +64,46 @@ struct SyncSettingsView: View {
                     .listRowBackground(VaultColors.surface)
                 }
             }
+            #if DEBUG
+            approvalSpikeSection
+            #endif
         }
         .themedFormBackground()
         .navigationTitle("iCloud Sync")
         .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPairSheet) { PairDeviceSheet() }
     }
+
+    #if DEBUG
+    /// Throwaway Phase-1 latency gating spike (two iCloud accounts). Plain
+    /// unlocalized strings on purpose — DEBUG-only, deleted after the gate.
+    private var approvalSpikeSection: some View {
+        Section("Approval Spike (DEBUG)") {
+            TextField("Participant iCloud email", text: $spikeEmail)
+                .platformAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Button("1 · Owner: create share") {
+                Task { await ApprovalSpike.shared.startOwner(participantEmail: spikeEmail,
+                                                             settings: env.settings) }
+            }
+            .disabled(!spikeEmail.contains("@"))
+            if let url = ApprovalSpike.shared.shareURL {
+                ShareLink("Send share link to participant", item: url)
+            }
+            Button("2 · Requester: send request") {
+                Task { await ApprovalSpike.shared.sendRequest(settings: env.settings) }
+            }
+            Button("3 · Owner: approve pending") {
+                Task { await ApprovalSpike.shared.approvePending() }
+            }
+            Text(ApprovalSpike.shared.status).font(.footnote).themedForeground(.secondary)
+            Button("Reset owner spike", role: .destructive) {
+                Task { await ApprovalSpike.shared.resetOwner() }
+            }
+        }
+        .listRowBackground(VaultColors.surface)
+    }
+    #endif
 
     @ViewBuilder private var statusRow: some View {
         switch env.cloudSync.status {

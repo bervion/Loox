@@ -1,31 +1,115 @@
 import CloudKit
 import SwiftUI
+import UserNotifications
 
-/// Receives CloudKit silent pushes (registered by `SyncPushService`'s zone
-/// subscription) and turns them into a `.vaultRemoteChangePush` notification the
-/// `SyncCoordinator` reacts to. Decoupled via NotificationCenter because the
-/// delegate is created by the adaptor before `AppEnvironment` exists.
+/// Receives CloudKit pushes and routes them by `AppPushKind` (ADR-5):
+/// - `vaultRemoteChange` — silent zone push from `SyncPushService`'s
+///   subscription → `.vaultRemoteChangePush` → `SyncCoordinator` pulls.
+/// - `approvalRequest` — user-visible alert push (participant wrote a request
+///   into an approval zone) → `.approvalRequestReceived`.
+/// - `approvalResponse` — silent shared-db push (owner answered) →
+///   `.approvalResponseReceived`.
+/// Decoupled via NotificationCenter because the delegate is created by the
+/// adaptor before `AppEnvironment` exists.
 #if canImport(UIKit)
-final class AppPushDelegate: NSObject, UIApplicationDelegate {
+final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         // Silent CloudKit pushes need remote-notification registration; this never
         // shows a permission prompt (alert notifications are a separate opt-in).
         application.registerForRemoteNotifications()
+        // Tap-routing for user-visible pushes (approval requests) and foreground
+        // presentation policy. Rotation reminders keep their default behavior.
+        UNUserNotificationCenter.current().delegate = self
         return true
+    }
+
+    /// Inject a scene delegate so CKShare invitations can be accepted
+    /// (`windowScene(_:userDidAcceptCloudKitShareWith:)`); SwiftUI still owns
+    /// the window — the delegate only listens.
+    func application(_ application: UIApplication,
+                     configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        config.delegateClass = VaultSceneDelegate.self
+        return config
     }
 
     func application(_ application: UIApplication,
                      didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        guard CKNotification(fromRemoteNotificationDictionary: userInfo) != nil else {
+        guard let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo) else {
             completionHandler(.noData)
             return
         }
-        NotificationCenter.default.post(name: .vaultRemoteChangePush, object: nil)
+        Self.route(ckNotification)
         // The pull runs async via the coordinator; report newData so iOS keeps
         // scheduling background deliveries for this app.
         completionHandler(.newData)
+    }
+
+    static func route(_ notification: CKNotification) {
+        switch AppPushKind.classify(notification) {
+        case .vaultRemoteChange:
+            NotificationCenter.default.post(name: .vaultRemoteChangePush, object: nil)
+        case .approvalRequest:
+            NotificationCenter.default.post(name: .approvalRequestReceived, object: nil)
+        case .approvalResponse:
+            NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
+        }
+    }
+
+    // MARK: UNUserNotificationCenterDelegate
+
+    /// The owner tapped the approval alert → open straight into the pending
+    /// request (verification happens before any approval UI is shown).
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        if let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo) {
+            Self.route(ckNotification)
+        }
+        completionHandler()
+    }
+
+    /// Foreground policy: approval alerts still banner (the owner may have the
+    /// app open on another screen); everything else keeps the pre-delegate
+    /// default of not presenting while foregrounded.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let userInfo = notification.request.content.userInfo
+        if let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo),
+           AppPushKind.classify(ckNotification) == .approvalRequest {
+            // Foreground owner: surface the pending request immediately (no tap
+            // needed) — the alert push carries no fetch payload by design.
+            Self.route(ckNotification)
+            completionHandler([.banner, .sound, .list])
+        } else {
+            completionHandler([])
+        }
+    }
+}
+
+/// Accepts CKShare invitations (approval-zone shares). Present only for the
+/// share-accept callback — SwiftUI keeps managing the window and scenes.
+final class VaultSceneDelegate: NSObject, UIWindowSceneDelegate {
+    func windowScene(_ windowScene: UIWindowScene,
+                     userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata) {
+        VaultSceneDelegate.accept(cloudKitShareMetadata)
+    }
+
+    static func accept(_ metadata: CKShare.Metadata) {
+        Task {
+            do {
+                let container = CKContainer(identifier: ApprovalConfig.containerID)
+                _ = try await container.accept(metadata)
+                NotificationCenter.default.post(name: .vaultShareAccepted, object: nil)
+            } catch {
+                // Best-effort: the inviter can re-send; the recipient can re-tap.
+            }
+        }
     }
 }
 #elseif canImport(AppKit)
@@ -36,8 +120,28 @@ final class AppPushDelegate: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication,
                      didReceiveRemoteNotification userInfo: [String: Any]) {
-        guard CKNotification(fromRemoteNotificationDictionary: userInfo) != nil else { return }
-        NotificationCenter.default.post(name: .vaultRemoteChangePush, object: nil)
+        guard let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo) else { return }
+        switch AppPushKind.classify(ckNotification) {
+        case .vaultRemoteChange:
+            NotificationCenter.default.post(name: .vaultRemoteChangePush, object: nil)
+        case .approvalRequest:
+            NotificationCenter.default.post(name: .approvalRequestReceived, object: nil)
+        case .approvalResponse:
+            NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
+        }
+    }
+
+    func application(_ application: NSApplication,
+                     userDidAcceptCloudKitShareWith metadata: CKShare.Metadata) {
+        Task {
+            do {
+                let container = CKContainer(identifier: ApprovalConfig.containerID)
+                _ = try await container.accept(metadata)
+                NotificationCenter.default.post(name: .vaultShareAccepted, object: nil)
+            } catch {
+                // Best-effort, mirroring the iOS branch: post only on success.
+            }
+        }
     }
 }
 #endif
