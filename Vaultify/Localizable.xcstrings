@@ -331,6 +331,16 @@
         }
       }
     },
+    "Accept": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chấp nhận"
+          }
+        }
+      }
+    },
     "Access is tied to this iCloud account — only they can accept, and there's no link that works for anyone else.": {
       "localizations": {
         "en": {
@@ -918,6 +928,7 @@
       }
     },
     "Ask %@ to read the code shown on their device. Confirm only if both codes match exactly — this is what proves you're sharing with the right person.": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1637,6 +1648,7 @@
       }
     },
     "Compare this code": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -4794,6 +4806,16 @@
         }
       }
     },
+    "Not Now": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Để sau"
+          }
+        }
+      }
+    },
     "Not now": {
       "localizations": {
         "vi": {
@@ -6319,6 +6341,16 @@
         }
       }
     },
+    "Send the invitation, then keep this screen open. Once they accept on their device, you can activate the share.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi lời mời, sau đó giữ màn hình này mở. Khi họ chấp nhận trên thiết bị của họ, bạn có thể kích hoạt chia sẻ."
+          }
+        }
+      }
+    },
     "Send the invitation, then keep this screen open. Once they accept on their device, you'll compare a short code together.": {
       "localizations": {
         "en": {
@@ -6605,6 +6637,16 @@
         }
       }
     },
+    "Share invitation": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lời mời chia sẻ"
+          }
+        }
+      }
+    },
     "Shared": {
       "localizations": {
         "en": {
@@ -6887,6 +6929,16 @@
         }
       }
     },
+    "Someone shared an item with you in Loox Password. Accept to see it in \"Shared with Me\" on Home.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có người chia sẻ một mục với bạn trong Loox Password. Chấp nhận để xem trong \"Được chia sẻ với tôi\" ở Trang chính."
+          }
+        }
+      }
+    },
     "Someone you shared with is asking for the current verification code for %@.": {
       "localizations": {
         "en": {
@@ -6986,6 +7038,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bộ khởi đầu"
+          }
+        }
+      }
+    },
+    "Still waiting — you can close this screen and finish later, or tap Check Now.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vẫn đang chờ — bạn có thể đóng màn hình này và hoàn tất sau, hoặc bấm Kiểm tra ngay."
           }
         }
       }
@@ -7260,6 +7322,7 @@
       }
     },
     "The codes match": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -7388,6 +7451,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kho đang bị khóa."
+          }
+        }
+      }
+    },
+    "Their device was notified automatically. If nothing shows up there, send the link below as a backup.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thiết bị của họ đã được thông báo tự động. Nếu bên đó không thấy gì, hãy gửi liên kết bên dưới để dự phòng."
           }
         }
       }
@@ -8793,7 +8866,40 @@
         }
       }
     },
+    "invite.push.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone shared something with you in Loox. Open to review."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có người chia sẻ một mục với bạn trong Loox. Mở ứng dụng để xem."
+          }
+        }
+      }
+    },
+    "invite.push.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share invitation"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lời mời chia sẻ"
+          }
+        }
+      }
+    },
     "the owner": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {

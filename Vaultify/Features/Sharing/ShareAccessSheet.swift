@@ -32,6 +32,11 @@ struct ShareAccessSheet: View {
     @State private var revokeTarget: ItemShareRecord?
     /// iMessage compose (recipient pre-filled) for the invite link.
     @State private var showMessageCompose = false
+    /// A rendezvous drop reached the recipient's armed inbox — their device
+    /// will surface the invite by itself; the link is now just a backup.
+    @State private var autoInviteSent = false
+    /// The bounded poll ran out — surface that waiting continues manually.
+    @State private var pollExhausted = false
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -83,6 +88,10 @@ struct ShareAccessSheet: View {
         do {
             try await env.approvalShare.revoke(zoneName: share.zoneName,
                                                inviteRecordName: share.inviteRecordName)
+            // The rendezvous drop is creator-delete only — GC it here too.
+            if let dropRecordName = share.dropRecordName {
+                await env.inviteLinks.deleteInvite(recordName: dropRecordName)
+            }
             env.sharingStore.remove(zoneName: share.zoneName)
         } catch {
             step = .failed(error.localizedDescription)
@@ -172,6 +181,16 @@ struct ShareAccessSheet: View {
                 inviteURL = minted.url
                 inviteRecordName = minted.recordName
             }
+            // Loox-to-Loox tier (U5): if the recipient has an armed invite
+            // inbox, drop a sealed envelope so their device gets a push and
+            // surfaces the invite by itself. Best-effort — the link below
+            // remains the universal fallback either way.
+            var dropRecordName: String?
+            if let shareURL = setup.shareURL {
+                dropRecordName = await env.inviteInbox.dropInvite(
+                    shareURL: shareURL, recipientEmail: normalizedEmail)
+                autoInviteSent = dropRecordName != nil
+            }
             // Approval Mode listening turns on now, deliberately BEFORE the
             // grant exists — the accept push must be receivable. The pending
             // record below keeps that state accounted for.
@@ -180,7 +199,8 @@ struct ShareAccessSheet: View {
                 itemId: itemID, zoneName: setup.zoneID.zoneName,
                 recipientLabel: normalizedEmail, grantId: nil,
                 createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
-                fingerprintConfirmed: false, inviteRecordName: inviteRecordName))
+                fingerprintConfirmed: false, inviteRecordName: inviteRecordName,
+                dropRecordName: dropRecordName))
             step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL)
         } catch {
             step = .failed(error.localizedDescription)
@@ -205,6 +225,9 @@ struct ShareAccessSheet: View {
             try? await Task.sleep(for: delay)
             delay = min(delay * 2, .seconds(10))
         }
+        // Budget exhausted must SAY so — a silent stop reads as "still
+        // polling" and strands the owner on a screen that no longer checks.
+        pollExhausted = true
     }
 
     /// One immediate profile check (the "Check Now" button).
@@ -243,11 +266,16 @@ struct ShareAccessSheet: View {
                 participantPubKey: profile.participantPubKey,
                 pinnedDeviceSigningKeys: profile.deviceSigningKeys,
                 epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
-            // Acceptance is proven — the public invite record has served its
-            // purpose; delete it now (owner is the only principal who can).
-            if let inviteRecordName = env.sharingStore.shares(forItem: item.id)
-                .first(where: { $0.zoneName == zoneID.zoneName })?.inviteRecordName {
+            // Acceptance is proven — the public invite artifacts have served
+            // their purpose; delete them now (owner is the only principal
+            // who can — public-db records are creator-delete only).
+            let pendingRecord = env.sharingStore.shares(forItem: item.id)
+                .first { $0.zoneName == zoneID.zoneName }
+            if let inviteRecordName = pendingRecord?.inviteRecordName {
                 await env.inviteLinks.deleteInvite(recordName: inviteRecordName)
+            }
+            if let dropRecordName = pendingRecord?.dropRecordName {
+                await env.inviteLinks.deleteInvite(recordName: dropRecordName)
             }
             env.sharingStore.upsert(ItemShareRecord(
                 itemId: item.id, zoneName: zoneID.zoneName,
@@ -336,9 +364,16 @@ struct ShareAccessSheet: View {
             ProgressView()
             Text("Waiting for them to accept…")
                 .vaultType(.section).themedForeground()
-            Text("Send the invitation, then keep this screen open. Once they accept on their device, you'll compare a short code together.")
+            Text(autoInviteSent
+                 ? "Their device was notified automatically. If nothing shows up there, send the link below as a backup."
+                 : "Send the invitation, then keep this screen open. Once they accept on their device, you can activate the share.")
                 .vaultType(.callout).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
+            if pollExhausted {
+                Text("Still waiting — you can close this screen and finish later, or tap Check Now.")
+                    .vaultType(.footnote).themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             if let shareURL {
                 #if os(iOS)
                 // Primary: iMessage with the recipient pre-filled (the share

@@ -80,6 +80,9 @@ struct VaultShellBehaviors: ViewModifier {
             .task(id: env.approvalCoordinator.recipientChangeCounter) {
                 await resumePendingShareAcceptance()
             }
+            // Recipient side: rendezvous invite inbox (arm + reconcile + accept
+            // prompt) — one path for launch/foreground/push-hint (U6).
+            .inviteInboxBehaviors()
             .sheet(item: $presentedApproval) { pending in
                 ApprovalRequestSheet(
                     pending: pending,

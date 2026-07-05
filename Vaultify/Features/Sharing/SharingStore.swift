@@ -14,6 +14,8 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
     /// Public-DB invite record to GC once acceptance is proven (optional —
     /// records created before this field decode fine).
     var inviteRecordName: String? = nil
+    /// Public-DB rendezvous drop to GC alongside it (creator-only delete).
+    var dropRecordName: String? = nil
 }
 
 /// Owner-side registry of shares per item → "Shared with N" and the Phase-7

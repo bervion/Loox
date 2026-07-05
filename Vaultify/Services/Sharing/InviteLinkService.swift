@@ -130,7 +130,13 @@ import Foundation
             throw Failure.notFoundOrExpired
         }
 
-        // CloudKit acceptance contract: URL → CKShare.Metadata → accept.
+        try await acceptShare(url: shareURL)
+    }
+
+    /// CloudKit acceptance contract (U7): URL → CKShare.Metadata → accept —
+    /// never fabricated metadata. Shared by the link tier (above) and the
+    /// rendezvous-envelope tier (the envelope carries the raw CKShare URL).
+    func acceptShare(url shareURL: URL) async throws {
         let metadata = try await fetchShareMetadata(shareURL: shareURL)
         do {
             _ = try await container.accept(metadata)
