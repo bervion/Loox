@@ -64,9 +64,7 @@ import Foundation
             // denied (reconcile-on-open still works, pushes just won't show).
             _ = await ApprovalPrerequisites.check()
             let userID = try await container.userRecordID()
-            let inboxID = UserDefaults.standard.string(forKey: Self.inboxIDKey)
-                ?? Self.randomInboxID()
-            UserDefaults.standard.set(inboxID, forKey: Self.inboxIDKey)
+            let inboxID = Self.storedOrNewInboxID()
 
             let signer = try DeviceSigningIdentity.loadOrCreate()
             let descriptor = CKRecord(
@@ -196,24 +194,10 @@ import Foundation
     func dropInvite(shareURL: URL, recipientEmail: String,
                     knownRecipientZoneNames: [String]) async -> String? {
         do {
-            guard let recipientID = await resolveRecipientUserRecordID(
+            guard let target = await resolveRecipientInbox(
                 email: recipientEmail, knownZoneNames: knownRecipientZoneNames) else {
                 return nil
             }
-            let descriptor: CKRecord
-            do {
-                descriptor = try await publicDB.record(
-                    for: CKRecord.ID(recordName: "inbox-" + recipientID.recordName))
-            } catch {
-                debugLog("drop skipped: recipient has no inbox descriptor yet")
-                return nil
-            }
-            guard let inboxID = descriptor[Field.inboxID] as? String,
-                  let encryptionKey = descriptor[Field.encryptionKey] as? Data else {
-                debugLog("drop skipped: descriptor malformed")
-                return nil
-            }
-
             let signer = try DeviceSigningIdentity.loadOrCreate()
             let myID = try await container.userRecordID()
             let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
@@ -221,16 +205,16 @@ import Foundation
                 inviteID: ApprovalConfig.opaqueName(),
                 shareURL: shareURL.absoluteString,
                 ownerParticipantID: myID.recordName,
-                recipientParticipantID: recipientID.recordName,
+                recipientParticipantID: target.recipientParticipantID,
                 senderSigningPubKey: signer.publicKeyRaw,
                 createdAtUnixMs: nowMs,
                 expiresAtUnixMs: nowMs + Self.dropLifetimeMs)
-            let blob = try envelope.sealedAndSigned(toRecipientPubKey: encryptionKey,
-                                                    inboxID: inboxID, signer: signer)
+            let blob = try envelope.sealedAndSigned(toRecipientPubKey: target.encryptionKey,
+                                                    inboxID: target.inboxID, signer: signer)
 
             let drop = CKRecord(recordType: ApprovalConfig.publicInviteRecordType,
                                 recordID: CKRecord.ID(recordName: "drop-" + ApprovalConfig.opaqueName()))
-            drop[Field.recipientInboxID] = inboxID as CKRecordValue
+            drop[Field.recipientInboxID] = target.inboxID as CKRecordValue
             drop[Field.blob] = blob as CKRecordValue
             // Coarse (hour) timestamps — exact mint time is a needless leak;
             // the precise createdAt lives INSIDE the sealed envelope.
@@ -238,12 +222,47 @@ import Foundation
             drop[Field.expiresAtMs] = (((nowMs + Self.dropLifetimeMs) / 3_600_000) * 3_600_000) as CKRecordValue
             let saved = try await publicDB.modifyRecords(saving: [drop], deleting: [])
             for (_, result) in saved.saveResults { _ = try result.get() }
-            debugLog("drop committed \(drop.recordID.recordName) → inbox \(inboxID.prefix(8))…")
+            debugLog("drop committed \(drop.recordID.recordName) → inbox \(target.inboxID.prefix(8))…")
             return drop.recordID.recordName
         } catch {
             debugLog("drop FAILED: \(error)")
             return nil
         }
+    }
+
+    /// Everything a drop needs about the recipient. Two channels, both
+    /// post-acceptance (CloudKit hides userRecordID from email lookups):
+    /// 1. The participant PROFILE the recipient published into one of this
+    ///    owner's zones — carries inboxID + encryption key + the recipient's
+    ///    self-declared userRecordID. Authoritative, no public-db hop.
+    /// 2. Legacy: accepted-participant scan → public descriptor fetch (for
+    ///    profiles written before the rendezvous fields existed).
+    /// Net either way: FIRST invite rides the link; repeats are automatic.
+    private func resolveRecipientInbox(email: String, knownZoneNames: [String]) async
+        -> (inboxID: String, encryptionKey: Data, recipientParticipantID: String)? {
+        let privateDB = container.privateCloudDatabase
+        for zoneName in knownZoneNames {
+            let profileID = CKRecord.ID(
+                recordName: ApprovalConfig.participantProfileRecordName,
+                zoneID: CKRecordZone.ID(zoneName: zoneName))
+            guard let profile = try? await privateDB.record(for: profileID) else { continue }
+            if let inboxID = profile[ApprovalRecordMapping.Field.inviteInboxID] as? String,
+               let recipientID = profile[ApprovalRecordMapping.Field.inviteRecipientID] as? String,
+               let key = profile[ApprovalRecordMapping.Field.participantPubKey] as? Data {
+                return (inboxID, key, recipientID)
+            }
+        }
+
+        guard let recipientID = await resolveRecipientUserRecordID(
+            email: email, knownZoneNames: knownZoneNames) else { return nil }
+        guard let descriptor = try? await publicDB.record(
+            for: CKRecord.ID(recordName: "inbox-" + recipientID.recordName)),
+              let inboxID = descriptor[Field.inboxID] as? String,
+              let encryptionKey = descriptor[Field.encryptionKey] as? Data else {
+            debugLog("drop skipped: recipient has no inbox descriptor yet")
+            return nil
+        }
+        return (inboxID, encryptionKey, recipientID.recordName)
     }
 
     /// The recipient's opaque CloudKit userRecordID. Email lookup first (in
@@ -276,6 +295,16 @@ import Foundation
     /// 256-bit random inbox id (U5) — never derived from email or any PII.
     private static func randomInboxID() -> String {
         CryptoRandom.bytes(32).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// The device's inbox id, minted on first use — also embedded in the
+    /// participant profile B publishes into each owner's zone, so owners can
+    /// auto-invite this recipient again without any public-db lookup.
+    static func storedOrNewInboxID() -> String {
+        if let existing = UserDefaults.standard.string(forKey: inboxIDKey) { return existing }
+        let fresh = randomInboxID()
+        UserDefaults.standard.set(fresh, forKey: inboxIDKey)
+        return fresh
     }
 
     private static func descriptorSigningBody(inboxID: String, encryptionKey: Data,

@@ -53,10 +53,16 @@ import Foundation
     func publishProfile(identity: ParticipantIdentity, zoneID: CKRecordZone.ID,
                         nowUnixMs: Int64) async throws {
         let signingIdentity = try DeviceSigningIdentity.loadOrCreate()
+        // Rendezvous pointers ride along (repeat auto-invites, U5): the inbox
+        // id B listens on, and B's OWN opaque userRecordID — the owner can't
+        // learn either from an email lookup, but B can always say its own.
         let record = ApprovalRecordMapping.participantProfileRecord(
             participantPubKey: identity.publicKeyRaw,
             deviceSigningKeys: [signingIdentity.publicKeyRaw],
-            createdAtUnixMs: nowUnixMs, zoneID: zoneID)
+            createdAtUnixMs: nowUnixMs,
+            inviteInboxID: InviteInboxService.storedOrNewInboxID(),
+            inviteRecipientID: (try? await container.userRecordID())?.recordName,
+            zoneID: zoneID)
         let saved = try await sharedDatabase.modifyRecords(saving: [record], deleting: [],
                                                            savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
