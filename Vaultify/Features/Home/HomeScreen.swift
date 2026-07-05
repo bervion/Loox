@@ -92,11 +92,6 @@ struct HomeScreen: View {
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
-            .navigationDestination(for: SharedWithMeRoute.self) { _ in SharedWithMeScreen() }
-            // Registered HERE, not inside SharedWithMeScreen: a destination
-            // declared inside another destination's content doesn't reliably
-            // register, leaving row taps dead.
-            .navigationDestination(for: SharedZoneRoute.self) { route in SharedItemView(route: route) }
             .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }

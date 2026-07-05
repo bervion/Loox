@@ -81,16 +81,26 @@ struct ItemsScreen: View {
             sectionHeader("Spaces")
             groupedCard {
                 ForEach(env.repository.folders) { folder in
-                    navRow(.folder(folder.id), title: Text(verbatim: folder.name),
+                    navRow(VaultRoute.folder(folder.id), title: Text(verbatim: folder.name),
                            count: env.repository.itemCount(for: folder.id), showDivider: true) {
                         FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
                     }
                 }
                 if env.repository.unfiledCount > 0 {
-                    navRow(.folder(nil), title: Text("Unfiled"),
+                    navRow(VaultRoute.folder(nil), title: Text("Unfiled"),
                            count: env.repository.unfiledCount, showDivider: true) {
                         leadingTile(Icons.folder, fill: VaultColors.fill,
                                     iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
+                    }
+                }
+                // System space (U1): a projection over shares accepted from
+                // other people — not a folder record, so no rename/delete/count.
+                if env.settings.approvalModeEnabled {
+                    navRow(SharedWithMeRoute(), title: Text("Shared with Me"),
+                           count: 0, showDivider: true) {
+                        leadingTile(Icons.share,
+                                    fill: Color(rgb: env.theme.active.accent).opacity(0.14),
+                                    iconColor: Color(rgb: env.theme.active.accent), iconSize: 16)
                     }
                 }
                 createSpaceRow
@@ -103,7 +113,7 @@ struct ItemsScreen: View {
             sectionHeader("Categories")
             groupedCard {
                 ForEach(Array(categories.enumerated()), id: \.element.id) { idx, category in
-                    navRow(.category(category), title: Text(category.title),
+                    navRow(VaultRoute.category(category), title: Text(category.title),
                            count: env.repository.count(forCategory: category),
                            showDivider: idx < categories.count - 1) {
                         leadingTile(category.iconAsset,
@@ -120,7 +130,7 @@ struct ItemsScreen: View {
             sectionHeader("Tags")
             groupedCard {
                 ForEach(Array(tags.enumerated()), id: \.element.tag) { idx, entry in
-                    navRow(.tag(entry.tag), title: Text(verbatim: entry.tag),
+                    navRow(VaultRoute.tag(entry.tag), title: Text(verbatim: entry.tag),
                            count: entry.count, showDivider: idx < tags.count - 1) {
                         leadingTile(Icons.hashtag, fill: VaultColors.fill,
                                     iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
@@ -132,12 +142,12 @@ struct ItemsScreen: View {
 
     private var standaloneSection: some View {
         groupedCard {
-            navRow(.archive, title: Text("Archive"),
+            navRow(VaultRoute.archive, title: Text("Archive"),
                    count: env.repository.archived.count, showDivider: true) {
                 leadingTile(Icons.archive, fill: VaultColors.fill,
                             iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
             }
-            navRow(.recentlyDeleted, title: Text("Recently Deleted"),
+            navRow(VaultRoute.recentlyDeleted, title: Text("Recently Deleted"),
                    count: env.repository.trashed.count, showDivider: false) {
                 leadingTile(Icons.trash, fill: VaultColors.fill,
                             iconColor: env.theme.active.color(.iconSecondary), iconSize: 16)
@@ -185,8 +195,8 @@ struct ItemsScreen: View {
     /// Navigation row inside a grouped card: leading badge + title + optional count
     /// + chevron, with a leading-inset hairline divider.
     @ViewBuilder
-    private func navRow<Leading: View>(
-        _ route: VaultRoute,
+    private func navRow<Route: Hashable, Leading: View>(
+        _ route: Route,
         title: Text,
         count: Int,
         showDivider: Bool,
