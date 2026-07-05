@@ -10,6 +10,9 @@ struct VaultifyApp: App {
     @State private var env = AppEnvironment()
     /// Localized failure from an invite universal link (expired/invalid).
     @State private var inviteError: String?
+    /// Acceptance succeeded — tell the user where to look (the accept itself
+    /// is silent/native by design; silence reads as "nothing happened").
+    @State private var inviteAccepted = false
     // Receives CloudKit silent pushes for near-real-time sync (see AppPushDelegate).
     #if canImport(UIKit)
     @UIApplicationDelegateAdaptor(AppPushDelegate.self) private var pushDelegate
@@ -62,8 +65,10 @@ struct VaultifyApp: App {
                     guard let url = activity.webpageURL,
                           InviteLinkService.isInviteLink(url) else { return }
                     Task {
-                        do { try await env.inviteLinks.acceptInvite(from: url) }
-                        catch { inviteError = error.localizedDescription }
+                        do {
+                            try await env.inviteLinks.acceptInvite(from: url)
+                            inviteAccepted = true
+                        } catch { inviteError = error.localizedDescription }
                     }
                 }
                 // A dead/expired invite link must say so — silence here reads
@@ -74,6 +79,11 @@ struct VaultifyApp: App {
                     Button("OK", role: .cancel) {}
                 } message: {
                     Text(verbatim: inviteError ?? "")
+                }
+                .alert("Invitation accepted", isPresented: $inviteAccepted) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("Unlock your vault and open \"Shared with Me\" on Home to finish setting up.")
                 }
                 .environment(env)
                 .environment(env.uiState)

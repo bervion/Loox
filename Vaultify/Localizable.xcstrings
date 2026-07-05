@@ -8687,6 +8687,38 @@
           }
         }
       }
+    },
+    "Invitation accepted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invitation accepted"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã nhận lời mời"
+          }
+        }
+      }
+    },
+    "Unlock your vault and open \"Shared with Me\" on Home to finish setting up.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock your vault and open \"Shared with Me\" on Home to finish setting up."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở khóa kho và vào \"Được chia sẻ với tôi\" ở màn hình chính để hoàn tất thiết lập."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

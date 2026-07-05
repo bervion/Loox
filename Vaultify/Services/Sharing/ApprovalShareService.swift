@@ -245,9 +245,15 @@ import Foundation
     /// the approve path fetches the grant FRESH, so a deleted zone fails with
     /// `zoneNotFound` before any code could be issued. Already-delivered
     /// `shared` values remain with B (stated in the revoke confirm — H5).
-    func revoke(zoneName: String) async throws {
+    func revoke(zoneName: String, inviteRecordName: String? = nil) async throws {
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         _ = try await database.modifyRecordZones(saving: [], deleting: [zoneID])
+        // A dangling public invite record would keep resolving to a dead zone
+        // for up to 7 days — delete it with the share it belonged to.
+        if let inviteRecordName {
+            _ = try? await container.publicCloudDatabase.modifyRecords(
+                saving: [], deleting: [CKRecord.ID(recordName: inviteRecordName)])
+        }
         _ = try? await database.modifySubscriptions(
             saving: [], deleting: [ApprovalConfig.requestSubscriptionID(zoneName: zoneName)])
         Self.unregisterZone(zoneName)

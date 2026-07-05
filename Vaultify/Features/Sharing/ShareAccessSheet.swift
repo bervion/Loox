@@ -79,7 +79,8 @@ struct ShareAccessSheet: View {
 
     private func revoke(_ share: ItemShareRecord) async {
         do {
-            try await env.approvalShare.revoke(zoneName: share.zoneName)
+            try await env.approvalShare.revoke(zoneName: share.zoneName,
+                                               inviteRecordName: share.inviteRecordName)
             env.sharingStore.remove(zoneName: share.zoneName)
         } catch {
             step = .failed(error.localizedDescription)
