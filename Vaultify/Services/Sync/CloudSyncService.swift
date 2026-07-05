@@ -129,61 +129,31 @@ import CloudKit
     /// that must be re-added per environment; missing it fails every pull with
     /// "Field 'recordName' is not marked queryable"). Zone changes need no index,
     /// page via `moreComing`, and the persisted server change token means later
-    /// syncs download only what actually changed.
+    /// syncs download only what actually changed. Token loop + expiry recovery
+    /// live in the shared `ZoneDeltaFetch` (also used by the approval path).
+    /// `deletions` are unused by design: vault deletions travel as soft
+    /// tombstones (deletedAt) on modified records, never as CK deletes.
     private func pull() async throws {
-        var token = savedChangeToken
-        var didResetToken = false
-        while true {
-            let changes: (modificationResultsByID: [CKRecord.ID: Result<CKDatabase.RecordZoneChange.Modification, any Error>],
-                          deletions: [CKDatabase.RecordZoneChange.Deletion],
-                          changeToken: CKServerChangeToken,
-                          moreComing: Bool)
-            do {
-                changes = try await database.recordZoneChanges(inZoneWith: zone.zoneID, since: token)
-            } catch let error as CKError where error.code == .changeTokenExpired && !didResetToken {
-                // Stale token (e.g. the zone was erased + recreated) → one full refetch.
-                token = nil
-                savedChangeToken = nil
-                didResetToken = true
-                continue
+        try await ZoneDeltaFetch.pull(database: database, zoneID: zone.zoneID,
+                                      cursor: changeCursor) { record in
+            switch record.recordType {
+            case self.recordType: self.apply(record)
+            case self.folderRecordType: self.applyFolder(record)
+            // Key-escrow records share the zone but aren't vault data.
+            default: break
             }
-            for (_, result) in changes.modificationResultsByID {
-                guard case .success(let modification) = result else { continue }
-                let record = modification.record
-                switch record.recordType {
-                case recordType: apply(record)
-                case folderRecordType: applyFolder(record)
-                // Key-escrow records share the zone but aren't vault data.
-                default: break
-                }
-            }
-            // `deletions` is unused by design: vault deletions travel as soft
-            // tombstones (deletedAt) on modified records, never as CK deletes.
-            token = changes.changeToken
-            savedChangeToken = changes.changeToken
-            guard changes.moreComing else { break }
         }
     }
 
     // MARK: Server change token (delta-pull cursor, device-local)
 
-    private static let changeTokenKey = "cloudkit_vault_zone_change_token"
+    /// Same UserDefaults key + archive format as always — adopting the shared
+    /// cursor changes no persisted state.
+    private let changeCursor = ChangeTokenCursor(key: "cloudkit_vault_zone_change_token")
 
     private var savedChangeToken: CKServerChangeToken? {
-        get {
-            guard let data = UserDefaults.standard.data(forKey: Self.changeTokenKey) else { return nil }
-            return try? NSKeyedUnarchiver.unarchivedObject(ofClass: CKServerChangeToken.self, from: data)
-        }
-        set {
-            let defaults = UserDefaults.standard
-            guard let newValue,
-                  let data = try? NSKeyedArchiver.archivedData(withRootObject: newValue,
-                                                               requiringSecureCoding: true) else {
-                defaults.removeObject(forKey: Self.changeTokenKey)
-                return
-            }
-            defaults.set(data, forKey: Self.changeTokenKey)
-        }
+        get { changeCursor.token }
+        set { changeCursor.token = newValue }
     }
 
     private func ckRecord(from record: ItemRecord) -> CKRecord {
