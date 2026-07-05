@@ -1,36 +1,55 @@
-# Phase 01 — Online Gate (app): chặn tuyệt đối khi mất mạng
+# Phase 01 — App Gate State Machine (V2.1: KHÔNG render trước verify)
 
-Priority: cao · Status: planned · Effort: 0.5 buổi
+Priority: cao · Effort: 0.5–1 buổi · Depends: P00
+Patched theo review 260705: bỏ hẳn "verify song song với render" (vi phạm INV-01).
 
-## Overview
-Shared items chỉ xem được khi CÓ mạng (quyết định #2 — không grace). Hai tầng:
-reachability (tức thì, NWPathMonitor) + live-grant verify (authoritative, fail-closed).
-Snapshot 260705 giữ nguyên (tốc độ list); tầng gate quyết định có render VALUES không.
+## State machine (bắt buộc, INV-01/02/03)
+
+```swift
+enum SharedValueAccessState: Equatable {
+    case offline                       // network path chưa satisfied
+    case verifying                     // đang authoritative verify — values CHƯA materialize
+    case authorized(VerifiedGrantContext)
+    case unavailable                   // verify lỗi/timeout — KHÔNG phải offline
+    case revoked
+}
+```
+
+- Values **không bao giờ vào render tree** trước `.authorized`:
+  `guard case .authorized = accessState else { renderLockedState(); return }`.
+  CẤM pattern `if hasSatisfiedNetworkPath { renderCachedSecret(); Task { verify() } }`.
+- Mở detail: path chưa satisfied → `.offline`. Path OK → `.verifying` → verify grant
+  (fetch record, đối chiếu epoch) → `.authorized` (decrypt + render) / `.revoked`
+  (purge projection + cache + snapshot, toast) / `.unavailable` (lỗi/timeout —
+  copy "Không thể xác minh quyền truy cập lúc này", KHÔNG nói "cần mạng").
+- Đang `.authorized` mà path rớt → về `.offline` ngay (values gỡ khỏi tree).
+- Copy/reveal: mỗi action re-check state; stale verify response phải bị loại bằng
+  epoch/version guard (INV-06 — verify kết quả mang epoch, so với epoch hiện hành).
+- Bật mạng lại → `.verifying`, KHÔNG "xem ngay". Snapshot chỉ được hiện metadata Tier 1
+  (title/site/icon) trong lúc verifying — value-bearing fields thì không.
+
+## Naming (review P1-3)
+- `NetworkReachabilityMonitor.hasSatisfiedNetworkPath` (KHÔNG đặt `isOnline`) —
+  NWPathMonitor là network-path precondition (Layer A), không phải oracle CloudKit.
+  Layer B = authoritative grant verify. Không có đường nào từ Layer A thẳng tới render.
+- Timeout verify lấy từ `SharedAccessTimingPolicy.grantVerificationDeadline` (P00) —
+  không hardcode 3s.
 
 ## Files
-- Tạo: `VaultifyCore/Platform/NetworkReachabilityMonitor.swift` (NWPathMonitor wrapper,
-  `@Observable`, nonisolated core — extension dùng chung ở P02).
-- Sửa: `SharedItemsProjection.swift` (thêm `isDisplayGateOpen` + `verifyGrantAlive(itemId:)`
-  — fetch nhẹ record grant, CKError.zoneNotFound → remove item + cache + snapshot ngay),
-  `ItemDetailScreen.swift` (sharedOrigin + offline → placeholder che values),
-  `ItemsScreen/HomeScreen/SearchScreen` (row shared khi offline: mờ + badge "Cần mạng"),
-  `SharedWithMeScreen.swift`, `AppEnvironment.swift` (wire monitor).
-
-## Steps
-1. `NetworkReachabilityMonitor`: `isOnline: Bool` cập nhật realtime; khởi động cùng env.
-2. Detail screen của shared item: `guard isOnline` → nếu offline hiện state
-   "Cần kết nối mạng để xem mục được chia sẻ" (icon globe, không render field values);
-   đang xem mà rớt mạng → values ẩn NGAY (observe monitor).
-3. Mở detail + trước mỗi copy/reveal: `verifyGrantAlive` async — grant chết → item biến mất
-   toàn cục (projection + cache + snapshot), toast "Chủ sở hữu đã thu hồi".
-4. List rows: offline → disabled + badge; không cho navigate vào detail.
-5. l10n EN+VI cho mọi copy mới.
+- Tạo: `VaultifyCore/Platform/NetworkReachabilityMonitor.swift`,
+  `Vaultify/Services/Sharing/SharedAccessAuthorizer.swift` (state machine + verify,
+  unit-testable thuần logic).
+- Sửa: `SharedItemsProjection.swift` (purge on revoked), `ItemDetailScreen.swift` (render
+  theo state), lists (row shared: badge theo state, không navigate khi offline),
+  `AppEnvironment.swift`.
 
 ## Success criteria
-- Airplane mode → shared values không thể xem ở bất kỳ màn nào; bật mạng lại → xem được ngay.
-- Revoke từ owner trong lúc recipient đang mở detail (có mạng) → values biến trong ≤1 lần verify.
-- Item OWNED không bị ảnh hưởng gì.
+- Airplane mode → `.offline`, không màn nào lộ values; bật mạng → `.verifying` →
+  chỉ hiện sau verify pass.
+- Race test (P06): revoke lúc app background → foreground → tap copy NGAY → fail
+  (state chưa kịp `.authorized` thì copy không có gì để lấy — vì values chưa render).
+- Owned items không đổi hành vi.
 
 ## Risks
-- CloudKit verify chậm trên mạng yếu → verify chạy song song với render, fail-closed sau
-  timeout ngắn (~3s coi như offline). KHÔNG block copy của owned items.
+- Verify thêm ~0.3–1s mỗi lần mở detail shared item khi mạng chậm — chấp nhận (đúng
+  yêu cầu "chặn tuyệt đối"); UX: skeleton + spinner ngắn, metadata Tier 1 hiện trước.

@@ -1,66 +1,62 @@
-# Phase 05 — Passkey + TOTP capability v2 (askEachTime & shared giao-key)
+# Phase 05 — Passkey + TOTP capability v2 (V2.1: frozen transcripts, honest revoke)
 
-Priority: cao · Status: planned · Effort: 2 buổi · Depends: P03 (grant v2), P04 (extension CK)
+Priority: cao · Effort: 2–3 buổi · Depends: P03b (grant v2), P04 (extension CK)
 
-## Overview
-Hai capability mới trên grant v2, mỗi cái 2 mode (quyết định #1 + #5):
-- **Passkey**: `none | askEachTime | shared`
-  - `askEachTime` (mặc định đề xuất): KHÔNG giao key. Extension/app recipient gửi
-    ApprovalRequest kèm `clientDataHash` + rpId + credentialId → owner nhận push, Face ID,
-    duyệt → owner ký WebAuthn assertion bằng privateKey (on-device) → response sealed
-    (ephemeral HPKE như TOTP) → extension `completeAssertionRequest`.
-  - `shared`: seal `PasskeySecret` (privateKeyRaw + metadata) cho recipient (per-device
-    theo deviceScope P03) — recipient ký local, dùng không cần hỏi.
-- **TOTP**: thêm mode `shared` (giao seed) bên cạnh `askEachTime` hiện có — recipient
-  generate code local, không cần hỏi. ⚠️ Reversal QA-4 (bỏ TOTP reveal) — user chốt lại
-  260705 kèm điều kiện CẢNH BÁO.
+## Preflight — ĐÃ VERIFY (P2-9 đóng)
+Passkey private key của Loox là software exportable: `PasskeySecret.privateKeyRaw: Data`
+(`VaultifyCore/Passkey/PasskeyModels.swift`), ký qua `WebAuthn.assertion(privateKeyRaw:)`
+— không Secure Enclave binding → shared-mode khả thi trực tiếp, không cần re-registration.
 
-## Cảnh báo owner (bắt buộc, l10n EN+VI)
-Khi chọn mode `shared` cho TOTP hoặc Passkey → `PolarisModal.destructive`-style confirm:
-"Đối phương sẽ dùng được KHÔNG CẦN HỎI bạn, trên chính thiết bị của họ. Đã giao thì không
-thu hồi được giá trị — thu hồi chỉ chặn cập nhật về sau." Chọn `askEachTime` không cần modal.
+## Capabilities (grant v2, canonical bump chung với P03b — MỘT lần duy nhất)
+- Passkey: `none | askEachTime | shared` · TOTP: thêm `.shared` cạnh `.askEachTime`.
+- Modal cảnh báo khi chọn `shared` (TOTP hoặc passkey) — copy theo INV-08.
 
-## Key work items
-1. Grant v2 capabilities mở rộng (`FieldCapability` thêm case passkey; TOTP thêm
-   `.totp(.shared)`) — nằm CHUNG version bump với P03 (một lần đổi canonical, không hai).
-2. Owner publish: passkey metadata công khai trong display envelope (rpId, credentialId,
-   userName — KHÔNG secret) để extension đăng ký `ASPasskeyCredentialIdentity`; seed/key
-   sealed riêng theo mode.
-3. Owner approve ceremony (askEachTime passkey): mở rộng `ApprovalCeremonyService` — verify
-   request (device key pinned, nonce, epoch) → Face ID → `WebAuthn.assertion(...)` với
-   clientDataHash NHẬN TỪ request → seal trả về. Counter: passkey counter=0 cố định
-   (Vaultify dùng flags legacy) — xác nhận không vỡ RP.
-4. Recipient extension ceremony: `PasskeyCeremonyView` thêm nhánh shared-passkey:
-   - `shared` mode: giải key từ cache (per-device) → ký local như passkey thường.
-   - `askEachTime`: UI "Chờ chủ sở hữu duyệt…" (spinner + huỷ), gửi request qua CK (P04),
-     poll response ≤60s; timeout → gợi ý thử lại / deep-link mở app.
-5. `SharedCredentialsCache` v2: entries mang optional passkey payload (mode, metadata,
-   sealed key nếu shared) — bump version byte, decode back-compat.
-6. Online gate (P01/P02) áp lên cả passkey shared: offline → không ký local dù có key
-   (gate UI; honesty: kẻ jailbreak vẫn có key — ghi trong plan.md).
-7. Recipient app UI: row passkey trong shared item detail ("Sign in with shared passkey" /
-   "Request sign-in approval"), trạng thái pending/denied.
+## Revoke semantics (SỬA theo review P1-4 — trung thực, INV-08)
+- `askEachTime`: revoke = cryptographic/authorization stop (secret chưa từng rời owner).
+- `shared`: revoke = **Vaultify access revocation ONLY** — gỡ identity sau verified
+  refresh, chặn updates + official-client use; KHÔNG vô hiệu được seed/key đã giao.
+  Thu hồi thật = rotate tại RP/origin (UI revoke nói thẳng + gợi ý rotate).
+- Success criteria/QA không được viết "revoke chặn từ lần verify sau" cho shared mode.
+
+## Protocol (schemas FROZEN tại P00 — không tự chế trong lúc code)
+- `PasskeyAssertionApprovalRequestV1` + owner verify 12 bước THEO THỨ TỰ rồi mới Face ID;
+  `PasskeyAssertionApprovalResponseV1` transcript-bound (requestID/epoch/credentialID/
+  clientDataHash), seal đúng requester device key (INV-09). Không response trần
+  `signature+authenticatorData`.
+- Counter strategy: dùng quyết định A/B/C đã chốt ở P00 + test matrix RP
+  (accept-zero / store-current / enforce-monotonic). KHÔNG ship shared passkey rộng
+  khi chưa chốt — không "theo dõi rồi tính".
+- Timing từ `SharedAccessTimingPolicy`: approvalRequestTTL ≠ UI wait ≠ polling budget;
+  response muộn bind requestID nên không dùng nhầm được ở ceremony mới.
+
+## Work items
+1. Owner side: capability rows (passkey từ `PasskeyVault`, TOTP mode picker) +
+   warning modal; publish metadata theo tiers (Tier 1: rpId/credentialId/userName —
+   CHỈ tới approved devices; Tier 0 không có gì nhạy cảm).
+2. Owner approve ceremony: `ApprovalCeremonyService` mở rộng — verify 12 bước →
+   Face ID → `WebAuthn.assertion` với clientDataHash từ request → response sealed.
+3. Recipient extension: shared mode = ký local từ cache per-device; askEachTime =
+   UI "Chờ chủ sở hữu duyệt…" + huỷ, gửi request qua CK (P04), poll theo policy,
+   timeout copy tử tế + deep-link fallback. **INV-11**: re-verify ngay trước
+   completeAssertionRequest.
+4. QuickType (quyết định #7): đăng ký `ASPasskeyCredentialIdentity` khi grant known +
+   device allowed + capability ≠ none + not tombstoned; single-device unapproved KHÔNG
+   đăng ký; revoked gỡ ngay sau verified refresh.
+5. `SharedCredentialsCache` v2: optional passkey payload, version byte bump,
+   decode back-compat (test).
+6. Recipient app UI: passkey row theo mode + pending/denied states.
 
 ## Files (chính)
-- `VaultifyCore/Sharing/ApprovalModels.swift` + canonical/verifier, `ApprovalCrypto.swift`
-- `VaultifyCore/Sharing/SharedCredentialsCache.swift`, `SharedDisplayEnvelope.swift`
-- `Vaultify/Services/Sharing/ApprovalShareService|CeremonyService|RecipientService`
-- `Vaultify/Features/Sharing/ShareAccessSheet.swift`, `FieldCapabilityRow.swift` (+passkey row)
-- `VaultifyAutoFill/PasskeyCeremonyView.swift`, `CredentialProviderViewController.swift`,
-  `CredentialIdentityService.swift` (đăng ký ASPasskeyCredentialIdentity shared)
-- Tests: capability codec v2, ceremony assertion vector, cache v2 back-compat
+Như V2 cũ + `ApprovalModels`/canonical theo schema P00; l10n EN+VI toàn bộ copy mới.
 
 ## Success criteria
-- Owner share passkey askEachTime → recipient mở site → chọn passkey trong QuickType →
-  extension chờ → owner duyệt trên máy owner → site đăng nhập thành công.
-- Owner share passkey/TOTP `shared` (qua cảnh báo) → recipient dùng offline-UI-gated,
-  không cần owner online.
-- Revoke: identity/QuickType biến mất sau refresh; askEachTime chết ngay (epoch bump).
+- askEachTime round-trip 2 máy: QuickType → chờ duyệt → owner Face ID → login OK;
+  đo extension lifetime thực tế; owner offline → timeout đúng policy.
+- shared mode: qua modal cảnh báo; dùng không cần hỏi; revoke gỡ identity/updates
+  (KHÔNG claim thu hồi secret).
+- Stale response (epoch cũ / requestID khác) bị loại — test P06.
 
 ## Risks
-- AutoFill session sống đủ lâu để chờ approve? Đo thật; nếu iOS kill sớm → fallback
-  deep-link mở app recipient để hoàn tất đăng nhập trong app (WebView? KHÔNG — chỉ hiện
-  hướng dẫn thử lại khi owner đã approve sẵn trong cửa sổ ngắn).
-- Push tới owner phải là alert push (đường `approvalRequest` sẵn có — tái dùng).
-- RP strict counter: một số site từ chối counter không tăng — theo dõi, có thể cần counter
-  đồng bộ owner-side cho passkey shared (owner là source of truth khi askEachTime).
+- Extension lifetime khi chờ approve — đo thật; quá ngắn → UX chuyển hẳn sang app.
+- RP enforce-monotonic counter với nhiều signer cùng credentialID — xử lý theo
+  strategy P00, có thể phải giới hạn compatibility (option C).

@@ -7,6 +7,15 @@ AutoFill extension hiện KHÔNG có CloudKit entitlement (TOTP ask-each-time ph
 mở app). Passkey ask-each-time (P05) và live-grant verify trong extension (P02) cần
 extension nói chuyện CloudKit trực tiếp.
 
+## P04-0 — Entitlement verification preflight (thêm theo review P2-11)
+Không tin `make check` — entitlement mismatch là loại bug "local Debug OK, CI archive
+fail / TestFlight runtime fail". Script assert (chạy cả Debug lẫn archive):
+```
+codesign -d --entitlements :- <path>/VaultifyAutoFill.appex   # chứa iCloud container?
+security cms -D -i embedded.mobileprovision                    # profile có entitlement?
+```
+Verify riêng cho development build VÀ TestFlight build (match regenerate cả hai).
+
 ## Steps
 1. `Project.swift` + `VaultifyAutoFill.entitlements`: thêm iCloud container
    `iCloud.com.bervion.vaultify` + aps? (KHÔNG cần push trong appex — poll là đủ).

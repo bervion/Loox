@@ -1,30 +1,29 @@
-# Phase 02 — Online Gate (extension)
+# Phase 02 — Extension Authoritative Gate COMPLETE (V2.1)
 
-Priority: cao · Status: planned · Effort: 0.5 buổi · Depends: P01
+Priority: cao · Effort: 0.5 buổi · Depends: **P01 + P04** (đổi theo review P0-2)
 
-## Overview
-Extension áp cùng luật: offline → shared credentials không dùng được. V1 phase này =
-reachability gate (NWPathMonitor); live-grant verify trong extension cần CloudKit → hoàn
-thiện sau P04 (ghi TODO rõ trong code).
+## Scope split (review)
+- **P02a — Reachability UX** (có thể land sớm sau P01): offline → shared rows disabled
+  + lý do; `hasSatisfiedNetworkPath` từ P01; default coi như offline tới khi path
+  satisfied (fail-closed).
+- **P02b — Authoritative fill gate** (cần P04): NGAY TRƯỚC khi
+  `completeRequest`/`completeAssertionRequest` với một shared entry → live grant verify
+  qua CloudKit (INV-11), state taxonomy như app (offline / verificationUnavailable /
+  revoked). Verify fail bất kỳ lý do gì → KHÔNG fill.
+- **Release gate: chỉ ship production khi P02a + P04 + P02b đủ.** Reachability-only
+  không được tuyên bố là "online gate" (nó chỉ là Layer A — INV-02).
 
 ## Files
-- Sửa: `VaultifyAutoFill/AutoFillView.swift` (CredentialListView: offline → shared rows
-  thay bằng 1 row disabled "Mục được chia sẻ cần kết nối mạng"; preferredRecordID trúng
-  shared entry khi offline → KHÔNG auto-fill, hiện state cần mạng),
-  `OneTimeCodeView.swift` (nhánh shared TOTP tương tự),
-  dùng `NetworkReachabilityMonitor` từ VaultifyCore (P01).
-
-## Steps
-1. Monitor khởi tạo trong extension (nhẹ, không giữ battery — extension sống ngắn).
-2. Gate cả 3 đường: list picker, preferredRecordID auto-select, passkey→password fallback.
-3. Sau P04: trước khi complete fill một shared entry → verify grant alive (CK fetch),
-   fail-closed như app.
-4. l10n EN+VI.
+- `VaultifyAutoFill/AutoFillView.swift` (gate cả 3 đường: list, preferredRecordID
+  auto-select, passkey→password fallback), `OneTimeCodeView.swift` (shared TOTP),
+  verify helper dùng chung từ core (P04 move).
 
 ## Success criteria
-- Airplane mode → extension vẫn fill OWNED items bình thường; shared entries hiện disabled
-  + lý do; không có đường nào lấy được password share khi offline.
+- Owner revoke → recipient extension (có mạng, cache còn entry) → chọn fill →
+  verify fail → không điền, hiện "Chủ sở hữu đã thu hồi". Cached credential không có
+  đường nào ra ngoài mà không qua verify.
+- Airplane mode → owned items fill bình thường, shared entries disabled + lý do.
 
 ## Risks
-- NWPathMonitor cần vài trăm ms cho path đầu tiên → default `.requiresConnection` (coi như
-  offline) tới khi path satisfied — fail-closed, không fail-open.
+- Verify thêm độ trễ ngay trước fill (~0.3–1s) — hiện spinner trên nút; timeout theo
+  `SharedAccessTimingPolicy`, fail-closed thành `verificationUnavailable`.
