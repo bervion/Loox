@@ -1,0 +1,84 @@
+import Foundation
+
+/// One quick link this device created. The revoke token is the only
+/// credential that can kill the link server-side, so records live in the
+/// Keychain (device-local) — V1 revocation is available from the creating
+/// device only (cross-device revoke is a pending backend decision).
+/// The content key is deliberately NOT stored: once the sheet is dismissed,
+/// only the recipient's URL can decrypt the snapshot.
+nonisolated struct LooxLinkRecord: Codable, Identifiable, Equatable, Sendable {
+    var shareId: String
+    var revokeToken: String
+    var itemId: String
+    var createdAt: Date
+    var expiresAt: Date
+    /// Burn after read: the server deletes the share on its first view.
+    var oneTime: Bool
+
+    var id: String { shareId }
+    var isExpired: Bool { expiresAt <= .now }
+
+    init(shareId: String, revokeToken: String, itemId: String,
+         createdAt: Date, expiresAt: Date, oneTime: Bool = false) {
+        self.shareId = shareId
+        self.revokeToken = revokeToken
+        self.itemId = itemId
+        self.createdAt = createdAt
+        self.expiresAt = expiresAt
+        self.oneTime = oneTime
+    }
+
+    /// Custom decode so records persisted before `oneTime` existed still load
+    /// (a missing key reads as false instead of dropping the whole registry).
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        shareId = try c.decode(String.self, forKey: .shareId)
+        revokeToken = try c.decode(String.self, forKey: .revokeToken)
+        itemId = try c.decode(String.self, forKey: .itemId)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        expiresAt = try c.decode(Date.self, forKey: .expiresAt)
+        oneTime = try c.decodeIfPresent(Bool.self, forKey: .oneTime) ?? false
+    }
+}
+
+/// Keychain-backed registry of the device's active quick links.
+@MainActor @Observable final class LooxLinkRecordStore {
+    private static let account = "loox-link-records"
+
+    private(set) var records: [LooxLinkRecord] = []
+
+    init() {
+        if let data = try? KeychainStore.get(account: Self.account),
+           let decoded = try? JSONDecoder().decode([LooxLinkRecord].self, from: data) {
+            // Expired links are dead server-side (404) — drop them on load.
+            records = decoded.filter { !$0.isExpired }
+        }
+    }
+
+    func records(forItem itemId: String) -> [LooxLinkRecord] {
+        records.filter { $0.itemId == itemId && !$0.isExpired }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    func add(_ record: LooxLinkRecord) {
+        records.removeAll { $0.shareId == record.shareId }
+        records.append(record)
+        persist()
+    }
+
+    func remove(shareId: String) {
+        records.removeAll { $0.shareId == shareId }
+        persist()
+    }
+
+    func wipe() {
+        records = []
+        KeychainStore.delete(account: Self.account)
+    }
+
+    private func persist() {
+        if let data = try? JSONEncoder().encode(records) {
+            try? KeychainStore.set(data, account: Self.account)
+        }
+    }
+}
