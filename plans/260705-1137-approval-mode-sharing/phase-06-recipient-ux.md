@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Recipient UX & request state machine"
-status: pending
+status: completed # 2026-07-05 — see Implementation Status; C1 zoneID fix NEEDS 2-device QA (Phase 8)
 priority: P1
 effort: "1.5d"
 dependencies: [3]
@@ -84,6 +84,35 @@ hard timeout so B is never stranded.
       gone after `validUntil`.
 - [ ] **ADR-6:** "Request Again" supersedes the old request (two live responses impossible); a late
       response for an expired/superseded request is rejected fail-closed, never shown.
+
+## Implementation Status — 2026-07-05
+
+**Complete (on feat/approval-mode-sharing).** NEW: `RequestCodeView.swift` (RequestCodeModel machine —
+supersede-by-key-drop, poll-only-current-id, stale fail-closed, advisory countdown, code dropped at
+window end), `SharedItemView.swift` (pre-pin fingerprint gate → post-pin values + request controls),
+`SharedWithMeScreen.swift` (+`SharedZoneRoute` typed route carrying FULL zoneID incl. ownerName).
+MODIFIED: shell `resumePendingShareAcceptance` (breadcrumb → escrow → profile publish → subscription →
+clear; retry-while-flagged), scene-delegate breadcrumb (set BEFORE accept — crash-window closed),
+recipient services (pin API keyed by ownerName+zoneName), Home "Shared with Me" entry, ~26 strings EN+VI
+(reviewer script-verified incl. `About %llds remaining`). 161/161 tests, iOS+macOS green.
+Simplifications vs original file list: no separate RequestStateMachine/PendingShareAcceptance/
+AcceptShareFlow files — the machine lives in RequestCodeModel, acceptance resume is an idempotent shell
+task + a UserDefaults breadcrumb (CloudKit accept itself is the durable state), accept flow = zero-UI
+resume + fingerprint on first item open. SUPERSEDED is structural (key drop + current-id-only poll),
+not an enum case — two live responses impossible by construction.
+
+**Review applied** (`from-code-reviewer-260705-phase6-recipient-ux-report.md`): C1 shared-DB zoneID
+rebuilt WITHOUT ownerName → `SharedZoneRoute` typed route + pin keys include ownerName (cross-account
+share would have 404'd; ~90% confidence, MUST confirm in 2-device QA); H1 String nav-destination
+collision with ItemDetail → typed route; H2 await-gap could render a superseded approval → currency
+re-check after EVERY await in `tickWhileWaiting`; H3 swallowed CancellationError hot-loop → honored,
+sleep failure exits; H4 first-recipient chicken-and-egg (counter bump gated on the flag the resume sets)
+→ `.vaultShareAccepted` bumps unconditionally; M1 models built in `load()` not body; M2 models rebuilt
+on grant-id change (in-flight WAITING survives same-grant reloads); M3 breadcrumb set before accept.
+
+**Verified sound by review:** static supersede path, pre-pin decrypt double-guard, SAS fingerprint
+properties, ephemeral-key hygiene, taskKey liveness transitions, localization byte-match, no
+delta-cursor misuse.
 
 ## Risk Assessment
 - Latency makes "Waiting…" feel stuck — show elapsed + allow cancel; EXPIRED timeout bounds it.

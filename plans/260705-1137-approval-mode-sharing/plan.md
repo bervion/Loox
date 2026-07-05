@@ -181,7 +181,7 @@ escalate transport design (Validation §1 options).
 | 3 | [CKShare transport, participant escrow & control-plane sync](./phase-03-ckshare-transport-push.md) | ✅ Complete (2026-07-05; device QA rides Phase 8) |
 | 4 | [Owner share-config UI](./phase-04-owner-share-config-ui.md) | ✅ Complete (2026-07-05; device QA rides Phase 8) |
 | 5 | [Owner approval ceremony (foreground)](./phase-05-owner-approval-ux-sessions.md) | ✅ Complete (2026-07-05; ADR-6 device QA rides Phase 8) |
-| 6 | [Recipient UX & request state machine](./phase-06-recipient-ux.md) | Pending |
+| 6 | [Recipient UX & request state machine](./phase-06-recipient-ux.md) | ✅ Complete (2026-07-05; zoneID fix needs 2-device QA in P8) |
 | 7 | [Revocation & share management](./phase-07-revocation-share-management.md) | Pending |
 | 8 | [Localization, DS compliance, integration gate & QA](./phase-08-localization-ds-compliance-qa.md) | Pending |
 
