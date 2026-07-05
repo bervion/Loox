@@ -4,25 +4,6 @@ import SwiftUI
 /// Route value for the Home → Shared-with-me navigation.
 nonisolated struct SharedWithMeRoute: Hashable {}
 
-/// Full identity of an accepted shared zone. Shared-database zones are
-/// namespaced by the SHARING OWNER's user record name — rebuilding a zone ID
-/// from the bare zoneName defaults to `__defaultOwner__` and misses the zone
-/// entirely on a real cross-account share. Owner name also disambiguates the
-/// TOFU pin (two owners could otherwise collide on a zone name).
-nonisolated struct SharedZoneRoute: Hashable {
-    let zoneName: String
-    let ownerName: String
-
-    init(zoneID: CKRecordZone.ID) {
-        zoneName = zoneID.zoneName
-        ownerName = zoneID.ownerName
-    }
-
-    var zoneID: CKRecordZone.ID {
-        CKRecordZone.ID(zoneName: zoneName, ownerName: ownerName)
-    }
-}
-
 /// The Shared-with-Me SPACE (V1.2 — a standard item list, not a custom zone
 /// browser): rows are the projected shared items, tap opens the ordinary
 /// item detail. Nothing here touches the local vault store.
