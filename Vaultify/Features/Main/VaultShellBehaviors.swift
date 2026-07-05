@@ -84,6 +84,9 @@ struct VaultShellBehaviors: ViewModifier {
             .onChange(of: env.approvalCoordinator.pendingOwnerRequests.first?.id) { _, _ in
                 presentNextApprovalIfIdle()
             }
+            .onChange(of: env.approvalCoordinator.autoPresentSuppressed) { _, suppressed in
+                if !suppressed { presentNextApprovalIfIdle() }
+            }
             // Recipient side: resume a pending share acceptance now that the
             // vault is unlocked (Validation §3 — escrow BEFORE profile publish;
             // idempotent, crash-safe, survives onboarding), then re-project
@@ -109,7 +112,8 @@ struct VaultShellBehaviors: ViewModifier {
     }
 
     private func presentNextApprovalIfIdle() {
-        guard presentedApproval == nil else { return }
+        guard presentedApproval == nil,
+              !env.approvalCoordinator.autoPresentSuppressed else { return }
         presentedApproval = env.approvalCoordinator.pendingOwnerRequests.first
     }
 

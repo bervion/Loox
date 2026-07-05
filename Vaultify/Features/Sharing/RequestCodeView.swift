@@ -262,28 +262,57 @@ private struct ApprovedCodeView: View {
     let periodEndUnixMs: Int64
     let onExpired: () -> Void
 
+    @Environment(AppEnvironment.self) private var env
     @State private var remainingSeconds: Int = 0
+    @State private var copied = false
+    @State private var showLargeType = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        // Same visual language as the app's own TOTP rows (TOTPCodeView +
-        // CountdownRing) — the only difference is the code is a delivered
-        // one-time value, not locally generated.
+        // Same interaction language as the app's own TOTP rows: tap-to-copy
+        // with the "Copied" flash, CountdownRing, and the "…" menu
+        // (Copy / Large Type) — only the code's origin differs.
         VStack(alignment: .leading, spacing: Space.s2) {
             HStack(spacing: 12) {
-                Text(verbatim: TOTPCodeView.format(code))
+                Text(verbatim: copied ? appString("Copied") : TOTPCodeView.format(code))
                     .font(.body.weight(.bold))
                     .monospacedDigit()
-                    .themedForeground()
-                    .textSelection(.enabled)
+                    .themedForeground(copied ? .accent : .primary)
                 Spacer()
                 CountdownRing(remaining: remainingSeconds, period: 30)
+                Menu {
+                    Button { copy() } label: { Label("Copy", image: Icons.copy) }
+                    Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
+                } label: {
+                    PolarisIcon("ic_menu_horizontal", size: 17)
+                        .themedForeground(.secondary)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(VaultColors.fill))
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
             }
             Text("Use it now — it expires with the current window.")
                 .vaultType(.footnote).themedForeground(.secondary)
         }
+        .contentShape(.rect)
+        .onTapGesture { copy() }
+        .platformFullScreenCover(isPresented: $showLargeType) {
+            LargeTypeView(text: code, totpSecret: nil, liveTOTPSecret: nil)
+        }
         .onAppear { updateRemaining() }
         .onReceive(timer) { _ in updateRemaining() }
+    }
+
+    private func copy() {
+        guard !copied else { return }
+        env.clipboard.copy(code, label: appString("Verification code"), sensitive: true)
+        copied = true
+        Task {
+            try? await Task.sleep(for: .seconds(1.2))
+            copied = false
+        }
     }
 
     private func updateRemaining() {
