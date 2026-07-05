@@ -41,3 +41,12 @@ V1.1 invite-link/display-envelope review (2026-07-05) additions (report from-cod
 - **User-locked numeric deviation**: reused `ApprovalConfig.opaqueName()` (160-bit) where plan U7 locked 192–256-bit tokens — grep locked numeric specs against the actual constant, don't assume reuse complies.
 - **xcstrings key-casing duplicates**: `appString("Shared Item")` minted a new vi-less key beside existing "Shared item" (has vi). Always grep the catalog for case-variant near-duplicates of new literals.
 - **Envelope revision is write-only so far**: `SharedDisplayEnvelope.revision` hardcoded 1 at the only publish site; no rename-republish path and recipient never compares revisions — doc comment promises out-of-order protection no code implements.
+
+V1.1 rendezvous-batch review (2026-07-05, report code-review-260705-1716-sharing-v11-rendezvous-batch-report.md):
+
+- **No-op-setter alert binding + async button action**: `.alert(isPresented:)` with computed get and `set { }` re-presents while the Accept Task is in flight (get still true after dismissal) → double-`advance()`/`removeFirst()` drops a queued item that's already in a persisted seen-set. Sibling of the Phase-5 computed-`.first` class; fix is the same explicit `@State presented` + remove-by-id.
+- **Persist-dedup-before-surface**: writing the dedup/seen set BEFORE the user acts, while the surfacing queue is shell-`@State`, means lock-on-background (default ON) permanently loses the item. Dedup persistence must ride the user decision.
+- **NotificationCenter post in `scene(_:willConnectTo:)`**: fires before SwiftUI `onReceive` subscribers exist → cold-launch deep links silently dropped. Cold-path handoffs need a buffered static + drain-on-`.task`, never fire-and-forget posts.
+- **Doc-promised check unimplemented (recurring)**: InviteEnvelope's U7 owner/recipient participant cross-check documented but absent at accept — grep every envelope doc claim against the accept/verify call site (2nd instance after display-envelope revision).
+- **Account-scoped CK subscription vs device-scoped state**: public-DB descriptor recordName + subscriptionID are per-Apple-ID; inboxID in UserDefaults is per-device → multi-device arm flaps and strands the other device. Matters once iPad/Mac plan lands.
+- **Verified safe patterns to cite**: `.allKeys` save bypasses the oplock (idempotent re-publish); `shareParticipant(forEmailAddress:)` empty-email NSException guarded by button `.disabled(!email.contains("@"))`; xcstrings recipe re-confirmed (all 23 keys incl. `%@` interpolations had VI).
