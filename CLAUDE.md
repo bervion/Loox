@@ -123,11 +123,13 @@ invisible text/icons after a theme switch; 44pt hit targets; new strings localiz
 - App Group `group.com.bervion.vaultify` + AutoFill Credential Provider are enabled on both
   bundle IDs (entitlements files + Apple Developer portal). The vault file (ciphertext,
   complete protection) lives in the shared container so the extension can read it.
-- **Keep iCloud/CloudKit entitlements OUT** of `Vaultify/Vaultify.entitlements`: an
-  unprovisioned iCloud container crashes the app at launch (even on the simulator). iCloud
-  sync is gated behind the `VAULTIFY_ICLOUD` compile flag (`CloudSyncService.isConfigured`)
-  — **off by default**. To enable: add the iCloud (CloudKit) capability + `VAULTIFY_ICLOUD`
-  to Swift Active Compilation Conditions + sign into iCloud.
+- **iCloud/CloudKit is ENABLED**: the entitlements carry the container
+  (`iCloud.com.bervion.vaultify`, provisioned in the portal) and `VAULTIFY_ICLOUD` is in
+  Swift Active Compilation Conditions (`Project.swift`). CloudKit code still compiles behind
+  the flag (`CloudSyncService.isConfigured`) so a fork without the provisioned container can
+  turn it off. Runtime: **vault-item sync** is opt-in via `iCloudSyncEnabled` (off by
+  default); **Approval Mode sharing** uses its own `approvalModeEnabled` flag and its own
+  services — the two must never gate each other (plan ADR-2).
 - iOS has no public API to read your own entitlements at runtime (`SecTask*` is macOS-only).
 
 ## Crypto
@@ -162,7 +164,8 @@ Documents, read back with `simctl get_app_container <id> data`.
 
 - ❌ Don't open or edit a committed `.xcodeproj` — edit `Project.swift`, then `tuist generate`.
 - ❌ Don't commit the generated project, `Derived/`, or any secret.
-- ❌ Don't add iCloud entitlements to the app target (crash) — use the `VAULTIFY_ICLOUD` flag.
+- ❌ Don't gate Approval-Mode sharing code on `iCloudSyncEnabled` — it has its own
+  `approvalModeEnabled` flag (control plane ≠ vault-item sync, plan ADR-2).
 - ❌ Don't use SF Symbols or Material icons — Polaris SVG only.
 - ❌ Don't ship user-facing text without a Vietnamese translation in `Localizable.xcstrings`.
 - ❌ Don't put the word "build" in bash paths/log names (hook block).

@@ -57,6 +57,11 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     var biometricKeyMigratedToSharedGroup: Bool { didSet { defaults.set(biometricKeyMigratedToSharedGroup, forKey: Key.biometricKeyMigrated) } }
     var hibpEnabled: Bool { didSet { defaults.set(hibpEnabled, forKey: Key.hibp) } }
     var iCloudSyncEnabled: Bool { didSet { defaults.set(iCloudSyncEnabled, forKey: Key.icloud) } }
+    /// Approval Mode transport (CKShare grants/requests/responses). Deliberately
+    /// SEPARATE from `iCloudSyncEnabled`: enabling approval sharing must never
+    /// imply vault-item uploads, and the approval push pipeline must never be
+    /// gated by the vault-sync toggle (control plane ≠ secret plane).
+    var approvalModeEnabled: Bool { didSet { defaults.set(approvalModeEnabled, forKey: Key.approvalMode) } }
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
     var clipboardClearSeconds: Int { didSet { defaults.set(clipboardClearSeconds, forKey: Key.clipboard) } }
     var hideInAppSwitcher: Bool { didSet { defaults.set(hideInAppSwitcher, forKey: Key.privacyScreen) } }
@@ -82,6 +87,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         biometricKeyMigratedToSharedGroup = d.bool(forKey: Key.biometricKeyMigrated)
         hibpEnabled = d.object(forKey: Key.hibp) as? Bool ?? true
         iCloudSyncEnabled = d.bool(forKey: Key.icloud)
+        approvalModeEnabled = d.bool(forKey: Key.approvalMode)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
@@ -100,6 +106,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let biometricKeyMigrated = "biometric_key_migrated_shared_group"
         static let hibp = "hibp_enabled"
         static let icloud = "icloud_sync_enabled"
+        static let approvalMode = "approval_mode_enabled"
         static let favicons = "show_website_icons"
         static let clipboard = "clipboard_clear_seconds"
         static let privacyScreen = "hide_in_app_switcher"

@@ -77,6 +77,9 @@ let project = Project(
                 // Wake on silent CloudKit pushes so cross-device changes pull promptly
                 // even when backgrounded (near-real-time sync).
                 "UIBackgroundModes": ["remote-notification"],
+                // Accept CKShare invitations (Approval Mode: owner shares an
+                // approval zone with a looked-up participant).
+                "CKSharingSupported": true,
                 "NSCameraUsageDescription": "Loox uses the camera to scan 2FA setup QR codes.",
                 "NSFaceIDUsageDescription": "Loox uses Face ID to unlock your vault.",
                 "UIApplicationSupportsIndirectInputEvents": true,

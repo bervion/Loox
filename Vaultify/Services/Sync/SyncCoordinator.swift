@@ -20,8 +20,9 @@ import Foundation
     private let pushService = SyncPushService()
 
     private var debounceTask: Task<Void, Never>?
-    private var inFlight = false
-    private var followUpRequested = false
+    /// Shared coalescing primitive (same semantics as the previous inline
+    /// inFlight/followUp pair; also used by the approval coordinator).
+    private let singleFlight = SingleFlight()
     private var observers: [NSObjectProtocol] = []
 
     /// Delay after the last local mutation before pushing (batches edit bursts).
@@ -68,13 +69,9 @@ import Foundation
     }
 
     private func runSync() async {
-        guard !inFlight else { followUpRequested = true; return }
-        inFlight = true
-        defer { inFlight = false }
-        repeat {
-            followUpRequested = false
-            await cloudSync.sync(reload: { [repository] in repository.reloadAfterRemoteSync() })
-        } while followUpRequested
+        await singleFlight.run { [cloudSync, repository] in
+            await cloudSync.sync(reload: { repository.reloadAfterRemoteSync() })
+        }
         if settings.iCloudSyncEnabled, case .success = cloudSync.status {
             await escrow.pushRecoveryEnvelopeIfNeeded()
             await pushService.ensureSubscribedIfNeeded()
