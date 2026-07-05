@@ -163,6 +163,7 @@ struct ShareAccessSheet: View {
         // tasks; the second must not mint a second zone (review M2).
         guard case .config = step else { return }
         step = .creating
+        pollExhausted = false
         do {
             // Resume path (review H2): an unfinished share to the SAME
             // recipient reuses its zone instead of littering a new one.
@@ -277,10 +278,14 @@ struct ShareAccessSheet: View {
             if let dropRecordName = pendingRecord?.dropRecordName {
                 await env.inviteLinks.deleteInvite(recordName: dropRecordName)
             }
+            // The names are CARRIED into the active record: deleteInvite is
+            // best-effort, and revoke retries the GC with these same names.
             env.sharingStore.upsert(ItemShareRecord(
                 itemId: item.id, zoneName: zoneID.zoneName,
                 recipientLabel: recipientEmail, grantId: grant.id,
-                createdAtUnixMs: nowUnixMs, fingerprintConfirmed: true))
+                createdAtUnixMs: nowUnixMs, fingerprintConfirmed: true,
+                inviteRecordName: pendingRecord?.inviteRecordName,
+                dropRecordName: pendingRecord?.dropRecordName))
             step = .done
         } catch {
             step = .failed(error.localizedDescription)

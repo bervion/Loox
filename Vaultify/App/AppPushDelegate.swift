@@ -122,6 +122,10 @@ final class VaultSceneDelegate: NSObject, UIWindowSceneDelegate {
         guard activity.activityType == NSUserActivityTypeBrowsingWeb,
               let url = activity.webpageURL,
               InviteLinkService.isInviteLink(url) else { return }
+        // Buffer FIRST: on a cold launch this runs before any SwiftUI
+        // observer exists, and an unheard post is a silently dead link —
+        // the app root drains the buffer when it appears.
+        PendingInviteLink.url = url
         NotificationCenter.default.post(name: .inviteLinkReceived, object: url)
     }
 

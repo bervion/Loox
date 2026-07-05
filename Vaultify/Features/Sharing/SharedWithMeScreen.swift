@@ -103,10 +103,14 @@ struct SharedWithMeScreen: View {
             // can always find the profile once B visits this screen.
             if let vaultKey = env.session.vaultKey?.bytes {
                 if let identity = try? await env.participantEscrow.ensureIdentity(vaultKey: vaultKey) {
-                    try? await env.approvalRecipient.completeAcceptance(
-                        identity: identity, nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
+                    // Burn the resume breadcrumb ONLY on success — an offline
+                    // visit here must not disable the shell's auto-resume.
+                    if (try? await env.approvalRecipient.completeAcceptance(
+                        identity: identity,
+                        nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))) != nil {
+                        UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
+                    }
                     await SharedZoneSubscriptionService().ensureSubscribedIfNeeded(settings: env.settings)
-                    UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
                 }
             }
             let zones = try await env.approvalRecipient.acceptedApprovalZones()

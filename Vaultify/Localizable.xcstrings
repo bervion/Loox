@@ -7625,6 +7625,16 @@
         }
       }
     },
+    "This invitation doesn't match its share. It was discarded for safety.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lời mời này không khớp với chia sẻ của nó nên đã bị loại bỏ để đảm bảo an toàn."
+          }
+        }
+      }
+    },
     "This invitation has expired or was withdrawn.": {
       "localizations": {
         "en": {

@@ -82,7 +82,11 @@ nonisolated struct InviteEnvelope: Sendable, Equatable {
                 senderSigningPubKey: try r.blob(),
                 createdAtUnixMs: try r.i64(),
                 expiresAtUnixMs: try r.i64())
-            return (envelope, try r.blob())
+            let signature = try r.blob()
+            // No trailing bytes: the encoding is exact, like every other
+            // wire blob in the kernel.
+            guard r.isAtEnd else { throw Failure.malformed }
+            return (envelope, signature)
         } catch let failure as Failure {
             throw failure
         } catch {

@@ -23,12 +23,14 @@ import Foundation
         case malformedLink
         case notFoundOrExpired
         case shareUnavailable
+        case participantMismatch
 
         var errorDescription: String? {
             switch self {
             case .malformedLink: return appString("This invite link isn't valid.")
             case .notFoundOrExpired: return appString("This invitation has expired or was withdrawn.")
             case .shareUnavailable: return appString("The owner stopped sharing this item.")
+            case .participantMismatch: return appString("This invitation doesn't match its share. It was discarded for safety.")
             }
         }
     }
@@ -136,8 +138,21 @@ import Foundation
     /// CloudKit acceptance contract (U7): URL → CKShare.Metadata → accept —
     /// never fabricated metadata. Shared by the link tier (above) and the
     /// rendezvous-envelope tier (the envelope carries the raw CKShare URL).
-    func acceptShare(url shareURL: URL) async throws {
+    /// The expected-participant parameters (rendezvous tier only) enforce
+    /// that the fetched metadata matches the envelope's claimed bindings —
+    /// an inconsistent drop is discarded before any acceptance happens.
+    func acceptShare(url shareURL: URL,
+                     expectedOwnerParticipantID: String? = nil,
+                     expectedRecipientParticipantID: String? = nil) async throws {
         let metadata = try await fetchShareMetadata(shareURL: shareURL)
+        if let expectedOwnerParticipantID,
+           metadata.ownerIdentity.userRecordID?.recordName != expectedOwnerParticipantID {
+            throw Failure.participantMismatch
+        }
+        if let expectedRecipientParticipantID,
+           (try? await container.userRecordID())?.recordName != expectedRecipientParticipantID {
+            throw Failure.participantMismatch
+        }
         do {
             _ = try await container.accept(metadata)
         } catch let error as CKError where error.code == .alreadyShared {

@@ -50,3 +50,11 @@ extension Notification.Name {
     /// Push = hint only; observers reconcile against the public-db inbox.
     static let inviteRendezvousReceived = Notification.Name("inviteRendezvousReceived")
 }
+
+/// Cold-launch mailbox for an invite universal link: the scene delegate
+/// receives the NSUserActivity BEFORE any SwiftUI observer exists, so a
+/// bare NotificationCenter post would vanish. The delegate both posts (warm
+/// path) and buffers here; the app root drains the buffer once it appears.
+@MainActor enum PendingInviteLink {
+    static var url: URL?
+}

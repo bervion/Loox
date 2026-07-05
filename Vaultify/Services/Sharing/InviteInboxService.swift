@@ -90,11 +90,16 @@ import Foundation
     /// Pull every drop addressed to this inbox, open + dedup, return the new
     /// envelopes (oldest first). Bad/expired/replayed drops are dropped
     /// silently — fail-closed, no partial trust.
+    ///
+    /// Dedup is READ-only here: an invite becomes "seen" when the USER
+    /// responds (`markSeen`), never at discovery — a lock/kill between
+    /// discovery and response must not swallow the invite forever.
     func reconcile(identity: ParticipantIdentity) async -> [InviteEnvelope] {
         guard CloudSyncService.isConfigured,
               let inboxID = UserDefaults.standard.string(forKey: Self.inboxIDKey) else { return [] }
         let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
-        var seen = Set(UserDefaults.standard.stringArray(forKey: Self.seenInvitesKey) ?? [])
+        let seen = Set(UserDefaults.standard.stringArray(forKey: Self.seenInvitesKey) ?? [])
+        var collected: Set<String> = []
         var discovered: [InviteEnvelope] = []
         do {
             let query = CKQuery(recordType: ApprovalConfig.publicInviteRecordType,
@@ -107,19 +112,25 @@ import Foundation
                       let envelope = try? InviteEnvelope.open(
                           blob, recipientPrivateKey: identity.privateKey,
                           inboxID: inboxID, nowUnixMs: nowMs),
-                      !seen.contains(envelope.inviteID) else { continue }
-                seen.insert(envelope.inviteID)
+                      !seen.contains(envelope.inviteID),
+                      collected.insert(envelope.inviteID).inserted else { continue }
                 discovered.append(envelope)
             }
         } catch {
             // Offline/transient — the next reconcile pass picks them up.
         }
-        if !discovered.isEmpty {
-            // Persist dedup BEFORE the invites are surfaced: replaying a drop
-            // must never re-prompt, even across a relaunch (capped FIFO).
-            UserDefaults.standard.set(Array(seen.suffix(200)), forKey: Self.seenInvitesKey)
-        }
         return discovered.sorted { $0.createdAtUnixMs < $1.createdAtUnixMs }
+    }
+
+    /// The user responded to this invite (accept OR dismiss) — never prompt
+    /// for it again, across relaunches. True FIFO cap: oldest ids evicted
+    /// first (their drops are long expired by then).
+    func markSeen(inviteID: String) {
+        var seen = UserDefaults.standard.stringArray(forKey: Self.seenInvitesKey) ?? []
+        guard !seen.contains(inviteID) else { return }
+        seen.append(inviteID)
+        if seen.count > 200 { seen.removeFirst(seen.count - 200) }
+        UserDefaults.standard.set(seen, forKey: Self.seenInvitesKey)
     }
 
     /// Erase-path teardown: descriptor + subscription + local state.
@@ -168,8 +179,9 @@ import Foundation
                                 recordID: CKRecord.ID(recordName: "drop-" + ApprovalConfig.opaqueName()))
             drop[Field.recipientInboxID] = inboxID as CKRecordValue
             drop[Field.blob] = blob as CKRecordValue
-            drop[Field.sentAtMs] = nowMs as CKRecordValue
-            // Coarse (hour) expiry — exact mint time is a needless leak.
+            // Coarse (hour) timestamps — exact mint time is a needless leak;
+            // the precise createdAt lives INSIDE the sealed envelope.
+            drop[Field.sentAtMs] = ((nowMs / 3_600_000) * 3_600_000) as CKRecordValue
             drop[Field.expiresAtMs] = (((nowMs + Self.dropLifetimeMs) / 3_600_000) * 3_600_000) as CKRecordValue
             let saved = try await publicDB.modifyRecords(saving: [drop], deleting: [])
             for (_, result) in saved.saveResults { _ = try result.get() }

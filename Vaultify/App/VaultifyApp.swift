@@ -52,6 +52,21 @@ struct VaultifyApp: App {
         WindowGroup { rootContent }
     }
 
+    /// One path for warm-tap and cold-launch invite links; the buffer is
+    /// cleared here so a handled link can't be re-processed by the drain.
+    private func handleInviteLink(_ url: URL) {
+        guard !inviteInFlight else { return }
+        inviteInFlight = true
+        PendingInviteLink.url = nil
+        Task {
+            defer { inviteInFlight = false }
+            do {
+                try await env.inviteLinks.acceptInvite(from: url)
+                inviteAccepted = true
+            } catch { inviteError = error.localizedDescription }
+        }
+    }
+
     private var rootContent: some View {
         RootView()
                 .onOpenURL { url in
@@ -65,15 +80,13 @@ struct VaultifyApp: App {
                 // Invite links arrive via the scene delegate (a custom scene
                 // delegate takes over NSUserActivity delivery from SwiftUI).
                 .onReceive(NotificationCenter.default.publisher(for: .inviteLinkReceived)) { note in
-                    guard let url = note.object as? URL, !inviteInFlight else { return }
-                    inviteInFlight = true
-                    Task {
-                        defer { inviteInFlight = false }
-                        do {
-                            try await env.inviteLinks.acceptInvite(from: url)
-                            inviteAccepted = true
-                        } catch { inviteError = error.localizedDescription }
-                    }
+                    guard let url = note.object as? URL else { return }
+                    handleInviteLink(url)
+                }
+                // Cold launch: the scene delegate buffered the link before
+                // this view (and its onReceive) existed — drain it now.
+                .task {
+                    if let url = PendingInviteLink.url { handleInviteLink(url) }
                 }
                 // A dead/expired invite link must say so — silence here reads
                 // as "the app is broken" and gets blamed on the sender.

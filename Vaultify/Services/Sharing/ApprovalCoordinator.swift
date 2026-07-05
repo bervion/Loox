@@ -25,8 +25,11 @@ import Foundation
     /// A responded request can outlive its record delete (offline, failed
     /// best-effort delete) yet still pass the PreviewNonceStore display
     /// verification — without this set it would re-enter the inbox and
-    /// re-present its sheet until the record's TTL expires.
-    private var handledRequestIds: Set<String> = []
+    /// re-present its sheet until the record's TTL expires. Persisted so a
+    /// relaunch inside that TTL window can't re-present it either.
+    private static let handledKey = "approval_handled_request_ids"
+    private var handledRequestIds: Set<String> =
+        Set(UserDefaults.standard.stringArray(forKey: handledKey) ?? [])
 
     private let settings: SettingsStore
     private let shareService: ApprovalShareService
@@ -111,6 +114,12 @@ import Foundation
     /// NEW requestId, so nothing real is lost.
     func clearPending(requestId: String) {
         handledRequestIds.insert(requestId)
+        // Bounded persist: ids only matter within the request TTL (~2 min),
+        // so a small FIFO window is plenty.
+        var stored = UserDefaults.standard.stringArray(forKey: Self.handledKey) ?? []
+        stored.append(requestId)
+        if stored.count > 100 { stored.removeFirst(stored.count - 100) }
+        UserDefaults.standard.set(stored, forKey: Self.handledKey)
         pendingOwnerRequests.removeAll { $0.request.requestId == requestId }
     }
 
