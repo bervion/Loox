@@ -47,8 +47,11 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     @ObservationIgnored private let defaults = UserDefaults.standard
 
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
+    /// Single lock timer: `.immediate` locks the moment the app is hidden; any other
+    /// window applies to BOTH backgrounding and foreground idle (the old separate
+    /// "lock on background" toggle instant-locked regardless of this, which made a
+    /// quick copy-into-another-app round trip re-prompt every time).
     var autoLock: AutoLockTimeout { didSet { defaults.set(autoLock.rawValue, forKey: Key.autoLock) } }
-    var lockOnBackground: Bool { didSet { defaults.set(lockOnBackground, forKey: Key.lockOnBackground) } }
     /// Lock the vault on a deliberate device shake (privacy panic gesture). Opt-in.
     var shakeToLock: Bool { didSet { defaults.set(shakeToLock, forKey: Key.shakeToLock) } }
     var biometricUnlockEnabled: Bool { didSet { defaults.set(biometricUnlockEnabled, forKey: Key.biometric) } }
@@ -81,7 +84,6 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         let d = UserDefaults.standard
         onboardingCompleted = d.bool(forKey: Key.onboarding)
         autoLock = AutoLockTimeout(rawValue: d.object(forKey: Key.autoLock) as? Int ?? 300) ?? .fiveMinutes
-        lockOnBackground = d.object(forKey: Key.lockOnBackground) as? Bool ?? true
         shakeToLock = d.object(forKey: Key.shakeToLock) as? Bool ?? false
         biometricUnlockEnabled = d.bool(forKey: Key.biometric)
         biometricKeyMigratedToSharedGroup = d.bool(forKey: Key.biometricKeyMigrated)
@@ -100,7 +102,6 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     private enum Key {
         static let onboarding = "onboarding_completed"
         static let autoLock = "auto_lock_timeout"
-        static let lockOnBackground = "lock_on_background"
         static let shakeToLock = "shake_to_lock"
         static let biometric = "biometric_unlock_enabled"
         static let biometricKeyMigrated = "biometric_key_migrated_shared_group"

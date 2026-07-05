@@ -5,11 +5,14 @@ import SwiftUI
 struct AutoFillView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
+    /// Set when another flow already unlocked (passkey → password fallback):
+    /// skips the second Face ID prompt for the same key.
+    var presetKey: [UInt8]? = nil
     let onSelect: (_ user: String, _ password: String) -> Void
     let onCancel: () -> Void
 
     var body: some View {
-        UnlockGate(title: "Loox", onCancel: onCancel) { vaultKey in
+        UnlockGate(title: "Loox", presetKey: presetKey, onCancel: onCancel) { vaultKey in
             CredentialListView(serviceIdentifiers: serviceIdentifiers,
                                preferredRecordID: preferredRecordID,
                                vaultKey: vaultKey,

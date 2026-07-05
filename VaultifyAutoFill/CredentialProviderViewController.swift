@@ -159,7 +159,11 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                     store: store)
     }
 
-    /// Passkey assertion invoked from the QuickType bar.
+    /// Passkey assertion invoked from the QuickType bar. This entry point may
+    /// legitimately end in a PASSWORD: a site can request a passkey while the
+    /// user only holds a password credential for it (e.g. one shared to them) —
+    /// zero passkey matches falls back to the password picker (same unlocked
+    /// key, no second Face ID) instead of erroring out and dismissing.
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier],
                                         requestParameters: ASPasskeyCredentialRequestParameters) {
         guard let store = makePasskeyStore() else { cancel(code: .failed); return }
@@ -169,10 +173,20 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                             allowedCredentialIDs: requestParameters.allowedCredentials,
                             clientDataHash: requestParameters.clientDataHash,
                             largeBlob: largeBlob),
-                    store: store)
+                    store: store,
+                    onNoPasskey: { [weak self] vaultKey in
+                        autofillLog.log("passkey assert: no matches — falling back to password list")
+                        self?.host(AutoFillView(
+                            serviceIdentifiers: serviceIdentifiers.map(\.identifier),
+                            preferredRecordID: nil,
+                            presetKey: vaultKey,
+                            onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
+                            onCancel: { [weak self] in self?.cancel() }))
+                    })
     }
 
-    private func showPasskey(_ purpose: PasskeyPurpose, store: VaultStore) {
+    private func showPasskey(_ purpose: PasskeyPurpose, store: VaultStore,
+                             onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil) {
         let title: LocalizedStringKey
         if case .register = purpose {
             title = "Create a passkey"
@@ -189,7 +203,8 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             onRegistration: { [weak self] credential in
                 self?.extensionContext.completeRegistrationRequest(using: credential)
             },
-            onCancel: { [weak self] code in self?.cancel(code: code) }))
+            onCancel: { [weak self] code in self?.cancel(code: code) },
+            onNoPasskey: onNoPasskey))
     }
 
     func makePasskeyStore() -> VaultStore? {
@@ -211,6 +226,13 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
 
     private func host(_ rootView: some View) {
         autofillLog.log("host: presenting SwiftUI content")
+        // A flow can re-host (passkey → password fallback) — tear down the
+        // previous hosting controller instead of stacking children.
+        for child in children {
+            child.willMove(toParent: nil)
+            child.view.removeFromSuperview()
+            child.removeFromParent()
+        }
         // Apply the user's theme (shared via the App Group) so the extension matches
         // the app: accent tint + light/dark. Static — no wallpaper/animation here.
         let theme = ThemePalette.resolve(

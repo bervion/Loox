@@ -38,6 +38,8 @@ import SwiftUI
     let sharedItems: SharedItemsProjection
     /// Device-local "which items are shared with whom" registry (owner side).
     let sharingStore = SharingStore()
+    /// Loox Link quick shares: encrypted snapshot links (key in URL fragment).
+    let looxLinks = LooxLinkService()
     /// Bounded local history for the notifications screen.
     let notificationHistory = NotificationHistoryStore()
 
@@ -110,11 +112,16 @@ import SwiftUI
         // Rendezvous inbox dies with the vault (descriptor + subscription).
         Task { [inviteInbox] in await inviteInbox.disarm() }
         sharingStore.wipe()
+        // Quick-link revoke tokens die with the vault; the links themselves
+        // expire server-side (we can't revoke without the tokens anyway).
+        looxLinks.records.wipe()
         sharedItems.wipe()
         notificationHistory.wipe()
-        // The AutoFill shared-credentials cache outlives an ordinary lock by design
-        // (see SharedCredentialsCache) — Erase Vault is the one place it must go too.
+        // The AutoFill shared-credentials cache and the projection snapshot outlive
+        // an ordinary lock by design (sealed at rest) — Erase Vault is the one
+        // place they must go too.
         SharedCredentialsCache.clear()
+        SharedItemsProjection.clearPersisted()
         VaultKeyEscrowService.clearPushedFingerprint()
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).

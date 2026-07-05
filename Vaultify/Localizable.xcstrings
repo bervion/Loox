@@ -164,12 +164,32 @@
         }
       }
     },
+    "1 hour": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 giờ"
+          }
+        }
+      }
+    },
     "1 min": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "1 phút"
+          }
+        }
+      }
+    },
+    "10 minutes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 phút"
           }
         }
       }
@@ -185,12 +205,32 @@
         }
       }
     },
+    "15 minutes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 phút"
+          }
+        }
+      }
+    },
     "15s": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "15 giây"
+          }
+        }
+      }
+    },
+    "24 hours": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24 giờ"
           }
         }
       }
@@ -216,12 +256,42 @@
         }
       }
     },
+    "30 minutes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 phút"
+          }
+        }
+      }
+    },
     "30s": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "30 giây"
+          }
+        }
+      }
+    },
+    "5 minutes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 phút"
+          }
+        }
+      }
+    },
+    "7 days": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 ngày"
           }
         }
       }
@@ -266,6 +336,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Két bảo mật riêng tư, không cần máy chủ. Bí mật của bạn luôn được mã hóa trên thiết bị và không bao giờ rời đi khi chưa được bảo vệ."
+          }
+        }
+      }
+    },
+    "A quick link is a one-time snapshot of the fields you pick. Sharing with a Loox user stays live and can require your approval for every use.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết nhanh là ảnh chụp một lần của các trường bạn chọn. Chia sẻ với người dùng Loox luôn cập nhật và có thể yêu cầu bạn phê duyệt mỗi lần sử dụng."
           }
         }
       }
@@ -438,6 +518,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đang hoạt động"
+          }
+        }
+      }
+    },
+    "Active links": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết đang hoạt động"
           }
         }
       }
@@ -767,12 +857,32 @@
         }
       }
     },
+    "Anyone who has the link loses access immediately.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ai đang giữ liên kết sẽ mất quyền truy cập ngay lập tức."
+          }
+        }
+      }
+    },
     "Anyone who has this kit and access to your iCloud can restore your vault — no master password needed. Keep it offline and private.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "Bất kỳ ai có bộ kit này và quyền truy cập iCloud của bạn đều có thể khôi phục kho — không cần mật khẩu chính. Hãy giữ nó ngoại tuyến và riêng tư."
+          }
+        }
+      }
+    },
+    "Anyone with this link can view the shared fields until it expires or you revoke it. Send it over a channel you trust.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ai có liên kết này đều xem được các trường đã chia sẻ cho tới khi liên kết hết hạn hoặc bạn thu hồi. Hãy gửi qua kênh bạn tin tưởng."
           }
         }
       }
@@ -877,6 +987,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Phê duyệt bị gián đoạn. Hãy nhờ họ gửi lại yêu cầu."
+          }
+        }
+      }
+    },
+    "Approval-based access over iCloud — you stay in control of every use.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cấp quyền qua iCloud với cơ chế phê duyệt — bạn kiểm soát mỗi lần sử dụng."
           }
         }
       }
@@ -1090,6 +1210,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tự động khóa"
+          }
+        }
+      }
+    },
+    "Auto-Lock counts both time away from the app and idle time in it — \"Immediately\" locks the moment you leave, longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động khoá tính cả thời gian rời app lẫn thời gian không thao tác trong app — \"Ngay lập tức\" khoá ngay khi bạn rời đi, các mốc dài hơn cho phép bạn sao chép sang app khác rồi quay lại mà không phải xác thực lại.\n\nNâng cấp passkey tự động có thể tạo passkey ở chế độ nền với khoá công khai chỉ ghi. Việc đọc hoặc dùng passkey vẫn yêu cầu mở khoá kho."
           }
         }
       }
@@ -1913,6 +2043,16 @@
         }
       }
     },
+    "Copy Link": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép liên kết"
+          }
+        }
+      }
+    },
     "Couldn't accept the invitation": {
       "localizations": {
         "en": {
@@ -2083,6 +2223,16 @@
         }
       }
     },
+    "Create Link": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo liên kết"
+          }
+        }
+      }
+    },
     "Create New Space": {
       "localizations": {
         "vi": {
@@ -2158,6 +2308,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tạo passkey"
+          }
+        }
+      }
+    },
+    "Create an encrypted link that opens anywhere — no app needed. Expires automatically.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo liên kết mã hoá mở được ở bất kỳ đâu — không cần cài ứng dụng. Tự động hết hạn."
           }
         }
       }
@@ -2830,6 +2990,16 @@
         }
       }
     },
+    "Encrypting and creating your link…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang mã hoá và tạo liên kết…"
+          }
+        }
+      }
+    },
     "End-to-end encryption": {
       "comment": "Description of a feature that provides end-to-end encryption of user data.",
       "isCommentAutoGenerated": true,
@@ -3100,6 +3270,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mọi mật khẩu đều mạnh và duy nhất."
+          }
+        }
+      }
+    },
+    "Everything is encrypted on this iPhone. The server stores only ciphertext — the decryption key travels inside the link and is never sent to any server.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi thứ được mã hoá ngay trên iPhone này. Máy chủ chỉ lưu bản mã — khoá giải mã nằm trong liên kết và không bao giờ được gửi tới máy chủ."
+          }
+        }
+      }
+    },
+    "Expires %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hết hạn %@"
           }
         }
       }
@@ -4120,6 +4310,36 @@
         }
       }
     },
+    "Link Copied": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã sao chép liên kết"
+          }
+        }
+      }
+    },
+    "Link expires after": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết hết hạn sau"
+          }
+        }
+      }
+    },
+    "Link ready": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết đã sẵn sàng"
+          }
+        }
+      }
+    },
     "Located In": {
       "extractionState": "manual",
       "localizations": {
@@ -4137,18 +4357,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Khóa ngay"
-          }
-        }
-      }
-    },
-    "Lock when backgrounded": {
-      "comment": "A toggle that allows the user to choose whether to lock the app when the app is in the background.",
-      "isCommentAutoGenerated": true,
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Khóa khi vào nền"
           }
         }
       }
@@ -5080,6 +5288,16 @@
         }
       }
     },
+    "One-time": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dùng một lần"
+          }
+        }
+      }
+    },
     "One-time Code": {
       "localizations": {
         "vi": {
@@ -5096,6 +5314,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mã một lần"
+          }
+        }
+      }
+    },
+    "One-time link": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết dùng một lần"
+          }
+        }
+      }
+    },
+    "Only the fields you select are included. One-time codes and extra-protected values can never be shared in a link.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉ các trường bạn chọn được đưa vào. Mã một lần và giá trị bảo vệ nâng cao không bao giờ được chia sẻ qua liên kết."
           }
         }
       }
@@ -5765,6 +6003,16 @@
         }
       }
     },
+    "Quick Link": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết nhanh"
+          }
+        }
+      }
+    },
     "Quick Look": {
       "localizations": {
         "vi": {
@@ -6186,6 +6434,16 @@
         }
       }
     },
+    "Revoke Link": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu hồi liên kết"
+          }
+        }
+      }
+    },
     "Revoke access?": {
       "localizations": {
         "en": {
@@ -6198,6 +6456,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thu hồi quyền truy cập?"
+          }
+        }
+      }
+    },
+    "Revoke link?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu hồi liên kết?"
           }
         }
       }
@@ -6475,6 +6743,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chọn một mục để xem chi tiết."
+          }
+        }
+      }
+    },
+    "Select at least one field to share.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn ít nhất một trường để chia sẻ."
           }
         }
       }
@@ -6825,6 +7103,16 @@
         }
       }
     },
+    "Share Link": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ liên kết"
+          }
+        }
+      }
+    },
     "Share Website Link": {
       "localizations": {
         "vi": {
@@ -6871,6 +7159,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lời mời chia sẻ và yêu cầu phê duyệt sẽ xuất hiện ở đây."
+          }
+        }
+      }
+    },
+    "Share service error (%@).": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lỗi dịch vụ chia sẻ (%@)."
+          }
+        }
+      }
+    },
+    "Share with a Loox user": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ với người dùng Loox"
           }
         }
       }
@@ -7598,6 +7906,16 @@
         }
       }
     },
+    "The link disappears the first time it's opened. If nobody opens it, it expires on its own after 24 hours. The viewer asks for a tap first, so link previews can't use it up.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết biến mất ngay lần mở đầu tiên. Nếu không ai mở, nó tự hết hạn sau 24 giờ. Trang xem yêu cầu bấm xác nhận trước, nên bản xem trước không làm mất lượt."
+          }
+        }
+      }
+    },
     "The owner hasn't finished setting up this share yet. Ask them to open the item and confirm the code with you.": {
       "localizations": {
         "en": {
@@ -7699,6 +8017,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cùng một mật khẩu bảo vệ nhiều mục."
+          }
+        }
+      }
+    },
+    "The share service sent an unexpected response.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dịch vụ chia sẻ trả về phản hồi không hợp lệ."
           }
         }
       }
@@ -7815,6 +8143,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Họ đã nhận một mã dùng một lần. Mã hết hạn theo chu kỳ hiện tại — không có gì khác được chia sẻ."
+          }
+        }
+      }
+    },
+    "This app couldn't prove it's a genuine Loox install. Try again later.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ứng dụng không thể xác minh đây là bản cài Loox chính hãng. Vui lòng thử lại sau."
           }
         }
       }
@@ -7975,6 +8313,16 @@
         }
       }
     },
+    "This item is too large to share as a link.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục này quá lớn để chia sẻ qua liên kết."
+          }
+        }
+      }
+    },
     "This item no longer exists.": {
       "localizations": {
         "en": {
@@ -7987,6 +8335,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mục này không còn tồn tại."
+          }
+        }
+      }
+    },
+    "This link can only be revoked from this device.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết này chỉ có thể được thu hồi từ thiết bị này."
+          }
+        }
+      }
+    },
+    "This link disappears after it's opened once.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết này biến mất sau lần mở đầu tiên."
+          }
+        }
+      }
+    },
+    "This link no longer exists.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết này không còn tồn tại."
           }
         }
       }
@@ -8874,6 +9252,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chúng tôi nên gọi bạn là gì?"
+          }
+        }
+      }
+    },
+    "What the link shows": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết hiển thị gì"
           }
         }
       }

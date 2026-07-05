@@ -5,6 +5,13 @@ import ProjectDescription
 // per machine, so a beta-Xcode dev and a stable-Xcode CI runner each get a
 // project file their Xcode can open. Version lives here (bumped by release.sh).
 
+// Interim Loox Link create token (anti-abuse, rotatable — NOT a user secret).
+// Injected into the app's Info.plist at generation time from the environment
+// (TUIST_LOOX_LINK_PROD_TOKEN, set on the CI runner) so it never lives in git.
+// Empty on dev machines: DEBUG builds supply it via UserDefaults instead.
+// Retired once App Attest becomes the create auth (loox-link epic C7).
+let looxLinkAppToken = Environment.looxLinkProdToken.getString(default: "")
+
 let project = Project(
     name: "Vaultify",
     options: .options(
@@ -55,6 +62,8 @@ let project = Project(
                 // per-upload encryption questionnaire in App Store Connect.
                 "ITSAppUsesNonExemptEncryption": false,
                 "LSApplicationCategoryType": "public.app-category.utilities",
+                // Loox Link interim create token (see `looxLinkAppToken` above).
+                "LooxLinkAppToken": .string(looxLinkAppToken),
                 // Exported document type for shareable `.vaultheme` custom themes.
                 "UTExportedTypeDeclarations": [
                     [
@@ -213,6 +222,9 @@ let project = Project(
             deploymentTargets: .iOS("17.6"),
             infoPlist: .default,
             sources: ["VaultifyTests/**"],
+            // Frozen parity fixtures (e.g. Loox Link canonical-hash vectors) —
+            // tests load them from the bundle instead of retyping values.
+            resources: ["VaultifyTests/Fixtures/**"],
             dependencies: [.target(name: "Vaultify")]
         ),
     ]

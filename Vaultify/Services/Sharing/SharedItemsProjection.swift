@@ -74,6 +74,7 @@ import Foundation
         }
         try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
         CredentialIdentityService.refreshShared(cacheEntries)
+        persistSnapshot(vaultKey: vaultKey)
         await refresh(vaultKey: vaultKey)
     }
 
@@ -84,12 +85,61 @@ import Foundation
         requestModels = [:]
     }
 
+    // MARK: Sealed snapshot (instant re-hydration after unlock)
+
+    /// The projection is memory-only and wiped on lock — without a snapshot,
+    /// every unlock/cold start showed "no shared items" until a full CloudKit
+    /// round trip finished (or indefinitely offline). Same at-rest model as
+    /// `SharedCredentialsCache`: ciphertext under the Vault Key, survives a
+    /// lock, cleared only by vault erase.
+    private nonisolated struct Snapshot: Codable {
+        var items: [VaultItem]
+        var grants: [String: AccessGrant]
+    }
+
+    private static let snapshotVersion: UInt8 = 1
+    private nonisolated static var snapshotURL: URL {
+        SharedConfig.containerURL.appending(path: "shared-projection-snapshot.bin")
+    }
+
+    /// Re-hydrate the last known projection so lists show shared items the
+    /// moment the vault unlocks; the network refresh then reconciles. No-op
+    /// once anything is loaded. Best-effort: corruption/missing → stays empty.
+    func seedFromSnapshot(vaultKey: [UInt8]) {
+        guard !hasLoaded, items.isEmpty,
+              let envelope = try? Data(contentsOf: Self.snapshotURL),
+              envelope.first == Self.snapshotVersion,
+              let plain = try? AESGCM.open(envelope.dropFirst(), key: vaultKey),
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: plain),
+              !snapshot.items.isEmpty else { return }
+        items = snapshot.items
+        grants = snapshot.grants
+        hasLoaded = true
+    }
+
+    private func persistSnapshot(vaultKey: [UInt8]) {
+        guard let plain = try? JSONEncoder().encode(Snapshot(items: items, grants: grants)),
+              let sealed = try? AESGCM.seal(plain, key: vaultKey) else { return }
+        var envelope = Data([Self.snapshotVersion])
+        envelope.append(sealed)
+        try? envelope.write(to: Self.snapshotURL, options: [.atomic, .completeFileProtection])
+    }
+
+    /// Vault erase only — a lock deliberately keeps the sealed snapshot.
+    nonisolated static func clearPersisted() {
+        try? FileManager.default.removeItem(at: snapshotURL)
+    }
+
     // MARK: Refresh (single-flight; triggers live on the unlocked shell)
 
     func refresh(vaultKey: [UInt8]) async {
         guard CloudSyncService.isConfigured, !refreshing else { return }
         refreshing = true
         defer { refreshing = false }
+        // Instant re-hydration first — the network reconcile below can take
+        // seconds (or fail offline), and "empty until CloudKit answers" reads
+        // as "my shared item is gone".
+        seedFromSnapshot(vaultKey: vaultKey)
         guard let identity = try? await escrow.ensureIdentity(vaultKey: vaultKey) else { return }
         let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
         guard let zones = try? await recipient.acceptedApprovalZones() else {
@@ -135,6 +185,13 @@ import Foundation
                 }
             }
         }
+        // A cancelled refresh (lock / shell teardown mid-flight) surfaces as
+        // per-zone "transient" errors with the projection already wiped — so
+        // `built` is empty garbage, not truth. Committing it would ALSO
+        // overwrite the AutoFill cache below with an empty list, silently
+        // killing shared credentials in the extension until the next full
+        // refresh. Bail out before touching any state.
+        guard !Task.isCancelled else { return }
         items = built.sorted {
             $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
         }
@@ -154,6 +211,7 @@ import Foundation
         }
         try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
         CredentialIdentityService.refreshShared(cacheEntries)
+        persistSnapshot(vaultKey: vaultKey)
     }
 
     /// Flattens a projected item + its grant into the AutoFill cache shape.
@@ -162,11 +220,24 @@ import Foundation
         let totpFieldId = grant.capabilities.first { $0.value.isAskEachTimeTOTP }?.key
         return SharedCredentialEntry(
             itemID: item.id, title: item.title,
-            websiteHost: item.urlField?.value.isEmpty == false ? item.urlField?.value : nil,
+            websiteHost: normalizedHost(item.urlField?.value),
             username: item.usernameField?.value.isEmpty == false ? item.usernameField?.value : nil,
             password: item.passwordField?.value.isEmpty == false ? item.passwordField?.value : nil,
             zoneName: origin.zoneName, ownerName: origin.ownerName, grantId: origin.grantId,
             askEachTimeTOTPFieldId: totpFieldId)
+    }
+
+    /// The cache's host feeds QuickType registration (`.domain`-type service
+    /// identifiers) and the extension's site matching — both need a bare host.
+    /// The owner may have shared their URL FIELD verbatim ("https://x.y/login"),
+    /// which would never match a domain identifier.
+    nonisolated static func normalizedHost(_ raw: String?) -> String? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return nil
+        }
+        let candidate = raw.contains("://") ? raw : "https://\(raw)"
+        if let host = URL(string: candidate)?.host, !host.isEmpty { return host.lowercased() }
+        return raw.lowercased()
     }
 
     // MARK: Building

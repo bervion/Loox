@@ -140,7 +140,7 @@ struct VaultShellBehaviors: ViewModifier {
         if env.settings.shakeToLock, scenePhase == .active {
             shakeDetector.start {
                 Haptics.success()
-                env.session.lock(viaShake: true)
+                env.session.lock(deliberate: true)
             }
         } else {
             shakeDetector.stop()

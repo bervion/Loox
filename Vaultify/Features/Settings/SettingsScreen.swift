@@ -57,9 +57,6 @@ struct SettingsScreen: View {
                     } label: {
                         Label { Text("Auto-Lock") } icon: { PolarisIcon(Icons.clock) }
                     }
-                    Toggle(isOn: $settings.lockOnBackground) {
-                        Label { Text("Lock when backgrounded") } icon: { PolarisIcon(Icons.lock) }
-                    }
                     Toggle(isOn: $settings.shakeToLock) {
                         Label { Text("Shake to lock") } icon: { PolarisIcon(Icons.alert) }
                     }
@@ -84,7 +81,7 @@ struct SettingsScreen: View {
                 } header: {
                     Text("Security")
                 } footer: {
-                    Text("Automatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
+                    Text("Auto-Lock counts both time away from the app and idle time in it — \"Immediately\" locks the moment you leave, longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
                 }
                 .listRowBackground(VaultColors.surface)
 
@@ -173,7 +170,9 @@ struct SettingsScreen: View {
                 .listRowBackground(VaultColors.surface)
 
                 Section {
-                    Button { env.session.lock() } label: {
+                    // Deliberate lock: the lock screen requires a slide before Face ID,
+                    // otherwise the camera re-opens the vault the instant it locks.
+                    Button { env.session.lock(deliberate: true) } label: {
                         Label { Text("Lock Now") } icon: { PolarisIcon(Icons.lockFill) }
                     }
                     Button(role: .destructive) { confirmErase = true } label: {

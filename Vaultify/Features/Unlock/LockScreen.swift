@@ -33,16 +33,17 @@ struct LockScreen: View {
     /// Biometric attempts (auto-prompt + taps) before falling back to the password field.
     private let maxBioAttempts = 3
 
-    /// Set once the user slides to confirm after a shake-lock.
+    /// Set once the user slides to confirm after a deliberate lock (shake or Lock Now).
     @State private var slideConfirmed = false
 
     private var canUseBiometrics: Bool {
         env.session.biometricEnrolled && env.settings.biometricUnlockEnabled && BiometricAuth.isAvailable
     }
 
-    /// After a shake-lock, gate Face ID behind a deliberate slide so a panic-shake in public
-    /// can't be instantly re-opened before the user puts the phone away.
-    private var requireSlide: Bool { env.session.shakeLocked && !slideConfirmed }
+    /// After a deliberate lock (panic shake or Settings "Lock Now"), gate Face ID behind a
+    /// slide so the vault can't be instantly re-opened by the owner's face still being in
+    /// front of the camera the moment they chose to lock it.
+    private var requireSlide: Bool { env.session.deliberatelyLocked && !slideConfirmed }
 
     /// Sub-header under the logo — names the biometric option when it's available,
     /// otherwise points straight at the password.

@@ -40,8 +40,19 @@ jobs:
           echo "Releasing $V ($B) from ${GITHUB_REF_NAME}"
 
       # Generate Vaultify.xcworkspace/.xcodeproj using this runner's Xcode.
+      # TUIST_LOOX_LINK_PROD_TOKEN bakes the interim Loox Link create token
+      # into the app's Info.plist (Project.swift reads it at generation) —
+      # without it, TestFlight builds get 401 creating quick links. Interim
+      # only: retired when App Attest becomes the create auth (loox-link C7).
       - name: Generate Xcode project
-        run: tuist generate --no-open
+        env:
+          TUIST_LOOX_LINK_PROD_TOKEN: ${{ secrets.LOOX_LINK_PROD_TOKEN }}
+        run: |
+          if [ -z "$TUIST_LOOX_LINK_PROD_TOKEN" ]; then
+            echo "::error::LOOX_LINK_PROD_TOKEN repo secret is not set — quick-link creation would 401 in this release. Set it (Settings → Secrets → Actions) and re-run."
+            exit 1
+          fi
+          tuist generate --no-open
 
       # Use a managed Ruby — the runner's macOS system Ruby (2.6) is too old for
       # modern bundler/fastlane. bundler-cache installs the locked gems (and the

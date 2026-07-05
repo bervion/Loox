@@ -27,6 +27,25 @@ struct UnlockGate<Content: View>: View {
     @State private var didAutoRetry = false
     @State private var vaultKey: [UInt8]?
 
+    init(title: LocalizedStringKey, onCancel: @escaping () -> Void,
+         @ViewBuilder content: @escaping (_ vaultKey: [UInt8]) -> Content) {
+        self.title = title
+        self.onCancel = onCancel
+        self.content = content
+    }
+
+    /// Pre-unlocked variant: one flow already authenticated (e.g. a passkey
+    /// assertion falling back to the password picker) — rendering the content
+    /// directly instead of prompting Face ID a second time for the same key.
+    init(title: LocalizedStringKey, presetKey: [UInt8]?, onCancel: @escaping () -> Void,
+         @ViewBuilder content: @escaping (_ vaultKey: [UInt8]) -> Content) {
+        self.title = title
+        self.onCancel = onCancel
+        self.content = content
+        _vaultKey = State(initialValue: presetKey)
+        _biometricInProgress = State(initialValue: presetKey == nil)
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -111,6 +130,7 @@ struct UnlockGate<Content: View>: View {
     /// Face ID unlock — no Argon2. Any failure (cancel, item-not-found, entitlement, biometrics
     /// changed) reveals the master-password form as a fallback.
     private func attemptBiometricUnlock() async {
+        guard vaultKey == nil else { return } // pre-unlocked (presetKey) — nothing to do
         let enrolled = BiometricKeyStore.isEnrolled
         bioLog.log("attemptBiometricUnlock: isEnrolled(shared group)=\(enrolled, privacy: .public)")
         guard enrolled else { biometricInProgress = false; return }

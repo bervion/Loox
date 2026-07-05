@@ -92,6 +92,7 @@ Repo → Settings → Actions → Runners → **New self-hosted runner** (macOS)
 - **Ruby** is provided by the `ruby/setup-ruby` action in CI (the runner's system Ruby 2.6 is too old) — no manual Ruby setup needed on the runner
 - `git`, and access to clone `vaultify-ios-certificates`
 - `claude` CLI is **not** needed on the runner (notes are generated locally during `make release` and committed)
+- Repo secret **`LOOX_LINK_PROD_TOKEN`** (Settings → Secrets → Actions): the interim Loox Link create token (matches the Worker's `APP_CREATE_TOKEN --env production`). The release workflow exports it as `TUIST_LOOX_LINK_PROD_TOKEN` for `tuist generate`, which bakes it into the app's Info.plist — never committed; the workflow fails early if the secret is missing. Rotate anytime (`wrangler secret put` + `gh secret set`). Retired when App Attest ships (loox-link C7).
 - Keep the runner online; default label `self-hosted` matches the workflows
 
 ---

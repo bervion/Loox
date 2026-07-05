@@ -37,10 +37,12 @@ enum AuthError: Error, LocalizedError {
     /// to `.inactive` (never `.background`), so it never sets this — preventing a re-lock /
     /// re-prompt loop when the biometric sheet closes.
     private var backgroundedAt: Date?
-    /// True when the last lock was triggered by the shake gesture. The lock screen reads this
-    /// to require a deliberate slide-to-unlock before any Face ID prompt — so a panic-shake
-    /// in public can't be instantly re-opened by Face ID before the user puts the phone away.
-    private(set) var shakeLocked = false
+    /// True when the last lock was a deliberate user action (panic shake or the
+    /// Settings "Lock Now" button). The lock screen reads this to require a
+    /// slide-to-unlock before any Face ID prompt — a deliberate lock must not be
+    /// instantly re-opened by the owner's face still being in front of the camera.
+    /// Auto-locks (timeout/background) keep the frictionless Face ID auto-prompt.
+    private(set) var deliberatelyLocked = false
 
     let settings: SettingsStore
 
@@ -133,11 +135,11 @@ enum AuthError: Error, LocalizedError {
 
     // MARK: Lock
 
-    func lock(viaShake: Bool = false) {
+    func lock(deliberate: Bool = false) {
         vaultKey = nil
         level2Key = nil
         backgroundedAt = nil
-        shakeLocked = viaShake
+        deliberatelyLocked = deliberate
         state = .locked
     }
 
@@ -160,7 +162,7 @@ enum AuthError: Error, LocalizedError {
         vaultKey = SecureBytes(key)
         state = .unlocked
         lastActivity = .now
-        shakeLocked = false
+        deliberatelyLocked = false
         migrateBiometricKeyToSharedGroupIfNeeded(key: key)
     }
 
@@ -187,8 +189,10 @@ enum AuthError: Error, LocalizedError {
     }
 
     /// Lock if the configured inactivity window has elapsed (foreground idle timer).
+    /// `.immediate` means "lock the moment the app is hidden", not "idle 0s" —
+    /// applying it here would lock mid-use on every timer tick.
     func lockIfTimedOut(now: Date = .now) {
-        guard state == .unlocked else { return }
+        guard state == .unlocked, settings.autoLock != .immediate else { return }
         if now.timeIntervalSince(lastActivity) >= settings.autoLock.seconds {
             lock()
         }

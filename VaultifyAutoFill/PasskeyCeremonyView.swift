@@ -8,6 +8,11 @@ struct PasskeyCeremonyView: View {
     let onAssertion: (_ credential: ASPasskeyAssertionCredential) -> Void
     let onRegistration: (_ credential: ASPasskeyRegistrationCredential) -> Void
     let onCancel: (_ code: ASExtensionError.Code) -> Void
+    /// QuickType-list assertions set this: a site can request a passkey while
+    /// the user only holds a password (e.g. a credential SHARED to them) — the
+    /// right answer is the password picker, not an error that dismisses the
+    /// sheet. The unlocked key rides along so the picker skips a second Face ID.
+    var onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil
 
     @State private var matches: [PasskeyInfo] = []
     @State private var working = false
@@ -85,8 +90,12 @@ struct PasskeyCeremonyView: View {
         matches = vault.matching(relyingParty: relyingParty, allowedCredentialIDs: allowed, key: vaultKey)
         switch matches.count {
         case 0:
-            errorMessage = appString("No passkey for this site.")
-            onCancel(.credentialIdentityNotFound)
+            if let onNoPasskey {
+                onNoPasskey(vaultKey)
+            } else {
+                errorMessage = appString("No passkey for this site.")
+                onCancel(.credentialIdentityNotFound)
+            }
         case 1:
             sign(matches[0])
         default:

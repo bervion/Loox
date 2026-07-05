@@ -76,11 +76,12 @@ struct RootView: View {
             // Save the last screen/tab/draft while the Vault Key is still in memory —
             // MUST run before the lock below drops it (and tears down the UI).
             env.uiState.persist()
-            // Lock instantly (no animation): the app is backgrounded and covered, so the
-            // lock screen should simply *be there* on return — not visibly cross-fade in from
-            // the unlocked UI. Animating this route change is what made the return to the
-            // foreground look like a jump back to the lock screen.
-            if env.settings.lockOnBackground {
+            // One timer governs leaving the app: "Immediately" drops the key right
+            // here, with no animation — the lock screen should simply *be there* on
+            // return, not cross-fade in from the unlocked UI. Any longer window keeps
+            // the key so a quick copy-into-another-app round trip doesn't force a
+            // re-auth; `lockIfBackgroundExpired` settles it on return.
+            if env.settings.autoLock == .immediate {
                 var transaction = Transaction()
                 transaction.disablesAnimations = true
                 withTransaction(transaction) { env.session.lock() }

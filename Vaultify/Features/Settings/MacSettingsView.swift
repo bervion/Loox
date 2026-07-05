@@ -146,7 +146,7 @@ private struct MacGeneralSettingsPane: View {
             }
 
             Section {
-                Button { env.session.lock() } label: {
+                Button { env.session.lock(deliberate: true) } label: {
                     Label { Text("Lock Now") } icon: { PolarisIcon(Icons.lockFill) }
                 }
                 .buttonStyle(.borderless)
@@ -205,9 +205,6 @@ private struct MacSecuritySettingsPane: View {
                 }
                 // Inline picker — see the menu-popup bridge note in the General pane.
                 .pickerStyle(.segmented)
-                Toggle(isOn: $settings.lockOnBackground) {
-                    Label { Text("Lock when backgrounded") } icon: { PolarisIcon(Icons.lock) }
-                }
             }
 
             Section {

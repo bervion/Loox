@@ -48,7 +48,11 @@ nonisolated enum FieldCapability: Codable, Sendable, Equatable {
 /// Contains no secrets — it is signed (tamper-evident), not sealed.
 /// `capabilities` keys are `DynamicField.id` values; the verifier FAILS CLOSED
 /// on any fieldId not present here (M3 — field ids are mutable strings).
-nonisolated struct AccessGrant: Sendable, Equatable {
+/// `Codable` serves the recipient's sealed projection snapshot (instant
+/// re-hydration after unlock) — the CloudKit wire format stays the canonical
+/// encoding. Snapshots only ever encode already-normalized grants, so the
+/// synthesized decode may skip the init's pinned-key sorting.
+nonisolated struct AccessGrant: Sendable, Equatable, Codable {
     var id: String
     var itemId: String
     /// Opaque recipient identifier — never an email/name (M2 metadata hygiene).

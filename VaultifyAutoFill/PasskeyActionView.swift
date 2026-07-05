@@ -24,6 +24,9 @@ struct PasskeyActionView: View {
     let onAssertion: (_ credential: ASPasskeyAssertionCredential) -> Void
     let onRegistration: (_ credential: ASPasskeyRegistrationCredential) -> Void
     let onCancel: (_ code: ASExtensionError.Code) -> Void
+    /// See `PasskeyCeremonyView.onNoPasskey` — password-picker fallback for
+    /// QuickType-list assertions with zero matching passkeys.
+    var onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil
 
     var body: some View {
         UnlockGate(title: title, onCancel: { onCancel(.userCanceled) }) { vaultKey in
@@ -33,7 +36,8 @@ struct PasskeyActionView: View {
                                     store: store,
                                     onAssertion: onAssertion,
                                     onRegistration: onRegistration,
-                                    onCancel: onCancel)
+                                    onCancel: onCancel,
+                                    onNoPasskey: onNoPasskey)
             }
         }
     }

@@ -13,6 +13,10 @@ struct ShareAccessSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     private enum Step {
+        /// Entry: quick link (encrypted snapshot, opens anywhere) vs
+        /// approval-based iCloud share (the pre-existing flow).
+        case choose
+        case quickLink
         case checking
         case blocked(ApprovalPrerequisites.Blocker)
         case config
@@ -27,7 +31,7 @@ struct ShareAccessSheet: View {
         case failed(String)
     }
 
-    @State private var step: Step = .checking
+    @State private var step: Step = .choose
     @State private var recipientEmail = ""
     @State private var capabilities: [String: FieldCapability] = [:]
     /// Share pending the destructive revoke confirmation.
@@ -67,10 +71,9 @@ struct ShareAccessSheet: View {
     }
 
     var body: some View {
-        VaultSheetScaffold(title: "Share Access") {
+        VaultSheetScaffold(title: sheetTitle) {
             content
         }
-        .task { await enter() }
         .task(id: pollingZoneName) {
             guard let zoneName = pollingZoneName else { return }
             await pollForProfile(zoneName: zoneName)
@@ -109,8 +112,20 @@ struct ShareAccessSheet: View {
         revokeTarget = nil
     }
 
+    private var sheetTitle: LocalizedStringResource {
+        switch step {
+        case .choose: "Share"
+        case .quickLink: "Quick Link"
+        default: "Share Access"
+        }
+    }
+
     @ViewBuilder private var content: some View {
         switch step {
+        case .choose:
+            chooseView
+        case .quickLink:
+            QuickLinkView(itemID: itemID)
         case .checking:
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         case .blocked(let blocker):
@@ -344,6 +359,53 @@ struct ShareAccessSheet: View {
     }
 
     // MARK: Subviews
+
+    /// Entry chooser: a portable encrypted link vs the approval-based iCloud
+    /// share. The quick link is listed first — it's the "just send it" path.
+    private var chooseView: some View {
+        Form {
+            Section {
+                shareOptionRow(icon: Icons.globe,
+                               title: "Quick Link",
+                               subtitle: "Create an encrypted link that opens anywhere — no app needed. Expires automatically.") {
+                    step = .quickLink
+                }
+                shareOptionRow(icon: Icons.shield,
+                               title: "Share with a Loox user",
+                               subtitle: "Approval-based access over iCloud — you stay in control of every use.") {
+                    step = .checking
+                    Task { await enter() }
+                }
+            } footer: {
+                Text("A quick link is a one-time snapshot of the fields you pick. Sharing with a Loox user stays live and can require your approval for every use.")
+            }
+            .listRowBackground(VaultColors.surface)
+        }
+    }
+
+    private func shareOptionRow(icon: String, title: LocalizedStringResource,
+                                subtitle: LocalizedStringResource,
+                                action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: Space.s3) {
+                PolarisIcon(icon, size: Metric.iconUtility)
+                    .themedForeground(.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title.inAppLocalized)
+                        .vaultType(.headline).themedForeground()
+                    Text(subtitle.inAppLocalized)
+                        .vaultType(.footnote).themedForeground(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
+                    .themedForeground(.iconSecondary)
+            }
+            .contentShape(Rectangle())
+            .padding(.vertical, Space.s1)
+        }
+        .buttonStyle(.plain)
+    }
 
     private var configForm: some View {
         Form {
