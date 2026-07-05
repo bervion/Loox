@@ -115,3 +115,13 @@ could move fully in-extension (poll `ApprovalRecipientService.fetchResponse` on 
 the deep-link hand-off — `RequestCodeModel`/`ApprovalRecipientService` would need to move (or their
 non-UI parts extracted) into `VaultifyCore` since the extension only compiles `VaultifyAutoFill/** +
 VaultifyCore/**`.
+
+## QA feedback round 2 (branch fix/sharing-realtime-per-recipient)
+- Realtime A→B: item save re-seals shared-field values (`republishSharedValues`, atomic stale-blob
+  swap, grant untouched) + display envelope; B's existing shared-db silent push → projection refresh.
+- Per-recipient management: `ShareRecipientDetailSheet` (tap a recipient row in owner detail) —
+  info, **Update automatically toggle** (`ItemShareRecord.autoUpdate`, nil=true; OFF = manual only),
+  **Send Update Now**, **capability editing on the live share** (seeded from fetched grant; Apply →
+  publishGrant epoch+1, removed fields' blobs deleted server-side), per-person Revoke.
+- Leave-share fix (B): optimistic local removal (single-flight refresh could no-op) + error alert
+  instead of silent try?.

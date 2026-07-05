@@ -14,6 +14,9 @@ struct ItemDetailScreen: View {
     @State private var showLastIdentityBlock = false
     @State private var showShareAccess = false
     @State private var confirmLeave = false
+    @State private var leaveError: String?
+    /// Per-recipient management sheet (V1.2 follow-up: multi-recipient shares).
+    @State private var selectedShare: ItemShareRecord?
     /// Safety code for a shared item (optional out-of-band comparison).
     @State private var safetyCode: String?
 
@@ -109,6 +112,7 @@ struct ItemDetailScreen: View {
         .sheet(item: $editing) { ItemEditorScreen(target: $0) }
         .sheet(isPresented: $showLocatedIn) { LocatedInSheet(itemID: itemID) }
         .sheet(isPresented: $showShareAccess) { ShareAccessSheet(itemID: itemID) }
+        .sheet(item: $selectedShare) { ShareRecipientDetailSheet(share: $0) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
                 if let item { try? env.repository.moveToTrash(item); dismiss() }
@@ -125,6 +129,12 @@ struct ItemDetailScreen: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("This is your only identity. Add another before removing this one.")
+        }
+        .alert("Couldn't leave the share", isPresented: Binding(
+            get: { leaveError != nil }, set: { if !$0 { leaveError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(verbatim: leaveError ?? "")
         }
         .confirmationDialog("Leave this share?", isPresented: $confirmLeave,
                             titleVisibility: .visible) {
@@ -144,8 +154,13 @@ struct ItemDetailScreen: View {
 
     private func leaveShare() async {
         guard let vaultKey = env.session.vaultKey?.bytes else { return }
-        try? await env.sharedItems.leave(itemId: itemID, vaultKey: vaultKey)
-        dismiss()
+        do {
+            try await env.sharedItems.leave(itemId: itemID, vaultKey: vaultKey)
+            dismiss()
+        } catch {
+            // Swallowing this reads as "the button does nothing" — say why.
+            leaveError = error.localizedDescription
+        }
     }
 
     /// Persist a single field change (e.g. protect / remove protection).
@@ -350,7 +365,7 @@ struct ItemDetailScreen: View {
         if !shares.isEmpty {
             VStack(spacing: 0) {
                 ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
-                    Button { showShareAccess = true } label: {
+                    Button { selectedShare = share } label: {
                         HStack(spacing: Space.s3) {
                             PolarisIcon(Icons.share, size: Metric.iconInline)
                                 .themedForeground(.accent)

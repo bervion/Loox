@@ -355,7 +355,10 @@ struct ItemEditorScreen: View {
     /// display envelope — a rename must reseal it or they keep the old name
     /// forever. Best-effort background work; presentation only, never the grant.
     private func republishSharedDisplayIfNeeded(for item: VaultItem) {
-        let active = env.sharingStore.shares(forItem: item.id).filter(\.fingerprintConfirmed)
+        // Manual-update shares opt out of edit-time propagation — the owner
+        // pushes to them explicitly from the share-details sheet.
+        let active = env.sharingStore.shares(forItem: item.id)
+            .filter { $0.fingerprintConfirmed && $0.isAutoUpdate }
         guard !active.isEmpty else { return }
         let title = item.title.isEmpty ? appString("Shared item") : item.title
         let host = item.urlField?.value.isEmpty == false
@@ -367,13 +370,23 @@ struct ItemEditorScreen: View {
                 : (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
                                                              kind: field.kind.rawValue))
         })
+        // Current plaintexts of shareable fields — republishSharedValues
+        // re-seals only the ones each grant actually marks `shared`.
+        let currentValues = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
+            field.isExtraProtected || field.value.isEmpty
+                ? nil : (field.id, Data(field.value.utf8))
+        })
         Task {
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
             for share in active {
+                let zoneID = CKRecordZone.ID(zoneName: share.zoneName)
                 try? await env.approvalShare.republishDisplayEnvelope(
                     title: title, websiteHost: host, displayFields: displayFields,
-                    zoneID: CKRecordZone.ID(zoneName: share.zoneName),
-                    nowUnixMs: nowUnixMs)
+                    zoneID: zoneID, nowUnixMs: nowUnixMs)
+                // Edited values follow to the recipient near-realtime (their
+                // shared-db push triggers a projection refresh).
+                try? await env.approvalShare.republishSharedValues(
+                    values: currentValues, zoneID: zoneID)
             }
         }
     }

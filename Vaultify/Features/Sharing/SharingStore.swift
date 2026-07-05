@@ -16,6 +16,12 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
     var inviteRecordName: String? = nil
     /// Public-DB rendezvous drop to GC alongside it (creator-only delete).
     var dropRecordName: String? = nil
+    /// nil = true (records predate the setting). When OFF, item edits do NOT
+    /// republish values/display to this recipient — the owner pushes updates
+    /// manually from the share-details sheet.
+    var autoUpdate: Bool? = nil
+
+    var isAutoUpdate: Bool { autoUpdate ?? true }
 }
 
 /// Owner-side registry of shares per item → "Shared with N" and the Phase-7

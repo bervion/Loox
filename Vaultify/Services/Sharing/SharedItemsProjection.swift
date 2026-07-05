@@ -59,6 +59,18 @@ import Foundation
     func leave(itemId: String, vaultKey: [UInt8]) async throws {
         guard let origin = item(id: itemId)?.sharedOrigin else { return }
         try await recipient.leave(zoneID: Self.zoneID(for: origin))
+        // Optimistic local removal: a concurrent shell refresh would make the
+        // follow-up refresh below a single-flight no-op, leaving the departed
+        // item on screen until the next trigger. Server truth already changed.
+        items.removeAll { $0.id == itemId }
+        requestModels = requestModels.filter { !$0.key.hasPrefix(origin.grantId + "|") }
+        grants.removeValue(forKey: itemId)
+        let cacheEntries = items.compactMap { item -> SharedCredentialEntry? in
+            guard let grant = grants[item.id] else { return nil }
+            return Self.cacheEntry(item: item, grant: grant)
+        }
+        try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
+        CredentialIdentityService.refreshShared(cacheEntries)
         await refresh(vaultKey: vaultKey)
     }
 

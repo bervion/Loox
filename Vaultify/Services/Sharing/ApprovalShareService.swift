@@ -209,6 +209,32 @@ import Foundation
         for (_, result) in saved.saveResults { _ = try result.get() }
     }
 
+    /// Owner edited the item: re-seal the CURRENT values of every `shared`
+    /// field so the recipient's projection follows edits near-realtime (the
+    /// shared-db silent push triggers their refresh). Authorization is
+    /// untouched — same grant, same capabilities, fresh ciphertext.
+    func republishSharedValues(values: [String: Data],
+                               zoneID: CKRecordZone.ID) async throws {
+        let grant = try await fetchGrantFresh(zoneID: zoneID)
+        var records: [CKRecord] = []
+        for (fieldId, plaintext) in values
+        where grant.capabilities[fieldId]?.isSharedValue == true {
+            let sealed = try ApprovalSeal.sealSharedField(
+                plaintext, toParticipantPubKey: grant.participantPubKey,
+                grantId: grant.id, fieldId: fieldId)
+            records.append(ApprovalRecordMapping.sharedFieldRecord(
+                sealedBlob: sealed, grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
+        }
+        guard !records.isEmpty else { return }
+        // Old blobs are superseded ciphertext — replace atomically, same
+        // pattern as publishGrant's stale cleanup.
+        let staleBlobIDs = try await recordIDs(ofType: ApprovalConfig.sharedFieldRecordType,
+                                               zoneID: zoneID)
+        let saved = try await database.modifyRecords(saving: records, deleting: staleBlobIDs,
+                                                     savePolicy: .allKeys)
+        for (_, result) in saved.saveResults { _ = try result.get() }
+    }
+
     // MARK: Inbound requests
 
     /// Fresh server fetch — the epoch check must never trust a cached grant.
