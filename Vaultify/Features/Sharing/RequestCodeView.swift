@@ -99,6 +99,16 @@ import SwiftUI
                 }
             } catch is CancellationError {
                 return
+            } catch let error as ApprovalRecipientService.Failure {
+                // A verification failure is DETERMINISTIC — retrying the same
+                // response forever would just spin silently. Surface it.
+                if case .verifyFailed = error,
+                   self.pending?.request.requestId == currentId {
+                    self.pending = nil
+                    phase = .failed(error.localizedDescription)
+                    return
+                }
+                // Other service failures (e.g. transient) fall through.
             } catch {
                 // Transient (offline/rate limit) — fall through to the sleep.
             }

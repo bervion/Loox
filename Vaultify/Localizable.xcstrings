@@ -8559,6 +8559,70 @@
           }
         }
       }
+    },
+    "Nothing has been shared with this account yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing has been shared with this account yet."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa có gì được chia sẻ với tài khoản này."
+          }
+        }
+      }
+    },
+    "The owner hasn't finished setting up this share yet. Ask them to open the item and confirm the code with you.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The owner hasn't finished setting up this share yet. Ask them to open the item and confirm the code with you."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu chưa hoàn tất thiết lập chia sẻ này. Hãy nhờ họ mở mục đó và cùng bạn xác nhận mã."
+          }
+        }
+      }
+    },
+    "This share couldn't be verified.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This share couldn't be verified."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể xác minh chia sẻ này."
+          }
+        }
+      }
+    },
+    "The response couldn't be read.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The response couldn't be read."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không đọc được phản hồi."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

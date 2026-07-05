@@ -8,11 +8,29 @@ import Foundation
 /// responses. Ephemeral request keys live ONLY in the caller's memory —
 /// this service never persists them.
 @MainActor final class ApprovalRecipientService {
-    enum Failure: Error {
+    enum Failure: Error, LocalizedError {
         case noAcceptedZone
         case grantMissing
         case verifyFailed(ApprovalVerifyFailure)
         case malformedPayload
+
+        var errorDescription: String? {
+            switch self {
+            case .noAcceptedZone:
+                return appString("Nothing has been shared with this account yet.")
+            case .grantMissing:
+                // Normal state while the owner hasn't confirmed the
+                // fingerprint yet — the grant only exists after that.
+                return appString("The owner hasn't finished setting up this share yet. Ask them to open the item and confirm the code with you.")
+            case .verifyFailed(let reason):
+                // The specific failed check is appended verbatim — it names a
+                // kernel invariant (e.g. badGrantSignature, ownerKeyUnpinned),
+                // which is exactly what a bug report needs.
+                return appString("This share couldn't be verified.") + " (\(reason))"
+            case .malformedPayload:
+                return appString("The response couldn't be read.")
+            }
+        }
     }
 
     private lazy var container = CKContainer(identifier: ApprovalConfig.containerID)
