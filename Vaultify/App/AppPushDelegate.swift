@@ -102,6 +102,11 @@ final class VaultSceneDelegate: NSObject, UIWindowSceneDelegate {
 
     static func accept(_ metadata: CKShare.Metadata) {
         Task {
+            // Routing-only breadcrumb (Validation §3), set BEFORE the accept:
+            // a crash between accept-success and flag-write would otherwise
+            // leave a server-side acceptance with no local resume. A flag with
+            // no acceptance behind it is harmless (resume no-ops and clears).
+            UserDefaults.standard.set(true, forKey: SharedConfig.pendingShareAcceptanceKey)
             do {
                 let container = CKContainer(identifier: ApprovalConfig.containerID)
                 _ = try await container.accept(metadata)

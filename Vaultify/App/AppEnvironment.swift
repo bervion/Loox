@@ -23,6 +23,10 @@ import SwiftUI
     let approvalCoordinator: ApprovalCoordinator
     /// Foreground approval ceremony (Face ID → boundary-aware issuance).
     let approvalCeremony: ApprovalCeremonyService
+    /// Recipient-side transport (accepted shares, requests, responses).
+    let approvalRecipient = ApprovalRecipientService()
+    /// Recipient participant-identity escrow under the Vault Key.
+    let participantEscrow = ParticipantEscrowService()
     /// Device-local "which items are shared with whom" registry (owner side).
     let sharingStore = SharingStore()
 

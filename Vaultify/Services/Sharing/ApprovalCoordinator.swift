@@ -44,7 +44,10 @@ import Foundation
         observers.append(center.addObserver(
             forName: .vaultShareAccepted, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.bumpRecipientCounter() }
+            // UNCONDITIONAL: a first-time recipient has approvalModeEnabled
+            // still false — gating this bump would deadlock the acceptance
+            // resume that is the very thing that turns the flag on.
+            MainActor.assumeIsolated { self?.recipientChangeCounter += 1 }
         })
     }
 

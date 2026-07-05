@@ -67,6 +67,12 @@ struct VaultShellBehaviors: ViewModifier {
             .onChange(of: env.approvalCoordinator.pendingOwnerRequests.first?.id) { _, _ in
                 presentNextApprovalIfIdle()
             }
+            // Recipient side: resume a pending share acceptance now that the
+            // vault is unlocked (Validation §3 — escrow BEFORE profile publish;
+            // idempotent, crash-safe, survives onboarding).
+            .task(id: env.approvalCoordinator.recipientChangeCounter) {
+                await resumePendingShareAcceptance()
+            }
             .sheet(item: $presentedApproval) { pending in
                 ApprovalRequestSheet(
                     pending: pending,
@@ -81,6 +87,24 @@ struct VaultShellBehaviors: ViewModifier {
     private func presentNextApprovalIfIdle() {
         guard presentedApproval == nil else { return }
         presentedApproval = env.approvalCoordinator.pendingOwnerRequests.first
+    }
+
+    /// Complete an accepted-but-unpublished share: transactional participant
+    /// escrow under the Vault Key, then profile publish into every accepted
+    /// zone, then arm the shared-DB push subscription. No-op without the flag.
+    private func resumePendingShareAcceptance() async {
+        guard UserDefaults.standard.bool(forKey: SharedConfig.pendingShareAcceptanceKey),
+              let vaultKey = env.session.vaultKey?.bytes else { return }
+        env.settings.approvalModeEnabled = true
+        do {
+            let identity = try await env.participantEscrow.ensureIdentity(vaultKey: vaultKey)
+            try await env.approvalRecipient.completeAcceptance(
+                identity: identity, nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
+            await SharedZoneSubscriptionService().ensureSubscribedIfNeeded(settings: env.settings)
+            UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
+        } catch {
+            // Flag stays set — retried on the next unlock/foreground pass.
+        }
     }
 
     /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).

@@ -8031,6 +8031,406 @@
           }
         }
       }
+    },
+    "Shared with Me": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared with Me"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Được chia sẻ với tôi"
+          }
+        }
+      }
+    },
+    "Shared with you": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared with you"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Được chia sẻ với bạn"
+          }
+        }
+      }
+    },
+    "Nothing shared with you yet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing shared with you yet"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa có gì được chia sẻ với bạn"
+          }
+        }
+      }
+    },
+    "When someone shares access with you, it appears here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When someone shares access with you, it appears here."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi có người chia sẻ quyền truy cập với bạn, nó sẽ hiện ở đây."
+          }
+        }
+      }
+    },
+    "Couldn't load shares": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load shares"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không tải được các chia sẻ"
+          }
+        }
+      }
+    },
+    "Shared item": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared item"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục được chia sẻ"
+          }
+        }
+      }
+    },
+    "Verified": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verified"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xác minh"
+          }
+        }
+      }
+    },
+    "Needs verification": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs verification"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần xác minh"
+          }
+        }
+      }
+    },
+    "Shared with you — you can use what's listed here, but not edit it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared with you — you can use what's listed here, but not edit it."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Được chia sẻ với bạn — bạn có thể dùng những gì liệt kê ở đây, nhưng không chỉnh sửa được."
+          }
+        }
+      }
+    },
+    "Shared value": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared value"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giá trị được chia sẻ"
+          }
+        }
+      }
+    },
+    "the owner": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the owner"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "chủ sở hữu"
+          }
+        }
+      }
+    },
+    "Unlock your vault to view this share.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock your vault to view this share."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở khóa kho để xem chia sẻ này."
+          }
+        }
+      }
+    },
+    "The owner stopped sharing this item.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The owner stopped sharing this item."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu đã ngừng chia sẻ mục này."
+          }
+        }
+      }
+    },
+    "Request Code": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request Code"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu mã"
+          }
+        }
+      }
+    },
+    "Request Again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request Again"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu lại"
+          }
+        }
+      }
+    },
+    "Sending request…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending request…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang gửi yêu cầu…"
+          }
+        }
+      }
+    },
+    "Waiting for approval…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for approval…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang chờ phê duyệt…"
+          }
+        }
+      }
+    },
+    "Match code: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Match code: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã đối chiếu: %@"
+          }
+        }
+      }
+    },
+    "This is taking longer than usual.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is taking longer than usual."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Việc này đang lâu hơn bình thường."
+          }
+        }
+      }
+    },
+    "Request declined": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request declined"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu bị từ chối"
+          }
+        }
+      }
+    },
+    "Approval was interrupted — request again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approval was interrupted — request again"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phê duyệt bị gián đoạn — hãy yêu cầu lại"
+          }
+        }
+      }
+    },
+    "The code expired — request again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code expired — request again"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã đã hết hạn — hãy yêu cầu lại"
+          }
+        }
+      }
+    },
+    "The response couldn't be verified.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The response couldn't be verified."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể xác minh phản hồi."
+          }
+        }
+      }
+    },
+    "Use it now — it expires with the current window.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use it now — it expires with the current window."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dùng ngay — mã hết hạn theo chu kỳ hiện tại."
+          }
+        }
+      }
+    },
+    "About %llds remaining": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About %llds remaining"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Còn khoảng %lld giây"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

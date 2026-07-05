@@ -30,6 +30,11 @@ nonisolated enum SharedConfig {
     /// into the shared defaults, so the extension can localize against the same choice.
     static let languageKey = "preferred_language"
 
+    /// Routing-only breadcrumb (standard defaults): a CKShare was accepted while
+    /// the vault might have been locked/onboarding; the unlocked shell resumes
+    /// the acceptance (participant escrow + profile publish) then clears it.
+    static let pendingShareAcceptanceKey = "pending_share_acceptance"
+
     static let automaticPasskeyUpgradesKey = "automatic_passkey_upgrades_enabled"
     private static let passkeyQuarantineNoticeKey = "passkey_quarantine_notice_sites"
 

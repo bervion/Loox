@@ -44,24 +44,36 @@ import Foundation
         for (_, result) in saved.saveResults { _ = try result.get() }
     }
 
-    // MARK: Owner-key pin (TOFU after the one-time fingerprint compare)
-
-    private static func pinAccount(zoneName: String) -> String {
-        "approval_pinned_owner_key_\(zoneName)"
+    /// Idempotent acceptance completion (Validation §3 ordering): identity is
+    /// already escrowed by the caller; publish the profile into EVERY accepted
+    /// zone (singleton record — re-publish is a harmless overwrite). Callable
+    /// after accept, after crash, after onboarding — same result.
+    func completeAcceptance(identity: ParticipantIdentity, nowUnixMs: Int64) async throws {
+        for zoneID in try await acceptedApprovalZones() {
+            try await publishProfile(identity: identity, zoneID: zoneID, nowUnixMs: nowUnixMs)
+        }
     }
 
-    static func pinnedOwnerKey(zoneName: String) -> Data? {
-        try? KeychainStore.get(account: pinAccount(zoneName: zoneName))
+    // MARK: Owner-key pin (TOFU after the one-time fingerprint compare)
+
+    /// Pin key includes the zone OWNER name — two different owners could
+    /// otherwise collide on an (opaque but attacker-visible) zone name.
+    private static func pinAccount(zoneID: CKRecordZone.ID) -> String {
+        "approval_pinned_owner_key_\(zoneID.ownerName)_\(zoneID.zoneName)"
+    }
+
+    static func pinnedOwnerKey(zoneID: CKRecordZone.ID) -> Data? {
+        try? KeychainStore.get(account: pinAccount(zoneID: zoneID))
     }
 
     /// Called by the Phase-6 fingerprint-confirm step. Pin once; a later
     /// grant with a different owner key is rejected, not re-pinned.
-    static func pinOwnerKey(_ key: Data, zoneName: String) throws {
-        try KeychainStore.set(key, account: pinAccount(zoneName: zoneName))
+    static func pinOwnerKey(_ key: Data, zoneID: CKRecordZone.ID) throws {
+        try KeychainStore.set(key, account: pinAccount(zoneID: zoneID))
     }
 
-    static func clearPin(zoneName: String) {
-        KeychainStore.delete(account: pinAccount(zoneName: zoneName))
+    static func clearPin(zoneID: CKRecordZone.ID) {
+        KeychainStore.delete(account: pinAccount(zoneID: zoneID))
     }
 
     // MARK: Grant + shared fields
@@ -76,7 +88,7 @@ import Foundation
             throw Failure.grantMissing
         }
         if let failure = ApprovalVerifier.verifyGrant(
-            grant, pinnedOwnerSigningKey: Self.pinnedOwnerKey(zoneName: zoneID.zoneName),
+            grant, pinnedOwnerSigningKey: Self.pinnedOwnerKey(zoneID: zoneID),
             nowUnixMs: nowUnixMs) {
             throw Failure.verifyFailed(failure)
         }
@@ -89,7 +101,7 @@ import Foundation
                                 zoneID: CKRecordZone.ID) async throws -> [String: Data] {
         // Decryption requires the completed fingerprint ceremony (TOFU pin) —
         // the "display only" pre-pin grant must not unlock values.
-        guard Self.pinnedOwnerKey(zoneName: zoneID.zoneName) == grant.ownerSigningPubKey else {
+        guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }
         var values: [String: Data] = [:]
@@ -120,7 +132,7 @@ import Foundation
     func sendRequest(grant: AccessGrant, fieldId: String, deviceId: String,
                      zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws -> PendingRequest {
         // Requests are only sent against a fingerprint-confirmed owner.
-        guard Self.pinnedOwnerKey(zoneName: zoneID.zoneName) == grant.ownerSigningPubKey else {
+        guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }
         let signingIdentity = try DeviceSigningIdentity.loadOrCreate()
@@ -144,7 +156,7 @@ import Foundation
     /// Look for the owner's answer to `requestId`; verify it (kernel-owned,
     /// pinned owner key) before returning. nil = not answered yet.
     func fetchResponse(requestId: String, zoneID: CKRecordZone.ID) async throws -> ApprovalResponse? {
-        guard let pinnedKey = Self.pinnedOwnerKey(zoneName: zoneID.zoneName) else {
+        guard let pinnedKey = Self.pinnedOwnerKey(zoneID: zoneID) else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }
         var found: ApprovalResponse?

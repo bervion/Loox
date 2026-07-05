@@ -92,6 +92,7 @@ struct HomeScreen: View {
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
+            .navigationDestination(for: SharedWithMeRoute.self) { _ in SharedWithMeScreen() }
             .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
@@ -120,7 +121,13 @@ struct HomeScreen: View {
                     // 3. Quick actions grid (Reminders-style colour cards)
                     quickActionsGrid
 
-                    // 4. TOTP scroller (only when items with TOTP exist)
+                    // 4. Shared with me (recipient side — only once Approval
+                    // Mode has ever been activated on this device)
+                    if env.settings.approvalModeEnabled {
+                        sharedWithMeRow
+                    }
+
+                    // 5. TOTP scroller (only when items with TOTP exist)
                     if !totpItems.isEmpty {
                         totpSection
                     }
@@ -144,6 +151,24 @@ struct HomeScreen: View {
             }
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: Shared with me row
+
+    private var sharedWithMeRow: some View {
+        NavigationLink(value: SharedWithMeRoute()) {
+            HStack(spacing: Space.s3) {
+                PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.accent)
+                Text("Shared with Me").vaultType(.body).themedForeground()
+                Spacer()
+                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
+            }
+            .padding(Space.s4)
+            .frame(minHeight: Metric.hitMin)
+            .background(VaultColors.surface)
+            .vaultCornerRadius(Radius.md)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Profile row
