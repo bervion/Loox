@@ -76,6 +76,14 @@ import Foundation
         KeychainStore.delete(account: pinAccount(zoneID: zoneID))
     }
 
+    /// Leave a received share: deleting the zone from the SHARED database
+    /// removes this participant's access server-side (the owner's copy is
+    /// untouched); the TOFU pin is dropped with it.
+    func leave(zoneID: CKRecordZone.ID) async throws {
+        _ = try await sharedDatabase.modifyRecordZones(saving: [], deleting: [zoneID])
+        Self.clearPin(zoneID: zoneID)
+    }
+
     // MARK: Grant + shared fields
 
     /// Fetch and verify the grant. Before the pin exists (pre-fingerprint)

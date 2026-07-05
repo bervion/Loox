@@ -8431,6 +8431,134 @@
           }
         }
       }
+    },
+    "Revoke": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoke"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu hồi"
+          }
+        }
+      }
+    },
+    "Revoke access?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoke access?"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu hồi quyền truy cập?"
+          }
+        }
+      }
+    },
+    "Revoke Access": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoke Access"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu hồi quyền"
+          }
+        }
+      }
+    },
+    "They can't request codes anymore. Values that were already shared stay on their device.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They can't request codes anymore. Values that were already shared stay on their device."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ không thể yêu cầu mã nữa. Những giá trị đã chia sẻ trước đó vẫn còn trên thiết bị của họ."
+          }
+        }
+      }
+    },
+    "Revoking stops all future requests immediately. Values you marked Shared were already delivered and stay with them.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoking stops all future requests immediately. Values you marked Shared were already delivered and stay with them."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu hồi sẽ chặn ngay mọi yêu cầu sau này. Các giá trị bạn đã đánh dấu Chia sẻ thì đã được gửi và vẫn ở lại với họ."
+          }
+        }
+      }
+    },
+    "Leave this share?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave this share?"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rời chia sẻ này?"
+          }
+        }
+      }
+    },
+    "Leave Share": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave Share"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rời chia sẻ"
+          }
+        }
+      }
+    },
+    "You'll lose access to it. The owner can share with you again later.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll lose access to it. The owner can share with you again later."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn sẽ mất quyền truy cập. Chủ sở hữu có thể chia sẻ lại với bạn sau."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

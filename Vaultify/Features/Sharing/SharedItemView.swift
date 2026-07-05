@@ -21,7 +21,9 @@ struct SharedItemView: View {
         case failed(String)
     }
 
+    @Environment(\.dismiss) private var dismiss
     @State private var loadState: LoadState = .loading
+    @State private var confirmLeave = false
     /// Built in `load()` (never during body) and rebuilt only when the grant
     /// id changes — an in-flight WAITING machine survives push-driven reloads
     /// of the SAME grant, but a re-granted share gets fresh models.
@@ -54,6 +56,23 @@ struct SharedItemView: View {
         .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle("Shared with you")
         .platformNavigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .platformPrimaryAction) {
+                Button(role: .destructive) {
+                    confirmLeave = true
+                } label: {
+                    PolarisIcon(Icons.trash, size: Metric.iconInline)
+                }
+            }
+        }
+        .confirmationDialog("Leave this share?", isPresented: $confirmLeave,
+                            titleVisibility: .visible) {
+            Button("Leave Share", role: .destructive) {
+                Task { await leave() }
+            }
+        } message: {
+            Text("You'll lose access to it. The owner can share with you again later.")
+        }
         .task(id: env.approvalCoordinator.recipientChangeCounter) { await load() }
     }
 
@@ -152,6 +171,15 @@ struct SharedItemView: View {
             loadState = .ready(grant: grant, values: values)
         } catch let error as CKError where error.code == .zoneNotFound || error.code == .userDeletedZone {
             loadState = .failed(appString("The owner stopped sharing this item."))
+        } catch {
+            loadState = .failed(error.localizedDescription)
+        }
+    }
+
+    private func leave() async {
+        do {
+            try await env.approvalRecipient.leave(zoneID: zoneID)
+            dismiss()
         } catch {
             loadState = .failed(error.localizedDescription)
         }

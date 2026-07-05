@@ -76,6 +76,9 @@ import SwiftUI
     /// future vault would pull ghosts sealed under the old key.
     func eraseEverything() {
         Task { [cloudSync] in await cloudSync.eraseRemote() }
+        // Approval shares must not outlive the vault that sealed them.
+        Task { [approvalShare] in await approvalShare.revokeAllOwned() }
+        sharingStore.wipe()
         VaultKeyEscrowService.clearPushedFingerprint()
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).

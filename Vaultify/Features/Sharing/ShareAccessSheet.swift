@@ -28,6 +28,8 @@ struct ShareAccessSheet: View {
     @State private var step: Step = .checking
     @State private var recipientEmail = ""
     @State private var capabilities: [String: FieldCapability] = [:]
+    /// Share pending the destructive revoke confirmation.
+    @State private var revokeTarget: ItemShareRecord?
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -56,6 +58,33 @@ struct ShareAccessSheet: View {
             guard let zoneName = pollingZoneName else { return }
             await pollForProfile(zoneName: zoneName)
         }
+        .confirmationDialog("Revoke access?", isPresented: revokeDialogBinding,
+                            titleVisibility: .visible) {
+            Button("Revoke Access", role: .destructive) {
+                if let target = revokeTarget {
+                    Task { await revoke(target) }
+                }
+            }
+        } message: {
+            // Forward-secrecy honesty (H5): future access ends now; already-
+            // delivered shared values cannot be clawed back.
+            Text("They can't request codes anymore. Values that were already shared stay on their device.")
+        }
+    }
+
+    private var revokeDialogBinding: Binding<Bool> {
+        Binding(get: { revokeTarget != nil },
+                set: { if !$0 { revokeTarget = nil } })
+    }
+
+    private func revoke(_ share: ItemShareRecord) async {
+        do {
+            try await env.approvalShare.revoke(zoneName: share.zoneName)
+            env.sharingStore.remove(zoneName: share.zoneName)
+        } catch {
+            step = .failed(error.localizedDescription)
+        }
+        revokeTarget = nil
     }
 
     @ViewBuilder private var content: some View {
@@ -231,9 +260,18 @@ struct ShareAccessSheet: View {
                                 Text(share.fingerprintConfirmed ? "Active" : "Pending")
                                     .themedForeground(.secondary)
                             }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    revokeTarget = share
+                                } label: {
+                                    Label("Revoke", image: Icons.trash)
+                                }
+                            }
                         }
                     } header: {
                         Text("Shared with \(existing.count)")
+                    } footer: {
+                        Text("Revoking stops all future requests immediately. Values you marked Shared were already delivered and stay with them.")
                     }
                     .listRowBackground(VaultColors.surface)
                 }
