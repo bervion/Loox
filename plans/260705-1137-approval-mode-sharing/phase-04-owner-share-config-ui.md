@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Owner share-config UI"
-status: pending
+status: completed # 2026-07-05 — see Implementation Status; device QA rides Phase 8
 priority: P1
 effort: "1.5d"
 dependencies: [3]
@@ -57,6 +57,30 @@ by notification permission (ADR-2) and iCloud account availability.
 - [ ] Password can only be none/shared; TOTP only none/askEachTime; passkey non-shareable.
 - [ ] Sheet blocked (clear message) when notifications denied or iCloud unavailable.
 - [ ] Fully localized EN+VI; DS-compliant; existing `ShareLink` unchanged.
+
+## Implementation Status — 2026-07-05
+
+**Complete (on feat/approval-mode-sharing, uncommitted).** NEW `Vaultify/Features/Sharing/`:
+`ShareAccessSheet.swift` (step machine: fail-closed gate → config → create → waiting/poll → fingerprint
+→ publish → done), `FieldCapabilityRow.swift` (kind-constrained picker; guard2 + attachments disabled),
+`TrustFingerprintView.swift`, `SharingStore.swift` (device-local registry). MODIFIED: ItemDetailScreen
+("Share Access…" menu entry, distinct from ShareLink), AppEnvironment (`sharingStore`),
+Localizable.xcstrings (32 entries EN+VI — reviewer script-verified 100% incl. byte-exact interpolation
+keys). 161/161 tests; iOS+macOS green.
+
+**Review applied** (`plans/reports/from-code-reviewer-260705-phase4-share-config-ui-report.md` —
+0 Critical, secret hygiene + fingerprint-before-grant verified): H1 poll leak → structural
+`.task(id: pollingZoneName)` with bounded backoff (3s→10s cap, ~10min budget), identity hoisted;
+H2 orphan zones → pending `ItemShareRecord(fingerprintConfirmed: false)` persisted at create, retry to
+the same recipient reuses its zone via `createShare(existingZoneName:)` ("Pending" state now real);
+M2 re-entrancy guard; M3 `LocalizedError` on `ApprovalShareService.Failure` (EN+VI); L: blocked view got
+"Check Again" re-check, item-gone → failed state, Icons.shield constant, prominent 44pt buttons.
+
+**Accepted/known:** `approvalModeEnabled` flips on at create (intentional — the accept push must be
+receivable before the grant exists; pending record accounts for it). Orphan zones for a DIFFERENT
+abandoned recipient → Phase 7 GC. `epoch: 1` hardcoded until Phase 7 revocation. Duplicate share to the
+same email is prevented by the resume path; "Shared with N" badge on the detail screen itself deferred
+to Phase 7 share management.
 
 ## Risk Assessment
 - <!-- Updated: Validation Session 1 - programmatic add-participant, not UICloudSharingController -->

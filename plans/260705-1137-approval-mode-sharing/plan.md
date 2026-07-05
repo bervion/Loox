@@ -179,7 +179,7 @@ escalate transport design (Validation §1 options).
 | 1 | [Transport + push + latency gating spike & CKShare enablement](./phase-01-icloud-ckshare-enablement.md) | ✅ Complete — CONDITIONAL GO (ADR-6, 2026-07-05) |
 | 2 | [Control-plane crypto core + trust anchoring](./phase-02-control-plane-crypto-core.md) | ✅ Complete (2026-07-05, 161/161 tests, review applied) |
 | 3 | [CKShare transport, participant escrow & control-plane sync](./phase-03-ckshare-transport-push.md) | ✅ Complete (2026-07-05; device QA rides Phase 8) |
-| 4 | [Owner share-config UI](./phase-04-owner-share-config-ui.md) | Pending |
+| 4 | [Owner share-config UI](./phase-04-owner-share-config-ui.md) | ✅ Complete (2026-07-05; device QA rides Phase 8) |
 | 5 | [Owner approval ceremony (foreground)](./phase-05-owner-approval-ux-sessions.md) | Pending |
 | 6 | [Recipient UX & request state machine](./phase-06-recipient-ux.md) | Pending |
 | 7 | [Revocation & share management](./phase-07-revocation-share-management.md) | Pending |
