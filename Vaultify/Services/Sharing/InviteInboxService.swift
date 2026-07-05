@@ -31,6 +31,9 @@ import Foundation
 
     /// Succeeded-this-launch latch — a FAILED arm retries on the next pass.
     private var armedThisLaunch = false
+    /// Concurrent triggers (launch + foreground + push) must not stack a
+    /// full arm sequence each — one in flight at a time.
+    private var armInFlight = false
 
     private enum Field {
         static let inboxID = "inboxID"
@@ -50,7 +53,9 @@ import Foundation
     /// subscription is replaced under its fixed id (delete-then-save —
     /// CloudKit can't morph an existing subscription's predicate in place).
     func ensureArmed(identity: ParticipantIdentity) async {
-        guard CloudSyncService.isConfigured, !armedThisLaunch else { return }
+        guard CloudSyncService.isConfigured, !armedThisLaunch, !armInFlight else { return }
+        armInFlight = true
+        defer { armInFlight = false }
         do {
             guard try await container.accountStatus() == .available else { return }
             // A pure recipient has never been through the owner-side flow, so
@@ -178,15 +183,21 @@ import Foundation
 
     // MARK: Sender side
 
-    /// Best-effort auto-invite: nil when the recipient has no armed inbox
-    /// (not a Loox user yet, U5 fallback = the link tier) or on any failure —
-    /// the caller always still offers the manual link. Returns the drop's
-    /// record name for GC at activation/revoke (creator-only delete).
-    func dropInvite(shareURL: URL, recipientEmail: String) async -> String? {
+    /// Best-effort auto-invite: nil when the recipient can't be resolved or
+    /// has no armed inbox (U5 fallback = the link tier) — the caller always
+    /// still offers the manual link. Returns the drop's record name for GC
+    /// at activation/revoke (creator-only delete).
+    ///
+    /// `knownRecipientZoneNames`: this owner's approval zones for the SAME
+    /// recipient — an email lookup deliberately returns NO userRecordID
+    /// before any acceptance (anti-enumeration, verified on-device), so the
+    /// opaque id comes from a share the recipient already accepted. Net: the
+    /// FIRST invite to a person rides the link; repeats are automatic.
+    func dropInvite(shareURL: URL, recipientEmail: String,
+                    knownRecipientZoneNames: [String]) async -> String? {
         do {
-            let participant = try await container.shareParticipant(forEmailAddress: recipientEmail)
-            guard let recipientID = participant.userIdentity.userRecordID else {
-                debugLog("drop skipped: no userRecordID for recipient")
+            guard let recipientID = await resolveRecipientUserRecordID(
+                email: recipientEmail, knownZoneNames: knownRecipientZoneNames) else {
                 return nil
             }
             let descriptor: CKRecord
@@ -233,6 +244,31 @@ import Foundation
             debugLog("drop FAILED: \(error)")
             return nil
         }
+    }
+
+    /// The recipient's opaque CloudKit userRecordID. Email lookup first (in
+    /// case a future OS populates it), then the participant lists of shares
+    /// this recipient ALREADY accepted — the only privacy-clean source.
+    private func resolveRecipientUserRecordID(email: String,
+                                              knownZoneNames: [String]) async -> CKRecord.ID? {
+        if let participant = try? await container.shareParticipant(forEmailAddress: email),
+           let id = participant.userIdentity.userRecordID {
+            return id
+        }
+        let privateDB = container.privateCloudDatabase
+        for zoneName in knownZoneNames {
+            let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare,
+                                      zoneID: CKRecordZone.ID(zoneName: zoneName))
+            guard let share = try? await privateDB.record(for: shareID) as? CKShare else { continue }
+            if let match = share.participants.first(where: {
+                $0.acceptanceStatus == .accepted &&
+                $0.userIdentity.lookupInfo?.emailAddress?.lowercased() == email.lowercased()
+            }), let id = match.userIdentity.userRecordID {
+                return id
+            }
+        }
+        debugLog("drop skipped: recipient unresolvable (no accepted share yet — first invite rides the link)")
+        return nil
     }
 
     // MARK: Helpers

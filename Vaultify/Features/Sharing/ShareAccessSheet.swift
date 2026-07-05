@@ -50,6 +50,14 @@ struct ShareAccessSheet: View {
         recipientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
+    /// Every zone this owner ever shared to the SAME recipient — the accepted
+    /// ones carry the opaque userRecordID the rendezvous drop needs.
+    private var recipientZoneNames: [String] {
+        env.sharingStore.shares
+            .filter { $0.recipientLabel.lowercased() == normalizedEmail }
+            .map(\.zoneName)
+    }
+
     /// Non-nil while the sheet should poll for the recipient's profile.
     /// Driving `.task(id:)` off this makes cancellation structural — the poll
     /// dies with the view or the step, never leaking (review H1).
@@ -191,7 +199,8 @@ struct ShareAccessSheet: View {
             var dropRecordName: String?
             if let shareURL = setup.shareURL {
                 dropRecordName = await env.inviteInbox.dropInvite(
-                    shareURL: shareURL, recipientEmail: normalizedEmail)
+                    shareURL: shareURL, recipientEmail: normalizedEmail,
+                    knownRecipientZoneNames: recipientZoneNames)
                 autoInviteSent = dropRecordName != nil
             }
             // Approval Mode listening turns on now, deliberately BEFORE the
@@ -220,7 +229,8 @@ struct ShareAccessSheet: View {
               case .waiting(let zoneID, _, let rawShareURL) = step,
               let rawShareURL else { return }
         guard let name = await env.inviteInbox.dropInvite(
-            shareURL: rawShareURL, recipientEmail: normalizedEmail) else { return }
+            shareURL: rawShareURL, recipientEmail: normalizedEmail,
+            knownRecipientZoneNames: recipientZoneNames) else { return }
         autoInviteSent = true
         if var pending = env.sharingStore.shares(forItem: itemID)
             .first(where: { $0.zoneName == zoneID.zoneName }) {
