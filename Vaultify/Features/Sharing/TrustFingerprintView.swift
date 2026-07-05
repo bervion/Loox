@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// The one-time out-of-band trust ceremony (ADR-4): both people read the same
-/// short code — derived from the owner's signing key and the recipient's
-/// participant key — over a call or in person. Confirming TOFU-pins the pair;
-/// a later key change is rejected, not silently re-pinned.
+/// Owner-side one-tap activation (ADR-4, single-confirm model): the recipient
+/// pairs automatically, so the OWNER is the sole enforcement point — this
+/// screen pins the recipient's key and publishes the grant. The safety code
+/// (derived from both keys, also shown on the recipient's shared-item screen)
+/// enables optional out-of-band comparison; a later key change is rejected,
+/// not silently re-pinned.
 struct TrustFingerprintView: View {
     let code: String
     let recipientLabel: String
@@ -13,10 +15,10 @@ struct TrustFingerprintView: View {
         VStack(spacing: Space.s5) {
             PolarisIcon(Icons.shield, size: Metric.iconTile)
                 .themedForeground(.accent)
-            Text("Compare this code")
+            Text("Ready to activate")
                 .vaultType(.section)
                 .themedForeground()
-            Text("Ask \(recipientLabel) to read the code shown on their device. Confirm only if both codes match exactly — this is what proves you're sharing with the right person.")
+            Text("\(recipientLabel) has joined. Activate to give them access. To be sure it's really them, you can compare this safety code with the one shown at the bottom of the shared item on their device.")
                 .vaultType(.callout)
                 .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
@@ -31,7 +33,7 @@ struct TrustFingerprintView: View {
             Button {
                 onConfirm()
             } label: {
-                Text("The codes match")
+                Text("Activate Sharing")
                     .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
             }
             .buttonStyle(.themedProminent)
