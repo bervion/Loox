@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Revocation & share management"
-status: pending
+status: completed # 2026-07-05 — see Implementation Status
 priority: P1
 effort: "0.75d"
 dependencies: [4, 5, 6]
@@ -56,6 +56,28 @@ re-seal path (model it as revoke + re-share), no foreground cleanup sweep, no se
 - [ ] Recipient can leave a share; owner sees them gone.
 - [ ] Past-`expiresAt` grants rejected at verify time (no sweep).
 - [ ] Revocation needs no TOTP seed reset; UX states `shared` values already delivered are retained by B.
+
+## Implementation Status — 2026-07-05
+
+**Complete (on feat/approval-mode-sharing).** Revocation model SIMPLIFIED from the epoch-bump draft:
+since each recipient has their OWN zone and "change what's shared" = revoke + re-share (new zone, new
+grant), **zone deletion IS the authoritative revocation** — it removes the CKShare (B loses access
+server-side), every record incl. nonces (GC carried item resolved), and the alert subscription. The
+approve path already fetches the grant FRESH from the server, so a revoked zone fails `zoneNotFound`
+before any issuance — same verify-time enforcement the epoch bump would give, with no half-revoked
+state. The kernel keeps `epoch` for future same-zone regrant flows. Expiry: `verifyGrant` rejects past
+`expiresAt` at verify time (Phase 2, tested).
+
+Landed: `ApprovalShareService.revoke(zoneName:)` + `revokeAllOwned()` (Erase Vault now cleans owned
+approval zones + SharingStore — carried item resolved); `ApprovalRecipientService.leave(zoneID:)`
+(shared-DB zone delete + TOFU pin drop); ShareAccessSheet "Shared with N" rows get swipe-Revoke +
+destructive confirm with forward-secrecy copy (H5); SharedItemView toolbar Leave + confirm. 8 strings
+EN+VI. `confirmationDialog` destructive (codebase idiom — PolarisModal is the Flutter project's API,
+not this repo's). 161/161 tests; iOS+macOS green.
+
+**Success criteria status:** revoke → next request fails (fresh grant fetch 404s — device QA in P8);
+leave → owner-side zone intact, B's access gone; expiry rejected at verify (unit-tested P2); no seed
+reset; retained-values honesty in both share-config footer and revoke confirm.
 
 ## Risk Assessment
 - Multi-device revoke race (session on a 2nd owner device) — eliminated by cutting sessions + fresh epoch
