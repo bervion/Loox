@@ -51,10 +51,19 @@ nonisolated enum ApprovalRecordMapping {
         return try? ApprovalRequest.decode(blob)
     }
 
+    /// DETERMINISTIC name ("rsp-" + requestId) — a CloudKit retry after an
+    /// ambiguous timeout re-saves the SAME record instead of colliding with
+    /// its own first (successful) attempt, and at most one response can ever
+    /// exist per request. Saved with `.allKeys` for the same reason. The
+    /// requestId is already opaque, so the name leaks nothing new.
+    static func responseRecordID(requestId: String, zoneID: CKRecordZone.ID) -> CKRecord.ID {
+        CKRecord.ID(recordName: "rsp-" + requestId, zoneID: zoneID)
+    }
+
     static func responseRecord(_ response: ApprovalResponse, zoneID: CKRecordZone.ID) -> CKRecord {
         let record = CKRecord(recordType: ApprovalConfig.responseRecordType,
-                              recordID: CKRecord.ID(recordName: ApprovalConfig.opaqueName(),
-                                                    zoneID: zoneID))
+                              recordID: responseRecordID(requestId: response.requestId,
+                                                         zoneID: zoneID))
         record[Field.blob] = response.encoded() as CKRecordValue
         // Cleartext linkage so the requester can find its answer without
         // decoding every response blob; the id itself is opaque.

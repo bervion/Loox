@@ -205,7 +205,11 @@ import Foundation
         return grant
     }
 
-    /// Sign and publish the owner's decision.
+    /// Sign and publish the owner's decision. Idempotent by construction:
+    /// deterministic record name + `.allKeys` means a CloudKit retry after an
+    /// ambiguous timeout overwrites the identical response instead of failing
+    /// "record to insert already exists" (seen in device QA — the first save
+    /// had actually landed).
     func respond(requestId: String, decision: ApprovalDecision, sealedPayload: Data?,
                  zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws {
         let identity = try DeviceSigningIdentity.loadOrCreate()
@@ -216,7 +220,8 @@ import Foundation
                                         ownerSignature: Data())
         response.ownerSignature = try identity.signature(for: response.signingBody())
         let record = ApprovalRecordMapping.responseRecord(response, zoneID: zoneID)
-        let saved = try await database.modifyRecords(saving: [record], deleting: [])
+        let saved = try await database.modifyRecords(saving: [record], deleting: [],
+                                                     savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
     }
 

@@ -181,20 +181,20 @@ import Foundation
 
     /// Look for the owner's answer to `requestId`; verify it (kernel-owned,
     /// pinned owner key) before returning. nil = not answered yet.
+    /// Direct record lookup — the response name is deterministic
+    /// ("rsp-" + requestId), so no zone scan is needed per poll tick.
     func fetchResponse(requestId: String, zoneID: CKRecordZone.ID) async throws -> ApprovalResponse? {
         guard let pinnedKey = Self.pinnedOwnerKey(zoneID: zoneID) else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }
-        var found: ApprovalResponse?
-        // Stateless: a cursor here would let a poll for one request silently
-        // consume (and lose) another request's response record.
-        try await ZoneDeltaFetch.pull(database: sharedDatabase, zoneID: zoneID, cursor: nil) { record in
-            guard record.recordType == ApprovalConfig.responseRecordType,
-                  (record[ApprovalRecordMapping.Field.requestName] as? String) == requestId,
-                  let response = ApprovalRecordMapping.response(from: record) else { return }
-            found = response
+        let recordID = ApprovalRecordMapping.responseRecordID(requestId: requestId, zoneID: zoneID)
+        let record: CKRecord
+        do {
+            record = try await sharedDatabase.record(for: recordID)
+        } catch let error as CKError where error.code == .unknownItem {
+            return nil // not answered yet
         }
-        guard let response = found else { return nil }
+        guard let response = ApprovalRecordMapping.response(from: record) else { return nil }
         if let failure = ApprovalVerifier.verifyResponse(response, expectedRequestId: requestId,
                                                          pinnedOwnerSigningKey: pinnedKey) {
             throw Failure.verifyFailed(failure)
