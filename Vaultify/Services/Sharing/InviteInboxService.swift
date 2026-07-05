@@ -241,6 +241,7 @@ import Foundation
     private func resolveRecipientInbox(email: String, knownZoneNames: [String]) async
         -> (inboxID: String, encryptionKey: Data, recipientParticipantID: String)? {
         let privateDB = container.privateCloudDatabase
+        var sawProfileWithoutPointers = false
         for zoneName in knownZoneNames {
             let profileID = CKRecord.ID(
                 recordName: ApprovalConfig.participantProfileRecordName,
@@ -251,10 +252,19 @@ import Foundation
                let key = profile[ApprovalRecordMapping.Field.participantPubKey] as? Data {
                 return (inboxID, key, recipientID)
             }
+            // Profile predates the rendezvous pointers — B republishes them
+            // the next time it opens Shared with Me / accepts on a new build.
+            sawProfileWithoutPointers = true
         }
 
         guard let recipientID = await resolveRecipientUserRecordID(
-            email: email, knownZoneNames: knownZoneNames) else { return nil }
+            email: email, knownZoneNames: knownZoneNames) else {
+            debugLog("drop skipped: unresolvable — scanned \(knownZoneNames.count) zone(s)"
+                     + (sawProfileWithoutPointers
+                        ? ", profile found WITHOUT pointers (B must open Shared with Me on the new build)"
+                        : ", no accepted pairing yet — first invite rides the link"))
+            return nil
+        }
         guard let descriptor = try? await publicDB.record(
             for: CKRecord.ID(recordName: "inbox-" + recipientID.recordName)),
               let inboxID = descriptor[Field.inboxID] as? String,
@@ -286,7 +296,6 @@ import Foundation
                 return id
             }
         }
-        debugLog("drop skipped: recipient unresolvable (no accepted share yet — first invite rides the link)")
         return nil
     }
 
