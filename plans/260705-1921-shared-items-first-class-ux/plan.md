@@ -1,7 +1,7 @@
 ---
 title: "Sharing V1.2 — shared items first-class, detail reuse, notification inbox"
 description: "Recipient shared items become real list items reusing ItemDetailScreen (read-only + Request); Shared-with-Me = Space only; owner detail shows recipients; single header share button; capability switches; notification inbox screen."
-status: pending
+status: implemented — awaiting 2-device QA
 priority: P2
 branch: feat/sharing-v12-shared-items-ux
 tags: [sharing, ux, item-detail, notifications]
@@ -37,13 +37,13 @@ created: "2026-07-05T19:21:00+07:00"
 ## Phases
 | # | File | Scope | Status |
 |---|------|-------|--------|
-| 1 | phase-01-shared-items-projection-data-layer.md | SharedOrigin + SharedItemsProjection + repository facade merge | pending |
-| 2 | phase-02-list-integration-shared-space.md | Items/Home/Search show shared items; Shared-with-Me space = standard list; remove Home row | pending |
-| 3 | phase-03-item-detail-reuse-readonly-shared.md | ItemDetailScreen read-only shared mode + Request + Leave | pending |
-| 4 | phase-04-owner-detail-sharing-row-header.md | A: sharing-with section, single header share button | pending |
-| 5 | phase-05-capability-switches-polish.md | FieldCapabilityRow → Toggle switches; sheet polish | pending |
-| 6 | phase-06-notification-inbox-screen.md | InviteInboxCoordinator + NotificationsScreen + Home bell badge | pending |
-| 7 | phase-07-tests-review-cleanup.md | projection unit tests, code review, delete dead screens, docs/localization sweep | pending |
+| 1 | phase-01-shared-items-projection-data-layer.md | SharedOrigin + SharedItemsProjection + repository facade merge | ✅ 5560dba |
+| 2 | phase-02-list-integration-shared-space.md | Items/Home/Search show shared items; Shared-with-Me space = standard list; remove Home row | ✅ 915520e |
+| 3 | phase-03-item-detail-reuse-readonly-shared.md | ItemDetailScreen read-only shared mode + Request + Leave | ✅ 915520e |
+| 4 | phase-04-owner-detail-sharing-row-header.md | A: sharing-with section, single header share button | ✅ 915520e |
+| 5 | phase-05-capability-switches-polish.md | FieldCapabilityRow → Toggle switches; sheet polish | ✅ a73fe6a |
+| 6 | phase-06-notification-inbox-screen.md | InviteInboxCoordinator + NotificationsScreen + Home bell badge | ✅ a73fe6a |
+| 7 | phase-07-tests-review-cleanup.md | projection unit tests, code review, delete dead screens, docs/localization sweep | ✅ 8004540 + review fixes ef285ad |
 
 ## Key dependencies / risks
 - Projection id must never collide with real item ids (prefix + zone owner).
@@ -56,3 +56,18 @@ created: "2026-07-05T19:21:00+07:00"
 ## Out of scope
 Editing shared items, re-share by recipient, multi-device inbox flap (M4 — multiplatform plan),
 Production schema deploy + TestFlight QA (release gate, unchanged from V1.1).
+
+## Review 260705 (report: plans/reports/code-review-260705-1931-sharing-v12-first-class-items-report.md)
+C1 projection-persist via swipe upsert (UI gates + repository guards), H1 wipe-on-lock, H2 burn-on-success,
+M1 always-merge + empty-gate + alert copy, M2 accepting flag + unsuppress re-present, M4 readOnly
+DetailFieldRow, L: no totp placeholders / stable website id / trashed share gate / stored deviceId / 9+ badge
+— ALL FIXED (ef285ad). M3 (field-kind metadata in display envelope) deferred: needs envelope v2 field map.
+
+## 2-device QA runbook (V1.2)
+1. A share item (switch UI!) → auto/link invite → B: notification screen (bell badge) hiện lời mời → Accept.
+2. B: item xuất hiện ở Home list + Items→Shared with Me space + Search, badge "Shared"; tap → detail chuẩn
+   read-only (không edit/pin/fav/trash; menu chỉ Leave Share); giá trị share reveal/copy được.
+3. B: TOTP Request ngay trong detail → A approve (sheet hoặc từ màn Notifications) → code hiện + countdown.
+4. A: detail item hiện section "đang chia sẻ với" (email + Active) → tap mở sheet quản lý; header chỉ 1 nút share.
+5. A đổi tên item → B thấy tên mới sau refresh. 6. Revoke/Leave → item biến mất khỏi mọi list của B.
+7. Khoá app B → mở lại → shared items xuất hiện lại sau unlock (wipe-on-lock hoạt động).
