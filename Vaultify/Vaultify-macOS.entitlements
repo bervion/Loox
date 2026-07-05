@@ -32,8 +32,9 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
-	<!-- Silent CloudKit pushes (near-real-time sync); macOS uses the prefixed key. -->
+	<!-- Silent CloudKit pushes (near-real-time sync); macOS uses the prefixed key.
+	     Value from APS_ENVIRONMENT (Debug → development / Release → production). -->
 	<key>com.apple.developer.aps-environment</key>
-	<string>development</string>
+	<string>$(APS_ENVIRONMENT)</string>
 </dict>
 </plist>

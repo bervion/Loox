@@ -20,6 +20,14 @@ let project = Project(
             "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
             "SWIFT_VERSION": "5.0",
         ],
+        // Push (aps-environment) is embedded from the entitlements file as-is under manual
+        // signing (fastlane), so it must match the build: sandbox APNs for Debug, production
+        // for Release/App Store. The entitlements use `$(APS_ENVIRONMENT)`; a hardcoded
+        // "development" would make TestFlight register with sandbox APNs (no production pushes).
+        configurations: [
+            .debug(name: "Debug", settings: ["APS_ENVIRONMENT": "development"]),
+            .release(name: "Release", settings: ["APS_ENVIRONMENT": "production"]),
+        ],
         defaultSettings: .recommended
     ),
     targets: [
