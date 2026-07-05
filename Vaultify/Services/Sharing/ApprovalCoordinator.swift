@@ -19,6 +19,10 @@ import Foundation
     }
 
     private(set) var pendingOwnerRequests: [PendingOwnerRequest] = []
+    /// True while the notifications screen is frontmost: the shell must not
+    /// auto-present the ceremony sheet over it (the two presenters would
+    /// fight and SwiftUI dismisses one) — rows there open it deliberately.
+    var autoPresentSuppressed = false
     /// Monotonic signal for recipient-side observers (cheap invalidation).
     private(set) var recipientChangeCounter = 0
     /// Requests already answered or explicitly dismissed on this device.

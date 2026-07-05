@@ -122,7 +122,8 @@ struct DetailFieldRow: View {
         Menu {
             Button { copy() } label: { Label("Copy", image: Icons.copy) }
             Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
-            if isSecret {
+            // TOTP renders its code live — a Reveal toggle is meaningless there.
+            if isSecret, field.kind != .totp {
                 Button {
                     withAnimation { revealed.toggle() }
                     if revealed { onUsed() }

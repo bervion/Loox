@@ -64,8 +64,14 @@ struct NotificationsScreen: View {
         .platformNavigationBarTitleDisplayMode(.inline)
         // The shell's quick-path alert stands down while this screen owns
         // the queue — otherwise the same invite pops twice at once.
-        .onAppear { env.inviteInboxCoordinator.alertsSuppressed = true }
-        .onDisappear { env.inviteInboxCoordinator.alertsSuppressed = false }
+        .onAppear {
+            env.inviteInboxCoordinator.alertsSuppressed = true
+            env.approvalCoordinator.autoPresentSuppressed = true
+        }
+        .onDisappear {
+            env.inviteInboxCoordinator.alertsSuppressed = false
+            env.approvalCoordinator.autoPresentSuppressed = false
+        }
         .task {
             await env.inviteInboxCoordinator.reconcile()
             env.approvalCoordinator.refreshOwnerRequests()
@@ -88,8 +94,14 @@ struct NotificationsScreen: View {
         }
     }
 
+    /// "Awaiting your action" marker on pending rows.
+    private var pendingDot: some View {
+        Circle().fill(env.theme.active.color(.success)).frame(width: 8, height: 8)
+    }
+
     private func inviteRow(_ invite: InviteEnvelope) -> some View {
         HStack(spacing: Space.s3) {
+            pendingDot
             PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accent)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Share invitation").vaultType(.body).themedForeground()
@@ -154,6 +166,7 @@ struct NotificationsScreen: View {
     private func requestRow(_ pending: ApprovalCoordinator.PendingOwnerRequest) -> some View {
         Button { presentedApproval = pending } label: {
             HStack(spacing: Space.s3) {
+                pendingDot
                 PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.warning)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Code approval requested").vaultType(.body).themedForeground()

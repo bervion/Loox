@@ -136,7 +136,13 @@ struct HomeScreen: View {
                     // 3. Quick actions grid (Reminders-style colour cards)
                     quickActionsGrid
 
-                    // 4. TOTP scroller (only when items with TOTP exist)
+                    // 4. Pending approval requests (owner side): one → open the
+                    // ceremony directly; several → the notifications inbox.
+                    if !env.approvalCoordinator.pendingOwnerRequests.isEmpty {
+                        approvalAttentionRow
+                    }
+
+                    // 5. TOTP scroller (only when items with TOTP exist)
                     if !totpItems.isEmpty {
                         totpSection
                     }
@@ -160,6 +166,51 @@ struct HomeScreen: View {
             }
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: Approval attention row
+
+    @State private var homePresentedApproval: ApprovalCoordinator.PendingOwnerRequest?
+
+    @ViewBuilder private var approvalAttentionRow: some View {
+        let requests = env.approvalCoordinator.pendingOwnerRequests
+        Group {
+            if requests.count == 1, let single = requests.first {
+                Button { homePresentedApproval = single } label: {
+                    approvalRowLabel(count: 1)
+                }
+                .buttonStyle(.plain)
+            } else {
+                NavigationLink(value: NotificationsRoute()) {
+                    approvalRowLabel(count: requests.count)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(item: $homePresentedApproval) { pending in
+            ApprovalRequestSheet(
+                pending: pending,
+                itemTitle: env.repository.item(id: pending.request.itemId)?.title
+                    ?? appString("an item"),
+                onFinished: {
+                    env.approvalCoordinator.clearPending(requestId: pending.request.requestId)
+                })
+        }
+    }
+
+    private func approvalRowLabel(count: Int) -> some View {
+        HStack(spacing: Space.s3) {
+            Circle().fill(env.theme.active.color(.success)).frame(width: 8, height: 8)
+            PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.warning)
+            Text("Approval needed").vaultType(.body).themedForeground()
+            Spacer()
+            Text("\(count)").themedForeground(.secondary)
+            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
+        }
+        .padding(Space.s4)
+        .frame(minHeight: Metric.hitMin)
+        .background(VaultColors.surface)
+        .vaultCornerRadius(Radius.md)
     }
 
     // MARK: Profile row
