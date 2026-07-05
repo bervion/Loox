@@ -26,9 +26,12 @@ import SwiftUI
     /// Recipient-side transport (accepted shares, requests, responses).
     let approvalRecipient: ApprovalRecipientService
     /// Pretty invite links (public-DB locator + fragment-key ciphertext).
-    let inviteLinks = InviteLinkService()
+    let inviteLinks: InviteLinkService
     /// Loox-to-Loox auto-invite rendezvous (U5 opaque public inbox).
-    let inviteInbox = InviteInboxService()
+    let inviteInbox: InviteInboxService
+    /// Pending-invite queue shared by the quick-path alert AND the
+    /// notifications screen (V7).
+    let inviteInboxCoordinator: InviteInboxCoordinator
     /// Recipient participant-identity escrow under the Vault Key.
     let participantEscrow: ParticipantEscrowService
     /// Shared-with-me items as first-class read-only projections (V1.2).
@@ -69,10 +72,17 @@ import SwiftUI
                                                         shareService: approvalShare)
         let approvalRecipient = ApprovalRecipientService()
         let participantEscrow = ParticipantEscrowService()
+        let inviteLinks = InviteLinkService()
+        let inviteInbox = InviteInboxService()
         self.approvalRecipient = approvalRecipient
         self.participantEscrow = participantEscrow
+        self.inviteLinks = inviteLinks
+        self.inviteInbox = inviteInbox
         self.sharedItems = SharedItemsProjection(recipient: approvalRecipient,
                                                  escrow: participantEscrow)
+        self.inviteInboxCoordinator = InviteInboxCoordinator(
+            settings: settings, session: session, escrow: participantEscrow,
+            inbox: inviteInbox, links: inviteLinks)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through

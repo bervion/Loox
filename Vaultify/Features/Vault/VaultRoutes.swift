@@ -47,5 +47,6 @@ extension View {
             // leaving row taps dead.
             .navigationDestination(for: SharedWithMeRoute.self) { _ in SharedWithMeScreen() }
             .navigationDestination(for: SharedZoneRoute.self) { route in SharedItemView(route: route) }
+            .navigationDestination(for: NotificationsRoute.self) { _ in NotificationsScreen() }
     }
 }

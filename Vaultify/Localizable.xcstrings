@@ -770,6 +770,16 @@
         }
       }
     },
+    "Approval requests": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu phê duyệt"
+          }
+        }
+      }
+    },
     "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access.": {
       "localizations": {
         "en": {
@@ -1595,6 +1605,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mã"
+          }
+        }
+      }
+    },
+    "Code approval requested": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có yêu cầu phê duyệt mã"
           }
         }
       }
@@ -4712,6 +4732,16 @@
         }
       }
     },
+    "No notifications": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có thông báo nào"
+          }
+        }
+      }
+    },
     "No passkey for this site.": {
       "localizations": {
         "en": {
@@ -4888,6 +4918,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chưa có gì được chia sẻ với bạn"
+          }
+        }
+      }
+    },
+    "Notifications": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thông báo"
           }
         }
       }
@@ -6664,6 +6704,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lời mời chia sẻ"
+          }
+        }
+      }
+    },
+    "Share invitations": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lời mời chia sẻ"
+          }
+        }
+      }
+    },
+    "Share invitations and approval requests appear here.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lời mời chia sẻ và yêu cầu phê duyệt sẽ xuất hiện ở đây."
           }
         }
       }
