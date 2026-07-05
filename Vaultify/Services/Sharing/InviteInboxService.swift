@@ -14,9 +14,15 @@ import Foundation
 /// Public-db records are deletable only by their CREATOR, so drop GC belongs
 /// to the sender (at activation/revoke, like the link-invite record); the
 /// recipient dedups by inviteID instead of deleting.
-@MainActor final class InviteInboxService {
-    private lazy var container = CKContainer(identifier: ApprovalConfig.containerID)
+@MainActor @Observable final class InviteInboxService {
+    @ObservationIgnored private lazy var container = CKContainer(identifier: ApprovalConfig.containerID)
     private var publicDB: CKDatabase { container.publicCloudDatabase }
+
+    #if DEBUG
+    /// In-app QA trace (the app has no Files-app sharing, so a Documents log
+    /// is invisible to the tester) — newest last, capped.
+    private(set) var debugLines: [String] = []
+    #endif
 
     private static let inboxIDKey = "invite_inbox_id_v1"
     private static let seenInvitesKey = "invite_inbox_seen_ids_v1"
@@ -246,21 +252,88 @@ import Foundation
         return w.data
     }
 
-    /// QA diagnostics (Documents/invite-inbox-log.txt, DEBUG only) — console
-    /// capture is unreliable in this environment; ciphertext and full ids
-    /// never logged.
+    /// QA diagnostics (DEBUG only, surfaced by the Settings debug panel) —
+    /// ciphertext and full ids never logged.
     private func debugLog(_ line: String) {
         #if DEBUG
-        let url = URL.documentsDirectory.appending(path: "invite-inbox-log.txt")
-        let stamp = Date().formatted(.iso8601.timeSeparator(.colon))
-        let entry = "\(stamp) \(line)\n"
-        if let handle = try? FileHandle(forWritingTo: url) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: Data(entry.utf8))
-        } else {
-            try? Data(entry.utf8).write(to: url)
-        }
+        let stamp = Date().formatted(date: .omitted, time: .standard)
+        debugLines.append("\(stamp) \(line)")
+        if debugLines.count > 100 { debugLines.removeFirst(debugLines.count - 100) }
         #endif
     }
 }
+
+#if DEBUG
+import UserNotifications
+
+extension InviteInboxService {
+    /// Manual re-arm from the debug panel (bypasses the once-per-launch latch).
+    func rearm(identity: ParticipantIdentity) async {
+        armedThisLaunch = false
+        await ensureArmed(identity: identity)
+    }
+
+    /// Server-truth snapshot: every hop the auto-invite depends on, with the
+    /// raw error text when a hop fails — pinpoints WHERE delivery breaks.
+    func diagnose() async -> String {
+        var lines: [String] = []
+        do {
+            let status = try await container.accountStatus()
+            lines.append("iCloud account: \(status == .available ? "available" : "NOT available (\(status.rawValue))")")
+        } catch { lines.append("iCloud account: ERROR \(error.localizedDescription)") }
+
+        let notif = await UNUserNotificationCenter.current().notificationSettings()
+        lines.append("notification permission: \(notif.authorizationStatus.debugLabel)")
+
+        let inboxID = UserDefaults.standard.string(forKey: Self.inboxIDKey)
+        lines.append("local inboxID: \(inboxID.map { String($0.prefix(8)) + "…" } ?? "NONE (never armed)")")
+
+        if let userID = try? await container.userRecordID() {
+            do {
+                let descriptor = try await publicDB.record(
+                    for: CKRecord.ID(recordName: "inbox-" + userID.recordName))
+                let remote = descriptor[Field.inboxID] as? String
+                let match = remote == inboxID ? "matches local" : "MISMATCH vs local"
+                lines.append("descriptor on server: yes (\(match))")
+            } catch {
+                lines.append("descriptor on server: NO — \(error.localizedDescription)")
+            }
+        } else {
+            lines.append("descriptor check skipped: no userRecordID")
+        }
+
+        do {
+            let subs = try await publicDB.allSubscriptions()
+            let ours = subs.contains { $0.subscriptionID == ApprovalConfig.inviteInboxSubscriptionID }
+            lines.append("public-db subscription: \(ours ? "ARMED" : "MISSING") (total \(subs.count))")
+        } catch { lines.append("subscription check: ERROR \(error.localizedDescription)") }
+
+        if let inboxID {
+            do {
+                let query = CKQuery(recordType: ApprovalConfig.publicInviteRecordType,
+                                    predicate: NSPredicate(format: "%K == %@",
+                                                           Field.recipientInboxID, inboxID))
+                let (results, _) = try await publicDB.records(matching: query)
+                lines.append("drops waiting in inbox: \(results.count)")
+            } catch { lines.append("inbox query: ERROR \(error.localizedDescription)") }
+        }
+
+        lines.append("--- recent activity ---")
+        lines.append(contentsOf: debugLines.suffix(12))
+        return lines.joined(separator: "\n")
+    }
+}
+
+private extension UNAuthorizationStatus {
+    var debugLabel: String {
+        switch self {
+        case .authorized: "authorized"
+        case .denied: "DENIED"
+        case .notDetermined: "not determined (never asked)"
+        case .provisional: "provisional"
+        case .ephemeral: "ephemeral"
+        @unknown default: "unknown"
+        }
+    }
+}
+#endif
