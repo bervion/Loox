@@ -68,6 +68,15 @@ H1 alert lifecycle, H2 seen-on-response, H3 cold-launch buffer, M1 U7 cross-chec
 burn-on-success, M3 persisted handled-set, M5 coarse sentAtMs, L1/L2/L3/L4/L6 — ALL FIXED (6875631).
 M4 (multi-device same-Apple-ID inbox flap) recorded in iPad/Mac multiplatform plan memory — defer.
 
+### Spike question ANSWERED (on-device 2026-07-05)
+`shareParticipant(forEmailAddress:)` returns **NO userRecordID pre-acceptance** (anti-enumeration —
+CloudKit refuses email→accountID resolution). Descriptor keying by userRecordID therefore only works
+once the recipient has ACCEPTED at least one share from this owner (participant list then carries the
+id). Architecture consequence, consistent with U5 wording ("inviter who ALREADY resolved B"): **first
+invite to a person = link tier; every subsequent share to the same person = automatic rendezvous.**
+Resolver: email lookup first (future-proof), then accepted-participant scan of the owner's zones for
+that recipient (f152696).
+
 ### Remaining before release
 1. 2-device QA of the full rendezvous flow (Development env), incl. cold-launch link tap + locked-screen push.
 2. CloudKit Console: deploy schema to Production (LooxInvite.recipientInboxID queryable + LooxInviteInbox) → TestFlight re-QA (the Phase-3 gate verdict).
