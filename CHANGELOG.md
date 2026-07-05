@@ -1,5 +1,64 @@
 # Changelog
 
+## [1.15.0] - 2026-07-05
+
+### Added
+- realtime value propagation, per-recipient management with update mode and live capability editing, leave-share fix (#30)
+- V1.2 — shared items as first-class read-only vault items (#29)
+- explain first-share-needs-link on the waiting screen
+- recipient publishes rendezvous pointers in participant profile — owner auto-invites repeats from its own zone
+- in-app invite-inbox diagnostics panel (DEBUG)
+- rendezvous auto-invite pipeline — inbox arm, sealed drop, reconciler, accept prompt
+- signed, sealed, expiring invite envelope kernel
+- public-db invite rendezvous transport spike
+- Shared with Me as a system space in the Items Spaces list
+- single-confirm pairing — recipient auto-pins, owner activates with one tap
+- iMessage compose with the recipient pre-filled
+- universal-link invites via public-database rendezvous
+- encrypted display envelope + associated-domains entitlement
+- revocation and share management
+- recipient shared-item UX and request state machine
+- owner approval ceremony with boundary-aware TOTP issuance
+- owner share-config UI
+- CKShare control-plane transport services
+- control-plane crypto kernel
+- approval transport plumbing + push pipeline separation
+
+### Fixed
+- QA round 4 — approved-code copy/large-type, drop TOTP reveal option, notifications-screen presenter arbitration, pending dots, Home approval row (#32)
+- QA round 3 — field order, website dedup, TOTP row parity, requester identity, auto-dismiss ceremony, restore/revoked handling, notification history, drop Home search icon (#31)
+- resolve rendezvous recipient from accepted-share participants — email lookup returns no userRecordID pre-acceptance
+- rendezvous delivery — notification prompt for recipients, schema bootstrap before subscription, drop retry while waiting
+- apply review findings — invite alert lifecycle, seen-on-response dedup, cold-launch link buffer, U7 metadata cross-check
+- stop answered approval requests resurfacing until TTL expiry
+- alert only on ApprovalRequest creation, not every zone write
+- present approval sheet when inbox filled before shell appears
+- route invite universal links through the scene delegate
+- confirm invite acceptance to the user; revoke deletes the invite record
+- unblock recipient navigation and owner waiting screen
+- invite-link hardening from review
+- make approval responses idempotent against CloudKit retries
+- surface recipient verification failures with the failed check
+
+### Changed
+- reviewer agent memory
+- self-explanatory resolver skip log for QA
+- record pre-acceptance userRecordID finding
+- sharing V1.1 invite tier in codebase summary
+- V1.1 phases 3-5 complete, review findings resolved
+- phase 4 kernel status
+- sync V1.1 phase statuses
+- sharing v1.1 plan — opaque invite rendezvous, universal link, shared-with-me space
+- phase 8 automated gates done + two-device QA runbook
+- describe Approval Mode sharing; correct the iCloud enablement note
+- phase 7 revocation sync-back
+- phase 6 recipient UX sync-back + review report
+- phase 5 approval ceremony sync-back + review report
+- phase 4 share-config UI sync-back + review report
+- approval-mode sharing plan, gate verdict, phase reports
+- extract zone-delta cursor + single-flight helper
+
+
 ## [1.14.1] - 2026-07-05
 
 ### Fixed

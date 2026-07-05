@@ -1,1 +1,1 @@
-Bản cập nhật này bao gồm các cải tiến ổn định và sửa lỗi nền tảng.
+Giờ đây bạn có thể chia sẻ an toàn một số mục trong kho lưu trữ với người mình tin tưởng — người nhận chỉ xem được, thông tin luôn cập nhật theo thời gian thực, còn bạn toàn quyền phê duyệt, quản lý và thu hồi quyền truy cập bất cứ lúc nào. Bản cập nhật cũng cải thiện màn hình chia sẻ, mã xác thực và thông báo để trải nghiệm mượt mà hơn.

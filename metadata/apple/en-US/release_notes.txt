@@ -1,1 +1,1 @@
-This update includes stability improvements and under-the-hood fixes.
+Share select vault items securely with people you trust — recipients get read-only access that updates in real time, while you stay in control with simple approval, management, and instant revocation. This update also refines sharing screens, verification codes, and notifications for a smoother experience.
