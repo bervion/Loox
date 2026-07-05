@@ -8719,6 +8719,54 @@
           }
         }
       }
+    },
+    "Send via Messages": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send via Messages"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi qua Tin nhắn"
+          }
+        }
+      }
+    },
+    "Share Another Way": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Another Way"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ cách khác"
+          }
+        }
+      }
+    },
+    "I shared an item with you in Loox Password. Open this link on your iPhone to accept: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I shared an item with you in Loox Password. Open this link on your iPhone to accept: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mình đã chia sẻ một mục với bạn trong Loox Password. Mở liên kết này trên iPhone để chấp nhận: %@"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

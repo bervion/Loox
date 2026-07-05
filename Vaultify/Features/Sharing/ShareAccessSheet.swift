@@ -30,6 +30,8 @@ struct ShareAccessSheet: View {
     @State private var capabilities: [String: FieldCapability] = [:]
     /// Share pending the destructive revoke confirmation.
     @State private var revokeTarget: ItemShareRecord?
+    /// iMessage compose (recipient pre-filled) for the invite link.
+    @State private var showMessageCompose = false
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -338,11 +340,28 @@ struct ShareAccessSheet: View {
                 .vaultType(.callout).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
             if let shareURL {
+                #if os(iOS)
+                // Primary: iMessage with the recipient pre-filled (the share
+                // sheet can't preselect one; the compose window can).
+                if MessageComposeView.canSendText {
+                    Button {
+                        showMessageCompose = true
+                    } label: {
+                        Label { Text("Send via Messages") } icon: { PolarisIcon(Icons.share) }
+                            .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    }
+                    .buttonStyle(.themedProminent)
+                    .sheet(isPresented: $showMessageCompose) {
+                        MessageComposeView(
+                            recipients: [normalizedEmail],
+                            body: appString("I shared an item with you in Loox Password. Open this link on your iPhone to accept: \(shareURL.absoluteString)"))
+                    }
+                }
+                #endif
                 ShareLink(item: shareURL) {
-                    Label { Text("Send Invitation") } icon: { PolarisIcon(Icons.share) }
+                    Label { Text("Share Another Way") } icon: { PolarisIcon(Icons.share) }
                         .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                 }
-                .buttonStyle(.themedProminent)
             }
             // Manual escape hatch: the background poll has a bounded budget —
             // this button re-checks on demand so a long wait can't strand the
