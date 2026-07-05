@@ -51,6 +51,19 @@ nonisolated enum ApprovalConfig {
         requestSubscriptionPrefix + zoneName
     }
 
+    // MARK: Public-DB invite rendezvous (U5 — opaque inbox, push = hint)
+
+    /// Public-db record carrying an invite drop. Shares the type used by
+    /// link invites ("inv-…" records); rendezvous drops add the queryable
+    /// `recipientInboxID` field that link records simply lack.
+    static let publicInviteRecordType = "LooxInvite"
+    /// Recipient-published inbox descriptor, keyed by the OPAQUE CloudKit
+    /// user record id (never email or any PII-derived value — U3).
+    static let inviteInboxDescriptorRecordType = "LooxInviteInbox"
+    /// Recipient-side query subscription on the PUBLIC db (invite drops
+    /// addressed to this account's inboxID).
+    static let inviteInboxSubscriptionID = "loox-invite-inbox"
+
     // MARK: Opaque naming
 
     /// Random, meaning-free identifier for zone and record names. 20 bytes of

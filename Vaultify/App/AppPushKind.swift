@@ -10,6 +10,7 @@ nonisolated enum AppPushKind {
     case vaultRemoteChange
     case approvalRequest
     case approvalResponse
+    case inviteRendezvous
 
     static func classify(_ notification: CKNotification) -> AppPushKind {
         guard let subscriptionID = notification.subscriptionID else {
@@ -21,6 +22,9 @@ nonisolated enum AppPushKind {
         }
         if subscriptionID == ApprovalConfig.sharedDatabaseSubscriptionID {
             return .approvalResponse
+        }
+        if subscriptionID == ApprovalConfig.inviteInboxSubscriptionID {
+            return .inviteRendezvous
         }
         // `SyncPushService.subscriptionID` and anything else → sync pull. An
         // unknown id defaulting to a pull is harmless (pull is idempotent);
@@ -42,4 +46,7 @@ extension Notification.Name {
     /// An invite universal link arrived via the scene delegate (`object` =
     /// the URL); the app root resolves + accepts and surfaces the outcome.
     static let inviteLinkReceived = Notification.Name("inviteLinkReceived")
+    /// A public-db invite drop addressed to this account's inbox (U5).
+    /// Push = hint only; observers reconcile against the public-db inbox.
+    static let inviteRendezvousReceived = Notification.Name("inviteRendezvousReceived")
 }

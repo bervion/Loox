@@ -56,6 +56,8 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
             NotificationCenter.default.post(name: .approvalRequestReceived, object: nil)
         case .approvalResponse:
             NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
+        case .inviteRendezvous:
+            NotificationCenter.default.post(name: .inviteRendezvousReceived, object: nil)
         }
     }
 
@@ -81,9 +83,9 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let userInfo = notification.request.content.userInfo
         if let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo),
-           AppPushKind.classify(ckNotification) == .approvalRequest {
-            // Foreground owner: surface the pending request immediately (no tap
-            // needed) — the alert push carries no fetch payload by design.
+           [.approvalRequest, .inviteRendezvous].contains(AppPushKind.classify(ckNotification)) {
+            // Foreground: surface the pending request / invite immediately (no
+            // tap needed) — these alert pushes carry no fetch payload by design.
             Self.route(ckNotification)
             completionHandler([.banner, .sound, .list])
         } else {
@@ -156,6 +158,8 @@ final class AppPushDelegate: NSObject, NSApplicationDelegate {
             NotificationCenter.default.post(name: .approvalRequestReceived, object: nil)
         case .approvalResponse:
             NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
+        case .inviteRendezvous:
+            NotificationCenter.default.post(name: .inviteRendezvousReceived, object: nil)
         }
     }
 

@@ -66,6 +66,7 @@ struct SyncSettingsView: View {
             }
             #if DEBUG
             approvalSpikeSection
+            rendezvousSpikeSection
             #endif
         }
         .themedFormBackground()
@@ -99,6 +100,31 @@ struct SyncSettingsView: View {
             Text(ApprovalSpike.shared.status).font(.footnote).themedForeground(.secondary)
             Button("Reset owner spike", role: .destructive) {
                 Task { await ApprovalSpike.shared.resetOwner() }
+            }
+        }
+        .listRowBackground(VaultColors.surface)
+    }
+
+    /// Throwaway V1.1 Phase-3 public-rendezvous transport spike (two iCloud
+    /// accounts). Plain unlocalized strings on purpose — DEBUG-only.
+    private var rendezvousSpikeSection: some View {
+        Section("Rendezvous Spike (DEBUG · V1.1)") {
+            Button("B · 1: Arm invite inbox") {
+                Task { await InviteRendezvousSpike.shared.armInbox() }
+            }
+            TextField("B's iCloud email (device A)", text: $spikeEmail)
+                .platformAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Button("A · 2: Drop invite to B") {
+                Task { await InviteRendezvousSpike.shared.sendInvite(toEmail: spikeEmail) }
+            }
+            .disabled(!spikeEmail.contains("@"))
+            Button("B · 3: Fetch inbox now") {
+                Task { await InviteRendezvousSpike.shared.fetchInvites(trigger: "manual") }
+            }
+            Text(InviteRendezvousSpike.shared.status).font(.footnote).themedForeground(.secondary)
+            Button("Reset rendezvous spike", role: .destructive) {
+                Task { await InviteRendezvousSpike.shared.reset() }
             }
         }
         .listRowBackground(VaultColors.surface)
