@@ -17,7 +17,9 @@ struct ShareAccessSheet: View {
         case blocked(ApprovalPrerequisites.Blocker)
         case config
         case creating
-        case waiting(zoneID: CKRecordZone.ID, shareURL: URL?)
+        // `shareURL` = pretty invite link (UI); `rawShareURL` = the CKShare
+        // URL the rendezvous envelope needs (drop retries while waiting).
+        case waiting(zoneID: CKRecordZone.ID, shareURL: URL?, rawShareURL: URL?)
         case fingerprint(zoneID: CKRecordZone.ID, code: String,
                          profile: (participantPubKey: Data, deviceSigningKeys: [Data], createdAtUnixMs: Int64))
         case publishing
@@ -52,7 +54,7 @@ struct ShareAccessSheet: View {
     /// Driving `.task(id:)` off this makes cancellation structural — the poll
     /// dies with the view or the step, never leaking (review H1).
     private var pollingZoneName: String? {
-        if case .waiting(let zoneID, _) = step { return zoneID.zoneName }
+        if case .waiting(let zoneID, _, _) = step { return zoneID.zoneName }
         return nil
     }
 
@@ -114,7 +116,7 @@ struct ShareAccessSheet: View {
                     .vaultType(.callout).themedForeground(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .waiting(_, let shareURL):
+        case .waiting(_, let shareURL, _):
             waitingView(shareURL: shareURL)
         case .fingerprint(_, let code, _):
             TrustFingerprintView(code: code, recipientLabel: recipientEmail) {
@@ -202,9 +204,28 @@ struct ShareAccessSheet: View {
                 createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
                 fingerprintConfirmed: false, inviteRecordName: inviteRecordName,
                 dropRecordName: dropRecordName))
-            step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL)
+            step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL,
+                            rawShareURL: setup.shareURL)
         } catch {
             step = .failed(error.localizedDescription)
+        }
+    }
+
+    /// The recipient may arm their invite inbox AFTER this share was created
+    /// (fresh install, first launch of a new build) — a single drop attempt
+    /// at creation would silently strand the auto-invite tier, so the waiting
+    /// poll retries until the descriptor appears or the ceremony moves on.
+    private func retryAutoInviteIfNeeded() async {
+        guard !autoInviteSent,
+              case .waiting(let zoneID, _, let rawShareURL) = step,
+              let rawShareURL else { return }
+        guard let name = await env.inviteInbox.dropInvite(
+            shareURL: rawShareURL, recipientEmail: normalizedEmail) else { return }
+        autoInviteSent = true
+        if var pending = env.sharingStore.shares(forItem: itemID)
+            .first(where: { $0.zoneName == zoneID.zoneName }) {
+            pending.dropRecordName = name
+            env.sharingStore.upsert(pending)
         }
     }
 
@@ -215,7 +236,7 @@ struct ShareAccessSheet: View {
         guard let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw else { return }
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         var delay: Duration = .seconds(3)
-        for _ in 0..<80 { // ≈ 10 minutes at the capped interval
+        for attempt in 0..<80 { // ≈ 10 minutes at the capped interval
             guard !Task.isCancelled else { return }
             if let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) {
                 let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
@@ -223,6 +244,9 @@ struct ShareAccessSheet: View {
                 step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
                 return
             }
+            // The recipient may have armed their inbox since the last try —
+            // re-attempt the auto-drop on a slower cadence (~every 30-60s).
+            if attempt % 6 == 5 { await retryAutoInviteIfNeeded() }
             try? await Task.sleep(for: delay)
             delay = min(delay * 2, .seconds(10))
         }
@@ -231,9 +255,11 @@ struct ShareAccessSheet: View {
         pollExhausted = true
     }
 
-    /// One immediate profile check (the "Check Now" button).
+    /// One immediate profile check (the "Check Now" button) — also re-tries
+    /// the auto-drop so "Check Now" doubles as "re-send the auto-invite".
     private func checkProfileNow() async {
-        guard case .waiting(let zoneID, _) = step,
+        await retryAutoInviteIfNeeded()
+        guard case .waiting(let zoneID, _, _) = step,
               let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw,
               let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID)
         else { return }

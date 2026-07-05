@@ -47,6 +47,11 @@ import Foundation
         guard CloudSyncService.isConfigured, !armedThisLaunch else { return }
         do {
             guard try await container.accountStatus() == .available else { return }
+            // A pure recipient has never been through the owner-side flow, so
+            // this is the first place notification permission can be asked —
+            // the alert push IS the auto-invite tier. Arm proceeds even when
+            // denied (reconcile-on-open still works, pushes just won't show).
+            _ = await ApprovalPrerequisites.check()
             let userID = try await container.userRecordID()
             let inboxID = UserDefaults.standard.string(forKey: Self.inboxIDKey)
                 ?? Self.randomInboxID()
@@ -68,6 +73,21 @@ import Foundation
             _ = try await publicDB.modifyRecords(saving: [descriptor], deleting: [],
                                                  savePolicy: .allKeys)
 
+            // JIT-schema bootstrap: the subscription predicate references
+            // `recipientInboxID`, which must exist on LooxInvite BEFORE the
+            // subscription can be saved — link-tier records never carried the
+            // field, so a fresh container rejects the predicate. A create +
+            // delete of a dummy drop materializes it (Development only;
+            // harmless no-op once the schema is deployed to Production).
+            let bootstrap = CKRecord(recordType: ApprovalConfig.publicInviteRecordType,
+                                     recordID: CKRecord.ID(recordName: "drop-" + ApprovalConfig.opaqueName()))
+            bootstrap[Field.recipientInboxID] = "schema-bootstrap" as CKRecordValue
+            bootstrap[Field.blob] = Data() as CKRecordValue
+            bootstrap[Field.sentAtMs] = Int64(0) as CKRecordValue
+            bootstrap[Field.expiresAtMs] = Int64(0) as CKRecordValue
+            _ = try await publicDB.modifyRecords(saving: [bootstrap], deleting: [])
+            _ = try? await publicDB.modifyRecords(saving: [], deleting: [bootstrap.recordID])
+
             let subscription = CKQuerySubscription(
                 recordType: ApprovalConfig.publicInviteRecordType,
                 predicate: NSPredicate(format: "%K == %@", Field.recipientInboxID, inboxID),
@@ -82,8 +102,10 @@ import Foundation
                 saving: [], deleting: [ApprovalConfig.inviteInboxSubscriptionID])
             _ = try await publicDB.modifySubscriptions(saving: [subscription], deleting: [])
             armedThisLaunch = true
+            debugLog("armed inbox=\(inboxID.prefix(8))… descriptor=inbox-\(userID.recordName)")
         } catch {
             // Best-effort — retried on the next launch/foreground pass (U6).
+            debugLog("arm FAILED: \(error)")
         }
     }
 
@@ -118,7 +140,9 @@ import Foundation
             }
         } catch {
             // Offline/transient — the next reconcile pass picks them up.
+            debugLog("reconcile FAILED: \(error)")
         }
+        if !discovered.isEmpty { debugLog("reconcile found \(discovered.count) new invite(s)") }
         return discovered.sorted { $0.createdAtUnixMs < $1.createdAtUnixMs }
     }
 
@@ -155,11 +179,23 @@ import Foundation
     func dropInvite(shareURL: URL, recipientEmail: String) async -> String? {
         do {
             let participant = try await container.shareParticipant(forEmailAddress: recipientEmail)
-            guard let recipientID = participant.userIdentity.userRecordID else { return nil }
-            let descriptor = try await publicDB.record(
-                for: CKRecord.ID(recordName: "inbox-" + recipientID.recordName))
+            guard let recipientID = participant.userIdentity.userRecordID else {
+                debugLog("drop skipped: no userRecordID for recipient")
+                return nil
+            }
+            let descriptor: CKRecord
+            do {
+                descriptor = try await publicDB.record(
+                    for: CKRecord.ID(recordName: "inbox-" + recipientID.recordName))
+            } catch {
+                debugLog("drop skipped: recipient has no inbox descriptor yet")
+                return nil
+            }
             guard let inboxID = descriptor[Field.inboxID] as? String,
-                  let encryptionKey = descriptor[Field.encryptionKey] as? Data else { return nil }
+                  let encryptionKey = descriptor[Field.encryptionKey] as? Data else {
+                debugLog("drop skipped: descriptor malformed")
+                return nil
+            }
 
             let signer = try DeviceSigningIdentity.loadOrCreate()
             let myID = try await container.userRecordID()
@@ -185,8 +221,10 @@ import Foundation
             drop[Field.expiresAtMs] = (((nowMs + Self.dropLifetimeMs) / 3_600_000) * 3_600_000) as CKRecordValue
             let saved = try await publicDB.modifyRecords(saving: [drop], deleting: [])
             for (_, result) in saved.saveResults { _ = try result.get() }
+            debugLog("drop committed \(drop.recordID.recordName) → inbox \(inboxID.prefix(8))…")
             return drop.recordID.recordName
         } catch {
+            debugLog("drop FAILED: \(error)")
             return nil
         }
     }
@@ -206,5 +244,23 @@ import Foundation
         w.blob(encryptionKey)
         w.blob(signingKey)
         return w.data
+    }
+
+    /// QA diagnostics (Documents/invite-inbox-log.txt, DEBUG only) — console
+    /// capture is unreliable in this environment; ciphertext and full ids
+    /// never logged.
+    private func debugLog(_ line: String) {
+        #if DEBUG
+        let url = URL.documentsDirectory.appending(path: "invite-inbox-log.txt")
+        let stamp = Date().formatted(.iso8601.timeSeparator(.colon))
+        let entry = "\(stamp) \(line)\n"
+        if let handle = try? FileHandle(forWritingTo: url) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: Data(entry.utf8))
+        } else {
+            try? Data(entry.utf8).write(to: url)
+        }
+        #endif
     }
 }
