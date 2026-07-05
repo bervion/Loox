@@ -49,6 +49,16 @@ struct VaultShellBehaviors: ViewModifier {
                                  set: { env.pendingTOTPImport = $0 })) { item in
                 ItemEditorScreen(target: .draft(item))
             }
+            // AutoFill's "Request code" hand-off: open the shared item's standard detail,
+            // which already has the Request control for askEachTime TOTP capabilities.
+            .sheet(isPresented: Binding(
+                get: { env.pendingSharedItemDeepLinkID != nil },
+                set: { if !$0 { env.pendingSharedItemDeepLinkID = nil } })
+            ) {
+                if let itemID = env.pendingSharedItemDeepLinkID {
+                    NavigationStack { ItemDetailScreen(itemID: itemID) }
+                }
+            }
             // Re-present an unsaved editor draft recovered from a previous launch (one-shot).
             .sheet(item: $uiState.restoredDraft) { draft in
                 ItemEditorScreen(target: draft.isNew ? .draft(draft.item) : .edit(draft.item))

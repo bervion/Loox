@@ -79,10 +79,39 @@ DetailFieldRow, L: no totp placeholders / stable website id / trashed share gate
 - Approved TOTP code uses the app's own TOTP components (TOTPCodeView.format + CountdownRing).
 - Home auto-select releases to "All Spaces" when shared items exist (both directions).
 
-## PENDING PHASE 8 — AutoFill for shared items (user-requested, NOT yet implemented)
-Design sketch: extension reads VaultStore only → needs a SEALED shared-credentials cache in the
-app-group container (values sealed under Vault Key, written by SharedItemsProjection.refresh,
-wiped on lock/revoke) + credential identities published for QuickType; TOTP askEachTime inside
-AutoFill = request→poll response with a bounded wait UI in the extension (no push in extensions),
-reusing RequestCodeModel over CloudKit from the extension process. Sizeable: needs its own review
-(security: cache lifetime, revocation lag) — implement as the next work item.
+## PHASE 8 — AutoFill for shared items (shipped, 8b via fallback — see note)
+**8a (full):** `SharedCredentialsCache` (VaultifyCore/Sharing/SharedCredentialsCache.swift) persists
+recipient shared logins (title/host/username/password?/zone+grant/askEachTime TOTP field id) as ONE
+AES-GCM blob under the Vault Key in the app-group container — deliberately NOT wiped on lock (only
+`AppEnvironment.eraseEverything`), since AutoFill has no other path to these values. Written by
+`SharedItemsProjection.refresh` every rebuild (empty list on last-share-left/revoked). QuickType:
+`CredentialIdentityService` now merges owned + shared identities in one `replaceCredentialIdentities`
+call (two "last known" caches — `replaceCredentialIdentities` clobbers the whole store per type, so
+publishing either side independently would erase the other's entries); shared identities carry the
+`shared::` `recordIdentifier` prefix. Extension (`AutoFillView.swift`) merges `SharedCredentialsCache`
+entries into the picker as `CredentialRow.shared`, subtitled "· Shared", including the
+`preferredRecordID` (QuickType tap) path.
+
+**8b (fallback, not the full in-extension request/poll machine):** `VaultifyAutoFill.entitlements`
+has NO iCloud/CloudKit container capability (confirmed: only app-group + autofill-credential-provider
++ shared keychain group) — running `ApprovalRecipientService`'s CKContainer-based request/response
+ceremony inside the extension process would need that capability added to the extension's App ID in
+the developer portal + a regenerated match profile, which is an infra/provisioning change outside
+this session's reach (not just a target-membership tangle). Implemented the explicit fallback
+instead: a shared row with an `askEachTime` TOTP capability shows a "Request code" button that opens
+`vaultify://shared-item/<id>` (`SharedItemDeepLink`, new `CFBundleURLTypes` entry in `Project.swift`)
+via SwiftUI's `openURL` environment action — in an extension this routes through
+`NSExtensionContext.open` automatically, no manual plumbing needed — then cancels the AutoFill
+request. `VaultifyApp.onOpenURL` stashes the id (`AppEnvironment.pendingSharedItemDeepLinkID`);
+`VaultShellBehaviors` presents `ItemDetailScreen(itemID:)` as a sheet once unlocked, which already
+has the Request control + polling/countdown from Phase 3.
+
+Tests: `SharedCredentialsCacheTests` (round-trip seal/load, wrong-key fail-closed, empty-save
+overwrite, host-matching). 179/179 tests green (was 172). Both targets (app iOS Simulator + embedded
+extension, and macOS) compile clean.
+
+Follow-up if the CloudKit entitlement is ever added to the extension: the request/response ceremony
+could move fully in-extension (poll `ApprovalRecipientService.fetchResponse` on a timer) instead of
+the deep-link hand-off — `RequestCodeModel`/`ApprovalRecipientService` would need to move (or their
+non-UI parts extracted) into `VaultifyCore` since the extension only compiles `VaultifyAutoFill/** +
+VaultifyCore/**`.

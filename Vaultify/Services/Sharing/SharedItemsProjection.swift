@@ -6,8 +6,10 @@ import Foundation
 /// A PROJECTION, not storage: models are rebuilt from the accepted shared
 /// zones (grant + display envelope + sealed shared values) and live only in
 /// memory. They deliberately never touch `VaultStore` — vault-item sync,
-/// backup, export, Watchtower, and AutoFill all read the store and must see
-/// zero shared items. Revoke = the zone disappears = the item disappears.
+/// backup, export, and Watchtower all read the store and must see zero shared
+/// items. Revoke = the zone disappears = the item disappears. AutoFill is the
+/// one deliberate exception (Phase 8): every refresh mirrors a flattened,
+/// separately-sealed copy into `SharedCredentialsCache` for the extension.
 @MainActor @Observable final class SharedItemsProjection {
     /// Projected items, title-sorted. Each carries `sharedOrigin`.
     private(set) var items: [VaultItem] = []
@@ -125,6 +127,29 @@ import Foundation
         requestModels = requestModels.filter { key, _ in
             liveGrantIDs.contains(String(key.split(separator: "|")[0]))
         }
+        // AutoFill sees none of the above — persist a flattened, Vault-Key-sealed
+        // copy (survives lock; see SharedCredentialsCache) and refresh QuickType.
+        // An empty `items` (last share left/revoked) overwrites with an empty
+        // cache, which is exactly the "disappear" behavior Leave/revoke need.
+        let cacheEntries = items.compactMap { item -> SharedCredentialEntry? in
+            guard let grant = grants[item.id] else { return nil }
+            return Self.cacheEntry(item: item, grant: grant)
+        }
+        try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
+        CredentialIdentityService.refreshShared(cacheEntries)
+    }
+
+    /// Flattens a projected item + its grant into the AutoFill cache shape.
+    private static func cacheEntry(item: VaultItem, grant: AccessGrant) -> SharedCredentialEntry? {
+        guard let origin = item.sharedOrigin else { return nil }
+        let totpFieldId = grant.capabilities.first { $0.value.isAskEachTimeTOTP }?.key
+        return SharedCredentialEntry(
+            itemID: item.id, title: item.title,
+            websiteHost: item.urlField?.value.isEmpty == false ? item.urlField?.value : nil,
+            username: item.usernameField?.value.isEmpty == false ? item.usernameField?.value : nil,
+            password: item.passwordField?.value.isEmpty == false ? item.passwordField?.value : nil,
+            zoneName: origin.zoneName, ownerName: origin.ownerName, grantId: origin.grantId,
+            askEachTimeTOTPFieldId: totpFieldId)
     }
 
     // MARK: Building

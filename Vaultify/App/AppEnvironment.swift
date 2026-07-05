@@ -42,6 +42,10 @@ import SwiftUI
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
     var pendingTOTPImport: VaultItem?
+    /// A shared item id from the AutoFill extension's "Request code" hand-off
+    /// (`vaultify://shared-item/<id>`, see `SharedItemDeepLink`). Presented as a
+    /// detail sheet once the vault is unlocked; cleared when the sheet dismisses.
+    var pendingSharedItemDeepLinkID: String?
 
     init() {
         let settings = SettingsStore()
@@ -104,6 +108,9 @@ import SwiftUI
         Task { [inviteInbox] in await inviteInbox.disarm() }
         sharingStore.wipe()
         sharedItems.wipe()
+        // The AutoFill shared-credentials cache outlives an ordinary lock by design
+        // (see SharedCredentialsCache) — Erase Vault is the one place it must go too.
+        SharedCredentialsCache.clear()
         VaultKeyEscrowService.clearPushedFingerprint()
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).
