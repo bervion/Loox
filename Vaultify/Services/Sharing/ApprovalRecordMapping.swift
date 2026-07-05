@@ -77,6 +77,25 @@ nonisolated enum ApprovalRecordMapping {
         return try? ApprovalResponse.decode(blob)
     }
 
+    // MARK: Display envelope (singleton per zone; ciphertext only)
+
+    static func displayEnvelopeRecord(sealedBlob: Data, grantId: String,
+                                      zoneID: CKRecordZone.ID) -> CKRecord {
+        let record = CKRecord(recordType: ApprovalConfig.displayEnvelopeRecordType,
+                              recordID: CKRecord.ID(recordName: ApprovalConfig.displayEnvelopeRecordName,
+                                                    zoneID: zoneID))
+        record[Field.blob] = sealedBlob as CKRecordValue
+        record[Field.grantId] = grantId as CKRecordValue
+        return record
+    }
+
+    static func displayEnvelope(from record: CKRecord) -> (grantId: String, blob: Data)? {
+        guard record.recordType == ApprovalConfig.displayEnvelopeRecordType,
+              let blob = record[Field.blob] as? Data,
+              let grantId = record[Field.grantId] as? String else { return nil }
+        return (grantId, blob)
+    }
+
     // MARK: Shared field blobs
 
     static func sharedFieldRecord(sealedBlob: Data, grantId: String, fieldId: String,

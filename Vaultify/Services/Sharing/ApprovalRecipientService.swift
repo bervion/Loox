@@ -145,6 +145,19 @@ import Foundation
         return values
     }
 
+    /// Decrypt the presentation metadata (title/host). nil when the owner
+    /// hasn't published one (older shares) — callers show a neutral fallback.
+    func fetchDisplayEnvelope(grant: AccessGrant, identity: ParticipantIdentity,
+                              zoneID: CKRecordZone.ID) async -> SharedDisplayEnvelope? {
+        guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else { return nil }
+        let id = CKRecord.ID(recordName: ApprovalConfig.displayEnvelopeRecordName, zoneID: zoneID)
+        guard let record = try? await sharedDatabase.record(for: id),
+              let payload = ApprovalRecordMapping.displayEnvelope(from: record),
+              payload.grantId == grant.id else { return nil }
+        return try? SharedDisplayEnvelope.open(payload.blob, participantIdentity: identity,
+                                               grantId: grant.id)
+    }
+
     // MARK: Request / response
 
     struct PendingRequest {

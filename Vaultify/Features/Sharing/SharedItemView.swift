@@ -17,7 +17,7 @@ struct SharedItemView: View {
     private enum LoadState {
         case loading
         case needsFingerprint(grant: AccessGrant, code: String)
-        case ready(grant: AccessGrant, values: [String: String])
+        case ready(grant: AccessGrant, values: [String: String], display: SharedDisplayEnvelope?)
         case failed(String)
     }
 
@@ -43,7 +43,17 @@ struct SharedItemView: View {
                     TrustFingerprintView(code: code, recipientLabel: appString("the owner")) {
                         confirmFingerprint()
                     }
-                case .ready(let grant, let values):
+                case .ready(let grant, let values, let display):
+                    if let display {
+                        VStack(alignment: .leading, spacing: Space.s1) {
+                            Text(verbatim: display.title)
+                                .vaultType(.section).themedForeground()
+                            if let host = display.websiteHost {
+                                Text(verbatim: host)
+                                    .vaultType(.footnote).themedForeground(.secondary)
+                            }
+                        }
+                    }
                     fieldsCard(grant: grant, values: values)
                 case .failed(let message):
                     Text(verbatim: message)
@@ -168,7 +178,9 @@ struct SharedItemView: View {
                 grant: grant, identity: identity, zoneID: zoneID)
             let values = raw.compactMapValues { String(data: $0, encoding: .utf8) }
             rebuildModelsIfNeeded(grant: grant)
-            loadState = .ready(grant: grant, values: values)
+            let display = await env.approvalRecipient.fetchDisplayEnvelope(
+                grant: grant, identity: identity, zoneID: zoneID)
+            loadState = .ready(grant: grant, values: values, display: display)
         } catch let error as CKError where error.code == .zoneNotFound || error.code == .userDeletedZone {
             loadState = .failed(appString("The owner stopped sharing this item."))
         } catch {

@@ -96,6 +96,13 @@ nonisolated enum ApprovalSeal {
         return w.data
     }
 
+    private static func displayEnvelopeInfo(grantId: String) -> Data {
+        var w = CanonicalWriter()
+        w.string("Loox display envelope v1")
+        w.string(grantId)
+        return w.data
+    }
+
     // Envelope layout mirrors the pairing envelope: version || encap(32) || ct.
 
     private static func seal(_ plaintext: Data, recipientKeyRaw: Data, info: Data) throws -> Data {
@@ -134,6 +141,20 @@ nonisolated enum ApprovalSeal {
                                     requestId: String, nonce: Data) throws -> Data {
         try open(envelope, privateKey: ephemeralPrivateKey,
                  info: responseInfo(requestId: requestId, nonce: nonce))
+    }
+
+    // MARK: display envelope ↔ persistent participant key
+
+    static func sealDisplayEnvelope(_ plaintext: Data, toParticipantPubKey key: Data,
+                                    grantId: String) throws -> Data {
+        try seal(plaintext, recipientKeyRaw: key, info: displayEnvelopeInfo(grantId: grantId))
+    }
+
+    static func openDisplayEnvelope(_ envelope: Data,
+                                    participantPrivateKey: Curve25519.KeyAgreement.PrivateKey,
+                                    grantId: String) throws -> Data {
+        try open(envelope, privateKey: participantPrivateKey,
+                 info: displayEnvelopeInfo(grantId: grantId))
     }
 
     // MARK: shared field blob ↔ persistent participant key

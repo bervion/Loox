@@ -130,6 +130,8 @@ import Foundation
     func publishGrant(itemId: String,
                       capabilities: [String: FieldCapability],
                       sharedValues: [String: Data],
+                      displayTitle: String,
+                      displayWebsiteHost: String?,
                       participantPubKey: Data,
                       pinnedDeviceSigningKeys: [Data],
                       epoch: UInt32,
@@ -147,6 +149,16 @@ import Foundation
         grant.ownerSignature = try identity.signature(for: grant.signingBody())
 
         var records: [CKRecord] = [ApprovalRecordMapping.grantRecord(grant, zoneID: zoneID)]
+        // Presentation metadata rides in its OWN encrypted envelope — never
+        // inside the signed grant (rename must not re-sign authorization)
+        // and never as plaintext CloudKit fields (metadata hygiene).
+        let display = SharedDisplayEnvelope(title: displayTitle,
+                                            websiteHost: displayWebsiteHost,
+                                            updatedAtUnixMs: nowUnixMs, revision: 1)
+        records.append(ApprovalRecordMapping.displayEnvelopeRecord(
+            sealedBlob: try display.sealed(toParticipantPubKey: participantPubKey,
+                                           grantId: grant.id),
+            grantId: grant.id, zoneID: zoneID))
         for (fieldId, plaintext) in sharedValues {
             guard capabilities[fieldId]?.isSharedValue == true else { continue }
             let sealed = try ApprovalSeal.sealSharedField(plaintext,

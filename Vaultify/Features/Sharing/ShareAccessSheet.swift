@@ -213,6 +213,9 @@ struct ShareAccessSheet: View {
                 itemId: item.id,
                 capabilities: capabilities,
                 sharedValues: sharedValues,
+                displayTitle: item.title.isEmpty ? appString("Shared Item") : item.title,
+                displayWebsiteHost: item.urlField?.value.isEmpty == false
+                    ? URL(string: item.urlField!.value)?.host : nil,
                 participantPubKey: profile.participantPubKey,
                 pinnedDeviceSigningKeys: profile.deviceSigningKeys,
                 epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)

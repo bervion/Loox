@@ -3,3 +3,4 @@
 - [Localization catalog convention](vaultify-localization-catalog-convention.md) — key IS the EN source; only `vi` needed; clipboard toast labels are untranslated literals
 - [TOTP/Home privacy model](vaultify-totp-home-privacy-model.md) — two-layer secret protection (global PrivacyShield + .privacySensitiveContents); lock-on-background clears repo
 - [Sync merge model](vaultify-sync-merge-model.md) — two-gate LWW (content/meta timestamps), changeTag short-circuit, snapshot markSynced; known push-first divergence gap
+- [Approval transport review patterns](approval-transport-review-patterns.md) — delta-cursor bug class, partialFailure shapes, escrow FWW; Phase-4: sheet orphans, xcstrings recipe; Phase-5: computed-.first sheet-binding double-clear, await-gap conditions checks; Phase-6: sharedDB zoneID owner-name, cancellation-swallow poll loop, local-copy key-drop defeat, duplicate String nav destinations

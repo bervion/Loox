@@ -27,12 +27,15 @@ nonisolated enum ApprovalConfig {
     static let nonceRecordType = "ApprovalNonce"
     /// B's Vault-Key-sealed participant private key (B's PRIVATE db).
     static let participantEscrowRecordType = "ApprovalParticipantEscrow"
+    /// Encrypted presentation metadata (title/host) — separate from the grant.
+    static let displayEnvelopeRecordType = "ApprovalDisplayEnvelope"
 
     // MARK: Fixed record names (zone is per-recipient + opaque-named; a fixed
     // name inside it leaks nothing beyond the already-visible recordType, and
     // singleton naming gives last-writer-wins conflict election for free).
 
     static let grantRecordName = "grant"
+    static let displayEnvelopeRecordName = "display-envelope"
     static let participantProfileRecordName = "participant-profile"
     static let participantEscrowRecordName = "approval-participant-escrow"
 

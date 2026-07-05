@@ -4,6 +4,13 @@
 <dict>
 	<key>com.apple.developer.authentication-services.autofill-credential-provider</key>
 	<true/>
+	<!-- Universal Links: share-invite deep links (invite.looxpassword.com/i/<token>)
+	     open the app directly instead of Safari/iCloud login. Requires the
+	     Associated Domains capability on the App ID + regenerated match profiles. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:invite.looxpassword.com</string>
+	</array>
 	<!-- iCloud (CloudKit) sync — container provisioned in the developer portal.
 	     Code paths stay behind the VAULTIFY_ICLOUD compile flag. -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
