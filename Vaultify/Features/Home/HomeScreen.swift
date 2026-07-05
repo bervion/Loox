@@ -39,7 +39,11 @@ struct HomeScreen: View {
     }
 
     private var allItems: [VaultItem] {
-        let sorted = sortOrder.apply(env.repository.allItems(folder: selectedFolderId))
+        var pool = env.repository.allItems(folder: selectedFolderId)
+        // Shared-with-me projections are first-class list citizens (V1.2) —
+        // they live in no Space, so they join the unfiltered view only.
+        if selectedFolderId == nil { pool += env.sharedItems.items }
+        let sorted = sortOrder.apply(pool)
         // Pinned items float to the top, keeping the chosen sort within each group.
         return sorted.filter(\.pinned) + sorted.filter { !$0.pinned }
     }
@@ -120,13 +124,7 @@ struct HomeScreen: View {
                     // 3. Quick actions grid (Reminders-style colour cards)
                     quickActionsGrid
 
-                    // 4. Shared with me (recipient side — only once Approval
-                    // Mode has ever been activated on this device)
-                    if env.settings.approvalModeEnabled {
-                        sharedWithMeRow
-                    }
-
-                    // 5. TOTP scroller (only when items with TOTP exist)
+                    // 4. TOTP scroller (only when items with TOTP exist)
                     if !totpItems.isEmpty {
                         totpSection
                     }
@@ -150,24 +148,6 @@ struct HomeScreen: View {
             }
         }
         .scrollIndicators(.hidden)
-    }
-
-    // MARK: Shared with me row
-
-    private var sharedWithMeRow: some View {
-        NavigationLink(value: SharedWithMeRoute()) {
-            HStack(spacing: Space.s3) {
-                PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.accent)
-                Text("Shared with Me").vaultType(.body).themedForeground()
-                Spacer()
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
-            }
-            .padding(Space.s4)
-            .frame(minHeight: Metric.hitMin)
-            .background(VaultColors.surface)
-            .vaultCornerRadius(Radius.md)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Profile row

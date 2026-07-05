@@ -40,6 +40,11 @@ struct VaultItemRow: View {
             if let folder {
                 spaceChip(folder).layoutPriority(1)
             }
+            // Recipient-side projection — read-only, lives in no Space, so the
+            // chip slot is free for the "Shared" marker.
+            if item.sharedOrigin != nil {
+                sharedChip.layoutPriority(1)
+            }
         }
         // Pinned → a pin glyph overlaid at the row's outermost top-right corner.
         .overlay(alignment: .topTrailing) {
@@ -65,6 +70,15 @@ struct VaultItemRow: View {
                     .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
             )
             .offset(x: 3, y: 3)
+    }
+
+    private var sharedChip: some View {
+        HStack(spacing: 4) {
+            PolarisIcon(Icons.share, size: 9).themedForeground(.accent)
+            Text("Shared").font(.caption2).themedForeground(.secondary)
+        }
+        .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
+        .background(VaultColors.fill, in: Capsule())
     }
 
     private func spaceChip(_ folder: Folder) -> some View {

@@ -76,9 +76,13 @@ struct VaultShellBehaviors: ViewModifier {
             }
             // Recipient side: resume a pending share acceptance now that the
             // vault is unlocked (Validation §3 — escrow BEFORE profile publish;
-            // idempotent, crash-safe, survives onboarding).
+            // idempotent, crash-safe, survives onboarding), then re-project
+            // the shared items so lists reflect the accepted/revoked state.
             .task(id: env.approvalCoordinator.recipientChangeCounter) {
                 await resumePendingShareAcceptance()
+                if let vaultKey = env.session.vaultKey?.bytes {
+                    await env.sharedItems.refresh(vaultKey: vaultKey)
+                }
             }
             // Recipient side: rendezvous invite inbox (arm + reconcile + accept
             // prompt) — one path for launch/foreground/push-hint (U6).

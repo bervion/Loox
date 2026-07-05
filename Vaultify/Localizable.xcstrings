@@ -6648,6 +6648,16 @@
         }
       }
     },
+    "Share Website Link": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ liên kết trang web"
+          }
+        }
+      }
+    },
     "Share invitation": {
       "localizations": {
         "vi": {
@@ -8385,6 +8395,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vaultify không thu thập phân tích và không có tài khoản. Yêu cầu mạng duy nhất là việc kiểm tra rò rỉ ẩn danh, tùy chọn."
+          }
+        }
+      }
+    },
+    "Verification code": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã xác minh"
           }
         }
       }
