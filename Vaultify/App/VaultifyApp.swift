@@ -72,7 +72,13 @@ struct VaultifyApp: App {
                 .onOpenURL { url in
                     // 2FA setup from an otpauth:// link/QR → stash a draft login; presented once
                     // the vault is unlocked (see MainTabView).
-                    if let draft = TOTPImport.draftLogin(from: url) { env.pendingTOTPImport = draft }
+                    if let draft = TOTPImport.draftLogin(from: url) {
+                        env.pendingTOTPImport = draft
+                    } else if let itemID = SharedItemDeepLink.itemID(from: url) {
+                        // AutoFill's "Request code" hand-off (no CloudKit entitlement there) —
+                        // presented once unlocked (see VaultShellBehaviors).
+                        env.pendingSharedItemDeepLinkID = itemID
+                    }
                 }
                 // Universal Link: share-invite (invite.looxpassword.com/i/<token>#k=…).
                 // Resolve + accept in background; the unlocked shell picks the

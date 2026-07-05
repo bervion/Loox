@@ -39,7 +39,12 @@ struct HomeScreen: View {
     }
 
     private var allItems: [VaultItem] {
-        let sorted = sortOrder.apply(env.repository.allItems(folder: selectedFolderId))
+        // Shared-with-me projections are first-class list citizens (V1.2).
+        // They live in no Space yet ALWAYS join the feed — single-Space users
+        // are auto-filtered to their folder, and a Space filter must not make
+        // somebody's share invisible (review M1).
+        let pool = env.repository.allItems(folder: selectedFolderId) + env.sharedItems.items
+        let sorted = sortOrder.apply(pool)
         // Pinned items float to the top, keeping the chosen sort within each group.
         return sorted.filter(\.pinned) + sorted.filter { !$0.pinned }
     }
@@ -56,7 +61,10 @@ struct HomeScreen: View {
     /// shows in the "All" section title. Only fills an unset selection — never overrides a
     /// choice the user made, and stays out of the way once a second Space exists.
     private func autoSelectSingleSpace() {
-        guard selectedFolderId == nil, env.repository.folders.count == 1 else { return }
+        // With shared items in play there are effectively TWO sources —
+        // stay on "All Spaces" so the shares are never filtered out.
+        guard selectedFolderId == nil, env.repository.folders.count == 1,
+              env.sharedItems.items.isEmpty else { return }
         selectedFolderId = env.repository.folders.first?.id
     }
 
@@ -66,7 +74,8 @@ struct HomeScreen: View {
             // ZStack lets the header float over scroll content so glass blurs it.
             ZStack(alignment: .top) {
                 Group {
-                    if env.repository.items.isEmpty {
+                    // A vault that's empty but RECEIVING shares still has a feed.
+                    if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
                         emptyVaultState
                     } else {
                         scrollContent
@@ -95,6 +104,13 @@ struct HomeScreen: View {
             .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
+            // First share arriving on a single-Space setup: release the
+            // auto-selected filter so the shared item is actually visible.
+            .onChange(of: env.sharedItems.items.count) { old, new in
+                if old == 0, new > 0, env.repository.folders.count == 1 {
+                    selectedFolderId = nil
+                }
+            }
             // New items inherit the Space currently selected on Home (nil = All Spaces →
             // editor falls back to the primary Space).
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
@@ -120,13 +136,7 @@ struct HomeScreen: View {
                     // 3. Quick actions grid (Reminders-style colour cards)
                     quickActionsGrid
 
-                    // 4. Shared with me (recipient side — only once Approval
-                    // Mode has ever been activated on this device)
-                    if env.settings.approvalModeEnabled {
-                        sharedWithMeRow
-                    }
-
-                    // 5. TOTP scroller (only when items with TOTP exist)
+                    // 4. TOTP scroller (only when items with TOTP exist)
                     if !totpItems.isEmpty {
                         totpSection
                     }
@@ -150,24 +160,6 @@ struct HomeScreen: View {
             }
         }
         .scrollIndicators(.hidden)
-    }
-
-    // MARK: Shared with me row
-
-    private var sharedWithMeRow: some View {
-        NavigationLink(value: SharedWithMeRoute()) {
-            HStack(spacing: Space.s3) {
-                PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.accent)
-                Text("Shared with Me").vaultType(.body).themedForeground()
-                Spacer()
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
-            }
-            .padding(Space.s4)
-            .frame(minHeight: Metric.hitMin)
-            .background(VaultColors.surface)
-            .vaultCornerRadius(Radius.md)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Profile row

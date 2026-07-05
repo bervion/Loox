@@ -12,6 +12,11 @@ struct HomeHeaderBar: View {
 
     @Environment(AppEnvironment.self) private var env
 
+    private var notificationCount: Int {
+        env.inviteInboxCoordinator.pendingInvites.count
+            + env.approvalCoordinator.pendingOwnerRequests.count
+    }
+
     var body: some View {
         VaultScreenHeader(
             leading: {
@@ -23,6 +28,29 @@ struct HomeHeaderBar: View {
             },
             trailing: {
                 HeaderActionCluster {
+                    // Notifications — pending share invitations + approval
+                    // requests (V7). Badge = actionable count; the bell is a
+                    // NavigationLink because the header lives inside Home's stack.
+                    NavigationLink(value: NotificationsRoute()) {
+                        PolarisIcon(Icons.notification, size: Metric.iconUtility)
+                            .themedForeground()
+                            .frame(width: Metric.hitMin, height: Metric.hitMin)
+                            .contentShape(.rect)
+                            .overlay(alignment: .topTrailing) {
+                                if notificationCount > 0 {
+                                    Text(verbatim: notificationCount > 9 ? "9+" : "\(notificationCount)")
+                                        .font(.caption2.bold())
+                                        .foregroundStyle(.white)
+                                        .frame(minWidth: 16, minHeight: 16)
+                                        .background(env.theme.active.color(.destructive),
+                                                    in: Circle())
+                                        .offset(x: -4, y: 6)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Notifications"))
+
                     // Search — switches to the Search tab via notification
                     HeaderIconButton(
                         Icons.search,

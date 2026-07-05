@@ -143,6 +143,7 @@ import Foundation
                       sharedValues: [String: Data],
                       displayTitle: String,
                       displayWebsiteHost: String?,
+                      displayFields: [String: SharedDisplayEnvelope.FieldMeta],
                       participantPubKey: Data,
                       pinnedDeviceSigningKeys: [Data],
                       epoch: UInt32,
@@ -165,7 +166,8 @@ import Foundation
         // and never as plaintext CloudKit fields (metadata hygiene).
         let display = SharedDisplayEnvelope(title: displayTitle,
                                             websiteHost: displayWebsiteHost,
-                                            updatedAtUnixMs: nowUnixMs, revision: 1)
+                                            updatedAtUnixMs: nowUnixMs, revision: 1,
+                                            fields: displayFields)
         records.append(ApprovalRecordMapping.displayEnvelopeRecord(
             sealedBlob: try display.sealed(toParticipantPubKey: participantPubKey,
                                            grantId: grant.id),
@@ -184,6 +186,27 @@ import Foundation
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
         return grant
+    }
+
+    /// Owner renamed the item (or its website changed): reseal ONLY the
+    /// display envelope with a bumped revision — presentation metadata has
+    /// its own lifecycle, the signed grant is untouched (U2). Revision is
+    /// second-granular monotonic so recipients drop out-of-order updates.
+    func republishDisplayEnvelope(title: String, websiteHost: String?,
+                                  displayFields: [String: SharedDisplayEnvelope.FieldMeta],
+                                  zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws {
+        let grant = try await fetchGrantFresh(zoneID: zoneID)
+        let display = SharedDisplayEnvelope(title: title, websiteHost: websiteHost,
+                                            updatedAtUnixMs: nowUnixMs,
+                                            revision: UInt32(clamping: nowUnixMs / 1000),
+                                            fields: displayFields)
+        let record = ApprovalRecordMapping.displayEnvelopeRecord(
+            sealedBlob: try display.sealed(toParticipantPubKey: grant.participantPubKey,
+                                           grantId: grant.id),
+            grantId: grant.id, zoneID: zoneID)
+        let saved = try await database.modifyRecords(saving: [record], deleting: [],
+                                                     savePolicy: .allKeys)
+        for (_, result) in saved.saveResults { _ = try result.get() }
     }
 
     // MARK: Inbound requests

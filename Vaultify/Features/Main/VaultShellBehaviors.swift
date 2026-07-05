@@ -49,6 +49,16 @@ struct VaultShellBehaviors: ViewModifier {
                                  set: { env.pendingTOTPImport = $0 })) { item in
                 ItemEditorScreen(target: .draft(item))
             }
+            // AutoFill's "Request code" hand-off: open the shared item's standard detail,
+            // which already has the Request control for askEachTime TOTP capabilities.
+            .sheet(isPresented: Binding(
+                get: { env.pendingSharedItemDeepLinkID != nil },
+                set: { if !$0 { env.pendingSharedItemDeepLinkID = nil } })
+            ) {
+                if let itemID = env.pendingSharedItemDeepLinkID {
+                    NavigationStack { ItemDetailScreen(itemID: itemID) }
+                }
+            }
             // Re-present an unsaved editor draft recovered from a previous launch (one-shot).
             .sheet(item: $uiState.restoredDraft) { draft in
                 ItemEditorScreen(target: draft.isNew ? .draft(draft.item) : .edit(draft.item))
@@ -76,9 +86,13 @@ struct VaultShellBehaviors: ViewModifier {
             }
             // Recipient side: resume a pending share acceptance now that the
             // vault is unlocked (Validation §3 — escrow BEFORE profile publish;
-            // idempotent, crash-safe, survives onboarding).
+            // idempotent, crash-safe, survives onboarding), then re-project
+            // the shared items so lists reflect the accepted/revoked state.
             .task(id: env.approvalCoordinator.recipientChangeCounter) {
                 await resumePendingShareAcceptance()
+                if let vaultKey = env.session.vaultKey?.bytes {
+                    await env.sharedItems.refresh(vaultKey: vaultKey)
+                }
             }
             // Recipient side: rendezvous invite inbox (arm + reconcile + accept
             // prompt) — one path for launch/foreground/push-hint (U6).

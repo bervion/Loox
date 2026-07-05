@@ -198,6 +198,12 @@ struct ShareAccessSheet: View {
             // remains the universal fallback either way.
             var dropRecordName: String?
             if let shareURL = setup.shareURL {
+                // A superseded drop from an earlier attempt at THIS pending
+                // share is dead weight in the recipient's inbox — GC it
+                // before dropping anew (creator-only delete).
+                if let staleDrop = pending?.dropRecordName {
+                    await env.inviteLinks.deleteInvite(recordName: staleDrop)
+                }
                 dropRecordName = await env.inviteInbox.dropInvite(
                     shareURL: shareURL, recipientEmail: normalizedEmail,
                     knownRecipientZoneNames: recipientZoneNames)
@@ -293,6 +299,14 @@ struct ShareAccessSheet: View {
                     return (field.id, Data(field.value.utf8))
                 })
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
+            // Field labels/kinds travel in the SEALED envelope so the
+            // recipient renders username as username, password as password.
+            let displayFields = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
+                capabilities[field.id]?.isSharedValue == true || capabilities[field.id]?.isAskEachTimeTOTP == true
+                    ? (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
+                                                                 kind: field.kind.rawValue))
+                    : nil
+            })
             let grant = try await env.approvalShare.publishGrant(
                 itemId: item.id,
                 capabilities: capabilities,
@@ -300,6 +314,7 @@ struct ShareAccessSheet: View {
                 displayTitle: item.title.isEmpty ? appString("Shared item") : item.title,
                 displayWebsiteHost: item.urlField?.value.isEmpty == false
                     ? URL(string: item.urlField!.value)?.host : nil,
+                displayFields: displayFields,
                 participantPubKey: profile.participantPubKey,
                 pinnedDeviceSigningKeys: profile.deviceSigningKeys,
                 epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)

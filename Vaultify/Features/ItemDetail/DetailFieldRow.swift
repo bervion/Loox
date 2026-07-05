@@ -11,6 +11,10 @@ struct DetailFieldRow: View {
     var onChange: (DynamicField) -> Void = { _ in }
     var onRemove: () -> Void = {}
     var onUsed: () -> Void = {}
+    /// Shared projections (V1.2): hide mutation affordances entirely —
+    /// a "Protect…" that Face-IDs and then silently does nothing is worse
+    /// than its absence. Copy/reveal/large-type stay.
+    var readOnly = false
     @Environment(AppEnvironment.self) private var env
     @State private var copied = false
     @State private var revealed = false
@@ -129,7 +133,7 @@ struct DetailFieldRow: View {
             if field.kind == .url, let url = Self.normalized(field.value) {
                 Button { PlatformAppearance.open(url) } label: { Label("Open Website", image: Icons.globe) }
             }
-            if !field.value.isEmpty {
+            if !field.value.isEmpty, !readOnly {
                 Divider()
                 Button { showProtect = true } label: { Label("Protect…", image: Icons.lock) }
             }

@@ -81,4 +81,11 @@ nonisolated enum SharedConfig {
 
     /// Wrapped key bundle location (shared, complete file protection).
     static var keyBundleURL: URL { containerURL.appending(path: "vault-keybundle.json") }
+
+    /// Recipient shared-credentials cache location (shared, complete file protection).
+    /// AES-GCM-sealed under the Vault Key by `SharedCredentialsCache` — see that file
+    /// for why it deliberately survives an app lock (AutoFill needs it while closed).
+    static var sharedCredentialsCacheURL: URL {
+        containerURL.appending(path: "shared-credentials-cache.bin")
+    }
 }

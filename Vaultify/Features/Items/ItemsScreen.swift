@@ -94,10 +94,10 @@ struct ItemsScreen: View {
                     }
                 }
                 // System space (U1): a projection over shares accepted from
-                // other people — not a folder record, so no rename/delete/count.
-                if env.settings.approvalModeEnabled {
+                // other people — not a folder record, so no rename/delete.
+                if env.settings.approvalModeEnabled || !env.sharedItems.items.isEmpty {
                     navRow(SharedWithMeRoute(), title: Text("Shared with Me"),
-                           count: 0, showDivider: true) {
+                           count: env.sharedItems.items.count, showDivider: true) {
                         leadingTile(Icons.share,
                                     fill: Color(rgb: env.theme.active.accent).opacity(0.14),
                                     iconColor: Color(rgb: env.theme.active.accent), iconSize: 16)

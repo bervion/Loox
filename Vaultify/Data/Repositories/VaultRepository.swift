@@ -181,6 +181,11 @@ import UserNotifications
     // MARK: CRUD
 
     func add(_ item: VaultItem) throws {
+        // A shared projection must NEVER be persisted: it is someone else's
+        // data, sealed under their trust — storing it would sync/back it up
+        // as owned and outlive revocation (V1.2 review C1, defense in depth
+        // behind the UI gates).
+        guard item.sharedOrigin == nil, !item.id.hasPrefix("shared::") else { return }
         guard let key = session.vaultKey else { throw AuthError.locked }
         let record = ItemRecord(id: item.id,
                                 sealed: try seal(item, key: key),
@@ -203,6 +208,8 @@ import UserNotifications
     }
 
     func update(_ item: VaultItem) throws {
+        // Same guard as `add` — the missing-record fallback below upserts.
+        guard item.sharedOrigin == nil, !item.id.hasPrefix("shared::") else { return }
         guard let key = session.vaultKey else { throw AuthError.locked }
         guard let record = try record(id: item.id) else { return try add(item) }
         var updated = item

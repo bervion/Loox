@@ -24,19 +24,28 @@ import SwiftUI
     /// Foreground approval ceremony (Face ID → boundary-aware issuance).
     let approvalCeremony: ApprovalCeremonyService
     /// Recipient-side transport (accepted shares, requests, responses).
-    let approvalRecipient = ApprovalRecipientService()
+    let approvalRecipient: ApprovalRecipientService
     /// Pretty invite links (public-DB locator + fragment-key ciphertext).
-    let inviteLinks = InviteLinkService()
+    let inviteLinks: InviteLinkService
     /// Loox-to-Loox auto-invite rendezvous (U5 opaque public inbox).
-    let inviteInbox = InviteInboxService()
+    let inviteInbox: InviteInboxService
+    /// Pending-invite queue shared by the quick-path alert AND the
+    /// notifications screen (V7).
+    let inviteInboxCoordinator: InviteInboxCoordinator
     /// Recipient participant-identity escrow under the Vault Key.
-    let participantEscrow = ParticipantEscrowService()
+    let participantEscrow: ParticipantEscrowService
+    /// Shared-with-me items as first-class read-only projections (V1.2).
+    let sharedItems: SharedItemsProjection
     /// Device-local "which items are shared with whom" registry (owner side).
     let sharingStore = SharingStore()
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
     var pendingTOTPImport: VaultItem?
+    /// A shared item id from the AutoFill extension's "Request code" hand-off
+    /// (`vaultify://shared-item/<id>`, see `SharedItemDeepLink`). Presented as a
+    /// detail sheet once the vault is unlocked; cleared when the sheet dismisses.
+    var pendingSharedItemDeepLinkID: String?
 
     init() {
         let settings = SettingsStore()
@@ -65,6 +74,19 @@ import SwiftUI
         self.approvalCeremony = ApprovalCeremonyService(session: session,
                                                         repository: repository,
                                                         shareService: approvalShare)
+        let approvalRecipient = ApprovalRecipientService()
+        let participantEscrow = ParticipantEscrowService()
+        let inviteLinks = InviteLinkService()
+        let inviteInbox = InviteInboxService()
+        self.approvalRecipient = approvalRecipient
+        self.participantEscrow = participantEscrow
+        self.inviteLinks = inviteLinks
+        self.inviteInbox = inviteInbox
+        self.sharedItems = SharedItemsProjection(recipient: approvalRecipient,
+                                                 escrow: participantEscrow)
+        self.inviteInboxCoordinator = InviteInboxCoordinator(
+            settings: settings, session: session, escrow: participantEscrow,
+            inbox: inviteInbox, links: inviteLinks)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
@@ -85,6 +107,10 @@ import SwiftUI
         // Rendezvous inbox dies with the vault (descriptor + subscription).
         Task { [inviteInbox] in await inviteInbox.disarm() }
         sharingStore.wipe()
+        sharedItems.wipe()
+        // The AutoFill shared-credentials cache outlives an ordinary lock by design
+        // (see SharedCredentialsCache) — Erase Vault is the one place it must go too.
+        SharedCredentialsCache.clear()
         VaultKeyEscrowService.clearPushedFingerprint()
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).

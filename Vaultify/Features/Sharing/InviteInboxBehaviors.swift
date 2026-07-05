@@ -1,41 +1,45 @@
 import SwiftUI
 
-/// Recipient-side invite inbox (U5/U6), attached to the unlocked shell:
-/// ONE reconcile path serves launch, foreground, push-hint, and re-unlock —
-/// a missed push is never a lost invite, the public-db inbox is the truth.
-/// Gated by `approvalModeEnabled` (a first-time recipient uses the link
-/// tier, which is what turns the flag on) and by the vault being unlocked
-/// (the participant identity lives under the Vault Key).
+/// Quick-path alert over `InviteInboxCoordinator`'s queue, attached to the
+/// unlocked shell. Reconcile triggers (launch, foreground, push-hint) live
+/// here because the shell is the reliable lifecycle anchor; the queue and
+/// accept/dismiss semantics live in the coordinator, shared with the
+/// notifications screen (V7).
 struct InviteInboxBehaviors: ViewModifier {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
-    /// FIFO of discovered invites. An invite leaves the queue ONLY on a user
-    /// response (accept / not now) — reconcile passes re-discover anything
-    /// unanswered, and `markSeen` fires on response, so a lock or kill while
-    /// the alert is up cannot swallow an invite (review H2).
-    @State private var pendingInvites: [InviteEnvelope] = []
     /// The invite whose alert is up. Explicit and decoupled from the queue:
     /// an in-flight accept must not let the SAME invite re-present, and a
     /// dismissal must remove exactly this invite by id (review H1).
     @State private var presentedInvite: InviteEnvelope?
-    @State private var reconciling = false
     @State private var acceptError: String?
+    /// True while an accept is in flight — the NEXT invite must not present
+    /// until the current one resolves (review M2).
+    @State private var accepting = false
 
     func body(content: Content) -> some View {
         content
-            .task { await armAndReconcile() }
+            .task { await reconcileAndPresent() }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await armAndReconcile() } }
+                if phase == .active { Task { await reconcileAndPresent() } }
             }
             // Push = wake-up hint only (U6); the reconcile query is the truth.
             .onReceive(NotificationCenter.default.publisher(for: .inviteRendezvousReceived)) { _ in
-                Task { await armAndReconcile() }
+                Task { await reconcileAndPresent() }
+            }
+            // The notifications screen consumes the same queue — follow it,
+            // and resume presenting when it releases the suppression.
+            .onChange(of: env.inviteInboxCoordinator.pendingInvites.first?.inviteID) { _, _ in
+                presentNextIfIdle()
+            }
+            .onChange(of: env.inviteInboxCoordinator.alertsSuppressed) { _, suppressed in
+                if !suppressed { presentNextIfIdle() }
             }
             .alert("Share invitation", isPresented: invitePresented, presenting: presentedInvite) { invite in
                 Button("Not Now", role: .cancel) { finish(invite, accept: false) }
                 Button("Accept") { finish(invite, accept: true) }
             } message: { _ in
-                Text("Someone shared an item with you in Loox Password. Accept to see it in \"Shared with Me\" on Home.")
+                Text("Someone shared an item with you in Loox Password. Accept to add it to your list.")
             }
             .alert("Couldn't accept the invitation",
                    isPresented: Binding(get: { acceptError != nil },
@@ -54,55 +58,39 @@ struct InviteInboxBehaviors: ViewModifier {
     }
 
     private func presentNextIfIdle() {
-        guard presentedInvite == nil, acceptError == nil else { return }
-        presentedInvite = pendingInvites.first
+        guard presentedInvite == nil, acceptError == nil, !accepting,
+              !env.inviteInboxCoordinator.alertsSuppressed else { return }
+        presentedInvite = env.inviteInboxCoordinator.pendingInvites.first
     }
 
-    /// A real user response: burn the dedup id, drop from the queue, then
-    /// accept (async) or move on.
     private func finish(_ invite: InviteEnvelope, accept: Bool) {
-        env.inviteInbox.markSeen(inviteID: invite.inviteID)
-        pendingInvites.removeAll { $0.inviteID == invite.inviteID }
         presentedInvite = nil
-        guard accept else { presentNextIfIdle(); return }
+        guard accept else {
+            env.inviteInboxCoordinator.dismiss(invite)
+            presentNextIfIdle()
+            return
+        }
+        accepting = true
         Task {
+            defer { accepting = false }
             do {
-                guard let url = URL(string: invite.shareURL) else {
-                    throw InviteLinkService.Failure.malformedLink
-                }
-                // U7: the fetched CKShare metadata must MATCH the envelope's
-                // participant bindings — a mismatched drop is discarded.
-                try await env.inviteLinks.acceptShare(
-                    url: url,
-                    expectedOwnerParticipantID: invite.ownerParticipantID,
-                    expectedRecipientParticipantID: invite.recipientParticipantID)
-                // Downstream is the standard acceptance resume: breadcrumb →
-                // escrow/profile publish → the share appears in Shared with Me.
+                try await env.inviteInboxCoordinator.accept(invite)
                 presentNextIfIdle()
             } catch {
+                // The invite stays queued (burn happens only on success) —
+                // after the error alert dismisses, it re-presents for retry.
                 acceptError = error.localizedDescription
             }
         }
     }
 
-    private func armAndReconcile() async {
-        guard env.settings.approvalModeEnabled,
-              let vaultKey = env.session.vaultKey?.bytes,
-              !reconciling else { return }
-        reconciling = true
-        defer { reconciling = false }
-        guard let identity = try? await env.participantEscrow.ensureIdentity(vaultKey: vaultKey)
-        else { return }
-        await env.inviteInbox.ensureArmed(identity: identity)
-        let discovered = await env.inviteInbox.reconcile(identity: identity)
-        guard !discovered.isEmpty else { return }
-        let queued = Set(pendingInvites.map(\.inviteID))
-        pendingInvites.append(contentsOf: discovered.filter { !queued.contains($0.inviteID) })
+    private func reconcileAndPresent() async {
+        await env.inviteInboxCoordinator.reconcile()
         presentNextIfIdle()
     }
 }
 
 extension View {
-    /// Attach the recipient-side invite-inbox reconciler (see type docs).
+    /// Attach the recipient-side invite-inbox quick-path alert (see type docs).
     func inviteInboxBehaviors() -> some View { modifier(InviteInboxBehaviors()) }
 }

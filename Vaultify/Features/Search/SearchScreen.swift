@@ -30,7 +30,17 @@ struct SearchResultsList: View {
     let query: String
 
     private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
-    private var results: [VaultItem] { env.repository.search(trimmed) }
+    private var results: [VaultItem] {
+        var matches = env.repository.search(trimmed)
+        // Shared-with-me projections join search too (V1.2): same all-tokens
+        // rule against the item's own search text (they have no Space name).
+        let tokens = trimmed.lowercased().split(separator: " ")
+        matches += env.sharedItems.items.filter { item in
+            let haystack = item.searchText
+            return !tokens.isEmpty && tokens.allSatisfy { haystack.contains($0) }
+        }
+        return matches
+    }
 
     var body: some View {
         Group {

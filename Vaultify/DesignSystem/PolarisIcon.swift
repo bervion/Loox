@@ -30,6 +30,7 @@ enum Icons {
     static let search = "ic_search"
     static let watchtower = "ic_shield_check_mark"
     static let settings = "ic_settings"
+    static let notification = "ic_notification"
     static let settingsFill = "ic_settings_filled"
     static let add = "ic_plus"
     static let addCircle = "ic_plus_circle"

@@ -73,6 +73,13 @@ let project = Project(
                         "CFBundleURLName": "com.bervion.vaultify.otpauth",
                         "CFBundleURLSchemes": ["otpauth"],
                     ],
+                    // AutoFill extension hand-off: it has no CloudKit entitlement, so a
+                    // "Request code" tap on a shared TOTP capability opens the app here
+                    // instead (see SharedItemDeepLink + VaultShellBehaviors).
+                    [
+                        "CFBundleURLName": "com.bervion.vaultify.deeplink",
+                        "CFBundleURLSchemes": ["vaultify"],
+                    ],
                 ],
                 // Wake on silent CloudKit pushes so cross-device changes pull promptly
                 // even when backgrounded (near-real-time sync).
