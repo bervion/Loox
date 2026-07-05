@@ -17,10 +17,11 @@ struct NotificationsScreen: View {
     private var requests: [ApprovalCoordinator.PendingOwnerRequest] {
         env.approvalCoordinator.pendingOwnerRequests
     }
+    private var history: [NotificationHistoryStore.Entry] { env.notificationHistory.entries }
 
     var body: some View {
         Group {
-            if invites.isEmpty && requests.isEmpty {
+            if invites.isEmpty && requests.isEmpty && history.isEmpty {
                 ContentUnavailableView {
                     Label { Text("No notifications") } icon: {
                         PolarisIcon(Icons.notification, size: Metric.iconTileLarge)
@@ -42,6 +43,14 @@ struct NotificationsScreen: View {
                         Section("Approval requests") {
                             ForEach(requests) { pending in
                                 requestRow(pending)
+                            }
+                        }
+                        .listRowBackground(VaultColors.surface)
+                    }
+                    if !history.isEmpty {
+                        Section("Recent") {
+                            ForEach(history) { entry in
+                                historyRow(entry)
                             }
                         }
                         .listRowBackground(VaultColors.surface)
@@ -100,6 +109,46 @@ struct NotificationsScreen: View {
             .buttonStyle(.borderedProminent)
         }
         .frame(minHeight: Metric.hitMin)
+    }
+
+    private func historyRow(_ entry: NotificationHistoryStore.Entry) -> some View {
+        HStack(spacing: Space.s3) {
+            PolarisIcon(historyIcon(entry.kind), size: Metric.iconInline)
+                .themedForeground(.iconSecondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(historyTitle(entry.kind)).vaultType(.body).themedForeground()
+                HStack(spacing: Space.s2) {
+                    if let label = entry.label {
+                        Text(verbatim: label)
+                            .vaultType(.footnote).themedForeground(.secondary)
+                            .lineLimit(1).truncationMode(.middle)
+                    }
+                    Text(Date(timeIntervalSince1970: Double(entry.atUnixMs) / 1000)
+                        .formatted(date: .abbreviated, time: .shortened))
+                        .vaultType(.footnote).themedForeground(.tertiary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(minHeight: Metric.hitMin)
+    }
+
+    private func historyIcon(_ kind: NotificationHistoryStore.Entry.Kind) -> String {
+        switch kind {
+        case .inviteReceived, .inviteAccepted, .inviteDismissed: Icons.share
+        case .approvalApproved: Icons.shield
+        case .approvalRejected: Icons.shieldAlert
+        }
+    }
+
+    private func historyTitle(_ kind: NotificationHistoryStore.Entry.Kind) -> LocalizedStringKey {
+        switch kind {
+        case .inviteReceived: "Share invitation received"
+        case .inviteAccepted: "Invitation accepted"
+        case .inviteDismissed: "Invitation dismissed"
+        case .approvalApproved: "Code request approved"
+        case .approvalRejected: "Code request rejected"
+        }
     }
 
     private func requestRow(_ pending: ApprovalCoordinator.PendingOwnerRequest) -> some View {

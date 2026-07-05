@@ -15,6 +15,12 @@ struct ApprovalRequestSheet: View {
 
     private var ceremony: ApprovalCeremonyService { env.approvalCeremony }
 
+    /// Who is asking — the owner's device-local registry maps the request's
+    /// zone back to the recipient email this share was created for.
+    private var requesterLabel: String? {
+        env.sharingStore.shares.first { $0.zoneName == pending.zoneName }?.recipientLabel
+    }
+
     /// Same 5-digit code renders on the requester's waiting screen — the
     /// human check that THIS request is the one they actually sent.
     private var requestCode: String {
@@ -79,9 +85,15 @@ struct ApprovalRequestSheet: View {
             VStack(spacing: Space.s2) {
                 Text("Code requested")
                     .vaultType(.section).themedForeground()
-                Text("Someone you shared with is asking for the current verification code for \(itemTitle).")
-                    .vaultType(.callout).themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
+                if let requesterLabel {
+                    Text("\(requesterLabel) is asking for the current verification code for \(itemTitle).")
+                        .vaultType(.callout).themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text("Someone you shared with is asking for the current verification code for \(itemTitle).")
+                        .vaultType(.callout).themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
             VStack(spacing: Space.s2) {
                 Text("Request code")
@@ -151,6 +163,16 @@ struct ApprovalRequestSheet: View {
         }
         .padding(Space.gutter)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The ceremony is over — a parked sheet only resurfaces stale UI
+        // later, so close it by itself after the outcome is readable.
+        .task {
+            env.notificationHistory.log(
+                decision == .approved ? .approvalApproved : .approvalRejected,
+                label: requesterLabel.map { "\($0) · \(itemTitle)" } ?? itemTitle)
+            try? await Task.sleep(for: .seconds(1.5))
+            onFinished()
+            dismiss()
+        }
     }
 
     private func failed(_ message: String) -> some View {

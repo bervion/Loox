@@ -48,6 +48,10 @@ struct ItemDetailScreen: View {
                     metadata(item)
                 }
                 .padding(Space.gutter)
+            } else if itemID.hasPrefix("shared::") && !env.sharedItems.hasLoaded {
+                // Cold-start restore straight into a shared item: the
+                // projection is still loading — don't flash "not found".
+                ProgressView().frame(maxWidth: .infinity).padding(.top, 120)
             } else {
                 ContentUnavailableView {
                     Label { Text("Item not found") } icon: { PolarisIcon(Icons.alert, size: Metric.iconTileLarge) }
@@ -143,6 +147,14 @@ struct ItemDetailScreen: View {
             }
         } message: {
             Text("You'll lose access to it. The owner can share with you again later.")
+        }
+        // A shared item that vanished (revoked while away, or after the
+        // projection finished loading) has no screen to show — go back.
+        .task(id: env.sharedItems.hasLoaded ? "loaded" : "loading") {
+            if itemID.hasPrefix("shared::"), env.sharedItems.hasLoaded,
+               env.sharedItems.item(id: itemID) == nil {
+                dismiss()
+            }
         }
         // Safety code loads once per shared item (needs the unlocked Vault Key).
         .task(id: itemID) {
@@ -309,9 +321,17 @@ struct ItemDetailScreen: View {
             }
             ForEach(Array(requestFieldIds.enumerated()), id: \.element) { index, fieldId in
                 if let model = env.sharedItems.requestModel(forItem: item.id, fieldId: fieldId) {
-                    RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId)
-                        .padding(.horizontal, Space.gutter)
-                        .padding(.vertical, Space.s3)
+                    // Same header treatment as every other detail field row —
+                    // this IS the item's TOTP field, just owner-gated.
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Verification code")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(env.theme.active.color(.accent))
+                        RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Space.gutter)
+                    .padding(.vertical, Space.s3)
                     if index < requestFieldIds.count - 1 {
                         Divider().padding(.leading, Space.gutter)
                     }

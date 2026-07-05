@@ -51,13 +51,6 @@ struct HomeHeaderBar: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("Notifications"))
 
-                    // Search — switches to the Search tab via notification
-                    HeaderIconButton(
-                        Icons.search,
-                        accessibilityLabel: "Search"
-                    ) {
-                        NotificationCenter.default.post(name: .vaultSwitchToSearch, object: nil)
-                    }
 
                     // Add — menu to choose item type
                     Menu {
