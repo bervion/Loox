@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.14.1] - 2026-07-05
+
+### Fixed
+- set aps-environment per configuration (production for release)
+
+### Changed
+- update fastlane
+
+
 ## [1.14.0] - 2026-07-05
 
 ### Added
