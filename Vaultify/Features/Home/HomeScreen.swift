@@ -39,10 +39,11 @@ struct HomeScreen: View {
     }
 
     private var allItems: [VaultItem] {
-        var pool = env.repository.allItems(folder: selectedFolderId)
-        // Shared-with-me projections are first-class list citizens (V1.2) —
-        // they live in no Space, so they join the unfiltered view only.
-        if selectedFolderId == nil { pool += env.sharedItems.items }
+        // Shared-with-me projections are first-class list citizens (V1.2).
+        // They live in no Space yet ALWAYS join the feed — single-Space users
+        // are auto-filtered to their folder, and a Space filter must not make
+        // somebody's share invisible (review M1).
+        let pool = env.repository.allItems(folder: selectedFolderId) + env.sharedItems.items
         let sorted = sortOrder.apply(pool)
         // Pinned items float to the top, keeping the chosen sort within each group.
         return sorted.filter(\.pinned) + sorted.filter { !$0.pinned }
@@ -70,7 +71,8 @@ struct HomeScreen: View {
             // ZStack lets the header float over scroll content so glass blurs it.
             ZStack(alignment: .top) {
                 Group {
-                    if env.repository.items.isEmpty {
+                    // A vault that's empty but RECEIVING shares still has a feed.
+                    if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
                         emptyVaultState
                     } else {
                         scrollContent

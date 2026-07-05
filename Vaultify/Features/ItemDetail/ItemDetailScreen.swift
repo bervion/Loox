@@ -63,9 +63,12 @@ struct ItemDetailScreen: View {
             if let item, item.sharedOrigin == nil {
                 // ONE share button (V5): sharing access IS the share action.
                 // The plain website-URL ShareLink lives in the "…" menu.
-                ToolbarItem(placement: .platformPrimaryAction) {
-                    Button { showShareAccess = true } label: {
-                        PolarisIcon(Icons.share, size: Metric.iconInline)
+                // Trashed items aren't shareable — restore first.
+                if !item.isTrashed {
+                    ToolbarItem(placement: .platformPrimaryAction) {
+                        Button { showShareAccess = true } label: {
+                            PolarisIcon(Icons.share, size: Metric.iconInline)
+                        }
                     }
                 }
                 ToolbarItem(placement: .platformPrimaryAction) {
@@ -276,9 +279,8 @@ struct ItemDetailScreen: View {
         return VStack(spacing: 0) {
             ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
                 if isShared {
-                    // Read-only: default no-op change/remove handlers keep
-                    // reveal/copy while mutations go nowhere.
-                    DetailFieldRow(field: field)
+                    // Read-only: mutation affordances hidden, reveal/copy stay.
+                    DetailFieldRow(field: field, readOnly: true)
                 } else {
                     DetailFieldRow(field: field,
                                    totpSecret: field.kind == .totp ? nil : totpSecret,

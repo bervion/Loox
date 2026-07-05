@@ -13,6 +13,9 @@ struct InviteInboxBehaviors: ViewModifier {
     /// dismissal must remove exactly this invite by id (review H1).
     @State private var presentedInvite: InviteEnvelope?
     @State private var acceptError: String?
+    /// True while an accept is in flight — the NEXT invite must not present
+    /// until the current one resolves (review M2).
+    @State private var accepting = false
 
     func body(content: Content) -> some View {
         content
@@ -24,15 +27,19 @@ struct InviteInboxBehaviors: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .inviteRendezvousReceived)) { _ in
                 Task { await reconcileAndPresent() }
             }
-            // The notifications screen consumes the same queue — follow it.
+            // The notifications screen consumes the same queue — follow it,
+            // and resume presenting when it releases the suppression.
             .onChange(of: env.inviteInboxCoordinator.pendingInvites.first?.inviteID) { _, _ in
                 presentNextIfIdle()
+            }
+            .onChange(of: env.inviteInboxCoordinator.alertsSuppressed) { _, suppressed in
+                if !suppressed { presentNextIfIdle() }
             }
             .alert("Share invitation", isPresented: invitePresented, presenting: presentedInvite) { invite in
                 Button("Not Now", role: .cancel) { finish(invite, accept: false) }
                 Button("Accept") { finish(invite, accept: true) }
             } message: { _ in
-                Text("Someone shared an item with you in Loox Password. Accept to see it in \"Shared with Me\" on Home.")
+                Text("Someone shared an item with you in Loox Password. Accept to add it to your list.")
             }
             .alert("Couldn't accept the invitation",
                    isPresented: Binding(get: { acceptError != nil },
@@ -51,7 +58,7 @@ struct InviteInboxBehaviors: ViewModifier {
     }
 
     private func presentNextIfIdle() {
-        guard presentedInvite == nil, acceptError == nil,
+        guard presentedInvite == nil, acceptError == nil, !accepting,
               !env.inviteInboxCoordinator.alertsSuppressed else { return }
         presentedInvite = env.inviteInboxCoordinator.pendingInvites.first
     }
@@ -63,11 +70,15 @@ struct InviteInboxBehaviors: ViewModifier {
             presentNextIfIdle()
             return
         }
+        accepting = true
         Task {
+            defer { accepting = false }
             do {
                 try await env.inviteInboxCoordinator.accept(invite)
                 presentNextIfIdle()
             } catch {
+                // The invite stays queued (burn happens only on success) —
+                // after the error alert dismisses, it re-presents for retry.
                 acceptError = error.localizedDescription
             }
         }

@@ -41,6 +41,10 @@ struct RootView: View {
                 env.syncNow()
             } else {
                 env.repository.clear()
+                // Shared projections hold decrypted values too — same lock
+                // privacy model as the owned cache (the shell task rebuilds
+                // them after the next unlock).
+                env.sharedItems.wipe()
             }
         }
         .onChange(of: scenePhase) { _, phase in handleScenePhase(phase) }

@@ -50,17 +50,20 @@ import Foundation
         pendingInvites.removeAll { $0.inviteID == invite.inviteID }
     }
 
-    /// Accept: burn dedup + run the U7-cross-checked CloudKit acceptance.
+    /// Accept: run the U7-cross-checked CloudKit acceptance, and burn the
+    /// dedup id ONLY on success — a transient CloudKit failure must leave
+    /// the invite queued for retry, not permanently lost (review H2).
     /// Downstream is the standard resume (breadcrumb → escrow/profile →
     /// the share appears as a projected item).
     func accept(_ invite: InviteEnvelope) async throws {
-        dismiss(invite)
         guard let url = URL(string: invite.shareURL) else {
+            dismiss(invite) // Malformed can never succeed — burn it.
             throw InviteLinkService.Failure.malformedLink
         }
         try await links.acceptShare(
             url: url,
             expectedOwnerParticipantID: invite.ownerParticipantID,
             expectedRecipientParticipantID: invite.recipientParticipantID)
+        dismiss(invite)
     }
 }

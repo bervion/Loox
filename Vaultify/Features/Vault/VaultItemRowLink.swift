@@ -15,29 +15,40 @@ struct VaultItemRowLink: View {
         env.repository.identityRemovalGate(item) == .lastActiveIdentity
     }
 
+    /// Shared projections are read-only guests: no trash/favorite/pin/archive
+    /// — a repository mutation with a projected item would UPSERT someone
+    /// else's data into the local vault store (review C1).
+    private var isSharedProjection: Bool { item.sharedOrigin != nil }
+
     var body: some View {
         NavigationLink(value: item.id) { VaultItemRow(item: item, showSpace: showSpace) }
             .swipeActions(edge: .trailing) {
-                Button(role: .destructive) {
-                    if isLastIdentity { showLastIdentityBlock = true } else { try? env.repository.moveToTrash(item) }
-                } label: {
-                    Label("Trash", image: Icons.trash)
+                if !isSharedProjection {
+                    Button(role: .destructive) {
+                        if isLastIdentity { showLastIdentityBlock = true } else { try? env.repository.moveToTrash(item) }
+                    } label: {
+                        Label("Trash", image: Icons.trash)
+                    }
                 }
             }
             .swipeActions(edge: .leading) {
-                Button { try? env.repository.toggleFavorite(item) } label: {
-                    Label("Favorite", image: item.favorite ? Icons.starFill : Icons.star)
+                if !isSharedProjection {
+                    Button { try? env.repository.toggleFavorite(item) } label: {
+                        Label("Favorite", image: item.favorite ? Icons.starFill : Icons.star)
+                    }
+                    .tint(VaultColors.strengthMedium)
                 }
-                .tint(VaultColors.strengthMedium)
             }
             .contextMenu {
-                Button { env.repository.togglePin(item) } label: {
-                    Label(item.pinned ? "Unpin" : "Pin", image: item.pinned ? Icons.pinFill : Icons.pin)
-                }
-                Button {
-                    if isLastIdentity { showLastIdentityBlock = true } else { env.repository.archive(item) }
-                } label: {
-                    Label("Archive", image: Icons.archive)
+                if !isSharedProjection {
+                    Button { env.repository.togglePin(item) } label: {
+                        Label(item.pinned ? "Unpin" : "Pin", image: item.pinned ? Icons.pinFill : Icons.pin)
+                    }
+                    Button {
+                        if isLastIdentity { showLastIdentityBlock = true } else { env.repository.archive(item) }
+                    } label: {
+                        Label("Archive", image: Icons.archive)
+                    }
                 }
             }
             .listRowBackground(VaultColors.surface)

@@ -1857,6 +1857,7 @@
       }
     },
     "Couldn't load shares": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -4442,6 +4443,7 @@
       }
     },
     "Needs verification": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -6392,6 +6394,7 @@
       }
     },
     "Send the invitation, then keep this screen open. Once they accept on their device, you can activate the share.": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -6645,6 +6648,7 @@
       }
     },
     "Share Access…": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -6825,6 +6829,7 @@
       }
     },
     "Shared with you": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -7006,6 +7011,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Một số passkey được tạo tự động không hợp lệ và đã bị xóa."
+          }
+        }
+      }
+    },
+    "Someone shared an item with you in Loox Password. Accept to add it to your list.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có người chia sẻ một mục với bạn trong Loox Password. Chấp nhận để thêm vào danh sách của bạn."
           }
         }
       }
@@ -8220,6 +8235,7 @@
       }
     },
     "Unlock your vault to view this share.": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -8470,6 +8486,7 @@
       }
     },
     "Verified": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {

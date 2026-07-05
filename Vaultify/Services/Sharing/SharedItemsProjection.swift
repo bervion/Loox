@@ -143,13 +143,14 @@ import Foundation
             fields.append(DynamicField(id: fieldId, label: appString("Shared value"),
                                        kind: .password, value: value, protected: true))
         }
-        for fieldId in grant.capabilities.keys.sorted()
-        where grant.capabilities[fieldId]?.isAskEachTimeTOTP == true {
-            fields.append(DynamicField(id: fieldId, label: appString("Verification code"),
-                                       kind: .totp, value: ""))
-        }
+        // No placeholder TOTP fields: the detail screen derives its Request
+        // rows from the grant's capabilities, and an empty field would only
+        // confuse list subtitles.
         if let host = display?.websiteHost, !host.isEmpty {
-            fields.append(DynamicField(label: appString("Website"), kind: .url, value: host))
+            // Stable id — a fresh UUID per refresh would needlessly
+            // invalidate row identity.
+            fields.append(DynamicField(id: "shared-website", label: appString("Website"),
+                                       kind: .url, value: host))
         }
         let updatedAt = display.map { Date(timeIntervalSince1970: Double($0.updatedAtUnixMs) / 1000) }
             ?? Date(timeIntervalSince1970: Double(grant.createdAtUnixMs) / 1000)
@@ -168,12 +169,12 @@ import Foundation
     }
 
     /// Stable opaque per-install id for request metadata (not a secret) —
-    /// shared by every request the detail screen sends.
-    var recipientDeviceId: String {
+    /// resolved once at init so view bodies never write UserDefaults.
+    let recipientDeviceId: String = {
         let key = "approval_recipient_device_id"
         if let existing = UserDefaults.standard.string(forKey: key) { return existing }
         let fresh = ApprovalConfig.opaqueName()
         UserDefaults.standard.set(fresh, forKey: key)
         return fresh
-    }
+    }()
 }

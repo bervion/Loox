@@ -24,7 +24,7 @@ final class SharedItemsProjectionTests: XCTestCase {
     private let origin = SharedOrigin(zoneName: "apz-abc", ownerName: "_owner1",
                                       grantId: "grant-1")
 
-    func testBuildItemMapsValuesEnvelopeAndTOTPPlaceholder() throws {
+    func testBuildItemMapsValuesAndEnvelope() throws {
         let grant = try makeGrant(capabilities: [
             "f-pass": .value(.shared),
             "f-totp": .totp(.askEachTime),
@@ -43,12 +43,13 @@ final class SharedItemsProjectionTests: XCTestCase {
         XCTAssertEqual(shared?.value, "hunter2")
         XCTAssertEqual(shared?.kind, .password)
         XCTAssertEqual(shared?.protected, true)
-        // askEachTime capability → empty totp placeholder for the Request UI.
-        let totp = item.fields.first { $0.id == "f-totp" }
-        XCTAssertEqual(totp?.kind, .totp)
-        XCTAssertEqual(totp?.value, "")
-        // Envelope host lands as a url field.
-        XCTAssertEqual(item.fields.first { $0.kind == .url }?.value, "github.com")
+        // NO placeholder for askEachTime capabilities — the detail screen
+        // derives Request rows from the grant, not from empty fields.
+        XCTAssertNil(item.fields.first { $0.kind == .totp })
+        // Envelope host lands as a url field with a STABLE id.
+        let url = item.fields.first { $0.kind == .url }
+        XCTAssertEqual(url?.value, "github.com")
+        XCTAssertEqual(url?.id, "shared-website")
     }
 
     func testBuildItemFallbackTitleWithoutEnvelope() throws {

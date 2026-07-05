@@ -38,7 +38,7 @@ struct HomeHeaderBar: View {
                             .contentShape(.rect)
                             .overlay(alignment: .topTrailing) {
                                 if notificationCount > 0 {
-                                    Text(verbatim: "\(min(notificationCount, 9))")
+                                    Text(verbatim: notificationCount > 9 ? "9+" : "\(notificationCount)")
                                         .font(.caption2.bold())
                                         .foregroundStyle(.white)
                                         .frame(minWidth: 16, minHeight: 16)
