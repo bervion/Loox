@@ -186,6 +186,25 @@ import Foundation
         return grant
     }
 
+    /// Owner renamed the item (or its website changed): reseal ONLY the
+    /// display envelope with a bumped revision — presentation metadata has
+    /// its own lifecycle, the signed grant is untouched (U2). Revision is
+    /// second-granular monotonic so recipients drop out-of-order updates.
+    func republishDisplayEnvelope(title: String, websiteHost: String?,
+                                  zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws {
+        let grant = try await fetchGrantFresh(zoneID: zoneID)
+        let display = SharedDisplayEnvelope(title: title, websiteHost: websiteHost,
+                                            updatedAtUnixMs: nowUnixMs,
+                                            revision: UInt32(clamping: nowUnixMs / 1000))
+        let record = ApprovalRecordMapping.displayEnvelopeRecord(
+            sealedBlob: try display.sealed(toParticipantPubKey: grant.participantPubKey,
+                                           grantId: grant.id),
+            grantId: grant.id, zoneID: zoneID)
+        let saved = try await database.modifyRecords(saving: [record], deleting: [],
+                                                     savePolicy: .allKeys)
+        for (_, result) in saved.saveResults { _ = try result.get() }
+    }
+
     // MARK: Inbound requests
 
     /// Fresh server fetch — the epoch check must never trust a cached grant.

@@ -198,6 +198,12 @@ struct ShareAccessSheet: View {
             // remains the universal fallback either way.
             var dropRecordName: String?
             if let shareURL = setup.shareURL {
+                // A superseded drop from an earlier attempt at THIS pending
+                // share is dead weight in the recipient's inbox — GC it
+                // before dropping anew (creator-only delete).
+                if let staleDrop = pending?.dropRecordName {
+                    await env.inviteLinks.deleteInvite(recordName: staleDrop)
+                }
                 dropRecordName = await env.inviteInbox.dropInvite(
                     shareURL: shareURL, recipientEmail: normalizedEmail,
                     knownRecipientZoneNames: recipientZoneNames)

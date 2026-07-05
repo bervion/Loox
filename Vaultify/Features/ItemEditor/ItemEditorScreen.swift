@@ -1,3 +1,4 @@
+import CloudKit
 import SwiftUI
 import Foundation
 
@@ -337,11 +338,36 @@ struct ItemEditorScreen: View {
             }
         }
         do {
-            if isNew { try env.repository.add(draft) } else { try env.repository.update(draft) }
+            if isNew {
+                try env.repository.add(draft)
+            } else {
+                try env.repository.update(draft)
+                republishSharedDisplayIfNeeded(for: draft)
+            }
             Haptics.success()
             dismiss()
         } catch {
             Haptics.error()
+        }
+    }
+
+    /// An active share's recipient sees this item's title via the sealed
+    /// display envelope — a rename must reseal it or they keep the old name
+    /// forever. Best-effort background work; presentation only, never the grant.
+    private func republishSharedDisplayIfNeeded(for item: VaultItem) {
+        let active = env.sharingStore.shares(forItem: item.id).filter(\.fingerprintConfirmed)
+        guard !active.isEmpty else { return }
+        let title = item.title.isEmpty ? appString("Shared item") : item.title
+        let host = item.urlField?.value.isEmpty == false
+            ? URL(string: item.urlField!.value)?.host : nil
+        Task {
+            let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
+            for share in active {
+                try? await env.approvalShare.republishDisplayEnvelope(
+                    title: title, websiteHost: host,
+                    zoneID: CKRecordZone.ID(zoneName: share.zoneName),
+                    nowUnixMs: nowUnixMs)
+            }
         }
     }
 }
