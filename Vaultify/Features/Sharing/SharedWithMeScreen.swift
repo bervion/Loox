@@ -88,9 +88,6 @@ struct SharedWithMeScreen: View {
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
-        .navigationDestination(for: SharedZoneRoute.self) { route in
-            SharedItemView(route: route)
-        }
     }
 
     private func pinnedLabel(_ zoneID: CKRecordZone.ID) -> LocalizedStringKey {
@@ -100,6 +97,18 @@ struct SharedWithMeScreen: View {
 
     private func load() async {
         do {
+            // Safety net for a silently-failed acceptance resume: re-run the
+            // idempotent completion (escrow → profile publish → subscription)
+            // whenever the vault is unlocked, so the owner's waiting screen
+            // can always find the profile once B visits this screen.
+            if let vaultKey = env.session.vaultKey?.bytes {
+                if let identity = try? await env.participantEscrow.ensureIdentity(vaultKey: vaultKey) {
+                    try? await env.approvalRecipient.completeAcceptance(
+                        identity: identity, nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
+                    await SharedZoneSubscriptionService().ensureSubscribedIfNeeded(settings: env.settings)
+                    UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
+                }
+            }
             let zones = try await env.approvalRecipient.acceptedApprovalZones()
             loadState = .ready(zones)
         } catch {

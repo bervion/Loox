@@ -204,6 +204,17 @@ struct ShareAccessSheet: View {
         }
     }
 
+    /// One immediate profile check (the "Check Now" button).
+    private func checkProfileNow() async {
+        guard case .waiting(let zoneID, _) = step,
+              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw,
+              let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID)
+        else { return }
+        let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
+                                         participantPubKey: profile.participantPubKey)
+        step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
+    }
+
     private func confirmFingerprintAndPublish() async {
         guard case .fingerprint(let zoneID, _, let profile) = step else { return }
         guard let item else {
@@ -331,6 +342,14 @@ struct ShareAccessSheet: View {
                         .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                 }
                 .buttonStyle(.themedProminent)
+            }
+            // Manual escape hatch: the background poll has a bounded budget —
+            // this button re-checks on demand so a long wait can't strand the
+            // owner on this screen.
+            Button {
+                Task { await checkProfileNow() }
+            } label: {
+                Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
             }
         }
         .padding(Space.gutter)
