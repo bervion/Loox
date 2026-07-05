@@ -21,6 +21,15 @@ import Foundation
     private(set) var pendingOwnerRequests: [PendingOwnerRequest] = []
     /// Monotonic signal for recipient-side observers (cheap invalidation).
     private(set) var recipientChangeCounter = 0
+    /// Requests already answered or explicitly dismissed on this device.
+    /// A responded request can outlive its record delete (offline, failed
+    /// best-effort delete) yet still pass the PreviewNonceStore display
+    /// verification — without this set it would re-enter the inbox and
+    /// re-present its sheet until the record's TTL expires. Persisted so a
+    /// relaunch inside that TTL window can't re-present it either.
+    private static let handledKey = "approval_handled_request_ids"
+    private var handledRequestIds: Set<String> =
+        Set(UserDefaults.standard.stringArray(forKey: handledKey) ?? [])
 
     private let settings: SettingsStore
     private let shareService: ApprovalShareService
@@ -73,7 +82,7 @@ import Foundation
                         guard let grant = try? await self.shareService.fetchGrantFresh(zoneID: zoneID),
                               let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw
                         else { continue }
-                        for request in live {
+                        for request in live where !self.handledRequestIds.contains(request.requestId) {
                             let failure = await ApprovalVerifier.verifyRequest(
                                 request, grant: grant,
                                 trustedOwnerSigningKeys: [ownerKey],
@@ -99,8 +108,18 @@ import Foundation
     }
 
     /// Drop a request from the inbox after the ceremony finished (approve,
-    /// reject, dismiss) — the zone record expires server-side via its TTL.
+    /// reject, dismiss) and suppress it from future refreshes — the record
+    /// is deleted at respond (best-effort) or expires via its TTL, and a
+    /// dismissed request must not re-nag; the requester's retry carries a
+    /// NEW requestId, so nothing real is lost.
     func clearPending(requestId: String) {
+        handledRequestIds.insert(requestId)
+        // Bounded persist: ids only matter within the request TTL (~2 min),
+        // so a small FIFO window is plenty.
+        var stored = UserDefaults.standard.stringArray(forKey: Self.handledKey) ?? []
+        stored.append(requestId)
+        if stored.count > 100 { stored.removeFirst(stored.count - 100) }
+        UserDefaults.standard.set(stored, forKey: Self.handledKey)
         pendingOwnerRequests.removeAll { $0.request.requestId == requestId }
     }
 

@@ -1,4 +1,7 @@
 import SwiftUI
+#if DEBUG && canImport(UIKit)
+import UIKit
+#endif
 
 /// iCloud sync controls. Sync is opt-in; it uploads only sealed ciphertext.
 struct SyncSettingsView: View {
@@ -6,6 +9,7 @@ struct SyncSettingsView: View {
     @State private var showPairSheet = false
     #if DEBUG
     @State private var spikeEmail = ""
+    @State private var inboxDiagnostics = ""
     #endif
 
     private var syncBinding: Binding<Bool> {
@@ -66,6 +70,7 @@ struct SyncSettingsView: View {
             }
             #if DEBUG
             approvalSpikeSection
+            inviteInboxDebugSection
             #endif
         }
         .themedFormBackground()
@@ -102,6 +107,55 @@ struct SyncSettingsView: View {
             }
         }
         .listRowBackground(VaultColors.surface)
+    }
+
+    /// Rendezvous invite-inbox QA panel (DEBUG; plain unlocalized strings).
+    /// The app deliberately has no Files-app sharing, so diagnostics live
+    /// here instead of a Documents log file.
+    private var inviteInboxDebugSection: some View {
+        Section("Invite Inbox (DEBUG · V1.1)") {
+            Button("Arm / re-arm inbox (B)") {
+                Task {
+                    guard let identity = await debugIdentity() else { return }
+                    await env.inviteInbox.rearm(identity: identity)
+                    inboxDiagnostics = await env.inviteInbox.diagnose()
+                }
+            }
+            Button("Reconcile now (B)") {
+                Task {
+                    guard let identity = await debugIdentity() else { return }
+                    let found = await env.inviteInbox.reconcile(identity: identity)
+                    inboxDiagnostics = "reconcile returned \(found.count) NEW invite(s)\n"
+                        + (await env.inviteInbox.diagnose())
+                }
+            }
+            Button("Run diagnostics") {
+                Task { inboxDiagnostics = await env.inviteInbox.diagnose() }
+            }
+            if !inboxDiagnostics.isEmpty {
+                Text(verbatim: inboxDiagnostics)
+                    .font(.system(size: 11, design: .monospaced))
+                    .themedForeground(.secondary)
+                    .textSelection(.enabled)
+                #if os(iOS)
+                Button("Copy report") { UIPasteboard.general.string = inboxDiagnostics }
+                #endif
+            }
+        }
+        .listRowBackground(VaultColors.surface)
+    }
+
+    /// Vault-key-gated participant identity for the debug buttons.
+    private func debugIdentity() async -> ParticipantIdentity? {
+        guard let vaultKey = env.session.vaultKey?.bytes else {
+            inboxDiagnostics = "vault is locked — unlock first"
+            return nil
+        }
+        guard let identity = try? await env.participantEscrow.ensureIdentity(vaultKey: vaultKey) else {
+            inboxDiagnostics = "participant identity unavailable (escrow failed)"
+            return nil
+        }
+        return identity
     }
     #endif
 

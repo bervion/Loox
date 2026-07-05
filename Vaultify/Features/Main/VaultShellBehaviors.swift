@@ -60,7 +60,14 @@ struct VaultShellBehaviors: ViewModifier {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { env.approvalCoordinator.refreshOwnerRequests() }
             }
-            .onAppear { env.approvalCoordinator.refreshOwnerRequests() }
+            .onAppear {
+                env.approvalCoordinator.refreshOwnerRequests()
+                // A request fetched while the vault was still locked (cold-launch
+                // notification tap fills the inbox before this shell exists) is
+                // already `first` when we appear — onChange below never fires for
+                // it, so the sheet must be presented explicitly here.
+                presentNextApprovalIfIdle()
+            }
             // Surface the next verified request once no sheet is up. Only THIS
             // request is cleared on finish — a queued second request presents
             // on the next inbox change, never gets silently dropped.
@@ -73,6 +80,9 @@ struct VaultShellBehaviors: ViewModifier {
             .task(id: env.approvalCoordinator.recipientChangeCounter) {
                 await resumePendingShareAcceptance()
             }
+            // Recipient side: rendezvous invite inbox (arm + reconcile + accept
+            // prompt) — one path for launch/foreground/push-hint (U6).
+            .inviteInboxBehaviors()
             .sheet(item: $presentedApproval) { pending in
                 ApprovalRequestSheet(
                     pending: pending,

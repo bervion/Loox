@@ -27,12 +27,15 @@ nonisolated enum ApprovalConfig {
     static let nonceRecordType = "ApprovalNonce"
     /// B's Vault-Key-sealed participant private key (B's PRIVATE db).
     static let participantEscrowRecordType = "ApprovalParticipantEscrow"
+    /// Encrypted presentation metadata (title/host) — separate from the grant.
+    static let displayEnvelopeRecordType = "ApprovalDisplayEnvelope"
 
     // MARK: Fixed record names (zone is per-recipient + opaque-named; a fixed
     // name inside it leaks nothing beyond the already-visible recordType, and
     // singleton naming gives last-writer-wins conflict election for free).
 
     static let grantRecordName = "grant"
+    static let displayEnvelopeRecordName = "display-envelope"
     static let participantProfileRecordName = "participant-profile"
     static let participantEscrowRecordName = "approval-participant-escrow"
 
@@ -47,6 +50,19 @@ nonisolated enum ApprovalConfig {
     static func requestSubscriptionID(zoneName: String) -> String {
         requestSubscriptionPrefix + zoneName
     }
+
+    // MARK: Public-DB invite rendezvous (U5 — opaque inbox, push = hint)
+
+    /// Public-db record carrying an invite drop. Shares the type used by
+    /// link invites ("inv-…" records); rendezvous drops add the queryable
+    /// `recipientInboxID` field that link records simply lack.
+    static let publicInviteRecordType = "LooxInvite"
+    /// Recipient-published inbox descriptor, keyed by the OPAQUE CloudKit
+    /// user record id (never email or any PII-derived value — U3).
+    static let inviteInboxDescriptorRecordType = "LooxInviteInbox"
+    /// Recipient-side query subscription on the PUBLIC db (invite drops
+    /// addressed to this account's inboxID).
+    static let inviteInboxSubscriptionID = "loox-invite-inbox"
 
     // MARK: Opaque naming
 

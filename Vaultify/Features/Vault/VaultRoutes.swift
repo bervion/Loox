@@ -41,5 +41,11 @@ extension View {
                 case .recentlyDeleted: TrashScreen()
                 }
             }
+            // Shared-with-Me is reachable from Home AND the Items Spaces list.
+            // Registered at the stack root — a destination declared inside
+            // another destination's content doesn't reliably register,
+            // leaving row taps dead.
+            .navigationDestination(for: SharedWithMeRoute.self) { _ in SharedWithMeScreen() }
+            .navigationDestination(for: SharedZoneRoute.self) { route in SharedItemView(route: route) }
     }
 }

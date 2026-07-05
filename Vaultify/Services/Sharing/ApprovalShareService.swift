@@ -92,12 +92,23 @@ import Foundation
         return ShareSetup(zoneID: zoneID, shareURL: url)
     }
 
-    /// User-visible alert on participant writes (ADR-5). Static, localized
-    /// copy via the notification localization keys — no item/account/code.
+    /// User-visible alert when a participant CREATES an ApprovalRequest (ADR-5).
+    /// Must stay scoped to that record type — a zone-wide subscription alerts
+    /// on every participant write (profile publish, and the idempotent
+    /// acceptance-resume re-publishes it), producing phantom "code requested"
+    /// notifications before any request exists. Static, localized copy via
+    /// the notification localization keys — no item/account/code.
     private func saveOwnerAlertSubscription(zoneID: CKRecordZone.ID) async throws {
-        let subscription = CKRecordZoneSubscription(
-            zoneID: zoneID,
-            subscriptionID: ApprovalConfig.requestSubscriptionID(zoneName: zoneID.zoneName))
+        let subscriptionID = ApprovalConfig.requestSubscriptionID(zoneName: zoneID.zoneName)
+        // Drop any previously deployed zone-wide subscription under this id
+        // first — CloudKit can't morph a subscription's type in place.
+        _ = try? await database.modifySubscriptions(saving: [], deleting: [subscriptionID])
+        let subscription = CKQuerySubscription(
+            recordType: ApprovalConfig.requestRecordType,
+            predicate: NSPredicate(value: true),
+            subscriptionID: subscriptionID,
+            options: [.firesOnRecordCreation])
+        subscription.zoneID = zoneID
         let info = CKSubscription.NotificationInfo()
         info.titleLocalizationKey = "approval.push.title"
         info.alertLocalizationKey = "approval.push.body"
@@ -130,6 +141,8 @@ import Foundation
     func publishGrant(itemId: String,
                       capabilities: [String: FieldCapability],
                       sharedValues: [String: Data],
+                      displayTitle: String,
+                      displayWebsiteHost: String?,
                       participantPubKey: Data,
                       pinnedDeviceSigningKeys: [Data],
                       epoch: UInt32,
@@ -147,6 +160,16 @@ import Foundation
         grant.ownerSignature = try identity.signature(for: grant.signingBody())
 
         var records: [CKRecord] = [ApprovalRecordMapping.grantRecord(grant, zoneID: zoneID)]
+        // Presentation metadata rides in its OWN encrypted envelope — never
+        // inside the signed grant (rename must not re-sign authorization)
+        // and never as plaintext CloudKit fields (metadata hygiene).
+        let display = SharedDisplayEnvelope(title: displayTitle,
+                                            websiteHost: displayWebsiteHost,
+                                            updatedAtUnixMs: nowUnixMs, revision: 1)
+        records.append(ApprovalRecordMapping.displayEnvelopeRecord(
+            sealedBlob: try display.sealed(toParticipantPubKey: participantPubKey,
+                                           grantId: grant.id),
+            grantId: grant.id, zoneID: zoneID))
         for (fieldId, plaintext) in sharedValues {
             guard capabilities[fieldId]?.isSharedValue == true else { continue }
             let sealed = try ApprovalSeal.sealSharedField(plaintext,
@@ -223,6 +246,14 @@ import Foundation
         let saved = try await database.modifyRecords(saving: [record], deleting: [],
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
+        // An answered request is spent: remove its record so inbox refreshes
+        // stop resurfacing it (its nonce is burned — a re-approve can only
+        // fail verification). Separate best-effort call, NOT part of the
+        // response batch: a retried delete of an already-gone record must
+        // not fail the idempotent response save, and the record's TTL plus
+        // the coordinator's handled-set cover a missed delete.
+        _ = try? await database.modifyRecords(
+            saving: [], deleting: [CKRecord.ID(recordName: requestId, zoneID: zoneID)])
     }
 
     // MARK: Revocation (owner)
@@ -233,9 +264,15 @@ import Foundation
     /// the approve path fetches the grant FRESH, so a deleted zone fails with
     /// `zoneNotFound` before any code could be issued. Already-delivered
     /// `shared` values remain with B (stated in the revoke confirm — H5).
-    func revoke(zoneName: String) async throws {
+    func revoke(zoneName: String, inviteRecordName: String? = nil) async throws {
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         _ = try await database.modifyRecordZones(saving: [], deleting: [zoneID])
+        // A dangling public invite record would keep resolving to a dead zone
+        // for up to 7 days — delete it with the share it belonged to.
+        if let inviteRecordName {
+            _ = try? await container.publicCloudDatabase.modifyRecords(
+                saving: [], deleting: [CKRecord.ID(recordName: inviteRecordName)])
+        }
         _ = try? await database.modifySubscriptions(
             saving: [], deleting: [ApprovalConfig.requestSubscriptionID(zoneName: zoneName)])
         Self.unregisterZone(zoneName)

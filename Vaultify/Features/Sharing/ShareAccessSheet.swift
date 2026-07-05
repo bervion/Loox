@@ -17,7 +17,9 @@ struct ShareAccessSheet: View {
         case blocked(ApprovalPrerequisites.Blocker)
         case config
         case creating
-        case waiting(zoneID: CKRecordZone.ID, shareURL: URL?)
+        // `shareURL` = pretty invite link (UI); `rawShareURL` = the CKShare
+        // URL the rendezvous envelope needs (drop retries while waiting).
+        case waiting(zoneID: CKRecordZone.ID, shareURL: URL?, rawShareURL: URL?)
         case fingerprint(zoneID: CKRecordZone.ID, code: String,
                          profile: (participantPubKey: Data, deviceSigningKeys: [Data], createdAtUnixMs: Int64))
         case publishing
@@ -30,6 +32,13 @@ struct ShareAccessSheet: View {
     @State private var capabilities: [String: FieldCapability] = [:]
     /// Share pending the destructive revoke confirmation.
     @State private var revokeTarget: ItemShareRecord?
+    /// iMessage compose (recipient pre-filled) for the invite link.
+    @State private var showMessageCompose = false
+    /// A rendezvous drop reached the recipient's armed inbox — their device
+    /// will surface the invite by itself; the link is now just a backup.
+    @State private var autoInviteSent = false
+    /// The bounded poll ran out — surface that waiting continues manually.
+    @State private var pollExhausted = false
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -41,11 +50,19 @@ struct ShareAccessSheet: View {
         recipientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
+    /// Every zone this owner ever shared to the SAME recipient — the accepted
+    /// ones carry the opaque userRecordID the rendezvous drop needs.
+    private var recipientZoneNames: [String] {
+        env.sharingStore.shares
+            .filter { $0.recipientLabel.lowercased() == normalizedEmail }
+            .map(\.zoneName)
+    }
+
     /// Non-nil while the sheet should poll for the recipient's profile.
     /// Driving `.task(id:)` off this makes cancellation structural — the poll
     /// dies with the view or the step, never leaking (review H1).
     private var pollingZoneName: String? {
-        if case .waiting(let zoneID, _) = step { return zoneID.zoneName }
+        if case .waiting(let zoneID, _, _) = step { return zoneID.zoneName }
         return nil
     }
 
@@ -79,7 +96,12 @@ struct ShareAccessSheet: View {
 
     private func revoke(_ share: ItemShareRecord) async {
         do {
-            try await env.approvalShare.revoke(zoneName: share.zoneName)
+            try await env.approvalShare.revoke(zoneName: share.zoneName,
+                                               inviteRecordName: share.inviteRecordName)
+            // The rendezvous drop is creator-delete only — GC it here too.
+            if let dropRecordName = share.dropRecordName {
+                await env.inviteLinks.deleteInvite(recordName: dropRecordName)
+            }
             env.sharingStore.remove(zoneName: share.zoneName)
         } catch {
             step = .failed(error.localizedDescription)
@@ -102,7 +124,7 @@ struct ShareAccessSheet: View {
                     .vaultType(.callout).themedForeground(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .waiting(_, let shareURL):
+        case .waiting(_, let shareURL, _):
             waitingView(shareURL: shareURL)
         case .fingerprint(_, let code, _):
             TrustFingerprintView(code: code, recipientLabel: recipientEmail) {
@@ -151,6 +173,7 @@ struct ShareAccessSheet: View {
         // tasks; the second must not mint a second zone (review M2).
         guard case .config = step else { return }
         step = .creating
+        pollExhausted = false
         do {
             // Resume path (review H2): an unfinished share to the SAME
             // recipient reuses its zone instead of littering a new one.
@@ -159,6 +182,27 @@ struct ShareAccessSheet: View {
             }
             let setup = try await env.approvalShare.createShare(
                 recipientEmail: normalizedEmail, existingZoneName: pending?.zoneName)
+            // Pretty invite link (invite.looxpassword.com) — opens the app
+            // directly on the recipient's phone instead of Safari/iCloud.
+            // Fall back to the raw CKShare URL if minting fails (offline).
+            var inviteURL = setup.shareURL
+            var inviteRecordName: String?
+            if let shareURL = setup.shareURL,
+               let minted = try? await env.inviteLinks.createInviteLink(shareURL: shareURL) {
+                inviteURL = minted.url
+                inviteRecordName = minted.recordName
+            }
+            // Loox-to-Loox tier (U5): if the recipient has an armed invite
+            // inbox, drop a sealed envelope so their device gets a push and
+            // surfaces the invite by itself. Best-effort — the link below
+            // remains the universal fallback either way.
+            var dropRecordName: String?
+            if let shareURL = setup.shareURL {
+                dropRecordName = await env.inviteInbox.dropInvite(
+                    shareURL: shareURL, recipientEmail: normalizedEmail,
+                    knownRecipientZoneNames: recipientZoneNames)
+                autoInviteSent = dropRecordName != nil
+            }
             // Approval Mode listening turns on now, deliberately BEFORE the
             // grant exists — the accept push must be receivable. The pending
             // record below keeps that state accounted for.
@@ -167,10 +211,31 @@ struct ShareAccessSheet: View {
                 itemId: itemID, zoneName: setup.zoneID.zoneName,
                 recipientLabel: normalizedEmail, grantId: nil,
                 createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
-                fingerprintConfirmed: false))
-            step = .waiting(zoneID: setup.zoneID, shareURL: setup.shareURL)
+                fingerprintConfirmed: false, inviteRecordName: inviteRecordName,
+                dropRecordName: dropRecordName))
+            step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL,
+                            rawShareURL: setup.shareURL)
         } catch {
             step = .failed(error.localizedDescription)
+        }
+    }
+
+    /// The recipient may arm their invite inbox AFTER this share was created
+    /// (fresh install, first launch of a new build) — a single drop attempt
+    /// at creation would silently strand the auto-invite tier, so the waiting
+    /// poll retries until the descriptor appears or the ceremony moves on.
+    private func retryAutoInviteIfNeeded() async {
+        guard !autoInviteSent,
+              case .waiting(let zoneID, _, let rawShareURL) = step,
+              let rawShareURL else { return }
+        guard let name = await env.inviteInbox.dropInvite(
+            shareURL: rawShareURL, recipientEmail: normalizedEmail,
+            knownRecipientZoneNames: recipientZoneNames) else { return }
+        autoInviteSent = true
+        if var pending = env.sharingStore.shares(forItem: itemID)
+            .first(where: { $0.zoneName == zoneID.zoneName }) {
+            pending.dropRecordName = name
+            env.sharingStore.upsert(pending)
         }
     }
 
@@ -181,7 +246,7 @@ struct ShareAccessSheet: View {
         guard let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw else { return }
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         var delay: Duration = .seconds(3)
-        for _ in 0..<80 { // ≈ 10 minutes at the capped interval
+        for attempt in 0..<80 { // ≈ 10 minutes at the capped interval
             guard !Task.isCancelled else { return }
             if let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) {
                 let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
@@ -189,9 +254,28 @@ struct ShareAccessSheet: View {
                 step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
                 return
             }
+            // The recipient may have armed their inbox since the last try —
+            // re-attempt the auto-drop on a slower cadence (~every 30-60s).
+            if attempt % 6 == 5 { await retryAutoInviteIfNeeded() }
             try? await Task.sleep(for: delay)
             delay = min(delay * 2, .seconds(10))
         }
+        // Budget exhausted must SAY so — a silent stop reads as "still
+        // polling" and strands the owner on a screen that no longer checks.
+        pollExhausted = true
+    }
+
+    /// One immediate profile check (the "Check Now" button) — also re-tries
+    /// the auto-drop so "Check Now" doubles as "re-send the auto-invite".
+    private func checkProfileNow() async {
+        await retryAutoInviteIfNeeded()
+        guard case .waiting(let zoneID, _, _) = step,
+              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw,
+              let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID)
+        else { return }
+        let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
+                                         participantPubKey: profile.participantPubKey)
+        step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
     }
 
     private func confirmFingerprintAndPublish() async {
@@ -213,13 +297,31 @@ struct ShareAccessSheet: View {
                 itemId: item.id,
                 capabilities: capabilities,
                 sharedValues: sharedValues,
+                displayTitle: item.title.isEmpty ? appString("Shared item") : item.title,
+                displayWebsiteHost: item.urlField?.value.isEmpty == false
+                    ? URL(string: item.urlField!.value)?.host : nil,
                 participantPubKey: profile.participantPubKey,
                 pinnedDeviceSigningKeys: profile.deviceSigningKeys,
                 epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
+            // Acceptance is proven — the public invite artifacts have served
+            // their purpose; delete them now (owner is the only principal
+            // who can — public-db records are creator-delete only).
+            let pendingRecord = env.sharingStore.shares(forItem: item.id)
+                .first { $0.zoneName == zoneID.zoneName }
+            if let inviteRecordName = pendingRecord?.inviteRecordName {
+                await env.inviteLinks.deleteInvite(recordName: inviteRecordName)
+            }
+            if let dropRecordName = pendingRecord?.dropRecordName {
+                await env.inviteLinks.deleteInvite(recordName: dropRecordName)
+            }
+            // The names are CARRIED into the active record: deleteInvite is
+            // best-effort, and revoke retries the GC with these same names.
             env.sharingStore.upsert(ItemShareRecord(
                 itemId: item.id, zoneName: zoneID.zoneName,
                 recipientLabel: recipientEmail, grantId: grant.id,
-                createdAtUnixMs: nowUnixMs, fingerprintConfirmed: true))
+                createdAtUnixMs: nowUnixMs, fingerprintConfirmed: true,
+                inviteRecordName: pendingRecord?.inviteRecordName,
+                dropRecordName: pendingRecord?.dropRecordName))
             step = .done
         } catch {
             step = .failed(error.localizedDescription)
@@ -303,15 +405,47 @@ struct ShareAccessSheet: View {
             ProgressView()
             Text("Waiting for them to accept…")
                 .vaultType(.section).themedForeground()
-            Text("Send the invitation, then keep this screen open. Once they accept on their device, you'll compare a short code together.")
+            Text(autoInviteSent
+                 ? "Their device was notified automatically. If nothing shows up there, send the link below as a backup."
+                 : "Send the invitation link — the first share with someone always needs it. After they accept once, future shares notify their device automatically.")
                 .vaultType(.callout).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
+            if pollExhausted {
+                Text("Still waiting — you can close this screen and finish later, or tap Check Now.")
+                    .vaultType(.footnote).themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             if let shareURL {
+                #if os(iOS)
+                // Primary: iMessage with the recipient pre-filled (the share
+                // sheet can't preselect one; the compose window can).
+                if MessageComposeView.canSendText {
+                    Button {
+                        showMessageCompose = true
+                    } label: {
+                        Label { Text("Send via Messages") } icon: { PolarisIcon(Icons.share) }
+                            .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    }
+                    .buttonStyle(.themedProminent)
+                    .sheet(isPresented: $showMessageCompose) {
+                        MessageComposeView(
+                            recipients: [normalizedEmail],
+                            body: appString("I shared an item with you in Loox Password. Open this link on your iPhone to accept: \(shareURL.absoluteString)"))
+                    }
+                }
+                #endif
                 ShareLink(item: shareURL) {
-                    Label { Text("Send Invitation") } icon: { PolarisIcon(Icons.share) }
+                    Label { Text("Share Another Way") } icon: { PolarisIcon(Icons.share) }
                         .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                 }
-                .buttonStyle(.themedProminent)
+            }
+            // Manual escape hatch: the background poll has a bounded budget —
+            // this button re-checks on demand so a long wait can't strand the
+            // owner on this screen.
+            Button {
+                Task { await checkProfileNow() }
+            } label: {
+                Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
             }
         }
         .padding(Space.gutter)

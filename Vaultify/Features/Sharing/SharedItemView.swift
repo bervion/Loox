@@ -16,8 +16,7 @@ struct SharedItemView: View {
 
     private enum LoadState {
         case loading
-        case needsFingerprint(grant: AccessGrant, code: String)
-        case ready(grant: AccessGrant, values: [String: String])
+        case ready(grant: AccessGrant, values: [String: String], display: SharedDisplayEnvelope?)
         case failed(String)
     }
 
@@ -29,6 +28,9 @@ struct SharedItemView: View {
     /// of the SAME grant, but a re-granted share gets fresh models.
     @State private var requestModels: [String: RequestCodeModel] = [:]
     @State private var modelsGrantId: String?
+    /// Short SAS code over both pinned keys — shown for OPTIONAL out-of-band
+    /// comparison with the owner's device (pairing itself is automatic).
+    @State private var safetyCode: String?
 
     private var zoneID: CKRecordZone.ID { route.zoneID }
 
@@ -39,12 +41,19 @@ struct SharedItemView: View {
                 switch loadState {
                 case .loading:
                     ProgressView().frame(maxWidth: .infinity)
-                case .needsFingerprint(_, let code):
-                    TrustFingerprintView(code: code, recipientLabel: appString("the owner")) {
-                        confirmFingerprint()
+                case .ready(let grant, let values, let display):
+                    if let display {
+                        VStack(alignment: .leading, spacing: Space.s1) {
+                            Text(verbatim: display.title)
+                                .vaultType(.section).themedForeground()
+                            if let host = display.websiteHost {
+                                Text(verbatim: host)
+                                    .vaultType(.footnote).themedForeground(.secondary)
+                            }
+                        }
                     }
-                case .ready(let grant, let values):
                     fieldsCard(grant: grant, values: values)
+                    safetyCodeFooter
                 case .failed(let message):
                     Text(verbatim: message)
                         .vaultType(.callout).themedForeground(.secondary)
@@ -114,6 +123,26 @@ struct SharedItemView: View {
         .vaultCornerRadius(Radius.md)
     }
 
+    /// Discreet, always-available verification affordance: matches the code
+    /// the owner sees on their activation screen.
+    @ViewBuilder private var safetyCodeFooter: some View {
+        if let safetyCode {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("Safety code").vaultType(.sectionLabel).themedForeground(.secondary)
+                Text(verbatim: safetyCode)
+                    .font(.vaultCode(size: 17))
+                    .monospacedDigit()
+                    .themedForeground()
+                Text("Compare with the code on the owner's device to verify the connection.")
+                    .vaultType(.footnote).themedForeground(.secondary)
+            }
+            .padding(Space.s3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(VaultColors.surface)
+            .vaultCornerRadius(Radius.md)
+        }
+    }
+
     private func askEachTimeFieldIds(_ grant: AccessGrant) -> [String] {
         grant.capabilities.filter { $0.value.isAskEachTimeTOTP }.keys.sorted()
     }
@@ -146,29 +175,28 @@ struct SharedItemView: View {
         do {
             let grant = try await env.approvalRecipient.fetchGrant(zoneID: zoneID,
                                                                    nowUnixMs: nowUnixMs)
-            // Pre-pin: show the one-time fingerprint ceremony; values and
-            // requests stay locked until the code is confirmed (ADR-4).
-            guard ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) != nil else {
-                guard let vaultKey = env.session.vaultKey?.bytes else {
-                    loadState = .failed(appString("Unlock your vault to view this share."))
-                    return
-                }
-                let identity = try await env.participantEscrow.ensureIdentity(vaultKey: vaultKey)
-                let code = TrustFingerprint.code(ownerSigningPubKey: grant.ownerSigningPubKey,
-                                                 participantPubKey: identity.publicKeyRaw)
-                loadState = .needsFingerprint(grant: grant, code: code)
-                return
-            }
             guard let vaultKey = env.session.vaultKey?.bytes else {
                 loadState = .failed(appString("Unlock your vault to view this share."))
                 return
             }
             let identity = try await env.participantEscrow.ensureIdentity(vaultKey: vaultKey)
+            // TOFU-pin the owner key on first sight: the owner's one-tap
+            // activation is the enforcement point for the secrets at stake,
+            // so the recipient joins without a ceremony. A later key CHANGE
+            // is still rejected, not re-pinned; the safety code stays
+            // visible below for optional out-of-band comparison.
+            if ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) == nil {
+                try ApprovalRecipientService.pinOwnerKey(grant.ownerSigningPubKey, zoneID: zoneID)
+            }
+            safetyCode = TrustFingerprint.code(ownerSigningPubKey: grant.ownerSigningPubKey,
+                                               participantPubKey: identity.publicKeyRaw)
             let raw = try await env.approvalRecipient.fetchSharedFieldValues(
                 grant: grant, identity: identity, zoneID: zoneID)
             let values = raw.compactMapValues { String(data: $0, encoding: .utf8) }
             rebuildModelsIfNeeded(grant: grant)
-            loadState = .ready(grant: grant, values: values)
+            let display = await env.approvalRecipient.fetchDisplayEnvelope(
+                grant: grant, identity: identity, zoneID: zoneID)
+            loadState = .ready(grant: grant, values: values, display: display)
         } catch let error as CKError where error.code == .zoneNotFound || error.code == .userDeletedZone {
             loadState = .failed(appString("The owner stopped sharing this item."))
         } catch {
@@ -185,14 +213,4 @@ struct SharedItemView: View {
         }
     }
 
-    private func confirmFingerprint() {
-        guard case .needsFingerprint(let grant, _) = loadState else { return }
-        do {
-            try ApprovalRecipientService.pinOwnerKey(grant.ownerSigningPubKey, zoneID: zoneID)
-            loadState = .loading
-            Task { await load() }
-        } catch {
-            loadState = .failed(error.localizedDescription)
-        }
-    }
 }

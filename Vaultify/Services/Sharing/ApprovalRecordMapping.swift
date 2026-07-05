@@ -16,6 +16,12 @@ nonisolated enum ApprovalRecordMapping {
         static let participantPubKey = "participantPubKey"
         static let deviceSigningKeys = "deviceSigningKeys"
         static let createdAtMs = "createdAtMs"
+        /// Rendezvous pointers B self-publishes post-acceptance: the owner
+        /// reads them from its OWN zone for repeat auto-invites — CloudKit
+        /// never reveals a recipient's userRecordID to an email lookup, but
+        /// B always knows its own.
+        static let inviteInboxID = "inviteInboxID"
+        static let inviteRecipientID = "inviteRecipientID"
         static let sealed = "sealed"
         static let expiresAtMs = "expiresAtMs"
     }
@@ -77,6 +83,25 @@ nonisolated enum ApprovalRecordMapping {
         return try? ApprovalResponse.decode(blob)
     }
 
+    // MARK: Display envelope (singleton per zone; ciphertext only)
+
+    static func displayEnvelopeRecord(sealedBlob: Data, grantId: String,
+                                      zoneID: CKRecordZone.ID) -> CKRecord {
+        let record = CKRecord(recordType: ApprovalConfig.displayEnvelopeRecordType,
+                              recordID: CKRecord.ID(recordName: ApprovalConfig.displayEnvelopeRecordName,
+                                                    zoneID: zoneID))
+        record[Field.blob] = sealedBlob as CKRecordValue
+        record[Field.grantId] = grantId as CKRecordValue
+        return record
+    }
+
+    static func displayEnvelope(from record: CKRecord) -> (grantId: String, blob: Data)? {
+        guard record.recordType == ApprovalConfig.displayEnvelopeRecordType,
+              let blob = record[Field.blob] as? Data,
+              let grantId = record[Field.grantId] as? String else { return nil }
+        return (grantId, blob)
+    }
+
     // MARK: Shared field blobs
 
     static func sharedFieldRecord(sealedBlob: Data, grantId: String, fieldId: String,
@@ -106,6 +131,7 @@ nonisolated enum ApprovalRecordMapping {
     /// `createdAtMs` lets the owner detect a newer profile).
     static func participantProfileRecord(participantPubKey: Data, deviceSigningKeys: [Data],
                                          createdAtUnixMs: Int64,
+                                         inviteInboxID: String?, inviteRecipientID: String?,
                                          zoneID: CKRecordZone.ID) -> CKRecord {
         let record = CKRecord(recordType: ApprovalConfig.participantProfileRecordType,
                               recordID: CKRecord.ID(recordName: ApprovalConfig.participantProfileRecordName,
@@ -113,6 +139,8 @@ nonisolated enum ApprovalRecordMapping {
         record[Field.participantPubKey] = participantPubKey as CKRecordValue
         record[Field.deviceSigningKeys] = deviceSigningKeys as CKRecordValue
         record[Field.createdAtMs] = createdAtUnixMs as CKRecordValue
+        if let inviteInboxID { record[Field.inviteInboxID] = inviteInboxID as CKRecordValue }
+        if let inviteRecipientID { record[Field.inviteRecipientID] = inviteRecipientID as CKRecordValue }
         return record
     }
 

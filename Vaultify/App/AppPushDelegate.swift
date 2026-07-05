@@ -56,6 +56,8 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
             NotificationCenter.default.post(name: .approvalRequestReceived, object: nil)
         case .approvalResponse:
             NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
+        case .inviteRendezvous:
+            NotificationCenter.default.post(name: .inviteRendezvousReceived, object: nil)
         }
     }
 
@@ -81,9 +83,9 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let userInfo = notification.request.content.userInfo
         if let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo),
-           AppPushKind.classify(ckNotification) == .approvalRequest {
-            // Foreground owner: surface the pending request immediately (no tap
-            // needed) — the alert push carries no fetch payload by design.
+           [.approvalRequest, .inviteRendezvous].contains(AppPushKind.classify(ckNotification)) {
+            // Foreground: surface the pending request / invite immediately (no
+            // tap needed) — these alert pushes carry no fetch payload by design.
             Self.route(ckNotification)
             completionHandler([.banner, .sound, .list])
         } else {
@@ -92,12 +94,39 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
     }
 }
 
-/// Accepts CKShare invitations (approval-zone shares). Present only for the
-/// share-accept callback — SwiftUI keeps managing the window and scenes.
+/// Accepts CKShare invitations (approval-zone shares) AND receives universal
+/// links: once a custom scene delegate exists, UIKit routes NSUserActivity
+/// continuation HERE — SwiftUI's `onContinueUserActivity` never fires — so
+/// both the warm-tap and cold-launch paths must be forwarded explicitly.
 final class VaultSceneDelegate: NSObject, UIWindowSceneDelegate {
     func windowScene(_ windowScene: UIWindowScene,
                      userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata) {
         VaultSceneDelegate.accept(cloudKitShareMetadata)
+    }
+
+    /// Warm tap: app already running, user taps an invite link.
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        forwardInviteLink(in: userActivity)
+    }
+
+    /// Cold launch: the tap started the app; the activity rides the
+    /// connection options instead of `continue`.
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
+               options connectionOptions: UIScene.ConnectionOptions) {
+        for activity in connectionOptions.userActivities {
+            forwardInviteLink(in: activity)
+        }
+    }
+
+    private func forwardInviteLink(in activity: NSUserActivity) {
+        guard activity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = activity.webpageURL,
+              InviteLinkService.isInviteLink(url) else { return }
+        // Buffer FIRST: on a cold launch this runs before any SwiftUI
+        // observer exists, and an unheard post is a silently dead link —
+        // the app root drains the buffer when it appears.
+        PendingInviteLink.url = url
+        NotificationCenter.default.post(name: .inviteLinkReceived, object: url)
     }
 
     static func accept(_ metadata: CKShare.Metadata) {
@@ -133,6 +162,8 @@ final class AppPushDelegate: NSObject, NSApplicationDelegate {
             NotificationCenter.default.post(name: .approvalRequestReceived, object: nil)
         case .approvalResponse:
             NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
+        case .inviteRendezvous:
+            NotificationCenter.default.post(name: .inviteRendezvousReceived, object: nil)
         }
     }
 

@@ -25,6 +25,10 @@ import SwiftUI
     let approvalCeremony: ApprovalCeremonyService
     /// Recipient-side transport (accepted shares, requests, responses).
     let approvalRecipient = ApprovalRecipientService()
+    /// Pretty invite links (public-DB locator + fragment-key ciphertext).
+    let inviteLinks = InviteLinkService()
+    /// Loox-to-Loox auto-invite rendezvous (U5 opaque public inbox).
+    let inviteInbox = InviteInboxService()
     /// Recipient participant-identity escrow under the Vault Key.
     let participantEscrow = ParticipantEscrowService()
     /// Device-local "which items are shared with whom" registry (owner side).
@@ -78,6 +82,8 @@ import SwiftUI
         Task { [cloudSync] in await cloudSync.eraseRemote() }
         // Approval shares must not outlive the vault that sealed them.
         Task { [approvalShare] in await approvalShare.revokeAllOwned() }
+        // Rendezvous inbox dies with the vault (descriptor + subscription).
+        Task { [inviteInbox] in await inviteInbox.disarm() }
         sharingStore.wipe()
         VaultKeyEscrowService.clearPushedFingerprint()
         // Approval Mode device-local state dies with the vault (full CloudKit

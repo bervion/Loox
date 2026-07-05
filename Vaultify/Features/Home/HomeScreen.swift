@@ -92,7 +92,6 @@ struct HomeScreen: View {
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
-            .navigationDestination(for: SharedWithMeRoute.self) { _ in SharedWithMeScreen() }
             .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }

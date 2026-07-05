@@ -96,6 +96,20 @@ nonisolated enum ApprovalSeal {
         return w.data
     }
 
+    private static func displayEnvelopeInfo(grantId: String) -> Data {
+        var w = CanonicalWriter()
+        w.string("Loox display envelope v1")
+        w.string(grantId)
+        return w.data
+    }
+
+    private static func inviteEnvelopeInfo(inboxID: String) -> Data {
+        var w = CanonicalWriter()
+        w.string("Loox invite envelope v1")
+        w.string(inboxID)
+        return w.data
+    }
+
     // Envelope layout mirrors the pairing envelope: version || encap(32) || ct.
 
     private static func seal(_ plaintext: Data, recipientKeyRaw: Data, info: Data) throws -> Data {
@@ -134,6 +148,37 @@ nonisolated enum ApprovalSeal {
                                     requestId: String, nonce: Data) throws -> Data {
         try open(envelope, privateKey: ephemeralPrivateKey,
                  info: responseInfo(requestId: requestId, nonce: nonce))
+    }
+
+    // MARK: display envelope ↔ persistent participant key
+
+    static func sealDisplayEnvelope(_ plaintext: Data, toParticipantPubKey key: Data,
+                                    grantId: String) throws -> Data {
+        try seal(plaintext, recipientKeyRaw: key, info: displayEnvelopeInfo(grantId: grantId))
+    }
+
+    static func openDisplayEnvelope(_ envelope: Data,
+                                    participantPrivateKey: Curve25519.KeyAgreement.PrivateKey,
+                                    grantId: String) throws -> Data {
+        try open(envelope, privateKey: participantPrivateKey,
+                 info: displayEnvelopeInfo(grantId: grantId))
+    }
+
+    // MARK: invite envelope ↔ recipient inbox key (U5 public rendezvous)
+
+    /// Sealing binds the ciphertext to the TARGET inboxID via the HPKE info —
+    /// a drop copied into another inbox (or replayed after an inbox rotation)
+    /// fails to open even with the right private key.
+    static func sealInviteEnvelope(_ plaintext: Data, toRecipientPubKey key: Data,
+                                   inboxID: String) throws -> Data {
+        try seal(plaintext, recipientKeyRaw: key, info: inviteEnvelopeInfo(inboxID: inboxID))
+    }
+
+    static func openInviteEnvelope(_ envelope: Data,
+                                   recipientPrivateKey: Curve25519.KeyAgreement.PrivateKey,
+                                   inboxID: String) throws -> Data {
+        try open(envelope, privateKey: recipientPrivateKey,
+                 info: inviteEnvelopeInfo(inboxID: inboxID))
     }
 
     // MARK: shared field blob ↔ persistent participant key

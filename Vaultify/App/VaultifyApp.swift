@@ -8,6 +8,12 @@ import SwiftUI
 @main
 struct VaultifyApp: App {
     @State private var env = AppEnvironment()
+    /// Localized failure from an invite universal link (expired/invalid).
+    @State private var inviteError: String?
+    /// Acceptance succeeded — tell the user where to look (the accept itself
+    /// is silent/native by design; silence reads as "nothing happened").
+    @State private var inviteAccepted = false
+    @State private var inviteInFlight = false
     // Receives CloudKit silent pushes for near-real-time sync (see AppPushDelegate).
     #if canImport(UIKit)
     @UIApplicationDelegateAdaptor(AppPushDelegate.self) private var pushDelegate
@@ -46,12 +52,55 @@ struct VaultifyApp: App {
         WindowGroup { rootContent }
     }
 
+    /// One path for warm-tap and cold-launch invite links; the buffer is
+    /// cleared here so a handled link can't be re-processed by the drain.
+    private func handleInviteLink(_ url: URL) {
+        guard !inviteInFlight else { return }
+        inviteInFlight = true
+        PendingInviteLink.url = nil
+        Task {
+            defer { inviteInFlight = false }
+            do {
+                try await env.inviteLinks.acceptInvite(from: url)
+                inviteAccepted = true
+            } catch { inviteError = error.localizedDescription }
+        }
+    }
+
     private var rootContent: some View {
         RootView()
                 .onOpenURL { url in
                     // 2FA setup from an otpauth:// link/QR → stash a draft login; presented once
                     // the vault is unlocked (see MainTabView).
                     if let draft = TOTPImport.draftLogin(from: url) { env.pendingTOTPImport = draft }
+                }
+                // Universal Link: share-invite (invite.looxpassword.com/i/<token>#k=…).
+                // Resolve + accept in background; the unlocked shell picks the
+                // acceptance up via the standard breadcrumb/resume flow.
+                // Invite links arrive via the scene delegate (a custom scene
+                // delegate takes over NSUserActivity delivery from SwiftUI).
+                .onReceive(NotificationCenter.default.publisher(for: .inviteLinkReceived)) { note in
+                    guard let url = note.object as? URL else { return }
+                    handleInviteLink(url)
+                }
+                // Cold launch: the scene delegate buffered the link before
+                // this view (and its onReceive) existed — drain it now.
+                .task {
+                    if let url = PendingInviteLink.url { handleInviteLink(url) }
+                }
+                // A dead/expired invite link must say so — silence here reads
+                // as "the app is broken" and gets blamed on the sender.
+                .alert("Couldn't accept the invitation",
+                       isPresented: Binding(get: { inviteError != nil },
+                                            set: { if !$0 { inviteError = nil } })) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(verbatim: inviteError ?? "")
+                }
+                .alert("Invitation accepted", isPresented: $inviteAccepted) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("Unlock your vault and open \"Shared with Me\" on Home to finish setting up.")
                 }
                 .environment(env)
                 .environment(env.uiState)
