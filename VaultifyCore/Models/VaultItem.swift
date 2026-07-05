@@ -32,6 +32,11 @@ nonisolated struct VaultItem: Identifiable, Equatable, Codable, Sendable {
     var createdAt: Date
     var updatedAt: Date
     var trashedAt: Date?
+    /// Non-nil ONLY on recipient-side projections built from a share grant
+    /// (`SharedItemsProjection`) — such items are read-only, never enter the
+    /// vault store, and therefore never sync, export, back up, or AutoFill.
+    /// Excluded from `secret`, so it can never be sealed at rest either.
+    var sharedOrigin: SharedOrigin? = nil
 
     init(id: String = UUID().uuidString,
          category: ItemCategory,

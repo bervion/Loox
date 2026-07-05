@@ -24,13 +24,15 @@ import SwiftUI
     /// Foreground approval ceremony (Face ID → boundary-aware issuance).
     let approvalCeremony: ApprovalCeremonyService
     /// Recipient-side transport (accepted shares, requests, responses).
-    let approvalRecipient = ApprovalRecipientService()
+    let approvalRecipient: ApprovalRecipientService
     /// Pretty invite links (public-DB locator + fragment-key ciphertext).
     let inviteLinks = InviteLinkService()
     /// Loox-to-Loox auto-invite rendezvous (U5 opaque public inbox).
     let inviteInbox = InviteInboxService()
     /// Recipient participant-identity escrow under the Vault Key.
-    let participantEscrow = ParticipantEscrowService()
+    let participantEscrow: ParticipantEscrowService
+    /// Shared-with-me items as first-class read-only projections (V1.2).
+    let sharedItems: SharedItemsProjection
     /// Device-local "which items are shared with whom" registry (owner side).
     let sharingStore = SharingStore()
 
@@ -65,6 +67,12 @@ import SwiftUI
         self.approvalCeremony = ApprovalCeremonyService(session: session,
                                                         repository: repository,
                                                         shareService: approvalShare)
+        let approvalRecipient = ApprovalRecipientService()
+        let participantEscrow = ParticipantEscrowService()
+        self.approvalRecipient = approvalRecipient
+        self.participantEscrow = participantEscrow
+        self.sharedItems = SharedItemsProjection(recipient: approvalRecipient,
+                                                 escrow: participantEscrow)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
@@ -85,6 +93,7 @@ import SwiftUI
         // Rendezvous inbox dies with the vault (descriptor + subscription).
         Task { [inviteInbox] in await inviteInbox.disarm() }
         sharingStore.wipe()
+        sharedItems.wipe()
         VaultKeyEscrowService.clearPushedFingerprint()
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).
