@@ -13,6 +13,9 @@ import Foundation
 @MainActor @Observable final class SharedItemsProjection {
     /// Projected items, title-sorted. Each carries `sharedOrigin`.
     private(set) var items: [VaultItem] = []
+    /// True once a refresh has successfully listed the accepted zones —
+    /// distinguishes "still loading after cold start" from "item is gone".
+    private(set) var hasLoaded = false
 
     /// Request state machines keyed by "grantId|fieldId" — an in-flight
     /// WAITING machine holds the ephemeral HPKE key and MUST survive
@@ -75,6 +78,7 @@ import Foundation
     }
 
     func wipe() {
+        hasLoaded = false
         items = []
         grants = [:]
         requestModels = [:]
@@ -135,6 +139,7 @@ import Foundation
             $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
         }
         grants = builtGrants
+        hasLoaded = true
         // Drop machines whose grant rotated or vanished (fresh models next time).
         requestModels = requestModels.filter { key, _ in
             liveGrantIDs.contains(String(key.split(separator: "|")[0]))
@@ -185,10 +190,26 @@ import Foundation
             let label = meta?.label.isEmpty == false ? meta!.label : appString("Shared value")
             fields.append(DynamicField(id: fieldId, label: label, kind: kind, value: value))
         }
+        // Detail-screen field order (dictionary order is random): identity
+        // first, then secrets, extras, website last.
+        func rank(_ kind: FieldKind) -> Int {
+            switch kind {
+            case .username, .email: 0
+            case .password: 1
+            case .url: 9
+            default: 2
+            }
+        }
+        fields = fields.enumerated()
+            .sorted { (rank($0.element.kind), $0.offset) < (rank($1.element.kind), $1.offset) }
+            .map(\.element)
         // No placeholder TOTP fields: the detail screen derives its Request
         // rows from the grant's capabilities, and an empty field would only
         // confuse list subtitles.
-        if let host = display?.websiteHost, !host.isEmpty {
+        // Envelope host is a FALLBACK — if the owner shared their URL field
+        // itself, appending the host too would duplicate "Website".
+        if !fields.contains(where: { $0.kind == .url }),
+           let host = display?.websiteHost, !host.isEmpty {
             // Stable id — a fresh UUID per refresh would needlessly
             // invalidate row identity.
             fields.append(DynamicField(id: "shared-website", label: appString("Website"),

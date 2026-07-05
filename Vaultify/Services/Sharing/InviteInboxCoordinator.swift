@@ -16,6 +16,8 @@ import Foundation
     @ObservationIgnored private let escrow: ParticipantEscrowService
     @ObservationIgnored private let inbox: InviteInboxService
     @ObservationIgnored private let links: InviteLinkService
+    /// Optional history sink (set by AppEnvironment after construction).
+    @ObservationIgnored weak var history: NotificationHistoryStore?
 
     init(settings: SettingsStore, session: VaultSession,
          escrow: ParticipantEscrowService, inbox: InviteInboxService,
@@ -41,12 +43,17 @@ import Foundation
         let discovered = await inbox.reconcile(identity: identity)
         guard !discovered.isEmpty else { return }
         let queued = Set(pendingInvites.map(\.inviteID))
-        pendingInvites.append(contentsOf: discovered.filter { !queued.contains($0.inviteID) })
+        let fresh = discovered.filter { !queued.contains($0.inviteID) }
+        pendingInvites.append(contentsOf: fresh)
+        for _ in fresh { history?.log(.inviteReceived) }
     }
 
     /// "Not now": burn the dedup id, drop from the queue — never re-prompted.
     func dismiss(_ invite: InviteEnvelope) {
         inbox.markSeen(inviteID: invite.inviteID)
+        if pendingInvites.contains(where: { $0.inviteID == invite.inviteID }) {
+            history?.log(.inviteDismissed)
+        }
         pendingInvites.removeAll { $0.inviteID == invite.inviteID }
     }
 
@@ -64,6 +71,8 @@ import Foundation
             url: url,
             expectedOwnerParticipantID: invite.ownerParticipantID,
             expectedRecipientParticipantID: invite.recipientParticipantID)
-        dismiss(invite)
+        inbox.markSeen(inviteID: invite.inviteID)
+        pendingInvites.removeAll { $0.inviteID == invite.inviteID }
+        history?.log(.inviteAccepted)
     }
 }

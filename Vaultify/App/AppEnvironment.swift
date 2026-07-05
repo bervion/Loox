@@ -38,6 +38,8 @@ import SwiftUI
     let sharedItems: SharedItemsProjection
     /// Device-local "which items are shared with whom" registry (owner side).
     let sharingStore = SharingStore()
+    /// Bounded local history for the notifications screen.
+    let notificationHistory = NotificationHistoryStore()
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
@@ -87,6 +89,7 @@ import SwiftUI
         self.inviteInboxCoordinator = InviteInboxCoordinator(
             settings: settings, session: session, escrow: participantEscrow,
             inbox: inviteInbox, links: inviteLinks)
+        inviteInboxCoordinator.history = notificationHistory
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
@@ -108,6 +111,7 @@ import SwiftUI
         Task { [inviteInbox] in await inviteInbox.disarm() }
         sharingStore.wipe()
         sharedItems.wipe()
+        notificationHistory.wipe()
         // The AutoFill shared-credentials cache outlives an ordinary lock by design
         // (see SharedCredentialsCache) — Erase Vault is the one place it must go too.
         SharedCredentialsCache.clear()

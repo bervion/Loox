@@ -14,6 +14,16 @@
         }
       }
     },
+    "%1$@ is asking for the current verification code for %2$@.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ đang yêu cầu mã xác thực hiện tại cho %2$@."
+          }
+        }
+      }
+    },
     "%@ has joined. Activate to give them access. To be sure it's really them, you can compare this safety code with the one shown at the bottom of the shared item on their device.": {
       "localizations": {
         "vi": {
@@ -1636,6 +1646,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Có yêu cầu phê duyệt mã"
+          }
+        }
+      }
+    },
+    "Code request approved": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã phê duyệt yêu cầu mã"
+          }
+        }
+      }
+    },
+    "Code request rejected": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã từ chối yêu cầu mã"
           }
         }
       }
@@ -3775,7 +3805,17 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã nhận lời mời"
+            "value": "Đã chấp nhận lời mời"
+          }
+        }
+      }
+    },
+    "Invitation dismissed": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã bỏ qua lời mời"
           }
         }
       }
@@ -5733,6 +5773,16 @@
         }
       }
     },
+    "Recent": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gần đây"
+          }
+        }
+      }
+    },
     "Recently Created": {
       "extractionState": "stale",
       "localizations": {
@@ -6769,6 +6819,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lời mời chia sẻ"
+          }
+        }
+      }
+    },
+    "Share invitation received": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã nhận lời mời chia sẻ"
           }
         }
       }
@@ -8593,7 +8653,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã xác minh"
+            "value": "Mã xác thực"
           }
         }
       }
