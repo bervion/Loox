@@ -92,12 +92,23 @@ import Foundation
         return ShareSetup(zoneID: zoneID, shareURL: url)
     }
 
-    /// User-visible alert on participant writes (ADR-5). Static, localized
-    /// copy via the notification localization keys — no item/account/code.
+    /// User-visible alert when a participant CREATES an ApprovalRequest (ADR-5).
+    /// Must stay scoped to that record type — a zone-wide subscription alerts
+    /// on every participant write (profile publish, and the idempotent
+    /// acceptance-resume re-publishes it), producing phantom "code requested"
+    /// notifications before any request exists. Static, localized copy via
+    /// the notification localization keys — no item/account/code.
     private func saveOwnerAlertSubscription(zoneID: CKRecordZone.ID) async throws {
-        let subscription = CKRecordZoneSubscription(
-            zoneID: zoneID,
-            subscriptionID: ApprovalConfig.requestSubscriptionID(zoneName: zoneID.zoneName))
+        let subscriptionID = ApprovalConfig.requestSubscriptionID(zoneName: zoneID.zoneName)
+        // Drop any previously deployed zone-wide subscription under this id
+        // first — CloudKit can't morph a subscription's type in place.
+        _ = try? await database.modifySubscriptions(saving: [], deleting: [subscriptionID])
+        let subscription = CKQuerySubscription(
+            recordType: ApprovalConfig.requestRecordType,
+            predicate: NSPredicate(value: true),
+            subscriptionID: subscriptionID,
+            options: [.firesOnRecordCreation])
+        subscription.zoneID = zoneID
         let info = CKSubscription.NotificationInfo()
         info.titleLocalizationKey = "approval.push.title"
         info.alertLocalizationKey = "approval.push.body"
