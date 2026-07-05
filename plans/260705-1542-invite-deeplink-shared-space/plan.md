@@ -59,9 +59,19 @@ of grant, no wire bump). Until it ships, rows display localized "Shared Item" fa
 | 0 | **ADR set**: Public Rendezvous v1 · Opaque Inbox Identity · Encrypted Invite Envelope · Push-is-hint | chốt trước khi code | ✅ (U1-U10 table) |
 | 1 | **Shared-with-Me space** (aggregate; "Shared Item" fallback title) + `SharedDisplayEnvelope` | KHÔNG grant v2 | ✅ envelope + Home row + system space in Items Spaces (cc8b9fb) |
 | 2 | **Universal Link**: FE AASA + `/i/*` landing (runbook); app Associated Domains + NSUserActivity + PendingInviteRouter; QA theo Apple Universal-Links technote (developer mode), không chỉ curl | capability/profile regen CHỈ trên branch V1.1 | ✅ verified on-device (scene-delegate routing fix) |
-| 3 | **Public Rendezvous SPIKE** (gating): B subscription → A write → B signal → fetch; locked-screen behavior; **Production/TestFlight environment SỚM** (forum-signal về query-subscription push khác biệt trên public DB production) | spike fail → dừng, escalate | 🔶 spike code shipped (f3602f4, DEBUG section in iCloud Sync settings) — AWAITING 2-device run + Production/TestFlight verdict |
-| 4 | **Encrypted Invite Envelope**: recipient seal + sender signature + expiry + replay + dedup | sau khi transport chứng minh | 🔶 KERNEL shipped (0e39992: InviteEnvelope sign→seal, inbox-bound HPKE info, U9 lifetime 24h–7d mint+open, 7 tests / suite 168) — transport WIRING gated on Phase 3 verdict; dedup by inviteID = Phase 5 reconciler |
-| 5 | **InviteInboxReconciler** — MỘT reconciler cho launch/foreground/push-hint/manual (H7, không fork sync stack) + inbox UI | | ⏸ |
+| 3 | **Public Rendezvous SPIKE** (gating): B subscription → A write → B signal → fetch; locked-screen behavior; **Production/TestFlight environment SỚM** (forum-signal về query-subscription push khác biệt trên public DB production) | spike fail → dừng, escalate | ✅ SUPERSEDED by real pipeline (spike file deleted 6875631 — it overwrote the production descriptor, review L3). Gate question now answered by QA-ing the REAL flow: share → B auto-notified. Production/TestFlight verdict still REQUIRED before release |
+| 4 | **Encrypted Invite Envelope**: recipient seal + sender signature + expiry + replay + dedup | sau khi transport chứng minh | ✅ kernel 0e39992 (sign→seal, inbox-bound info, U9 lifetime mint+open, no-trailing-bytes) + WIRED 1bce886/6875631 (dropInvite at share-create; U7 metadata cross-check at accept) |
+| 5 | **InviteInboxReconciler** — MỘT reconciler cho launch/foreground/push-hint/manual (H7, không fork sync stack) + inbox UI | | ✅ 1bce886+6875631: InviteInboxService (arm/reconcile/markSeen/dropInvite/disarm) + InviteInboxBehaviors on shell (launch/foreground/push = one path; alert queue; seen-on-RESPONSE dedup; cold-launch link buffer PendingInviteLink) |
+
+### Review 260705 (report: plans/reports/code-review-260705-1716-sharing-v11-rendezvous-batch-report.md)
+H1 alert lifecycle, H2 seen-on-response, H3 cold-launch buffer, M1 U7 cross-check, M2 breadcrumb
+burn-on-success, M3 persisted handled-set, M5 coarse sentAtMs, L1/L2/L3/L4/L6 — ALL FIXED (6875631).
+M4 (multi-device same-Apple-ID inbox flap) recorded in iPad/Mac multiplatform plan memory — defer.
+
+### Remaining before release
+1. 2-device QA of the full rendezvous flow (Development env), incl. cold-launch link tap + locked-screen push.
+2. CloudKit Console: deploy schema to Production (LooxInvite.recipientInboxID queryable + LooxInviteInbox) → TestFlight re-QA (the Phase-3 gate verdict).
+3. DisplayEnvelope rename-path republish (M3 informational, V1 leftover) — optional.
 
 ### Mid-flight scope additions (user-driven, shipped)
 - iMessage compose pre-filled recipient (3f2a020) · cold-launch approval-sheet fix (8b8a1f1)
