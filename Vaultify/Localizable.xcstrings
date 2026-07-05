@@ -8659,6 +8659,22 @@
           }
         }
       }
+    },
+    "Couldn't accept the invitation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't accept the invitation"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể chấp nhận lời mời"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

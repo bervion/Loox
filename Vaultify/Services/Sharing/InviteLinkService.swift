@@ -50,17 +50,31 @@ import Foundation
 
     // MARK: Owner side — mint a link for a created CKShare
 
-    func createInviteLink(shareURL: URL) async throws -> URL {
+    struct MintedInvite {
+        let url: URL
+        let recordName: String
+    }
+
+    private static func base64URL(_ data: Data) -> String {
+        data.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    func createInviteLink(shareURL: URL) async throws -> MintedInvite {
         let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
         let key = CryptoRandom.bytes(32)
         let payload = InvitePayload(shareURL: shareURL.absoluteString, createdAtUnixMs: nowMs)
         let ciphertext = try AESGCM.seal(JSONEncoder().encode(payload), key: key)
 
-        let token = ApprovalConfig.opaqueName()
+        // 192-bit token (user-locked range 192-256) — invite-specific, NOT opaqueName's 160.
+        let token = Self.base64URL(Data(CryptoRandom.bytes(24)))
         let record = CKRecord(recordType: Self.recordType,
                               recordID: CKRecord.ID(recordName: "inv-" + token))
         record[Self.blobField] = ciphertext as CKRecordValue
-        record[Self.expiresField] = (nowMs + Self.lifetimeMs) as CKRecordValue
+        // Coarse (hour) expiry — exact mint time is a needless metadata leak.
+        record[Self.expiresField] = (((nowMs + Self.lifetimeMs) / 3_600_000) * 3_600_000) as CKRecordValue
         let saved = try await publicDatabase.modifyRecords(saving: [record], deleting: [])
         for (_, result) in saved.saveResults { _ = try result.get() }
 
@@ -68,12 +82,17 @@ import Foundation
         components.scheme = "https"
         components.host = Self.host
         components.path = "/i/\(token)"
-        components.fragment = "k=" + Data(key).base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
+        components.fragment = "k=" + Self.base64URL(Data(key))
         guard let url = components.url else { throw Failure.malformedLink }
-        return url
+        return MintedInvite(url: url, recordName: "inv-" + token)
+    }
+
+    /// Owner-side GC (invite lifecycle rule: delete after accept/expiry —
+    /// public-DB records are deletable only by their creator, so this is the
+    /// ONLY place cleanup can happen). Best-effort.
+    func deleteInvite(recordName: String) async {
+        _ = try? await publicDatabase.modifyRecords(
+            saving: [], deleting: [CKRecord.ID(recordName: recordName)])
     }
 
     // MARK: Recipient side — universal link → CKShare metadata → accept

@@ -163,9 +163,11 @@ struct ShareAccessSheet: View {
             // directly on the recipient's phone instead of Safari/iCloud.
             // Fall back to the raw CKShare URL if minting fails (offline).
             var inviteURL = setup.shareURL
+            var inviteRecordName: String?
             if let shareURL = setup.shareURL,
-               let pretty = try? await env.inviteLinks.createInviteLink(shareURL: shareURL) {
-                inviteURL = pretty
+               let minted = try? await env.inviteLinks.createInviteLink(shareURL: shareURL) {
+                inviteURL = minted.url
+                inviteRecordName = minted.recordName
             }
             // Approval Mode listening turns on now, deliberately BEFORE the
             // grant exists — the accept push must be receivable. The pending
@@ -175,7 +177,7 @@ struct ShareAccessSheet: View {
                 itemId: itemID, zoneName: setup.zoneID.zoneName,
                 recipientLabel: normalizedEmail, grantId: nil,
                 createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
-                fingerprintConfirmed: false))
+                fingerprintConfirmed: false, inviteRecordName: inviteRecordName))
             step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL)
         } catch {
             step = .failed(error.localizedDescription)
@@ -221,12 +223,18 @@ struct ShareAccessSheet: View {
                 itemId: item.id,
                 capabilities: capabilities,
                 sharedValues: sharedValues,
-                displayTitle: item.title.isEmpty ? appString("Shared Item") : item.title,
+                displayTitle: item.title.isEmpty ? appString("Shared item") : item.title,
                 displayWebsiteHost: item.urlField?.value.isEmpty == false
                     ? URL(string: item.urlField!.value)?.host : nil,
                 participantPubKey: profile.participantPubKey,
                 pinnedDeviceSigningKeys: profile.deviceSigningKeys,
                 epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
+            // Acceptance is proven — the public invite record has served its
+            // purpose; delete it now (owner is the only principal who can).
+            if let inviteRecordName = env.sharingStore.shares(forItem: item.id)
+                .first(where: { $0.zoneName == zoneID.zoneName })?.inviteRecordName {
+                await env.inviteLinks.deleteInvite(recordName: inviteRecordName)
+            }
             env.sharingStore.upsert(ItemShareRecord(
                 itemId: item.id, zoneName: zoneID.zoneName,
                 recipientLabel: recipientEmail, grantId: grant.id,

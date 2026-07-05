@@ -8,6 +8,8 @@ import SwiftUI
 @main
 struct VaultifyApp: App {
     @State private var env = AppEnvironment()
+    /// Localized failure from an invite universal link (expired/invalid).
+    @State private var inviteError: String?
     // Receives CloudKit silent pushes for near-real-time sync (see AppPushDelegate).
     #if canImport(UIKit)
     @UIApplicationDelegateAdaptor(AppPushDelegate.self) private var pushDelegate
@@ -59,7 +61,19 @@ struct VaultifyApp: App {
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                     guard let url = activity.webpageURL,
                           InviteLinkService.isInviteLink(url) else { return }
-                    Task { try? await env.inviteLinks.acceptInvite(from: url) }
+                    Task {
+                        do { try await env.inviteLinks.acceptInvite(from: url) }
+                        catch { inviteError = error.localizedDescription }
+                    }
+                }
+                // A dead/expired invite link must say so — silence here reads
+                // as "the app is broken" and gets blamed on the sender.
+                .alert("Couldn't accept the invitation",
+                       isPresented: Binding(get: { inviteError != nil },
+                                            set: { if !$0 { inviteError = nil } })) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(verbatim: inviteError ?? "")
                 }
                 .environment(env)
                 .environment(env.uiState)
