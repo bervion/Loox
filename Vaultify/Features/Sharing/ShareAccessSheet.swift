@@ -159,6 +159,14 @@ struct ShareAccessSheet: View {
             }
             let setup = try await env.approvalShare.createShare(
                 recipientEmail: normalizedEmail, existingZoneName: pending?.zoneName)
+            // Pretty invite link (invite.looxpassword.com) — opens the app
+            // directly on the recipient's phone instead of Safari/iCloud.
+            // Fall back to the raw CKShare URL if minting fails (offline).
+            var inviteURL = setup.shareURL
+            if let shareURL = setup.shareURL,
+               let pretty = try? await env.inviteLinks.createInviteLink(shareURL: shareURL) {
+                inviteURL = pretty
+            }
             // Approval Mode listening turns on now, deliberately BEFORE the
             // grant exists — the accept push must be receivable. The pending
             // record below keeps that state accounted for.
@@ -168,7 +176,7 @@ struct ShareAccessSheet: View {
                 recipientLabel: normalizedEmail, grantId: nil,
                 createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
                 fingerprintConfirmed: false))
-            step = .waiting(zoneID: setup.zoneID, shareURL: setup.shareURL)
+            step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL)
         } catch {
             step = .failed(error.localizedDescription)
         }

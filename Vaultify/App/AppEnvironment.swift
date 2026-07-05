@@ -25,6 +25,8 @@ import SwiftUI
     let approvalCeremony: ApprovalCeremonyService
     /// Recipient-side transport (accepted shares, requests, responses).
     let approvalRecipient = ApprovalRecipientService()
+    /// Pretty invite links (public-DB locator + fragment-key ciphertext).
+    let inviteLinks = InviteLinkService()
     /// Recipient participant-identity escrow under the Vault Key.
     let participantEscrow = ParticipantEscrowService()
     /// Device-local "which items are shared with whom" registry (owner side).

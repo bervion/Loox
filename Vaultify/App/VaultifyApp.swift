@@ -53,6 +53,14 @@ struct VaultifyApp: App {
                     // the vault is unlocked (see MainTabView).
                     if let draft = TOTPImport.draftLogin(from: url) { env.pendingTOTPImport = draft }
                 }
+                // Universal Link: share-invite (invite.looxpassword.com/i/<token>#k=…).
+                // Resolve + accept in background; the unlocked shell picks the
+                // acceptance up via the standard breadcrumb/resume flow.
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    guard let url = activity.webpageURL,
+                          InviteLinkService.isInviteLink(url) else { return }
+                    Task { try? await env.inviteLinks.acceptInvite(from: url) }
+                }
                 .environment(env)
                 .environment(env.uiState)
                 .environment(\.locale, locale)
