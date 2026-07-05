@@ -407,7 +407,7 @@ struct ShareAccessSheet: View {
                 .vaultType(.section).themedForeground()
             Text(autoInviteSent
                  ? "Their device was notified automatically. If nothing shows up there, send the link below as a backup."
-                 : "Send the invitation, then keep this screen open. Once they accept on their device, you can activate the share.")
+                 : "Send the invitation link — the first share with someone always needs it. After they accept once, future shares notify their device automatically.")
                 .vaultType(.callout).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
             if pollExhausted {
