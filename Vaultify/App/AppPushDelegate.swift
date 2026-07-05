@@ -92,12 +92,35 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
     }
 }
 
-/// Accepts CKShare invitations (approval-zone shares). Present only for the
-/// share-accept callback — SwiftUI keeps managing the window and scenes.
+/// Accepts CKShare invitations (approval-zone shares) AND receives universal
+/// links: once a custom scene delegate exists, UIKit routes NSUserActivity
+/// continuation HERE — SwiftUI's `onContinueUserActivity` never fires — so
+/// both the warm-tap and cold-launch paths must be forwarded explicitly.
 final class VaultSceneDelegate: NSObject, UIWindowSceneDelegate {
     func windowScene(_ windowScene: UIWindowScene,
                      userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata) {
         VaultSceneDelegate.accept(cloudKitShareMetadata)
+    }
+
+    /// Warm tap: app already running, user taps an invite link.
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        forwardInviteLink(in: userActivity)
+    }
+
+    /// Cold launch: the tap started the app; the activity rides the
+    /// connection options instead of `continue`.
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
+               options connectionOptions: UIScene.ConnectionOptions) {
+        for activity in connectionOptions.userActivities {
+            forwardInviteLink(in: activity)
+        }
+    }
+
+    private func forwardInviteLink(in activity: NSUserActivity) {
+        guard activity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = activity.webpageURL,
+              InviteLinkService.isInviteLink(url) else { return }
+        NotificationCenter.default.post(name: .inviteLinkReceived, object: url)
     }
 
     static func accept(_ metadata: CKShare.Metadata) {

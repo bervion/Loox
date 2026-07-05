@@ -13,6 +13,7 @@ struct VaultifyApp: App {
     /// Acceptance succeeded — tell the user where to look (the accept itself
     /// is silent/native by design; silence reads as "nothing happened").
     @State private var inviteAccepted = false
+    @State private var inviteInFlight = false
     // Receives CloudKit silent pushes for near-real-time sync (see AppPushDelegate).
     #if canImport(UIKit)
     @UIApplicationDelegateAdaptor(AppPushDelegate.self) private var pushDelegate
@@ -61,10 +62,13 @@ struct VaultifyApp: App {
                 // Universal Link: share-invite (invite.looxpassword.com/i/<token>#k=…).
                 // Resolve + accept in background; the unlocked shell picks the
                 // acceptance up via the standard breadcrumb/resume flow.
-                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
-                    guard let url = activity.webpageURL,
-                          InviteLinkService.isInviteLink(url) else { return }
+                // Invite links arrive via the scene delegate (a custom scene
+                // delegate takes over NSUserActivity delivery from SwiftUI).
+                .onReceive(NotificationCenter.default.publisher(for: .inviteLinkReceived)) { note in
+                    guard let url = note.object as? URL, !inviteInFlight else { return }
+                    inviteInFlight = true
                     Task {
+                        defer { inviteInFlight = false }
                         do {
                             try await env.inviteLinks.acceptInvite(from: url)
                             inviteAccepted = true

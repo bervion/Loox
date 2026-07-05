@@ -39,4 +39,7 @@ extension Notification.Name {
     /// A CKShare invitation was accepted on this device (userInfo-free; the
     /// accept already ran — observers refresh their shared-zone state).
     static let vaultShareAccepted = Notification.Name("vaultShareAccepted")
+    /// An invite universal link arrived via the scene delegate (`object` =
+    /// the URL); the app root resolves + accepts and surfaces the outcome.
+    static let inviteLinkReceived = Notification.Name("inviteLinkReceived")
 }
