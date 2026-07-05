@@ -17,6 +17,10 @@ import SwiftUI
     /// Restorable UI state (selected tab, per-tab nav depth, in-progress editor draft),
     /// sealed under the Vault Key. Saved on background, re-applied after unlock.
     let uiState: UIStateStore
+    /// Approval Mode sharing transport (owner side) + push-driven refresh.
+    /// Construction is cheap and touches no CloudKit until a flow runs.
+    let approvalShare: ApprovalShareService
+    let approvalCoordinator: ApprovalCoordinator
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
@@ -42,6 +46,10 @@ import SwiftUI
         self.faviconService = FaviconService()
         self.attachmentStore = AttachmentStore(session: session)
         self.uiState = UIStateStore(session: session)
+        let approvalShare = ApprovalShareService()
+        self.approvalShare = approvalShare
+        self.approvalCoordinator = ApprovalCoordinator(settings: settings,
+                                                       shareService: approvalShare)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
@@ -58,6 +66,11 @@ import SwiftUI
     func eraseEverything() {
         Task { [cloudSync] in await cloudSync.eraseRemote() }
         VaultKeyEscrowService.clearPushedFingerprint()
+        // Approval Mode device-local state dies with the vault (full CloudKit
+        // approval-artifact teardown is the revocation phase's job).
+        ParticipantEscrowService.clearLocalCache()
+        SharedZoneSubscriptionService.clearLocalFlag()
+        settings.approvalModeEnabled = false
         settings.iCloudSyncEnabled = false
         repository.clear()
         try? store.eraseAll()
