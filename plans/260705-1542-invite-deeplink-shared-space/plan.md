@@ -54,14 +54,21 @@ of grant, no wire bump). Until it ships, rows display localized "Shared Item" fa
 
 ## Phases
 
-| # | Nội dung | Ghi chú |
-|---|----------|---------|
-| 0 | **ADR set**: Public Rendezvous v1 · Opaque Inbox Identity · Encrypted Invite Envelope · Push-is-hint | chốt trước khi code |
-| 1 | **Shared-with-Me space** (aggregate; "Shared Item" fallback title) + `SharedDisplayEnvelope` | KHÔNG grant v2 |
-| 2 | **Universal Link**: FE AASA + `/i/*` landing (runbook); app Associated Domains + NSUserActivity + PendingInviteRouter; QA theo Apple Universal-Links technote (developer mode), không chỉ curl | capability/profile regen CHỈ trên branch V1.1 |
-| 3 | **Public Rendezvous SPIKE** (gating): B subscription → A write → B signal → fetch; locked-screen behavior; **Production/TestFlight environment SỚM** (forum-signal về query-subscription push khác biệt trên public DB production) | spike fail → dừng, escalate |
-| 4 | **Encrypted Invite Envelope**: recipient seal + sender signature + expiry + replay + dedup | sau khi transport chứng minh |
-| 5 | **InviteInboxReconciler** — MỘT reconciler cho launch/foreground/push-hint/manual (H7, không fork sync stack) + inbox UI | |
+| # | Nội dung | Ghi chú | Status |
+|---|----------|---------|--------|
+| 0 | **ADR set**: Public Rendezvous v1 · Opaque Inbox Identity · Encrypted Invite Envelope · Push-is-hint | chốt trước khi code | ✅ (U1-U10 table) |
+| 1 | **Shared-with-Me space** (aggregate; "Shared Item" fallback title) + `SharedDisplayEnvelope` | KHÔNG grant v2 | ✅ envelope + Home row + system space in Items Spaces (cc8b9fb) |
+| 2 | **Universal Link**: FE AASA + `/i/*` landing (runbook); app Associated Domains + NSUserActivity + PendingInviteRouter; QA theo Apple Universal-Links technote (developer mode), không chỉ curl | capability/profile regen CHỈ trên branch V1.1 | ✅ verified on-device (scene-delegate routing fix) |
+| 3 | **Public Rendezvous SPIKE** (gating): B subscription → A write → B signal → fetch; locked-screen behavior; **Production/TestFlight environment SỚM** (forum-signal về query-subscription push khác biệt trên public DB production) | spike fail → dừng, escalate | 🔶 spike code shipped (f3602f4, DEBUG section in iCloud Sync settings) — AWAITING 2-device run + Production/TestFlight verdict |
+| 4 | **Encrypted Invite Envelope**: recipient seal + sender signature + expiry + replay + dedup | sau khi transport chứng minh | ⏸ gated on Phase 3 verdict |
+| 5 | **InviteInboxReconciler** — MỘT reconciler cho launch/foreground/push-hint/manual (H7, không fork sync stack) + inbox UI | | ⏸ |
+
+### Mid-flight scope additions (user-driven, shipped)
+- iMessage compose pre-filled recipient (3f2a020) · cold-launch approval-sheet fix (8b8a1f1)
+- Owner alert = CKQuerySubscription on ApprovalRequest creation only — phantom-alert fix (563edfc)
+- **Single-confirm pairing (USER-LOCKED, amends ADR-4/U10 ceremony UX):** B auto-TOFU-pins on first
+  grant fetch; A one-tap "Activate Sharing" là enforcement point duy nhất; safety code hiển thị cả 2
+  bên để đối chiếu tùy chọn; key CHANGE vẫn bị reject (d5fd430)
 
 ## Bootstrap spike questions (Phase 3 phải trả lời)
 - Resolve CK participant identity → descriptor: record đặt ở đâu (public DB keyed theo gì — recordName
