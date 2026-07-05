@@ -246,6 +246,14 @@ import Foundation
         let saved = try await database.modifyRecords(saving: [record], deleting: [],
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
+        // An answered request is spent: remove its record so inbox refreshes
+        // stop resurfacing it (its nonce is burned — a re-approve can only
+        // fail verification). Separate best-effort call, NOT part of the
+        // response batch: a retried delete of an already-gone record must
+        // not fail the idempotent response save, and the record's TTL plus
+        // the coordinator's handled-set cover a missed delete.
+        _ = try? await database.modifyRecords(
+            saving: [], deleting: [CKRecord.ID(recordName: requestId, zoneID: zoneID)])
     }
 
     // MARK: Revocation (owner)
