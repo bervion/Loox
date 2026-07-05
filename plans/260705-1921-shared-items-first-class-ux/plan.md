@@ -71,3 +71,18 @@ DetailFieldRow, L: no totp placeholders / stable website id / trashed share gate
 4. A: detail item hiện section "đang chia sẻ với" (email + Active) → tap mở sheet quản lý; header chỉ 1 nút share.
 5. A đổi tên item → B thấy tên mới sau refresh. 6. Revoke/Leave → item biến mất khỏi mọi list của B.
 7. Khoá app B → mở lại → shared items xuất hiện lại sau unlock (wipe-on-lock hoạt động).
+
+## QA feedback round 1 (fixed 76ce1d7)
+- Field labels/kinds now travel as `SharedDisplayEnvelope.FieldMeta` (sealed): username renders
+  visible, password masked; unknown meta fails closed to a masked secret. NOTE: shares created
+  BEFORE this need re-share (or a rename on A re-publishes the envelope with meta).
+- Approved TOTP code uses the app's own TOTP components (TOTPCodeView.format + CountdownRing).
+- Home auto-select releases to "All Spaces" when shared items exist (both directions).
+
+## PENDING PHASE 8 — AutoFill for shared items (user-requested, NOT yet implemented)
+Design sketch: extension reads VaultStore only → needs a SEALED shared-credentials cache in the
+app-group container (values sealed under Vault Key, written by SharedItemsProjection.refresh,
+wiped on lock/revoke) + credential identities published for QuickType; TOTP askEachTime inside
+AutoFill = request→poll response with a bounded wait UI in the extension (no push in extensions),
+reusing RequestCodeModel over CloudKit from the extension process. Sizeable: needs its own review
+(security: cache lifetime, revocation lag) — implement as the next work item.
