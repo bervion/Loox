@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Localization, DS compliance, integration gate & QA"
-status: pending
+status: in_progress # 2026-07-05 — automated gates done; TWO-DEVICE QA = user runbook below
 priority: P1
 effort: "1.25d"
 dependencies: [4, 5, 6, 7]
@@ -81,6 +81,46 @@ full foreground ceremony. (Latency was already measured by the Phase-1 gating sp
 - [ ] DEBUG self-test passes all crypto invariants.
 - [ ] Two-account ceremony QA verified on device (share → foreground approve → revoke → leave → reject).
 - [ ] `make check` green; docs updated (incl. corrected CLAUDE.md iCloud note).
+
+## Status — 2026-07-05
+
+**Done (automated):** localization sweep — 52 sharing-UI literals script-verified against the catalog,
+all EN+VI, interpolation keys byte-exact. DS audit grep — no `.font(.system`, no SF Symbols, no raw
+colors, no raw `ic_` literals, no `BlurStyle.inner` in Sharing UI. ADR-7 grep gate — kernel free of
+`Calendar`/`TimeZone`/`DateComponents`. Kernel invariants covered by 14 unit tests (sign/verify/tamper,
+HPKE both recipients + cross-open fails, replay, epoch, lifetime clamp, unpinned keys, unknown-field
+fail-closed, zero-period fail-closed, verifyResponse suite, multi-key canonical round-trip, escrow
+round-trip, window math + issuance policy boundary). Suite 161/161; iOS + macOS compile green.
+Docs updated (codebase-summary, README, CLAUDE.md iCloud note corrected).
+
+**Remaining — TWO-DEVICE QA (user, Debug app on both, 2 iCloud accounts):**
+1. **Share + fingerprint:** A: item → ⋯ → Share Access… → email B → capabilities (1 shared password +
+   TOTP ask-each-time) → Create Share → send invite. B: tap invite → app opens → Home shows "Shared
+   with Me" → open item → fingerprint codes MATCH on both → confirm both sides. ✅ proves C1 zoneID fix
+   (cross-account shared-DB addressing) + accept-resume + escrow.
+2. **Shared value:** B sees the shared password value after pin. Second B device (if available): same
+   value decrypts (escrow recovery).
+3. **Ceremony happy path:** B: Request Code → A gets ALERT push → tap → sheet shows request + match
+   code (equals B's) → Approve with Face ID → B receives code with comfortable remaining life. Repeat
+   ~10× and note `TOTP_remaining` — gate: ≥95% arrive ≥15s (measured AFTER boundary-aware issuance).
+4. **Boundary wait (ADR-6):** time an approve so the ring is near the end of a 30s window → A shows
+   "Preparing a fresh verification code…" for a few seconds → B's code arrives with ~25-29s left.
+   NEVER a code that dies instantly.
+5. **Abort:** A backgrounds the app mid-wait → B shows "Approval was interrupted — request again".
+6. **Supersede:** B: Request → wait past ~20s → Request Again → only ONE code ever displays.
+7. **Reject + revoke + leave:** reject → B sees declined. A: Share Access → swipe → Revoke → B's next
+   request fails / item shows owner stopped sharing. Separate share: B leaves → A row still local
+   (SharingStore is device-local; refresh case documented).
+8. **Sync independence (Validation §2):** A with iCloud Sync toggle OFF + a share active → approval
+   round-trip works AND no VaultItem records appear in CloudKit console.
+9. **Nonce collision shape (H4, if A has 2 devices):** approve the same request from both quickly —
+   second must fail, never double-issue.
+10. **A11y passes:** VI language, dark mode, Reduce Motion — sharing screens render, no invisible text.
+
+**Deferred (recorded, not blockers):** CKQuerySubscription experiment for the false profile-publish
+alert (M2, phase-03); decomposed per-hop latency telemetry (ADR-6 condition 5) — measure during QA run
+#3 manually (request→alert, approve→receive) if the gate numbers look off; escrow AAD + writer u32
+clamp hardening (phase-02 list); multi-device-owner grant signing (V1: approve on the sharing device).
 
 ## Risk Assessment
 - If the integration gate fails (canonical bytes mutate through CKRecord), fix the encoder before shipping —
