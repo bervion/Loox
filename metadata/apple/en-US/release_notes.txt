@@ -1,1 +1,1 @@
-Introducing Loox Link — share a login or passkey with anyone in seconds, even if they don't have Loox. Create a private link that expires automatically, so you stay in control of what you share and for how long.
+Fixed an issue that could affect Loox Link sharing. Minor stability improvements.

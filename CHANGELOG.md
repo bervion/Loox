@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.16.1] - 2026-07-05
+
+### Fixed
+- add Loox Link sources missing from the loox link commit
+
+### Changed
+- loox link quick share, passkey supersede, shared-vault hardening v2
+
+
 ## [1.16.0] - 2026-07-05
 
 ### Added

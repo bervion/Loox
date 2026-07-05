@@ -1,1 +1,1 @@
-Ra mắt Loox Link — chia sẻ mật khẩu hoặc passkey với bất kỳ ai chỉ trong vài giây, kể cả khi họ chưa dùng Loox. Tạo liên kết riêng tư, tự động hết hạn, giúp bạn luôn kiểm soát những gì mình chia sẻ và trong bao lâu.
+Đã sửa lỗi có thể ảnh hưởng đến tính năng chia sẻ Loox Link. Cải thiện nhỏ về độ ổn định.
