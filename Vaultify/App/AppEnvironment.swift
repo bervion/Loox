@@ -21,6 +21,8 @@ import SwiftUI
     /// Construction is cheap and touches no CloudKit until a flow runs.
     let approvalShare: ApprovalShareService
     let approvalCoordinator: ApprovalCoordinator
+    /// Device-local "which items are shared with whom" registry (owner side).
+    let sharingStore = SharingStore()
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.

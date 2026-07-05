@@ -12,6 +12,7 @@ struct ItemDetailScreen: View {
     @State private var confirmDelete = false
     @State private var showLocatedIn = false
     @State private var showLastIdentityBlock = false
+    @State private var showShareAccess = false
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -57,6 +58,13 @@ struct ItemDetailScreen: View {
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
+                        // Capability sharing ("share access, not secrets") — distinct
+                        // from the ShareLink above, which only shares the website URL.
+                        if !item.isTrashed {
+                            Button { showShareAccess = true } label: {
+                                Label("Share Access…", image: Icons.shield)
+                            }
+                        }
                         // Archiving only applies to live items; a trashed item is
                         // restored/deleted from the card below instead.
                         if !item.isTrashed {
@@ -78,6 +86,7 @@ struct ItemDetailScreen: View {
         }
         .sheet(item: $editing) { ItemEditorScreen(target: $0) }
         .sheet(isPresented: $showLocatedIn) { LocatedInSheet(itemID: itemID) }
+        .sheet(isPresented: $showShareAccess) { ShareAccessSheet(itemID: itemID) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
                 if let item { try? env.repository.moveToTrash(item); dismiss() }

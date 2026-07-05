@@ -8,12 +8,27 @@ import Foundation
 /// responses. All ciphertext/public data only — the control plane never
 /// carries vault plaintext (ADR-2).
 @MainActor final class ApprovalShareService {
-    enum Failure: Error {
+    enum Failure: Error, LocalizedError {
         case invalidRecipientEmail
         case prerequisitesBlocked(ApprovalPrerequisites.Blocker)
         case noParticipantProfile
         case grantMissing
         case verifyFailed(ApprovalVerifyFailure)
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidRecipientEmail:
+                return appString("Enter the recipient's iCloud email first.")
+            case .prerequisitesBlocked:
+                return appString("Sharing isn't available right now — check iCloud and notification permissions.")
+            case .noParticipantProfile:
+                return appString("They haven't accepted the invitation yet.")
+            case .grantMissing:
+                return appString("This share isn't set up yet.")
+            case .verifyFailed:
+                return appString("The request couldn't be verified.")
+            }
+        }
     }
 
     private lazy var container = CKContainer(identifier: ApprovalConfig.containerID)

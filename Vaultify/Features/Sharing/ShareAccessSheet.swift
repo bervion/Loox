@@ -1,0 +1,322 @@
+import CloudKit
+import SwiftUI
+
+/// Owner share-config flow: pick a recipient (looked-up iCloud identity, no
+/// bearer semantics), set per-field capability, create the CKShare, wait for
+/// the recipient to accept + publish their identity, run the one-time
+/// fingerprint ceremony, then publish the signed grant + sealed blobs.
+/// Fail-closed at the door: no iCloud account or no notification permission →
+/// the flow never starts (ADR-2).
+struct ShareAccessSheet: View {
+    let itemID: String
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.dismiss) private var dismiss
+
+    private enum Step {
+        case checking
+        case blocked(ApprovalPrerequisites.Blocker)
+        case config
+        case creating
+        case waiting(zoneID: CKRecordZone.ID, shareURL: URL?)
+        case fingerprint(zoneID: CKRecordZone.ID, code: String,
+                         profile: (participantPubKey: Data, deviceSigningKeys: [Data], createdAtUnixMs: Int64))
+        case publishing
+        case done
+        case failed(String)
+    }
+
+    @State private var step: Step = .checking
+    @State private var recipientEmail = ""
+    @State private var capabilities: [String: FieldCapability] = [:]
+
+    private var item: VaultItem? { env.repository.item(id: itemID) }
+
+    private var hasGrantedCapability: Bool {
+        capabilities.values.contains { $0.isAskEachTimeTOTP || $0.isSharedValue }
+    }
+
+    private var normalizedEmail: String {
+        recipientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    /// Non-nil while the sheet should poll for the recipient's profile.
+    /// Driving `.task(id:)` off this makes cancellation structural — the poll
+    /// dies with the view or the step, never leaking (review H1).
+    private var pollingZoneName: String? {
+        if case .waiting(let zoneID, _) = step { return zoneID.zoneName }
+        return nil
+    }
+
+    var body: some View {
+        VaultSheetScaffold(title: "Share Access") {
+            content
+        }
+        .task { await enter() }
+        .task(id: pollingZoneName) {
+            guard let zoneName = pollingZoneName else { return }
+            await pollForProfile(zoneName: zoneName)
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch step {
+        case .checking:
+            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .blocked(let blocker):
+            blockedView(blocker)
+        case .config:
+            configForm
+        case .creating, .publishing:
+            VStack(spacing: Space.s4) {
+                ProgressView()
+                Text("Setting up encrypted approval transport…")
+                    .vaultType(.callout).themedForeground(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .waiting(_, let shareURL):
+            waitingView(shareURL: shareURL)
+        case .fingerprint(_, let code, _):
+            TrustFingerprintView(code: code, recipientLabel: recipientEmail) {
+                Task { await confirmFingerprintAndPublish() }
+            }
+        case .done:
+            doneView
+        case .failed(let message):
+            VStack(spacing: Space.s4) {
+                PolarisIcon(Icons.alert, size: Metric.iconTile)
+                    .themedForeground(.destructive)
+                Text(verbatim: message)
+                    .vaultType(.callout).themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                Button {
+                    step = .config
+                } label: {
+                    Text("Try Again")
+                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                }
+                .buttonStyle(.themedProminent)
+            }
+            .padding(Space.gutter)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    // MARK: Steps
+
+    private func enter() async {
+        if let blocker = await ApprovalPrerequisites.check() {
+            step = .blocked(blocker)
+            return
+        }
+        if capabilities.isEmpty, let item {
+            // Least exposure by default: everything Off until the owner opts in.
+            for field in item.fields {
+                capabilities[field.id] = field.kind == .totp ? .totp(.none) : .value(.none)
+            }
+        }
+        step = .config
+    }
+
+    private func createShare() async {
+        // Re-entrancy guard: a double-tapped button queues two MainActor
+        // tasks; the second must not mint a second zone (review M2).
+        guard case .config = step else { return }
+        step = .creating
+        do {
+            // Resume path (review H2): an unfinished share to the SAME
+            // recipient reuses its zone instead of littering a new one.
+            let pending = env.sharingStore.shares(forItem: itemID).first {
+                !$0.fingerprintConfirmed && $0.recipientLabel == normalizedEmail
+            }
+            let setup = try await env.approvalShare.createShare(
+                recipientEmail: normalizedEmail, existingZoneName: pending?.zoneName)
+            // Approval Mode listening turns on now, deliberately BEFORE the
+            // grant exists — the accept push must be receivable. The pending
+            // record below keeps that state accounted for.
+            env.settings.approvalModeEnabled = true
+            env.sharingStore.upsert(ItemShareRecord(
+                itemId: itemID, zoneName: setup.zoneID.zoneName,
+                recipientLabel: normalizedEmail, grantId: nil,
+                createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
+                fingerprintConfirmed: false))
+            step = .waiting(zoneID: setup.zoneID, shareURL: setup.shareURL)
+        } catch {
+            step = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Structured poll (auto-cancelled via `.task(id:)`): identity loaded
+    /// once, gentle backoff, bounded — the ceremony can also be finished
+    /// later by reopening the sheet (the pending record resumes it).
+    private func pollForProfile(zoneName: String) async {
+        guard let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw else { return }
+        let zoneID = CKRecordZone.ID(zoneName: zoneName)
+        var delay: Duration = .seconds(3)
+        for _ in 0..<80 { // ≈ 10 minutes at the capped interval
+            guard !Task.isCancelled else { return }
+            if let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) {
+                let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
+                                                 participantPubKey: profile.participantPubKey)
+                step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
+                return
+            }
+            try? await Task.sleep(for: delay)
+            delay = min(delay * 2, .seconds(10))
+        }
+    }
+
+    private func confirmFingerprintAndPublish() async {
+        guard case .fingerprint(let zoneID, _, let profile) = step else { return }
+        guard let item else {
+            step = .failed(appString("This item no longer exists."))
+            return
+        }
+        step = .publishing
+        do {
+            let sharedValues: [String: Data] = Dictionary(uniqueKeysWithValues:
+                item.fields.compactMap { field in
+                    guard capabilities[field.id]?.isSharedValue == true,
+                          !field.isExtraProtected else { return nil }
+                    return (field.id, Data(field.value.utf8))
+                })
+            let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
+            let grant = try await env.approvalShare.publishGrant(
+                itemId: item.id,
+                capabilities: capabilities,
+                sharedValues: sharedValues,
+                participantPubKey: profile.participantPubKey,
+                pinnedDeviceSigningKeys: profile.deviceSigningKeys,
+                epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
+            env.sharingStore.upsert(ItemShareRecord(
+                itemId: item.id, zoneName: zoneID.zoneName,
+                recipientLabel: recipientEmail, grantId: grant.id,
+                createdAtUnixMs: nowUnixMs, fingerprintConfirmed: true))
+            step = .done
+        } catch {
+            step = .failed(error.localizedDescription)
+        }
+    }
+
+    // MARK: Subviews
+
+    private var configForm: some View {
+        Form {
+            Section {
+                TextField("Recipient's iCloud email", text: $recipientEmail)
+                    .platformKeyboardType(.emailAddress)
+                    .platformAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            } footer: {
+                Text("Access is tied to this iCloud account — only they can accept, and there's no link that works for anyone else.")
+            }
+            .listRowBackground(VaultColors.surface)
+
+            if let item {
+                Section {
+                    ForEach(item.fields) { field in
+                        FieldCapabilityRow(field: field, capability: binding(for: field))
+                    }
+                } header: {
+                    Text("What they can use")
+                } footer: {
+                    Text("Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use — the secret never leaves your vault.")
+                }
+                .listRowBackground(VaultColors.surface)
+
+                let existing = env.sharingStore.shares(forItem: item.id)
+                if !existing.isEmpty {
+                    Section {
+                        ForEach(existing) { share in
+                            LabeledContent(share.recipientLabel) {
+                                Text(share.fingerprintConfirmed ? "Active" : "Pending")
+                                    .themedForeground(.secondary)
+                            }
+                        }
+                    } header: {
+                        Text("Shared with \(existing.count)")
+                    }
+                    .listRowBackground(VaultColors.surface)
+                }
+            }
+
+            Section {
+                Button {
+                    Task { await createShare() }
+                } label: {
+                    Text("Create Share")
+                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                }
+                .buttonStyle(.themedProminent)
+                .disabled(!recipientEmail.contains("@") || !hasGrantedCapability)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            }
+        }
+    }
+
+    private func binding(for field: DynamicField) -> Binding<FieldCapability> {
+        Binding(
+            get: { capabilities[field.id] ?? (field.kind == .totp ? .totp(.none) : .value(.none)) },
+            set: { capabilities[field.id] = $0 })
+    }
+
+    private func waitingView(shareURL: URL?) -> some View {
+        VStack(spacing: Space.s5) {
+            ProgressView()
+            Text("Waiting for them to accept…")
+                .vaultType(.section).themedForeground()
+            Text("Send the invitation, then keep this screen open. Once they accept on their device, you'll compare a short code together.")
+                .vaultType(.callout).themedForeground(.secondary)
+                .multilineTextAlignment(.center)
+            if let shareURL {
+                ShareLink(item: shareURL) {
+                    Label { Text("Send Invitation") } icon: { PolarisIcon(Icons.share) }
+                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                }
+                .buttonStyle(.themedProminent)
+            }
+        }
+        .padding(Space.gutter)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var doneView: some View {
+        VStack(spacing: Space.s4) {
+            PolarisIcon(Icons.shield, size: Metric.iconTileLarge)
+                .themedForeground(.success)
+            Text("Access shared")
+                .vaultType(.section).themedForeground()
+            Text("They now see what you allowed. You can change or revoke access anytime from this item.")
+                .vaultType(.callout).themedForeground(.secondary)
+                .multilineTextAlignment(.center)
+            Button("Done") { dismiss() }
+                .buttonStyle(.themedProminent)
+        }
+        .padding(Space.gutter)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func blockedView(_ blocker: ApprovalPrerequisites.Blocker) -> some View {
+        VStack(spacing: Space.s4) {
+            PolarisIcon(Icons.info, size: Metric.iconTile)
+                .themedForeground(.warning)
+            Text(blocker == .iCloudUnavailable
+                 ? "Sign in to iCloud to share access. Sharing uses an encrypted approval transport — it does not turn on vault sync."
+                 : "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access.")
+                .vaultType(.callout).themedForeground(.secondary)
+                .multilineTextAlignment(.center)
+            // The gate result can change while the sheet is up (user flips
+            // the permission in Settings and comes back) — allow a re-check.
+            Button {
+                step = .checking
+                Task { await enter() }
+            } label: {
+                Text("Check Again")
+                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+            }
+            .buttonStyle(.themedProminent)
+        }
+        .padding(Space.gutter)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}

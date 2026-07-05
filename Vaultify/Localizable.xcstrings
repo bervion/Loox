@@ -7233,6 +7233,518 @@
           }
         }
       }
+    },
+    "Share Access": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Access"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ quyền truy cập"
+          }
+        }
+      }
+    },
+    "Share Access…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Access…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ quyền truy cập…"
+          }
+        }
+      }
+    },
+    "Compare this code": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compare this code"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So sánh mã này"
+          }
+        }
+      }
+    },
+    "Ask %@ to read the code shown on their device. Confirm only if both codes match exactly — this is what proves you're sharing with the right person.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask %@ to read the code shown on their device. Confirm only if both codes match exactly — this is what proves you're sharing with the right person."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhờ %@ đọc mã hiển thị trên thiết bị của họ. Chỉ xác nhận khi hai mã trùng khớp hoàn toàn — đây là cách chứng minh bạn đang chia sẻ đúng người."
+          }
+        }
+      }
+    },
+    "The codes match": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The codes match"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai mã trùng khớp"
+          }
+        }
+      }
+    },
+    "Setting up encrypted approval transport…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setting up encrypted approval transport…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang thiết lập kênh phê duyệt mã hóa…"
+          }
+        }
+      }
+    },
+    "Recipient's iCloud email": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient's iCloud email"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email iCloud của người nhận"
+          }
+        }
+      }
+    },
+    "Access is tied to this iCloud account — only they can accept, and there's no link that works for anyone else.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access is tied to this iCloud account — only they can accept, and there's no link that works for anyone else."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quyền truy cập gắn với tài khoản iCloud này — chỉ họ mới có thể chấp nhận, không có liên kết nào dùng được cho người khác."
+          }
+        }
+      }
+    },
+    "What they can use": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What they can use"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ được dùng gì"
+          }
+        }
+      }
+    },
+    "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use — the secret never leaves your vault.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use — the secret never leaves your vault."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giá trị được chia sẻ sẽ hiển thị với họ và không thể thu hồi sau này. Mã \"Hỏi mỗi lần\" cần bạn phê duyệt cho từng lần dùng — bí mật không bao giờ rời kho của bạn."
+          }
+        }
+      }
+    },
+    "Shared with %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared with %lld"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chia sẻ với %lld người"
+          }
+        }
+      }
+    },
+    "Active": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang hoạt động"
+          }
+        }
+      }
+    },
+    "Pending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pending"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang chờ"
+          }
+        }
+      }
+    },
+    "Create Share": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Share"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo chia sẻ"
+          }
+        }
+      }
+    },
+    "Waiting for them to accept…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for them to accept…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang chờ họ chấp nhận…"
+          }
+        }
+      }
+    },
+    "Send the invitation, then keep this screen open. Once they accept on their device, you'll compare a short code together.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send the invitation, then keep this screen open. Once they accept on their device, you'll compare a short code together."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi lời mời, rồi giữ màn hình này mở. Khi họ chấp nhận trên thiết bị của họ, hai bạn sẽ cùng so sánh một mã ngắn."
+          }
+        }
+      }
+    },
+    "Send Invitation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Invitation"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi lời mời"
+          }
+        }
+      }
+    },
+    "Access shared": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access shared"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chia sẻ quyền truy cập"
+          }
+        }
+      }
+    },
+    "They now see what you allowed. You can change or revoke access anytime from this item.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They now see what you allowed. You can change or revoke access anytime from this item."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ đã thấy những gì bạn cho phép. Bạn có thể thay đổi hoặc thu hồi quyền bất cứ lúc nào từ mục này."
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to share access. Sharing uses an encrypted approval transport — it does not turn on vault sync.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to iCloud to share access. Sharing uses an encrypted approval transport — it does not turn on vault sync."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đăng nhập iCloud để chia sẻ quyền truy cập. Tính năng này dùng kênh phê duyệt mã hóa — không bật đồng bộ kho."
+          }
+        }
+      }
+    },
+    "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu phê duyệt cần thông báo. Hãy cho phép thông báo trong Cài đặt để chia sẻ quyền \"hỏi mỗi lần\"."
+          }
+        }
+      }
+    },
+    "Ask each time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask each time"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hỏi mỗi lần"
+          }
+        }
+      }
+    },
+    "Shared": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ"
+          }
+        }
+      }
+    },
+    "Extra-protected — not shareable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra-protected — not shareable"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bảo vệ tăng cường — không thể chia sẻ"
+          }
+        }
+      }
+    },
+    "Attachments aren’t shareable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attachments aren’t shareable"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tệp đính kèm không thể chia sẻ"
+          }
+        }
+      }
+    },
+    "Check Again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Again"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra lại"
+          }
+        }
+      }
+    },
+    "This item no longer exists.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This item no longer exists."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục này không còn tồn tại."
+          }
+        }
+      }
+    },
+    "Enter the recipient's iCloud email first.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the recipient's iCloud email first."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hãy nhập email iCloud của người nhận trước."
+          }
+        }
+      }
+    },
+    "Sharing isn't available right now — check iCloud and notification permissions.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing isn't available right now — check iCloud and notification permissions."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện chưa thể chia sẻ — hãy kiểm tra iCloud và quyền thông báo."
+          }
+        }
+      }
+    },
+    "They haven't accepted the invitation yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They haven't accepted the invitation yet."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ chưa chấp nhận lời mời."
+          }
+        }
+      }
+    },
+    "This share isn't set up yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This share isn't set up yet."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ này chưa được thiết lập."
+          }
+        }
+      }
+    },
+    "The request couldn't be verified.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The request couldn't be verified."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể xác minh yêu cầu."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
