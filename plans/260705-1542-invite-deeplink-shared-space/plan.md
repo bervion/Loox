@@ -60,7 +60,7 @@ of grant, no wire bump). Until it ships, rows display localized "Shared Item" fa
 | 1 | **Shared-with-Me space** (aggregate; "Shared Item" fallback title) + `SharedDisplayEnvelope` | KHÔNG grant v2 | ✅ envelope + Home row + system space in Items Spaces (cc8b9fb) |
 | 2 | **Universal Link**: FE AASA + `/i/*` landing (runbook); app Associated Domains + NSUserActivity + PendingInviteRouter; QA theo Apple Universal-Links technote (developer mode), không chỉ curl | capability/profile regen CHỈ trên branch V1.1 | ✅ verified on-device (scene-delegate routing fix) |
 | 3 | **Public Rendezvous SPIKE** (gating): B subscription → A write → B signal → fetch; locked-screen behavior; **Production/TestFlight environment SỚM** (forum-signal về query-subscription push khác biệt trên public DB production) | spike fail → dừng, escalate | 🔶 spike code shipped (f3602f4, DEBUG section in iCloud Sync settings) — AWAITING 2-device run + Production/TestFlight verdict |
-| 4 | **Encrypted Invite Envelope**: recipient seal + sender signature + expiry + replay + dedup | sau khi transport chứng minh | ⏸ gated on Phase 3 verdict |
+| 4 | **Encrypted Invite Envelope**: recipient seal + sender signature + expiry + replay + dedup | sau khi transport chứng minh | 🔶 KERNEL shipped (0e39992: InviteEnvelope sign→seal, inbox-bound HPKE info, U9 lifetime 24h–7d mint+open, 7 tests / suite 168) — transport WIRING gated on Phase 3 verdict; dedup by inviteID = Phase 5 reconciler |
 | 5 | **InviteInboxReconciler** — MỘT reconciler cho launch/foreground/push-hint/manual (H7, không fork sync stack) + inbox UI | | ⏸ |
 
 ### Mid-flight scope additions (user-driven, shipped)
