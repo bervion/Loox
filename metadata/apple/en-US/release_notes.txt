@@ -1,1 +1,1 @@
-Share select vault items securely with people you trust — recipients get read-only access that updates in real time, while you stay in control with simple approval, management, and instant revocation. This update also refines sharing screens, verification codes, and notifications for a smoother experience.
+Introducing Loox Link — share a login or passkey with anyone in seconds, even if they don't have Loox. Create a private link that expires automatically, so you stay in control of what you share and for how long.

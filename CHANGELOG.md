@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.16.0] - 2026-07-05
+
+### Added
+- implement loox link
+
+
 ## [1.15.0] - 2026-07-05
 
 ### Added
