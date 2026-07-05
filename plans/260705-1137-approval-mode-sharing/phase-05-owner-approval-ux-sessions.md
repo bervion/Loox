@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Owner approval ceremony (foreground)"
-status: pending
+status: completed # 2026-07-05 — see Implementation Status; ADR-6 device QA rides Phase 8
 priority: P1
 effort: "1.5d"
 dependencies: [3]
@@ -96,6 +96,33 @@ approval sessions** — those are removed from V1 (M4) because the vault key is 
       is still in counter N; remaining < threshold → issuance waits for the boundary; backgrounding
       mid-wait aborts issuance (no seed cached across the wait).
 - [ ] Fully localized + DS-compliant.
+
+## Implementation Status — 2026-07-05
+
+**Complete (on feat/approval-mode-sharing).** NEW: `ApprovalCeremonyService.swift` (ADR-6 machine:
+Face ID → authoritative verify/nonce burn → period via throwaway scope, seed NOT retained → boundary
+gate as a LOOP → fresh seed read at issue → payload → seal → respond; abort → signed `interrupted`),
+`ApprovalRequestSheet.swift` (verified request, 5-digit match code via `TrustFingerprint.requestCode`,
+Approve/Reject, Close hidden while busy, abandon-on-disappear aborts). MODIFIED: kernel adds
+`PreviewNonceStore` (display verify, no nonce burn) + `requestCode`; coordinator verify-before-show;
+shell wiring (foreground refresh + decoupled `@State` presentation); AppEnvironment; 18 strings EN+VI.
+Deviations from original file plan (simpler, same coverage): inbox = coordinator's in-memory verified
+list (no separate PendingApprovalStore/Inbox files — YAGNI, refresh-on-foreground covers missed pushes);
+deep-link tap routing rides `.approvalRequestReceived` → refresh → auto-present.
+
+**Review applied** (`from-code-reviewer-260705-phase5-approval-ceremony-report.md` — ADR-6 headline
+invariant verified safe-by-construction; nonce semantics + repository-cache-cleared-on-lock verified):
+H1 seed no longer retained across the wait (scoped period parse + fresh re-fetch at issue); H2
+foreground re-check after the verify await (covers lockOnBackground=false); H3 presentation decoupled
+(`@State presentedApproval`) — dismissal can't drop the next queued request; M1 inbox refresh can't swap
+the sheet mid-ceremony; M2 Close hidden while busy + `abandonIfBusy` on disappear (decision: abort +
+`interrupted`, never headless issuance); M3 `applicationState != .background` (Face ID `.inactive`
+false-abort); M4 window gate is a loop (late wake re-evaluates); M5 "Close" VI added. Low: post-nonce-burn
+failures now send `interrupted` (requester stops waiting; retry supersedes — Phase 6); reject re-entrancy
+guard; Icons.shieldAlert.
+
+**ADR-6 acceptance status:** counter-N+1-never-early = safe-by-construction (issue-time recompute);
+abort-on-background + no-seed-cache implemented; on-device QA (Face ID timing, real push) → Phase 8.
 
 ## Risk Assessment
 - Missed alert push (iOS budget) → A never taps. Mitigation: pending-requests inbox + B-side timeout
