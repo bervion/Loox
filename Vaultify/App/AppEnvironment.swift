@@ -21,6 +21,8 @@ import SwiftUI
     /// Construction is cheap and touches no CloudKit until a flow runs.
     let approvalShare: ApprovalShareService
     let approvalCoordinator: ApprovalCoordinator
+    /// Foreground approval ceremony (Face ID → boundary-aware issuance).
+    let approvalCeremony: ApprovalCeremonyService
     /// Device-local "which items are shared with whom" registry (owner side).
     let sharingStore = SharingStore()
 
@@ -52,6 +54,9 @@ import SwiftUI
         self.approvalShare = approvalShare
         self.approvalCoordinator = ApprovalCoordinator(settings: settings,
                                                        shareService: approvalShare)
+        self.approvalCeremony = ApprovalCeremonyService(session: session,
+                                                        repository: repository,
+                                                        shareService: approvalShare)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through

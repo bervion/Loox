@@ -157,6 +157,19 @@ nonisolated enum ApprovalSeal {
 /// A and B read it to each other ONCE (call/in person); after confirmation
 /// the owner key is TOFU-pinned and any change is rejected.
 nonisolated enum TrustFingerprint {
+    /// Short per-request match code shown on BOTH sides during an approval
+    /// ceremony (owner sheet + requester waiting screen) so A can eyeball
+    /// that the request on screen is the one B actually sent.
+    static func requestCode(requestId: String, nonce: Data) -> String {
+        var w = CanonicalWriter()
+        w.string("Loox request code v1")
+        w.string(requestId)
+        w.blob(nonce)
+        let digest = Data(SHA256.hash(data: w.data))
+        let value = digest.prefix(4).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian }
+        return String(format: "%05d", value % 100_000)
+    }
+
     /// "12345-67890-24680" — three 5-digit groups from a domain-separated
     /// SHA-256 over both keys (length-prefixed; order fixed owner-first).
     static func code(ownerSigningPubKey: Data, participantPubKey: Data) -> String {

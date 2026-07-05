@@ -62,9 +62,25 @@ import Foundation
                     do {
                         let live = try await self.shareService.fetchLiveRequests(
                             zoneID: zoneID, nowUnixMs: nowUnixMs)
-                        collected.append(contentsOf: live.map {
-                            PendingOwnerRequest(zoneName: zoneName, request: $0)
-                        })
+                        guard !live.isEmpty else { continue }
+                        // Verify-before-show: only a request that passes the
+                        // kernel checks reaches any UI. Display verification
+                        // uses PreviewNonceStore — the single-use nonce burns
+                        // only at approve, not at render.
+                        guard let grant = try? await self.shareService.fetchGrantFresh(zoneID: zoneID),
+                              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw
+                        else { continue }
+                        for request in live {
+                            let failure = await ApprovalVerifier.verifyRequest(
+                                request, grant: grant,
+                                trustedOwnerSigningKeys: [ownerKey],
+                                currentEpoch: grant.epoch, nowUnixMs: nowUnixMs,
+                                nonceStore: PreviewNonceStore())
+                            if failure == nil {
+                                collected.append(PendingOwnerRequest(zoneName: zoneName,
+                                                                     request: request))
+                            }
+                        }
                     } catch let error as CKError
                         where error.code == .zoneNotFound || error.code == .userDeletedZone {
                         // Zone gone = share revoked/left; drop the registry entry.
@@ -77,6 +93,12 @@ import Foundation
                     .sorted { $0.request.createdAtUnixMs > $1.request.createdAtUnixMs }
             }
         }
+    }
+
+    /// Drop a request from the inbox after the ceremony finished (approve,
+    /// reject, dismiss) — the zone record expires server-side via its TTL.
+    func clearPending(requestId: String) {
+        pendingOwnerRequests.removeAll { $0.request.requestId == requestId }
     }
 
     private func bumpRecipientCounter() {

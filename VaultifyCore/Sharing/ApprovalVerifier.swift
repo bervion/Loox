@@ -35,6 +35,15 @@ nonisolated enum ApprovalVerifyFailure: Error, Equatable {
     case malformedResponse     // decision/payload combination inconsistent
 }
 
+/// Verification WITHOUT nonce consumption — for showing a request in UI
+/// before the owner acts. The nonce is single-use; burning it at display
+/// time would make a viewed-then-dismissed request permanently unapprovable.
+/// NEVER use for issuance: the approve path must consume authoritatively.
+nonisolated struct PreviewNonceStore: ApprovalNonceStore {
+    init() {}
+    func consume(nonce: Data, expiresAtUnixMs: Int64) async throws -> Bool { true }
+}
+
 nonisolated enum ApprovalVerifier {
 
     /// Hard upper bound on a request's B-signed lifetime. Without it the

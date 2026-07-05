@@ -13,6 +13,10 @@ struct VaultShellBehaviors: ViewModifier {
     @Environment(UIStateStore.self) private var uiState
     @Environment(\.scenePhase) private var scenePhase
     @State private var shakeDetector = ShakeToLockService()
+    /// The request whose ceremony sheet is currently up. Decoupled from the
+    /// coordinator inbox on purpose: inbox refreshes must not swap the sheet
+    /// mid-ceremony, and dismissing must not clear the NEXT pending request.
+    @State private var presentedApproval: ApprovalCoordinator.PendingOwnerRequest?
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     func body(content: Content) -> some View {
@@ -49,6 +53,34 @@ struct VaultShellBehaviors: ViewModifier {
             .sheet(item: $uiState.restoredDraft) { draft in
                 ItemEditorScreen(target: draft.isNew ? .draft(draft.item) : .edit(draft.item))
             }
+            // Owner approval ceremony (ADR-1): the shell only exists while the
+            // vault is unlocked, so a surfaced request can go straight to the
+            // verified sheet. Pushes are best-effort — refresh the inbox on
+            // every foreground activation too, so a missed push can't strand B.
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { env.approvalCoordinator.refreshOwnerRequests() }
+            }
+            .onAppear { env.approvalCoordinator.refreshOwnerRequests() }
+            // Surface the next verified request once no sheet is up. Only THIS
+            // request is cleared on finish — a queued second request presents
+            // on the next inbox change, never gets silently dropped.
+            .onChange(of: env.approvalCoordinator.pendingOwnerRequests.first?.id) { _, _ in
+                presentNextApprovalIfIdle()
+            }
+            .sheet(item: $presentedApproval) { pending in
+                ApprovalRequestSheet(
+                    pending: pending,
+                    itemTitle: env.repository.item(id: pending.request.itemId)?.title
+                        ?? appString("an item"),
+                    onFinished: {
+                        env.approvalCoordinator.clearPending(requestId: pending.request.requestId)
+                    })
+            }
+    }
+
+    private func presentNextApprovalIfIdle() {
+        guard presentedApproval == nil else { return }
+        presentedApproval = env.approvalCoordinator.pendingOwnerRequests.first
     }
 
     /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).
