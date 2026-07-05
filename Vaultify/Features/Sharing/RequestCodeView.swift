@@ -266,32 +266,24 @@ private struct ApprovedCodeView: View {
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
+        // Same visual language as the app's own TOTP rows (TOTPCodeView +
+        // CountdownRing) — the only difference is the code is a delivered
+        // one-time value, not locally generated.
         VStack(alignment: .leading, spacing: Space.s2) {
-            HStack(spacing: Space.s3) {
-                Text(verbatim: formattedCode)
-                    .font(.vaultCode(size: 28))
+            HStack(spacing: 12) {
+                Text(verbatim: TOTPCodeView.format(code))
+                    .font(.body.weight(.bold))
                     .monospacedDigit()
                     .themedForeground()
                     .textSelection(.enabled)
                 Spacer()
-                Text("About \(remainingSeconds)s remaining")
-                    .vaultType(.footnote).themedForeground(.secondary)
-                    .monospacedDigit()
+                CountdownRing(remaining: remainingSeconds, period: 30)
             }
             Text("Use it now — it expires with the current window.")
                 .vaultType(.footnote).themedForeground(.secondary)
         }
-        .padding(Space.s4)
-        .background(VaultColors.surface)
-        .vaultCornerRadius(Radius.md)
         .onAppear { updateRemaining() }
         .onReceive(timer) { _ in updateRemaining() }
-    }
-
-    private var formattedCode: String {
-        guard code.count == 6 else { return code }
-        let mid = code.index(code.startIndex, offsetBy: 3)
-        return "\(code[..<mid]) \(code[mid...])"
     }
 
     private func updateRemaining() {

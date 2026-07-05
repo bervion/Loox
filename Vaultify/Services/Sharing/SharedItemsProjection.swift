@@ -140,8 +140,13 @@ import Foundation
         for fieldId in values.keys.sorted() {
             guard let data = values[fieldId],
                   let value = String(data: data, encoding: .utf8) else { continue }
-            fields.append(DynamicField(id: fieldId, label: appString("Shared value"),
-                                       kind: .password, value: value, protected: true))
+            // Envelope metadata gives the field its real identity (username
+            // renders visible, password masked, AutoFill kinds correct);
+            // unknown/missing meta fails CLOSED into a masked secret.
+            let meta = display?.fields?[fieldId]
+            let kind = meta.flatMap { FieldKind(rawValue: $0.kind) } ?? .password
+            let label = meta?.label.isEmpty == false ? meta!.label : appString("Shared value")
+            fields.append(DynamicField(id: fieldId, label: label, kind: kind, value: value))
         }
         // No placeholder TOTP fields: the detail screen derives its Request
         // rows from the grant's capabilities, and an empty field would only

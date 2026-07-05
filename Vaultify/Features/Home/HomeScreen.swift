@@ -61,7 +61,10 @@ struct HomeScreen: View {
     /// shows in the "All" section title. Only fills an unset selection — never overrides a
     /// choice the user made, and stays out of the way once a second Space exists.
     private func autoSelectSingleSpace() {
-        guard selectedFolderId == nil, env.repository.folders.count == 1 else { return }
+        // With shared items in play there are effectively TWO sources —
+        // stay on "All Spaces" so the shares are never filtered out.
+        guard selectedFolderId == nil, env.repository.folders.count == 1,
+              env.sharedItems.items.isEmpty else { return }
         selectedFolderId = env.repository.folders.first?.id
     }
 
@@ -101,6 +104,13 @@ struct HomeScreen: View {
             .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
+            // First share arriving on a single-Space setup: release the
+            // auto-selected filter so the shared item is actually visible.
+            .onChange(of: env.sharedItems.items.count) { old, new in
+                if old == 0, new > 0, env.repository.folders.count == 1 {
+                    selectedFolderId = nil
+                }
+            }
             // New items inherit the Space currently selected on Home (nil = All Spaces →
             // editor falls back to the primary Space).
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }

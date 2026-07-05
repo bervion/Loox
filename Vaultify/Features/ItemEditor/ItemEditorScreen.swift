@@ -360,11 +360,18 @@ struct ItemEditorScreen: View {
         let title = item.title.isEmpty ? appString("Shared item") : item.title
         let host = item.urlField?.value.isEmpty == false
             ? URL(string: item.urlField!.value)?.host : nil
+        // Editor doesn't know per-share capabilities — publish meta for every
+        // shareable field (labels+kinds only, sealed to the recipient).
+        let displayFields = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
+            field.isExtraProtected ? nil
+                : (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
+                                                             kind: field.kind.rawValue))
+        })
         Task {
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
             for share in active {
                 try? await env.approvalShare.republishDisplayEnvelope(
-                    title: title, websiteHost: host,
+                    title: title, websiteHost: host, displayFields: displayFields,
                     zoneID: CKRecordZone.ID(zoneName: share.zoneName),
                     nowUnixMs: nowUnixMs)
             }
