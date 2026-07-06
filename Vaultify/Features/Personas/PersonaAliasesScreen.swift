@@ -74,20 +74,19 @@ struct PersonaAliasesScreen: View {
     }
 
     @ViewBuilder private func personaAliasSection(_ persona: Persona) -> some View {
-        Section("Reusable address") {
-            if let alias = env.repository.personaAlias(forPersona: persona.id) {
-                aliasRow(alias, subtitle: persona.displayName)
-            } else {
-                Button {
-                    guardEmail(persona) {
-                        if let id = try? env.repository.createPersonaAlias(for: persona),
-                           let created = env.repository.aliases.first(where: { $0.id == id }) {
-                            activate(created)
-                        }
+        Section("Reusable addresses") {
+            ForEach(env.repository.reusableAliases(forPersona: persona.id)) { alias in
+                aliasRow(alias, subtitle: alias.label ?? persona.displayName)
+            }
+            Button {
+                guardEmail(persona) {
+                    if let id = try? env.repository.createPersonaAlias(for: persona),
+                       let created = env.repository.aliases.first(where: { $0.id == id }) {
+                        activate(created)
                     }
-                } label: {
-                    Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
                 }
+            } label: {
+                Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
             }
         }
         .listRowBackground(VaultColors.surface)
@@ -141,9 +140,10 @@ struct PersonaAliasesScreen: View {
         }
     }
 
-    /// Aliases forward to the persona's real email — require one before creating.
+    /// Aliases forward to a real inbox — require one (default inbox or profile
+    /// email) before creating.
     private func guardEmail(_ persona: Persona, _ create: () -> Void) {
-        if env.repository.destinationEmail(for: persona) == nil { missingEmail = true }
+        if env.repository.newAliasDestination(for: persona) == nil { missingEmail = true }
         else { create() }
     }
 

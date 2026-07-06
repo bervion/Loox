@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Reusable addresses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ dùng lâu dài"
+          }
+        }
+      }
+    },
     "Private Email" : {
       "localizations" : {
         "vi" : {

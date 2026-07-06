@@ -29,9 +29,14 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
     var localPart: String
     var boundItemId: String?
     var boundDomain: String?
+    /// User label ("Clients", "GitHub Work") — reusable addresses especially.
+    var label: String?
     var status: AliasStatus
-    /// The real inbox this alias forwards to — set on activation via
-    /// rotateDestination (the owning persona's profile email).
+    /// Explicit forwarding-inbox override. nil → the persona's default inbox
+    /// resolves at activation time (see `resolvedDestination`).
+    var forwardingInboxID: String?
+    /// The real inbox this alias forwards to — the last destination actually
+    /// set on the backend via rotateDestination (display + idempotent retry).
     var forwardingTarget: String?
     var disabledAt: Date?
     /// True once the backend has minted this alias (createAlias returned ok).
@@ -49,7 +54,9 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
          localPart: String,
          boundItemId: String? = nil,
          boundDomain: String? = nil,
+         label: String? = nil,
          status: AliasStatus = .draft,
+         forwardingInboxID: String? = nil,
          forwardingTarget: String? = nil,
          disabledAt: Date? = nil,
          backendMinted: Bool = false,
@@ -62,7 +69,9 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
         self.localPart = localPart
         self.boundItemId = boundItemId
         self.boundDomain = boundDomain
+        self.label = label
         self.status = status
+        self.forwardingInboxID = forwardingInboxID
         self.forwardingTarget = forwardingTarget
         self.disabledAt = disabledAt
         self.backendMinted = backendMinted
@@ -74,7 +83,9 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
     var secret: EmailAliasSecret {
         EmailAliasSecret(personaId: personaId, tier: tier, localPart: localPart,
                          boundItemId: boundItemId, boundDomain: boundDomain,
-                         status: status, forwardingTarget: forwardingTarget,
+                         label: label, status: status,
+                         forwardingInboxID: forwardingInboxID,
+                         forwardingTarget: forwardingTarget,
                          disabledAt: disabledAt, backendMinted: backendMinted)
     }
 }
@@ -89,21 +100,26 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
     var localPart: String
     var boundItemId: String?
     var boundDomain: String?
+    var label: String?
     var status: AliasStatus
+    var forwardingInboxID: String?
     var forwardingTarget: String?
     var disabledAt: Date?
     var backendMinted: Bool
 
     init(personaId: String, tier: AliasTier, localPart: String,
          boundItemId: String? = nil, boundDomain: String? = nil,
-         status: AliasStatus = .draft, forwardingTarget: String? = nil,
+         label: String? = nil, status: AliasStatus = .draft,
+         forwardingInboxID: String? = nil, forwardingTarget: String? = nil,
          disabledAt: Date? = nil, backendMinted: Bool = false) {
         self.personaId = personaId
         self.tier = tier
         self.localPart = localPart
         self.boundItemId = boundItemId
         self.boundDomain = boundDomain
+        self.label = label
         self.status = status
+        self.forwardingInboxID = forwardingInboxID
         self.forwardingTarget = forwardingTarget
         self.disabledAt = disabledAt
         self.backendMinted = backendMinted
@@ -117,6 +133,8 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
         status = try c.decodeIfPresent(AliasStatus.self, forKey: .status) ?? .draft
         boundItemId = try c.decodeIfPresent(String.self, forKey: .boundItemId)
         boundDomain = try c.decodeIfPresent(String.self, forKey: .boundDomain)
+        label = try c.decodeIfPresent(String.self, forKey: .label)
+        forwardingInboxID = try c.decodeIfPresent(String.self, forKey: .forwardingInboxID)
         forwardingTarget = try c.decodeIfPresent(String.self, forKey: .forwardingTarget)
         disabledAt = try c.decodeIfPresent(Date.self, forKey: .disabledAt)
         backendMinted = try c.decodeIfPresent(Bool.self, forKey: .backendMinted) ?? false
