@@ -69,14 +69,18 @@ final class PersonaCoreTests: XCTestCase {
 
     // MARK: primarySpaceId rebind
 
-    func testPrimarySpaceIdFollowsActivePersonaPointer() throws {
+    func testPrimarySpaceIdIsPersonaScopedAfterPartition() throws {
         let repo = makeRepo()
-        let space = try repo.addFolder(name: "Work", icon: "ic_work", color: .blue)
-        // A persona created now pins the current primary Space.
+        let space = try repo.addFolder(name: "Work", icon: "ic_work", color: .blue)  // owned by default
+        XCTAssertEqual(repo.primarySpaceId, space)   // default owns it
+        // A new persona gets its OWN starter Space; primarySpaceId resolves to that,
+        // never the default's Space (fail-closed partition).
         let newID = try repo.addPersona(displayName: "Work", kind: .professional)
         repo.setActivePersona(newID)
-        XCTAssertEqual(repo.activePersona?.primarySpaceID, space)
-        XCTAssertEqual(repo.primarySpaceId, space)                // resolves via persona pointer
+        let primary = repo.primarySpaceId
+        XCTAssertNotNil(primary)
+        XCTAssertNotEqual(primary, space)
+        XCTAssertEqual(repo.folders.first { $0.id == primary }?.personaId, newID)  // owned by the new persona
     }
 
     // MARK: Sealed round-trip / backward-decode

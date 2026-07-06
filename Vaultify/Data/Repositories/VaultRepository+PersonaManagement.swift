@@ -21,21 +21,38 @@ extension VaultRepository {
         return .ok
     }
 
-    /// Create a persona with an explicit isolation policy.
+    /// Create a persona with an explicit isolation policy, and a starter Space it
+    /// owns so its items have a home. The persona's `primarySpaceID` points at that
+    /// starter — never another persona's Space (the pre-partition leak).
     @discardableResult
     func addPersona(displayName: String, kind: PersonaKind,
                     isolationPolicy: PersonaIsolationPolicy) throws -> String {
         guard let key = session.vaultKey else { throw AuthError.locked }
-        let persona = Persona(displayName: displayName, kind: kind, isolationPolicy: isolationPolicy,
-                              primarySpaceID: folders.first?.id,
+        let personaID = UUID().uuidString
+
+        // Starter Space owned by the new persona.
+        let starter = Folder(name: displayName, iconAsset: "ic_folder", color: .blue,
+                             sortIndex: (folders.map(\.sortIndex).max() ?? -1) + 1,
+                             personaId: personaID)
+        let folderRecord = FolderRecord(id: starter.id,
+                                        sealed: try sealFolder(starter, key: key),
+                                        iconAsset: starter.iconAsset,
+                                        colorRaw: starter.color.rawValue,
+                                        sortIndex: starter.sortIndex,
+                                        createdAt: starter.createdAt,
+                                        updatedAt: starter.updatedAt)
+        store.context.insert(folderRecord)
+
+        let persona = Persona(id: personaID, displayName: displayName, kind: kind,
+                              isolationPolicy: isolationPolicy, primarySpaceID: starter.id,
                               sortIndex: (personas.map(\.sortIndex).max() ?? -1) + 1)
-        let record = PersonaRecord(id: persona.id,
-                                   sealed: try sealPersona(persona, key: key),
-                                   isDefault: false,
-                                   sortIndex: persona.sortIndex,
-                                   createdAt: persona.createdAt,
-                                   updatedAt: persona.updatedAt)
-        store.context.insert(record)
+        let personaRecord = PersonaRecord(id: persona.id,
+                                          sealed: try sealPersona(persona, key: key),
+                                          isDefault: false,
+                                          sortIndex: persona.sortIndex,
+                                          createdAt: persona.createdAt,
+                                          updatedAt: persona.updatedAt)
+        store.context.insert(personaRecord)
         try store.context.save()
         reload()
         noteLocalMutation()
@@ -58,16 +75,29 @@ extension VaultRepository {
         noteLocalMutation()
     }
 
-    /// Tombstone a persona (guarded). Personas don't own items yet, so no item
-    /// reassignment is needed — just a soft-delete that propagates via sync.
+    /// Tombstone a persona (guarded). Its Spaces (and thereby their items) are
+    /// REASSIGNED to the default persona — never destroyed — so deleting an
+    /// identity never loses user data. Aliases are cascaded (tombstoned).
     func deletePersona(_ persona: Persona) throws {
         guard personaRemovalGate(persona) == .ok else { return }
-        guard let record = store.personaRecord(id: persona.id) else { return }
+        guard let key = session.vaultKey else { throw AuthError.locked }
+        guard let record = store.personaRecord(id: persona.id),
+              let defaultID = defaultPersona?.id else { return }
+
+        // Reassign owned Spaces → default (batched into the single save below).
+        for folder in folders where folder.personaId == persona.id {
+            guard let folderRecord = store.folderRecord(id: folder.id) else { continue }
+            var updated = folder
+            updated.personaId = defaultID
+            updated.updatedAt = .now
+            folderRecord.sealed = try sealFolder(updated, key: key)
+            folderRecord.updatedAt = updated.updatedAt
+            folderRecord.dirty = true
+        }
+        deleteAliases(forPersona: persona.id)
         record.deletedAt = .now
         record.updatedAt = .now
         record.dirty = true
-        // Cascade: tombstone this persona's aliases so none are orphaned.
-        deleteAliases(forPersona: persona.id)
         try store.context.save()
         reload()
         noteLocalMutation()

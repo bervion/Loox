@@ -8,7 +8,7 @@ extension VaultRepository {
 
     // MARK: Folder sealing (mirrors the item seal/open path)
 
-    private func sealFolder(_ folder: Folder, key: SecureBytes) throws -> Data {
+    func sealFolder(_ folder: Folder, key: SecureBytes) throws -> Data {
         try AESGCM.seal(JSONEncoder().encode(folder.secret), key: key)
     }
 
@@ -42,19 +42,21 @@ extension VaultRepository {
     }
 
     /// The Space a new item defaults into when the caller supplies no context.
-    /// Resolves to the active persona's chosen primary Space; falls back to the
-    /// lowest-sortIndex folder when the persona has none pinned (or no persona
-    /// exists yet), preserving the pre-persona behavior. `nil` only when no
-    /// folders exist at all (Unfiled world).
-    var primarySpaceId: String? { activePersona?.primarySpaceID ?? folders.first?.id }
+    /// Resolves to the active persona's chosen primary Space, else its first OWNED
+    /// Space — never another persona's (fail-closed for the partition). `nil` when
+    /// the active persona owns no Space (its new items are Unfiled until it gets
+    /// one) or no folders exist at all.
+    var primarySpaceId: String? { activePersona?.primarySpaceID ?? activePersonaSpaces.first?.id }
 
     // MARK: Folder CRUD
 
     @discardableResult
     func addFolder(name: String, icon: String, color: FolderColor) throws -> String {
         guard let key = session.vaultKey else { throw AuthError.locked }
+        // A new Space is owned by the persona you're acting as (partition).
         let folder = Folder(name: name, iconAsset: icon, color: color,
-                            sortIndex: (folders.map(\.sortIndex).max() ?? -1) + 1)
+                            sortIndex: (folders.map(\.sortIndex).max() ?? -1) + 1,
+                            personaId: activePersona?.id)
         let record = FolderRecord(id: folder.id,
                                   sealed: try sealFolder(folder, key: key),
                                   iconAsset: folder.iconAsset,
@@ -112,13 +114,13 @@ extension VaultRepository {
     // MARK: Counts & filtered accessors (live items only — trashed excluded)
 
     func itemCount(for folderId: String) -> Int {
-        items.filter { $0.folderId == folderId }.count
+        activePersonaItems.filter { $0.folderId == folderId }.count
     }
 
-    var unfiledCount: Int { items.filter { $0.folderId == nil }.count }
+    var unfiledCount: Int { activePersonaItems.filter { $0.folderId == nil }.count }
 
     func items(inFolder folderId: String?) -> [VaultItem] {
-        items.filter { $0.folderId == folderId }
+        activePersonaItems.filter { $0.folderId == folderId }
     }
 
     // MARK: Recents
@@ -174,8 +176,9 @@ extension VaultRepository {
 
     /// Scoped set of live items for a folder filter. nil = all folders.
     private func scoped(_ folderId: String?) -> [VaultItem] {
-        guard let folderId else { return items }
-        return items.filter { $0.folderId == folderId }
+        let pool = activePersonaItems
+        guard let folderId else { return pool }
+        return pool.filter { $0.folderId == folderId }
     }
 
     /// Favorite items, optionally scoped to a folder, sorted alphabetically.
@@ -252,16 +255,18 @@ extension VaultRepository {
         let tokens = query.trimmingCharacters(in: .whitespaces).lowercased()
             .split(separator: " ").map(String.init)
         guard !tokens.isEmpty else { return [] }
+        // Persona-scoped: search only within the active persona's items (INV-R03).
+        let pool = activePersonaItems
         switch scope {
         case .sharedWithMe:
             return []
         case .thisSpace(let id):
-            return items.filter { item in
+            return pool.filter { item in
                 item.folderId == id && tokens.allSatisfy { item.searchText.contains($0) }
             }
         case .allSpaces:
             let names = Dictionary(folders.map { ($0.id, $0.name.lowercased()) }, uniquingKeysWith: { a, _ in a })
-            return items.filter { item in
+            return pool.filter { item in
                 let hay = item.searchText + " " + (item.folderId.flatMap { names[$0] } ?? "")
                 return tokens.allSatisfy { hay.contains($0) }
             }

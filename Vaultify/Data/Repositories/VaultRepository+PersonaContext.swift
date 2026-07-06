@@ -76,12 +76,14 @@ extension VaultRepository {
             candidates: candidates, activePersonaID: active.id, policy: active.isolationPolicy).prefix(3))
     }
 
-    /// Best-effort persona owner of an item: the persona whose primary Space is the
-    /// item's folder. Items aren't persona-partitioned yet (P3), so an item outside
-    /// any persona's primary Space resolves to nil — which strictAnonymous excludes
-    /// (fail-closed).
-    private func personaID(forItem item: VaultItem) -> String? {
-        guard let folderId = item.folderId else { return nil }
-        return personas.first { $0.primarySpaceID == folderId }?.id
+    /// The persona that owns an item — derived from its Space's `personaId`. An
+    /// item with no Space (Unfiled) belongs to the default persona (fail-closed:
+    /// a non-default, incl. strictAnonymous, persona never owns Unfiled items).
+    func personaID(forItem item: VaultItem) -> String? {
+        if let folderId = item.folderId,
+           let owner = folders.first(where: { $0.id == folderId })?.personaId {
+            return owner
+        }
+        return defaultPersona?.id
     }
 }

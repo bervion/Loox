@@ -77,6 +77,7 @@ import UserNotifications
         personas = loadPersonas(key: key)
         ensurePersonaExists(key: key)
         normalizeDefaultPersona()
+        migratePartition(key: key)
         mirrorActivePersonaContext()
         aliases = loadAliases(key: key)
     }
@@ -249,6 +250,54 @@ import UserNotifications
         record.isDefault = isDefault
         record.updatedAt = now
         record.dirty = true
+    }
+
+    /// Populate the persona↔Space partition in place (never `reload()`). Backfills
+    /// any Space with no owner to the default persona, and repoints a persona's
+    /// `primarySpaceID` that dangles into a Space it doesn't own (the pre-partition
+    /// leak where `addPersona` seeded `folders.first`). Idempotent — writes only on
+    /// real change; re-seals bump `updatedAt` so ownership rides whole-record LWW.
+    private func migratePartition(key: SecureBytes) {
+        guard let defaultID = defaultPersona?.id else { return }
+        var didWrite = false
+
+        // F1: backfill unowned Spaces → default persona.
+        for index in folders.indices where folders[index].personaId == nil {
+            var updated = folders[index]
+            updated.personaId = defaultID
+            updated.updatedAt = .now
+            guard let record = store.folderRecord(id: updated.id),
+                  let sealed = try? sealFolder(updated, key: key) else { continue }
+            record.sealed = sealed
+            record.updatedAt = updated.updatedAt
+            record.dirty = true
+            folders[index] = updated
+            didWrite = true
+        }
+
+        // F2: reconcile a primarySpaceID that points at a Space the persona doesn't own.
+        for index in personas.indices {
+            let persona = personas[index]
+            guard let sid = persona.primarySpaceID else { continue }
+            let ownerOfPrimary = folders.first { $0.id == sid }?.personaId ?? defaultID
+            guard ownerOfPrimary != persona.id else { continue }
+            let newPrimary = folders.first { ($0.personaId ?? defaultID) == persona.id }?.id
+            var updated = persona
+            updated.primarySpaceID = newPrimary
+            updated.updatedAt = .now
+            guard let record = store.personaRecord(id: persona.id),
+                  let sealed = try? sealPersona(updated, key: key) else { continue }
+            record.sealed = sealed
+            record.updatedAt = updated.updatedAt
+            record.dirty = true
+            personas[index] = updated
+            didWrite = true
+        }
+
+        if didWrite {
+            try? store.context.save()
+            noteLocalMutation()
+        }
     }
 
     /// Mirror the active persona's isolation policy + profile item id into the
