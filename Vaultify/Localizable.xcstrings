@@ -5938,6 +5938,18 @@
         "vi": { "stringUnit": { "state": "translated", "value": "Danh tính" } }
       }
     },
+    "Manage personas": {
+      "comment": "Profile row opening the persona manager.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Quản lý danh tính" } }
+      }
+    },
+    "Switch": {
+      "comment": "Menu to switch the active persona.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Đổi" } }
+      }
+    },
     "Professional": {
       "comment": "Persona kind.",
       "localizations": {

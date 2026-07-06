@@ -249,15 +249,16 @@ struct HomeScreen: View {
 
     // MARK: Profile row
 
-    private var profileEmail: String? {
-        guard let value = env.repository.defaultIdentity?.fields.first(where: { $0.kind == .email })?.value,
-              !value.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        return value
-    }
-
-    /// "Name · email" on one line; falls back to whichever part exists.
-    private func profileSubtitle(name: String) -> String {
-        [name, profileEmail].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: ", ")
+    /// Subtitle under the active persona name: its kind, plus that persona's own
+    /// email when resolvable. Uses the persona-scoped resolver so a strictAnonymous
+    /// persona never shows another identity's email (INV-R03).
+    private var personaSubtitle: String {
+        guard let persona = env.repository.activePersona else { return appString("Set up your identity") }
+        let kind = PersonaKindStyle.label(persona.kind)
+        if let email = env.repository.identityUsername(forPersona: persona), !email.isEmpty {
+            return "\(kind) · \(email)"
+        }
+        return kind
     }
 
     /// Profile entry row above the quick actions: avatar + "Profile" title + the default
@@ -267,15 +268,12 @@ struct HomeScreen: View {
             HStack(spacing: Space.s3) {
                 profileAvatar
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Profile").vaultType(.headline).themedForeground()
-                    if let identity = env.repository.defaultIdentity {
-                        // Name + email on a single line (email appended after the name).
-                        Text(verbatim: profileSubtitle(name: identity.title))
-                            .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
-                    } else {
-                        Text("Set up your identity")
-                            .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
-                    }
+                    // The active persona is the header identity — always visible so it's
+                    // clear which identity you're acting as. Tapping opens Profile to switch.
+                    Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
+                        .vaultType(.headline).themedForeground().lineLimit(1)
+                    Text(verbatim: personaSubtitle)
+                        .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: Space.s2)
                 PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
