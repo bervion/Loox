@@ -40,7 +40,7 @@ Review gốc: user feedback 260705 22:53 (7 blocker P0/P1 — đã tiếp thu to
 | 03b | Grant v2 (DeviceKeyBinding IDs+hash, canonical bump MỘT lần cùng P05 enum) + per-device envelopes | 1 | P03a | ✅ 260706 (v1 bit-compat — kernel tests cũ xanh; GrantWireV2Tests) |
 | 04 | Extension CloudKit enablement + entitlement verification preflight | 0.5–1 | P00 | ✅ code 260706 — ⚠️ CẦN portal: bật iCloud cho `.autofill` + match regenerate; preflight script chạy khi có build ký |
 | 02 | Extension authoritative gate COMPLETE | 0.5 | P01, P04 | ✅ code 260706 (reachability + SharedGrantLiveCheck trước fill); verify runtime cần portal P04 |
-| 05 | Passkey/TOTP capability v2 UI + ceremonies (transcripts đã freeze ở P00; enum/wire đã vào từ P03b) | 2–3 | P03b, P04 | ⏳ CHƯA — cần portal P04 xong + real device |
+| 05 | Passkey/TOTP capability v2 UI + ceremonies | 2–3 | P03b, P04 | 🟡 260706: shared/hand-over mode XONG end-to-end (owner UI 3-mode + warning, publish, projection, cache v2, QuickType, extension ký local sau INV-11 check; TOTP seed hand-over đủ đường). CÒN P05.4: passkey askEachTime ceremony (request/response artifact mới theo transcript P00, owner Face-ID ký hộ, extension waiting UI + poll) — tạm fallback password picker |
 | 06 | Adversarial test matrix + QA 2 máy + docs | 1 | tất cả | ⏳ một phần (adversarial canonical/seal tests đã có; QA 2 máy chưa) |
 
 **Effort thực tế: 6.5–9 buổi** (revised theo review; 5 buổi cũ là lạc quan).
