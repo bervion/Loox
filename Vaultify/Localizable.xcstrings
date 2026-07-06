@@ -1,666 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Private Email will stop forwarding soon. Review accounts using these addresses." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email riêng tư sắp ngừng chuyển tiếp. Hãy xem lại các tài khoản đang dùng những địa chỉ này."
-          }
-        }
-      }
-    },
-    "No Internet Connection" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không có kết nối mạng"
-          }
-        }
-      }
-    },
-    "Your saved private addresses are still available in Loox. Connect to the internet to create or change forwarding settings." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Các địa chỉ riêng tư đã lưu vẫn có sẵn trong Loox. Hãy kết nối mạng để tạo hoặc thay đổi cài đặt chuyển tiếp."
-          }
-        }
-      }
-    },
-    "Temporarily unavailable" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạm thời không khả dụng"
-          }
-        }
-      }
-    },
-    "Under maintenance" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đang bảo trì"
-          }
-        }
-      }
-    },
-    "Currently unavailable" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hiện không khả dụng"
-          }
-        }
-      }
-    },
-    "No longer available" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không còn khả dụng"
-          }
-        }
-      }
-    },
-    "Online Features" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tính năng trực tuyến"
-          }
-        }
-      }
-    },
-    "Share Links" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Liên kết chia sẻ"
-          }
-        }
-      }
-    },
-    "Available" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Khả dụng"
-          }
-        }
-      }
-    },
-    "Offline" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ngoại tuyến"
-          }
-        }
-      }
-    },
-    "Maintenance" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bảo trì"
-          }
-        }
-      }
-    },
-    "Unavailable" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không khả dụng"
-          }
-        }
-      }
-    },
-    "Unknown" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không rõ"
-          }
-        }
-      }
-    },
-    "Review affected accounts" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Xem tài khoản bị ảnh hưởng"
-          }
-        }
-      }
-    },
-    "Affected accounts" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tài khoản bị ảnh hưởng"
-          }
-        }
-      }
-    },
-    "No accounts here use a private address." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không có tài khoản nào ở đây dùng địa chỉ riêng tư."
-          }
-        }
-      }
-    },
-    "Update these accounts to a different email so you keep receiving password resets and important mail." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cập nhật các tài khoản này sang email khác để bạn tiếp tục nhận email đặt lại mật khẩu và thông báo quan trọng."
-          }
-        }
-      }
-    },
-    "Connect to the internet to create a share link." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hãy kết nối mạng để tạo liên kết chia sẻ."
-          }
-        }
-      }
-    },
-    "Share Links are turned off in Settings." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Liên kết chia sẻ đang tắt trong Cài đặt."
-          }
-        }
-      }
-    },
-    "Private Email is under maintenance. Creating or changing private addresses is temporarily paused. Your vault continues to work normally." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email riêng tư đang bảo trì. Việc tạo hoặc thay đổi địa chỉ tạm dừng. Kho lưu trữ của bạn vẫn hoạt động bình thường."
-          }
-        }
-      }
-    },
-    "Private Email is currently unavailable. Loox has temporarily disabled this feature. Your vault and other features continue to work normally." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email riêng tư hiện không khả dụng. Loox đã tạm tắt tính năng này. Kho lưu trữ và các tính năng khác vẫn hoạt động bình thường."
-          }
-        }
-      }
-    },
-    "Private Email is no longer offered by Loox. Your saved alias records remain visible so you can identify accounts that used them." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loox không còn cung cấp Email riêng tư. Các địa chỉ đã lưu vẫn hiển thị để bạn nhận diện tài khoản từng dùng chúng."
-          }
-        }
-      }
-    },
-    "We’re having trouble reaching the relay service. Your vault and saved passwords are not affected." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không thể kết nối dịch vụ chuyển tiếp. Kho lưu trữ và mật khẩu đã lưu không bị ảnh hưởng."
-          }
-        }
-      }
-    },
-    "Creating and managing links is temporarily paused. Your vault continues to work normally." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Việc tạo và quản lý liên kết tạm dừng. Kho lưu trữ của bạn vẫn hoạt động bình thường."
-          }
-        }
-      }
-    },
-    "Share Links are no longer offered. Your saved vault items are unchanged." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loox không còn cung cấp Liên kết chia sẻ. Các mục đã lưu của bạn không thay đổi."
-          }
-        }
-      }
-    },
-    "Share Links are temporarily unavailable. Your vault is not affected." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Liên kết chia sẻ tạm thời không khả dụng. Kho lưu trữ của bạn không bị ảnh hưởng."
-          }
-        }
-      }
-    },
-    "You’ve reached the limit for private addresses. Permanently delete addresses you no longer use." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bạn đã đạt giới hạn số địa chỉ riêng tư. Hãy xoá vĩnh viễn những địa chỉ không còn dùng."
-          }
-        }
-      }
-    },
-    "Use private email" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dùng email riêng tư"
-          }
-        }
-      }
-    },
-    "Unlock Loox and try again." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mở khoá Loox rồi thử lại."
-          }
-        }
-      }
-    },
-    "You’re offline. Connect to the internet to change this private address." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bạn đang ngoại tuyến. Hãy kết nối mạng để thay đổi địa chỉ riêng tư này."
-          }
-        }
-      }
-    },
-    "Couldn’t verify this device. Unlock Loox and try again." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không thể xác minh thiết bị này. Mở khoá Loox rồi thử lại."
-          }
-        }
-      }
-    },
-    "Too many requests. Please try again shortly." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút."
-          }
-        }
-      }
-    },
-    "Forwarding to" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chuyển tiếp đến"
-          }
-        }
-      }
-    },
-    "Forwarding inboxes" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hộp thư nhận"
-          }
-        }
-      }
-    },
-    "Forwarding inbox" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hộp thư nhận"
-          }
-        }
-      }
-    },
-    "Add inbox" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thêm hộp thư nhận"
-          }
-        }
-      }
-    },
-    "A real inbox your private addresses can forward to." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hộp thư thật mà các địa chỉ riêng tư sẽ chuyển tiếp đến."
-          }
-        }
-      }
-    },
-    "New addresses will forward here. Existing addresses keep their inbox until you update them." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Địa chỉ mới sẽ chuyển tiếp về đây. Địa chỉ hiện có giữ nguyên hộp thư cho đến khi bạn cập nhật."
-          }
-        }
-      }
-    },
-    "Update existing addresses" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cập nhật địa chỉ hiện có"
-          }
-        }
-      }
-    },
-    "Keep Loox open until the update finishes. You can safely retry — finished addresses aren’t repeated." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Giữ Loox mở đến khi cập nhật xong. Có thể thử lại an toàn — địa chỉ đã xong sẽ không lặp lại."
-          }
-        }
-      }
-    },
-    "%lld of %lld" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld / %lld"
-          }
-        }
-      }
-    },
-    "Set as default" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đặt làm mặc định"
-          }
-        }
-      }
-    },
-    "Profile email" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email hồ sơ"
-          }
-        }
-      }
-    },
-    "Inbox" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hộp thư"
-          }
-        }
-      }
-    },
-    "Edit label" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sửa nhãn"
-          }
-        }
-      }
-    },
-    "New reusable address" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Địa chỉ dùng lâu dài mới"
-          }
-        }
-      }
-    },
-    "Optional label like “Clients”." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nhãn tuỳ chọn, ví dụ “Khách hàng”."
-          }
-        }
-      }
-    },
-    "Create private email" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạo email riêng tư"
-          }
-        }
-      }
-    },
-    "Unique for %@" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Riêng cho %@"
-          }
-        }
-      }
-    },
-    "Reusable addresses" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Địa chỉ dùng lâu dài"
-          }
-        }
-      }
-    },
-    "Private Email" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email riêng tư"
-          }
-        }
-      }
-    },
-    "Reusable address" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Địa chỉ dùng lâu dài"
-          }
-        }
-      }
-    },
-    "Create reusable address" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạo địa chỉ dùng lâu dài"
-          }
-        }
-      }
-    },
-    "Site-specific addresses" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Địa chỉ riêng theo trang"
-          }
-        }
-      }
-    },
-    "Add site-specific address" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thêm địa chỉ riêng cho trang"
-          }
-        }
-      }
-    },
-    "New site-specific address" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Địa chỉ riêng cho trang mới"
-          }
-        }
-      }
-    },
-    "Forwarding active" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đang chuyển tiếp"
-          }
-        }
-      }
-    },
-    "Forwarding paused" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã tạm dừng chuyển tiếp"
-          }
-        }
-      }
-    },
-    "Pause" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạm dừng"
-          }
-        }
-      }
-    },
-    "Pause forwarding" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạm dừng chuyển tiếp"
-          }
-        }
-      }
-    },
-    "Pause forwarding?" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạm dừng chuyển tiếp?"
-          }
-        }
-      }
-    },
-    "New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thư mới gửi đến địa chỉ này sẽ không còn về hộp thư của bạn. Bạn có thể bật lại chuyển tiếp sau."
-          }
-        }
-      }
-    },
-    "Delete permanently" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Xoá vĩnh viễn"
-          }
-        }
-      }
-    },
-    "Delete this private address permanently?" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Xoá vĩnh viễn địa chỉ riêng tư này?"
-          }
-        }
-      }
-    },
-    "This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Địa chỉ sẽ ngừng chuyển tiếp và không thể khôi phục hoặc cấp lại cho bất kỳ ai. Các tài khoản vẫn dùng địa chỉ này có thể không gửi được email đặt lại mật khẩu hoặc thông báo quan trọng cho bạn."
-          }
-        }
-      }
-    },
     "" : {
 
     },
@@ -841,6 +181,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld tháng chưa đổi"
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld"
           }
         }
       }
@@ -1075,6 +425,16 @@
         }
       }
     },
+    "A real inbox your private addresses can forward to." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư thật mà các địa chỉ riêng tư sẽ chuyển tiếp đến."
+          }
+        }
+      }
+    },
     "A second password for your most sensitive fields. Items can use this or their own code. If you forget it, those fields cannot be recovered." : {
       "comment" : "A description of the extra password.",
       "isCommentAutoGenerated" : true,
@@ -1209,6 +569,16 @@
         }
       }
     },
+    "Activate" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích hoạt"
+          }
+        }
+      }
+    },
     "Activate Sharing" : {
       "localizations" : {
         "vi" : {
@@ -1289,6 +659,26 @@
         }
       }
     },
+    "Add an email first" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm email trước"
+          }
+        }
+      }
+    },
+    "Add an email to this identity’s profile — that’s where your aliases forward to." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm email vào hồ sơ của danh tính này — đó là nơi email ẩn danh chuyển thư về."
+          }
+        }
+      }
+    },
     "Add Attachment" : {
       "comment" : "The title of the sheet that lets the user choose a file or photo to attach.",
       "isCommentAutoGenerated" : true,
@@ -1311,6 +701,16 @@
         }
       }
     },
+    "Add inbox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm hộp thư nhận"
+          }
+        }
+      }
+    },
     "Add Item" : {
       "localizations" : {
         "vi" : {
@@ -1322,6 +722,7 @@
       }
     },
     "Add per-site alias" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -1338,6 +739,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thêm danh tính"
+          }
+        }
+      }
+    },
+    "Add site-specific address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm địa chỉ riêng cho trang"
           }
         }
       }
@@ -1409,7 +820,6 @@
     },
     "Address" : {
       "comment" : "Display name for an identity profile field.",
-      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -1427,6 +837,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mã hóa AES-256-GCM"
+          }
+        }
+      }
+    },
+    "Affected accounts" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản bị ảnh hưởng"
           }
         }
       }
@@ -1503,6 +923,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sau 30 giây"
+          }
+        }
+      }
+    },
+    "Alias" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email ẩn danh"
           }
         }
       }
@@ -2101,6 +1532,16 @@
         }
       }
     },
+    "Available" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khả dụng"
+          }
+        }
+      }
+    },
     "Avoid ambiguous" : {
       "localizations" : {
         "vi" : {
@@ -2317,6 +1758,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đổi thẻ"
+          }
+        }
+      }
+    },
+    "Change forwarding address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi địa chỉ nhận thư"
           }
         }
       }
@@ -2868,6 +2319,16 @@
         }
       }
     },
+    "Connect to the internet to create a share link." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy kết nối mạng để tạo liên kết chia sẻ."
+          }
+        }
+      }
+    },
     "Continue" : {
       "localizations" : {
         "vi" : {
@@ -3120,6 +2581,16 @@
         }
       }
     },
+    "Couldn’t verify this device. Unlock Loox and try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể xác minh thiết bị này. Mở khoá Loox rồi thử lại."
+          }
+        }
+      }
+    },
     "Create a passkey" : {
       "localizations" : {
         "vi" : {
@@ -3205,6 +2676,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tạo passkey"
+          }
+        }
+      }
+    },
+    "Create private email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo email riêng tư"
+          }
+        }
+      }
+    },
+    "Create reusable address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo địa chỉ dùng lâu dài"
           }
         }
       }
@@ -3343,6 +2834,16 @@
         }
       }
     },
+    "Creating and managing links is temporarily paused. Your vault continues to work normally." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Việc tạo và quản lý liên kết tạm dừng. Kho lưu trữ của bạn vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
     "Credential ID" : {
       "localizations" : {
         "vi" : {
@@ -3405,6 +2906,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mật khẩu hiện tại"
+          }
+        }
+      }
+    },
+    "Currently unavailable" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện không khả dụng"
           }
         }
       }
@@ -3616,6 +3127,16 @@
         }
       }
     },
+    "Delete permanently" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoá vĩnh viễn"
+          }
+        }
+      }
+    },
     "Delete Permanently" : {
       "localizations" : {
         "vi" : {
@@ -3642,12 +3163,33 @@
         }
       }
     },
+    "Delete this alias?" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa email ẩn danh này?"
+          }
+        }
+      }
+    },
     "Delete this passkey?" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xóa passkey này?"
+          }
+        }
+      }
+    },
+    "Delete this private address permanently?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoá vĩnh viễn địa chỉ riêng tư này?"
           }
         }
       }
@@ -3691,6 +3233,7 @@
       }
     },
     "Disable" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -3702,6 +3245,7 @@
     },
     "Disabled" : {
       "comment" : "Alias status.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -3791,6 +3335,16 @@
         }
       }
     },
+    "Edit label" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sửa nhãn"
+          }
+        }
+      }
+    },
     "Edit persona" : {
       "comment" : "Title of the edit-persona sheet.",
       "localizations" : {
@@ -3863,6 +3417,7 @@
     },
     "Email aliases" : {
       "comment" : "Settings row + screen title for email aliases.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -4522,6 +4077,56 @@
         }
       }
     },
+    "Forwarding active" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chuyển tiếp"
+          }
+        }
+      }
+    },
+    "Forwarding inbox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư nhận"
+          }
+        }
+      }
+    },
+    "Forwarding inboxes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư nhận"
+          }
+        }
+      }
+    },
+    "Forwarding paused" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã tạm dừng chuyển tiếp"
+          }
+        }
+      }
+    },
+    "Forwarding to" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển tiếp đến"
+          }
+        }
+      }
+    },
     "Forwards to" : {
       "localizations" : {
         "vi" : {
@@ -5044,6 +4649,16 @@
         }
       }
     },
+    "Inbox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư"
+          }
+        }
+      }
+    },
     "Include number" : {
       "comment" : "A toggle that adds a number to the passphrase.",
       "isCommentAutoGenerated" : true,
@@ -5280,6 +4895,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giữ ở nơi an toàn và ngoại tuyến."
+          }
+        }
+      }
+    },
+    "Keep Loox open until the update finishes. You can safely retry — finished addresses aren’t repeated." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ Loox mở đến khi cập nhật xong. Có thể thử lại an toàn — địa chỉ đã xong sẽ không lặp lại."
           }
         }
       }
@@ -5592,6 +5217,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư gửi tới email đã kích hoạt sẽ chuyển về hộp thư của bạn. Chỉ nhận."
+          }
+        }
+      }
+    },
+    "Mail to your aliases will forward here. Changing it re-points every alias of this identity." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư gửi tới email ẩn danh sẽ chuyển về đây. Đổi địa chỉ này sẽ cập nhật cho mọi email ẩn danh của danh tính này."
+          }
+        }
+      }
+    },
+    "Maintenance" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo trì"
           }
         }
       }
@@ -5946,6 +5591,16 @@
         }
       }
     },
+    "New addresses will forward here. Existing addresses keep their inbox until you update them." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ mới sẽ chuyển tiếp về đây. Địa chỉ hiện có giữ nguyên hộp thư cho đến khi bạn cập nhật."
+          }
+        }
+      }
+    },
     "New Item" : {
       "localizations" : {
         "vi" : {
@@ -5978,6 +5633,16 @@
         }
       }
     },
+    "New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mới gửi đến địa chỉ này sẽ không còn về hộp thư của bạn. Bạn có thể bật lại chuyển tiếp sau."
+          }
+        }
+      }
+    },
     "New password" : {
       "comment" : "A password strength meter that shows a bar that changes color based on the strength of the password.",
       "isCommentAutoGenerated" : true,
@@ -5991,6 +5656,7 @@
       }
     },
     "New per-site alias" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -6007,6 +5673,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Danh tính mới"
+          }
+        }
+      }
+    },
+    "New reusable address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ dùng lâu dài mới"
+          }
+        }
+      }
+    },
+    "New site-specific address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ riêng cho trang mới"
           }
         }
       }
@@ -6104,6 +5790,16 @@
         }
       }
     },
+    "No accounts here use a private address." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có tài khoản nào ở đây dùng địa chỉ riêng tư."
+          }
+        }
+      }
+    },
     "No answer from the owner yet. Try again in a moment." : {
       "localizations" : {
         "vi" : {
@@ -6148,6 +5844,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chưa có danh tính"
+          }
+        }
+      }
+    },
+    "No Internet Connection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có kết nối mạng"
           }
         }
       }
@@ -6207,6 +5913,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chưa có đăng nhập nào để liên kết."
+          }
+        }
+      }
+    },
+    "No longer available" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không còn khả dụng"
           }
         }
       }
@@ -6483,6 +6199,16 @@
         }
       }
     },
+    "Offline" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngoại tuyến"
+          }
+        }
+      }
+    },
     "OK" : {
       "localizations" : {
         "vi" : {
@@ -6549,6 +6275,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Liên kết dùng một lần"
+          }
+        }
+      }
+    },
+    "Online Features" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tính năng trực tuyến"
           }
         }
       }
@@ -6620,6 +6356,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mở website"
+          }
+        }
+      }
+    },
+    "Optional label like “Clients”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhãn tuỳ chọn, ví dụ “Khách hàng”."
           }
         }
       }
@@ -6899,6 +6645,36 @@
         }
       }
     },
+    "Pause" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm dừng"
+          }
+        }
+      }
+    },
+    "Pause forwarding" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm dừng chuyển tiếp"
+          }
+        }
+      }
+    },
+    "Pause forwarding?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm dừng chuyển tiếp?"
+          }
+        }
+      }
+    },
     "Payment" : {
       "localizations" : {
         "vi" : {
@@ -6947,6 +6723,7 @@
       }
     },
     "Per-site aliases" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -6991,6 +6768,7 @@
       }
     },
     "Persona alias" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -7165,6 +6943,67 @@
         }
       }
     },
+    "Private email" : {
+      "comment" : "Field label for the anonymous alias written back onto an identity/login.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email ẩn danh"
+          }
+        }
+      }
+    },
+    "Private Email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư"
+          }
+        }
+      }
+    },
+    "Private Email is currently unavailable. Loox has temporarily disabled this feature. Your vault and other features continue to work normally." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư hiện không khả dụng. Loox đã tạm tắt tính năng này. Kho lưu trữ và các tính năng khác vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
+    "Private Email is no longer offered by Loox. Your saved alias records remain visible so you can identify accounts that used them." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox không còn cung cấp Email riêng tư. Các địa chỉ đã lưu vẫn hiển thị để bạn nhận diện tài khoản từng dùng chúng."
+          }
+        }
+      }
+    },
+    "Private Email is under maintenance. Creating or changing private addresses is temporarily paused. Your vault continues to work normally." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư đang bảo trì. Việc tạo hoặc thay đổi địa chỉ tạm dừng. Kho lưu trữ của bạn vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
+    "Private Email will stop forwarding soon. Review accounts using these addresses." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư sắp ngừng chuyển tiếp. Hãy xem lại các tài khoản đang dùng những địa chỉ này."
+          }
+        }
+      }
+    },
     "Private Key" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7193,6 +7032,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hồ sơ"
+          }
+        }
+      }
+    },
+    "Profile email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email hồ sơ"
           }
         }
       }
@@ -7579,6 +7428,16 @@
         }
       }
     },
+    "Replies from your inbox may reveal your real email address." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư trả lời từ hộp thư của bạn có thể để lộ email thật."
+          }
+        }
+      }
+    },
     "Request Again" : {
       "localizations" : {
         "en" : {
@@ -7660,6 +7519,7 @@
       }
     },
     "Reserve a private alias" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -7701,6 +7561,27 @@
         }
       }
     },
+    "Reusable address" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ dùng lâu dài"
+          }
+        }
+      }
+    },
+    "Reusable addresses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ dùng lâu dài"
+          }
+        }
+      }
+    },
     "Reused passwords" : {
       "comment" : "Watchtower category: reused passwords.",
       "localizations" : {
@@ -7731,6 +7612,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hiện"
+          }
+        }
+      }
+    },
+    "Review affected accounts" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem tài khoản bị ảnh hưởng"
           }
         }
       }
@@ -8257,6 +8148,16 @@
         }
       }
     },
+    "Set as default" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt làm mặc định"
+          }
+        }
+      }
+    },
     "Set password" : {
       "localizations" : {
         "vi" : {
@@ -8492,6 +8393,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chia sẻ liên kết"
+          }
+        }
+      }
+    },
+    "Share Links" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết chia sẻ"
+          }
+        }
+      }
+    },
+    "Share Links are no longer offered. Your saved vault items are unchanged." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox không còn cung cấp Liên kết chia sẻ. Các mục đã lưu của bạn không thay đổi."
+          }
+        }
+      }
+    },
+    "Share Links are temporarily unavailable. Your vault is not affected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết chia sẻ tạm thời không khả dụng. Kho lưu trữ của bạn không bị ảnh hưởng."
+          }
+        }
+      }
+    },
+    "Share Links are turned off in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết chia sẻ đang tắt trong Cài đặt."
           }
         }
       }
@@ -8804,6 +8745,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chia sẻ một thiết bị cần người nhận cập nhật Loox trước."
+          }
+        }
+      }
+    },
+    "Site-specific addresses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ riêng theo trang"
           }
         }
       }
@@ -9251,43 +9202,15 @@
         }
       }
     },
-    "Private email" : {
-      "comment" : "Field label for the anonymous alias written back onto an identity/login.",
+    "Temporarily unavailable" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Email ẩn danh"
+            "value" : "Tạm thời không khả dụng"
           }
         }
       }
-    },
-    "Alias" : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Email ẩn danh" } } }
-    },
-    "Change forwarding address" : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Đổi địa chỉ nhận thư" } } }
-    },
-    "Activate" : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Kích hoạt" } } }
-    },
-    "Add an email first" : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Thêm email trước" } } }
-    },
-    "Add an email to this identity’s profile — that’s where your aliases forward to." : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Thêm email vào hồ sơ của danh tính này — đó là nơi email ẩn danh chuyển thư về." } } }
-    },
-    "Mail to your aliases will forward here. Changing it re-points every alias of this identity." : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Thư gửi tới email ẩn danh sẽ chuyển về đây. Đổi địa chỉ này sẽ cập nhật cho mọi email ẩn danh của danh tính này." } } }
-    },
-    "Delete this alias?" : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Xóa email ẩn danh này?" } } }
-    },
-    "The address stops working immediately and cannot be restored." : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Địa chỉ ngừng hoạt động ngay lập tức và không thể khôi phục." } } }
-    },
-    "Replies from your inbox may reveal your real email address." : {
-      "localizations" : { "vi" : { "stringUnit" : { "state" : "translated", "value" : "Thư trả lời từ hộp thư của bạn có thể để lộ email thật." } } }
     },
     "Text" : {
       "comment" : "Display name for a field type that accepts plain text input.",
@@ -9341,6 +9264,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khóa khôi phục đó không hợp lệ."
+          }
+        }
+      }
+    },
+    "The address stops working immediately and cannot be restored." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ ngừng hoạt động ngay lập tức và không thể khôi phục."
           }
         }
       }
@@ -9696,6 +9630,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Họ sẽ dùng được mà không cần hỏi bạn, ngay trên thiết bị của họ. Thu hồi sau này chỉ chặn cập nhật — bí mật đã giao thì không rút lại được. Muốn thu hồi thật sự, hãy đổi nó tại trang web."
+          }
+        }
+      }
+    },
+    "This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ sẽ ngừng chuyển tiếp và không thể khôi phục hoặc cấp lại cho bất kỳ ai. Các tài khoản vẫn dùng địa chỉ này có thể không gửi được email đặt lại mật khẩu hoặc thông báo quan trọng cho bạn."
           }
         }
       }
@@ -10144,6 +10088,16 @@
         }
       }
     },
+    "Too many requests. Please try again shortly." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút."
+          }
+        }
+      }
+    },
     "Trash" : {
       "localizations" : {
         "vi" : {
@@ -10214,6 +10168,26 @@
         }
       }
     },
+    "Unavailable" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không khả dụng"
+          }
+        }
+      }
+    },
+    "Under maintenance" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang bảo trì"
+          }
+        }
+      }
+    },
     "Underscore" : {
       "comment" : "A label for the \"_\" separator in a passphrase.",
       "isCommentAutoGenerated" : true,
@@ -10252,6 +10226,26 @@
         }
       }
     },
+    "Unique for %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riêng cho %@"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không rõ"
+          }
+        }
+      }
+    },
     "Unlock" : {
       "localizations" : {
         "vi" : {
@@ -10270,6 +10264,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mở khóa thất bại."
+          }
+        }
+      }
+    },
+    "Unlock Loox and try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở khoá Loox rồi thử lại."
           }
         }
       }
@@ -10423,12 +10427,32 @@
         }
       }
     },
+    "Update existing addresses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cập nhật địa chỉ hiện có"
+          }
+        }
+      }
+    },
     "Update sent." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã gửi cập nhật."
+          }
+        }
+      }
+    },
+    "Update these accounts to a different email so you keep receiving password resets and important mail." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cập nhật các tài khoản này sang email khác để bạn tiếp tục nhận email đặt lại mật khẩu và thông báo quan trọng."
           }
         }
       }
@@ -10487,6 +10511,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dùng mật khẩu"
+          }
+        }
+      }
+    },
+    "Use private email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng email riêng tư"
           }
         }
       }
@@ -10757,6 +10791,16 @@
         }
       }
     },
+    "We’re having trouble reaching the relay service. Your vault and saved passwords are not affected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể kết nối dịch vụ chuyển tiếp. Kho lưu trữ và mật khẩu đã lưu không bị ảnh hưởng."
+          }
+        }
+      }
+    },
     "Weak" : {
       "localizations" : {
         "vi" : {
@@ -10970,6 +11014,26 @@
         }
       }
     },
+    "You’re offline. Connect to the internet to change this private address." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đang ngoại tuyến. Hãy kết nối mạng để thay đổi địa chỉ riêng tư này."
+          }
+        }
+      }
+    },
+    "You’ve reached the limit for private addresses. Permanently delete addresses you no longer use." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã đạt giới hạn số địa chỉ riêng tư. Hãy xoá vĩnh viễn những địa chỉ không còn dùng."
+          }
+        }
+      }
+    },
     "Your items are end-to-end encrypted before they sync — iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata." : {
       "localizations" : {
         "vi" : {
@@ -11032,6 +11096,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khóa khôi phục trước đó sẽ ngừng hoạt động."
+          }
+        }
+      }
+    },
+    "Your saved private addresses are still available in Loox. Connect to the internet to create or change forwarding settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các địa chỉ riêng tư đã lưu vẫn có sẵn trong Loox. Hãy kết nối mạng để tạo hoặc thay đổi cài đặt chuyển tiếp."
           }
         }
       }
