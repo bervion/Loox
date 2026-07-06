@@ -59,4 +59,13 @@ extension VaultRepository {
     func aliases(forItem itemId: String) -> [EmailAlias] {
         aliases.filter { $0.boundItemId == itemId }
     }
+
+    /// Reuse suggestions for a login context, scoped to the ACTIVE persona
+    /// (INV-PE01: another persona's addresses are excluded, not down-ranked).
+    func aliasSuggestions(forItem itemId: String?, host: String?) -> [EmailAlias] {
+        guard let active = activePersona else { return [] }
+        return AliasSuggestion.ranked(aliases: aliases(forPersona: active.id),
+                                      itemID: itemId, host: host,
+                                      flag: RelayFeature.activeAliasesEnabled)
+    }
 }

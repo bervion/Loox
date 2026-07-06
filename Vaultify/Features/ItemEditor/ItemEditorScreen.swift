@@ -24,6 +24,12 @@ struct ItemEditorScreen: View {
     /// Persona-scoped username suggestions for a new login (computed once on appear).
     /// Empty under a strictAnonymous persona with no own profile (INV-R03 fail-safe).
     @State private var usernameSuggestions: [String] = []
+    // Private-email provisioning (create-login flow). Rendering the chip never
+    // allocates a backend alias (INV-PE03) — provisioning runs only on tap.
+    @State private var creatingAlias = false
+    @State private var pendingAliasID: String?
+    @State private var aliasMissingEmail = false
+    @State private var aliasError = false
 
     init(target: EditorTarget, preselectedFolderId: String? = nil) {
         self.target = target
@@ -92,21 +98,29 @@ struct ItemEditorScreen: View {
                 // row width), so zero horizontal inset lines the avatar/title up with them.
                 .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s4, trailing: 0))
 
-                // Persona-scoped username suggestions (tap-to-fill) for a new login.
-                if isNew, draft.category == .login, !usernameSuggestions.isEmpty {
+                // Persona-scoped email suggestions for a new login: create a private
+                // email (relay), reuse an existing alias for this site, or fill a
+                // plain username suggestion.
+                if isNew, draft.category == .login,
+                   RelayFeature.activeAliasesEnabled || !usernameSuggestions.isEmpty {
                     Section {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: Space.s2) {
-                                ForEach(usernameSuggestions, id: \.self) { value in
-                                    Button { applyUsernameSuggestion(value) } label: {
-                                        Text(value)
-                                            .vaultType(.footnote)
-                                            .themedForeground(.accent)
-                                            .padding(.horizontal, Space.s3)
-                                            .padding(.vertical, Space.s2)
-                                            .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
+                                if RelayFeature.activeAliasesEnabled {
+                                    createPrivateEmailChip
+                                }
+                                // Reuse before create: an existing alias for this
+                                // site/persona is never re-minted.
+                                ForEach(aliasSuggestions) { alias in
+                                    suggestionChip(AliasAddress.display(
+                                        localPart: alias.localPart, status: alias.status,
+                                        relayDomain: RelayConfig.emailDomain)) { value in
+                                        fillEmail(value)
+                                        pendingAliasID = alias.boundItemId == nil ? alias.id : nil
                                     }
-                                    .buttonStyle(.plain)
+                                }
+                                ForEach(usernameSuggestions, id: \.self) { value in
+                                    suggestionChip(value) { applyUsernameSuggestion($0) }
                                 }
                             }
                         }
@@ -347,6 +361,114 @@ struct ItemEditorScreen: View {
         }
     }
 
+    // MARK: Private email (create-login integration)
+
+    /// Live reuse candidates for this draft's site, scoped to the active persona.
+    private var aliasSuggestions: [EmailAlias] {
+        env.repository.aliasSuggestions(forItem: isNew ? nil : draft.id,
+                                        host: draft.autofillHost)
+    }
+
+    private var createPrivateEmailChip: some View {
+        Button { createPrivateEmail() } label: {
+            HStack(spacing: Space.s2) {
+                if creatingAlias {
+                    ProgressView().controlSize(.small)
+                } else {
+                    PolarisIcon(Icons.mail, size: 13).themedForeground(.accent)
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Create private email").vaultType(.footnote).themedForeground(.accent)
+                    if let host = draft.autofillHost {
+                        Text("Unique for \(host)")
+                            .vaultType(.caption).themedForeground(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s2)
+            .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(creatingAlias)
+        .alert(Text("Add an email first"), isPresented: $aliasMissingEmail) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Add an email to this identity’s profile — that’s where your aliases forward to.")
+        }
+        .alert(Text("Couldn’t reach the relay"), isPresented: $aliasError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Check your connection and iCloud, then try again.")
+        }
+    }
+
+    private func suggestionChip(_ value: String, apply: @escaping (String) -> Void) -> some View {
+        Button { apply(value) } label: {
+            Text(verbatim: value)
+                .vaultType(.footnote)
+                .themedForeground(.accent)
+                .padding(.horizontal, Space.s3)
+                .padding(.vertical, Space.s2)
+                .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Reserve → activate a per-site alias and fill it in. On failure the alias
+    /// stays `reserved` (resumable, manageable in Private Email) — never
+    /// auto-deleted, and the address is never shown as usable (INV-PE02).
+    private func createPrivateEmail() {
+        guard let persona = env.repository.activePersona else { return }
+        guard env.repository.newAliasDestination(for: persona) != nil else {
+            aliasMissingEmail = true
+            return
+        }
+        creatingAlias = true
+        let host = draft.autofillHost
+        Task {
+            defer { creatingAlias = false }
+            do {
+                let id = try env.repository.createPerSiteAlias(for: persona, boundItemId: nil,
+                                                               domain: host)
+                guard let alias = env.repository.aliases.first(where: { $0.id == id }) else { return }
+                try await env.relay.activate(alias)
+                if let live = env.repository.aliases.first(where: { $0.id == id }),
+                   live.status == .active {
+                    fillEmail(AliasAddress.display(localPart: live.localPart, status: live.status,
+                                                   relayDomain: RelayConfig.emailDomain))
+                    pendingAliasID = id
+                    Haptics.success()
+                }
+            } catch {
+                aliasError = true
+            }
+        }
+    }
+
+    /// Put the alias address where AutoFill will use it: email field, else
+    /// username field, else a new Email field.
+    private func fillEmail(_ value: String) {
+        if let idx = draft.fields.firstIndex(where: { $0.kind == .email }) {
+            draft.fields[idx].value = value
+        } else if let idx = draft.fields.firstIndex(where: { $0.kind == .username }) {
+            draft.fields[idx].value = value
+        } else {
+            draft.fields.insert(DynamicField(label: "Email", kind: .email, value: value), at: 0)
+        }
+    }
+
+    /// Bind the freshly provisioned (or reused-unbound) alias to the saved login,
+    /// so returning to this site reuses this exact address (never re-mints).
+    private func bindPendingAlias() {
+        guard let id = pendingAliasID,
+              var alias = env.repository.aliases.first(where: { $0.id == id }),
+              alias.boundItemId == nil else { return }
+        alias.boundItemId = draft.id
+        if alias.boundDomain == nil { alias.boundDomain = draft.autofillHost }
+        try? env.repository.updateAlias(alias)
+    }
+
     /// Login always shows a Notes section, so guarantee the single `.multiline` note
     /// field exists. Folds the same instance into `original` too, so opening the editor
     /// on a note-less login isn't counted as an unsaved change. Idempotent.
@@ -381,6 +503,7 @@ struct ItemEditorScreen: View {
         do {
             if isNew {
                 try env.repository.add(draft)
+                bindPendingAlias()
             } else {
                 try env.repository.update(draft)
                 republishSharedDisplayIfNeeded(for: draft)

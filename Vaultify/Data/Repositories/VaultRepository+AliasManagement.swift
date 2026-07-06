@@ -22,10 +22,13 @@ extension VaultRepository {
             sortIndex: (aliases.map(\.sortIndex).max() ?? -1) + 1))
     }
 
-    /// Reserve a unique per-site alias bound to a login item + its first website.
+    /// Reserve a unique per-site alias. `boundItemId` may be nil when the login
+    /// doesn't exist yet (create-login flow binds it on save); `domain` overrides
+    /// the hint derived from the bound item's first website.
     @discardableResult
-    func createPerSiteAlias(for persona: Persona, boundItemId: String) throws -> String {
-        let domain = item(id: boundItemId).flatMap { $0.autofillHosts.first }
+    func createPerSiteAlias(for persona: Persona, boundItemId: String?,
+                            domain: String? = nil) throws -> String {
+        let domain = domain ?? boundItemId.flatMap { item(id: $0)?.autofillHosts.first }
         return try insertAlias(EmailAlias(
             personaId: persona.id,
             tier: .perSite,
