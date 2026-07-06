@@ -11,6 +11,7 @@ nonisolated enum RelayAPIClient {
         case nonceReplay           // 409 nonce_replay — retry with a fresh nonce
         case epochStale            // 409 epoch_stale — refresh principal state
         case aliasExists           // 409 alias_exists — regenerate the local-part
+        case aliasCapReached       // 409 alias_cap_reached — active+paused at cap; deletes free space
         case rateLimited           // 429 — back off (~30/min, 500/day per principal)
         case server(Int)           // anything else non-2xx
         case transport             // network unreachable
@@ -67,6 +68,7 @@ nonisolated enum RelayAPIClient {
         case "nonce_replay": return .nonceReplay
         case "epoch_stale": return .epochStale
         case "alias_exists": return .aliasExists
+        case "alias_cap_reached": return .aliasCapReached
         default: return .server(409)
         }
     }
