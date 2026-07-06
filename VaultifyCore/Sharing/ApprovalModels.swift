@@ -92,6 +92,24 @@ nonisolated enum PasskeySlot {
     static func isPasskeySlot(_ fieldOrSlotId: String) -> Bool {
         fieldOrSlotId.hasPrefix(prefix)
     }
+
+    static func credentialID(fromSlotId id: String) -> Data? {
+        guard id.hasPrefix(prefix) else { return nil }
+        return Data(hexString: String(id.dropFirst(prefix.count)))
+    }
+}
+
+/// Plaintext of an approved passkey assertion, sealed to the request's
+/// ephemeral key (forward secrecy) and bound to the request via the HPKE
+/// info AND the echoed fields below — the requester verifies every echo
+/// before completing the WebAuthn ceremony (INV-09).
+nonisolated struct PasskeyApprovalPayload: Codable, Sendable, Equatable {
+    var authenticatorData: Data
+    var signature: Data
+    var userHandle: Data
+    var credentialID: Data
+    var clientDataHash: Data
+    var requestNonce: Data
 }
 
 // MARK: - Device scope (wire v2)
@@ -160,6 +178,20 @@ nonisolated enum ParticipantProfileMerge {
 
 extension Data {
     nonisolated var hexString: String { map { String(format: "%02x", $0) }.joined() }
+
+    nonisolated init?(hexString: String) {
+        guard hexString.count.isMultiple(of: 2) else { return nil }
+        var bytes: [UInt8] = []
+        bytes.reserveCapacity(hexString.count / 2)
+        var index = hexString.startIndex
+        while index < hexString.endIndex {
+            let next = hexString.index(index, offsetBy: 2)
+            guard let byte = UInt8(hexString[index..<next], radix: 16) else { return nil }
+            bytes.append(byte)
+            index = next
+        }
+        self.init(bytes)
+    }
 }
 
 // MARK: - Grant
@@ -249,6 +281,14 @@ nonisolated struct ApprovalRequest: Sendable, Equatable {
     /// Which pinned device key signed this request (must ∈ grant's pinned set).
     var requesterSigningPubKey: Data
     var requesterSignature: Data
+    /// Wire v2 (passkey askEachTime): the exact 32-byte WebAuthn
+    /// clientDataHash the approved assertion must sign — binds this approval
+    /// to ONE challenge (INV-09). Nil for TOTP requests, which then encode
+    /// bit-identical to wire v1. Realizes the P00
+    /// `PasskeyAssertionApprovalRequestV1` transcript as a version bump of
+    /// the audited request artifact instead of a parallel rail (amendment
+    /// noted in security-invariants.md).
+    var payloadBinding: Data? = nil
 }
 
 // MARK: - Response

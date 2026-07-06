@@ -24,6 +24,16 @@
         }
       }
     },
+    "%1$@ is asking to sign in with the shared passkey for %2$@.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ đang yêu cầu đăng nhập bằng passkey được chia sẻ cho %2$@."
+          }
+        }
+      }
+    },
     "%@ has joined. Activate to give them access. To be sure it's really them, you can compare this safety code with the one shown at the bottom of the shared item on their device.": {
       "localizations": {
         "vi": {
@@ -1017,6 +1027,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Phê duyệt"
+          }
+        }
+      }
+    },
+    "Approve a sign-in request": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phê duyệt yêu cầu đăng nhập"
           }
         }
       }
@@ -2102,6 +2122,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Không tải được các chia sẻ"
+          }
+        }
+      }
+    },
+    "Couldn't reach the owner right now.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện không liên lạc được với chủ sở hữu."
           }
         }
       }
@@ -5030,6 +5060,16 @@
         }
       }
     },
+    "No answer from the owner yet. Try again in a moment.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu chưa phản hồi. Thử lại sau chút nhé."
+          }
+        }
+      }
+    },
     "No archived items": {
       "localizations": {
         "en": {
@@ -7525,6 +7565,16 @@
         }
       }
     },
+    "Sign-in requested": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu đăng nhập"
+          }
+        }
+      }
+    },
     "Single-device sharing needs the recipient to update Loox first.": {
       "localizations": {
         "vi": {
@@ -7599,6 +7649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Người bạn đã chia sẻ đang xin mã xác minh hiện tại của %@."
+          }
+        }
+      }
+    },
+    "Someone you shared with is asking to sign in with the shared passkey for %@.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một người bạn đã chia sẻ đang yêu cầu đăng nhập bằng passkey được chia sẻ cho %@."
           }
         }
       }
@@ -8012,6 +8072,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Liên kết biến mất ngay lần mở đầu tiên. Nếu không ai mở, nó tự hết hạn sau 24 giờ. Trang xem yêu cầu bấm xác nhận trước, nên bản xem trước không làm mất lượt."
+          }
+        }
+      }
+    },
+    "The owner declined this sign-in.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu đã từ chối lần đăng nhập này."
           }
         }
       }
@@ -8505,6 +8575,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mã ghép nối này cần phiên bản ứng dụng mới hơn."
+          }
+        }
+      }
+    },
+    "This passkey isn't available anymore.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkey này không còn khả dụng."
           }
         }
       }
@@ -9254,6 +9334,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đang chờ phê duyệt…"
+          }
+        }
+      }
+    },
+    "Waiting for the owner to approve…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang chờ chủ sở hữu phê duyệt…"
           }
         }
       }

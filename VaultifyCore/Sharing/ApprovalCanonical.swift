@@ -269,9 +269,13 @@ extension AccessGrant {
 // MARK: - ApprovalRequest
 
 extension ApprovalRequest {
+    /// Wire v2 iff `payloadBinding` is present (passkey askEachTime) — TOTP
+    /// requests keep encoding bit-identical to pre-v2, so existing pinned
+    /// devices and in-flight requests are untouched.
     nonisolated func signingBody() -> Data {
         var w = CanonicalWriter()
-        w.byte(ApprovalWire.version)
+        let v2 = payloadBinding != nil
+        w.byte(v2 ? ApprovalWire.versionV2 : ApprovalWire.version)
         w.byte(ApprovalWire.TypeTag.request.rawValue)
         w.string(requestId)
         w.string(grantId)
@@ -280,6 +284,7 @@ extension ApprovalRequest {
         w.string(fieldId)
         w.blob(nonce)
         w.blob(ephemeralPubKey)
+        if let payloadBinding { w.blob(payloadBinding) }
         w.i64(createdAtUnixMs)
         w.i64(expiresAtUnixMs)
         w.blob(requesterSigningPubKey)
@@ -295,19 +300,39 @@ extension ApprovalRequest {
 
     nonisolated static func decode(_ data: Data) throws -> ApprovalRequest {
         var r = CanonicalReader(data)
-        guard try r.byte() == ApprovalWire.version else { throw ApprovalWire.DecodeError.unknownVersion }
+        let version = try r.byte()
+        guard version == ApprovalWire.version || version == ApprovalWire.versionV2 else {
+            throw ApprovalWire.DecodeError.unknownVersion
+        }
         guard try r.byte() == ApprovalWire.TypeTag.request.rawValue else { throw ApprovalWire.DecodeError.wrongType }
-        let request = ApprovalRequest(
-            requestId: try r.string(), grantId: try r.string(),
-            requesterDeviceId: try r.string(), itemId: try r.string(),
-            fieldId: try r.string(), nonce: try r.blob(),
-            ephemeralPubKey: try r.blob(),
-            createdAtUnixMs: try r.i64(), expiresAtUnixMs: try r.i64(),
-            requesterSigningPubKey: try r.blob(), requesterSignature: Data())
-        var mutable = request
-        mutable.requesterSignature = try r.blob()
+        let requestId = try r.string()
+        let grantId = try r.string()
+        let requesterDeviceId = try r.string()
+        let itemId = try r.string()
+        let fieldId = try r.string()
+        let nonce = try r.blob()
+        let ephemeralPubKey = try r.blob()
+        var payloadBinding: Data?
+        if version == ApprovalWire.versionV2 {
+            let binding = try r.blob()
+            // The binding IS the reason v2 exists — exactly one SHA-256.
+            guard binding.count == 32 else { throw ApprovalWire.DecodeError.invalidValue }
+            payloadBinding = binding
+        }
+        let createdAtUnixMs = try r.i64()
+        let expiresAtUnixMs = try r.i64()
+        let requesterSigningPubKey = try r.blob()
+        let requesterSignature = try r.blob()
         guard r.isAtEnd else { throw ApprovalWire.DecodeError.invalidValue }
-        return mutable
+        return ApprovalRequest(
+            requestId: requestId, grantId: grantId,
+            requesterDeviceId: requesterDeviceId, itemId: itemId,
+            fieldId: fieldId, nonce: nonce,
+            ephemeralPubKey: ephemeralPubKey,
+            createdAtUnixMs: createdAtUnixMs, expiresAtUnixMs: expiresAtUnixMs,
+            requesterSigningPubKey: requesterSigningPubKey,
+            requesterSignature: requesterSignature,
+            payloadBinding: payloadBinding)
     }
 }
 

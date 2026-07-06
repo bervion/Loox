@@ -18,6 +18,9 @@ struct PasskeyCeremonyView: View {
     @State private var working = false
     @State private var errorMessage: String?
     @State private var didStartAssertion = false
+    /// askEachTime ceremony in flight — waiting for the owner's approval.
+    @State private var awaitingApproval = false
+    @State private var approvalTask: Task<Void, Never>?
 
     var body: some View {
         Form {
@@ -74,8 +77,21 @@ struct PasskeyCeremonyView: View {
                 }
             } else {
                 Section {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    if awaitingApproval {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Waiting for the owner to approve…")
+                                .font(.footnote).foregroundStyle(.secondary)
+                            Button("Cancel", role: .cancel) {
+                                approvalTask?.cancel()
+                                onCancel(.userCanceled)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
                 } footer: {
                     if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
                 }
@@ -99,6 +115,8 @@ struct PasskeyCeremonyView: View {
                 $0.slot.mode == .shared && $0.slot.privateKeyRaw != nil
             }) {
                 signShared(entry: handOver.entry, slot: handOver.slot)
+            } else if let ask = shared.first(where: { $0.slot.mode == .askEachTime }) {
+                startOwnerApproval(entry: ask.entry, slot: ask.slot)
             } else if let onNoPasskey {
                 onNoPasskey(vaultKey)
             } else {
@@ -158,6 +176,42 @@ struct PasskeyCeremonyView: View {
                     credentialID: slot.credentialID))
             } catch {
                 errorMessage = appString("Couldn’t sign in with this passkey.")
+            }
+        }
+    }
+
+    /// askEachTime: the private key stays with the owner (INV-07) — submit a
+    /// signed, challenge-bound request and wait for the sealed assertion.
+    /// Every failure keeps the sheet up with a message; Cancel is always
+    /// available while waiting.
+    private func startOwnerApproval(entry: SharedCredentialEntry, slot: SharedPasskeyEntry) {
+        guard case let .assert(relyingParty, _, clientDataHash, _) = purpose else { return }
+        awaitingApproval = true
+        errorMessage = nil
+        approvalTask = Task {
+            do {
+                let ticket = try await PasskeyApprovalTransport.submitRequest(
+                    zoneName: entry.zoneName, ownerName: entry.ownerName,
+                    expectedGrantId: entry.grantId, slotId: slot.slotId,
+                    clientDataHash: clientDataHash)
+                let payload = try await PasskeyApprovalTransport.awaitApproval(ticket)
+                awaitingApproval = false
+                onAssertion(ASPasskeyAssertionCredential(
+                    userHandle: payload.userHandle, relyingParty: relyingParty,
+                    signature: payload.signature, clientDataHash: clientDataHash,
+                    authenticatorData: payload.authenticatorData,
+                    credentialID: payload.credentialID))
+            } catch is CancellationError {
+                awaitingApproval = false
+            } catch PasskeyApprovalTransport.Failure.rejected {
+                awaitingApproval = false
+                errorMessage = appString("The owner declined this sign-in.")
+            } catch PasskeyApprovalTransport.Failure.timedOut {
+                awaitingApproval = false
+                errorMessage = appString("No answer from the owner yet. Try again in a moment.")
+            } catch {
+                awaitingApproval = false
+                errorMessage = appString("Couldn't reach the owner right now.")
             }
         }
     }

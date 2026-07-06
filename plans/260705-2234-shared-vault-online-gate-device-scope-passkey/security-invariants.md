@@ -110,6 +110,28 @@ authenticatorData: Data, signature: Data, userHandle: Data?, expiresAtUnixMs
 Extension chấp nhận chỉ khi requestID/epoch/credentialID/clientDataHash khớp request
 đang chờ (INV-09) và chưa hết hạn.
 
+## Amendment 260706 (P05.4 implementation)
+
+`PasskeyAssertionApprovalRequestV1/ResponseV1` được HIỆN THỰC dưới dạng **wire v2 của
+ApprovalRequest/ApprovalResponse hiện có** thay vì artifact song song:
+- Request v2 = request v1 + `payloadBinding` (đúng 32-byte clientDataHash) — version
+  byte 2 nằm trong signed bytes (domain-separated); TOTP requests giữ bit-identical v1.
+- Mọi trường P00 yêu cầu đều có mặt: requestID/grantID/epoch (qua verifier fresh-fetch),
+  requester key pinned, rpID/credentialID (suy từ slotId + owner-side secret lookup),
+  clientDataHash (payloadBinding), nonce single-use, TTL, chữ ký hai chiều.
+- Response đi rail cũ: sealed tới EPHEMERAL key của request (forward secrecy — mạnh hơn
+  seal tới device key), HPKE info bind requestId+nonce; payload
+  `PasskeyApprovalPayload` echo clientDataHash/credentialID/nonce, requester verify
+  từng echo trước khi hoàn tất WebAuthn (INV-09 giữ nguyên).
+- Lý do: một rail đã audit + version-gated thay vì nhân đôi toàn bộ record/verifier/
+  nonce machinery — giảm bề mặt lỗi, không giảm thuộc tính bảo mật nào.
+- Owner verify: 12 bước P00 ánh xạ vào `ApprovalVerifier.verifyRequest` (bước 8 mở
+  rộng: capability/binding agreement) — thứ tự giữ nguyên, nonce burn cuối cùng.
+
+Kèm theo: `DeviceSigningIdentity` + `DeviceHPKEIdentity` chuyển sang SHARED keychain
+access group (migration một chiều từ app-private group) — extension ký request bằng
+đúng identity đã pin; không đổi key material nên pins hiện có không vỡ.
+
 ## State machine chuẩn (P01/P02 dùng chung)
 ```
 offline → (path satisfied) → verifying → authorized | revoked | unavailable

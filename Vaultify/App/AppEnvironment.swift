@@ -80,7 +80,8 @@ import SwiftUI
                                                        shareService: approvalShare)
         self.approvalCeremony = ApprovalCeremonyService(session: session,
                                                         repository: repository,
-                                                        shareService: approvalShare)
+                                                        shareService: approvalShare,
+                                                        store: store)
         let approvalRecipient = ApprovalRecipientService()
         let participantEscrow = ParticipantEscrowService()
         let inviteLinks = InviteLinkService()

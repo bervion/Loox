@@ -27,15 +27,30 @@ nonisolated struct DeviceSigningIdentity: Sendable {
     /// would break every pin that references this device with nothing but an
     /// unexplained `requesterKeyUnpinned` on the far side; surfacing the
     /// corruption lets the UI drive an explicit re-enrollment.
+    ///
+    /// Lives in the SHARED keychain group so the AutoFill extension signs
+    /// passkey-approval requests with the SAME pinned identity — an
+    /// extension-local key would be unpinned and every request rejected.
+    /// Keys minted before the move are migrated from the app-private group
+    /// (app-side only; the extension can't see that group and would fall
+    /// through to create — in practice the app always runs first because
+    /// enrollment/pinning happens in-app).
     static func loadOrCreate() throws -> DeviceSigningIdentity {
-        if let raw = try KeychainStore.get(account: keychainAccount) {
+        let group = SharedConfig.keychainAccessGroup
+        if let raw = try KeychainStore.get(account: keychainAccount, accessGroup: group) {
             guard let key = try? P256.Signing.PrivateKey(rawRepresentation: raw) else {
                 throw Failure.corruptKeyMaterial
             }
             return DeviceSigningIdentity(privateKey: key)
         }
+        if let legacy = try? KeychainStore.get(account: keychainAccount),
+           let key = try? P256.Signing.PrivateKey(rawRepresentation: legacy) {
+            try KeychainStore.set(legacy, account: keychainAccount, accessGroup: group)
+            KeychainStore.delete(account: keychainAccount)
+            return DeviceSigningIdentity(privateKey: key)
+        }
         let key = P256.Signing.PrivateKey()
-        try KeychainStore.set(key.rawRepresentation, account: keychainAccount)
+        try KeychainStore.set(key.rawRepresentation, account: keychainAccount, accessGroup: group)
         return DeviceSigningIdentity(privateKey: key)
     }
 

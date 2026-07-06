@@ -32,19 +32,36 @@ nonisolated struct DeviceHPKEIdentity: Sendable {
     /// are a PAIR: exactly one present means corrupted state — throw instead
     /// of silently minting a fresh half (a new id would orphan every grant
     /// binding that references this device; mirror of DeviceSigningIdentity).
+    ///
+    /// SHARED keychain group (same rationale as DeviceSigningIdentity): the
+    /// extension opens per-device sealed blobs and approval responses with
+    /// the same key the app enrolled. Pre-move pairs migrate from the
+    /// app-private group on the app's next load.
     static func loadOrCreate() throws -> DeviceHPKEIdentity {
-        let storedKey = try KeychainStore.get(account: keyKeychainAccount)
-        let storedID = try KeychainStore.get(account: idKeychainAccount)
+        let group = SharedConfig.keychainAccessGroup
+        let storedKey = try KeychainStore.get(account: keyKeychainAccount, accessGroup: group)
+        let storedID = try KeychainStore.get(account: idKeychainAccount, accessGroup: group)
         switch (storedKey, storedID) {
         case let (raw?, id?):
             guard let key = try? Curve25519.KeyAgreement.PrivateKey(rawRepresentation: raw),
                   id.count == 32 else { throw Failure.corruptKeyMaterial }
             return DeviceHPKEIdentity(privateKey: key, deviceKeyID: id)
         case (nil, nil):
+            // Migrate an app-private pair minted before the shared-group move.
+            if let legacyKey = try? KeychainStore.get(account: keyKeychainAccount),
+               let legacyID = try? KeychainStore.get(account: idKeychainAccount),
+               let key = try? Curve25519.KeyAgreement.PrivateKey(rawRepresentation: legacyKey),
+               legacyID.count == 32 {
+                try KeychainStore.set(legacyKey, account: keyKeychainAccount, accessGroup: group)
+                try KeychainStore.set(legacyID, account: idKeychainAccount, accessGroup: group)
+                KeychainStore.delete(account: keyKeychainAccount)
+                KeychainStore.delete(account: idKeychainAccount)
+                return DeviceHPKEIdentity(privateKey: key, deviceKeyID: legacyID)
+            }
             let key = Curve25519.KeyAgreement.PrivateKey()
             let id = CryptoRandom.data(32)
-            try KeychainStore.set(key.rawRepresentation, account: keyKeychainAccount)
-            try KeychainStore.set(id, account: idKeychainAccount)
+            try KeychainStore.set(key.rawRepresentation, account: keyKeychainAccount, accessGroup: group)
+            try KeychainStore.set(id, account: idKeychainAccount, accessGroup: group)
             return DeviceHPKEIdentity(privateKey: key, deviceKeyID: id)
         default:
             throw Failure.corruptKeyMaterial
