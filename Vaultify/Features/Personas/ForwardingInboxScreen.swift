@@ -135,8 +135,10 @@ struct ForwardingInboxScreen: View {
                     rotationDone = done
                     rotationTotal = total
                 }
-            } catch {
+            } catch let failure as RelayService.Failure {
                 // Finished aliases are checkpointed — the section re-offers the rest.
+                errorMessage = failure.userMessage
+            } catch {
                 errorMessage = appString("Check your connection and iCloud, then try again.")
             }
         }

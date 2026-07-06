@@ -1,6 +1,46 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Unlock Loox and try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở khoá Loox rồi thử lại."
+          }
+        }
+      }
+    },
+    "You’re offline. Connect to the internet to change this private address." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đang ngoại tuyến. Hãy kết nối mạng để thay đổi địa chỉ riêng tư này."
+          }
+        }
+      }
+    },
+    "Couldn’t verify this device. Unlock Loox and try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể xác minh thiết bị này. Mở khoá Loox rồi thử lại."
+          }
+        }
+      }
+    },
+    "Too many requests. Please try again shortly." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút."
+          }
+        }
+      }
+    },
     "Forwarding to" : {
       "localizations" : {
         "vi" : {

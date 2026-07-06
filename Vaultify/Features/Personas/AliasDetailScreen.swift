@@ -188,6 +188,7 @@ struct AliasDetailScreen: View {
         Task {
             defer { busy = false }
             do { try await operation() }
+            catch let failure as RelayService.Failure { errorMessage = failure.userMessage }
             catch { errorMessage = appString("Check your connection and iCloud, then try again.") }
         }
     }

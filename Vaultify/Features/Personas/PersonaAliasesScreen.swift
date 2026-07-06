@@ -202,8 +202,8 @@ struct PersonaAliasesScreen: View {
         Task {
             defer { busyAliasID = nil }
             do { try await operation() }
-            catch is RelayService.Failure {
-                errorMessage = appString("Check your connection and iCloud, then try again.")
+            catch let failure as RelayService.Failure {
+                errorMessage = failure.userMessage
             } catch {
                 errorMessage = appString("Check your connection and iCloud, then try again.")
             }

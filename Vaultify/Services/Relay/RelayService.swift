@@ -163,32 +163,46 @@ import Foundation
         throw Failure.rejected("alias_exists")
     }
 
+    /// Sign and send one command. Bounded silent recovery via `RelayRetryPolicy`:
+    /// nonce_replay rebuilds the command (fresh nonce + issued_at, re-signed) and
+    /// retries ONCE; epoch_stale refreshes the principal from the escrow first
+    /// (another device rotated it) — the user sees a spinner, never epoch talk.
+    /// Every attempt re-resolves the principal and signs a fresh transcript; a
+    /// signature is never reused after any field changes (SEC-PE06/07).
     private func send(kind: RelayCommandKind, aliasID: String?, destination: String? = nil,
                       path: String, method: String = "POST", genesis: Bool = false) async throws {
         guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
-        let principal: RelayPrincipalIdentity
-        do { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
-        catch { throw Failure.principalUnavailable }
+        var attempt = 0
+        while true {
+            attempt += 1
+            let principal: RelayPrincipalIdentity
+            do { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
+            catch { throw Failure.principalUnavailable }
 
-        let command = RelayCommand(principalID: principal.principalID, epoch: principal.epoch,
-                                   nonce: Data(CryptoRandom.bytes(16)),
-                                   issuedAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
-                                   kind: kind, aliasID: aliasID, destination: destination)
-        let signature = try RelayCommandCanonical.sign(command, using: principal).signature
-        let genesisKey = (genesis && principal.epoch == 1) ? principal.signingPublicKey : nil
+            let command = RelayCommand(principalID: principal.principalID, epoch: principal.epoch,
+                                       nonce: Data(CryptoRandom.bytes(16)),
+                                       issuedAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
+                                       kind: kind, aliasID: aliasID, destination: destination)
+            let signature = try RelayCommandCanonical.sign(command, using: principal).signature
+            let genesisKey = (genesis && principal.epoch == 1) ? principal.signingPublicKey : nil
 
-        do {
-            try await RelayAPIClient.send(command, signature: signature,
-                                          genesisPublicKey: genesisKey, path: path, method: method)
-        } catch let failure as RelayAPIClient.Failure {
-            switch failure {
-            case .transport: throw Failure.network
-            case .aliasExists: throw failure   // handled by mint's retry loop
-            case .unauthorized: throw Failure.rejected("unauthorized")
-            case .nonceReplay: throw Failure.rejected("nonce_replay")
-            case .epochStale: throw Failure.rejected("epoch_stale")
-            case .rateLimited: throw Failure.rejected("rate_limited")
-            case .server(let code): throw Failure.rejected("server_\(code)")
+            do {
+                try await RelayAPIClient.send(command, signature: signature,
+                                              genesisPublicKey: genesisKey, path: path, method: method)
+                return
+            } catch let failure as RelayAPIClient.Failure {
+                if case .aliasExists = failure { throw failure }  // mint's retry loop handles it
+                switch RelayRetryPolicy.action(for: failure, attempt: attempt) {
+                case .retry:
+                    continue
+                case .refreshEpochThenRetry:
+                    _ = try? await escrow.refreshFromCloud(vaultKey: vaultKey.bytes)
+                    continue
+                case .fail("network"):
+                    throw Failure.network
+                case .fail(let reason):
+                    throw Failure.rejected(reason)
+                }
             }
         }
     }
