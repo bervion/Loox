@@ -70,6 +70,11 @@ private enum CredentialRow: Identifiable {
         return nil
     }
 
+    var ownedItem: VaultItem? {
+        if case .owned(let item) = self { return item }
+        return nil
+    }
+
     func matches(serviceIdentifiers: [String]) -> Bool {
         switch self {
         case .owned(let item): return item.matchesAutoFill(serviceIdentifiers: serviceIdentifiers)
@@ -194,6 +199,18 @@ private struct CredentialListView: View {
                 }
             }
             .buttonStyle(.plain)
+            // Alias reuse (owned rows only): the written-back "Private email" field
+            // fills instead of the primary username. Read-only vault access — the
+            // extension makes NO relay network calls; provisioning stays in the app.
+            .contextMenu {
+                if let item = row.ownedItem, let alias = item.privateEmailValue {
+                    Button {
+                        onSelect(alias, item.passwordField?.value ?? "")
+                    } label: {
+                        Label("Use private email", systemImage: "envelope.badge.shield.half.filled")
+                    }
+                }
+            }
             Spacer()
             // Extensions have no CloudKit entitlement, so the request/response ceremony
             // can't run here — hand off to the app, which already has the Request
