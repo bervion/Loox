@@ -24,6 +24,8 @@ nonisolated enum RelayRetryPolicy {
         case .rateLimited:  return .fail("rate_limited")
         case .aliasExists:  return .fail("alias_exists")   // mint loop handles upstream
         case .aliasCapReached: return .fail("alias_cap_reached")
+        // Handled upstream (verified operator state, never retried); defensive here.
+        case .capability: return .fail("capability")
         case .transport:    return .fail("network")
         case .server(let code): return .fail("server_\(code)")
         }
@@ -35,6 +37,16 @@ extension RelayService.Failure {
     /// reaches the user; those are auto-retried before ever landing here.
     var userMessage: String {
         switch self {
+        // Verified operator states — each is distinct from an outage and from
+        // offline (INV-CAP-04); the vault itself is always unaffected.
+        case .capabilityBlocked(.maintenance, _):
+            return appString("Private Email is under maintenance. Creating or changing private addresses is temporarily paused. Your vault continues to work normally.")
+        case .capabilityBlocked(.disabled, _):
+            return appString("Private Email is currently unavailable. Loox has temporarily disabled this feature. Your vault and other features continue to work normally.")
+        case .capabilityBlocked(.retired, _):
+            return appString("Private Email is no longer offered by Loox. Your saved alias records remain visible so you can identify accounts that used them.")
+        case .capabilityBlocked:
+            return appString("We’re having trouble reaching the relay service. Your vault and saved passwords are not affected.")
         case .vaultLocked:
             return appString("Unlock Loox and try again.")
         case .missingDestination:

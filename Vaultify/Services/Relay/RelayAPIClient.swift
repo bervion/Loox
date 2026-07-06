@@ -13,6 +13,10 @@ nonisolated enum RelayAPIClient {
         case aliasExists           // 409 alias_exists — regenerate the local-part
         case aliasCapReached       // 409 alias_cap_reached — active+paused at cap; deletes free space
         case rateLimited           // 429 — back off (~30/min, 500/day per principal)
+        /// Structured operator state (problem+json `capability_*` / 410 +
+        /// X-Loox-Service-State). VERIFIED signal — the only response class
+        /// allowed to move the app's operator-mode state (INV-CAP-07).
+        case capability(CapabilityServiceMode, retryAfter: Int?)
         case server(Int)           // anything else non-2xx
         case transport             // network unreachable
     }
@@ -57,8 +61,31 @@ nonisolated enum RelayAPIClient {
         case 401: throw Failure.unauthorized
         case 409: throw conflictFailure(from: data)
         case 429: throw Failure.rateLimited
+        case 410, 503:
+            if let signal = capabilitySignal(from: http, data: data) { throw signal }
+            throw Failure.server(http.statusCode)   // plain 503 = infrastructure, NOT operator state
         default: throw Failure.server(http.statusCode)
         }
+    }
+
+    /// Parse the frozen capability contract: `X-Loox-Service-State` header (mode)
+    /// + problem+json `code`/`retry_after_seconds`. Absent/garbled → nil, so a
+    /// generic Cloudflare 503 can never masquerade as maintenance/retirement.
+    static func capabilitySignal(from http: HTTPURLResponse, data: Data) -> Failure? {
+        let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let code = (body?["code"] as? String) ?? ""
+        let headerState = http.value(forHTTPHeaderField: "X-Loox-Service-State")
+        guard code.hasPrefix("capability_") || headerState != nil else { return nil }
+        let fallbackMode: CapabilityServiceMode
+        switch code {
+        case "capability_retired": fallbackMode = .retired
+        case "capability_maintenance": fallbackMode = .maintenance
+        default: fallbackMode = .disabled
+        }
+        let mode = headerState.flatMap(CapabilityServiceMode.init(rawValue:)) ?? fallbackMode
+        let retryAfter = (body?["retry_after_seconds"] as? Int)
+            ?? http.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init)
+        return .capability(mode, retryAfter: retryAfter)
     }
 
     private static func conflictFailure(from data: Data) -> Failure {

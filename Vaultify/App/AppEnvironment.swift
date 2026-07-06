@@ -44,7 +44,10 @@ import SwiftUI
     let looxLinks = LooxLinkService()
     /// Layer-A network-path precondition for the shared-vault access gate
     /// (INV-02 — a satisfied path is never an authorization by itself).
-    let reachability = NetworkReachabilityMonitor()
+    let reachability: NetworkReachabilityMonitor
+    /// Optional-capability state (Share Link / Private Email): user prefs,
+    /// last verified operator modes, health, per-service circuit breakers.
+    let capabilities: CapabilityStore
     /// Bounded local history for the notifications screen.
     let notificationHistory = NotificationHistoryStore()
 
@@ -67,6 +70,11 @@ import SwiftUI
         let repository = VaultRepository(store: store, session: session)
         self.repository = repository
         self.relay = RelayService(repository: repository, session: session)
+        // Capability state: never consulted by the Core Vault (INV-CAP-01);
+        // built from locals (two-phase init), wired into services at the end.
+        let reachability = NetworkReachabilityMonitor()
+        self.reachability = reachability
+        self.capabilities = CapabilityStore(reachability: reachability)
         self.clipboard = ClipboardService(settings: settings)
         let cloudSync = CloudSyncService(store: store, settings: settings)
         self.cloudSync = cloudSync
@@ -99,6 +107,10 @@ import SwiftUI
             settings: settings, session: session, escrow: participantEscrow,
             inbox: inviteInbox, links: inviteLinks)
         inviteInboxCoordinator.history = notificationHistory
+        // All stored properties are set — safe to wire the capability sinks
+        // (weak refs; one independent breaker per service, INV-CAP-03).
+        relay.capabilities = capabilities
+        looxLinks.capabilities = capabilities
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
