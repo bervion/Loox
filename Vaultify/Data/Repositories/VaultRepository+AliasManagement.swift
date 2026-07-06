@@ -6,17 +6,19 @@ import SwiftData
 /// tombstone. A persona has at most one persona-tier alias.
 extension VaultRepository {
 
-    /// Reserve the persona's single stable alias (≤1 per persona). No-op if one
-    /// already exists. `reserved`, never `active` — the relay backend isn't live.
+    /// Reserve a reusable (persona-tier) address — 0..N per persona, optionally
+    /// labelled ("Clients"). `reserved`, never `active`, until the relay confirms.
     @discardableResult
-    func createPersonaAlias(for persona: Persona) throws -> String? {
-        guard personaAlias(forPersona: persona.id) == nil else { return nil }
-        return try insertAlias(EmailAlias(
+    func createPersonaAlias(for persona: Persona, label: String? = nil,
+                            forwardingInboxID: String? = nil) throws -> String? {
+        try insertAlias(EmailAlias(
             personaId: persona.id,
             tier: .persona,
             localPart: AliasAddress.randomLocalPart(),
+            label: label,
             status: .reserved,
-            forwardingTarget: identityUsername(forPersona: persona),
+            forwardingInboxID: forwardingInboxID,
+            forwardingTarget: newAliasDestination(for: persona),
             sortIndex: (aliases.map(\.sortIndex).max() ?? -1) + 1))
     }
 
@@ -31,7 +33,7 @@ extension VaultRepository {
             boundItemId: boundItemId,
             boundDomain: domain,
             status: .reserved,
-            forwardingTarget: identityUsername(forPersona: persona),
+            forwardingTarget: newAliasDestination(for: persona),
             sortIndex: (aliases.map(\.sortIndex).max() ?? -1) + 1))
     }
 

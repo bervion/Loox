@@ -94,12 +94,14 @@ final class EmailAliasTests: XCTestCase {
 
     // MARK: Repo CRUD + flag gating
 
-    func testCreatePersonaAliasIsCappedAtOne() throws {
+    func testMultipleReusableAliasesPerPersonaAllowed() throws {
         let repo = makeRepo()
         let persona = repo.activePersona!
-        XCTAssertNotNil(try repo.createPersonaAlias(for: persona))
-        XCTAssertNil(try repo.createPersonaAlias(for: persona))  // second is rejected
-        XCTAssertEqual(repo.aliases(forPersona: persona.id).filter { $0.tier == .persona }.count, 1)
+        XCTAssertNotNil(try repo.createPersonaAlias(for: persona, label: "Clients"))
+        XCTAssertNotNil(try repo.createPersonaAlias(for: persona, label: "Newsletter"))
+        let reusable = repo.reusableAliases(forPersona: persona.id)
+        XCTAssertEqual(reusable.count, 2)
+        XCTAssertEqual(Set(reusable.compactMap(\.label)), ["Clients", "Newsletter"])
     }
 
     func testSetAliasStatusActiveGatedByRelayFlag() throws {

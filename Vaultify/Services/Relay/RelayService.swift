@@ -34,7 +34,9 @@ import Foundation
         guard let persona = repository.personas.first(where: { $0.id == alias.personaId }) else {
             throw Failure.rejected("no_persona")
         }
-        guard let destination = repository.destinationEmail(for: persona) else {
+        // Explicit per-alias inbox wins; else the persona's default inbox; else
+        // the profile email (pre-inbox vaults).
+        guard let destination = repository.resolvedDestination(for: alias) else {
             throw Failure.missingDestination
         }
 
@@ -64,10 +66,15 @@ import Foundation
     }
 
     /// Change a persona's real email: re-point every one of its aliases that the
-    /// backend knows about to the new destination. Sequential + idempotent — a
-    /// retry finishes any that didn't rotate.
+    /// backend knows about to the new destination — EXCEPT aliases pinned to a
+    /// different explicit inbox (their destination is their own choice).
+    /// Sequential + idempotent — a retry finishes any that didn't rotate.
     func updateDestination(for persona: Persona, to email: String) async throws {
+        let profileInboxID = repository.forwardingInboxes.first {
+            $0.source == .personaProfile && $0.personaId == persona.id
+        }?.id
         for alias in repository.aliases(forPersona: persona.id) where alias.backendMinted {
+            if let pinned = alias.forwardingInboxID, pinned != profileInboxID { continue }
             try await send(kind: .rotateDestination, aliasID: alias.localPart, destination: email,
                            path: "/v1/relay/aliases/\(alias.localPart)/destination")
             var updated = alias

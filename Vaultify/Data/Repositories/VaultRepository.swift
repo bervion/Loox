@@ -17,6 +17,10 @@ import UserNotifications
     private(set) var passkeys: [PasskeyInfo] = []
     private(set) var personas: [Persona] = []
     private(set) var aliases: [EmailAlias] = []
+    /// Internal(set) — `ensureProfileInboxes` (extension) patches it in place
+    /// during reload, the same "never reload() from within reload" rule the
+    /// persona helpers follow.
+    var forwardingInboxes: [ForwardingInbox] = []
 
     init(store: VaultStore, session: VaultSession) {
         self.store = store
@@ -33,6 +37,7 @@ import UserNotifications
         passkeys = []
         personas = []
         aliases = []
+        forwardingInboxes = []
         CredentialIdentityService.clear()
     }
 
@@ -80,6 +85,10 @@ import UserNotifications
         migratePartition(key: key)
         mirrorActivePersonaContext()
         aliases = loadAliases(key: key)
+        // Inboxes load after personas + items so profile-email derivation sees
+        // the persona's card; derivation patches the cache in place.
+        forwardingInboxes = loadInboxes(key: key)
+        ensureProfileInboxes(key: key)
     }
 
     /// Reload after a CloudKit pull — same as `reload()` plus the duplicate

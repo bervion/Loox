@@ -20,7 +20,9 @@ extension VaultRepository {
                           localPart: secret.localPart,
                           boundItemId: secret.boundItemId,
                           boundDomain: secret.boundDomain,
+                          label: secret.label,
                           status: secret.status,
+                          forwardingInboxID: secret.forwardingInboxID,
                           forwardingTarget: secret.forwardingTarget,
                           disabledAt: secret.disabledAt,
                           backendMinted: secret.backendMinted,
@@ -44,9 +46,14 @@ extension VaultRepository {
         aliases.filter { $0.personaId == personaId }
     }
 
-    /// The single persona-tier alias for a persona, if one exists (≤1 per persona).
+    /// All reusable (persona-tier) addresses of a persona — 0..N, user-labelled.
+    func reusableAliases(forPersona personaId: String) -> [EmailAlias] {
+        aliases.filter { $0.personaId == personaId && $0.tier == .persona }
+    }
+
+    /// First reusable address of a persona (legacy single-alias call sites).
     func personaAlias(forPersona personaId: String) -> EmailAlias? {
-        aliases.first { $0.personaId == personaId && $0.tier == .persona }
+        reusableAliases(forPersona: personaId).first
     }
 
     func aliases(forItem itemId: String) -> [EmailAlias] {
