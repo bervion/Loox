@@ -1,6 +1,26 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Create private email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo email riêng tư"
+          }
+        }
+      }
+    },
+    "Unique for %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riêng cho %@"
+          }
+        }
+      }
+    },
     "Reusable addresses" : {
       "localizations" : {
         "vi" : {
