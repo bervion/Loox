@@ -92,7 +92,7 @@ struct ProfileScreen: View {
                     personaRowLabel("Manage personas", icon: Icons.person)
                 }
                 NavigationLink { PersonaAliasesScreen() } label: {
-                    personaRowLabel("Email aliases", icon: Icons.mail)
+                    personaRowLabel("Private Email", icon: Icons.mail)
                 }
             }
             .padding(Space.s4)

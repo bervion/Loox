@@ -12,6 +12,7 @@ struct AliasDetailScreen: View {
     @State private var busy = false
     @State private var errorMessage: String?
     @State private var confirmDelete = false
+    @State private var confirmPause = false
     @State private var editingDestination = false
     @State private var destinationDraft = ""
 
@@ -29,7 +30,7 @@ struct AliasDetailScreen: View {
                 Color.clear.onAppear { dismiss() }
             }
         }
-        .navigationTitle(Text("Alias"))
+        .navigationTitle(Text("Private Email"))
         .platformNavigationBarTitleDisplayMode(.inline)
         .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
@@ -42,7 +43,7 @@ struct AliasDetailScreen: View {
         List {
             Section("Address") {
                 Button {
-                    env.clipboard.copy(address, label: appString("Email aliases"), sensitive: false)
+                    env.clipboard.copy(address, label: appString("Private Email"), sensitive: false)
                 } label: {
                     HStack {
                         Text(verbatim: address).themedForeground(.primary)
@@ -58,7 +59,9 @@ struct AliasDetailScreen: View {
             .listRowBackground(VaultColors.surface)
 
             Section {
-                LabeledContent { Text(verbatim: alias.forwardingTarget ?? "—") } label: { Text("Forwards to") }
+                // Masked in overview; the full address appears only when editing.
+                LabeledContent { Text(verbatim: alias.forwardingTarget.map(EmailMask.masked) ?? "—") }
+                    label: { Text("Forwards to") }
                 Button {
                     destinationDraft = alias.forwardingTarget ?? (persona.flatMap { env.repository.destinationEmail(for: $0) } ?? "")
                     editingDestination = true
@@ -76,12 +79,13 @@ struct AliasDetailScreen: View {
                     }
                 }
                 if alias.status != .disabled {
-                    Button(role: .destructive) { run { try await env.relay.disable(alias) } } label: {
-                        Label { Text("Disable") } icon: { PolarisIcon(Icons.hide) }
+                    // Pause is reversible later (relay keeps the row) — not destructive.
+                    Button { confirmPause = true } label: {
+                        Label { Text("Pause forwarding") } icon: { PolarisIcon(Icons.hide) }
                     }
                 }
                 Button(role: .destructive) { confirmDelete = true } label: {
-                    Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
+                    Label { Text("Delete permanently") } icon: { PolarisIcon(Icons.trash) }
                 }
             }
             .listRowBackground(VaultColors.surface)
@@ -95,18 +99,25 @@ struct AliasDetailScreen: View {
         } message: {
             Text("Mail to your aliases will forward here. Changing it re-points every alias of this identity.")
         }
-        .confirmationDialog("Delete this alias?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { run { try await env.relay.delete(alias) } }
+        .confirmationDialog("Pause forwarding?", isPresented: $confirmPause, titleVisibility: .visible) {
+            Button("Pause forwarding") { run { try await env.relay.disable(alias) } }
         } message: {
-            Text("The address stops working immediately and cannot be restored.")
+            Text("New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later.")
+        }
+        .confirmationDialog("Delete this private address permanently?", isPresented: $confirmDelete,
+                            titleVisibility: .visible) {
+            Button("Delete permanently", role: .destructive) { run { try await env.relay.delete(alias) } }
+        } message: {
+            Text(verbatim: address + "\n")
+                + Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
         }
     }
 
     private func statusLabel(_ status: AliasStatus) -> String {
         switch status {
-        case .active:   return appString("Active")
+        case .active:   return appString("Forwarding active")
         case .reserved: return appString("Tap to activate")
-        case .disabled: return appString("Disabled")
+        case .disabled: return appString("Forwarding paused")
         default:        return appString("Draft")
         }
     }

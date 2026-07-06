@@ -11,6 +11,8 @@ struct PersonaAliasesScreen: View {
     @State private var busyAliasID: String?
     @State private var errorMessage: String?
     @State private var missingEmail = false
+    @State private var pendingPause: EmailAlias?
+    @State private var pendingDelete: EmailAlias?
 
     private var persona: Persona? { env.repository.activePersona }
 
@@ -26,9 +28,23 @@ struct PersonaAliasesScreen: View {
                 perSiteSection(persona)
             }
         }
-        .navigationTitle(Text("Email aliases"))
+        .navigationTitle(Text("Private Email"))
         .sheet(isPresented: $showingPerSiteEditor) {
             if let persona { AliasEditorSheet(persona: persona, onCreated: { activate($0) }) }
+        }
+        // Pause is reversible later (relay keeps the row) — calm confirmation, not destructive.
+        .confirmationDialog("Pause forwarding?", isPresented: pauseBinding,
+                            titleVisibility: .visible, presenting: pendingPause) { alias in
+            Button("Pause forwarding") { disableAlias(alias) }
+        } message: { _ in
+            Text("New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later.")
+        }
+        // Permanent delete: address can never be restored or re-issued (backend tombstone).
+        .confirmationDialog("Delete this private address permanently?", isPresented: deleteBinding,
+                            titleVisibility: .visible, presenting: pendingDelete) { alias in
+            Button("Delete permanently", role: .destructive) { remove(alias) }
+        } message: { _ in
+            Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
         }
         .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
@@ -58,7 +74,7 @@ struct PersonaAliasesScreen: View {
     }
 
     @ViewBuilder private func personaAliasSection(_ persona: Persona) -> some View {
-        Section("Persona alias") {
+        Section("Reusable address") {
             if let alias = env.repository.personaAlias(forPersona: persona.id) {
                 aliasRow(alias, subtitle: persona.displayName)
             } else {
@@ -70,7 +86,7 @@ struct PersonaAliasesScreen: View {
                         }
                     }
                 } label: {
-                    Label { Text("Reserve a private alias") } icon: { PolarisIcon(Icons.addCircle) }
+                    Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
                 }
             }
         }
@@ -79,12 +95,12 @@ struct PersonaAliasesScreen: View {
 
     @ViewBuilder private func perSiteSection(_ persona: Persona) -> some View {
         let perSite = env.repository.aliases(forPersona: persona.id).filter { $0.tier == .perSite }
-        Section("Per-site aliases") {
+        Section("Site-specific addresses") {
             ForEach(perSite) { alias in
                 aliasRow(alias, subtitle: alias.boundDomain)
             }
             Button { guardEmail(persona) { showingPerSiteEditor = true } } label: {
-                Label { Text("Add per-site alias") } icon: { PolarisIcon(Icons.addCircle) }
+                Label { Text("Add site-specific address") } icon: { PolarisIcon(Icons.addCircle) }
             }
         }
         .listRowBackground(VaultColors.surface)
@@ -114,12 +130,12 @@ struct PersonaAliasesScreen: View {
             }
         }
         .swipeActions(edge: .trailing) {
-            Button(role: .destructive) { remove(alias) } label: {
+            Button(role: .destructive) { pendingDelete = alias } label: {
                 Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
             }
             if alias.status != .disabled {
-                Button { disableAlias(alias) } label: {
-                    Label { Text("Disable") } icon: { PolarisIcon(Icons.hide) }
+                Button { pendingPause = alias } label: {
+                    Label { Text("Pause") } icon: { PolarisIcon(Icons.hide) }
                 }
             }
         }
@@ -133,9 +149,9 @@ struct PersonaAliasesScreen: View {
 
     private func statusLabel(_ status: AliasStatus) -> String {
         switch status {
-        case .active:   return appString("Active")
+        case .active:   return appString("Forwarding active")
         case .reserved: return appString("Tap to activate")
-        case .disabled: return appString("Disabled")
+        case .disabled: return appString("Forwarding paused")
         default:        return appString("Draft")
         }
     }
@@ -169,5 +185,13 @@ struct PersonaAliasesScreen: View {
 
     private var errorBinding: Binding<Bool> {
         Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+    }
+
+    private var pauseBinding: Binding<Bool> {
+        Binding(get: { pendingPause != nil }, set: { if !$0 { pendingPause = nil } })
+    }
+
+    private var deleteBinding: Binding<Bool> {
+        Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })
     }
 }
