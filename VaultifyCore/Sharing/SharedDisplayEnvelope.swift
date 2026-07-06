@@ -31,6 +31,23 @@ nonisolated struct SharedDisplayEnvelope: Codable, Sendable, Equatable {
                                              toParticipantPubKey: key, grantId: grantId)
     }
 
+    /// Per-device variants (grant v2): Tier-1 metadata is sealed to each
+    /// APPROVED device only — an unapproved device stays at Tier 0 (INV-10).
+    func sealedForDevice(toDevicePubKey key: Data, deviceKeyID: Data,
+                         grantId: String) throws -> Data {
+        try ApprovalSeal.sealDisplayEnvelopeForDevice(JSONEncoder().encode(self),
+                                                      toDevicePubKey: key,
+                                                      deviceKeyID: deviceKeyID,
+                                                      grantId: grantId)
+    }
+
+    static func openForDevice(_ blob: Data, deviceIdentity: DeviceHPKEIdentity,
+                              grantId: String) throws -> SharedDisplayEnvelope {
+        let plaintext = try ApprovalSeal.openDisplayEnvelopeForDevice(
+            blob, deviceIdentity: deviceIdentity, grantId: grantId)
+        return try JSONDecoder().decode(SharedDisplayEnvelope.self, from: plaintext)
+    }
+
     static func open(_ blob: Data, participantIdentity: ParticipantIdentity,
                      grantId: String) throws -> SharedDisplayEnvelope {
         let plaintext = try ApprovalSeal.openDisplayEnvelope(

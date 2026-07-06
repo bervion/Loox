@@ -16,6 +16,10 @@ import UIKit
         case grantMissing
         case verifyFailed(ApprovalVerifyFailure)
         case malformedPayload
+        /// v2 single-device grant that does not include THIS device (or the
+        /// binding hash doesn't match our key) — Tier-0 projection, not an
+        /// error toast (INV-04/10).
+        case deviceNotAuthorized
 
         var errorDescription: String? {
             switch self {
@@ -32,6 +36,8 @@ import UIKit
                 return appString("This share couldn't be verified.") + " (\(reason))"
             case .malformedPayload:
                 return appString("The response couldn't be read.")
+            case .deviceNotAuthorized:
+                return appString("The owner limited this item to a different device.")
             }
         }
     }
@@ -178,13 +184,35 @@ import UIKit
         guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }
+        // Grant v2 with device bindings: this device must appear in the
+        // signed bindings AND its live public key must match the bound hash
+        // (a swapped key under the same id is rejected — INV-12 test).
+        // The legacy synced participant key is NEVER consulted here (INV-04).
+        var deviceIdentity: DeviceHPKEIdentity?
+        if !grant.allowedDeviceKeyBindings.isEmpty {
+            guard let device = try? DeviceHPKEIdentity.loadOrCreate(),
+                  let binding = grant.allowedDeviceKeyBindings
+                      .first(where: { $0.deviceKeyID == device.deviceKeyID }),
+                  binding.hpkePublicKeyHash == device.publicKeyHash else {
+                throw Failure.deviceNotAuthorized
+            }
+            deviceIdentity = device
+        }
         var values: [String: Data] = [:]
         // Stateless: current state of the shared blobs, every call.
         try await ZoneDeltaFetch.pull(database: sharedDatabase, zoneID: zoneID, cursor: nil) { record in
             guard let field = ApprovalRecordMapping.sharedField(from: record),
                   field.grantId == grant.id,
                   grant.capabilities[field.fieldId]?.isSharedValue == true else { return }
-            if let plaintext = try? ApprovalSeal.openSharedField(
+            if let device = deviceIdentity {
+                if let blob = try? PerDeviceSealedBlob.decode(field.blob),
+                   let envelope = blob.envelope(forDeviceKeyID: device.deviceKeyID),
+                   let plaintext = try? ApprovalSeal.openSharedFieldForDevice(
+                       envelope, deviceIdentity: device,
+                       grantId: grant.id, fieldId: field.fieldId) {
+                    values[field.fieldId] = plaintext
+                }
+            } else if let plaintext = try? ApprovalSeal.openSharedField(
                 field.blob, participantPrivateKey: identity.privateKey,
                 grantId: grant.id, fieldId: field.fieldId) {
                 values[field.fieldId] = plaintext
@@ -202,6 +230,21 @@ import UIKit
         guard let record = try? await sharedDatabase.record(for: id),
               let payload = ApprovalRecordMapping.displayEnvelope(from: record),
               payload.grantId == grant.id else { return nil }
+        if !grant.allowedDeviceKeyBindings.isEmpty {
+            // v2: Tier-1 metadata is per-device too — an unbound device gets
+            // nil (generic Tier-0 title), not the real title (INV-10).
+            guard let device = try? DeviceHPKEIdentity.loadOrCreate(),
+                  grant.allowedDeviceKeyBindings.contains(where: {
+                      $0.deviceKeyID == device.deviceKeyID
+                          && $0.hpkePublicKeyHash == device.publicKeyHash
+                  }),
+                  let blob = try? PerDeviceSealedBlob.decode(payload.blob),
+                  let envelope = blob.envelope(forDeviceKeyID: device.deviceKeyID) else {
+                return nil
+            }
+            return try? SharedDisplayEnvelope.openForDevice(envelope, deviceIdentity: device,
+                                                            grantId: grant.id)
+        }
         return try? SharedDisplayEnvelope.open(payload.blob, participantIdentity: identity,
                                                grantId: grant.id)
     }

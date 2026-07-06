@@ -14,6 +14,10 @@ import Foundation
         case noParticipantProfile
         case grantMissing
         case verifyFailed(ApprovalVerifyFailure)
+        /// Single-device requested but the recipient never published a
+        /// per-device key directory (pre-P03a app) — sealing to the legacy
+        /// synced key would silently void the single-device promise (INV-04).
+        case recipientNeedsUpdate
 
         var errorDescription: String? {
             switch self {
@@ -27,6 +31,8 @@ import Foundation
                 return appString("This share isn't set up yet.")
             case .verifyFailed:
                 return appString("The request couldn't be verified.")
+            case .recipientNeedsUpdate:
+                return appString("Single-device sharing needs the recipient to update Loox first.")
             }
         }
     }
@@ -149,8 +155,20 @@ import Foundation
                       pinnedDeviceSigningKeys: [Data],
                       epoch: UInt32,
                       zoneID: CKRecordZone.ID,
-                      nowUnixMs: Int64) async throws -> AccessGrant {
+                      nowUnixMs: Int64,
+                      deviceScope: DeviceScope = .multi,
+                      allowedDevices: [DeviceHPKEDirectoryEntry] = []) async throws -> AccessGrant {
         let identity = try DeviceSigningIdentity.loadOrCreate()
+        // Single-device is meaningless without at least one enrolled device
+        // key — and it must NEVER fall back to the legacy synced participant
+        // key (INV-04): fail loudly instead.
+        if deviceScope == .single {
+            guard !allowedDevices.isEmpty else { throw Failure.recipientNeedsUpdate }
+        }
+        let bindings = allowedDevices.map {
+            DeviceKeyBinding(deviceKeyID: $0.deviceKeyID,
+                             hpkePublicKeyHash: Data(SHA256.hash(data: $0.hpkePublicKey)))
+        }
         var grant = AccessGrant(
             id: ApprovalConfig.opaqueName(), itemId: itemId,
             recipientId: ApprovalConfig.opaqueName(),
@@ -158,7 +176,9 @@ import Foundation
             pinnedDeviceSigningKeys: pinnedDeviceSigningKeys,
             capabilities: capabilities, epoch: epoch,
             createdAtUnixMs: nowUnixMs, expiresAtUnixMs: nil,
-            ownerSigningPubKey: identity.publicKeyRaw, ownerSignature: Data())
+            ownerSigningPubKey: identity.publicKeyRaw, ownerSignature: Data(),
+            deviceScope: deviceScope,
+            allowedDeviceKeyBindings: deviceScope == .single ? bindings : [])
         grant.ownerSignature = try identity.signature(for: grant.signingBody())
 
         var records: [CKRecord] = [ApprovalRecordMapping.grantRecord(grant, zoneID: zoneID)]
@@ -169,15 +189,39 @@ import Foundation
                                             websiteHost: displayWebsiteHost,
                                             updatedAtUnixMs: nowUnixMs, revision: 1,
                                             fields: displayFields)
-        records.append(ApprovalRecordMapping.displayEnvelopeRecord(
-            sealedBlob: try display.sealed(toParticipantPubKey: participantPubKey,
-                                           grantId: grant.id),
-            grantId: grant.id, zoneID: zoneID))
+        if grant.allowedDeviceKeyBindings.isEmpty {
+            records.append(ApprovalRecordMapping.displayEnvelopeRecord(
+                sealedBlob: try display.sealed(toParticipantPubKey: participantPubKey,
+                                               grantId: grant.id),
+                grantId: grant.id, zoneID: zoneID))
+        } else {
+            var envelopes: [String: Data] = [:]
+            for device in allowedDevices {
+                envelopes[device.deviceKeyID.hexString] = try display.sealedForDevice(
+                    toDevicePubKey: device.hpkePublicKey,
+                    deviceKeyID: device.deviceKeyID, grantId: grant.id)
+            }
+            records.append(ApprovalRecordMapping.displayEnvelopeRecord(
+                sealedBlob: try PerDeviceSealedBlob(envelopes: envelopes).encoded(),
+                grantId: grant.id, zoneID: zoneID))
+        }
         for (fieldId, plaintext) in sharedValues {
             guard capabilities[fieldId]?.isSharedValue == true else { continue }
-            let sealed = try ApprovalSeal.sealSharedField(plaintext,
+            let sealed: Data
+            if grant.allowedDeviceKeyBindings.isEmpty {
+                sealed = try ApprovalSeal.sealSharedField(plaintext,
                                                           toParticipantPubKey: participantPubKey,
                                                           grantId: grant.id, fieldId: fieldId)
+            } else {
+                var envelopes: [String: Data] = [:]
+                for device in allowedDevices {
+                    envelopes[device.deviceKeyID.hexString] = try ApprovalSeal.sealSharedFieldForDevice(
+                        plaintext, toDevicePubKey: device.hpkePublicKey,
+                        deviceKeyID: device.deviceKeyID,
+                        grantId: grant.id, fieldId: fieldId)
+                }
+                sealed = try PerDeviceSealedBlob(envelopes: envelopes).encoded()
+            }
             records.append(ApprovalRecordMapping.sharedFieldRecord(
                 sealedBlob: sealed, grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
         }

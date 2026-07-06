@@ -59,12 +59,16 @@ struct FieldCapabilityRow: View {
                 switch capability {
                 case .totp(let c): return c == .askEachTime
                 case .value(let c): return c == .shared
+                // Passkey rows get dedicated UI in the capability-v2 phase;
+                // until then the toggle maps to the ask-each-time default.
+                case .passkey(let c): return c != .none
                 }
             },
             set: { enabled in
                 switch capability {
                 case .totp: capability = .totp(enabled ? .askEachTime : .none)
                 case .value: capability = .value(enabled ? .shared : .none)
+                case .passkey: capability = .passkey(enabled ? .askEachTime : .none)
                 }
             })
     }

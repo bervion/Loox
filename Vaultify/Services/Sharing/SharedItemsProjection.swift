@@ -156,12 +156,25 @@ import Foundation
                 if ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) == nil {
                     try ApprovalRecipientService.pinOwnerKey(grant.ownerSigningPubKey, zoneID: zoneID)
                 }
-                let values = try await recipient.fetchSharedFieldValues(
-                    grant: grant, identity: identity, zoneID: zoneID)
-                let display = await recipient.fetchDisplayEnvelope(
-                    grant: grant, identity: identity, zoneID: zoneID)
+                // v2 single-device grants exclude this device entirely: keep
+                // a Tier-0 placeholder (generic state, no metadata, no
+                // values) instead of dropping the zone — the user should see
+                // WHY there's nothing here (INV-10).
+                var deviceAuthorized = true
+                var values: [String: Data] = [:]
+                do {
+                    values = try await recipient.fetchSharedFieldValues(
+                        grant: grant, identity: identity, zoneID: zoneID)
+                } catch ApprovalRecipientService.Failure.deviceNotAuthorized {
+                    deviceAuthorized = false
+                }
+                let display = deviceAuthorized
+                    ? await recipient.fetchDisplayEnvelope(
+                        grant: grant, identity: identity, zoneID: zoneID)
+                    : nil
                 let origin = SharedOrigin(zoneName: zoneID.zoneName,
-                                          ownerName: zoneID.ownerName, grantId: grant.id)
+                                          ownerName: zoneID.ownerName, grantId: grant.id,
+                                          deviceAuthorized: deviceAuthorized)
                 let item = Self.buildItem(origin: origin, grant: grant,
                                           display: display, values: values)
                 built.append(item)
@@ -216,7 +229,8 @@ import Foundation
 
     /// Flattens a projected item + its grant into the AutoFill cache shape.
     private static func cacheEntry(item: VaultItem, grant: AccessGrant) -> SharedCredentialEntry? {
-        guard let origin = item.sharedOrigin else { return nil }
+        // Tier-0 items must not leak title/username into the extension list.
+        guard let origin = item.sharedOrigin, origin.deviceAuthorized else { return nil }
         let totpFieldId = grant.capabilities.first { $0.value.isAskEachTimeTOTP }?.key
         return SharedCredentialEntry(
             itemID: item.id, title: item.title,

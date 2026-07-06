@@ -103,6 +103,28 @@ nonisolated enum ApprovalSeal {
         return w.data
     }
 
+    /// Per-device variants (grant v2): the deviceKeyID rides in the HPKE
+    /// info, so an envelope sealed for device A can never be opened by (or
+    /// swapped onto) device B even if both keys leaked — the AEAD binding
+    /// fails first.
+    private static func sharedFieldInfoV2(grantId: String, fieldId: String,
+                                          deviceKeyID: Data) -> Data {
+        var w = CanonicalWriter()
+        w.string("Loox shared field v2")
+        w.string(grantId)
+        w.string(fieldId)
+        w.blob(deviceKeyID)
+        return w.data
+    }
+
+    private static func displayEnvelopeInfoV2(grantId: String, deviceKeyID: Data) -> Data {
+        var w = CanonicalWriter()
+        w.string("Loox display envelope v2")
+        w.string(grantId)
+        w.blob(deviceKeyID)
+        return w.data
+    }
+
     private static func inviteEnvelopeInfo(inboxID: String) -> Data {
         var w = CanonicalWriter()
         w.string("Loox invite envelope v1")
@@ -194,6 +216,70 @@ nonisolated enum ApprovalSeal {
         try open(envelope, privateKey: participantPrivateKey,
                  info: sharedFieldInfo(grantId: grantId, fieldId: fieldId))
     }
+
+    // MARK: per-device seal (grant v2 — INV-04: never a legacy synced key)
+
+    static func sealSharedFieldForDevice(_ plaintext: Data, toDevicePubKey key: Data,
+                                         deviceKeyID: Data,
+                                         grantId: String, fieldId: String) throws -> Data {
+        try seal(plaintext, recipientKeyRaw: key,
+                 info: sharedFieldInfoV2(grantId: grantId, fieldId: fieldId,
+                                         deviceKeyID: deviceKeyID))
+    }
+
+    static func openSharedFieldForDevice(_ envelope: Data,
+                                         deviceIdentity: DeviceHPKEIdentity,
+                                         grantId: String, fieldId: String) throws -> Data {
+        try open(envelope, privateKey: deviceIdentity.agreementPrivateKey,
+                 info: sharedFieldInfoV2(grantId: grantId, fieldId: fieldId,
+                                         deviceKeyID: deviceIdentity.deviceKeyID))
+    }
+
+    static func sealDisplayEnvelopeForDevice(_ plaintext: Data, toDevicePubKey key: Data,
+                                             deviceKeyID: Data, grantId: String) throws -> Data {
+        try seal(plaintext, recipientKeyRaw: key,
+                 info: displayEnvelopeInfoV2(grantId: grantId, deviceKeyID: deviceKeyID))
+    }
+
+    static func openDisplayEnvelopeForDevice(_ envelope: Data,
+                                             deviceIdentity: DeviceHPKEIdentity,
+                                             grantId: String) throws -> Data {
+        try open(envelope, privateKey: deviceIdentity.agreementPrivateKey,
+                 info: displayEnvelopeInfoV2(grantId: grantId,
+                                             deviceKeyID: deviceIdentity.deviceKeyID))
+    }
+}
+
+// MARK: - Per-device sealed blob container (grant v2)
+
+/// One CloudKit blob carrying an envelope per allowed device — same record
+/// count/linkage as v1 (metadata hygiene), recipients pick their own entry
+/// by deviceKeyID. Readers choose the format by the GRANT's wire version,
+/// never by sniffing bytes; the marker byte is a sanity check only.
+nonisolated struct PerDeviceSealedBlob: Sendable {
+    static let marker: UInt8 = 0xD2
+
+    /// deviceKeyID (hex) → HPKE envelope sealed for that device.
+    var envelopes: [String: Data]
+
+    enum CodecFailure: Error { case malformed }
+
+    func encoded() throws -> Data {
+        var data = Data([Self.marker])
+        data.append(try JSONEncoder().encode(envelopes))
+        return data
+    }
+
+    static func decode(_ data: Data) throws -> PerDeviceSealedBlob {
+        guard data.first == marker,
+              let envelopes = try? JSONDecoder().decode([String: Data].self,
+                                                        from: data.dropFirst()) else {
+            throw CodecFailure.malformed
+        }
+        return PerDeviceSealedBlob(envelopes: envelopes)
+    }
+
+    func envelope(forDeviceKeyID id: Data) -> Data? { envelopes[id.hexString] }
 }
 
 // MARK: - Trust fingerprint (ADR-4 one-time out-of-band compare)

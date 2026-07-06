@@ -10,11 +10,23 @@ import Foundation
 
 // MARK: - Capabilities (per-field, type-constrained)
 
-/// TOTP fields can be `none` or `askEachTime` — never `shared` (the seed
-/// stays in the owner's vault, ADR-1).
+/// TOTP fields: `none`, `askEachTime`, or `shared` (seed hand-over).
+/// `shared` is a CONSCIOUS reversal of ADR-1 (user decision 260705): it is
+/// only offered behind an explicit warning modal, encodes as wire v2, and a
+/// delivered seed is not cryptographically revocable (INV-08).
 nonisolated enum TOTPFieldCapability: UInt8, Codable, Sendable {
     case none = 0
     case askEachTime = 1
+    case shared = 2
+}
+
+/// Passkey slots (wire v2 only): `askEachTime` = the owner signs the
+/// assertion on THEIR device per use (INV-07); `shared` = private-key
+/// hand-over behind the same warning modal semantics as TOTP `shared`.
+nonisolated enum PasskeyFieldCapability: UInt8, Codable, Sendable {
+    case none = 0
+    case askEachTime = 1
+    case shared = 2
 }
 
 /// Non-TOTP fields (password/username/url/text) can be `none` or `shared` —
@@ -30,16 +42,41 @@ nonisolated enum ValueFieldCapability: UInt8, Codable, Sendable {
 nonisolated enum FieldCapability: Codable, Sendable, Equatable {
     case totp(TOTPFieldCapability)
     case value(ValueFieldCapability)
+    case passkey(PasskeyFieldCapability)
 
     var isAskEachTimeTOTP: Bool {
         if case .totp(.askEachTime) = self { return true }
         return false
     }
 
+    /// Capabilities whose plaintext ships in a sealed shared blob: classic
+    /// shared values AND the v2 hand-over modes (TOTP seed, passkey key).
     var isSharedValue: Bool {
-        if case .value(.shared) = self { return true }
-        return false
+        switch self {
+        case .value(.shared), .totp(.shared), .passkey(.shared): return true
+        default: return false
+        }
     }
+
+    /// Encodable only in wire v2 — a v1 grant carrying one of these is
+    /// malformed (decode rejects; the layout guard in ApprovalCanonical).
+    var requiresWireV2: Bool {
+        switch self {
+        case .passkey: return true
+        case .totp(.shared): return true
+        default: return false
+        }
+    }
+}
+
+// MARK: - Device scope (wire v2)
+
+/// Whether the recipient may use this grant on all their enrolled devices or
+/// exactly the device(s) named in `allowedDeviceKeyBindings` (sealed
+/// per-device — not merely policy-checked, INV-04/05).
+nonisolated enum DeviceScope: UInt8, Codable, Sendable {
+    case multi = 0
+    case single = 1
 }
 
 // MARK: - Device key bindings (per-device seal, P03)
@@ -127,14 +164,28 @@ nonisolated struct AccessGrant: Sendable, Equatable, Codable {
     var expiresAtUnixMs: Int64?
     var ownerSigningPubKey: Data
     var ownerSignature: Data
+    /// Wire v2 (P03b): device scope + the device-key bindings sealed to.
+    /// `.multi` + empty bindings keeps the grant on wire v1, bit-identical
+    /// to pre-P03b bytes — existing signatures stay valid.
+    var deviceScope: DeviceScope
+    var allowedDeviceKeyBindings: [DeviceKeyBinding]
 
-    /// Pinned keys are normalized to sorted order at construction so the
-    /// in-memory value, the signed canonical bytes, and a decoded copy are
-    /// all identical (`decode(encoded(x)) == x` — no phantom diffs in sync).
+    /// True when any field forces the v2 canonical layout.
+    var requiresWireV2: Bool {
+        deviceScope != .multi || !allowedDeviceKeyBindings.isEmpty
+            || capabilities.values.contains { $0.requiresWireV2 }
+    }
+
+    /// Pinned keys and device bindings are normalized to sorted order at
+    /// construction so the in-memory value, the signed canonical bytes, and
+    /// a decoded copy are all identical (`decode(encoded(x)) == x` — no
+    /// phantom diffs in sync; INV-12 deterministic ordering).
     init(id: String, itemId: String, recipientId: String, participantPubKey: Data,
          pinnedDeviceSigningKeys: [Data], capabilities: [String: FieldCapability],
          epoch: UInt32, createdAtUnixMs: Int64, expiresAtUnixMs: Int64?,
-         ownerSigningPubKey: Data, ownerSignature: Data) {
+         ownerSigningPubKey: Data, ownerSignature: Data,
+         deviceScope: DeviceScope = .multi,
+         allowedDeviceKeyBindings: [DeviceKeyBinding] = []) {
         self.id = id
         self.itemId = itemId
         self.recipientId = recipientId
@@ -147,6 +198,9 @@ nonisolated struct AccessGrant: Sendable, Equatable, Codable {
         self.expiresAtUnixMs = expiresAtUnixMs
         self.ownerSigningPubKey = ownerSigningPubKey
         self.ownerSignature = ownerSignature
+        self.deviceScope = deviceScope
+        self.allowedDeviceKeyBindings = allowedDeviceKeyBindings
+            .sorted { $0.deviceKeyID.lexicographicallyPrecedes($1.deviceKeyID) }
     }
 }
 

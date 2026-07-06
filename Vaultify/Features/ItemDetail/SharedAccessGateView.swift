@@ -15,6 +15,17 @@ struct SharedAccessGateView<Content: View>: View {
     @State private var authorizer = SharedAccessAuthorizer()
 
     var body: some View {
+        // Tier 0 outranks the whole gate: an unauthorized device never even
+        // starts verification — there is nothing it could be authorized FOR.
+        if env.sharedItems.item(id: itemID)?.sharedOrigin?.deviceAuthorized == false {
+            stateCard(icon: Icons.personLockFilled, tint: .secondary,
+                      message: "The owner limited this item to a different device.")
+        } else {
+            gateBody
+        }
+    }
+
+    private var gateBody: some View {
         Group {
             switch authorizer.state {
             case .authorized:

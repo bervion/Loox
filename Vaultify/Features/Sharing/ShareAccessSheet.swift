@@ -35,6 +35,9 @@ struct ShareAccessSheet: View {
     @State private var step: Step = .choose
     @State private var recipientEmail = ""
     @State private var capabilities: [String: FieldCapability] = [:]
+    /// Device scope (P03b): OFF = single-device — values sealed exclusively
+    /// to the recipient's first-enrolled device key (crypto-enforced, INV-04).
+    @State private var allowMultipleDevices = true
     /// Share pending the destructive revoke confirmation.
     @State private var revokeTarget: ItemShareRecord?
     /// iMessage compose (recipient pre-filled) for the invite link.
@@ -323,6 +326,22 @@ struct ShareAccessSheet: View {
                                                                  kind: field.kind.rawValue))
                     : nil
             })
+            // Single-device: seal to the recipient's FIRST-enrolled device
+            // (deterministic choice); their other devices stay Tier 0. A
+            // recipient app without a device directory can't honor the
+            // promise — fail loudly, never fall back to the synced key.
+            let deviceScope: DeviceScope = allowMultipleDevices ? .multi : .single
+            var allowedDevices: [DeviceHPKEDirectoryEntry] = []
+            if deviceScope == .single {
+                guard let first = profile.deviceHPKEDirectory.min(by: {
+                    ($0.addedAtUnixMs, $0.deviceKeyID.hexString)
+                        < ($1.addedAtUnixMs, $1.deviceKeyID.hexString)
+                }) else {
+                    step = .failed(appString("Single-device sharing needs the recipient to update Loox first."))
+                    return
+                }
+                allowedDevices = [first]
+            }
             let grant = try await env.approvalShare.publishGrant(
                 itemId: item.id,
                 capabilities: capabilities,
@@ -333,7 +352,8 @@ struct ShareAccessSheet: View {
                 displayFields: displayFields,
                 participantPubKey: profile.participantPubKey,
                 pinnedDeviceSigningKeys: profile.deviceSigningKeys,
-                epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
+                epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs,
+                deviceScope: deviceScope, allowedDevices: allowedDevices)
             // Acceptance is proven — the public invite artifacts have served
             // their purpose; delete them now (owner is the only principal
             // who can — public-db records are creator-delete only).
@@ -429,6 +449,15 @@ struct ShareAccessSheet: View {
                     Text("What they can use")
                 } footer: {
                     Text("Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use — the secret never leaves your vault.")
+                }
+                .listRowBackground(VaultColors.surface)
+
+                Section {
+                    Toggle(isOn: $allowMultipleDevices) {
+                        Label { Text("Allow use on multiple devices") } icon: { PolarisIcon(Icons.apps) }
+                    }
+                } footer: {
+                    Text("When off, everything is encrypted for the first device they enrolled — their other devices only see a locked placeholder.")
                 }
                 .listRowBackground(VaultColors.surface)
 
