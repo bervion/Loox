@@ -15,6 +15,7 @@ import UserNotifications
     private(set) var archived: [VaultItem] = []
     private(set) var folders: [Folder] = []
     private(set) var passkeys: [PasskeyInfo] = []
+    private(set) var personas: [Persona] = []
 
     init(store: VaultStore, session: VaultSession) {
         self.store = store
@@ -29,6 +30,7 @@ import UserNotifications
         archived = []
         folders = []
         passkeys = []
+        personas = []
         CredentialIdentityService.clear()
     }
 
@@ -68,6 +70,11 @@ import UserNotifications
             pendingSeedFolderMerge = false
             mergeDuplicateSeedFolders(key: key)
         }
+        // Personas load AFTER folders + identity so the seed can link the default
+        // identity + primary Space. Both helpers patch state in place — never reload().
+        personas = loadPersonas(key: key)
+        ensurePersonaExists(key: key)
+        normalizeDefaultPersona()
     }
 
     /// Reload after a CloudKit pull — same as `reload()` plus the duplicate
@@ -174,6 +181,68 @@ import UserNotifications
     func writeIdentityDefault(id: String, isDefault: Bool, now: Date) {
         guard let record = store.record(id: id) else { return }
         record.isDefaultIdentity = isDefault
+        record.updatedAt = now
+        record.dirty = true
+    }
+
+    // MARK: Persona invariants (run at the tail of reload(); patch in place)
+
+    /// Seed the bootstrap Personal persona when none exists — covers both a fresh
+    /// install and an existing vault upgrading to personas. Idempotent and
+    /// multi-device-safe: the fixed bootstrap id means two devices seeding offline
+    /// collide on one record (sync LWW merges them, no duplicate-merge pass needed).
+    /// Links the current default identity + primary Space. Patches `personas` in
+    /// place and never calls `reload()` (mirrors `normalizeDefaultIdentity`).
+    func ensurePersonaExists(key: SecureBytes) {
+        guard personas.isEmpty else { return }
+        let now = Date()
+        let persona = Persona(id: Persona.bootstrapPersonalID,
+                              displayName: appString("Personal"),
+                              kind: .personal,
+                              primaryProfileItemID: defaultIdentity?.id,
+                              primarySpaceID: folders.first?.id,
+                              isDefault: true,
+                              createdAt: now, updatedAt: now)
+        guard let sealed = try? sealPersona(persona, key: key) else { return }
+        let record = PersonaRecord(id: persona.id, sealed: sealed, isDefault: true,
+                                   sortIndex: 0, createdAt: now, updatedAt: now)
+        store.context.insert(record)
+        try? store.context.save()
+        personas = [persona]
+        noteLocalMutation()
+    }
+
+    /// Converge to exactly one default persona (sync can transiently produce zero
+    /// or two; winner = most recently touched). Carries `isDefault` in the content
+    /// gate (bumps `updatedAt`) so the change survives the whole-record LWW pull.
+    /// Patches `personas` in place; never `reload()`.
+    func normalizeDefaultPersona() {
+        guard !personas.isEmpty else { return }
+        guard personas.filter(\.isDefault).count != 1 else { return }
+        guard let winner = personas.max(by: {
+            ($0.updatedAt, $0.createdAt) < ($1.updatedAt, $1.createdAt)
+        }) else { return }
+        let now = Date()
+        var didWrite = false
+        for persona in personas {
+            let shouldBeDefault = persona.id == winner.id
+            guard persona.isDefault != shouldBeDefault else { continue }
+            writePersonaDefault(id: persona.id, isDefault: shouldBeDefault, now: now)
+            if let idx = personas.firstIndex(where: { $0.id == persona.id }) {
+                personas[idx].isDefault = shouldBeDefault
+                personas[idx].updatedAt = now
+            }
+            didWrite = true
+        }
+        if didWrite { try? store.context.save() }
+    }
+
+    /// Set the default marker on a persona record + bump `updatedAt` (content-gate)
+    /// so the converged default propagates through whole-record LWW. Marks dirty.
+    /// Internal so the `+Personas` extension can drive `setDefaultPersona`.
+    func writePersonaDefault(id: String, isDefault: Bool, now: Date) {
+        guard let record = store.personaRecord(id: id) else { return }
+        record.isDefault = isDefault
         record.updatedAt = now
         record.dirty = true
     }
