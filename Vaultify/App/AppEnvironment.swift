@@ -130,6 +130,9 @@ import SwiftUI
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).
         ParticipantEscrowService.clearLocalCache()
+        // Relay Principal: local cache dies here; the remote escrow record dies
+        // with the "Vault" zone that eraseRemote() drops (no extra remote call).
+        RelayPrincipalEscrowService.clearLocalCache()
         SharedZoneSubscriptionService.clearLocalFlag()
         settings.approvalModeEnabled = false
         settings.iCloudSyncEnabled = false
