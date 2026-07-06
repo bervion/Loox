@@ -5229,6 +5229,16 @@
         }
       }
     },
+    "No results in %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có kết quả trong %@"
+          }
+        }
+      }
+    },
     "No synced vault found for this iCloud account. Create the Emergency Kit on your other device with iCloud Sync on, then try again.": {
       "localizations": {
         "vi": {
@@ -6771,6 +6781,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tìm kiếm"
+          }
+        }
+      }
+    },
+    "Search all Spaces": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm trong tất cả space"
           }
         }
       }
@@ -8371,6 +8391,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ứng dụng không thể xác minh đây là bản cài Loox chính hãng. Vui lòng thử lại sau."
+          }
+        }
+      }
+    },
+    "This Space": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Space này"
           }
         }
       }

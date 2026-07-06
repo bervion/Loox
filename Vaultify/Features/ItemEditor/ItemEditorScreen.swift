@@ -146,7 +146,7 @@ struct ItemEditorScreen: View {
                 if isNew, !didApplyDefaultFolder, draft.folderId == nil {
                     // Preselect the caller's Space context (e.g. the Space selected on Home);
                     // when there's none ("All Spaces") fall back to the primary Space.
-                    if let target = preselectedFolderId ?? env.repository.folders.first?.id {
+                    if let target = preselectedFolderId ?? env.repository.primarySpaceId {
                         draft.folderId = target
                         // Fold the auto-applied Space into the baseline too, so it isn't
                         // counted as an unsaved change (otherwise X would prompt "Discard?"
