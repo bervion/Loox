@@ -9,6 +9,9 @@ import Foundation
 @MainActor @Observable final class LooxLinkService {
     let records = LooxLinkRecordStore()
     private let api = LooxLinkAPIClient()
+    /// Optional-capability state sink — independent from Private Email's
+    /// (INV-CAP-03). Optional so tests without an AppEnvironment run unchanged.
+    weak var capabilities: CapabilityStore?
 
     struct CreatedLink {
         let url: URL
@@ -63,9 +66,19 @@ import Foundation
             }
         }
 
-        let response = try await api.createShare(
-            ciphertextB64: cipher.ciphertextB64, ivB64: cipher.ivB64,
-            expiresInSeconds: expiry, oneTime: oneTime, assertion: assertion)
+        guard capabilities?.allowRequest(.shareLink) ?? true else {
+            throw LooxLinkAPIError.capability(.active, retryAfter: nil)   // breaker open → "temporarily unavailable"
+        }
+        let response: LooxLinkCreateResponse
+        do {
+            response = try await api.createShare(
+                ciphertextB64: cipher.ciphertextB64, ivB64: cipher.ivB64,
+                expiresInSeconds: expiry, oneTime: oneTime, assertion: assertion)
+            capabilities?.noteSuccess(.shareLink)
+        } catch {
+            note(error)
+            throw error
+        }
         guard let url = LooxLinkConfig.shareURL(shareId: response.shareId,
                                                 fragmentKey: cipher.fragmentKey,
                                                 oneTime: oneTime) else {
@@ -86,9 +99,30 @@ import Foundation
     func revoke(_ record: LooxLinkRecord) async throws {
         do {
             try await api.revoke(shareId: record.shareId, revokeToken: record.revokeToken)
+            capabilities?.noteSuccess(.shareLink)
         } catch LooxLinkAPIError.notFound {
             // Already dead server-side — fall through to local cleanup.
+            capabilities?.noteServiceResponded(.shareLink)
+        } catch {
+            note(error)
+            throw error
         }
         records.remove(shareId: record.shareId)
+    }
+
+    /// Classify an API failure for the capability store: verified operator
+    /// state persists; infra failures feed the breaker; everything else means
+    /// the service answered (INV-CAP-07 — no state change from generic errors).
+    private func note(_ error: Error) {
+        switch error {
+        case LooxLinkAPIError.capability(let mode, let retryAfter):
+            capabilities?.noteOperatorSignal(.shareLink, .init(mode: mode, retryAfter: retryAfter))
+        case LooxLinkAPIError.server(let status, _) where (502...504).contains(status):
+            capabilities?.noteInfrastructureFailure(.shareLink)
+        case is URLError:
+            capabilities?.noteInfrastructureFailure(.shareLink)
+        default:
+            capabilities?.noteServiceResponded(.shareLink)
+        }
     }
 }

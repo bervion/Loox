@@ -7,6 +7,9 @@ nonisolated enum LooxLinkAPIError: Error, LocalizedError, Sendable {
     case unauthorized
     case payloadTooLarge
     case notFound
+    /// Verified operator state (problem+json `capability_*` / 410 + header) —
+    /// distinct copy per mode; never inferred from plain 404/timeout (INV-CAP-07).
+    case capability(CapabilityServiceMode, retryAfter: Int?)
     case server(status: Int, code: String?)
 
     var errorDescription: String? {
@@ -15,6 +18,9 @@ nonisolated enum LooxLinkAPIError: Error, LocalizedError, Sendable {
         case .unauthorized: appString("This app couldn't prove it's a genuine Loox install. Try again later.")
         case .payloadTooLarge: appString("This item is too large to share as a link.")
         case .notFound: appString("This link no longer exists.")
+        case .capability(.maintenance, _): appString("Creating and managing links is temporarily paused. Your vault continues to work normally.")
+        case .capability(.retired, _): appString("Share Links are no longer offered. Your saved vault items are unchanged.")
+        case .capability: appString("Share Links are temporarily unavailable. Your vault is not affected.")
         case .server(let status, let code): appString("Share service error (\(code ?? String(status))).")
         }
     }
@@ -150,6 +156,13 @@ nonisolated struct LooxLinkAPIClient: Sendable {
         case 401: throw LooxLinkAPIError.unauthorized
         case 404: throw LooxLinkAPIError.notFound
         case 413: throw LooxLinkAPIError.payloadTooLarge
+        case 410, 503:
+            // Same frozen capability contract as the relay worker.
+            if case .capability(let mode, let retryAfter)? =
+                RelayAPIClient.capabilitySignal(from: http, data: data) {
+                throw LooxLinkAPIError.capability(mode, retryAfter: retryAfter)
+            }
+            fallthrough   // plain 503 = infrastructure → generic server error
         default:
             let code = (try? JSONDecoder().decode([String: String].self, from: data))?["error"]
             throw LooxLinkAPIError.server(status: http.statusCode, code: code)
