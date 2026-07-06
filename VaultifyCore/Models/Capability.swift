@@ -70,12 +70,15 @@ nonisolated enum CapabilityResolver {
                              connectivity: ConnectivityState,
                              breakerOpen: Bool,
                              retryAfter: Int? = nil,
+                             operationDisabled: Bool = false,
                              operation: CapabilityOperation) -> CapabilityAvailability {
         // Local records are never hidden by any remote/preference state.
         if operation == .read { return .available }
         if !userPreference { return .disabledByUser }
         if mode == .retired { return .retired }
-        if !operationEnabled(mode: mode, operation: operation) {
+        // Manifest per-operation override narrows on top of the mode table —
+        // it can only ever disable further, never re-enable past the gate.
+        if operationDisabled || !operationEnabled(mode: mode, operation: operation) {
             switch mode {
             case .maintenance: return .maintenance(retryAfter: retryAfter)
             case .disabled: return .disabledByOperator

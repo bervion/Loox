@@ -7,10 +7,12 @@ import Foundation
 /// outage (INV-CAP-07: it never touches the operator mode).
 @MainActor enum CapabilityHealthProbe {
 
+    /// Lightweight service-state endpoints (BE handoff §3) — poll on screen
+    /// open, never per-action and never at startup.
     static func readyURL(for id: CapabilityID) -> URL {
         switch id {
-        case .privateEmail: return URL(string: "https://api-relay.looxpassword.com/health/ready")!
-        case .shareLink: return LooxLinkConfig.defaultAPIBase.appending(path: "/health/ready")
+        case .privateEmail: return URL(string: "https://api-relay.looxpassword.com/v1/relay/service-state")!
+        case .shareLink: return LooxLinkConfig.defaultAPIBase.appending(path: "/v1/link/service-state")
         }
     }
 
