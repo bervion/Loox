@@ -32,7 +32,7 @@ final class VaultStore {
             ? ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             : ModelConfiguration(url: SharedConfig.storeURL, cloudKitDatabase: .none)
         return try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self,
-                                  PersonaRecord.self,
+                                  PersonaRecord.self, EmailAliasRecord.self,
                                   configurations: configuration)
     }
 
@@ -43,6 +43,7 @@ final class VaultStore {
         try context.delete(model: FolderRecord.self)
         try context.delete(model: PasskeyRecord.self)
         try context.delete(model: PersonaRecord.self)
+        try context.delete(model: EmailAliasRecord.self)
         try context.save()
     }
 
@@ -269,6 +270,64 @@ final class VaultStore {
     /// push snapshot (an edit during the in-flight push must stay dirty).
     @MainActor
     func markPersonaSynced(_ record: PersonaRecord, changeTag: String?, snapshotUpdatedAt: Date) {
+        record.ckChangeTag = changeTag
+        if record.updatedAt == snapshotUpdatedAt {
+            record.dirty = false
+        }
+        try? context.save()
+    }
+
+    // MARK: Email-alias sync access (sealed content + plaintext sort/sync metadata)
+
+    @MainActor
+    func allAliasRecords() -> [EmailAliasRecord] {
+        (try? context.fetch(FetchDescriptor<EmailAliasRecord>())) ?? []
+    }
+
+    @MainActor
+    func aliasRecord(id: String) -> EmailAliasRecord? {
+        var descriptor = FetchDescriptor<EmailAliasRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Last-writer-wins upsert of a remote alias record (sealed + metadata). Single
+    /// content gate keyed on `updatedAt` (status/tier ride the sealed blob, so any
+    /// change bumps `updatedAt`).
+    @MainActor
+    func upsertAliasFromRemote(id: String, sealed: Data, sortIndex: Int,
+                               deletedAt: Date?, createdAt: Date, updatedAt: Date,
+                               changeTag: String?) {
+        if let existing = aliasRecord(id: id) {
+            if let changeTag, changeTag == existing.ckChangeTag { return }
+            guard updatedAt > existing.updatedAt else {
+                if existing.updatedAt > updatedAt {
+                    existing.dirty = true
+                    try? context.save()
+                }
+                return
+            }
+            existing.sealed = sealed
+            existing.sortIndex = sortIndex
+            existing.deletedAt = deletedAt
+            existing.updatedAt = updatedAt
+            existing.ckChangeTag = changeTag
+            existing.dirty = false
+        } else {
+            let record = EmailAliasRecord(id: id, sealed: sealed, sortIndex: sortIndex,
+                                          createdAt: createdAt, updatedAt: updatedAt)
+            record.deletedAt = deletedAt
+            record.ckChangeTag = changeTag
+            record.dirty = false
+            context.insert(record)
+        }
+        try? context.save()
+    }
+
+    /// Alias analogue of `markSynced` — clear `dirty` only if unchanged since the
+    /// push snapshot (an edit during the in-flight push must stay dirty).
+    @MainActor
+    func markAliasSynced(_ record: EmailAliasRecord, changeTag: String?, snapshotUpdatedAt: Date) {
         record.ckChangeTag = changeTag
         if record.updatedAt == snapshotUpdatedAt {
             record.dirty = false

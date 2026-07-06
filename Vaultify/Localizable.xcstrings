@@ -6858,6 +6858,56 @@
         "vi": { "stringUnit": { "state": "translated", "value": "Email gợi ý" } }
       }
     },
+    "Email aliases": {
+      "comment": "Settings row + screen title for email aliases.",
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Email ẩn danh" } } }
+    },
+    "Coming soon — a receive-only private email relay.": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Sắp ra mắt — dịch vụ chuyển tiếp email riêng tư chỉ nhận." } } }
+    },
+    "Replies from your destination inbox may reveal your real email address.": {
+      "comment": "Receive-only relay privacy warning (D14).",
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Thư trả lời từ hộp thư đích của bạn có thể để lộ địa chỉ email thật." } } }
+    },
+    "Persona alias": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Email của danh tính" } } }
+    },
+    "Reserve a private alias": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Giữ chỗ một email ẩn danh" } } }
+    },
+    "Per-site aliases": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Email theo từng trang" } } }
+    },
+    "Add per-site alias": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Thêm email cho trang" } } }
+    },
+    "Reserved": {
+      "comment": "Alias status.",
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Đã giữ chỗ" } } }
+    },
+    "Disabled": {
+      "comment": "Alias status.",
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Đã tắt" } } }
+    },
+    "Draft": {
+      "comment": "Alias status.",
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Nháp" } } }
+    },
+    "Disable": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Tắt" } } }
+    },
+    "No logins to bind yet.": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Chưa có đăng nhập nào để liên kết." } } }
+    },
+    "Choose a login": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Chọn một đăng nhập" } } }
+    },
+    "Forwards to": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Chuyển tiếp tới" } } }
+    },
+    "New per-site alias": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Email mới cho trang" } } }
+    },
     "Edit persona": {
       "comment": "Title of the edit-persona sheet.",
       "localizations": {
