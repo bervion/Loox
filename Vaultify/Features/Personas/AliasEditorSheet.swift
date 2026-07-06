@@ -7,6 +7,8 @@ struct AliasEditorSheet: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
     let persona: Persona
+    /// Called with the freshly reserved alias so the parent can activate it.
+    var onCreated: ((EmailAlias) -> Void)?
     @State private var selectedItemId: String?
 
     /// Logins scoped to the active persona's Space (falls back to all logins when
@@ -54,7 +56,10 @@ struct AliasEditorSheet: View {
 
     private func save() {
         guard let itemId = selectedItemId else { return }
-        _ = try? env.repository.createPerSiteAlias(for: persona, boundItemId: itemId)
+        if let id = try? env.repository.createPerSiteAlias(for: persona, boundItemId: itemId),
+           let created = env.repository.aliases.first(where: { $0.id == id }) {
+            onCreated?(created)
+        }
         dismiss()
     }
 }

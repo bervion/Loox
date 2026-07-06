@@ -95,13 +95,17 @@ final class EmailAliasTests: XCTestCase {
         XCTAssertEqual(repo.aliases(forPersona: persona.id).filter { $0.tier == .persona }.count, 1)
     }
 
-    func testSetAliasStatusActiveIsNoOpWhileFlagOff() throws {
+    func testSetAliasStatusActiveGatedByRelayFlag() throws {
         let repo = makeRepo()
         let persona = repo.activePersona!
         _ = try repo.createPersonaAlias(for: persona)
         let alias = repo.personaAlias(forPersona: persona.id)!
-        try repo.setAliasStatus(alias, to: .active)  // flag off → no-op
-        XCTAssertEqual(repo.personaAlias(forPersona: persona.id)?.status, .reserved)
+        try repo.setAliasStatus(alias, to: .active)
+        // The relay is live (RelayFeature.activeAliasesEnabled) → the transition is
+        // allowed. Guarded so if the backend is ever pulled (flag off) this reverts
+        // to a no-op that keeps aliases from rendering as live when they aren't.
+        let expected: AliasStatus = RelayFeature.activeAliasesEnabled ? .active : .reserved
+        XCTAssertEqual(repo.personaAlias(forPersona: persona.id)?.status, expected)
     }
 
     func testDeletePersonaCascadesAliases() throws {

@@ -6874,6 +6874,24 @@
       "comment": "Settings row + screen title for email aliases.",
       "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Email ẩn danh" } } }
     },
+    "Tap to activate": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Chạm để kích hoạt" } } }
+    },
+    "Mail sent to an active alias forwards to your inbox. Receive-only.": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Thư gửi tới email đã kích hoạt sẽ chuyển về hộp thư của bạn. Chỉ nhận." } } }
+    },
+    "Couldn’t reach the relay": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Không kết nối được máy chủ chuyển tiếp" } } }
+    },
+    "Check your connection and iCloud, then try again.": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Kiểm tra kết nối mạng và iCloud, rồi thử lại." } } }
+    },
+    "Network needed": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Cần kết nối mạng" } } }
+    },
+    "Connect to the internet so your private-email aliases can be turned off before erasing.": {
+      "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Kết nối internet để tắt các email ẩn danh trước khi xóa kho." } } }
+    },
     "Coming soon — a receive-only private email relay.": {
       "localizations": { "vi": { "stringUnit": { "state": "translated", "value": "Sắp ra mắt — dịch vụ chuyển tiếp email riêng tư chỉ nhận." } } }
     },
