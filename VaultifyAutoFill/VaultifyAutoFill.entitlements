@@ -8,6 +8,19 @@
 	</array>
 	<key>com.apple.developer.authentication-services.autofill-credential-provider</key>
 	<true/>
+	<!-- CloudKit for the shared-vault authoritative fill gate (INV-11) and the
+	     upcoming passkey ask-each-time ceremony: the extension verifies the
+	     grant is alive in the shared zone right before completing a fill.
+	     Portal: enable iCloud on com.bervion.vaultify.autofill + regenerate
+	     match profiles before the next release. -->
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.bervion.vaultify</string>
+	</array>
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)com.bervion.vaultify.shared</string>

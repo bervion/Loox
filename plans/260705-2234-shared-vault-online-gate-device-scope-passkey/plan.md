@@ -32,16 +32,16 @@ Review gốc: user feedback 260705 22:53 (7 blocker P0/P1 — đã tiếp thu to
 
 ## Phase order (đổi theo review — P04 trước khi P02 được coi là xong)
 
-| # | Phase | Effort | Depends |
-|---|-------|--------|---------|
-| 00 | Security invariants (INV-01..12) + protocol/schema freeze | 0.5 | — |
-| 01 | App gate state machine (không render trước verify) | 0.5–1 | P00 |
-| 03a | Device identity migration (per-device HPKE, private key hết sync) | 1 | P00 |
-| 03b | Grant v2 (DeviceKeyBinding IDs+hash, canonical bump MỘT lần cùng P05 schema) + per-device envelopes | 1 | P03a |
-| 04 | Extension CloudKit enablement + entitlement verification preflight | 0.5–1 | P00 |
-| 02 | Extension authoritative gate COMPLETE (P02a UX sớm được, release cần P02b) | 0.5 | P01, P04 |
-| 05 | Passkey/TOTP capability v2 (frozen transcripts từ P00) | 2–3 | P03b, P04 |
-| 06 | Adversarial test matrix + QA 2 máy + docs | 1 | tất cả |
+| # | Phase | Effort | Depends | Status |
+|---|-------|--------|---------|--------|
+| 00 | Security invariants (INV-01..12) + protocol/schema freeze | 0.5 | — | ✅ 260706 (`security-invariants.md`; counter = A always-zero, verified WebAuthn.swift:9) |
+| 01 | App gate state machine (không render trước verify) | 0.5–1 | P00 | ✅ 260706 (SharedAccessAuthorizer + GateView; tests xanh) |
+| 03a | Device identity migration (per-device HPKE, private key hết sync) | 1 | P00 | ✅ 260706 (DeviceHPKEIdentity, profile merge; tests xanh) |
+| 03b | Grant v2 (DeviceKeyBinding IDs+hash, canonical bump MỘT lần cùng P05 enum) + per-device envelopes | 1 | P03a | ✅ 260706 (v1 bit-compat — kernel tests cũ xanh; GrantWireV2Tests) |
+| 04 | Extension CloudKit enablement + entitlement verification preflight | 0.5–1 | P00 | ✅ code 260706 — ⚠️ CẦN portal: bật iCloud cho `.autofill` + match regenerate; preflight script chạy khi có build ký |
+| 02 | Extension authoritative gate COMPLETE | 0.5 | P01, P04 | ✅ code 260706 (reachability + SharedGrantLiveCheck trước fill); verify runtime cần portal P04 |
+| 05 | Passkey/TOTP capability v2 UI + ceremonies (transcripts đã freeze ở P00; enum/wire đã vào từ P03b) | 2–3 | P03b, P04 | ⏳ CHƯA — cần portal P04 xong + real device |
+| 06 | Adversarial test matrix + QA 2 máy + docs | 1 | tất cả | ⏳ một phần (adversarial canonical/seal tests đã có; QA 2 máy chưa) |
 
 **Effort thực tế: 6.5–9 buổi** (revised theo review; 5 buổi cũ là lạc quan).
 **Release gate production**: P02a + P04 + P02b đều xong — reachability-only KHÔNG được
