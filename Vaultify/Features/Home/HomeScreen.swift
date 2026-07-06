@@ -294,7 +294,9 @@ struct HomeScreen: View {
     /// 44pt circular avatar — stored image, letter-avatar, or a person glyph when no identity.
     @ViewBuilder private var profileAvatar: some View {
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        if let identity = env.repository.defaultIdentity {
+        // The ACTIVE persona's own card — never another persona's (an anonymous
+        // persona must not wear the personal photo).
+        if let identity = env.repository.activeProfileItem {
             if let image = env.repository.avatarImage(for: identity.id) {
                 Image(platformImage: image).resizable().scaledToFill()
                     .frame(width: 44, height: 44).clipShape(shape)

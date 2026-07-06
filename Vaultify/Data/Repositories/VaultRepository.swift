@@ -294,6 +294,27 @@ import UserNotifications
             didWrite = true
         }
 
+        // F3: link a persona with no (or a dangling) profile card to the first
+        // identity item IT OWNS — covers personas created before profile cards
+        // existed and a card later added by hand from Profile. Never a write when
+        // no owned candidate exists (no churn), never a cross-persona link.
+        for index in personas.indices {
+            let persona = personas[index]
+            guard profileItem(for: persona) == nil,
+                  let candidate = items(for: persona).first(where: { $0.category == .identity })
+            else { continue }
+            var updated = persona
+            updated.primaryProfileItemID = candidate.id
+            updated.updatedAt = .now
+            guard let record = store.personaRecord(id: persona.id),
+                  let sealed = try? sealPersona(updated, key: key) else { continue }
+            record.sealed = sealed
+            record.updatedAt = updated.updatedAt
+            record.dirty = true
+            personas[index] = updated
+            didWrite = true
+        }
+
         if didWrite {
             try? store.context.save()
             noteLocalMutation()
