@@ -20,6 +20,7 @@ final class RelayRetryPolicyTests: XCTestCase {
         for attempt in [1, 2] {
             XCTAssertEqual(RelayRetryPolicy.action(for: .unauthorized, attempt: attempt), .fail("unauthorized"))
             XCTAssertEqual(RelayRetryPolicy.action(for: .rateLimited, attempt: attempt), .fail("rate_limited"))
+            XCTAssertEqual(RelayRetryPolicy.action(for: .aliasCapReached, attempt: attempt), .fail("alias_cap_reached"))
             XCTAssertEqual(RelayRetryPolicy.action(for: .transport, attempt: attempt), .fail("network"))
             XCTAssertEqual(RelayRetryPolicy.action(for: .server(500), attempt: attempt), .fail("server_500"))
         }
@@ -30,6 +31,7 @@ final class RelayRetryPolicyTests: XCTestCase {
             .vaultLocked, .principalUnavailable, .missingDestination, .network,
             .rejected("unauthorized"), .rejected("rate_limited"),
             .rejected("nonce_replay"), .rejected("epoch_stale"), .rejected("server_503"),
+            .rejected("alias_cap_reached"),
         ]
         for failure in failures {
             let message = failure.userMessage

@@ -23,6 +23,7 @@ nonisolated enum RelayRetryPolicy {
         case .unauthorized: return .fail("unauthorized")
         case .rateLimited:  return .fail("rate_limited")
         case .aliasExists:  return .fail("alias_exists")   // mint loop handles upstream
+        case .aliasCapReached: return .fail("alias_cap_reached")
         case .transport:    return .fail("network")
         case .server(let code): return .fail("server_\(code)")
         }
@@ -44,6 +45,9 @@ extension RelayService.Failure {
             return appString("Couldn’t verify this device. Unlock Loox and try again.")
         case .rejected("rate_limited"):
             return appString("Too many requests. Please try again shortly.")
+        case .rejected("alias_cap_reached"):
+            // Backend cap counts active + paused; permanent deletes free space.
+            return appString("You’ve reached the limit for private addresses. Permanently delete addresses you no longer use.")
         case .principalUnavailable, .rejected:
             return appString("Check your connection and iCloud, then try again.")
         }
