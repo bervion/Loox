@@ -1,6 +1,156 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Private Email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư"
+          }
+        }
+      }
+    },
+    "Reusable address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ dùng lâu dài"
+          }
+        }
+      }
+    },
+    "Create reusable address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo địa chỉ dùng lâu dài"
+          }
+        }
+      }
+    },
+    "Site-specific addresses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ riêng theo trang"
+          }
+        }
+      }
+    },
+    "Add site-specific address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm địa chỉ riêng cho trang"
+          }
+        }
+      }
+    },
+    "New site-specific address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ riêng cho trang mới"
+          }
+        }
+      }
+    },
+    "Forwarding active" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chuyển tiếp"
+          }
+        }
+      }
+    },
+    "Forwarding paused" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã tạm dừng chuyển tiếp"
+          }
+        }
+      }
+    },
+    "Pause" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm dừng"
+          }
+        }
+      }
+    },
+    "Pause forwarding" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm dừng chuyển tiếp"
+          }
+        }
+      }
+    },
+    "Pause forwarding?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm dừng chuyển tiếp?"
+          }
+        }
+      }
+    },
+    "New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mới gửi đến địa chỉ này sẽ không còn về hộp thư của bạn. Bạn có thể bật lại chuyển tiếp sau."
+          }
+        }
+      }
+    },
+    "Delete permanently" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoá vĩnh viễn"
+          }
+        }
+      }
+    },
+    "Delete this private address permanently?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoá vĩnh viễn địa chỉ riêng tư này?"
+          }
+        }
+      }
+    },
+    "This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ sẽ ngừng chuyển tiếp và không thể khôi phục hoặc cấp lại cho bất kỳ ai. Các tài khoản vẫn dùng địa chỉ này có thể không gửi được email đặt lại mật khẩu hoặc thông báo quan trọng cho bạn."
+          }
+        }
+      }
+    },
     "" : {
 
     },

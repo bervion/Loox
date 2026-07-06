@@ -41,6 +41,13 @@ final class EmailAliasTests: XCTestCase {
         XCTAssertTrue(AliasLifecycle.canTransition(from: .reserved, to: .active, flag: true))
     }
 
+    func testEmailMaskKeepsPrefixAndDomain() {
+        XCTAssertEqual(EmailMask.masked("chinh@gmail.com"), "ch***@gmail.com")
+        XCTAssertEqual(EmailMask.masked("a@x.co"), "a***@x.co")      // short local part
+        XCTAssertEqual(EmailMask.masked("no-at-sign"), "no-at-sign") // not an email → unchanged
+        XCTAssertEqual(EmailMask.masked("@lead.com"), "@lead.com")   // empty local → unchanged
+    }
+
     func testRandomLocalPartIsUnpredictableAndClean() {
         let a = AliasAddress.randomLocalPart(), b = AliasAddress.randomLocalPart()
         XCTAssertNotEqual(a, b)

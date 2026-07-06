@@ -36,15 +36,17 @@ struct AliasEditorSheet: View {
                     }
                 }
                 Section {
-                    if let target = env.repository.identityUsername(forPersona: persona) {
-                        LabeledContent { Text(target).themedForeground(.secondary) }
+                    // Destination = the persona's real email (masked here; full address
+                    // lives in the profile). Same source guardEmail() checks upstream.
+                    if let target = env.repository.destinationEmail(for: persona) {
+                        LabeledContent { Text(verbatim: EmailMask.masked(target)).themedForeground(.secondary) }
                             label: { Text("Forwards to") }
                     }
                 } footer: {
                     Text("Replies from your destination inbox may reveal your real email address.")
                 }
             }
-            .navigationTitle(Text("New per-site alias"))
+            .navigationTitle(Text("New site-specific address"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
