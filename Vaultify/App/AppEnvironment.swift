@@ -40,6 +40,9 @@ import SwiftUI
     let sharingStore = SharingStore()
     /// Loox Link quick shares: encrypted snapshot links (key in URL fragment).
     let looxLinks = LooxLinkService()
+    /// Layer-A network-path precondition for the shared-vault access gate
+    /// (INV-02 — a satisfied path is never an authorization by itself).
+    let reachability = NetworkReachabilityMonitor()
     /// Bounded local history for the notifications screen.
     let notificationHistory = NotificationHistoryStore()
 
