@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Private Email will stop forwarding soon. Review accounts using these addresses." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư sắp ngừng chuyển tiếp. Hãy xem lại các tài khoản đang dùng những địa chỉ này."
+          }
+        }
+      }
+    },
     "No Internet Connection" : {
       "localizations" : {
         "vi" : {

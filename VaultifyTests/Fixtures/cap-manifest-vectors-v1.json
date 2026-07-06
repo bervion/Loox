@@ -1,0 +1,33 @@
+{
+  "note": "Frozen parity vector for LOOX-CAP-MANIFEST-V1. iOS verifier MUST reproduce canonical_bytes_hex byte-for-byte. Signature is dynamic (ECDSA non-deterministic).",
+  "manifest": {
+    "schema_version": 1,
+    "manifest_version": 42,
+    "key_id": "cap-2026-01",
+    "issued_at": 1783328400000,
+    "expires_at": 1783414800000,
+    "capabilities": {
+      "private_email": {
+        "policy": "maintenance",
+        "operations": {
+          "read": "enabled",
+          "create": "disabled",
+          "mutate": "disabled",
+          "delete": "enabled",
+          "revoke": "enabled"
+        },
+        "message_key": "private_email_maintenance"
+      },
+      "share_link": {
+        "policy": "enabled",
+        "operations": {
+          "create": "enabled",
+          "read": "enabled",
+          "revoke": "enabled"
+        },
+        "message_key": null
+      }
+    }
+  },
+  "canonical_bytes_hex": "4c4f4f582d4341502d4d414e49464553542d563101000000000000002a0000000b6361702d323032362d30310000019f36a7e2800000019f3bce3e80000000020000000d707269766174655f656d61696c0000000b6d61696e74656e616e636500000005000000066372656174650000000864697361626c65640000000664656c65746500000007656e61626c6564000000066d75746174650000000864697361626c6564000000047265616400000007656e61626c6564000000067265766f6b6500000007656e61626c65640100000019707269766174655f656d61696c5f6d61696e74656e616e63650000000a73686172655f6c696e6b00000007656e61626c6564000000030000000663726561746500000007656e61626c6564000000047265616400000007656e61626c6564000000067265766f6b6500000007656e61626c656400"
+}
