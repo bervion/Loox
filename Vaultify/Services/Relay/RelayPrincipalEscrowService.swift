@@ -58,6 +58,14 @@ import Foundation
         }
     }
 
+    /// Drop the Keychain fast-path cache and re-read the escrow from CloudKit —
+    /// the epoch_stale recovery step (another device rotated the principal, so
+    /// the cached identity signs under a dead epoch).
+    func refreshFromCloud(vaultKey: [UInt8]) async throws -> RelayPrincipalIdentity {
+        KeychainStore.delete(account: Self.cacheAccount)
+        return try await ensurePrincipal(vaultKey: vaultKey)
+    }
+
     /// Rotate the principal to the next epoch: mint a new key (same principalID),
     /// sign the rotate command with the CURRENT key (proving epoch N authorized
     /// N+1, D5), and OVERWRITE the escrow (last-writer-wins, not the create path).
