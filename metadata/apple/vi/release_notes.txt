@@ -1,1 +1,1 @@
-Phiên bản 1.17.0: Cải thiện hiệu suất và sửa lỗi.
+Loox giờ có Hồ sơ (Personas): tạo nhiều hồ sơ riêng cho từng phần trong cuộc sống, mỗi hồ sơ có kho mật khẩu riêng và chuyển đổi nhanh chóng. Bạn cũng có thể tạo Email Riêng Tư để dùng thay email thật khi đăng ký tài khoản, với thao tác tạm ngưng hoặc xóa đơn giản. Độ ổn định của AutoFill cũng được cải thiện.

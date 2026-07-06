@@ -1,1 +1,1 @@
-Version 1.17.0: Performance improvements and bug fixes.
+Introducing Personas — separate profiles for different parts of your life, each with its own private vault and quick switching. You can also create Private Email addresses to use instead of your real email when signing up, with simple pause and delete controls. AutoFill reliability has been improved.

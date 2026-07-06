@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.18.0] - 2026-07-06
+
+### Added
+- adopt BE LOOX-CAP-MANIFEST-V1 contract + service-state probes
+- UI state system, Online Features settings, retired review, AutoFill snapshot
+- signed manifest core — verify, cache, anti-rollback, fail-safe dormancy
+- capability core — resolver, per-service breakers, structured operator signals
+- map alias_cap_reached to dedicated user copy
+- offer written-back private email as alternative username
+- typed error copy + bounded silent retry (nonce replay, stale epoch)
+- forwarding-inbox management UI + journal-free resumable bulk rotation
+- create-login private email — suggest, provision on tap, bind on save
+- first-class ForwardingInbox model + 0..N reusable addresses
+- rename alias surfaces to Private Email + pause/delete confirmations
+- real destination email + alias management (2-call create, write-back, detail)
+- P4B iOS client — activate aliases on live relay + erase gate
+- per-persona profile card — Profile/avatar follow active persona
+- hard Space<->persona partition (fail-closed, INV-R03)
+- surface active persona in Profile + Home header
+- P4A relay principal — P256 owner key, signed commands, escrow (iOS)
+- P3 local email alias model (no backend, relay-gated)
+- P2 persona context + AutoFill isolation (INV-R03)
+- P1 persona core — model, sync, seed/invariants, switcher
+- P0 space hardening — persistence, primary resolver, scoped search
+
+### Changed
+- Xcode catalog normalization (re-sorted, no content change)
+- record C4 BE-contract adoption in capability plan
+- mark private-email gap roadmap G1-G6 shipped (PR #44-#49)
+- persona-Space hard partition plan marked done
+- P4A relay principal plan marked done
+- P3 local alias model plan marked done
+- P2 persona context + AutoFill plan (P2.1-P2.4) marked done
+- P1 persona core plan (P1.1-P1.3) marked done
+- persona/spaces/relay proposal V3 (locked) + P0 space hardening plan
+
+
 ## [1.17.0] - 2026-07-06
 
 ### Added
