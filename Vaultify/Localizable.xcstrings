@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Use private email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng email riêng tư"
+          }
+        }
+      }
+    },
     "Unlock Loox and try again." : {
       "localizations" : {
         "vi" : {

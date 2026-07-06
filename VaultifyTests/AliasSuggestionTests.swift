@@ -65,6 +65,18 @@ final class AliasSuggestionTests: XCTestCase {
         XCTAssertTrue(repo.aliasSuggestions(forItem: nil, host: "github.com").isEmpty)
     }
 
+    // MARK: Extension write-back contract
+
+    func testPrivateEmailValueReadsWrittenBackField() {
+        var item = VaultItem(category: .login, title: "GitHub",
+                             fields: [DynamicField(label: "Email", kind: .email, value: "me@real.com")])
+        XCTAssertNil(item.privateEmailValue)
+        item = AliasWriteback.upsertPrivateEmail(on: item, address: "r7k2p9@relay.x")
+        XCTAssertEqual(item.privateEmailValue, "r7k2p9@relay.x")
+        // Primary username is untouched — the alias is an alternative, not a takeover.
+        XCTAssertEqual(item.usernameField?.value, "me@real.com")
+    }
+
     // MARK: Unbound create path (create-login flow)
 
     func testCreatePerSiteAliasWithoutItemThenBindLater() throws {

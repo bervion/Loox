@@ -39,24 +39,5 @@ extension VaultRepository {
         try? update(updated)
     }
 }
-
-/// Pure write-back helpers (label constant + idempotent field upsert).
-nonisolated enum AliasWriteback {
-    /// Raw field label — localized at display via `fieldLabelText`; the catalog
-    /// carries the VI value. Used as the stable key for idempotent upsert.
-    static let privateEmailLabel = "Private email"
-
-    /// Append the alias as a "Private email" field, or update it in place if one
-    /// already exists — never duplicates, never disturbs the real Email field.
-    static func upsertPrivateEmail(on item: VaultItem, address: String) -> VaultItem {
-        var updated = item
-        if let index = updated.fields.firstIndex(where: {
-            $0.label == privateEmailLabel && $0.kind == .email
-        }) {
-            updated.fields[index].value = address
-        } else {
-            updated.fields.append(DynamicField(label: privateEmailLabel, kind: .email, value: address))
-        }
-        return updated
-    }
-}
+// `AliasWriteback` itself lives in VaultifyCore (shared with the AutoFill
+// extension, which reads the written-back field to offer the alias).
