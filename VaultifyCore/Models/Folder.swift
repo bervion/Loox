@@ -39,4 +39,11 @@ nonisolated struct Folder: Identifiable, Equatable, Sendable {
 /// The encrypted-at-rest payload of a folder. Only the name is secret.
 nonisolated struct FolderSecret: Codable, Sendable {
     var name: String
+    /// Sealed link from this Space to the identity that owns it. Nil today —
+    /// nothing writes it yet; the field exists so the linkage can be added later
+    /// without re-sealing every existing folder. Optional means old sealed blobs
+    /// (which lack the key) decode cleanly to nil. Any future writer MUST re-seal
+    /// through `updateFolder` so `updatedAt` bumps, otherwise the whole-record
+    /// last-writer-wins pull gate silently drops the change.
+    var personaId: String?
 }

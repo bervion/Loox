@@ -71,6 +71,28 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// Which payment card the Profile screen shows as "your" card. Device-local (not synced) —
     /// a display preference, unlike the synced default identity. nil = fall back to the first card.
     var selectedPaymentCardId: String? { didSet { defaults.set(selectedPaymentCardId, forKey: Key.selectedCard) } }
+    /// Last Home Space filter, remembered per identity so it survives relaunch.
+    /// Device-local display preference — deliberately NOT synced (a selected-Space
+    /// choice reveals nothing sensitive and needn't cross devices). Keyed by
+    /// identity id; today everything uses `PersonaID.placeholder`. Value is a
+    /// folderId; absence of a key means "All Spaces".
+    private(set) var lastSelectedSpaceByPersona: [String: String] {
+        didSet { defaults.set(lastSelectedSpaceByPersona, forKey: Key.lastSelectedSpaces) }
+    }
+
+    /// The remembered Home Space for an identity, or nil for "All Spaces".
+    func lastSelectedSpace(persona: String) -> String? {
+        lastSelectedSpaceByPersona[persona]
+    }
+
+    /// Remember (or, with nil, forget → "All Spaces") the Home Space for an identity.
+    func setLastSelectedSpace(_ folderId: String?, persona: String) {
+        if let folderId {
+            lastSelectedSpaceByPersona[persona] = folderId
+        } else {
+            lastSelectedSpaceByPersona.removeValue(forKey: persona)
+        }
+    }
     var preferredLanguage: String {
         didSet {
             defaults.set(preferredLanguage, forKey: Key.language)
@@ -94,6 +116,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
         selectedPaymentCardId = d.string(forKey: Key.selectedCard)
+        lastSelectedSpaceByPersona = d.dictionary(forKey: Key.lastSelectedSpaces) as? [String: String] ?? [:]
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
         SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
         appResourceLocale = appLocale(forCode: preferredLanguage)
@@ -112,6 +135,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let clipboard = "clipboard_clear_seconds"
         static let privacyScreen = "hide_in_app_switcher"
         static let selectedCard = "profile_selected_payment_card_id"
+        static let lastSelectedSpaces = "last_selected_space_by_persona"
         static let language = "preferred_language"
     }
 }

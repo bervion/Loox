@@ -40,6 +40,13 @@ extension VaultRepository {
         return try? store.context.fetch(descriptor).first
     }
 
+    /// The Space a new item defaults into when the caller supplies no context.
+    /// Single source for the "primary Space" heuristic so it can later resolve to
+    /// the active identity's chosen primary Space by editing only this accessor —
+    /// call sites never change. V1 = lowest-sortIndex folder (`folders` is already
+    /// sorted by `(sortIndex, createdAt)`); `nil` when no folders exist (Unfiled world).
+    var primarySpaceId: String? { folders.first?.id }
+
     // MARK: Folder CRUD
 
     @discardableResult
@@ -227,16 +234,45 @@ extension VaultRepository {
             ?? trashed.first { $0.id == id }
     }
 
-    /// Smart search: every space-separated token must appear in the item's
-    /// searchable text (title/fields/tags) OR its Space name.
-    func search(_ query: String) -> [VaultItem] {
+    /// Scope-aware smart search: every space-separated token must appear in the
+    /// item's searchable text (title/fields/tags). Scope handling:
+    /// - `.thisSpace(id)` filters to that folder by strict id equality FIRST and
+    ///   does not match on any Space name (matching another Space's name would
+    ///   contradict the scope). A stale id therefore yields empty, never the
+    ///   global set.
+    /// - `.allSpaces` also matches an item's own Space name (e.g. "github work").
+    /// - `.sharedWithMe` returns empty here — shared projections aren't vault
+    ///   items; the search surface supplies them for that scope.
+    ///
+    /// Unfiled (`folderId == nil`) items are included under `.allSpaces` and
+    /// excluded under any `.thisSpace` (no id match). They stay reachable via the
+    /// Unfiled route and All-Spaces search, so they never vanish from the app.
+    func search(_ query: String, scope: SpaceScope) -> [VaultItem] {
         let tokens = query.trimmingCharacters(in: .whitespaces).lowercased()
             .split(separator: " ").map(String.init)
         guard !tokens.isEmpty else { return [] }
-        let names = Dictionary(folders.map { ($0.id, $0.name.lowercased()) }, uniquingKeysWith: { a, _ in a })
-        return items.filter { item in
-            let hay = item.searchText + " " + (item.folderId.flatMap { names[$0] } ?? "")
-            return tokens.allSatisfy { hay.contains($0) }
+        switch scope {
+        case .sharedWithMe:
+            return []
+        case .thisSpace(let id):
+            return items.filter { item in
+                item.folderId == id && tokens.allSatisfy { item.searchText.contains($0) }
+            }
+        case .allSpaces:
+            let names = Dictionary(folders.map { ($0.id, $0.name.lowercased()) }, uniquingKeysWith: { a, _ in a })
+            return items.filter { item in
+                let hay = item.searchText + " " + (item.folderId.flatMap { names[$0] } ?? "")
+                return tokens.allSatisfy { hay.contains($0) }
+            }
         }
     }
+
+    /// Legacy global search for callers that have no Space context (e.g. the Mac
+    /// header search). Equivalent to `.allSpaces`.
+    func search(_ query: String) -> [VaultItem] { search(query, scope: .allSpaces) }
+
+    /// Whether widening a search to every Space is currently permitted. Always
+    /// true today; a future isolated/anonymous identity will drive this false so
+    /// its searches can never surface another identity's items.
+    var allSpacesSearchAllowed: Bool { true }
 }

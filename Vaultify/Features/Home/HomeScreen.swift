@@ -18,6 +18,9 @@ struct HomeScreen: View {
     @State private var showTotpList = false
     @State private var showFolderPicker = false
     @State private var selectedFolderId: String?
+    /// Guards the once-per-launch restore of the remembered Space so it can't
+    /// clobber a selection the user makes after launch.
+    @State private var didRestoreSelectedSpace = false
     @State private var sortOrder: VaultSort = .updated
     @State private var scrolledUnder = false
     /// Cached Watchtower issue count for the quick-action badge (recomputed on appear and
@@ -65,7 +68,20 @@ struct HomeScreen: View {
         // stay on "All Spaces" so the shares are never filtered out.
         guard selectedFolderId == nil, env.repository.folders.count == 1,
               env.sharedItems.items.isEmpty else { return }
-        selectedFolderId = env.repository.folders.first?.id
+        selectedFolderId = env.repository.primarySpaceId
+    }
+
+    /// Restore the Space filter remembered from a previous launch. Runs once per
+    /// launch, before `autoSelectSingleSpace`, so a remembered choice wins. A
+    /// remembered Space deleted on another device (stale id) falls back to
+    /// "All Spaces" rather than showing an empty filter.
+    private func restoreSelectedSpace() {
+        guard !didRestoreSelectedSpace else { return }
+        didRestoreSelectedSpace = true
+        let saved = env.settings.lastSelectedSpace(persona: PersonaID.placeholder)
+        if let saved, env.repository.folders.contains(where: { $0.id == saved }) {
+            selectedFolderId = saved
+        }
     }
 
     var body: some View {
@@ -101,7 +117,9 @@ struct HomeScreen: View {
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
-            .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
+            .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
+            // Remember the Home Space across launches (per identity; device-local, not synced).
+            .onChange(of: selectedFolderId) { env.settings.setLastSelectedSpace($1, persona: PersonaID.placeholder) }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
             // First share arriving on a single-Space setup: release the
