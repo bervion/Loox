@@ -51,7 +51,9 @@ final class PersonaPartitionTests: XCTestCase {
         let nyx = repo.activePersona!
 
         XCTAssertFalse(repo.spaces(for: nyx).contains { $0.id == defFolder })  // not the default's Space
-        XCTAssertTrue(repo.items(for: nyx).isEmpty)                            // no default items
+        // Nyx owns ONLY its own profile card — none of the default's items leak.
+        XCTAssertFalse(repo.items(for: nyx).contains { $0.title == "GH" || $0.title == "Loose" })
+        XCTAssertTrue(repo.items(for: nyx).allSatisfy { $0.category == .identity })
         XCTAssertEqual(repo.unfiledCount, 0)                                   // Unfiled is default-only
         XCTAssertTrue(repo.search("gh", scope: .allSpaces).isEmpty)
         XCTAssertTrue(repo.search("loose", scope: .allSpaces).isEmpty)
@@ -63,7 +65,9 @@ final class PersonaPartitionTests: XCTestCase {
         try repo.add(VaultItem(category: .login, title: "GH", folderId: folderId))
         let workID = try repo.addPersona(displayName: "Work", kind: .professional, isolationPolicy: .standard)
         repo.setActivePersona(workID)
-        XCTAssertTrue(repo.activePersonaItems.isEmpty)                 // its starter Space is empty
+        // Work owns only its own profile card — never the default's items.
+        XCTAssertFalse(repo.activePersonaItems.contains { $0.title == "GH" })
+        XCTAssertTrue(repo.activePersonaItems.allSatisfy { $0.category == .identity })
         XCTAssertFalse(repo.items(for: repo.defaultPersona!).isEmpty)  // default keeps its items
     }
 
@@ -108,6 +112,57 @@ final class PersonaPartitionTests: XCTestCase {
         let created = repo.items.first { $0.title == "L" }!
         XCTAssertEqual(repo.personaID(forItem: created), workID)
         XCTAssertTrue(repo.items(for: repo.activePersona!).contains { $0.id == created.id })
+    }
+
+    // MARK: Profile card per persona
+
+    func testAddPersonaCreatesLinkedProfileCard() throws {
+        let repo = makeRepo()
+        let workID = try repo.addPersona(displayName: "Kiyo", kind: .professional, isolationPolicy: .standard)
+        let work = repo.personas.first { $0.id == workID }!
+
+        let card = repo.profileItem(for: work)
+        XCTAssertNotNil(card)                                        // born with its own card
+        XCTAssertEqual(card?.category, .identity)
+        XCTAssertEqual(card?.title, "Kiyo")
+        XCTAssertEqual(card?.folderId, work.primarySpaceID)          // filed in its starter Space
+        XCTAssertEqual(repo.personaID(forItem: card!), workID)       // owned by the new persona
+        XCTAssertEqual(card?.fields.first { $0.kind == .text }?.value, "Kiyo")  // name pre-filled
+    }
+
+    func testActiveProfileItemFollowsPersonaSwitch() throws {
+        let repo = makeRepo()
+        // Default persona gets a classic default identity.
+        try repo.add(VaultItem(category: .identity, title: "Chính",
+                               fields: [DynamicField(label: "Email", kind: .email, value: "me@x.com")],
+                               isDefaultIdentity: true))
+        let nyxID = try repo.addPersona(displayName: "Nyx", kind: .anonymous, isolationPolicy: .strictAnonymous)
+
+        XCTAssertEqual(repo.activeProfileItem?.title, "Chính")       // default persona → its card
+        repo.setActivePersona(nyxID)
+        XCTAssertEqual(repo.activeProfileItem?.title, "Nyx")         // switch → Nyx's own card, never Chính's
+    }
+
+    func testReconcileLinksOwnedIdentityWhenLinkMissing() throws {
+        let repo = makeRepo()
+        let workID = try repo.addPersona(displayName: "Work", kind: .professional, isolationPolicy: .standard)
+        // Simulate a pre-profile-card persona: sever the link, keep the owned card.
+        var severed = repo.personas.first { $0.id == workID }!
+        severed.primaryProfileItemID = nil
+        try repo.updatePersona(severed)
+        // reload's reconcile pass relinks to the identity item the persona owns.
+        XCTAssertEqual(repo.profileItem(for: repo.personas.first { $0.id == workID }!)?.title, "Work")
+    }
+
+    func testSetProfileItemForDefaultMovesDefaultIdentityMarker() throws {
+        let repo = makeRepo()
+        try repo.add(VaultItem(category: .identity, title: "A",
+                               fields: [], isDefaultIdentity: true))
+        try repo.add(VaultItem(category: .identity, title: "B", folderId: nil, fields: []))
+        let b = repo.items.first { $0.title == "B" }!
+        repo.setProfileItem(b, for: repo.defaultPersona!)
+        XCTAssertEqual(repo.activeProfileItem?.title, "B")
+        XCTAssertEqual(repo.defaultIdentity?.title, "B")             // synced marker follows
     }
 
     // MARK: Delete reassign (Phase 04)

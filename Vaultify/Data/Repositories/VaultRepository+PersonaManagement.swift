@@ -21,9 +21,10 @@ extension VaultRepository {
         return .ok
     }
 
-    /// Create a persona with an explicit isolation policy, and a starter Space it
-    /// owns so its items have a home. The persona's `primarySpaceID` points at that
-    /// starter — never another persona's Space (the pre-partition leak).
+    /// Create a persona with an explicit isolation policy, a starter Space it
+    /// owns, AND its own profile card (identity item) filed into that Space —
+    /// so a fresh persona is immediately usable: Profile shows ITS card, and
+    /// suggestions/prefill resolve its own (not another identity's) details.
     @discardableResult
     func addPersona(displayName: String, kind: PersonaKind,
                     isolationPolicy: PersonaIsolationPolicy) throws -> String {
@@ -43,8 +44,20 @@ extension VaultRepository {
                                         updatedAt: starter.updatedAt)
         store.context.insert(folderRecord)
 
+        // Profile card: an identity item pre-filled with the persona's name.
+        // Deliberately NOT the global default identity (that synced invariant
+        // keeps driving legacy AutoFill fallback for the default persona only).
+        var profileFields = ItemCategory.identity.fieldTemplate
+        if let nameIndex = profileFields.firstIndex(where: { $0.kind == .text }) {
+            profileFields[nameIndex].value = displayName
+        }
+        let profile = VaultItem(category: .identity, title: displayName,
+                                folderId: starter.id, fields: profileFields)
+
         let persona = Persona(id: personaID, displayName: displayName, kind: kind,
-                              isolationPolicy: isolationPolicy, primarySpaceID: starter.id,
+                              isolationPolicy: isolationPolicy,
+                              primaryProfileItemID: profile.id,
+                              primarySpaceID: starter.id,
                               sortIndex: (personas.map(\.sortIndex).max() ?? -1) + 1)
         let personaRecord = PersonaRecord(id: persona.id,
                                           sealed: try sealPersona(persona, key: key),
@@ -54,9 +67,20 @@ extension VaultRepository {
                                           updatedAt: persona.updatedAt)
         store.context.insert(personaRecord)
         try store.context.save()
-        reload()
-        noteLocalMutation()
+        // `add` saves + reloads + notifies — the reload also links everything up.
+        try add(profile)
         return persona.id
+    }
+
+    /// Point a persona at a different profile card. For the DEFAULT persona this
+    /// also moves the synced global default-identity marker so legacy surfaces
+    /// (AutoFill fallback, onboarding invariants) stay aligned.
+    func setProfileItem(_ item: VaultItem, for persona: Persona) {
+        guard item.category == .identity else { return }
+        var updated = persona
+        updated.primaryProfileItemID = item.id
+        try? updatePersona(updated)
+        if persona.isDefault { setDefaultIdentity(item) }
     }
 
     /// Re-seal a persona's identity content (name/kind/policy/links) and bump

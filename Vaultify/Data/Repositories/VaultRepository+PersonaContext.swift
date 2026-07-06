@@ -19,6 +19,23 @@ extension VaultRepository {
         return nil
     }
 
+    /// The persona's own profile card (identity item), resolved via its
+    /// `primaryProfileItemID`. Only a live identity item counts — a trashed or
+    /// re-categorized target reads as "no profile" (nil), never a stale card.
+    /// No cross-persona fallback (fail-closed): the default persona's link is
+    /// seeded at bootstrap, so it still resolves to the classic default identity.
+    func profileItem(for persona: Persona) -> VaultItem? {
+        guard let id = persona.primaryProfileItemID,
+              let item = items.first(where: { $0.id == id }),
+              item.category == .identity else { return nil }
+        return item
+    }
+
+    /// The ACTIVE persona's profile card — what Profile and the Home header show.
+    var activeProfileItem: VaultItem? {
+        activePersona.flatMap { profileItem(for: $0) }
+    }
+
     /// The username to represent a persona: its own profile item; the global
     /// default identity is used as a fallback ONLY when the persona is not
     /// strictly anonymous (INV-R03 — an anonymous persona never borrows another
