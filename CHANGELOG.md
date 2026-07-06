@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.17.0] - 2026-07-06
+
+### Added
+- shared-vault hardening V2.1 — online gate, per-device seal, capability v2 (TOTP/passkey ask-each-time + hand-over) (#33)
+- enable App Attest registration + shadow-mode assertions
+
+### Changed
+- shared-vault hardening V2.1 — patch per security review
+
+
 ## [1.16.1] - 2026-07-05
 
 ### Fixed

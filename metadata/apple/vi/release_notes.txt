@@ -1,1 +1,1 @@
-Đã sửa lỗi có thể ảnh hưởng đến tính năng chia sẻ Loox Link. Cải thiện nhỏ về độ ổn định.
+Phiên bản 1.17.0: Cải thiện hiệu suất và sửa lỗi.
