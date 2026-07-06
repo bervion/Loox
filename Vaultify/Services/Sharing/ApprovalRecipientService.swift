@@ -1,6 +1,9 @@
 import CloudKit
 import CryptoKit
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Recipient-side (B) transport: publish the participant profile into the
 /// accepted shared zone, read the owner's grant (TOFU-pinning the owner key
@@ -50,22 +53,61 @@ import Foundation
     /// Publish B's identity material for the owner to pin (ADR-4). Called
     /// after `ParticipantEscrowService.ensureIdentity` succeeded (Validation
     /// §3 ordering: escrowed BEFORE published).
+    ///
+    /// MERGE-aware (P03a): the profile is a singleton per zone, but each of
+    /// B's devices must appear in it — signing keys are unioned and the
+    /// per-device HPKE directory is upserted onto the FETCHED record, so a
+    /// republish from device 2 no longer erases device 1.
     func publishProfile(identity: ParticipantIdentity, zoneID: CKRecordZone.ID,
                         nowUnixMs: Int64) async throws {
         let signingIdentity = try DeviceSigningIdentity.loadOrCreate()
+        let hpkeIdentity = try DeviceHPKEIdentity.loadOrCreate()
+        let ownEntry = DeviceHPKEDirectoryEntry(
+            deviceKeyID: hpkeIdentity.deviceKeyID,
+            hpkePublicKey: hpkeIdentity.publicKeyRaw,
+            label: Self.deviceLabel(),
+            addedAtUnixMs: nowUnixMs)
+
+        let recordID = CKRecord.ID(recordName: ApprovalConfig.participantProfileRecordName,
+                                   zoneID: zoneID)
+        let record: CKRecord
+        var signingKeys = [signingIdentity.publicKeyRaw]
+        var directory = [ownEntry]
+        if let existing = try? await sharedDatabase.record(for: recordID),
+           let profile = ApprovalRecordMapping.participantProfile(from: existing) {
+            signingKeys = ParticipantProfileMerge.signingKeys(
+                existing: profile.deviceSigningKeys, adding: signingIdentity.publicKeyRaw)
+            directory = ParticipantProfileMerge.directory(
+                existing: profile.deviceHPKEDirectory, upserting: ownEntry)
+            record = existing
+        } else {
+            record = CKRecord(recordType: ApprovalConfig.participantProfileRecordType,
+                              recordID: recordID)
+        }
         // Rendezvous pointers ride along (repeat auto-invites, U5): the inbox
         // id B listens on, and B's OWN opaque userRecordID — the owner can't
         // learn either from an email lookup, but B can always say its own.
-        let record = ApprovalRecordMapping.participantProfileRecord(
+        ApprovalRecordMapping.applyParticipantProfile(
+            to: record,
             participantPubKey: identity.publicKeyRaw,
-            deviceSigningKeys: [signingIdentity.publicKeyRaw],
+            deviceSigningKeys: signingKeys,
+            deviceHPKEDirectory: directory,
             createdAtUnixMs: nowUnixMs,
             inviteInboxID: InviteInboxService.storedOrNewInboxID(),
-            inviteRecipientID: (try? await container.userRecordID())?.recordName,
-            zoneID: zoneID)
+            inviteRecipientID: (try? await container.userRecordID())?.recordName)
         let saved = try await sharedDatabase.modifyRecords(saving: [record], deleting: [],
                                                            savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
+    }
+
+    /// Display label for the device directory (owner-facing in the P03b
+    /// "new device asks for access" banner). Non-sensitive.
+    private static func deviceLabel() -> String {
+        #if canImport(UIKit)
+        return UIDevice.current.name
+        #else
+        return Host.current().localizedName ?? "Mac"
+        #endif
     }
 
     /// Idempotent acceptance completion (Validation §3 ordering): identity is

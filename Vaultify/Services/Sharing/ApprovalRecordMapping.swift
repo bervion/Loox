@@ -22,6 +22,9 @@ nonisolated enum ApprovalRecordMapping {
         /// B always knows its own.
         static let inviteInboxID = "inviteInboxID"
         static let inviteRecipientID = "inviteRecipientID"
+        /// JSON-encoded `[DeviceHPKEDirectoryEntry]` — per-device HPKE public
+        /// keys (P03a). Public material; absent on legacy profiles.
+        static let deviceHPKEDirectory = "deviceHPKEDirectory"
         static let sealed = "sealed"
         static let expiresAtMs = "expiresAtMs"
     }
@@ -130,27 +133,51 @@ nonisolated enum ApprovalRecordMapping {
     /// itself is just the delivery vehicle. Last writer wins (singleton name +
     /// `createdAtMs` lets the owner detect a newer profile).
     static func participantProfileRecord(participantPubKey: Data, deviceSigningKeys: [Data],
+                                         deviceHPKEDirectory: [DeviceHPKEDirectoryEntry],
                                          createdAtUnixMs: Int64,
                                          inviteInboxID: String?, inviteRecipientID: String?,
                                          zoneID: CKRecordZone.ID) -> CKRecord {
         let record = CKRecord(recordType: ApprovalConfig.participantProfileRecordType,
                               recordID: CKRecord.ID(recordName: ApprovalConfig.participantProfileRecordName,
                                                     zoneID: zoneID))
-        record[Field.participantPubKey] = participantPubKey as CKRecordValue
-        record[Field.deviceSigningKeys] = deviceSigningKeys as CKRecordValue
-        record[Field.createdAtMs] = createdAtUnixMs as CKRecordValue
-        if let inviteInboxID { record[Field.inviteInboxID] = inviteInboxID as CKRecordValue }
-        if let inviteRecipientID { record[Field.inviteRecipientID] = inviteRecipientID as CKRecordValue }
+        applyParticipantProfile(to: record,
+                                participantPubKey: participantPubKey,
+                                deviceSigningKeys: deviceSigningKeys,
+                                deviceHPKEDirectory: deviceHPKEDirectory,
+                                createdAtUnixMs: createdAtUnixMs,
+                                inviteInboxID: inviteInboxID,
+                                inviteRecipientID: inviteRecipientID)
         return record
     }
 
+    /// Field application split out so a MERGED republish mutates the FETCHED
+    /// record (change tag preserved) — blind fresh-record overwrites are what
+    /// used to drop sibling devices' keys from the singleton profile.
+    static func applyParticipantProfile(to record: CKRecord,
+                                        participantPubKey: Data, deviceSigningKeys: [Data],
+                                        deviceHPKEDirectory: [DeviceHPKEDirectoryEntry],
+                                        createdAtUnixMs: Int64,
+                                        inviteInboxID: String?, inviteRecipientID: String?) {
+        record[Field.participantPubKey] = participantPubKey as CKRecordValue
+        record[Field.deviceSigningKeys] = deviceSigningKeys as CKRecordValue
+        record[Field.createdAtMs] = createdAtUnixMs as CKRecordValue
+        if let directory = try? DeviceHPKEDirectoryEntry.encodeDirectory(deviceHPKEDirectory) {
+            record[Field.deviceHPKEDirectory] = directory as CKRecordValue
+        }
+        if let inviteInboxID { record[Field.inviteInboxID] = inviteInboxID as CKRecordValue }
+        if let inviteRecipientID { record[Field.inviteRecipientID] = inviteRecipientID as CKRecordValue }
+    }
+
     static func participantProfile(from record: CKRecord)
-        -> (participantPubKey: Data, deviceSigningKeys: [Data], createdAtUnixMs: Int64)? {
+        -> (participantPubKey: Data, deviceSigningKeys: [Data],
+            deviceHPKEDirectory: [DeviceHPKEDirectoryEntry], createdAtUnixMs: Int64)? {
         guard record.recordType == ApprovalConfig.participantProfileRecordType,
               let pubKey = record[Field.participantPubKey] as? Data,
               let signingKeys = record[Field.deviceSigningKeys] as? [Data],
               let createdAt = record[Field.createdAtMs] as? Int64 else { return nil }
-        return (pubKey, signingKeys, createdAt)
+        let directory = DeviceHPKEDirectoryEntry.decodeDirectory(
+            record[Field.deviceHPKEDirectory] as? Data)
+        return (pubKey, signingKeys, directory, createdAt)
     }
 
     // MARK: Nonce marker (create-if-not-exists)

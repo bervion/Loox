@@ -25,7 +25,8 @@ struct ShareAccessSheet: View {
         // URL the rendezvous envelope needs (drop retries while waiting).
         case waiting(zoneID: CKRecordZone.ID, shareURL: URL?, rawShareURL: URL?)
         case fingerprint(zoneID: CKRecordZone.ID, code: String,
-                         profile: (participantPubKey: Data, deviceSigningKeys: [Data], createdAtUnixMs: Int64))
+                         profile: (participantPubKey: Data, deviceSigningKeys: [Data],
+                                   deviceHPKEDirectory: [DeviceHPKEDirectoryEntry], createdAtUnixMs: Int64))
         case publishing
         case done
         case failed(String)

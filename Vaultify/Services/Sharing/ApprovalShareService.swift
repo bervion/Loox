@@ -125,7 +125,8 @@ import Foundation
     // MARK: Participant profile → grant
 
     func fetchParticipantProfile(zoneID: CKRecordZone.ID)
-        async throws -> (participantPubKey: Data, deviceSigningKeys: [Data], createdAtUnixMs: Int64) {
+        async throws -> (participantPubKey: Data, deviceSigningKeys: [Data],
+                         deviceHPKEDirectory: [DeviceHPKEDirectoryEntry], createdAtUnixMs: Int64) {
         let id = CKRecord.ID(recordName: ApprovalConfig.participantProfileRecordName, zoneID: zoneID)
         guard let record = try? await database.record(for: id),
               let profile = ApprovalRecordMapping.participantProfile(from: record) else {

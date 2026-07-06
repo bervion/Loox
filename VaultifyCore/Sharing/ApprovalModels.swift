@@ -42,6 +42,64 @@ nonisolated enum FieldCapability: Codable, Sendable, Equatable {
     }
 }
 
+// MARK: - Device key bindings (per-device seal, P03)
+
+/// Names one recipient device inside a v2 grant: the stable device id plus a
+/// hash binding of its CURRENT HPKE public key. The raw public key lives in
+/// the profile's device directory, OUTSIDE the signed grant — verifiers must
+/// check `SHA256(directory pubkey) == hpkePublicKeyHash` before sealing to or
+/// trusting that key (substitution guard, INV-12).
+nonisolated struct DeviceKeyBinding: Codable, Sendable, Equatable {
+    var deviceKeyID: Data
+    var hpkePublicKeyHash: Data
+}
+
+/// One entry of the recipient-published device directory (participant
+/// profile record). Public material only — never a private key.
+nonisolated struct DeviceHPKEDirectoryEntry: Codable, Sendable, Equatable {
+    var deviceKeyID: Data
+    var hpkePublicKey: Data
+    var label: String
+    var addedAtUnixMs: Int64
+
+    static func encodeDirectory(_ entries: [DeviceHPKEDirectoryEntry]) throws -> Data {
+        try JSONEncoder().encode(entries)
+    }
+
+    /// Lenient decode: an unreadable directory yields [] (legacy profiles
+    /// predate the field entirely) — grants v2 then simply cannot seal to
+    /// this recipient until a device republishes.
+    static func decodeDirectory(_ data: Data?) -> [DeviceHPKEDirectoryEntry] {
+        guard let data else { return [] }
+        return (try? JSONDecoder().decode([DeviceHPKEDirectoryEntry].self, from: data)) ?? []
+    }
+}
+
+/// Pure merge rules for the multi-device profile record (unit-tested): each
+/// device republished the singleton profile with `.allKeys` before P03a,
+/// silently dropping sibling devices — merging keeps every enrolled device.
+nonisolated enum ParticipantProfileMerge {
+    /// Upsert by deviceKeyID (a republish refreshes label/key), stable order
+    /// by first enrollment time then id — deterministic for tests and UI.
+    static func directory(existing: [DeviceHPKEDirectoryEntry],
+                          upserting entry: DeviceHPKEDirectoryEntry) -> [DeviceHPKEDirectoryEntry] {
+        var merged = existing.filter { $0.deviceKeyID != entry.deviceKeyID }
+        merged.append(entry)
+        return merged.sorted {
+            ($0.addedAtUnixMs, $0.deviceKeyID.hexString) < ($1.addedAtUnixMs, $1.deviceKeyID.hexString)
+        }
+    }
+
+    /// Union preserving existing order; the new key appends if unseen.
+    static func signingKeys(existing: [Data], adding key: Data) -> [Data] {
+        existing.contains(key) ? existing : existing + [key]
+    }
+}
+
+extension Data {
+    nonisolated var hexString: String { map { String(format: "%02x", $0) }.joined() }
+}
+
 // MARK: - Grant
 
 /// Owner-signed capability delegation for one item to one recipient.
