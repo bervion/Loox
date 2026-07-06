@@ -21,12 +21,14 @@ Proposal phases A–D + half of F already shipped. This roadmap covers only the 
 
 | # | Phase | File | Status |
 |---|-------|------|--------|
-| G1 | Naming & copy: "Private Email", Pause/Resume terminology, masked email display | phase-g1-private-email-naming-copy.md | ⏳ pending |
-| G2 | ForwardingInbox sealed model + 0..N reusable aliases + alias label | phase-g2-forwarding-inbox-model.md | ⏳ pending |
-| G4 | Create Login integration (flagship): suggest → explicit provision → bind → fill | phase-g4-create-login-integration.md | ⏳ pending |
-| G3 | Management UI: reusable list, per-alias inbox picker, default inbox, resumable bulk rotation | phase-g3-management-ui-bulk-rotation.md | ⏳ pending |
-| G5 | Error mapping polish + Resume Forwarding (**blocked on BE re-enable contract freeze**) | phase-g5-error-mapping-resume.md | ⏳ pending (resume blocked on BE) |
-| G6 | AutoFill: existing-alias reuse only; no in-extension provisioning V1 | phase-g6-autofill-alias-reuse.md | ⏳ pending |
+| G1 | Naming & copy: "Private Email", Pause/Resume terminology, masked email display | phase-g1-private-email-naming-copy.md | ✅ PR #44 |
+| G2 | ForwardingInbox sealed model + 0..N reusable aliases + alias label | phase-g2-forwarding-inbox-model.md | ✅ PR #45 |
+| G4 | Create Login integration (flagship): suggest → explicit provision → bind → fill | phase-g4-create-login-integration.md | ✅ PR #46 |
+| G3 | Management UI: reusable list, per-alias inbox picker, default inbox, resumable bulk rotation | phase-g3-management-ui-bulk-rotation.md | ✅ PR #47 (journal-free: forwardingTarget checkpoints ARE the batch) |
+| G5 | Error mapping polish + Resume Forwarding (**blocked on BE re-enable contract freeze**) | phase-g5-error-mapping-resume.md | ✅ PR #48 (Resume NOT shipped — awaiting BE vector) |
+| G6 | AutoFill: existing-alias reuse only; no in-extension provisioning V1 | phase-g6-autofill-alias-reuse.md | ✅ PR #49 |
+
+All merged to develop 260706; suite 307/307. Remaining external: BE re-enable contract → then Resume Forwarding.
 
 Order G4 before G3 per proposal author's priority (Create Login > management dashboard).
 
