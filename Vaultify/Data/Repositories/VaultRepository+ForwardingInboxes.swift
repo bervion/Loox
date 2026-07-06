@@ -63,6 +63,19 @@ extension VaultRepository {
         defaultInbox(for: persona)?.email ?? destinationEmail(for: persona)
     }
 
+    /// Backend-known aliases whose resolved destination differs from what the
+    /// backend last had (`forwardingTarget`). This IS the bulk-rotation batch:
+    /// forwardingTarget is checkpointed per alias after each rotate, so the set
+    /// shrinks as rotations land and a retry/relaunch resumes exactly the
+    /// stragglers — no separate journal to desync.
+    var aliasesNeedingRotation: [EmailAlias] {
+        aliases.filter { alias in
+            guard alias.backendMinted, alias.status != .disabled,
+                  let want = resolvedDestination(for: alias) else { return false }
+            return alias.forwardingTarget != want
+        }
+    }
+
     // MARK: Derivation (runs inside reload — patches state in place, never reload())
 
     /// One `.personaProfile` inbox per persona that has a profile email; the

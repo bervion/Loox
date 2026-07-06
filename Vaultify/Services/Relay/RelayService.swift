@@ -83,6 +83,40 @@ import Foundation
         }
     }
 
+    /// Pin an alias to an inbox, then rotate it on the backend. The pin persists
+    /// FIRST (durable intent): if the rotate fails, the alias lands in
+    /// `aliasesNeedingRotation` and the next reconcile finishes the job.
+    func setInbox(_ inbox: ForwardingInbox, for alias: EmailAlias) async throws {
+        var pinned = alias
+        pinned.forwardingInboxID = inbox.id
+        try repository.updateAlias(pinned)
+        guard alias.backendMinted else { return }
+        try await send(kind: .rotateDestination, aliasID: alias.localPart, destination: inbox.email,
+                       path: "/v1/relay/aliases/\(alias.localPart)/destination")
+        if var live = repository.aliases.first(where: { $0.id == alias.id }) {
+            live.forwardingTarget = inbox.email
+            try repository.updateAlias(live)
+        }
+    }
+
+    /// Rotate every alias whose resolved destination drifted from the backend
+    /// (default-inbox change, inbox email edit…). Sequential; `forwardingTarget`
+    /// checkpoints after each success, so an interruption resumes exactly the
+    /// stragglers. NOT atomic — progress is surfaced, never pretended away.
+    func reconcileDestinations(progress: ((Int, Int) -> Void)? = nil) async throws {
+        let pending = repository.aliasesNeedingRotation
+        for (index, alias) in pending.enumerated() {
+            guard let want = repository.resolvedDestination(for: alias) else { continue }
+            try await send(kind: .rotateDestination, aliasID: alias.localPart, destination: want,
+                           path: "/v1/relay/aliases/\(alias.localPart)/destination")
+            if var live = repository.aliases.first(where: { $0.id == alias.id }) {
+                live.forwardingTarget = want
+                try repository.updateAlias(live)
+            }
+            progress?(index + 1, pending.count)
+        }
+    }
+
     func disable(_ alias: EmailAlias) async throws {
         if alias.backendMinted || alias.status == .active {
             try await send(kind: .disableAlias, aliasID: alias.localPart,

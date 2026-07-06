@@ -1,6 +1,156 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Forwarding to" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển tiếp đến"
+          }
+        }
+      }
+    },
+    "Forwarding inboxes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư nhận"
+          }
+        }
+      }
+    },
+    "Forwarding inbox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư nhận"
+          }
+        }
+      }
+    },
+    "Add inbox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm hộp thư nhận"
+          }
+        }
+      }
+    },
+    "A real inbox your private addresses can forward to." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư thật mà các địa chỉ riêng tư sẽ chuyển tiếp đến."
+          }
+        }
+      }
+    },
+    "New addresses will forward here. Existing addresses keep their inbox until you update them." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ mới sẽ chuyển tiếp về đây. Địa chỉ hiện có giữ nguyên hộp thư cho đến khi bạn cập nhật."
+          }
+        }
+      }
+    },
+    "Update existing addresses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cập nhật địa chỉ hiện có"
+          }
+        }
+      }
+    },
+    "Keep Loox open until the update finishes. You can safely retry — finished addresses aren’t repeated." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ Loox mở đến khi cập nhật xong. Có thể thử lại an toàn — địa chỉ đã xong sẽ không lặp lại."
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld"
+          }
+        }
+      }
+    },
+    "Set as default" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt làm mặc định"
+          }
+        }
+      }
+    },
+    "Profile email" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email hồ sơ"
+          }
+        }
+      }
+    },
+    "Inbox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hộp thư"
+          }
+        }
+      }
+    },
+    "Edit label" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sửa nhãn"
+          }
+        }
+      }
+    },
+    "New reusable address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ dùng lâu dài mới"
+          }
+        }
+      }
+    },
+    "Optional label like “Clients”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhãn tuỳ chọn, ví dụ “Khách hàng”."
+          }
+        }
+      }
+    },
     "Create private email" : {
       "localizations" : {
         "vi" : {

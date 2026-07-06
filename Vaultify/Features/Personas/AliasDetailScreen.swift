@@ -15,6 +15,8 @@ struct AliasDetailScreen: View {
     @State private var confirmPause = false
     @State private var editingDestination = false
     @State private var destinationDraft = ""
+    @State private var editingLabel = false
+    @State private var labelDraft = ""
 
     /// Live alias (nil once deleted — the screen then pops).
     private var alias: EmailAlias? { env.repository.aliases.first { $0.id == aliasID } }
@@ -55,6 +57,12 @@ struct AliasDetailScreen: View {
                 if let domain = alias.boundDomain, !domain.isEmpty {
                     LabeledContent { Text(verbatim: domain) } label: { Text("Website") }
                 }
+                Button {
+                    labelDraft = alias.label ?? ""
+                    editingLabel = true
+                } label: {
+                    LabeledContent { Text(verbatim: alias.label ?? "—") } label: { Text("Label") }
+                }
             }
             .listRowBackground(VaultColors.surface)
 
@@ -62,10 +70,24 @@ struct AliasDetailScreen: View {
                 // Masked in overview; the full address appears only when editing.
                 LabeledContent { Text(verbatim: alias.forwardingTarget.map(EmailMask.masked) ?? "—") }
                     label: { Text("Forwards to") }
+                // Per-alias inbox pin — offered once there's a choice to make.
+                if env.repository.forwardingInboxes.count > 1 {
+                    Menu {
+                        ForEach(env.repository.forwardingInboxes) { inbox in
+                            Button { pick(inbox, for: alias) } label: {
+                                Text(verbatim: inboxTitle(inbox))
+                            }
+                        }
+                    } label: {
+                        LabeledContent { Text(verbatim: currentInboxTitle(alias)) }
+                            label: { Text("Forwarding inbox") }
+                    }
+                }
                 Button {
                     destinationDraft = alias.forwardingTarget ?? (persona.flatMap { env.repository.destinationEmail(for: $0) } ?? "")
                     editingDestination = true
                 } label: { Text("Change forwarding address") }
+                NavigationLink { ForwardingInboxScreen() } label: { Text("Forwarding inboxes") }
             } footer: {
                 Text("Replies from your inbox may reveal your real email address.")
             }
@@ -91,6 +113,11 @@ struct AliasDetailScreen: View {
             .listRowBackground(VaultColors.surface)
         }
         .disabled(busy)
+        .alert("Edit label", isPresented: $editingLabel) {
+            TextField("Label", text: $labelDraft)
+            Button("Cancel", role: .cancel) {}
+            Button("Save") { saveLabel(alias) }
+        }
         .alert("Change forwarding address", isPresented: $editingDestination) {
             TextField("Email", text: $destinationDraft)
                 .keyboardType(.emailAddress).textInputAutocapitalization(.never)
@@ -120,6 +147,33 @@ struct AliasDetailScreen: View {
         case .disabled: return appString("Forwarding paused")
         default:        return appString("Draft")
         }
+    }
+
+    private func inboxTitle(_ inbox: ForwardingInbox) -> String {
+        if let label = inbox.label, !label.isEmpty { return label }
+        return EmailMask.masked(inbox.email)
+    }
+
+    /// The inbox this alias currently resolves to (pin, else persona default).
+    private func currentInboxTitle(_ alias: EmailAlias) -> String {
+        if let id = alias.forwardingInboxID, let pinned = env.repository.inbox(id: id) {
+            return inboxTitle(pinned)
+        }
+        if let persona, let fallback = env.repository.defaultInbox(for: persona) {
+            return inboxTitle(fallback)
+        }
+        return "—"
+    }
+
+    private func pick(_ inbox: ForwardingInbox, for alias: EmailAlias) {
+        run { try await env.relay.setInbox(inbox, for: alias) }
+    }
+
+    private func saveLabel(_ alias: EmailAlias) {
+        var updated = alias
+        let trimmed = labelDraft.trimmingCharacters(in: .whitespaces)
+        updated.label = trimmed.isEmpty ? nil : trimmed
+        try? env.repository.updateAlias(updated)
     }
 
     private func changeDestination() {
