@@ -20,6 +20,25 @@ struct PersonaAliasesScreen: View {
 
     var body: some View {
         List {
+            // Contextual capability state (offline ≠ outage ≠ maintenance ≠
+            // disabled ≠ retired). Local records below stay visible in EVERY
+            // state — only network-dependent actions gate.
+            let createState = env.capabilities.availability(.privateEmail, operation: .create)
+            if createState != .available {
+                Section {
+                    CapabilityBannerView(availability: createState) { probe() }
+                }
+                .listRowBackground(Color.clear)
+            }
+            if case .retired = createState {
+                Section {
+                    NavigationLink { AffectedAccountsScreen() } label: {
+                        Label { Text("Review affected accounts") } icon: { PolarisIcon(Icons.archive) }
+                    }
+                }
+                .listRowBackground(VaultColors.surface)
+            }
+
             Section {
                 warningBanner
             }
@@ -44,6 +63,8 @@ struct PersonaAliasesScreen: View {
             }
         }
         .navigationTitle(Text("Private Email"))
+        // Non-blocking, contextual — never at app startup (INV-CAP-02).
+        .task { probe() }
         .sheet(isPresented: $showingPerSiteEditor) {
             if let persona { AliasEditorSheet(persona: persona, onCreated: { activate($0) }) }
         }
@@ -167,9 +188,15 @@ struct PersonaAliasesScreen: View {
         }
     }
 
+    private func probe() {
+        Task { await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities) }
+    }
+
     /// Aliases forward to a real inbox — require one (default inbox or profile
-    /// email) before creating.
+    /// email) before creating. Creation also gates on capability availability
+    /// (the banner above explains why when it's blocked).
     private func guardEmail(_ persona: Persona, _ create: () -> Void) {
+        guard env.capabilities.availability(.privateEmail, operation: .create) == .available else { return }
         if env.repository.newAliasDestination(for: persona) == nil { missingEmail = true }
         else { create() }
     }

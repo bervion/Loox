@@ -13,6 +13,24 @@ struct SettingsScreen: View {
     /// aliases and the relay can't be reached, the erase is BLOCKED (an "erase"
     /// must never leave anonymous addresses forwarding to a real inbox forever).
     /// With no active aliases (the common case) this awaits nothing meaningful.
+    /// One Online Features row: preference toggle + operator/runtime status.
+    /// The toggle mutates ONLY the user preference (INV-CAP-09).
+    private func onlineFeatureRow(_ id: CapabilityID, title: LocalizedStringKey,
+                                  icon: String) -> some View {
+        Toggle(isOn: Binding(
+            get: { env.capabilities.userPreference(id) },
+            set: { env.capabilities.setUserPreference(id, enabled: $0) })) {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                    Text(verbatim: CapabilityStatusText.label(
+                        env.capabilities.availability(id, operation: .create)))
+                        .vaultType(.caption).themedForeground(.secondary)
+                }
+            } icon: { PolarisIcon(icon) }
+        }
+    }
+
     private func eraseWithRelayTeardown() {
         guard env.repository.aliases.contains(where: { $0.status == .active }) else {
             env.eraseEverything(); return
@@ -124,6 +142,15 @@ struct SettingsScreen: View {
                     NavigationLink { ManageFoldersScreen() } label: {
                         Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
                     }
+                }
+                .listRowBackground(VaultColors.surface)
+
+                // Optional network capabilities: user preference (this toggle)
+                // and operator availability are independent axes — an outage
+                // shows in the status text but NEVER flips the toggle.
+                Section("Online Features") {
+                    onlineFeatureRow(.privateEmail, title: "Private Email", icon: Icons.mail)
+                    onlineFeatureRow(.shareLink, title: "Share Links", icon: Icons.share)
                 }
                 .listRowBackground(VaultColors.surface)
 

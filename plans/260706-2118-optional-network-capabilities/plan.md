@@ -19,9 +19,9 @@ Source: app-team proposal (260706). User locked: **Full A0–A7, both capabiliti
 
 | PR | Phases | Content | Status |
 |----|--------|---------|--------|
-| C1 | A0+A1+A3 | Pure capability model + resolver (BE-parity op table) + circuit breaker; `CapabilityStore` (@MainActor: user pref, persisted operator mode, health, connectivity, breakers); structured problem+json parsing in BOTH clients; RelayService/LooxLink wiring + breaker gate; A0 audit | ⏳ pending |
-| C2 | A2 | Manifest verification core (payload_b64+sig P256, key set w/ key_id, schema+timestamps+anti-rollback), cache, bundled fallback, graceful fetch primary→secondary; BE contract draft | ⏳ pending |
-| C3 | A4+A5+A6+A7 | `CapabilityStatusBadge`/`CapabilityUnavailableView`/action gating; screen-open `/health/ready` probe (non-blocking); Settings ▸ Online Features (pref ≠ operator; outage never flips pref); retired UX + Review Affected Accounts; App Group snapshot for extension; chaos QA checklist | ⏳ pending |
+| C1 | A0+A1+A3 | Pure capability model + resolver (BE-parity op table) + circuit breaker; `CapabilityStore` (@MainActor: user pref, persisted operator mode, health, connectivity, breakers); structured problem+json parsing in BOTH clients; RelayService/LooxLink wiring + breaker gate; A0 audit | ✅ PR #53 |
+| C2 | A2 | Manifest verification core (payload_b64+sig P256, key set w/ key_id, schema+timestamps+anti-rollback), cache, bundled fallback, graceful fetch primary→secondary; BE contract draft | ✅ PR #54 |
+| C3 | A4+A5+A6+A7 | `CapabilityStatusBadge`/`CapabilityUnavailableView`/action gating; screen-open `/health/ready` probe (non-blocking); Settings ▸ Online Features (pref ≠ operator; outage never flips pref); retired UX + Review Affected Accounts; App Group snapshot for extension; chaos QA checklist | ✅ PR #55 |
 
 ## Invariants enforced in code/tests
 

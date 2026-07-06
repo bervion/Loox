@@ -110,6 +110,9 @@ import Foundation
         modes[id] = mode
         retryAfters[id] = retryAfter
         defaults.set(mode.rawValue, forKey: modeKey(id))
+        // Reduced App Group snapshot for the extension (INV-CAP-06: the
+        // extension never fetches capability state itself).
+        CapabilitySnapshot.write(modes: modes)
     }
 
     private func persistedMode(_ id: CapabilityID) -> CapabilityServiceMode? {
