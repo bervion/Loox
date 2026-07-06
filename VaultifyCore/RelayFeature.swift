@@ -1,13 +1,12 @@
 import Foundation
 
-/// Gates the email-relay ("private email") capability. The relay backend does
-/// not exist yet, so live/`active` aliases are kept unreachable — a persona can
-/// draft and reserve an alias, but nothing renders a working `name@domain`
-/// address until this flips on. Shipping an address that looks live before the
-/// relay works would be a user-trust breach (and an App Review risk). The model
-/// carries the full lifecycle; this flag decides how much of it is reachable.
+/// Gates the email-relay ("private email") capability. The relay backend is
+/// LIVE (receive-only forwarding on relay.looxpassword.com), so active aliases
+/// are enabled: an activated alias renders its full working address. If the
+/// backend ever has to be pulled, flipping this off makes every alias render as
+/// a bare reserved local-part again — nothing looks live that isn't.
 nonisolated enum RelayFeature {
     /// When false, `.active`/`.paused` aliases can't be created and no address is
     /// ever rendered with an `@domain` suffix.
-    static let activeAliasesEnabled = false
+    static let activeAliasesEnabled = true
 }
