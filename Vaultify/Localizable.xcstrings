@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "You’ve reached the limit for private addresses. Permanently delete addresses you no longer use." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã đạt giới hạn số địa chỉ riêng tư. Hãy xoá vĩnh viễn những địa chỉ không còn dùng."
+          }
+        }
+      }
+    },
     "Use private email" : {
       "localizations" : {
         "vi" : {
