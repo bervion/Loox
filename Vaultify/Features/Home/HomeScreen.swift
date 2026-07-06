@@ -66,7 +66,7 @@ struct HomeScreen: View {
     private func autoSelectSingleSpace() {
         // With shared items in play there are effectively TWO sources —
         // stay on "All Spaces" so the shares are never filtered out.
-        guard selectedFolderId == nil, env.repository.folders.count == 1,
+        guard selectedFolderId == nil, env.repository.activePersonaSpaces.count == 1,
               env.sharedItems.items.isEmpty else { return }
         selectedFolderId = env.repository.primarySpaceId
     }
@@ -94,7 +94,7 @@ struct HomeScreen: View {
     private func applyRememberedSpace() {
         let saved = env.settings.lastSelectedSpace(persona: activePersonaKey)
         selectedFolderId = saved.flatMap { id in
-            env.repository.folders.contains { $0.id == id } ? id : nil
+            env.repository.activePersonaSpaces.contains { $0.id == id } ? id : nil
         }
     }
 
@@ -137,11 +137,11 @@ struct HomeScreen: View {
             // Switching the active persona re-drives the Home filter to that persona's Space.
             .onChange(of: env.repository.activePersona?.id) { applyRememberedSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
-            .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
+            .onChange(of: env.repository.activePersonaSpaces.count) { autoSelectSingleSpace() }
             // First share arriving on a single-Space setup: release the
             // auto-selected filter so the shared item is actually visible.
             .onChange(of: env.sharedItems.items.count) { old, new in
-                if old == 0, new > 0, env.repository.folders.count == 1 {
+                if old == 0, new > 0, env.repository.activePersonaSpaces.count == 1 {
                     selectedFolderId = nil
                 }
             }
@@ -464,7 +464,7 @@ struct HomeScreen: View {
 
     /// Selected Space name, or the localized "All Spaces" fallback (nil filter).
     private var spaceTitleText: Text {
-        if let id = selectedFolderId, let folder = env.repository.folders.first(where: { $0.id == id }) {
+        if let id = selectedFolderId, let folder = env.repository.activePersonaSpaces.first(where: { $0.id == id }) {
             return Text(verbatim: folder.name)
         }
         return Text("All Spaces")

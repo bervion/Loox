@@ -43,7 +43,7 @@ struct SearchResultsList: View {
     private var currentSpaceId: String? {
         let key = env.repository.activePersona?.id ?? PersonaID.placeholder
         guard let saved = env.settings.lastSelectedSpace(persona: key),
-              env.repository.folders.contains(where: { $0.id == saved }) else { return nil }
+              env.repository.activePersonaSpaces.contains(where: { $0.id == saved }) else { return nil }
         return saved
     }
 
@@ -166,7 +166,7 @@ struct SearchResultsList: View {
     }
 
     private func folderName(_ id: String) -> String {
-        env.repository.folders.first { $0.id == id }?.name ?? appString("This Space")
+        env.repository.activePersonaSpaces.first { $0.id == id }?.name ?? appString("This Space")
     }
 }
 
