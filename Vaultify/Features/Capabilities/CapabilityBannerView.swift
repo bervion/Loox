@@ -6,6 +6,9 @@ import SwiftUI
 struct CapabilityBannerView: View {
     @Environment(AppEnvironment.self) private var env
     let availability: CapabilityAvailability
+    /// Manifest-provided copy key — overrides the default body when it maps
+    /// to a whitelisted localized string (a raw key is never rendered).
+    var messageKey: String?
     /// Retry hook for the outage state ("Try Again" → re-probe).
     var onRetry: (() -> Void)?
 
@@ -14,9 +17,15 @@ struct CapabilityBannerView: View {
             VStack(alignment: .leading, spacing: Space.s2) {
                 Label { Text(content.title).vaultType(.subhead).themedForeground(.primary) }
                     icon: { PolarisIcon(content.icon, size: 15) }
-                Text(content.body)
-                    .vaultType(.footnote)
-                    .themedForeground(.secondary)
+                if let custom = CapabilityMessageKey.localized(messageKey) {
+                    Text(verbatim: custom)
+                        .vaultType(.footnote)
+                        .themedForeground(.secondary)
+                } else {
+                    Text(content.body)
+                        .vaultType(.footnote)
+                        .themedForeground(.secondary)
+                }
                 if content.showsRetry, let onRetry {
                     Button { onRetry() } label: {
                         Text("Try Again").vaultType(.footnote).themedForeground(.accent)
@@ -64,6 +73,32 @@ struct CapabilityBannerView: View {
                            title: "No longer available",
                            body: "Private Email is no longer offered by Loox. Your saved alias records remain visible so you can identify accounts that used them.")
         case .unknown:
+            return nil
+        }
+    }
+}
+
+/// Whitelisted manifest `message_key`s → localized copy (BE handoff §7.5).
+/// Unknown keys return nil so the banner falls back to per-state defaults —
+/// a raw key string is never shown to the user.
+nonisolated enum CapabilityMessageKey {
+    static func localized(_ key: String?) -> String? {
+        switch key {
+        case "private_email_maintenance":
+            return appString("Private Email is under maintenance. Creating or changing private addresses is temporarily paused. Your vault continues to work normally.")
+        case "private_email_disabled":
+            return appString("Private Email is currently unavailable. Loox has temporarily disabled this feature. Your vault and other features continue to work normally.")
+        case "private_email_retired":
+            return appString("Private Email is no longer offered by Loox. Your saved alias records remain visible so you can identify accounts that used them.")
+        case "private_email_shutdown_notice":
+            return appString("Private Email will stop forwarding soon. Review accounts using these addresses.")
+        case "share_link_maintenance":
+            return appString("Creating and managing links is temporarily paused. Your vault continues to work normally.")
+        case "share_link_disabled":
+            return appString("Share Links are temporarily unavailable. Your vault is not affected.")
+        case "share_link_retired":
+            return appString("Share Links are no longer offered. Your saved vault items are unchanged.")
+        default:
             return nil
         }
     }

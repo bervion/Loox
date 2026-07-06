@@ -25,6 +25,10 @@ import Foundation
     private(set) var retryAfters: [CapabilityID: Int] = [:]
     private(set) var health: [CapabilityID: CapabilityHealth] = [:]
     private var breakers: [CapabilityID: CapabilityCircuitBreaker] = [:]
+    /// Manifest per-operation overrides (narrow-only) + localized-copy keys.
+    /// Session-scoped: re-applied when the cached manifest re-verifies.
+    private(set) var disabledOperations: [CapabilityID: Set<CapabilityOperation>] = [:]
+    private(set) var messageKeys: [CapabilityID: String] = [:]
 
     init(reachability: NetworkReachabilityMonitor, defaults: UserDefaults = .standard) {
         self.reachability = reachability
@@ -59,6 +63,7 @@ import Foundation
                                         connectivity: connectivity,
                                         breakerOpen: breakers[id]?.isOpen ?? false,
                                         retryAfter: retryAfters[id],
+                                        operationDisabled: disabledOperations[id]?.contains(operation) ?? false,
                                         operation: operation)
     }
 
@@ -99,8 +104,13 @@ import Foundation
 
     /// Operator policy from a VERIFIED manifest — policy distribution only:
     /// unlike a live response it says nothing about runtime health, so the
-    /// breaker and health are deliberately untouched.
-    func applyOperatorPolicy(_ id: CapabilityID, _ signal: OperatorSignal) {
+    /// breaker and health are deliberately untouched. Carries the manifest's
+    /// narrow-only per-operation overrides and the localized-copy key.
+    func applyOperatorPolicy(_ id: CapabilityID, _ signal: OperatorSignal,
+                             disabledOps: Set<CapabilityOperation> = [],
+                             messageKey: String? = nil) {
+        disabledOperations[id] = disabledOps
+        messageKeys[id] = messageKey
         setMode(id, signal.mode, retryAfter: signal.retryAfter)
     }
 

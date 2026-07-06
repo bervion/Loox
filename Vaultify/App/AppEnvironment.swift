@@ -48,6 +48,10 @@ import SwiftUI
     /// Optional-capability state (Share Link / Private Email): user prefs,
     /// last verified operator modes, health, per-service circuit breakers.
     let capabilities: CapabilityStore
+    /// Signed capability-manifest client (LOOX-CAP-MANIFEST-V1): verified
+    /// cache re-applied at init (local, no network); refresh runs from the
+    /// capability screens' probe — never on the startup critical path.
+    let capabilityManifest: CapabilityManifestClient
     /// Bounded local history for the notifications screen.
     let notificationHistory = NotificationHistoryStore()
 
@@ -74,7 +78,9 @@ import SwiftUI
         // built from locals (two-phase init), wired into services at the end.
         let reachability = NetworkReachabilityMonitor()
         self.reachability = reachability
-        self.capabilities = CapabilityStore(reachability: reachability)
+        let capabilities = CapabilityStore(reachability: reachability)
+        self.capabilities = capabilities
+        self.capabilityManifest = CapabilityManifestClient(store: capabilities)
         self.clipboard = ClipboardService(settings: settings)
         let cloudSync = CloudSyncService(store: store, settings: settings)
         self.cloudSync = cloudSync
@@ -111,6 +117,8 @@ import SwiftUI
         // (weak refs; one independent breaker per service, INV-CAP-03).
         relay.capabilities = capabilities
         looxLinks.capabilities = capabilities
+        // Local-only cache re-verify (no network; INV-CAP-02 intact).
+        capabilityManifest.applyCached()
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through

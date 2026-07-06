@@ -26,7 +26,8 @@ struct PersonaAliasesScreen: View {
             let createState = env.capabilities.availability(.privateEmail, operation: .create)
             if createState != .available {
                 Section {
-                    CapabilityBannerView(availability: createState) { probe() }
+                    CapabilityBannerView(availability: createState,
+                                         messageKey: env.capabilities.messageKeys[.privateEmail]) { probe() }
                 }
                 .listRowBackground(Color.clear)
             }
@@ -189,7 +190,12 @@ struct PersonaAliasesScreen: View {
     }
 
     private func probe() {
-        Task { await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities) }
+        Task {
+            await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities)
+            // Manifest refresh piggybacks on the contextual probe — cheap,
+            // ETag-cached server-side, and never on the startup path.
+            await env.capabilityManifest.refresh()
+        }
     }
 
     /// Aliases forward to a real inbox — require one (default inbox or profile
