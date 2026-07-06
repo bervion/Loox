@@ -69,6 +69,22 @@ nonisolated enum FieldCapability: Codable, Sendable, Equatable {
     }
 }
 
+// MARK: - Passkey capability slots (wire v2)
+
+/// Passkeys are not `DynamicField`s — their capability rides in the grant's
+/// map under a synthetic slot id derived from the credential id, so the
+/// fail-closed verifier rule ("unknown fieldId → reject") keeps working
+/// unchanged for passkey slots.
+nonisolated enum PasskeySlot {
+    static let prefix = "passkey::"
+
+    static func slotId(credentialID: Data) -> String { prefix + credentialID.hexString }
+
+    static func isPasskeySlot(_ fieldOrSlotId: String) -> Bool {
+        fieldOrSlotId.hasPrefix(prefix)
+    }
+}
+
 // MARK: - Device scope (wire v2)
 
 /// Whether the recipient may use this grant on all their enrolled devices or

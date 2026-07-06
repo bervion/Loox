@@ -26,6 +26,23 @@ nonisolated struct SharedDisplayEnvelope: Codable, Sendable, Equatable {
     /// Per-fieldId metadata (optional — pre-V1.2 envelopes decode fine).
     var fields: [String: FieldMeta]? = nil
 
+    /// Tier-1 metadata for shared passkey slots (capability v2): what the
+    /// recipient needs to RENDER and to register a QuickType identity —
+    /// never key material (that ships, for hand-over mode only, inside the
+    /// per-slot sealed shared blob like any other shared value).
+    struct PasskeyMeta: Codable, Sendable, Equatable {
+        /// `PasskeySlot.slotId` — joins grant capability ↔ metadata ↔ blob.
+        var slotId: String
+        var relyingParty: String
+        var userName: String
+        var userHandle: Data
+        var credentialID: Data
+        var flags: UInt8?
+    }
+
+    /// Optional — envelopes from builds without passkey sharing decode fine.
+    var passkeys: [PasskeyMeta]? = nil
+
     func sealed(toParticipantPubKey key: Data, grantId: String) throws -> Data {
         try ApprovalSeal.sealDisplayEnvelope(JSONEncoder().encode(self),
                                              toParticipantPubKey: key, grantId: grantId)
