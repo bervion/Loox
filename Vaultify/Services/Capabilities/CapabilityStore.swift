@@ -97,6 +97,13 @@ import Foundation
         health[id] = .healthy
     }
 
+    /// Operator policy from a VERIFIED manifest — policy distribution only:
+    /// unlike a live response it says nothing about runtime health, so the
+    /// breaker and health are deliberately untouched.
+    func applyOperatorPolicy(_ id: CapabilityID, _ signal: OperatorSignal) {
+        setMode(id, signal.mode, retryAfter: signal.retryAfter)
+    }
+
     // MARK: Persistence (operator mode survives relaunch — never the health)
 
     private func setMode(_ id: CapabilityID, _ mode: CapabilityServiceMode, retryAfter: Int?) {
