@@ -15,13 +15,20 @@ nonisolated enum LooxLinkConfig {
     static let defaultViewerBase = URL(string: "https://s.looxpassword.com")!
     #endif
 
-    /// Gate for the App Attest register/assert flow. The deployed Worker
-    /// serves challenges but has NOT wired `/v1/attestation/register` or
-    /// assertion verification yet (epics C2c/C7) — with this on, real
-    /// devices dead-end at register and can't create links at all. The
-    /// interim `X-Loox-App-Token` is the create auth until C7 ships; flip
-    /// this then (the client flow is complete and parity-tested).
-    static let attestationEnabled = false
+    /// App Attest register/assert flow. The Worker's register route is live
+    /// on staging + production (verified 260706: bogus challenge → 401
+    /// challenge_invalid, no longer the 404 catch-all) and create-share
+    /// verifies assertions in SHADOW mode (`ASSERTION_MODE=off` server-side:
+    /// verify + observe, interim token remains the auth).
+    static let attestationEnabled = true
+
+    /// Fail-closed switch, flipped together with the server moving
+    /// `ASSERTION_MODE` to `required`: attestation failures then BLOCK the
+    /// create (C6 — no unauthenticated fallback). While the server is in
+    /// off/shadow mode, an attest failure only logs and the token path
+    /// proceeds — a register bug must not brick a flow the assertion isn't
+    /// even authenticating yet.
+    static let attestationRequired = false
 
     /// Interim anti-abuse token (`X-Loox-App-Token`) — both staging and
     /// production Workers gate create on it until App Attest ships (C7).

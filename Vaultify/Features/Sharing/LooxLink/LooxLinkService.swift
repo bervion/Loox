@@ -43,15 +43,24 @@ import Foundation
             throw Failure.tooLarge
         }
 
-        // App Attest gates creation where the hardware supports it (real
-        // device) once the backend ships verification (see
-        // `LooxLinkConfig.attestationEnabled`). Until then the interim
-        // `X-Loox-App-Token` header is the create auth.
+        // App Attest on real devices. Shadow phase (server ASSERTION_MODE
+        // off/shadow): attest best-effort — a failure logs and the interim
+        // token still authenticates, because the assertion isn't the auth
+        // yet and a register bug must not brick creation. Once the server
+        // requires assertions, `attestationRequired` makes failures BLOCK
+        // the create (C6 fail-closed, no unauthenticated fallback).
         var assertion: LooxLinkAPIClient.AssertionHeaders?
         if LooxLinkConfig.attestationEnabled, LooxLinkAttestation.isSupported {
-            assertion = try await LooxLinkAttestation.assertCreateShare(
-                api: api, ciphertext: cipher.ciphertextRaw, iv: cipher.ivRaw,
-                expiresInSeconds: expiry)
+            do {
+                assertion = try await LooxLinkAttestation.assertCreateShare(
+                    api: api, ciphertext: cipher.ciphertextRaw, iv: cipher.ivRaw,
+                    expiresInSeconds: expiry)
+            } catch {
+                if LooxLinkConfig.attestationRequired { throw error }
+                #if DEBUG
+                print("[LooxLink] attest failed (shadow mode, continuing with token): \(error)")
+                #endif
+            }
         }
 
         let response = try await api.createShare(
