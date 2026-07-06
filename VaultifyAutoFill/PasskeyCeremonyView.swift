@@ -90,7 +90,16 @@ struct PasskeyCeremonyView: View {
         matches = vault.matching(relyingParty: relyingParty, allowedCredentialIDs: allowed, key: vaultKey)
         switch matches.count {
         case 0:
-            if let onNoPasskey {
+            // Shared passkey slots (capability v2): hand-over mode signs
+            // locally after the live grant check. askEachTime slots await
+            // the owner-approval ceremony — until that ships they fall back
+            // to the password picker rather than a flash-error dismissal.
+            let shared = sharedSlotMatches(relyingParty: relyingParty, allowed: allowed)
+            if let handOver = shared.first(where: {
+                $0.slot.mode == .shared && $0.slot.privateKeyRaw != nil
+            }) {
+                signShared(entry: handOver.entry, slot: handOver.slot)
+            } else if let onNoPasskey {
                 onNoPasskey(vaultKey)
             } else {
                 errorMessage = appString("No passkey for this site.")
@@ -100,6 +109,56 @@ struct PasskeyCeremonyView: View {
             sign(matches[0])
         default:
             break
+        }
+    }
+
+    /// Shared passkey slots matching this assertion (rp + allow-list).
+    private func sharedSlotMatches(relyingParty: String, allowed: [Data])
+        -> [(entry: SharedCredentialEntry, slot: SharedPasskeyEntry)] {
+        SharedCredentialsCache.load(vaultKey: vaultKey).flatMap { entry in
+            (entry.passkeys ?? []).compactMap { slot in
+                guard slot.relyingParty == relyingParty,
+                      allowed.isEmpty || allowed.contains(slot.credentialID) else { return nil }
+                return (entry, slot)
+            }
+        }
+    }
+
+    /// Hand-over mode: sign locally with the delivered key — but only after
+    /// the authoritative live grant check passes (INV-11; online-required).
+    /// Failures keep the sheet up with a message instead of flash-dismissing.
+    private func signShared(entry: SharedCredentialEntry, slot: SharedPasskeyEntry) {
+        guard case let .assert(relyingParty, _, clientDataHash, _) = purpose,
+              let keyRaw = slot.privateKeyRaw else { return }
+        working = true
+        Task {
+            let outcome = await SharedGrantLiveCheck.verify(
+                zoneName: entry.zoneName, ownerName: entry.ownerName,
+                expectedGrantId: entry.grantId)
+            working = false
+            switch outcome {
+            case .revoked:
+                errorMessage = appString("The owner has revoked access to this item.")
+                return
+            case .unavailable:
+                errorMessage = appString("Couldn't verify access right now.")
+                return
+            case .authorized:
+                break
+            }
+            do {
+                let result = try WebAuthn.assertion(
+                    relyingParty: relyingParty, clientDataHash: clientDataHash,
+                    privateKeyRaw: keyRaw,
+                    flags: slot.flags ?? WebAuthn.legacyAssertionFlags)
+                onAssertion(ASPasskeyAssertionCredential(
+                    userHandle: slot.userHandle, relyingParty: relyingParty,
+                    signature: result.signature, clientDataHash: clientDataHash,
+                    authenticatorData: result.authenticatorData,
+                    credentialID: slot.credentialID))
+            } catch {
+                errorMessage = appString("Couldn’t sign in with this passkey.")
+            }
         }
     }
 

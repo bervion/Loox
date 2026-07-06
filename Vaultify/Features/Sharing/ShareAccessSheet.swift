@@ -38,6 +38,9 @@ struct ShareAccessSheet: View {
     /// Device scope (P03b): OFF = single-device — values sealed exclusively
     /// to the recipient's first-enrolled device key (crypto-enforced, INV-04).
     @State private var allowMultipleDevices = true
+    /// Hand-over selection (TOTP seed / passkey key) awaiting the
+    /// irreversibility confirmation (INV-08). Applied only on confirm.
+    @State private var pendingHandOver: (id: String, capability: FieldCapability)?
     /// Share pending the destructive revoke confirmation.
     @State private var revokeTarget: ItemShareRecord?
     /// iMessage compose (recipient pre-filled) for the invite link.
@@ -50,8 +53,16 @@ struct ShareAccessSheet: View {
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
+    /// This item's passkeys (matched by relying party, same rule the detail
+    /// screen uses) — each becomes a capability slot in the grant.
+    private var itemPasskeys: [PasskeyInfo] {
+        guard let item, let key = env.session.vaultKey else { return [] }
+        return PasskeyVault(store: env.store).all(key: key)
+            .filter { item.matchesRelyingParty($0.relyingParty) }
+    }
+
     private var hasGrantedCapability: Bool {
-        capabilities.values.contains { $0.isAskEachTimeTOTP || $0.isSharedValue }
+        capabilities.values.contains { $0.grantsAnything }
     }
 
     private var normalizedEmail: String {
@@ -93,6 +104,19 @@ struct ShareAccessSheet: View {
             // Forward-secrecy honesty (H5): future access ends now; already-
             // delivered shared values cannot be clawed back.
             Text("They can't request codes anymore. Values that were already shared stay on their device.")
+        }
+        // Hand-over confirmation (INV-08): the one honest moment to say a
+        // delivered secret is not revocable by us.
+        .confirmationDialog("Hand over this secret?", isPresented: handOverDialogBinding,
+                            titleVisibility: .visible) {
+            Button("Hand Over — Can't Be Taken Back", role: .destructive) {
+                if let pending = pendingHandOver {
+                    capabilities[pending.id] = pending.capability
+                }
+                pendingHandOver = nil
+            }
+        } message: {
+            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates — a secret already handed over can't be pulled back. To truly revoke it, change it at the website.")
         }
     }
 
@@ -182,6 +206,10 @@ struct ShareAccessSheet: View {
             // Least exposure by default: everything Off until the owner opts in.
             for field in item.fields {
                 capabilities[field.id] = field.kind == .totp ? .totp(.none) : .value(.none)
+            }
+            for passkey in itemPasskeys {
+                capabilities[PasskeySlot.slotId(credentialID: passkey.credentialID)]
+                    = .passkey(.none)
             }
         }
         step = .config
@@ -311,12 +339,32 @@ struct ShareAccessSheet: View {
         }
         step = .publishing
         do {
-            let sharedValues: [String: Data] = Dictionary(uniqueKeysWithValues:
+            var sharedValues: [String: Data] = Dictionary(uniqueKeysWithValues:
                 item.fields.compactMap { field in
                     guard capabilities[field.id]?.isSharedValue == true,
                           !field.isExtraProtected else { return nil }
                     return (field.id, Data(field.value.utf8))
                 })
+            // Passkey slots: metadata travels for every granted mode (the
+            // recipient renders + registers QuickType from it); the full
+            // PasskeySecret ships ONLY for hand-over (INV-07/08).
+            var displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []
+            if let vaultKey = env.session.vaultKey {
+                let vault = PasskeyVault(store: env.store)
+                for passkey in itemPasskeys {
+                    let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
+                    guard case .passkey(let mode)? = capabilities[slot], mode != .none,
+                          let secret = vault.secret(credentialID: passkey.credentialID,
+                                                    key: vaultKey) else { continue }
+                    displayPasskeys.append(SharedDisplayEnvelope.PasskeyMeta(
+                        slotId: slot, relyingParty: secret.relyingParty,
+                        userName: secret.userName, userHandle: secret.userHandle,
+                        credentialID: secret.credentialID, flags: secret.flags))
+                    if mode == .shared, let blob = try? JSONEncoder().encode(secret) {
+                        sharedValues[slot] = blob
+                    }
+                }
+            }
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
             // Field labels/kinds travel in the SEALED envelope so the
             // recipient renders username as username, password as password.
@@ -353,7 +401,8 @@ struct ShareAccessSheet: View {
                 participantPubKey: profile.participantPubKey,
                 pinnedDeviceSigningKeys: profile.deviceSigningKeys,
                 epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs,
-                deviceScope: deviceScope, allowedDevices: allowedDevices)
+                deviceScope: deviceScope, allowedDevices: allowedDevices,
+                displayPasskeys: displayPasskeys)
             // Acceptance is proven — the public invite artifacts have served
             // their purpose; delete them now (owner is the only principal
             // who can — public-db records are creator-delete only).
@@ -443,7 +492,18 @@ struct ShareAccessSheet: View {
             if let item {
                 Section {
                     ForEach(item.fields) { field in
-                        FieldCapabilityRow(field: field, capability: binding(for: field))
+                        FieldCapabilityRow(field: field, capability: binding(for: field),
+                                           requestHandOver: { proposed in
+                                               pendingHandOver = (field.id, proposed)
+                                           })
+                    }
+                    ForEach(itemPasskeys) { passkey in
+                        PasskeyCapabilityRow(passkey: passkey,
+                                             capability: passkeyBinding(for: passkey),
+                                             requestHandOver: { proposed in
+                                                 pendingHandOver = (PasskeySlot.slotId(
+                                                     credentialID: passkey.credentialID), proposed)
+                                             })
                     }
                 } header: {
                     Text("What they can use")
@@ -505,6 +565,17 @@ struct ShareAccessSheet: View {
         Binding(
             get: { capabilities[field.id] ?? (field.kind == .totp ? .totp(.none) : .value(.none)) },
             set: { capabilities[field.id] = $0 })
+    }
+
+    private func passkeyBinding(for passkey: PasskeyInfo) -> Binding<FieldCapability> {
+        let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
+        return Binding(get: { capabilities[slot] ?? .passkey(.none) },
+                       set: { capabilities[slot] = $0 })
+    }
+
+    private var handOverDialogBinding: Binding<Bool> {
+        Binding(get: { pendingHandOver != nil },
+                set: { if !$0 { pendingHandOver = nil } })
     }
 
     private func waitingView(shareURL: URL?) -> some View {

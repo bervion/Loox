@@ -157,7 +157,8 @@ import Foundation
                       zoneID: CKRecordZone.ID,
                       nowUnixMs: Int64,
                       deviceScope: DeviceScope = .multi,
-                      allowedDevices: [DeviceHPKEDirectoryEntry] = []) async throws -> AccessGrant {
+                      allowedDevices: [DeviceHPKEDirectoryEntry] = [],
+                      displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []) async throws -> AccessGrant {
         let identity = try DeviceSigningIdentity.loadOrCreate()
         // Single-device is meaningless without at least one enrolled device
         // key — and it must NEVER fall back to the legacy synced participant
@@ -185,10 +186,11 @@ import Foundation
         // Presentation metadata rides in its OWN encrypted envelope — never
         // inside the signed grant (rename must not re-sign authorization)
         // and never as plaintext CloudKit fields (metadata hygiene).
-        let display = SharedDisplayEnvelope(title: displayTitle,
+        var display = SharedDisplayEnvelope(title: displayTitle,
                                             websiteHost: displayWebsiteHost,
                                             updatedAtUnixMs: nowUnixMs, revision: 1,
                                             fields: displayFields)
+        display.passkeys = displayPasskeys.isEmpty ? nil : displayPasskeys
         if grant.allowedDeviceKeyBindings.isEmpty {
             records.append(ApprovalRecordMapping.displayEnvelopeRecord(
                 sealedBlob: try display.sealed(toParticipantPubKey: participantPubKey,

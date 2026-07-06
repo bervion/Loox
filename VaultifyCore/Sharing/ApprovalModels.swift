@@ -58,6 +58,15 @@ nonisolated enum FieldCapability: Codable, Sendable, Equatable {
         }
     }
 
+    /// Grants something (any non-none mode) — drives the owner sheet's
+    /// "at least one capability" gate across all three kinds.
+    var grantsAnything: Bool {
+        switch self {
+        case .totp(.none), .value(.none), .passkey(.none): return false
+        default: return true
+        }
+    }
+
     /// Encodable only in wire v2 — a v1 grant carrying one of these is
     /// malformed (decode rejects; the layout guard in ApprovalCanonical).
     var requiresWireV2: Bool {

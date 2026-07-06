@@ -92,6 +92,21 @@ enum CredentialIdentityService {
                 recordIdentifier: entry.itemID)
         }
         let passkeyIdentities = lastPasskeys.map { $0.credentialIdentity() }
+        // Shared passkey slots (capability v2): identity registration is
+        // metadata-only, allowed for BOTH modes (user decision 260705 —
+        // askEachTime taps route into the approval ceremony). Tier-0 items
+        // never reach the cache, so unapproved devices register nothing.
+        let sharedPasskeyIdentities: [ASPasskeyCredentialIdentity] = lastSharedEntries
+            .flatMap { entry in
+                (entry.passkeys ?? []).map { slot in
+                    ASPasskeyCredentialIdentity(
+                        relyingPartyIdentifier: slot.relyingParty,
+                        userName: slot.userName,
+                        credentialID: slot.credentialID,
+                        userHandle: slot.userHandle,
+                        recordIdentifier: entry.itemID)
+                }
+            }
         CredentialIdentityRefreshGate.enqueue {
             let store = ASCredentialIdentityStore.shared
             guard await store.state().isEnabled,
@@ -101,7 +116,8 @@ enum CredentialIdentityService {
                 .map { $0 as any ASCredentialIdentity }
             try? await store.replaceCredentialIdentities(passwordEntries)
             guard CredentialIdentityRefreshGate.isCurrent(token) else { return }
-            var secondary = passkeyIdentities.map { $0 as any ASCredentialIdentity }
+            var secondary = (passkeyIdentities + sharedPasskeyIdentities)
+                .map { $0 as any ASCredentialIdentity }
             if #available(iOS 18, *) {
                 let otp = oneTimeCodeIdentities(lastOwnedItems)
                 secondary.append(contentsOf: otp.map { $0 as any ASCredentialIdentity })

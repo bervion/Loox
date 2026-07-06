@@ -24,6 +24,10 @@ import Foundation
     @ObservationIgnored private var requestModels: [String: RequestCodeModel] = [:]
     /// Per-item origin + decoded grant (capability lookups in the detail UI).
     @ObservationIgnored private var grants: [String: AccessGrant] = [:]
+    /// Per-item shared passkey slots for the AutoFill cache (capability v2).
+    /// Built from display metadata + opened slot blobs during refresh — the
+    /// projected `VaultItem` never carries key material as a field.
+    @ObservationIgnored private var cachePasskeys: [String: [SharedPasskeyEntry]] = [:]
     @ObservationIgnored private let recipient: ApprovalRecipientService
     @ObservationIgnored private let escrow: ParticipantEscrowService
     private var refreshing = false
@@ -70,7 +74,8 @@ import Foundation
         grants.removeValue(forKey: itemId)
         let cacheEntries = items.compactMap { item -> SharedCredentialEntry? in
             guard let grant = grants[item.id] else { return nil }
-            return Self.cacheEntry(item: item, grant: grant)
+            return Self.cacheEntry(item: item, grant: grant,
+                                   passkeys: cachePasskeys[item.id])
         }
         try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
         CredentialIdentityService.refreshShared(cacheEntries)
@@ -83,6 +88,7 @@ import Foundation
         items = []
         grants = [:]
         requestModels = [:]
+        cachePasskeys = [:]
     }
 
     // MARK: Sealed snapshot (instant re-hydration after unlock)
@@ -95,6 +101,8 @@ import Foundation
     private nonisolated struct Snapshot: Codable {
         var items: [VaultItem]
         var grants: [String: AccessGrant]
+        /// Optional — snapshots from before capability v2 decode fine.
+        var passkeys: [String: [SharedPasskeyEntry]]?
     }
 
     private static let snapshotVersion: UInt8 = 1
@@ -114,11 +122,13 @@ import Foundation
               !snapshot.items.isEmpty else { return }
         items = snapshot.items
         grants = snapshot.grants
+        cachePasskeys = snapshot.passkeys ?? [:]
         hasLoaded = true
     }
 
     private func persistSnapshot(vaultKey: [UInt8]) {
-        guard let plain = try? JSONEncoder().encode(Snapshot(items: items, grants: grants)),
+        guard let plain = try? JSONEncoder().encode(
+            Snapshot(items: items, grants: grants, passkeys: cachePasskeys)),
               let sealed = try? AESGCM.seal(plain, key: vaultKey) else { return }
         var envelope = Data([Self.snapshotVersion])
         envelope.append(sealed)
@@ -179,6 +189,9 @@ import Foundation
                                           display: display, values: values)
                 built.append(item)
                 builtGrants[item.id] = grant
+                cachePasskeys[item.id] = Self.passkeyEntries(grant: grant,
+                                                             display: display,
+                                                             values: values)
                 liveGrantIDs.insert(grant.id)
             } catch let error as CKError
                 where error.code == .zoneNotFound || error.code == .userDeletedZone {
@@ -218,27 +231,62 @@ import Foundation
         // copy (survives lock; see SharedCredentialsCache) and refresh QuickType.
         // An empty `items` (last share left/revoked) overwrites with an empty
         // cache, which is exactly the "disappear" behavior Leave/revoke need.
+        cachePasskeys = cachePasskeys.filter { key, _ in items.contains { $0.id == key } }
         let cacheEntries = items.compactMap { item -> SharedCredentialEntry? in
             guard let grant = grants[item.id] else { return nil }
-            return Self.cacheEntry(item: item, grant: grant)
+            return Self.cacheEntry(item: item, grant: grant,
+                                   passkeys: cachePasskeys[item.id])
         }
         try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
         CredentialIdentityService.refreshShared(cacheEntries)
         persistSnapshot(vaultKey: vaultKey)
     }
 
+    /// Shared passkey slots for one item: Tier-1 metadata joined with the
+    /// grant capability mode; the private key rides along ONLY when the
+    /// owner chose hand-over (the slot blob then carries a PasskeySecret).
+    private nonisolated static func passkeyEntries(
+        grant: AccessGrant, display: SharedDisplayEnvelope?,
+        values: [String: Data]) -> [SharedPasskeyEntry] {
+        (display?.passkeys ?? []).compactMap { meta in
+            guard case .passkey(let mode)? = grant.capabilities[meta.slotId],
+                  mode != .none else { return nil }
+            var privateKeyRaw: Data?
+            var flags = meta.flags
+            if mode == .shared, let blob = values[meta.slotId],
+               let secret = try? JSONDecoder().decode(PasskeySecret.self, from: blob) {
+                privateKeyRaw = secret.privateKeyRaw
+                flags = secret.flags ?? flags
+            }
+            return SharedPasskeyEntry(slotId: meta.slotId, mode: mode,
+                                      relyingParty: meta.relyingParty,
+                                      userName: meta.userName,
+                                      userHandle: meta.userHandle,
+                                      credentialID: meta.credentialID,
+                                      privateKeyRaw: privateKeyRaw, flags: flags)
+        }
+    }
+
     /// Flattens a projected item + its grant into the AutoFill cache shape.
-    private static func cacheEntry(item: VaultItem, grant: AccessGrant) -> SharedCredentialEntry? {
+    private static func cacheEntry(item: VaultItem, grant: AccessGrant,
+                                   passkeys: [SharedPasskeyEntry]?) -> SharedCredentialEntry? {
         // Tier-0 items must not leak title/username into the extension list.
         guard let origin = item.sharedOrigin, origin.deviceAuthorized else { return nil }
         let totpFieldId = grant.capabilities.first { $0.value.isAskEachTimeTOTP }?.key
+        // Hand-over TOTP: the seed is an ordinary shared field value on the
+        // projected item — surface it so the extension can generate codes.
+        let sharedTOTPSecret = grant.capabilities
+            .first { $0.value == .totp(.shared) }
+            .flatMap { pair in item.fields.first { $0.id == pair.key }?.value }
         return SharedCredentialEntry(
             itemID: item.id, title: item.title,
             websiteHost: normalizedHost(item.urlField?.value),
             username: item.usernameField?.value.isEmpty == false ? item.usernameField?.value : nil,
             password: item.passwordField?.value.isEmpty == false ? item.passwordField?.value : nil,
             zoneName: origin.zoneName, ownerName: origin.ownerName, grantId: origin.grantId,
-            askEachTimeTOTPFieldId: totpFieldId)
+            askEachTimeTOTPFieldId: totpFieldId,
+            sharedTOTPSecret: sharedTOTPSecret,
+            passkeys: (passkeys?.isEmpty == false) ? passkeys : nil)
     }
 
     /// The cache's host feeds QuickType registration (`.domain`-type service
@@ -264,7 +312,9 @@ import Foundation
                                       display: SharedDisplayEnvelope?,
                                       values: [String: Data]) -> VaultItem {
         var fields: [DynamicField] = []
-        for fieldId in values.keys.sorted() {
+        // Passkey slot blobs are PasskeySecret JSON, not display values — they
+        // feed the AutoFill cache, never a rendered field.
+        for fieldId in values.keys.sorted() where !PasskeySlot.isPasskeySlot(fieldId) {
             guard let data = values[fieldId],
                   let value = String(data: data, encoding: .utf8) else { continue }
             // Envelope metadata gives the field its real identity (username
