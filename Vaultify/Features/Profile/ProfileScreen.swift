@@ -29,6 +29,7 @@ struct ProfileScreen: View {
         ScrollView {
             VStack(spacing: 22) {
                 if let identity { avatarHeader(identity) }
+                personaSection
                 identitySection
                 paymentSection
             }
@@ -46,6 +47,74 @@ struct ProfileScreen: View {
         ProfileAvatarView(identity: identity)
             .frame(maxWidth: .infinity)
             .padding(.top, Space.s2)
+    }
+
+    /// The active persona — the identity you're currently acting as. Shows kind +
+    /// isolation, lets you switch, and is the home for persona + email management
+    /// (moved here from Settings so identities live with the profile).
+    @ViewBuilder private var personaSection: some View {
+        if let persona = env.repository.activePersona {
+            VStack(alignment: .leading, spacing: Space.s3) {
+                HStack(spacing: Space.s3) {
+                    PolarisIcon(PersonaKindStyle.icon(persona.kind), size: Metric.iconUtility)
+                        .themedForeground(.accent)
+                        .frame(width: 44, height: 44)
+                        .background(Color(rgb: env.theme.active.accentSoft),
+                                    in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: persona.displayName).vaultType(.headline).themedForeground()
+                        Text(verbatim: personaMeta(persona)).vaultType(.footnote).themedForeground(.secondary)
+                    }
+                    Spacer()
+                    if env.repository.personas.count > 1 {
+                        Menu {
+                            ForEach(env.repository.personas) { candidate in
+                                Button { env.repository.setActivePersona(candidate.id) } label: {
+                                    if candidate.id == persona.id {
+                                        Label { Text(verbatim: candidate.displayName) } icon: { PolarisIcon(Icons.checkCircle) }
+                                    } else {
+                                        Text(verbatim: candidate.displayName)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Text("Switch").vaultType(.subhead).themedForeground(.accent)
+                        }
+                    }
+                }
+                Divider().overlay(Color(rgb: env.theme.active.separator))
+                NavigationLink { PersonaSwitcherScreen() } label: {
+                    personaRowLabel("Manage personas", icon: Icons.person)
+                }
+                NavigationLink { PersonaAliasesScreen() } label: {
+                    personaRowLabel("Email aliases", icon: Icons.mail)
+                }
+            }
+            .padding(Space.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(rgb: env.theme.active.elevatedBackground))
+            .vaultCornerRadius(Radius.lg)
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5))
+        }
+    }
+
+    private func personaMeta(_ persona: Persona) -> String {
+        var parts = [PersonaKindStyle.label(persona.kind)]
+        if persona.isolationPolicy != .standard {
+            parts.append(PersonaKindStyle.policyLabel(persona.isolationPolicy))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func personaRowLabel(_ title: LocalizedStringKey, icon: String) -> some View {
+        HStack(spacing: Space.s3) {
+            PolarisIcon(icon, size: 18).themedForeground(.iconSecondary)
+            Text(title).vaultType(.body).themedForeground()
+            Spacer()
+            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+        }
+        .contentShape(.rect)
     }
 
     private var identitySection: some View {

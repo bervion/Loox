@@ -100,12 +100,8 @@ struct SettingsScreen: View {
                 .listRowBackground(VaultColors.surface)
 
                 Section("Organization") {
-                    NavigationLink { PersonaSwitcherScreen() } label: {
-                        Label { Text("Personas") } icon: { PolarisIcon(Icons.person) }
-                    }
-                    NavigationLink { PersonaAliasesScreen() } label: {
-                        Label { Text("Email aliases") } icon: { PolarisIcon(Icons.mail) }
-                    }
+                    // Personas + Email aliases now live in Profile (identities belong with
+                    // the profile, not buried in Settings).
                     NavigationLink { ManageFoldersScreen() } label: {
                         Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
                     }
