@@ -10,6 +10,7 @@ struct PersonaAliasesScreen: View {
     @State private var showingPerSiteEditor = false
     @State private var busyAliasID: String?
     @State private var errorMessage: String?
+    @State private var missingEmail = false
 
     private var persona: Persona? { env.repository.activePersona }
 
@@ -34,6 +35,11 @@ struct PersonaAliasesScreen: View {
         } message: {
             Text(verbatim: errorMessage ?? "")
         }
+        .alert(Text("Add an email first"), isPresented: $missingEmail) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Add an email to this identity’s profile — that’s where your aliases forward to.")
+        }
     }
 
     private var warningBanner: some View {
@@ -57,9 +63,11 @@ struct PersonaAliasesScreen: View {
                 aliasRow(alias, subtitle: persona.displayName)
             } else {
                 Button {
-                    if let id = try? env.repository.createPersonaAlias(for: persona),
-                       let created = env.repository.aliases.first(where: { $0.id == id }) {
-                        activate(created)
+                    guardEmail(persona) {
+                        if let id = try? env.repository.createPersonaAlias(for: persona),
+                           let created = env.repository.aliases.first(where: { $0.id == id }) {
+                            activate(created)
+                        }
                     }
                 } label: {
                     Label { Text("Reserve a private alias") } icon: { PolarisIcon(Icons.addCircle) }
@@ -75,7 +83,7 @@ struct PersonaAliasesScreen: View {
             ForEach(perSite) { alias in
                 aliasRow(alias, subtitle: alias.boundDomain)
             }
-            Button { showingPerSiteEditor = true } label: {
+            Button { guardEmail(persona) { showingPerSiteEditor = true } } label: {
                 Label { Text("Add per-site alias") } icon: { PolarisIcon(Icons.addCircle) }
             }
         }
@@ -86,16 +94,8 @@ struct PersonaAliasesScreen: View {
         // Full working address only when live+active — AliasAddress guarantees it.
         let address = AliasAddress.display(localPart: alias.localPart, status: alias.status,
                                            relayDomain: RelayConfig.emailDomain)
-        return Button {
-            switch alias.status {
-            case .active:
-                // Copy the working address (not a secret — no auto-clear urgency).
-                env.clipboard.copy(address, label: appString("Email aliases"), sensitive: false)
-            case .reserved:
-                activate(alias)
-            default:
-                break
-            }
+        return NavigationLink {
+            AliasDetailScreen(aliasID: alias.id)
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -112,9 +112,7 @@ struct PersonaAliasesScreen: View {
                         .themedForeground(alias.status == .active ? .accent : .secondary)
                 }
             }
-            .contentShape(.rect)
         }
-        .buttonStyle(.plain)
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) { remove(alias) } label: {
                 Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
@@ -125,6 +123,12 @@ struct PersonaAliasesScreen: View {
                 }
             }
         }
+    }
+
+    /// Aliases forward to the persona's real email — require one before creating.
+    private func guardEmail(_ persona: Persona, _ create: () -> Void) {
+        if env.repository.destinationEmail(for: persona) == nil { missingEmail = true }
+        else { create() }
     }
 
     private func statusLabel(_ status: AliasStatus) -> String {

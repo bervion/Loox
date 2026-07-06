@@ -36,6 +36,17 @@ extension VaultRepository {
         activePersona.flatMap { profileItem(for: $0) }
     }
 
+    /// The persona's REAL email — where its aliases forward. This is the profile
+    /// card's own `.email` field, excluding the written-back "Private email" alias
+    /// field (so the destination stays the real inbox, not the alias). nil when the
+    /// persona has no email yet (the UI then asks the user to add one first).
+    func destinationEmail(for persona: Persona) -> String? {
+        guard let card = profileItem(for: persona) else { return nil }
+        return card.fields.first {
+            $0.kind == .email && $0.label != AliasWriteback.privateEmailLabel && !$0.value.isEmpty
+        }?.value
+    }
+
     /// The username to represent a persona: its own profile item; the global
     /// default identity is used as a fallback ONLY when the persona is not
     /// strictly anonymous (INV-R03 — an anonymous persona never borrows another

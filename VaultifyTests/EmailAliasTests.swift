@@ -118,6 +118,50 @@ final class EmailAliasTests: XCTestCase {
         XCTAssertTrue(repo.aliases(forPersona: newID).isEmpty)  // cascade tombstoned them
     }
 
+    // MARK: Destination + write-back (relay destination feature)
+
+    func testAliasSecretBackendMintedBackwardDecodesFalse() throws {
+        let legacy = #"{"personaId":"p1","localPart":"x7k2"}"#
+        let secret = try JSONDecoder().decode(EmailAliasSecret.self, from: Data(legacy.utf8))
+        XCTAssertFalse(secret.backendMinted)   // absent → false
+        var minted = EmailAlias(personaId: "p", tier: .persona, localPart: "y", backendMinted: true)
+        minted.forwardingTarget = "me@x.com"
+        let sealed = try AESGCM.seal(JSONEncoder().encode(minted.secret), key: testKey)
+        let decoded = try JSONDecoder().decode(EmailAliasSecret.self, from: AESGCM.open(sealed, key: testKey))
+        XCTAssertTrue(decoded.backendMinted)
+        XCTAssertEqual(decoded.forwardingTarget, "me@x.com")
+    }
+
+    func testUpsertPrivateEmailAppendsOnceKeepsRealEmailFirst() {
+        var item = VaultItem(category: .identity, title: "Me",
+                             fields: [DynamicField(label: "Email", kind: .email, value: "me@real.com")])
+        item = AliasWriteback.upsertPrivateEmail(on: item, address: "nyx@relay.x")
+        let emails = item.fields.filter { $0.kind == .email }
+        XCTAssertEqual(emails.count, 2)
+        XCTAssertEqual(emails.first?.value, "me@real.com")   // real stays first (suggestions use it)
+        XCTAssertTrue(item.fields.contains { $0.label == "Private email" && $0.value == "nyx@relay.x" })
+        // Idempotent: re-activation updates the same field, never duplicates.
+        item = AliasWriteback.upsertPrivateEmail(on: item, address: "nyx2@relay.x")
+        XCTAssertEqual(item.fields.filter { $0.label == "Private email" }.count, 1)
+        XCTAssertEqual(item.fields.first { $0.label == "Private email" }?.value, "nyx2@relay.x")
+    }
+
+    func testDestinationEmailExcludesWrittenBackAlias() throws {
+        let repo = makeRepo()
+        // A persona created via addPersona has its own profile card (which starts
+        // without an email — so no forwarding destination yet).
+        let id = try repo.addPersona(displayName: "Work", kind: .professional, isolationPolicy: .standard)
+        let persona = repo.personas.first { $0.id == id }!
+        XCTAssertNil(repo.destinationEmail(for: persona))
+        repo.setDestinationEmail("me@real.com", for: persona)
+        XCTAssertEqual(repo.destinationEmail(for: persona), "me@real.com")
+        // Writing back an alias adds a "Private email" field — destination stays real.
+        if let card = repo.profileItem(for: persona) {
+            try repo.update(AliasWriteback.upsertPrivateEmail(on: card, address: "nyx@relay.x"))
+        }
+        XCTAssertEqual(repo.destinationEmail(for: persona), "me@real.com")
+    }
+
     func testEraseAllRemovesAliasRecords() throws {
         let repo = makeRepo()
         _ = try repo.createPersonaAlias(for: repo.activePersona!)

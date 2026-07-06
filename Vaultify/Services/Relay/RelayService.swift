@@ -2,13 +2,17 @@ import Foundation
 
 /// Orchestrates relay alias lifecycle against the live backend: resolves the
 /// Relay Principal (escrow), signs the canonical command, calls the control API,
-/// and mirrors the outcome into the vault's alias records. All state changes go
-/// through the repository so the UI observes them; a failed call never mutates
-/// local state (the alias stays reserved/active as it was).
+/// and mirrors the outcome into the vault. Local state changes only after a
+/// backend success — a failed call never lies about what is live.
+///
+/// "Create an alias" is two backend calls: createAlias (mint) then
+/// rotateDestination (set the persona's real email). The mint is checkpointed
+/// (`backendMinted`) so a failure between the two is resumable without orphaning.
 @MainActor final class RelayService {
     enum Failure: Error, Equatable {
         case vaultLocked
         case principalUnavailable   // escrow not reachable (no iCloud / offline)
+        case missingDestination     // the persona's profile has no email to forward to
         case network                // transport-level failure
         case rejected(String)       // backend refused (mapped reason, for UI copy)
     }
@@ -22,51 +26,74 @@ import Foundation
         self.session = session
     }
 
-    /// Activate a reserved alias on the relay. On a local-part collision the
-    /// alias is re-minted (new random local-part) and retried, up to 3 attempts.
+    /// Activate a reserved alias: mint it (if not already), point it at the
+    /// owning persona's real email, mark it active, and write the address back
+    /// onto the profile/login. Resumable: a retry after a mint resumes at
+    /// rotateDestination rather than re-minting.
     func activate(_ alias: EmailAlias) async throws {
+        guard let persona = repository.personas.first(where: { $0.id == alias.personaId }) else {
+            throw Failure.rejected("no_persona")
+        }
+        guard let destination = repository.destinationEmail(for: persona) else {
+            throw Failure.missingDestination
+        }
+
         var current = alias
-        for _ in 0..<3 {
-            do {
-                try await send(kind: .createAlias, aliasID: current.localPart,
-                               path: "/v1/relay/aliases", genesis: true)
-                try repository.setAliasStatus(current, to: .active)
-                return
-            } catch RelayAPIClient.Failure.aliasExists {
-                // Collision on the global namespace — re-mint and retry.
-                current.localPart = AliasAddress.randomLocalPart()
-                try repository.updateAlias(current)
-                if let refreshed = repository.aliases.first(where: { $0.id == current.id }) {
-                    current = refreshed
-                }
+        if !current.backendMinted {
+            current = try await mint(current)      // createAlias (+ collision re-mint)
+            try repository.markMinted(current)
+            current = repository.aliases.first { $0.id == current.id } ?? current
+        }
+
+        try await send(kind: .rotateDestination, aliasID: current.localPart, destination: destination,
+                       path: "/v1/relay/aliases/\(current.localPart)/destination")
+
+        var activated = current
+        activated.forwardingTarget = destination
+        try repository.updateAlias(activated)
+        if let refreshed = repository.aliases.first(where: { $0.id == activated.id }) {
+            try repository.setAliasStatus(refreshed, to: .active)
+        }
+        // Write-back is non-fatal — the backend state is already correct.
+        if let live = repository.aliases.first(where: { $0.id == activated.id }) {
+            switch live.tier {
+            case .persona: repository.attachAliasToProfile(live, persona: persona)
+            case .perSite: repository.attachAliasToLogin(live)
             }
         }
-        throw Failure.rejected("alias_exists")
     }
 
-    /// Disable an alias. Active aliases are disabled on the backend first; a
-    /// reserved/draft alias is local-only and needs no network.
+    /// Change a persona's real email: re-point every one of its aliases that the
+    /// backend knows about to the new destination. Sequential + idempotent — a
+    /// retry finishes any that didn't rotate.
+    func updateDestination(for persona: Persona, to email: String) async throws {
+        for alias in repository.aliases(forPersona: persona.id) where alias.backendMinted {
+            try await send(kind: .rotateDestination, aliasID: alias.localPart, destination: email,
+                           path: "/v1/relay/aliases/\(alias.localPart)/destination")
+            var updated = alias
+            updated.forwardingTarget = email
+            try repository.updateAlias(updated)
+        }
+    }
+
     func disable(_ alias: EmailAlias) async throws {
-        if alias.status == .active {
+        if alias.backendMinted || alias.status == .active {
             try await send(kind: .disableAlias, aliasID: alias.localPart,
                            path: "/v1/relay/aliases/\(alias.localPart)/disable")
         }
         try repository.setAliasStatus(alias, to: .disabled)
     }
 
-    /// Delete an alias. Active aliases are deleted on the backend first.
     func delete(_ alias: EmailAlias) async throws {
-        if alias.status == .active {
+        if alias.backendMinted || alias.status == .active {
             try await send(kind: .deleteAlias, aliasID: alias.localPart,
                            path: "/v1/relay/aliases/\(alias.localPart)", method: "DELETE")
         }
         try repository.deleteAlias(alias)
     }
 
-    /// Disable every alias of this principal — the Erase-Vault teardown step.
-    /// MUST succeed (durable backend ack) before a vault with active aliases may
-    /// be erased; the caller blocks the erase on failure (privacy invariant:
-    /// "erase" must not leave anonymous addresses forwarding forever).
+    /// Disable every alias of this principal — the Erase-Vault teardown step. MUST
+    /// succeed (durable backend ack) before a vault with active aliases is erased.
     func disableAllForErase() async throws {
         guard repository.aliases.contains(where: { $0.status == .active }) else { return }
         try await send(kind: .disableAll, aliasID: nil, path: "/v1/relay/principal/disable-all")
@@ -77,8 +104,26 @@ import Foundation
 
     // MARK: Internals
 
-    private func send(kind: RelayCommandKind, aliasID: String?, path: String,
-                      method: String = "POST", genesis: Bool = false) async throws {
+    /// createAlias with collision re-mint (up to 3 tries). Returns the (possibly
+    /// re-minted) alias whose local-part the backend accepted.
+    private func mint(_ alias: EmailAlias) async throws -> EmailAlias {
+        var current = alias
+        for _ in 0..<3 {
+            do {
+                try await send(kind: .createAlias, aliasID: current.localPart,
+                               path: "/v1/relay/aliases", genesis: true)
+                return current
+            } catch RelayAPIClient.Failure.aliasExists {
+                current.localPart = AliasAddress.randomLocalPart()
+                try repository.updateAlias(current)
+                current = repository.aliases.first { $0.id == current.id } ?? current
+            }
+        }
+        throw Failure.rejected("alias_exists")
+    }
+
+    private func send(kind: RelayCommandKind, aliasID: String?, destination: String? = nil,
+                      path: String, method: String = "POST", genesis: Bool = false) async throws {
         guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
         let principal: RelayPrincipalIdentity
         do { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
@@ -87,10 +132,8 @@ import Foundation
         let command = RelayCommand(principalID: principal.principalID, epoch: principal.epoch,
                                    nonce: Data(CryptoRandom.bytes(16)),
                                    issuedAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
-                                   kind: kind, aliasID: aliasID)
+                                   kind: kind, aliasID: aliasID, destination: destination)
         let signature = try RelayCommandCanonical.sign(command, using: principal).signature
-        // public_key rides ONLY while the principal is at genesis epoch — the
-        // backend self-registers the principal on its first createAlias.
         let genesisKey = (genesis && principal.epoch == 1) ? principal.signingPublicKey : nil
 
         do {
@@ -99,7 +142,7 @@ import Foundation
         } catch let failure as RelayAPIClient.Failure {
             switch failure {
             case .transport: throw Failure.network
-            case .aliasExists: throw failure   // handled by activate's retry loop
+            case .aliasExists: throw failure   // handled by mint's retry loop
             case .unauthorized: throw Failure.rejected("unauthorized")
             case .nonceReplay: throw Failure.rejected("nonce_replay")
             case .epochStale: throw Failure.rejected("epoch_stale")

@@ -23,6 +23,7 @@ extension VaultRepository {
                           status: secret.status,
                           forwardingTarget: secret.forwardingTarget,
                           disabledAt: secret.disabledAt,
+                          backendMinted: secret.backendMinted,
                           sortIndex: record.sortIndex,
                           createdAt: record.createdAt,
                           updatedAt: record.updatedAt)
