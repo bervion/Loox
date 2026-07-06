@@ -75,6 +75,7 @@ import UserNotifications
         personas = loadPersonas(key: key)
         ensurePersonaExists(key: key)
         normalizeDefaultPersona()
+        mirrorActivePersonaContext()
     }
 
     /// Reload after a CloudKit pull — same as `reload()` plus the duplicate
@@ -245,6 +246,18 @@ import UserNotifications
         record.isDefault = isDefault
         record.updatedAt = now
         record.dirty = true
+    }
+
+    /// Mirror the active persona's isolation policy + profile item id into the
+    /// App Group so the AutoFill extension (which can't read the app's local
+    /// `activePersonaID`) honors isolation. Only an opaque enum + UUID cross over —
+    /// no identity-bearing plaintext; the extension resolves the email under the
+    /// Vault Key. Called on every reload and every active-persona switch.
+    func mirrorActivePersonaContext() {
+        let defaults = SharedConfig.sharedDefaults
+        let persona = activePersona
+        defaults.set(persona?.isolationPolicy.rawValue, forKey: SharedConfig.activePersonaPolicyKey)
+        defaults.set(persona?.primaryProfileItemID, forKey: SharedConfig.activePersonaProfileItemKey)
     }
 
     // MARK: CRUD

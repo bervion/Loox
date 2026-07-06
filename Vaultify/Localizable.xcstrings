@@ -6852,6 +6852,72 @@
         }
       }
     },
+    "Suggested email": {
+      "comment": "Header above tap-to-fill username suggestions in the new-login editor.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Email gợi ý" } }
+      }
+    },
+    "Edit persona": {
+      "comment": "Title of the edit-persona sheet.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Sửa danh tính" } }
+      }
+    },
+    "Standard": {
+      "comment": "Persona isolation policy.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Tiêu chuẩn" } }
+      }
+    },
+    "Isolated": {
+      "comment": "Persona isolation policy.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Tách biệt" } }
+      }
+    },
+    "Strictly anonymous": {
+      "comment": "Persona isolation policy.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Ẩn danh tuyệt đối" } }
+      }
+    },
+    "Suggestions and search can include your other identities.": {
+      "comment": "Standard isolation policy explanation.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Gợi ý và tìm kiếm có thể bao gồm các danh tính khác của bạn." } }
+      }
+    },
+    "Prefers this identity but still shows others.": {
+      "comment": "Isolated policy explanation.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Ưu tiên danh tính này nhưng vẫn hiển thị các danh tính khác." } }
+      }
+    },
+    "Never suggests or searches your other identities.": {
+      "comment": "Strictly anonymous policy explanation.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Không bao giờ gợi ý hay tìm trong các danh tính khác của bạn." } }
+      }
+    },
+    "Can’t delete this identity": {
+      "comment": "Title of the delete-blocked alert.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Không thể xóa danh tính này" } }
+      }
+    },
+    "You need at least one identity.": {
+      "comment": "Delete blocked because it is the last persona.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Bạn cần ít nhất một danh tính." } }
+      }
+    },
+    "Make another identity the default first.": {
+      "comment": "Delete blocked because it is the default persona.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Hãy đặt một danh tính khác làm mặc định trước." } }
+      }
+    },
     "Search your vault": {
       "localizations": {
         "en": {

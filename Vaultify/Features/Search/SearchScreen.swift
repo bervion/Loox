@@ -47,10 +47,11 @@ struct SearchResultsList: View {
         return saved
     }
 
-    /// Shared-with-Me is offered as a scope only when there is something to show —
-    /// mirrors the Items screen's pseudo-space gate.
+    /// Shared-with-Me is offered as a scope only when there is something to show
+    /// (mirrors the Items screen's pseudo-space gate) AND the active persona's
+    /// isolation allows cross-persona surfaces — never under strictAnonymous.
     private var showsSharedScope: Bool {
-        env.settings.approvalModeEnabled || !env.sharedItems.items.isEmpty
+        env.repository.showsSharedScope(base: env.settings.approvalModeEnabled || !env.sharedItems.items.isEmpty)
     }
 
     private var availableScopes: [SpaceScope] {
@@ -93,11 +94,13 @@ struct SearchResultsList: View {
         .onAppear(perform: seedScope)
     }
 
-    /// Seed the default scope once: the current Home Space if set, else All Spaces.
+    /// Seed the default scope once. Delegated to the repository so isolation is
+    /// fail-closed: a strictAnonymous persona is never seeded to `.allSpaces` (which
+    /// would run a global cross-persona search even with the chip hidden).
     private func seedScope() {
         guard !didSeedScope else { return }
         didSeedScope = true
-        scope = currentSpaceId.map { .thisSpace(id: $0) } ?? .allSpaces
+        scope = env.repository.defaultSearchScope(currentSpaceId: currentSpaceId)
     }
 
     @ViewBuilder private var scopeChips: some View {
