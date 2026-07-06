@@ -93,7 +93,7 @@ struct OnboardingFlow: View {
             displayName: displayName, email: email, fallback: appString("Me"),
             note: note, tag: tag)
         // File the seed into "My Vault" (matches the editor's default) so it isn't Unfiled.
-        identity.folderId = defaultFolderId ?? env.repository.folders.first?.id
+        identity.folderId = defaultFolderId ?? env.repository.primarySpaceId
         try? env.repository.add(identity)
     }
 
@@ -115,7 +115,7 @@ struct OnboardingFlow: View {
 
         let item = VaultItem(category: .login,
                              title: "\(appString("Loox Account")) (\(displayName))",
-                             folderId: defaultFolderId ?? env.repository.folders.first?.id,
+                             folderId: defaultFolderId ?? env.repository.primarySpaceId,
                              fields: fields, tags: [tag])
         try? env.repository.add(item)
     }

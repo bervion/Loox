@@ -32,6 +32,8 @@ final class VaultStore {
             ? ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             : ModelConfiguration(url: SharedConfig.storeURL, cloudKitDatabase: .none)
         return try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self,
+                                  PersonaRecord.self, EmailAliasRecord.self,
+                                  ForwardingInboxRecord.self,
                                   configurations: configuration)
     }
 
@@ -41,6 +43,9 @@ final class VaultStore {
         try context.delete(model: ItemRecord.self)
         try context.delete(model: FolderRecord.self)
         try context.delete(model: PasskeyRecord.self)
+        try context.delete(model: PersonaRecord.self)
+        try context.delete(model: EmailAliasRecord.self)
+        try context.delete(model: ForwardingInboxRecord.self)
         try context.save()
     }
 
@@ -204,6 +209,184 @@ final class VaultStore {
     /// push snapshot (an edit during the in-flight push must stay dirty).
     @MainActor
     func markFolderSynced(_ record: FolderRecord, changeTag: String?, snapshotUpdatedAt: Date) {
+        record.ckChangeTag = changeTag
+        if record.updatedAt == snapshotUpdatedAt {
+            record.dirty = false
+        }
+        try? context.save()
+    }
+
+    // MARK: Persona sync access (sealed identity content + plaintext default/sort)
+
+    @MainActor
+    func allPersonaRecords() -> [PersonaRecord] {
+        (try? context.fetch(FetchDescriptor<PersonaRecord>())) ?? []
+    }
+
+    @MainActor
+    func personaRecord(id: String) -> PersonaRecord? {
+        var descriptor = FetchDescriptor<PersonaRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Last-writer-wins upsert of a remote persona record (sealed + metadata).
+    /// Single content gate keyed on `updatedAt`; `isDefault` rides that gate (it
+    /// is written together with a `updatedAt` bump, like `isDefaultIdentity` on an
+    /// item), so the converged default can never be dropped as a column-only edit.
+    @MainActor
+    func upsertPersonaFromRemote(id: String, sealed: Data, isDefault: Bool, sortIndex: Int,
+                                 deletedAt: Date?, createdAt: Date, updatedAt: Date,
+                                 changeTag: String?) {
+        if let existing = personaRecord(id: id) {
+            // Same server revision already merged — skip regardless of clocks.
+            if let changeTag, changeTag == existing.ckChangeTag { return }
+            guard updatedAt > existing.updatedAt else {
+                // Server holds a different, strictly-older revision → an out-of-order
+                // push overwrote it; re-push the local winner (see folder analogue).
+                if existing.updatedAt > updatedAt {
+                    existing.dirty = true
+                    try? context.save()
+                }
+                return
+            }
+            existing.sealed = sealed
+            existing.isDefault = isDefault
+            existing.sortIndex = sortIndex
+            existing.deletedAt = deletedAt
+            existing.updatedAt = updatedAt
+            existing.ckChangeTag = changeTag
+            existing.dirty = false
+        } else {
+            let record = PersonaRecord(id: id, sealed: sealed, isDefault: isDefault,
+                                       sortIndex: sortIndex, createdAt: createdAt, updatedAt: updatedAt)
+            record.deletedAt = deletedAt
+            record.ckChangeTag = changeTag
+            record.dirty = false
+            context.insert(record)
+        }
+        try? context.save()
+    }
+
+    /// Persona analogue of `markSynced` — clear `dirty` only if unchanged since the
+    /// push snapshot (an edit during the in-flight push must stay dirty).
+    @MainActor
+    func markPersonaSynced(_ record: PersonaRecord, changeTag: String?, snapshotUpdatedAt: Date) {
+        record.ckChangeTag = changeTag
+        if record.updatedAt == snapshotUpdatedAt {
+            record.dirty = false
+        }
+        try? context.save()
+    }
+
+    // MARK: Email-alias sync access (sealed content + plaintext sort/sync metadata)
+
+    @MainActor
+    func allAliasRecords() -> [EmailAliasRecord] {
+        (try? context.fetch(FetchDescriptor<EmailAliasRecord>())) ?? []
+    }
+
+    @MainActor
+    func aliasRecord(id: String) -> EmailAliasRecord? {
+        var descriptor = FetchDescriptor<EmailAliasRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Last-writer-wins upsert of a remote alias record (sealed + metadata). Single
+    /// content gate keyed on `updatedAt` (status/tier ride the sealed blob, so any
+    /// change bumps `updatedAt`).
+    @MainActor
+    func upsertAliasFromRemote(id: String, sealed: Data, sortIndex: Int,
+                               deletedAt: Date?, createdAt: Date, updatedAt: Date,
+                               changeTag: String?) {
+        if let existing = aliasRecord(id: id) {
+            if let changeTag, changeTag == existing.ckChangeTag { return }
+            guard updatedAt > existing.updatedAt else {
+                if existing.updatedAt > updatedAt {
+                    existing.dirty = true
+                    try? context.save()
+                }
+                return
+            }
+            existing.sealed = sealed
+            existing.sortIndex = sortIndex
+            existing.deletedAt = deletedAt
+            existing.updatedAt = updatedAt
+            existing.ckChangeTag = changeTag
+            existing.dirty = false
+        } else {
+            let record = EmailAliasRecord(id: id, sealed: sealed, sortIndex: sortIndex,
+                                          createdAt: createdAt, updatedAt: updatedAt)
+            record.deletedAt = deletedAt
+            record.ckChangeTag = changeTag
+            record.dirty = false
+            context.insert(record)
+        }
+        try? context.save()
+    }
+
+    /// Alias analogue of `markSynced` — clear `dirty` only if unchanged since the
+    /// push snapshot (an edit during the in-flight push must stay dirty).
+    @MainActor
+    func markAliasSynced(_ record: EmailAliasRecord, changeTag: String?, snapshotUpdatedAt: Date) {
+        record.ckChangeTag = changeTag
+        if record.updatedAt == snapshotUpdatedAt {
+            record.dirty = false
+        }
+        try? context.save()
+    }
+
+    // MARK: Forwarding-inbox sync access (mirrors the alias block exactly)
+
+    @MainActor
+    func allInboxRecords() -> [ForwardingInboxRecord] {
+        (try? context.fetch(FetchDescriptor<ForwardingInboxRecord>())) ?? []
+    }
+
+    @MainActor
+    func inboxRecord(id: String) -> ForwardingInboxRecord? {
+        var descriptor = FetchDescriptor<ForwardingInboxRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Last-writer-wins upsert of a remote inbox record — single content gate
+    /// keyed on `updatedAt` (email/default flag ride the sealed blob).
+    @MainActor
+    func upsertInboxFromRemote(id: String, sealed: Data, sortIndex: Int,
+                               deletedAt: Date?, createdAt: Date, updatedAt: Date,
+                               changeTag: String?) {
+        if let existing = inboxRecord(id: id) {
+            if let changeTag, changeTag == existing.ckChangeTag { return }
+            guard updatedAt > existing.updatedAt else {
+                if existing.updatedAt > updatedAt {
+                    existing.dirty = true
+                    try? context.save()
+                }
+                return
+            }
+            existing.sealed = sealed
+            existing.sortIndex = sortIndex
+            existing.deletedAt = deletedAt
+            existing.updatedAt = updatedAt
+            existing.ckChangeTag = changeTag
+            existing.dirty = false
+        } else {
+            let record = ForwardingInboxRecord(id: id, sealed: sealed, sortIndex: sortIndex,
+                                               createdAt: createdAt, updatedAt: updatedAt)
+            record.deletedAt = deletedAt
+            record.ckChangeTag = changeTag
+            record.dirty = false
+            context.insert(record)
+        }
+        try? context.save()
+    }
+
+    /// Inbox analogue of `markSynced` — clear `dirty` only if unchanged since the
+    /// push snapshot (an edit during the in-flight push must stay dirty).
+    @MainActor
+    func markInboxSynced(_ record: ForwardingInboxRecord, changeTag: String?, snapshotUpdatedAt: Date) {
         record.ckChangeTag = changeTag
         if record.updatedAt == snapshotUpdatedAt {
             record.dirty = false

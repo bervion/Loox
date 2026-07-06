@@ -80,7 +80,7 @@ struct ItemsScreen: View {
         VStack(alignment: .leading, spacing: Space.s2) {
             sectionHeader("Spaces")
             groupedCard {
-                ForEach(env.repository.folders) { folder in
+                ForEach(env.repository.activePersonaSpaces) { folder in
                     navRow(VaultRoute.folder(folder.id), title: Text(verbatim: folder.name),
                            count: env.repository.itemCount(for: folder.id), showDivider: true) {
                         FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)

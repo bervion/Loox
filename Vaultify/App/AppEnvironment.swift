@@ -8,6 +8,8 @@ import SwiftUI
     let session: VaultSession
     let store: VaultStore
     let repository: VaultRepository
+    /// Email-relay control plane (alias activate/disable/delete, erase teardown).
+    let relay: RelayService
     let clipboard: ClipboardService
     let cloudSync: CloudSyncService
     /// Schedules sync runs (immediate on unlock/activate, debounced after mutations).
@@ -64,6 +66,7 @@ import SwiftUI
         self.store = store
         let repository = VaultRepository(store: store, session: session)
         self.repository = repository
+        self.relay = RelayService(repository: repository, session: session)
         self.clipboard = ClipboardService(settings: settings)
         let cloudSync = CloudSyncService(store: store, settings: settings)
         self.cloudSync = cloudSync
@@ -130,6 +133,9 @@ import SwiftUI
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).
         ParticipantEscrowService.clearLocalCache()
+        // Relay Principal: local cache dies here; the remote escrow record dies
+        // with the "Vault" zone that eraseRemote() drops (no extra remote call).
+        RelayPrincipalEscrowService.clearLocalCache()
         SharedZoneSubscriptionService.clearLocalFlag()
         settings.approvalModeEnabled = false
         settings.iCloudSyncEnabled = false

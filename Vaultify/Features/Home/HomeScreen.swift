@@ -18,6 +18,9 @@ struct HomeScreen: View {
     @State private var showTotpList = false
     @State private var showFolderPicker = false
     @State private var selectedFolderId: String?
+    /// Guards the once-per-launch restore of the remembered Space so it can't
+    /// clobber a selection the user makes after launch.
+    @State private var didRestoreSelectedSpace = false
     @State private var sortOrder: VaultSort = .updated
     @State private var scrolledUnder = false
     /// Cached Watchtower issue count for the quick-action badge (recomputed on appear and
@@ -63,9 +66,36 @@ struct HomeScreen: View {
     private func autoSelectSingleSpace() {
         // With shared items in play there are effectively TWO sources —
         // stay on "All Spaces" so the shares are never filtered out.
-        guard selectedFolderId == nil, env.repository.folders.count == 1,
+        guard selectedFolderId == nil, env.repository.activePersonaSpaces.count == 1,
               env.sharedItems.items.isEmpty else { return }
-        selectedFolderId = env.repository.folders.first?.id
+        selectedFolderId = env.repository.primarySpaceId
+    }
+
+    /// Restore the Space filter remembered from a previous launch. Runs once per
+    /// launch, before `autoSelectSingleSpace`, so a remembered choice wins. A
+    /// remembered Space deleted on another device (stale id) falls back to
+    /// "All Spaces" rather than showing an empty filter.
+    private func restoreSelectedSpace() {
+        guard !didRestoreSelectedSpace else { return }
+        didRestoreSelectedSpace = true
+        applyRememberedSpace()
+    }
+
+    /// The persistence bucket key for the active persona. Falls back to the shared
+    /// placeholder before the persona seed lands (or if the resolver is momentarily
+    /// nil) so the key stays stable — no crash, no bucket churn.
+    private var activePersonaKey: String {
+        env.repository.activePersona?.id ?? PersonaID.placeholder
+    }
+
+    /// Apply the Space remembered for the active persona, validated against live
+    /// folders (a stale id → All Spaces). Reused on active-persona change so the
+    /// Home filter follows the persona.
+    private func applyRememberedSpace() {
+        let saved = env.settings.lastSelectedSpace(persona: activePersonaKey)
+        selectedFolderId = saved.flatMap { id in
+            env.repository.activePersonaSpaces.contains { $0.id == id } ? id : nil
+        }
     }
 
     var body: some View {
@@ -101,13 +131,17 @@ struct HomeScreen: View {
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
-            .task { recomputeWatchtowerCount(); autoSelectSingleSpace() }
+            .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
+            // Remember the Home Space across launches (per identity; device-local, not synced).
+            .onChange(of: selectedFolderId) { env.settings.setLastSelectedSpace($1, persona: activePersonaKey) }
+            // Switching the active persona re-drives the Home filter to that persona's Space.
+            .onChange(of: env.repository.activePersona?.id) { applyRememberedSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
-            .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
+            .onChange(of: env.repository.activePersonaSpaces.count) { autoSelectSingleSpace() }
             // First share arriving on a single-Space setup: release the
             // auto-selected filter so the shared item is actually visible.
             .onChange(of: env.sharedItems.items.count) { old, new in
-                if old == 0, new > 0, env.repository.folders.count == 1 {
+                if old == 0, new > 0, env.repository.activePersonaSpaces.count == 1 {
                     selectedFolderId = nil
                 }
             }
@@ -215,15 +249,16 @@ struct HomeScreen: View {
 
     // MARK: Profile row
 
-    private var profileEmail: String? {
-        guard let value = env.repository.defaultIdentity?.fields.first(where: { $0.kind == .email })?.value,
-              !value.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        return value
-    }
-
-    /// "Name · email" on one line; falls back to whichever part exists.
-    private func profileSubtitle(name: String) -> String {
-        [name, profileEmail].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: ", ")
+    /// Subtitle under the active persona name: its kind, plus that persona's own
+    /// email when resolvable. Uses the persona-scoped resolver so a strictAnonymous
+    /// persona never shows another identity's email (INV-R03).
+    private var personaSubtitle: String {
+        guard let persona = env.repository.activePersona else { return appString("Set up your identity") }
+        let kind = PersonaKindStyle.label(persona.kind)
+        if let email = env.repository.identityUsername(forPersona: persona), !email.isEmpty {
+            return "\(kind) · \(email)"
+        }
+        return kind
     }
 
     /// Profile entry row above the quick actions: avatar + "Profile" title + the default
@@ -233,15 +268,12 @@ struct HomeScreen: View {
             HStack(spacing: Space.s3) {
                 profileAvatar
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Profile").vaultType(.headline).themedForeground()
-                    if let identity = env.repository.defaultIdentity {
-                        // Name + email on a single line (email appended after the name).
-                        Text(verbatim: profileSubtitle(name: identity.title))
-                            .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
-                    } else {
-                        Text("Set up your identity")
-                            .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
-                    }
+                    // The active persona is the header identity — always visible so it's
+                    // clear which identity you're acting as. Tapping opens Profile to switch.
+                    Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
+                        .vaultType(.headline).themedForeground().lineLimit(1)
+                    Text(verbatim: personaSubtitle)
+                        .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: Space.s2)
                 PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
@@ -262,7 +294,9 @@ struct HomeScreen: View {
     /// 44pt circular avatar — stored image, letter-avatar, or a person glyph when no identity.
     @ViewBuilder private var profileAvatar: some View {
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        if let identity = env.repository.defaultIdentity {
+        // The ACTIVE persona's own card — never another persona's (an anonymous
+        // persona must not wear the personal photo).
+        if let identity = env.repository.activeProfileItem {
             if let image = env.repository.avatarImage(for: identity.id) {
                 Image(platformImage: image).resizable().scaledToFill()
                     .frame(width: 44, height: 44).clipShape(shape)
@@ -432,7 +466,7 @@ struct HomeScreen: View {
 
     /// Selected Space name, or the localized "All Spaces" fallback (nil filter).
     private var spaceTitleText: Text {
-        if let id = selectedFolderId, let folder = env.repository.folders.first(where: { $0.id == id }) {
+        if let id = selectedFolderId, let folder = env.repository.activePersonaSpaces.first(where: { $0.id == id }) {
             return Text(verbatim: folder.name)
         }
         return Text("All Spaces")

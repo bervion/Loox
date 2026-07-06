@@ -13,8 +13,13 @@ struct ProfileScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var editing: EditorTarget?
 
-    private var identity: VaultItem? { env.repository.defaultIdentity }
-    private var identities: [VaultItem] { env.repository.activeIdentities }
+    /// Profile follows the ACTIVE persona: its own profile card, and a picker pool
+    /// limited to identities that persona owns (never another persona's — INV-R03).
+    private var identity: VaultItem? { env.repository.activeProfileItem }
+    private var identities: [VaultItem] {
+        guard let persona = env.repository.activePersona else { return env.repository.activeIdentities }
+        return env.repository.items(for: persona).filter { $0.category == .identity }
+    }
     private var cards: [VaultItem] { env.repository.items.filter { $0.category == .card } }
 
     /// The card shown in the Payment section: the device-local pick, else the first card.
@@ -29,6 +34,7 @@ struct ProfileScreen: View {
         ScrollView {
             VStack(spacing: 22) {
                 if let identity { avatarHeader(identity) }
+                personaSection
                 identitySection
                 paymentSection
             }
@@ -48,6 +54,74 @@ struct ProfileScreen: View {
             .padding(.top, Space.s2)
     }
 
+    /// The active persona — the identity you're currently acting as. Shows kind +
+    /// isolation, lets you switch, and is the home for persona + email management
+    /// (moved here from Settings so identities live with the profile).
+    @ViewBuilder private var personaSection: some View {
+        if let persona = env.repository.activePersona {
+            VStack(alignment: .leading, spacing: Space.s3) {
+                HStack(spacing: Space.s3) {
+                    PolarisIcon(PersonaKindStyle.icon(persona.kind), size: Metric.iconUtility)
+                        .themedForeground(.accent)
+                        .frame(width: 44, height: 44)
+                        .background(Color(rgb: env.theme.active.accentSoft),
+                                    in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: persona.displayName).vaultType(.headline).themedForeground()
+                        Text(verbatim: personaMeta(persona)).vaultType(.footnote).themedForeground(.secondary)
+                    }
+                    Spacer()
+                    if env.repository.personas.count > 1 {
+                        Menu {
+                            ForEach(env.repository.personas) { candidate in
+                                Button { env.repository.setActivePersona(candidate.id) } label: {
+                                    if candidate.id == persona.id {
+                                        Label { Text(verbatim: candidate.displayName) } icon: { PolarisIcon(Icons.checkCircle) }
+                                    } else {
+                                        Text(verbatim: candidate.displayName)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Text("Switch").vaultType(.subhead).themedForeground(.accent)
+                        }
+                    }
+                }
+                Divider().overlay(Color(rgb: env.theme.active.separator))
+                NavigationLink { PersonaSwitcherScreen() } label: {
+                    personaRowLabel("Manage personas", icon: Icons.person)
+                }
+                NavigationLink { PersonaAliasesScreen() } label: {
+                    personaRowLabel("Private Email", icon: Icons.mail)
+                }
+            }
+            .padding(Space.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(rgb: env.theme.active.elevatedBackground))
+            .vaultCornerRadius(Radius.lg)
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5))
+        }
+    }
+
+    private func personaMeta(_ persona: Persona) -> String {
+        var parts = [PersonaKindStyle.label(persona.kind)]
+        if persona.isolationPolicy != .standard {
+            parts.append(PersonaKindStyle.policyLabel(persona.isolationPolicy))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func personaRowLabel(_ title: LocalizedStringKey, icon: String) -> some View {
+        HStack(spacing: Space.s3) {
+            PolarisIcon(icon, size: 18).themedForeground(.iconSecondary)
+            Text(title).vaultType(.body).themedForeground()
+            Spacer()
+            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+        }
+        .contentShape(.rect)
+    }
+
     private var identitySection: some View {
         ProfileSectionCard(
             title: "Identity",
@@ -57,7 +131,15 @@ struct ProfileScreen: View {
             selected: identity,
             pool: identities,
             onEdit: { if let identity { editing = .edit(identity) } },
-            onChoose: { env.repository.setDefaultIdentity($0) },
+            onChoose: { item in
+                // Re-point the ACTIVE persona's profile card (for the default
+                // persona this also moves the synced default-identity marker).
+                if let persona = env.repository.activePersona {
+                    env.repository.setProfileItem(item, for: persona)
+                } else {
+                    env.repository.setDefaultIdentity(item)
+                }
+            },
             onCreate: { editing = .new(.identity) })
     }
 

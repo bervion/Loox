@@ -125,7 +125,7 @@ struct HomeFolderPickerSheet: View {
                              iconColor: env.theme.active.color(.iconSecondary))
                     } action: { select(nil) }
 
-                    ForEach(env.repository.folders) { folder in
+                    ForEach(env.repository.activePersonaSpaces) { folder in
                         spaceRow(name: Text(verbatim: folder.name),
                                  count: env.repository.itemCount(for: folder.id),
                                  selected: selectedFolderId == folder.id) {

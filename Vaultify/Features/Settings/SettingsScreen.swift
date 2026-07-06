@@ -6,6 +6,25 @@ struct SettingsScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
     @State private var confirmErase = false
+    @State private var erasing = false
+    @State private var relayBlockErase = false
+
+    /// Erase, but tear down live relay aliases first. If the vault has active
+    /// aliases and the relay can't be reached, the erase is BLOCKED (an "erase"
+    /// must never leave anonymous addresses forwarding to a real inbox forever).
+    /// With no active aliases (the common case) this awaits nothing meaningful.
+    private func eraseWithRelayTeardown() {
+        guard env.repository.aliases.contains(where: { $0.status == .active }) else {
+            env.eraseEverything(); return
+        }
+        erasing = true
+        Task {
+            defer { erasing = false }
+            do { try await env.relay.disableAllForErase() }
+            catch { relayBlockErase = true; return }   // offline / unreachable → block
+            env.eraseEverything()
+        }
+    }
 
     private var biometricBinding: Binding<Bool> {
         Binding(
@@ -100,6 +119,8 @@ struct SettingsScreen: View {
                 .listRowBackground(VaultColors.surface)
 
                 Section("Organization") {
+                    // Personas + Email aliases now live in Profile (identities belong with
+                    // the profile, not buried in Settings).
                     NavigationLink { ManageFoldersScreen() } label: {
                         Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
                     }
@@ -189,8 +210,13 @@ struct SettingsScreen: View {
                 }
                 .listRowBackground(VaultColors.surface)
             }
+            .alert(Text("Network needed"), isPresented: $relayBlockErase) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Connect to the internet so your private-email aliases can be turned off before erasing.")
+            }
             .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
-                Button("Erase Everything", role: .destructive) { env.eraseEverything() }
+                Button("Erase Everything", role: .destructive) { eraseWithRelayTeardown() }
             } message: {
                 Text("This permanently deletes every item and key on this device. This cannot be undone.")
             }

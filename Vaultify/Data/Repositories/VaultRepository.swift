@@ -15,6 +15,12 @@ import UserNotifications
     private(set) var archived: [VaultItem] = []
     private(set) var folders: [Folder] = []
     private(set) var passkeys: [PasskeyInfo] = []
+    private(set) var personas: [Persona] = []
+    private(set) var aliases: [EmailAlias] = []
+    /// Internal(set) — `ensureProfileInboxes` (extension) patches it in place
+    /// during reload, the same "never reload() from within reload" rule the
+    /// persona helpers follow.
+    var forwardingInboxes: [ForwardingInbox] = []
 
     init(store: VaultStore, session: VaultSession) {
         self.store = store
@@ -29,6 +35,9 @@ import UserNotifications
         archived = []
         folders = []
         passkeys = []
+        personas = []
+        aliases = []
+        forwardingInboxes = []
         CredentialIdentityService.clear()
     }
 
@@ -68,6 +77,18 @@ import UserNotifications
             pendingSeedFolderMerge = false
             mergeDuplicateSeedFolders(key: key)
         }
+        // Personas load AFTER folders + identity so the seed can link the default
+        // identity + primary Space. Both helpers patch state in place — never reload().
+        personas = loadPersonas(key: key)
+        ensurePersonaExists(key: key)
+        normalizeDefaultPersona()
+        migratePartition(key: key)
+        mirrorActivePersonaContext()
+        aliases = loadAliases(key: key)
+        // Inboxes load after personas + items so profile-email derivation sees
+        // the persona's card; derivation patches the cache in place.
+        forwardingInboxes = loadInboxes(key: key)
+        ensureProfileInboxes(key: key)
     }
 
     /// Reload after a CloudKit pull — same as `reload()` plus the duplicate
@@ -176,6 +197,149 @@ import UserNotifications
         record.isDefaultIdentity = isDefault
         record.updatedAt = now
         record.dirty = true
+    }
+
+    // MARK: Persona invariants (run at the tail of reload(); patch in place)
+
+    /// Seed the bootstrap Personal persona when none exists — covers both a fresh
+    /// install and an existing vault upgrading to personas. Idempotent and
+    /// multi-device-safe: the fixed bootstrap id means two devices seeding offline
+    /// collide on one record (sync LWW merges them, no duplicate-merge pass needed).
+    /// Links the current default identity + primary Space. Patches `personas` in
+    /// place and never calls `reload()` (mirrors `normalizeDefaultIdentity`).
+    func ensurePersonaExists(key: SecureBytes) {
+        guard personas.isEmpty else { return }
+        let now = Date()
+        let persona = Persona(id: Persona.bootstrapPersonalID,
+                              displayName: appString("Personal"),
+                              kind: .personal,
+                              primaryProfileItemID: defaultIdentity?.id,
+                              primarySpaceID: folders.first?.id,
+                              isDefault: true,
+                              createdAt: now, updatedAt: now)
+        guard let sealed = try? sealPersona(persona, key: key) else { return }
+        let record = PersonaRecord(id: persona.id, sealed: sealed, isDefault: true,
+                                   sortIndex: 0, createdAt: now, updatedAt: now)
+        store.context.insert(record)
+        try? store.context.save()
+        personas = [persona]
+        noteLocalMutation()
+    }
+
+    /// Converge to exactly one default persona (sync can transiently produce zero
+    /// or two; winner = most recently touched). Carries `isDefault` in the content
+    /// gate (bumps `updatedAt`) so the change survives the whole-record LWW pull.
+    /// Patches `personas` in place; never `reload()`.
+    func normalizeDefaultPersona() {
+        guard !personas.isEmpty else { return }
+        guard personas.filter(\.isDefault).count != 1 else { return }
+        guard let winner = personas.max(by: {
+            ($0.updatedAt, $0.createdAt) < ($1.updatedAt, $1.createdAt)
+        }) else { return }
+        let now = Date()
+        var didWrite = false
+        for persona in personas {
+            let shouldBeDefault = persona.id == winner.id
+            guard persona.isDefault != shouldBeDefault else { continue }
+            writePersonaDefault(id: persona.id, isDefault: shouldBeDefault, now: now)
+            if let idx = personas.firstIndex(where: { $0.id == persona.id }) {
+                personas[idx].isDefault = shouldBeDefault
+                personas[idx].updatedAt = now
+            }
+            didWrite = true
+        }
+        if didWrite { try? store.context.save() }
+    }
+
+    /// Set the default marker on a persona record + bump `updatedAt` (content-gate)
+    /// so the converged default propagates through whole-record LWW. Marks dirty.
+    /// Internal so the `+Personas` extension can drive `setDefaultPersona`.
+    func writePersonaDefault(id: String, isDefault: Bool, now: Date) {
+        guard let record = store.personaRecord(id: id) else { return }
+        record.isDefault = isDefault
+        record.updatedAt = now
+        record.dirty = true
+    }
+
+    /// Populate the persona↔Space partition in place (never `reload()`). Backfills
+    /// any Space with no owner to the default persona, and repoints a persona's
+    /// `primarySpaceID` that dangles into a Space it doesn't own (the pre-partition
+    /// leak where `addPersona` seeded `folders.first`). Idempotent — writes only on
+    /// real change; re-seals bump `updatedAt` so ownership rides whole-record LWW.
+    private func migratePartition(key: SecureBytes) {
+        guard let defaultID = defaultPersona?.id else { return }
+        var didWrite = false
+
+        // F1: backfill unowned Spaces → default persona.
+        for index in folders.indices where folders[index].personaId == nil {
+            var updated = folders[index]
+            updated.personaId = defaultID
+            updated.updatedAt = .now
+            guard let record = store.folderRecord(id: updated.id),
+                  let sealed = try? sealFolder(updated, key: key) else { continue }
+            record.sealed = sealed
+            record.updatedAt = updated.updatedAt
+            record.dirty = true
+            folders[index] = updated
+            didWrite = true
+        }
+
+        // F2: reconcile a primarySpaceID that points at a Space the persona doesn't own.
+        for index in personas.indices {
+            let persona = personas[index]
+            guard let sid = persona.primarySpaceID else { continue }
+            let ownerOfPrimary = folders.first { $0.id == sid }?.personaId ?? defaultID
+            guard ownerOfPrimary != persona.id else { continue }
+            let newPrimary = folders.first { ($0.personaId ?? defaultID) == persona.id }?.id
+            var updated = persona
+            updated.primarySpaceID = newPrimary
+            updated.updatedAt = .now
+            guard let record = store.personaRecord(id: persona.id),
+                  let sealed = try? sealPersona(updated, key: key) else { continue }
+            record.sealed = sealed
+            record.updatedAt = updated.updatedAt
+            record.dirty = true
+            personas[index] = updated
+            didWrite = true
+        }
+
+        // F3: link a persona with no (or a dangling) profile card to the first
+        // identity item IT OWNS — covers personas created before profile cards
+        // existed and a card later added by hand from Profile. Never a write when
+        // no owned candidate exists (no churn), never a cross-persona link.
+        for index in personas.indices {
+            let persona = personas[index]
+            guard profileItem(for: persona) == nil,
+                  let candidate = items(for: persona).first(where: { $0.category == .identity })
+            else { continue }
+            var updated = persona
+            updated.primaryProfileItemID = candidate.id
+            updated.updatedAt = .now
+            guard let record = store.personaRecord(id: persona.id),
+                  let sealed = try? sealPersona(updated, key: key) else { continue }
+            record.sealed = sealed
+            record.updatedAt = updated.updatedAt
+            record.dirty = true
+            personas[index] = updated
+            didWrite = true
+        }
+
+        if didWrite {
+            try? store.context.save()
+            noteLocalMutation()
+        }
+    }
+
+    /// Mirror the active persona's isolation policy + profile item id into the
+    /// App Group so the AutoFill extension (which can't read the app's local
+    /// `activePersonaID`) honors isolation. Only an opaque enum + UUID cross over —
+    /// no identity-bearing plaintext; the extension resolves the email under the
+    /// Vault Key. Called on every reload and every active-persona switch.
+    func mirrorActivePersonaContext() {
+        let defaults = SharedConfig.sharedDefaults
+        let persona = activePersona
+        defaults.set(persona?.isolationPolicy.rawValue, forKey: SharedConfig.activePersonaPolicyKey)
+        defaults.set(persona?.primaryProfileItemID, forKey: SharedConfig.activePersonaProfileItemKey)
     }
 
     // MARK: CRUD

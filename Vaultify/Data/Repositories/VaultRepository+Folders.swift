@@ -8,7 +8,7 @@ extension VaultRepository {
 
     // MARK: Folder sealing (mirrors the item seal/open path)
 
-    private func sealFolder(_ folder: Folder, key: SecureBytes) throws -> Data {
+    func sealFolder(_ folder: Folder, key: SecureBytes) throws -> Data {
         try AESGCM.seal(JSONEncoder().encode(folder.secret), key: key)
     }
 
@@ -21,7 +21,8 @@ extension VaultRepository {
                       color: FolderColor(rawValue: record.colorRaw) ?? .gray,
                       sortIndex: record.sortIndex,
                       createdAt: record.createdAt,
-                      updatedAt: record.updatedAt)
+                      updatedAt: record.updatedAt,
+                      personaId: secret.personaId)
     }
 
     /// Decrypt all live folders, sorted by sort order then creation. Called from
@@ -40,13 +41,22 @@ extension VaultRepository {
         return try? store.context.fetch(descriptor).first
     }
 
+    /// The Space a new item defaults into when the caller supplies no context.
+    /// Resolves to the active persona's chosen primary Space, else its first OWNED
+    /// Space — never another persona's (fail-closed for the partition). `nil` when
+    /// the active persona owns no Space (its new items are Unfiled until it gets
+    /// one) or no folders exist at all.
+    var primarySpaceId: String? { activePersona?.primarySpaceID ?? activePersonaSpaces.first?.id }
+
     // MARK: Folder CRUD
 
     @discardableResult
     func addFolder(name: String, icon: String, color: FolderColor) throws -> String {
         guard let key = session.vaultKey else { throw AuthError.locked }
+        // A new Space is owned by the persona you're acting as (partition).
         let folder = Folder(name: name, iconAsset: icon, color: color,
-                            sortIndex: (folders.map(\.sortIndex).max() ?? -1) + 1)
+                            sortIndex: (folders.map(\.sortIndex).max() ?? -1) + 1,
+                            personaId: activePersona?.id)
         let record = FolderRecord(id: folder.id,
                                   sealed: try sealFolder(folder, key: key),
                                   iconAsset: folder.iconAsset,
@@ -104,13 +114,13 @@ extension VaultRepository {
     // MARK: Counts & filtered accessors (live items only — trashed excluded)
 
     func itemCount(for folderId: String) -> Int {
-        items.filter { $0.folderId == folderId }.count
+        activePersonaItems.filter { $0.folderId == folderId }.count
     }
 
-    var unfiledCount: Int { items.filter { $0.folderId == nil }.count }
+    var unfiledCount: Int { activePersonaItems.filter { $0.folderId == nil }.count }
 
     func items(inFolder folderId: String?) -> [VaultItem] {
-        items.filter { $0.folderId == folderId }
+        activePersonaItems.filter { $0.folderId == folderId }
     }
 
     // MARK: Recents
@@ -166,8 +176,9 @@ extension VaultRepository {
 
     /// Scoped set of live items for a folder filter. nil = all folders.
     private func scoped(_ folderId: String?) -> [VaultItem] {
-        guard let folderId else { return items }
-        return items.filter { $0.folderId == folderId }
+        let pool = activePersonaItems
+        guard let folderId else { return pool }
+        return pool.filter { $0.folderId == folderId }
     }
 
     /// Favorite items, optionally scoped to a folder, sorted alphabetically.
@@ -227,16 +238,47 @@ extension VaultRepository {
             ?? trashed.first { $0.id == id }
     }
 
-    /// Smart search: every space-separated token must appear in the item's
-    /// searchable text (title/fields/tags) OR its Space name.
-    func search(_ query: String) -> [VaultItem] {
+    /// Scope-aware smart search: every space-separated token must appear in the
+    /// item's searchable text (title/fields/tags). Scope handling:
+    /// - `.thisSpace(id)` filters to that folder by strict id equality FIRST and
+    ///   does not match on any Space name (matching another Space's name would
+    ///   contradict the scope). A stale id therefore yields empty, never the
+    ///   global set.
+    /// - `.allSpaces` also matches an item's own Space name (e.g. "github work").
+    /// - `.sharedWithMe` returns empty here — shared projections aren't vault
+    ///   items; the search surface supplies them for that scope.
+    ///
+    /// Unfiled (`folderId == nil`) items are included under `.allSpaces` and
+    /// excluded under any `.thisSpace` (no id match). They stay reachable via the
+    /// Unfiled route and All-Spaces search, so they never vanish from the app.
+    func search(_ query: String, scope: SpaceScope) -> [VaultItem] {
         let tokens = query.trimmingCharacters(in: .whitespaces).lowercased()
             .split(separator: " ").map(String.init)
         guard !tokens.isEmpty else { return [] }
-        let names = Dictionary(folders.map { ($0.id, $0.name.lowercased()) }, uniquingKeysWith: { a, _ in a })
-        return items.filter { item in
-            let hay = item.searchText + " " + (item.folderId.flatMap { names[$0] } ?? "")
-            return tokens.allSatisfy { hay.contains($0) }
+        // Persona-scoped: search only within the active persona's items (INV-R03).
+        let pool = activePersonaItems
+        switch scope {
+        case .sharedWithMe:
+            return []
+        case .thisSpace(let id):
+            return pool.filter { item in
+                item.folderId == id && tokens.allSatisfy { item.searchText.contains($0) }
+            }
+        case .allSpaces:
+            let names = Dictionary(folders.map { ($0.id, $0.name.lowercased()) }, uniquingKeysWith: { a, _ in a })
+            return pool.filter { item in
+                let hay = item.searchText + " " + (item.folderId.flatMap { names[$0] } ?? "")
+                return tokens.allSatisfy { hay.contains($0) }
+            }
         }
     }
+
+    /// Legacy global search for callers that have no Space context (e.g. the Mac
+    /// header search). Equivalent to `.allSpaces`.
+    func search(_ query: String) -> [VaultItem] { search(query, scope: .allSpaces) }
+
+    /// Whether widening a search to every Space is currently permitted. A
+    /// strictAnonymous persona drives this false so its searches can never surface
+    /// another identity's items (INV-R03); every other policy allows it.
+    var allSpacesSearchAllowed: Bool { activeIsolationPolicy != .strictAnonymous }
 }

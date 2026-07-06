@@ -22,6 +22,9 @@ import CloudKit
     private let zone = CKRecordZone(zoneName: "Vault")
     private let recordType = "VaultItem"
     private let folderRecordType = "VaultFolder"
+    private let personaRecordType = "VaultPersona"
+    private let aliasRecordType = "VaultEmailAlias"
+    private let inboxRecordType = "VaultForwardingInbox"
     private var database: CKDatabase { container.privateCloudDatabase }
 
     init(store: VaultStore, settings: SettingsStore) {
@@ -83,6 +86,9 @@ import CloudKit
     private func push() async throws {
         try await pushItems()
         try await pushFolders()
+        try await pushPersonas()
+        try await pushAliases()
+        try await pushInboxes()
     }
 
     private func pushItems() async throws {
@@ -139,6 +145,9 @@ import CloudKit
             switch record.recordType {
             case self.recordType: self.apply(record)
             case self.folderRecordType: self.applyFolder(record)
+            case self.personaRecordType: self.applyPersona(record)
+            case self.aliasRecordType: self.applyAlias(record)
+            case self.inboxRecordType: self.applyInbox(record)
             // Key-escrow records share the zone but aren't vault data.
             default: break
             }
@@ -218,6 +227,123 @@ import CloudKit
         store.upsertFolderFromRemote(
             id: record.recordID.recordName, sealed: sealed,
             iconAsset: iconAsset, colorRaw: colorRaw,
+            sortIndex: (record["sortIndex"] as? Int) ?? 0,
+            deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            changeTag: record.recordChangeTag)
+    }
+
+    private func pushPersonas() async throws {
+        let dirty = store.allPersonaRecords().filter(\.dirty)
+        guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
+        let records = dirty.map(ckPersonaRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult,
+               let local = store.personaRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markPersonaSynced(local, changeTag: saved.recordChangeTag,
+                                        snapshotUpdatedAt: snapshot)
+            }
+        }
+    }
+
+    private func ckPersonaRecord(from record: PersonaRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: personaRecordType, recordID: id)
+        ck["sealed"] = record.sealed as CKRecordValue
+        ck["isDefault"] = (record.isDefault ? 1 : 0) as CKRecordValue
+        ck["sortIndex"] = record.sortIndex as CKRecordValue
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
+        return ck
+    }
+
+    private func applyPersona(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        store.upsertPersonaFromRemote(
+            id: record.recordID.recordName, sealed: sealed,
+            isDefault: (record["isDefault"] as? Int ?? 0) == 1,
+            sortIndex: (record["sortIndex"] as? Int) ?? 0,
+            deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            changeTag: record.recordChangeTag)
+    }
+
+    private func pushAliases() async throws {
+        let dirty = store.allAliasRecords().filter(\.dirty)
+        guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
+        let records = dirty.map(ckAliasRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult,
+               let local = store.aliasRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markAliasSynced(local, changeTag: saved.recordChangeTag, snapshotUpdatedAt: snapshot)
+            }
+        }
+    }
+
+    private func ckAliasRecord(from record: EmailAliasRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: aliasRecordType, recordID: id)
+        ck["sealed"] = record.sealed as CKRecordValue
+        ck["sortIndex"] = record.sortIndex as CKRecordValue
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
+        return ck
+    }
+
+    private func applyAlias(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        store.upsertAliasFromRemote(
+            id: record.recordID.recordName, sealed: sealed,
+            sortIndex: (record["sortIndex"] as? Int) ?? 0,
+            deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            changeTag: record.recordChangeTag)
+    }
+
+    private func pushInboxes() async throws {
+        let dirty = store.allInboxRecords().filter(\.dirty)
+        guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
+        let records = dirty.map(ckInboxRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult,
+               let local = store.inboxRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markInboxSynced(local, changeTag: saved.recordChangeTag, snapshotUpdatedAt: snapshot)
+            }
+        }
+    }
+
+    private func ckInboxRecord(from record: ForwardingInboxRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: inboxRecordType, recordID: id)
+        ck["sealed"] = record.sealed as CKRecordValue
+        ck["sortIndex"] = record.sortIndex as CKRecordValue
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
+        return ck
+    }
+
+    private func applyInbox(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        store.upsertInboxFromRemote(
+            id: record.recordID.recordName, sealed: sealed,
             sortIndex: (record["sortIndex"] as? Int) ?? 0,
             deletedAt: record["deletedAt"] as? Date,
             createdAt: createdAt, updatedAt: updatedAt,
