@@ -157,18 +157,50 @@ struct QuickLinkView: View {
                 .listRowBackground(VaultColors.surface)
             }
 
+            // Create gates on capability availability; existing local link
+            // history above stays visible in every state (INV-CAP-05/10).
+            let createState = env.capabilities.availability(.shareLink, operation: .create)
             Section {
-                Button {
-                    Task { await create() }
-                } label: {
-                    Text("Create Link")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                switch createState {
+                case .available:
+                    createButton.disabled(selectedFieldIDs.isEmpty)
+                case .offline:
+                    Text("Connect to the internet to create a share link.")
+                        .vaultType(.footnote).themedForeground(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
+                default:
+                    createButton.disabled(true)
+                    Text(verbatim: shareStateFootnote(createState))
+                        .vaultType(.footnote).themedForeground(.secondary)
+                        .listRowBackground(Color.clear)
                 }
-                .buttonStyle(.themedProminent)
-                .disabled(selectedFieldIDs.isEmpty)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
             }
+        }
+    }
+
+    private var createButton: some View {
+        Button {
+            Task { await create() }
+        } label: {
+            Text("Create Link")
+                .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+        }
+        .buttonStyle(.themedProminent)
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(Color.clear)
+    }
+
+    private func shareStateFootnote(_ state: CapabilityAvailability) -> String {
+        switch state {
+        case .maintenance:
+            return appString("Creating and managing links is temporarily paused. Your vault continues to work normally.")
+        case .retired:
+            return appString("Share Links are no longer offered. Your saved vault items are unchanged.")
+        case .disabledByUser:
+            return appString("Share Links are turned off in Settings.")
+        default:
+            return appString("Share Links are temporarily unavailable. Your vault is not affected.")
         }
     }
 

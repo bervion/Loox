@@ -121,6 +121,32 @@ final class CapabilityTests: XCTestCase {
             from: response(503), data: Data(#"{"error":"upstream"}"#.utf8)))
     }
 
+    // MARK: Health-probe parsing + App Group snapshot
+
+    func testReadyReportStateParses() {
+        XCTAssertEqual(CapabilityHealthProbe.parseState(
+            Data(#"{"ready":true,"state":"maintenance","checks":{}}"#.utf8)), .maintenance)
+        XCTAssertNil(CapabilityHealthProbe.parseState(Data(#"{"ok":true}"#.utf8)))
+        XCTAssertNil(CapabilityHealthProbe.parseState(Data()))
+    }
+
+    func testSnapshotRoundTripAndCorruptFallback() {
+        let suite = "capability-snapshot-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        // Missing snapshot → nil ("unknown"), never a gate on local behavior.
+        XCTAssertNil(CapabilitySnapshot.read(defaults: defaults))
+        CapabilitySnapshot.write(modes: [.privateEmail: .maintenance, .shareLink: .active],
+                                 defaults: defaults)
+        let snapshot = CapabilitySnapshot.read(defaults: defaults)
+        XCTAssertEqual(snapshot?.mode(for: .privateEmail), .maintenance)
+        XCTAssertEqual(snapshot?.mode(for: .shareLink), .active)
+        // Corrupt data → nil, not a crash and not a false state.
+        defaults.set(Data([0xFF, 0x00]), forKey: "capability_snapshot_v1")
+        XCTAssertNil(CapabilitySnapshot.read(defaults: defaults))
+        defaults.removePersistentDomain(forName: suite)
+    }
+
     // MARK: Store
 
     private func makeStore(_ suite: String) -> (CapabilityStore, UserDefaults) {
