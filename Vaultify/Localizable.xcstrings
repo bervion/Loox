@@ -1,6 +1,266 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "No Internet Connection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có kết nối mạng"
+          }
+        }
+      }
+    },
+    "Your saved private addresses are still available in Loox. Connect to the internet to create or change forwarding settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các địa chỉ riêng tư đã lưu vẫn có sẵn trong Loox. Hãy kết nối mạng để tạo hoặc thay đổi cài đặt chuyển tiếp."
+          }
+        }
+      }
+    },
+    "Temporarily unavailable" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm thời không khả dụng"
+          }
+        }
+      }
+    },
+    "Under maintenance" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang bảo trì"
+          }
+        }
+      }
+    },
+    "Currently unavailable" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện không khả dụng"
+          }
+        }
+      }
+    },
+    "No longer available" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không còn khả dụng"
+          }
+        }
+      }
+    },
+    "Online Features" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tính năng trực tuyến"
+          }
+        }
+      }
+    },
+    "Share Links" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết chia sẻ"
+          }
+        }
+      }
+    },
+    "Available" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khả dụng"
+          }
+        }
+      }
+    },
+    "Offline" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngoại tuyến"
+          }
+        }
+      }
+    },
+    "Maintenance" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo trì"
+          }
+        }
+      }
+    },
+    "Unavailable" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không khả dụng"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không rõ"
+          }
+        }
+      }
+    },
+    "Review affected accounts" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem tài khoản bị ảnh hưởng"
+          }
+        }
+      }
+    },
+    "Affected accounts" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản bị ảnh hưởng"
+          }
+        }
+      }
+    },
+    "No accounts here use a private address." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có tài khoản nào ở đây dùng địa chỉ riêng tư."
+          }
+        }
+      }
+    },
+    "Update these accounts to a different email so you keep receiving password resets and important mail." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cập nhật các tài khoản này sang email khác để bạn tiếp tục nhận email đặt lại mật khẩu và thông báo quan trọng."
+          }
+        }
+      }
+    },
+    "Connect to the internet to create a share link." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy kết nối mạng để tạo liên kết chia sẻ."
+          }
+        }
+      }
+    },
+    "Share Links are turned off in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết chia sẻ đang tắt trong Cài đặt."
+          }
+        }
+      }
+    },
+    "Private Email is under maintenance. Creating or changing private addresses is temporarily paused. Your vault continues to work normally." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư đang bảo trì. Việc tạo hoặc thay đổi địa chỉ tạm dừng. Kho lưu trữ của bạn vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
+    "Private Email is currently unavailable. Loox has temporarily disabled this feature. Your vault and other features continue to work normally." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư hiện không khả dụng. Loox đã tạm tắt tính năng này. Kho lưu trữ và các tính năng khác vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
+    "Private Email is no longer offered by Loox. Your saved alias records remain visible so you can identify accounts that used them." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox không còn cung cấp Email riêng tư. Các địa chỉ đã lưu vẫn hiển thị để bạn nhận diện tài khoản từng dùng chúng."
+          }
+        }
+      }
+    },
+    "We’re having trouble reaching the relay service. Your vault and saved passwords are not affected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể kết nối dịch vụ chuyển tiếp. Kho lưu trữ và mật khẩu đã lưu không bị ảnh hưởng."
+          }
+        }
+      }
+    },
+    "Creating and managing links is temporarily paused. Your vault continues to work normally." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Việc tạo và quản lý liên kết tạm dừng. Kho lưu trữ của bạn vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
+    "Share Links are no longer offered. Your saved vault items are unchanged." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox không còn cung cấp Liên kết chia sẻ. Các mục đã lưu của bạn không thay đổi."
+          }
+        }
+      }
+    },
+    "Share Links are temporarily unavailable. Your vault is not affected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết chia sẻ tạm thời không khả dụng. Kho lưu trữ của bạn không bị ảnh hưởng."
+          }
+        }
+      }
+    },
     "You’ve reached the limit for private addresses. Permanently delete addresses you no longer use." : {
       "localizations" : {
         "vi" : {

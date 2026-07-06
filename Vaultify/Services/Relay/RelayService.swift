@@ -14,12 +14,18 @@ import Foundation
         case principalUnavailable   // escrow not reachable (no iCloud / offline)
         case missingDestination     // the persona's profile has no email to forward to
         case network                // transport-level failure
+        /// Verified operator state (maintenance/disabled/retired) — distinct
+        /// from outages and offline (INV-CAP-04); carries per-state copy.
+        case capabilityBlocked(CapabilityServiceMode, retryAfter: Int?)
         case rejected(String)       // backend refused (mapped reason, for UI copy)
     }
 
     private let repository: VaultRepository
     private let session: VaultSession
     private let escrow = RelayPrincipalEscrowService()
+    /// Optional-capability state sink (breaker + operator mode + health).
+    /// Optional so tests without an AppEnvironment run unchanged.
+    weak var capabilities: CapabilityStore?
 
     init(repository: VaultRepository, session: VaultSession) {
         self.repository = repository
@@ -172,6 +178,10 @@ import Foundation
     private func send(kind: RelayCommandKind, aliasID: String?, destination: String? = nil,
                       path: String, method: String = "POST", genesis: Bool = false) async throws {
         guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
+        // Circuit breaker: during a confirmed outage, don't burn signed requests.
+        guard capabilities?.allowRequest(.privateEmail) ?? true else {
+            throw Failure.capabilityBlocked(.active, retryAfter: nil)   // renders as "temporarily unavailable"
+        }
         var attempt = 0
         while true {
             attempt += 1
@@ -189,9 +199,18 @@ import Foundation
             do {
                 try await RelayAPIClient.send(command, signature: signature,
                                               genesisPublicKey: genesisKey, path: path, method: method)
+                capabilities?.noteSuccess(.privateEmail)
                 return
             } catch let failure as RelayAPIClient.Failure {
-                if case .aliasExists = failure { throw failure }  // mint's retry loop handles it
+                if case .aliasExists = failure {
+                    capabilities?.noteServiceResponded(.privateEmail)
+                    throw failure  // mint's retry loop handles it
+                }
+                if case .capability(let mode, let retryAfter) = failure {
+                    // Verified operator state — persist it; the service is UP.
+                    capabilities?.noteOperatorSignal(.privateEmail, .init(mode: mode, retryAfter: retryAfter))
+                    throw Failure.capabilityBlocked(mode, retryAfter: retryAfter)
+                }
                 switch RelayRetryPolicy.action(for: failure, attempt: attempt) {
                 case .retry:
                     continue
@@ -199,8 +218,15 @@ import Foundation
                     _ = try? await escrow.refreshFromCloud(vaultKey: vaultKey.bytes)
                     continue
                 case .fail("network"):
+                    capabilities?.noteInfrastructureFailure(.privateEmail)
                     throw Failure.network
                 case .fail(let reason):
+                    // Plain 502/503/504 (no capability code) = infrastructure.
+                    if reason.hasPrefix("server_5") {
+                        capabilities?.noteInfrastructureFailure(.privateEmail)
+                    } else {
+                        capabilities?.noteServiceResponded(.privateEmail)
+                    }
                     throw Failure.rejected(reason)
                 }
             }
