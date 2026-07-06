@@ -103,6 +103,9 @@ struct SettingsScreen: View {
                     NavigationLink { PersonaSwitcherScreen() } label: {
                         Label { Text("Personas") } icon: { PolarisIcon(Icons.person) }
                     }
+                    NavigationLink { PersonaAliasesScreen() } label: {
+                        Label { Text("Email aliases") } icon: { PolarisIcon(Icons.mail) }
+                    }
                     NavigationLink { ManageFoldersScreen() } label: {
                         Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
                     }

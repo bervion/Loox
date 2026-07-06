@@ -66,6 +66,8 @@ extension VaultRepository {
         record.deletedAt = .now
         record.updatedAt = .now
         record.dirty = true
+        // Cascade: tombstone this persona's aliases so none are orphaned.
+        deleteAliases(forPersona: persona.id)
         try store.context.save()
         reload()
         noteLocalMutation()

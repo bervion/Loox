@@ -16,6 +16,7 @@ import UserNotifications
     private(set) var folders: [Folder] = []
     private(set) var passkeys: [PasskeyInfo] = []
     private(set) var personas: [Persona] = []
+    private(set) var aliases: [EmailAlias] = []
 
     init(store: VaultStore, session: VaultSession) {
         self.store = store
@@ -31,6 +32,7 @@ import UserNotifications
         folders = []
         passkeys = []
         personas = []
+        aliases = []
         CredentialIdentityService.clear()
     }
 
@@ -76,6 +78,7 @@ import UserNotifications
         ensurePersonaExists(key: key)
         normalizeDefaultPersona()
         mirrorActivePersonaContext()
+        aliases = loadAliases(key: key)
     }
 
     /// Reload after a CloudKit pull — same as `reload()` plus the duplicate
