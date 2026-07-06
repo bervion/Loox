@@ -38,3 +38,15 @@ Source: app-team proposal (260706). User locked: **Full A0–A7, both capabiliti
 
 - BE B3 manifest endpoint — contract draft in `manifest-contract-draft-for-be.md`; until then the
   fetch path no-ops onto cache→bundled fallback (all-active default).
+
+## C4 — BE contract adoption (260706 late, PR #57)
+
+BE shipped B3 with its OWN frozen contract (handoff 260706) superseding the C2 draft:
+`LOOX-CAP-MANIFEST-V1` canonical transcript (NOT raw-bytes signing), policy vocab
+enabled/…, per-operation narrow-only overrides, message_key, key cap-2026-01 (pinned,
+fingerprint asserted), STRICT anti-rollback (reject ≤). Parity vector reproduced
+byte-for-byte (`VaultifyTests/Fixtures/cap-manifest-vectors-v1.json`). Probes moved to
+`/v1/relay/service-state` + `/v1/link/service-state`. Secondary = CloudKit public DB
+`LooxCapabilityManifest/current` (`bytes` field, iOS-owned schema) + verify-then-mirror
+operator tooling `publishSecondaryMirror`. `manifest-contract-draft-for-be.md` is
+SUPERSEDED by the BE handoff. Live endpoint currently 404 no_manifest (KV propagating).
