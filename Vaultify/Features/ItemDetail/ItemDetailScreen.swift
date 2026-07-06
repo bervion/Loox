@@ -37,7 +37,13 @@ struct ItemDetailScreen: View {
                     header(item)
                     if item.sharedOrigin != nil { sharedBadge }
                     organization(item)
-                    fieldsCard(item)
+                    if item.sharedOrigin == nil {
+                        fieldsCard(item)
+                    } else {
+                        // Shared VALUES render only after live authorization
+                        // (INV-01) — header/title above are Tier-1 metadata.
+                        SharedAccessGateView(itemID: item.id) { fieldsCard(item) }
+                    }
                     if item.sharedOrigin == nil {
                         ItemPasskeysSection(item: item)
                         sharingSection(item)

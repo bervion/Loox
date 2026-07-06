@@ -18,6 +18,9 @@ struct PasskeyCeremonyView: View {
     @State private var working = false
     @State private var errorMessage: String?
     @State private var didStartAssertion = false
+    /// askEachTime ceremony in flight — waiting for the owner's approval.
+    @State private var awaitingApproval = false
+    @State private var approvalTask: Task<Void, Never>?
 
     var body: some View {
         Form {
@@ -74,8 +77,21 @@ struct PasskeyCeremonyView: View {
                 }
             } else {
                 Section {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    if awaitingApproval {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Waiting for the owner to approve…")
+                                .font(.footnote).foregroundStyle(.secondary)
+                            Button("Cancel", role: .cancel) {
+                                approvalTask?.cancel()
+                                onCancel(.userCanceled)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
                 } footer: {
                     if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
                 }
@@ -90,7 +106,18 @@ struct PasskeyCeremonyView: View {
         matches = vault.matching(relyingParty: relyingParty, allowedCredentialIDs: allowed, key: vaultKey)
         switch matches.count {
         case 0:
-            if let onNoPasskey {
+            // Shared passkey slots (capability v2): hand-over mode signs
+            // locally after the live grant check. askEachTime slots await
+            // the owner-approval ceremony — until that ships they fall back
+            // to the password picker rather than a flash-error dismissal.
+            let shared = sharedSlotMatches(relyingParty: relyingParty, allowed: allowed)
+            if let handOver = shared.first(where: {
+                $0.slot.mode == .shared && $0.slot.privateKeyRaw != nil
+            }) {
+                signShared(entry: handOver.entry, slot: handOver.slot)
+            } else if let ask = shared.first(where: { $0.slot.mode == .askEachTime }) {
+                startOwnerApproval(entry: ask.entry, slot: ask.slot)
+            } else if let onNoPasskey {
                 onNoPasskey(vaultKey)
             } else {
                 errorMessage = appString("No passkey for this site.")
@@ -100,6 +127,92 @@ struct PasskeyCeremonyView: View {
             sign(matches[0])
         default:
             break
+        }
+    }
+
+    /// Shared passkey slots matching this assertion (rp + allow-list).
+    private func sharedSlotMatches(relyingParty: String, allowed: [Data])
+        -> [(entry: SharedCredentialEntry, slot: SharedPasskeyEntry)] {
+        SharedCredentialsCache.load(vaultKey: vaultKey).flatMap { entry in
+            (entry.passkeys ?? []).compactMap { slot in
+                guard slot.relyingParty == relyingParty,
+                      allowed.isEmpty || allowed.contains(slot.credentialID) else { return nil }
+                return (entry, slot)
+            }
+        }
+    }
+
+    /// Hand-over mode: sign locally with the delivered key — but only after
+    /// the authoritative live grant check passes (INV-11; online-required).
+    /// Failures keep the sheet up with a message instead of flash-dismissing.
+    private func signShared(entry: SharedCredentialEntry, slot: SharedPasskeyEntry) {
+        guard case let .assert(relyingParty, _, clientDataHash, _) = purpose,
+              let keyRaw = slot.privateKeyRaw else { return }
+        working = true
+        Task {
+            let outcome = await SharedGrantLiveCheck.verify(
+                zoneName: entry.zoneName, ownerName: entry.ownerName,
+                expectedGrantId: entry.grantId)
+            working = false
+            switch outcome {
+            case .revoked:
+                errorMessage = appString("The owner has revoked access to this item.")
+                return
+            case .unavailable:
+                errorMessage = appString("Couldn't verify access right now.")
+                return
+            case .authorized:
+                break
+            }
+            do {
+                let result = try WebAuthn.assertion(
+                    relyingParty: relyingParty, clientDataHash: clientDataHash,
+                    privateKeyRaw: keyRaw,
+                    flags: slot.flags ?? WebAuthn.legacyAssertionFlags)
+                onAssertion(ASPasskeyAssertionCredential(
+                    userHandle: slot.userHandle, relyingParty: relyingParty,
+                    signature: result.signature, clientDataHash: clientDataHash,
+                    authenticatorData: result.authenticatorData,
+                    credentialID: slot.credentialID))
+            } catch {
+                errorMessage = appString("Couldn’t sign in with this passkey.")
+            }
+        }
+    }
+
+    /// askEachTime: the private key stays with the owner (INV-07) — submit a
+    /// signed, challenge-bound request and wait for the sealed assertion.
+    /// Every failure keeps the sheet up with a message; Cancel is always
+    /// available while waiting.
+    private func startOwnerApproval(entry: SharedCredentialEntry, slot: SharedPasskeyEntry) {
+        guard case let .assert(relyingParty, _, clientDataHash, _) = purpose else { return }
+        awaitingApproval = true
+        errorMessage = nil
+        approvalTask = Task {
+            do {
+                let ticket = try await PasskeyApprovalTransport.submitRequest(
+                    zoneName: entry.zoneName, ownerName: entry.ownerName,
+                    expectedGrantId: entry.grantId, slotId: slot.slotId,
+                    clientDataHash: clientDataHash)
+                let payload = try await PasskeyApprovalTransport.awaitApproval(ticket)
+                awaitingApproval = false
+                onAssertion(ASPasskeyAssertionCredential(
+                    userHandle: payload.userHandle, relyingParty: relyingParty,
+                    signature: payload.signature, clientDataHash: clientDataHash,
+                    authenticatorData: payload.authenticatorData,
+                    credentialID: payload.credentialID))
+            } catch is CancellationError {
+                awaitingApproval = false
+            } catch PasskeyApprovalTransport.Failure.rejected {
+                awaitingApproval = false
+                errorMessage = appString("The owner declined this sign-in.")
+            } catch PasskeyApprovalTransport.Failure.timedOut {
+                awaitingApproval = false
+                errorMessage = appString("No answer from the owner yet. Try again in a moment.")
+            } catch {
+                awaitingApproval = false
+                errorMessage = appString("Couldn't reach the owner right now.")
+            }
         }
     }
 

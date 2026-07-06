@@ -65,6 +65,11 @@ private enum CredentialRow: Identifiable {
         return nil
     }
 
+    var sharedEntry: SharedCredentialEntry? {
+        if case .shared(let entry) = self { return entry }
+        return nil
+    }
+
     func matches(serviceIdentifiers: [String]) -> Bool {
         switch self {
         case .owned(let item): return item.matchesAutoFill(serviceIdentifiers: serviceIdentifiers)
@@ -95,10 +100,23 @@ private struct CredentialListView: View {
     @State private var sharedEntries: [SharedCredentialEntry] = []
     @State private var defaultUsername = ""
     @State private var loaded = false
+    /// Layer A for the shared-credential gate (INV-02): offline hides shared
+    /// rows entirely; a satisfied path still needs the live check below.
+    @State private var reachability = NetworkReachabilityMonitor()
+    /// Non-nil while the pre-fill live grant check runs (INV-11).
+    @State private var verifyingRowID: String?
+    @State private var fillBlockedMessage: String?
 
     var body: some View {
         Group {
             if loaded { list } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+        }
+        .overlay { if verifyingRowID != nil { ProgressView().controlSize(.large) } }
+        .disabled(verifyingRowID != nil)
+        .alert(Text(verbatim: fillBlockedMessage ?? ""),
+               isPresented: Binding(get: { fillBlockedMessage != nil },
+                                    set: { if !$0 { fillBlockedMessage = nil } })) {
+            Button("OK", role: .cancel) {}
         }
         .task {
             guard !loaded else { return }
@@ -108,7 +126,9 @@ private struct CredentialListView: View {
             loaded = true
             if let preferredRecordID {
                 if let hit = sharedEntries.first(where: { $0.itemID == preferredRecordID }) {
-                    onSelect(hit.username ?? "", hit.password ?? "")
+                    // Same gated path as a manual tap — QuickType must not
+                    // bypass the live check (INV-11).
+                    select(.shared(hit))
                 } else if let hit = items.first(where: { $0.id == preferredRecordID }) {
                     select(.owned(hit))
                 }
@@ -135,11 +155,21 @@ private struct CredentialListView: View {
                 if !others.isEmpty { Section("Other logins") { ForEach(others, content: row) } }
             }
             if rows.isEmpty { Text("No logins found").foregroundStyle(.secondary) }
+            if !reachability.hasSatisfiedNetworkPath && !sharedEntries.isEmpty {
+                Text("Shared items need an internet connection.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
         }
     }
 
+    /// Offline ⇒ shared credentials are not offered at all (absolute online
+    /// gate — same rule the app applies).
+    private var visibleSharedEntries: [SharedCredentialEntry] {
+        reachability.hasSatisfiedNetworkPath ? sharedEntries : []
+    }
+
     private var rows: [CredentialRow] {
-        items.map(CredentialRow.owned) + sharedEntries.map(CredentialRow.shared)
+        items.map(CredentialRow.owned) + visibleSharedEntries.map(CredentialRow.shared)
     }
     private var matched: [CredentialRow] { rows.filter { $0.matches(serviceIdentifiers: serviceIdentifiers) } }
     private var others: [CredentialRow] {
@@ -182,6 +212,31 @@ private struct CredentialListView: View {
     }
 
     private func select(_ row: CredentialRow) {
+        // Shared credentials pass the authoritative gate right before the
+        // fill (INV-11): live grant check, fail-closed on every outcome that
+        // isn't a verified match. Owned items fill directly as before.
+        if let entry = row.sharedEntry {
+            guard reachability.hasSatisfiedNetworkPath else {
+                fillBlockedMessage = appString("Shared items need an internet connection.")
+                return
+            }
+            verifyingRowID = row.id
+            Task {
+                let outcome = await SharedGrantLiveCheck.verify(
+                    zoneName: entry.zoneName, ownerName: entry.ownerName,
+                    expectedGrantId: entry.grantId)
+                verifyingRowID = nil
+                switch outcome {
+                case .authorized:
+                    onSelect(entry.username ?? "", entry.password ?? "")
+                case .revoked:
+                    fillBlockedMessage = appString("The owner has revoked access to this item.")
+                case .unavailable:
+                    fillBlockedMessage = appString("Couldn't verify access right now.")
+                }
+            }
+            return
+        }
         let credential = row.credential
         onSelect(credential.user, credential.password)
     }

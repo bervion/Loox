@@ -33,12 +33,16 @@ import UIKit
     private let session: VaultSession
     private let repository: VaultRepository
     private let shareService: ApprovalShareService
+    /// Passkey approvals read the secret straight from the passkey store.
+    private let store: VaultStore
     private let policy = TOTPIssuancePolicy.v1
 
-    init(session: VaultSession, repository: VaultRepository, shareService: ApprovalShareService) {
+    init(session: VaultSession, repository: VaultRepository,
+         shareService: ApprovalShareService, store: VaultStore) {
         self.session = session
         self.repository = repository
         self.shareService = shareService
+        self.store = store
     }
 
     private var nowUnixMs: Int64 { Int64(Date().timeIntervalSince1970 * 1000) }
@@ -60,6 +64,12 @@ import UIKit
     /// Face ID → authoritative verify (consumes the nonce) → boundary-aware
     /// issuance → seal to the request's ephemeral key → signed response.
     func approve(_ pending: ApprovalCoordinator.PendingOwnerRequest) async {
+        // Passkey slots take the assertion path (no TOTP window mechanics);
+        // both share the same verify-then-Face-ID discipline.
+        if PasskeySlot.isPasskeySlot(pending.request.fieldId) {
+            await approvePasskey(pending)
+            return
+        }
         guard state == .idle || stateIsTerminal else { return } // no concurrent ceremonies
         let request = pending.request
         let zoneID = CKRecordZone.ID(zoneName: pending.zoneName)
@@ -143,6 +153,61 @@ import UIKit
         } catch {
             // The nonce may already be burnt — tell the requester to stop
             // waiting (their retry supersedes this request, Phase 6).
+            state = .failed(error.localizedDescription)
+            sendInterrupted(request, zoneID: zoneID)
+        }
+    }
+
+    /// Passkey askEachTime approval (INV-07: the private key never leaves
+    /// this device — only the signed assertion does). Face ID → authoritative
+    /// verify (burns the nonce; the verifier already enforced the 32-byte
+    /// clientDataHash binding for passkey slots) → sign the requester's exact
+    /// challenge → seal to the request's ephemeral key (forward secrecy,
+    /// requestId + nonce in the HPKE info — INV-09) → signed response.
+    private func approvePasskey(_ pending: ApprovalCoordinator.PendingOwnerRequest) async {
+        guard state == .idle || stateIsTerminal else { return }
+        let request = pending.request
+        let zoneID = CKRecordZone.ID(zoneName: pending.zoneName)
+        state = .authenticating
+        do {
+            try await BiometricAuth.authenticate(
+                reason: appString("Approve a sign-in request"))
+            guard ceremonyConditionsHold else { return abort(request, zoneID: zoneID) }
+            _ = try await shareService.verifyInbound(request, zoneID: zoneID, nowUnixMs: nowUnixMs)
+            guard ceremonyConditionsHold else { return abort(request, zoneID: zoneID) }
+
+            state = .issuing
+            guard let binding = request.payloadBinding,
+                  let credentialID = PasskeySlot.credentialID(fromSlotId: request.fieldId),
+                  let vaultKey = session.vaultKey,
+                  let secret = PasskeyVault(store: store).secret(credentialID: credentialID,
+                                                                 key: vaultKey) else {
+                state = .failed(appString("This passkey isn't available anymore."))
+                sendInterrupted(request, zoneID: zoneID)
+                return
+            }
+            let result = try WebAuthn.assertion(
+                relyingParty: secret.relyingParty, clientDataHash: binding,
+                privateKeyRaw: secret.privateKeyRaw,
+                flags: secret.flags ?? WebAuthn.legacyAssertionFlags)
+            let payload = PasskeyApprovalPayload(
+                authenticatorData: result.authenticatorData,
+                signature: result.signature,
+                userHandle: secret.userHandle,
+                credentialID: secret.credentialID,
+                clientDataHash: binding,
+                requestNonce: request.nonce)
+            let sealed = try ApprovalSeal.sealResponsePayload(
+                try JSONEncoder().encode(payload),
+                toEphemeralPubKey: request.ephemeralPubKey,
+                requestId: request.requestId, nonce: request.nonce)
+            try await shareService.respond(requestId: request.requestId, decision: .approved,
+                                           sealedPayload: sealed, zoneID: zoneID,
+                                           nowUnixMs: nowUnixMs)
+            state = .finished(.approved)
+        } catch is CancellationError {
+            abort(request, zoneID: zoneID)
+        } catch {
             state = .failed(error.localizedDescription)
             sendInterrupted(request, zoneID: zoneID)
         }

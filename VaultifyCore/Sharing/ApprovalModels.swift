@@ -10,11 +10,23 @@ import Foundation
 
 // MARK: - Capabilities (per-field, type-constrained)
 
-/// TOTP fields can be `none` or `askEachTime` — never `shared` (the seed
-/// stays in the owner's vault, ADR-1).
+/// TOTP fields: `none`, `askEachTime`, or `shared` (seed hand-over).
+/// `shared` is a CONSCIOUS reversal of ADR-1 (user decision 260705): it is
+/// only offered behind an explicit warning modal, encodes as wire v2, and a
+/// delivered seed is not cryptographically revocable (INV-08).
 nonisolated enum TOTPFieldCapability: UInt8, Codable, Sendable {
     case none = 0
     case askEachTime = 1
+    case shared = 2
+}
+
+/// Passkey slots (wire v2 only): `askEachTime` = the owner signs the
+/// assertion on THEIR device per use (INV-07); `shared` = private-key
+/// hand-over behind the same warning modal semantics as TOTP `shared`.
+nonisolated enum PasskeyFieldCapability: UInt8, Codable, Sendable {
+    case none = 0
+    case askEachTime = 1
+    case shared = 2
 }
 
 /// Non-TOTP fields (password/username/url/text) can be `none` or `shared` —
@@ -30,15 +42,155 @@ nonisolated enum ValueFieldCapability: UInt8, Codable, Sendable {
 nonisolated enum FieldCapability: Codable, Sendable, Equatable {
     case totp(TOTPFieldCapability)
     case value(ValueFieldCapability)
+    case passkey(PasskeyFieldCapability)
 
     var isAskEachTimeTOTP: Bool {
         if case .totp(.askEachTime) = self { return true }
         return false
     }
 
+    /// Capabilities whose plaintext ships in a sealed shared blob: classic
+    /// shared values AND the v2 hand-over modes (TOTP seed, passkey key).
     var isSharedValue: Bool {
-        if case .value(.shared) = self { return true }
-        return false
+        switch self {
+        case .value(.shared), .totp(.shared), .passkey(.shared): return true
+        default: return false
+        }
+    }
+
+    /// Grants something (any non-none mode) — drives the owner sheet's
+    /// "at least one capability" gate across all three kinds.
+    var grantsAnything: Bool {
+        switch self {
+        case .totp(.none), .value(.none), .passkey(.none): return false
+        default: return true
+        }
+    }
+
+    /// Encodable only in wire v2 — a v1 grant carrying one of these is
+    /// malformed (decode rejects; the layout guard in ApprovalCanonical).
+    var requiresWireV2: Bool {
+        switch self {
+        case .passkey: return true
+        case .totp(.shared): return true
+        default: return false
+        }
+    }
+}
+
+// MARK: - Passkey capability slots (wire v2)
+
+/// Passkeys are not `DynamicField`s — their capability rides in the grant's
+/// map under a synthetic slot id derived from the credential id, so the
+/// fail-closed verifier rule ("unknown fieldId → reject") keeps working
+/// unchanged for passkey slots.
+nonisolated enum PasskeySlot {
+    static let prefix = "passkey::"
+
+    static func slotId(credentialID: Data) -> String { prefix + credentialID.hexString }
+
+    static func isPasskeySlot(_ fieldOrSlotId: String) -> Bool {
+        fieldOrSlotId.hasPrefix(prefix)
+    }
+
+    static func credentialID(fromSlotId id: String) -> Data? {
+        guard id.hasPrefix(prefix) else { return nil }
+        return Data(hexString: String(id.dropFirst(prefix.count)))
+    }
+}
+
+/// Plaintext of an approved passkey assertion, sealed to the request's
+/// ephemeral key (forward secrecy) and bound to the request via the HPKE
+/// info AND the echoed fields below — the requester verifies every echo
+/// before completing the WebAuthn ceremony (INV-09).
+nonisolated struct PasskeyApprovalPayload: Codable, Sendable, Equatable {
+    var authenticatorData: Data
+    var signature: Data
+    var userHandle: Data
+    var credentialID: Data
+    var clientDataHash: Data
+    var requestNonce: Data
+}
+
+// MARK: - Device scope (wire v2)
+
+/// Whether the recipient may use this grant on all their enrolled devices or
+/// exactly the device(s) named in `allowedDeviceKeyBindings` (sealed
+/// per-device — not merely policy-checked, INV-04/05).
+nonisolated enum DeviceScope: UInt8, Codable, Sendable {
+    case multi = 0
+    case single = 1
+}
+
+// MARK: - Device key bindings (per-device seal, P03)
+
+/// Names one recipient device inside a v2 grant: the stable device id plus a
+/// hash binding of its CURRENT HPKE public key. The raw public key lives in
+/// the profile's device directory, OUTSIDE the signed grant — verifiers must
+/// check `SHA256(directory pubkey) == hpkePublicKeyHash` before sealing to or
+/// trusting that key (substitution guard, INV-12).
+nonisolated struct DeviceKeyBinding: Codable, Sendable, Equatable {
+    var deviceKeyID: Data
+    var hpkePublicKeyHash: Data
+}
+
+/// One entry of the recipient-published device directory (participant
+/// profile record). Public material only — never a private key.
+nonisolated struct DeviceHPKEDirectoryEntry: Codable, Sendable, Equatable {
+    var deviceKeyID: Data
+    var hpkePublicKey: Data
+    var label: String
+    var addedAtUnixMs: Int64
+
+    static func encodeDirectory(_ entries: [DeviceHPKEDirectoryEntry]) throws -> Data {
+        try JSONEncoder().encode(entries)
+    }
+
+    /// Lenient decode: an unreadable directory yields [] (legacy profiles
+    /// predate the field entirely) — grants v2 then simply cannot seal to
+    /// this recipient until a device republishes.
+    static func decodeDirectory(_ data: Data?) -> [DeviceHPKEDirectoryEntry] {
+        guard let data else { return [] }
+        return (try? JSONDecoder().decode([DeviceHPKEDirectoryEntry].self, from: data)) ?? []
+    }
+}
+
+/// Pure merge rules for the multi-device profile record (unit-tested): each
+/// device republished the singleton profile with `.allKeys` before P03a,
+/// silently dropping sibling devices — merging keeps every enrolled device.
+nonisolated enum ParticipantProfileMerge {
+    /// Upsert by deviceKeyID (a republish refreshes label/key), stable order
+    /// by first enrollment time then id — deterministic for tests and UI.
+    static func directory(existing: [DeviceHPKEDirectoryEntry],
+                          upserting entry: DeviceHPKEDirectoryEntry) -> [DeviceHPKEDirectoryEntry] {
+        var merged = existing.filter { $0.deviceKeyID != entry.deviceKeyID }
+        merged.append(entry)
+        return merged.sorted {
+            ($0.addedAtUnixMs, $0.deviceKeyID.hexString) < ($1.addedAtUnixMs, $1.deviceKeyID.hexString)
+        }
+    }
+
+    /// Union preserving existing order; the new key appends if unseen.
+    static func signingKeys(existing: [Data], adding key: Data) -> [Data] {
+        existing.contains(key) ? existing : existing + [key]
+    }
+}
+
+extension Data {
+    nonisolated var hexString: String { map { String(format: "%02x", $0) }.joined() }
+
+    nonisolated init?(hexString: String) {
+        guard hexString.count.isMultiple(of: 2) else { return nil }
+        var bytes: [UInt8] = []
+        bytes.reserveCapacity(hexString.count / 2)
+        var index = hexString.startIndex
+        while index < hexString.endIndex {
+            let next = hexString.index(index, offsetBy: 2)
+            guard let byte = UInt8(hexString[index..<next], radix: 16) else { return nil }
+            bytes.append(byte)
+            index = next
+        }
+        self.init(bytes)
     }
 }
 
@@ -69,14 +221,28 @@ nonisolated struct AccessGrant: Sendable, Equatable, Codable {
     var expiresAtUnixMs: Int64?
     var ownerSigningPubKey: Data
     var ownerSignature: Data
+    /// Wire v2 (P03b): device scope + the device-key bindings sealed to.
+    /// `.multi` + empty bindings keeps the grant on wire v1, bit-identical
+    /// to pre-P03b bytes — existing signatures stay valid.
+    var deviceScope: DeviceScope
+    var allowedDeviceKeyBindings: [DeviceKeyBinding]
 
-    /// Pinned keys are normalized to sorted order at construction so the
-    /// in-memory value, the signed canonical bytes, and a decoded copy are
-    /// all identical (`decode(encoded(x)) == x` — no phantom diffs in sync).
+    /// True when any field forces the v2 canonical layout.
+    var requiresWireV2: Bool {
+        deviceScope != .multi || !allowedDeviceKeyBindings.isEmpty
+            || capabilities.values.contains { $0.requiresWireV2 }
+    }
+
+    /// Pinned keys and device bindings are normalized to sorted order at
+    /// construction so the in-memory value, the signed canonical bytes, and
+    /// a decoded copy are all identical (`decode(encoded(x)) == x` — no
+    /// phantom diffs in sync; INV-12 deterministic ordering).
     init(id: String, itemId: String, recipientId: String, participantPubKey: Data,
          pinnedDeviceSigningKeys: [Data], capabilities: [String: FieldCapability],
          epoch: UInt32, createdAtUnixMs: Int64, expiresAtUnixMs: Int64?,
-         ownerSigningPubKey: Data, ownerSignature: Data) {
+         ownerSigningPubKey: Data, ownerSignature: Data,
+         deviceScope: DeviceScope = .multi,
+         allowedDeviceKeyBindings: [DeviceKeyBinding] = []) {
         self.id = id
         self.itemId = itemId
         self.recipientId = recipientId
@@ -89,6 +255,9 @@ nonisolated struct AccessGrant: Sendable, Equatable, Codable {
         self.expiresAtUnixMs = expiresAtUnixMs
         self.ownerSigningPubKey = ownerSigningPubKey
         self.ownerSignature = ownerSignature
+        self.deviceScope = deviceScope
+        self.allowedDeviceKeyBindings = allowedDeviceKeyBindings
+            .sorted { $0.deviceKeyID.lexicographicallyPrecedes($1.deviceKeyID) }
     }
 }
 
@@ -112,6 +281,14 @@ nonisolated struct ApprovalRequest: Sendable, Equatable {
     /// Which pinned device key signed this request (must ∈ grant's pinned set).
     var requesterSigningPubKey: Data
     var requesterSignature: Data
+    /// Wire v2 (passkey askEachTime): the exact 32-byte WebAuthn
+    /// clientDataHash the approved assertion must sign — binds this approval
+    /// to ONE challenge (INV-09). Nil for TOTP requests, which then encode
+    /// bit-identical to wire v1. Realizes the P00
+    /// `PasskeyAssertionApprovalRequestV1` transcript as a version bump of
+    /// the audited request artifact instead of a parallel rail (amendment
+    /// noted in security-invariants.md).
+    var payloadBinding: Data? = nil
 }
 
 // MARK: - Response

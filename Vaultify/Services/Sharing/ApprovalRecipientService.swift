@@ -1,6 +1,9 @@
 import CloudKit
 import CryptoKit
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Recipient-side (B) transport: publish the participant profile into the
 /// accepted shared zone, read the owner's grant (TOFU-pinning the owner key
@@ -13,6 +16,10 @@ import Foundation
         case grantMissing
         case verifyFailed(ApprovalVerifyFailure)
         case malformedPayload
+        /// v2 single-device grant that does not include THIS device (or the
+        /// binding hash doesn't match our key) — Tier-0 projection, not an
+        /// error toast (INV-04/10).
+        case deviceNotAuthorized
 
         var errorDescription: String? {
             switch self {
@@ -29,6 +36,8 @@ import Foundation
                 return appString("This share couldn't be verified.") + " (\(reason))"
             case .malformedPayload:
                 return appString("The response couldn't be read.")
+            case .deviceNotAuthorized:
+                return appString("The owner limited this item to a different device.")
             }
         }
     }
@@ -50,22 +59,61 @@ import Foundation
     /// Publish B's identity material for the owner to pin (ADR-4). Called
     /// after `ParticipantEscrowService.ensureIdentity` succeeded (Validation
     /// §3 ordering: escrowed BEFORE published).
+    ///
+    /// MERGE-aware (P03a): the profile is a singleton per zone, but each of
+    /// B's devices must appear in it — signing keys are unioned and the
+    /// per-device HPKE directory is upserted onto the FETCHED record, so a
+    /// republish from device 2 no longer erases device 1.
     func publishProfile(identity: ParticipantIdentity, zoneID: CKRecordZone.ID,
                         nowUnixMs: Int64) async throws {
         let signingIdentity = try DeviceSigningIdentity.loadOrCreate()
+        let hpkeIdentity = try DeviceHPKEIdentity.loadOrCreate()
+        let ownEntry = DeviceHPKEDirectoryEntry(
+            deviceKeyID: hpkeIdentity.deviceKeyID,
+            hpkePublicKey: hpkeIdentity.publicKeyRaw,
+            label: Self.deviceLabel(),
+            addedAtUnixMs: nowUnixMs)
+
+        let recordID = CKRecord.ID(recordName: ApprovalConfig.participantProfileRecordName,
+                                   zoneID: zoneID)
+        let record: CKRecord
+        var signingKeys = [signingIdentity.publicKeyRaw]
+        var directory = [ownEntry]
+        if let existing = try? await sharedDatabase.record(for: recordID),
+           let profile = ApprovalRecordMapping.participantProfile(from: existing) {
+            signingKeys = ParticipantProfileMerge.signingKeys(
+                existing: profile.deviceSigningKeys, adding: signingIdentity.publicKeyRaw)
+            directory = ParticipantProfileMerge.directory(
+                existing: profile.deviceHPKEDirectory, upserting: ownEntry)
+            record = existing
+        } else {
+            record = CKRecord(recordType: ApprovalConfig.participantProfileRecordType,
+                              recordID: recordID)
+        }
         // Rendezvous pointers ride along (repeat auto-invites, U5): the inbox
         // id B listens on, and B's OWN opaque userRecordID — the owner can't
         // learn either from an email lookup, but B can always say its own.
-        let record = ApprovalRecordMapping.participantProfileRecord(
+        ApprovalRecordMapping.applyParticipantProfile(
+            to: record,
             participantPubKey: identity.publicKeyRaw,
-            deviceSigningKeys: [signingIdentity.publicKeyRaw],
+            deviceSigningKeys: signingKeys,
+            deviceHPKEDirectory: directory,
             createdAtUnixMs: nowUnixMs,
             inviteInboxID: InviteInboxService.storedOrNewInboxID(),
-            inviteRecipientID: (try? await container.userRecordID())?.recordName,
-            zoneID: zoneID)
+            inviteRecipientID: (try? await container.userRecordID())?.recordName)
         let saved = try await sharedDatabase.modifyRecords(saving: [record], deleting: [],
                                                            savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
+    }
+
+    /// Display label for the device directory (owner-facing in the P03b
+    /// "new device asks for access" banner). Non-sensitive.
+    private static func deviceLabel() -> String {
+        #if canImport(UIKit)
+        return UIDevice.current.name
+        #else
+        return Host.current().localizedName ?? "Mac"
+        #endif
     }
 
     /// Idempotent acceptance completion (Validation §3 ordering): identity is
@@ -136,13 +184,35 @@ import Foundation
         guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }
+        // Grant v2 with device bindings: this device must appear in the
+        // signed bindings AND its live public key must match the bound hash
+        // (a swapped key under the same id is rejected — INV-12 test).
+        // The legacy synced participant key is NEVER consulted here (INV-04).
+        var deviceIdentity: DeviceHPKEIdentity?
+        if !grant.allowedDeviceKeyBindings.isEmpty {
+            guard let device = try? DeviceHPKEIdentity.loadOrCreate(),
+                  let binding = grant.allowedDeviceKeyBindings
+                      .first(where: { $0.deviceKeyID == device.deviceKeyID }),
+                  binding.hpkePublicKeyHash == device.publicKeyHash else {
+                throw Failure.deviceNotAuthorized
+            }
+            deviceIdentity = device
+        }
         var values: [String: Data] = [:]
         // Stateless: current state of the shared blobs, every call.
         try await ZoneDeltaFetch.pull(database: sharedDatabase, zoneID: zoneID, cursor: nil) { record in
             guard let field = ApprovalRecordMapping.sharedField(from: record),
                   field.grantId == grant.id,
                   grant.capabilities[field.fieldId]?.isSharedValue == true else { return }
-            if let plaintext = try? ApprovalSeal.openSharedField(
+            if let device = deviceIdentity {
+                if let blob = try? PerDeviceSealedBlob.decode(field.blob),
+                   let envelope = blob.envelope(forDeviceKeyID: device.deviceKeyID),
+                   let plaintext = try? ApprovalSeal.openSharedFieldForDevice(
+                       envelope, deviceIdentity: device,
+                       grantId: grant.id, fieldId: field.fieldId) {
+                    values[field.fieldId] = plaintext
+                }
+            } else if let plaintext = try? ApprovalSeal.openSharedField(
                 field.blob, participantPrivateKey: identity.privateKey,
                 grantId: grant.id, fieldId: field.fieldId) {
                 values[field.fieldId] = plaintext
@@ -160,6 +230,21 @@ import Foundation
         guard let record = try? await sharedDatabase.record(for: id),
               let payload = ApprovalRecordMapping.displayEnvelope(from: record),
               payload.grantId == grant.id else { return nil }
+        if !grant.allowedDeviceKeyBindings.isEmpty {
+            // v2: Tier-1 metadata is per-device too — an unbound device gets
+            // nil (generic Tier-0 title), not the real title (INV-10).
+            guard let device = try? DeviceHPKEIdentity.loadOrCreate(),
+                  grant.allowedDeviceKeyBindings.contains(where: {
+                      $0.deviceKeyID == device.deviceKeyID
+                          && $0.hpkePublicKeyHash == device.publicKeyHash
+                  }),
+                  let blob = try? PerDeviceSealedBlob.decode(payload.blob),
+                  let envelope = blob.envelope(forDeviceKeyID: device.deviceKeyID) else {
+                return nil
+            }
+            return try? SharedDisplayEnvelope.openForDevice(envelope, deviceIdentity: device,
+                                                            grantId: grant.id)
+        }
         return try? SharedDisplayEnvelope.open(payload.blob, participantIdentity: identity,
                                                grantId: grant.id)
     }

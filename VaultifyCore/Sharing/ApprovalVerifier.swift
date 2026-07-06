@@ -122,11 +122,21 @@ nonisolated enum ApprovalVerifier {
               request.expiresAtUnixMs <= nowUnixMs + Self.maxRequestLifetimeMs else {
             return .requestLifetimeTooLong
         }
-        // 8. Capability lookup — unknown fieldId FAILS CLOSED (M3).
+        // 8. Capability lookup — unknown fieldId FAILS CLOSED (M3). The
+        // request kind and the granted capability must AGREE, and the
+        // payload binding must match the kind: exactly one clientDataHash
+        // for passkey slots, none for TOTP (INV-09).
         guard let capability = grant.capabilities[request.fieldId] else {
             return .unknownField
         }
-        guard capability.isAskEachTimeTOTP else { return .capabilityNotGranted }
+        switch capability {
+        case .totp(.askEachTime):
+            guard request.payloadBinding == nil else { return .malformedRequest }
+        case .passkey(.askEachTime):
+            guard request.payloadBinding?.count == 32 else { return .malformedRequest }
+        default:
+            return .capabilityNotGranted
+        }
         // 9. Nonce — authoritative single use, consumed only now.
         do {
             guard try await nonceStore.consume(nonce: request.nonce,

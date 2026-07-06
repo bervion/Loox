@@ -10,6 +10,9 @@ import SwiftUI
 struct FieldCapabilityRow: View {
     let field: DynamicField
     @Binding var capability: FieldCapability
+    /// Hand-over modes (TOTP seed) never write directly: the parent shows the
+    /// irreversibility warning (INV-08) and applies the capability on confirm.
+    var requestHandOver: (FieldCapability) -> Void = { _ in }
 
     private var shareable: Bool {
         !(field.isExtraProtected || field.kind == .fileRef)
@@ -30,17 +33,35 @@ struct FieldCapabilityRow: View {
                         .vaultType(.footnote)
                         .themedForeground(.secondary)
                 } else {
-                    // The switch's meaning per kind, since the control itself
-                    // is unlabeled: what turning it ON grants.
-                    Text(isTOTP ? "Ask each time" : "Shared")
+                    // The control's meaning per kind, since it is unlabeled:
+                    // what enabling grants (or the current TOTP mode).
+                    Text(isTOTP ? totpModeTitle : "Shared")
                         .vaultType(.footnote)
                         .themedForeground(.secondary)
                 }
             }
             Spacer()
             if shareable {
-                Toggle("", isOn: enabledBinding)
-                    .labelsHidden()
+                if isTOTP {
+                    // Three modes need a real menu (V6's "binary → Toggle"
+                    // rule no longer applies to TOTP since seed hand-over).
+                    Menu {
+                        Button { capability = .totp(.none) } label: { Text("Off") }
+                        Button { capability = .totp(.askEachTime) } label: { Text("Ask each time") }
+                        Button { requestHandOver(.totp(.shared)) } label: {
+                            Label("Hand over secret…", image: Icons.alert)
+                        }
+                    } label: {
+                        HStack(spacing: Space.s1) {
+                            Text(totpModeTitle).vaultType(.callout)
+                            PolarisIcon(Icons.chevronDown, size: 14)
+                        }
+                        .themedForeground(.accent)
+                    }
+                } else {
+                    Toggle("", isOn: enabledBinding)
+                        .labelsHidden()
+                }
             }
         }
         .frame(minHeight: Metric.hitMin)
@@ -52,6 +73,14 @@ struct FieldCapabilityRow: View {
         return false
     }
 
+    private var totpModeTitle: LocalizedStringKey {
+        switch capability {
+        case .totp(.askEachTime): "Ask each time"
+        case .totp(.shared): "Secret handed over"
+        default: "Off"
+        }
+    }
+
     /// ON ↔ the single grantable capability for this field kind.
     private var enabledBinding: Binding<Bool> {
         Binding(
@@ -59,12 +88,16 @@ struct FieldCapabilityRow: View {
                 switch capability {
                 case .totp(let c): return c == .askEachTime
                 case .value(let c): return c == .shared
+                // Passkey rows get dedicated UI in the capability-v2 phase;
+                // until then the toggle maps to the ask-each-time default.
+                case .passkey(let c): return c != .none
                 }
             },
             set: { enabled in
                 switch capability {
                 case .totp: capability = .totp(enabled ? .askEachTime : .none)
                 case .value: capability = .value(enabled ? .shared : .none)
+                case .passkey: capability = .passkey(enabled ? .askEachTime : .none)
                 }
             })
     }

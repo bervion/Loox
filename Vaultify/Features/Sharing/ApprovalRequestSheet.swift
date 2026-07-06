@@ -23,6 +23,10 @@ struct ApprovalRequestSheet: View {
 
     /// Same 5-digit code renders on the requester's waiting screen — the
     /// human check that THIS request is the one they actually sent.
+    private var isPasskeyRequest: Bool {
+        PasskeySlot.isPasskeySlot(pending.request.fieldId)
+    }
+
     private var requestCode: String {
         TrustFingerprint.requestCode(requestId: pending.request.requestId,
                                      nonce: pending.request.nonce)
@@ -83,9 +87,19 @@ struct ApprovalRequestSheet: View {
             PolarisIcon(Icons.shield, size: Metric.iconTileLarge)
                 .themedForeground(.accent)
             VStack(spacing: Space.s2) {
-                Text("Code requested")
+                Text(isPasskeyRequest ? "Sign-in requested" : "Code requested")
                     .vaultType(.section).themedForeground()
-                if let requesterLabel {
+                if isPasskeyRequest {
+                    if let requesterLabel {
+                        Text("\(requesterLabel) is asking to sign in with the shared passkey for \(itemTitle).")
+                            .vaultType(.callout).themedForeground(.secondary)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        Text("Someone you shared with is asking to sign in with the shared passkey for \(itemTitle).")
+                            .vaultType(.callout).themedForeground(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                } else if let requesterLabel {
                     Text("\(requesterLabel) is asking for the current verification code for \(itemTitle).")
                         .vaultType(.callout).themedForeground(.secondary)
                         .multilineTextAlignment(.center)

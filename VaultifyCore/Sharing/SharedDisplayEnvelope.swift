@@ -26,9 +26,43 @@ nonisolated struct SharedDisplayEnvelope: Codable, Sendable, Equatable {
     /// Per-fieldId metadata (optional — pre-V1.2 envelopes decode fine).
     var fields: [String: FieldMeta]? = nil
 
+    /// Tier-1 metadata for shared passkey slots (capability v2): what the
+    /// recipient needs to RENDER and to register a QuickType identity —
+    /// never key material (that ships, for hand-over mode only, inside the
+    /// per-slot sealed shared blob like any other shared value).
+    struct PasskeyMeta: Codable, Sendable, Equatable {
+        /// `PasskeySlot.slotId` — joins grant capability ↔ metadata ↔ blob.
+        var slotId: String
+        var relyingParty: String
+        var userName: String
+        var userHandle: Data
+        var credentialID: Data
+        var flags: UInt8?
+    }
+
+    /// Optional — envelopes from builds without passkey sharing decode fine.
+    var passkeys: [PasskeyMeta]? = nil
+
     func sealed(toParticipantPubKey key: Data, grantId: String) throws -> Data {
         try ApprovalSeal.sealDisplayEnvelope(JSONEncoder().encode(self),
                                              toParticipantPubKey: key, grantId: grantId)
+    }
+
+    /// Per-device variants (grant v2): Tier-1 metadata is sealed to each
+    /// APPROVED device only — an unapproved device stays at Tier 0 (INV-10).
+    func sealedForDevice(toDevicePubKey key: Data, deviceKeyID: Data,
+                         grantId: String) throws -> Data {
+        try ApprovalSeal.sealDisplayEnvelopeForDevice(JSONEncoder().encode(self),
+                                                      toDevicePubKey: key,
+                                                      deviceKeyID: deviceKeyID,
+                                                      grantId: grantId)
+    }
+
+    static func openForDevice(_ blob: Data, deviceIdentity: DeviceHPKEIdentity,
+                              grantId: String) throws -> SharedDisplayEnvelope {
+        let plaintext = try ApprovalSeal.openDisplayEnvelopeForDevice(
+            blob, deviceIdentity: deviceIdentity, grantId: grantId)
+        return try JSONDecoder().decode(SharedDisplayEnvelope.self, from: plaintext)
     }
 
     static func open(_ blob: Data, participantIdentity: ParticipantIdentity,
