@@ -5903,6 +5903,53 @@
         }
       }
     },
+    "Add persona": {
+      "comment": "Button to create a new persona.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Thêm danh tính" } }
+      }
+    },
+    "Anonymous": {
+      "comment": "Persona kind.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Ẩn danh" } }
+      }
+    },
+    "New persona": {
+      "comment": "Title of the create-persona sheet.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Danh tính mới" } }
+      }
+    },
+    "Personal": {
+      "comment": "Default persona name.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cá nhân"
+          }
+        }
+      }
+    },
+    "Personas": {
+      "comment": "Screen title / settings row for managing personas.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Danh tính" } }
+      }
+    },
+    "Professional": {
+      "comment": "Persona kind.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Công việc" } }
+      }
+    },
+    "Pseudonymous": {
+      "comment": "Persona kind.",
+      "localizations": {
+        "vi": { "stringUnit": { "state": "translated", "value": "Bút danh" } }
+      }
+    },
     "Phone": {
       "comment": "Display name for an identity profile field.",
       "extractionState": "stale",

@@ -80,6 +80,12 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         didSet { defaults.set(lastSelectedSpaceByPersona, forKey: Key.lastSelectedSpaces) }
     }
 
+    /// Which persona the UI currently acts as. Device-local selection (not synced,
+    /// unlike the persona's converged `isDefault` flag): the active view is a
+    /// per-device UI concern, and a persona id reveals nothing without the sealed
+    /// name. nil / stale falls back to the default persona.
+    var activePersonaID: String? { didSet { defaults.set(activePersonaID, forKey: Key.activePersona) } }
+
     /// The remembered Home Space for an identity, or nil for "All Spaces".
     func lastSelectedSpace(persona: String) -> String? {
         lastSelectedSpaceByPersona[persona]
@@ -117,6 +123,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
         selectedPaymentCardId = d.string(forKey: Key.selectedCard)
         lastSelectedSpaceByPersona = d.dictionary(forKey: Key.lastSelectedSpaces) as? [String: String] ?? [:]
+        activePersonaID = d.string(forKey: Key.activePersona)
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
         SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
         appResourceLocale = appLocale(forCode: preferredLanguage)
@@ -136,6 +143,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let privacyScreen = "hide_in_app_switcher"
         static let selectedCard = "profile_selected_payment_card_id"
         static let lastSelectedSpaces = "last_selected_space_by_persona"
+        static let activePersona = "active_persona_id"
         static let language = "preferred_language"
     }
 }

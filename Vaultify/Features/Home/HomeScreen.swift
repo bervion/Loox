@@ -78,9 +78,23 @@ struct HomeScreen: View {
     private func restoreSelectedSpace() {
         guard !didRestoreSelectedSpace else { return }
         didRestoreSelectedSpace = true
-        let saved = env.settings.lastSelectedSpace(persona: PersonaID.placeholder)
-        if let saved, env.repository.folders.contains(where: { $0.id == saved }) {
-            selectedFolderId = saved
+        applyRememberedSpace()
+    }
+
+    /// The persistence bucket key for the active persona. Falls back to the shared
+    /// placeholder before the persona seed lands (or if the resolver is momentarily
+    /// nil) so the key stays stable — no crash, no bucket churn.
+    private var activePersonaKey: String {
+        env.repository.activePersona?.id ?? PersonaID.placeholder
+    }
+
+    /// Apply the Space remembered for the active persona, validated against live
+    /// folders (a stale id → All Spaces). Reused on active-persona change so the
+    /// Home filter follows the persona.
+    private func applyRememberedSpace() {
+        let saved = env.settings.lastSelectedSpace(persona: activePersonaKey)
+        selectedFolderId = saved.flatMap { id in
+            env.repository.folders.contains { $0.id == id } ? id : nil
         }
     }
 
@@ -119,7 +133,9 @@ struct HomeScreen: View {
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
             .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
-            .onChange(of: selectedFolderId) { env.settings.setLastSelectedSpace($1, persona: PersonaID.placeholder) }
+            .onChange(of: selectedFolderId) { env.settings.setLastSelectedSpace($1, persona: activePersonaKey) }
+            // Switching the active persona re-drives the Home filter to that persona's Space.
+            .onChange(of: env.repository.activePersona?.id) { applyRememberedSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
             .onChange(of: env.repository.folders.count) { autoSelectSingleSpace() }
             // First share arriving on a single-Space setup: release the

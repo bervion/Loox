@@ -21,7 +21,8 @@ extension VaultRepository {
                       color: FolderColor(rawValue: record.colorRaw) ?? .gray,
                       sortIndex: record.sortIndex,
                       createdAt: record.createdAt,
-                      updatedAt: record.updatedAt)
+                      updatedAt: record.updatedAt,
+                      personaId: secret.personaId)
     }
 
     /// Decrypt all live folders, sorted by sort order then creation. Called from
@@ -41,11 +42,11 @@ extension VaultRepository {
     }
 
     /// The Space a new item defaults into when the caller supplies no context.
-    /// Single source for the "primary Space" heuristic so it can later resolve to
-    /// the active identity's chosen primary Space by editing only this accessor —
-    /// call sites never change. V1 = lowest-sortIndex folder (`folders` is already
-    /// sorted by `(sortIndex, createdAt)`); `nil` when no folders exist (Unfiled world).
-    var primarySpaceId: String? { folders.first?.id }
+    /// Resolves to the active persona's chosen primary Space; falls back to the
+    /// lowest-sortIndex folder when the persona has none pinned (or no persona
+    /// exists yet), preserving the pre-persona behavior. `nil` only when no
+    /// folders exist at all (Unfiled world).
+    var primarySpaceId: String? { activePersona?.primarySpaceID ?? folders.first?.id }
 
     // MARK: Folder CRUD
 

@@ -100,6 +100,9 @@ struct SettingsScreen: View {
                 .listRowBackground(VaultColors.surface)
 
                 Section("Organization") {
+                    NavigationLink { PersonaSwitcherScreen() } label: {
+                        Label { Text("Personas") } icon: { PolarisIcon(Icons.person) }
+                    }
                     NavigationLink { ManageFoldersScreen() } label: {
                         Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
                     }

@@ -41,7 +41,8 @@ struct SearchResultsList: View {
     /// The Space the user is currently in, if it still exists — the default
     /// search scope. nil when Home is on "All Spaces" or the Space was deleted.
     private var currentSpaceId: String? {
-        guard let saved = env.settings.lastSelectedSpace(persona: PersonaID.placeholder),
+        let key = env.repository.activePersona?.id ?? PersonaID.placeholder
+        guard let saved = env.settings.lastSelectedSpace(persona: key),
               env.repository.folders.contains(where: { $0.id == saved }) else { return nil }
         return saved
     }

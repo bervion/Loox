@@ -15,6 +15,10 @@ nonisolated struct Folder: Identifiable, Equatable, Sendable {
     var sortIndex: Int
     var createdAt: Date
     var updatedAt: Date
+    /// Sealed link to the persona that owns this Space. nil = unassigned. Not
+    /// auto-populated today (the persona's `primarySpaceID` is the authoritative
+    /// link); a writer sets it via `updateFolder` so `updatedAt` bumps (LWW).
+    var personaId: String?
 
     init(id: String = UUID().uuidString,
          name: String,
@@ -22,7 +26,8 @@ nonisolated struct Folder: Identifiable, Equatable, Sendable {
          color: FolderColor = .blue,
          sortIndex: Int = 0,
          createdAt: Date = .now,
-         updatedAt: Date = .now) {
+         updatedAt: Date = .now,
+         personaId: String? = nil) {
         self.id = id
         self.name = name
         self.iconAsset = iconAsset
@@ -30,10 +35,11 @@ nonisolated struct Folder: Identifiable, Equatable, Sendable {
         self.sortIndex = sortIndex
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.personaId = personaId
     }
 
     /// The portion sealed (AES-256-GCM) at rest.
-    var secret: FolderSecret { FolderSecret(name: name) }
+    var secret: FolderSecret { FolderSecret(name: name, personaId: personaId) }
 }
 
 /// The encrypted-at-rest payload of a folder. Only the name is secret.
