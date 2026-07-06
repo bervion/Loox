@@ -46,6 +46,15 @@ extension VaultRepository {
         try updateAlias(updated)
     }
 
+    /// Checkpoint that the backend has minted this alias, so a resumed activation
+    /// skips createAlias (avoids orphaning the first mint on a collision retry).
+    func markMinted(_ alias: EmailAlias) throws {
+        guard !alias.backendMinted else { return }
+        var updated = alias
+        updated.backendMinted = true
+        try updateAlias(updated)
+    }
+
     func updateAlias(_ alias: EmailAlias) throws {
         guard let key = session.vaultKey else { throw AuthError.locked }
         guard let record = store.aliasRecord(id: alias.id) else { return }

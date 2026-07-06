@@ -30,10 +30,15 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
     var boundItemId: String?
     var boundDomain: String?
     var status: AliasStatus
-    /// Local label of the real inbox this would forward to (the persona's profile
-    /// email today; a verified-destination reference once the relay exists).
+    /// The real inbox this alias forwards to — set on activation via
+    /// rotateDestination (the owning persona's profile email).
     var forwardingTarget: String?
     var disabledAt: Date?
+    /// True once the backend has minted this alias (createAlias returned ok).
+    /// Makes activation resumable: if rotateDestination fails after the mint, a
+    /// retry skips createAlias (which would collide and orphan the first mint).
+    /// Also means disable/delete must reach the backend even while still reserved.
+    var backendMinted: Bool
     var sortIndex: Int
     var createdAt: Date
     var updatedAt: Date
@@ -47,6 +52,7 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
          status: AliasStatus = .draft,
          forwardingTarget: String? = nil,
          disabledAt: Date? = nil,
+         backendMinted: Bool = false,
          sortIndex: Int = 0,
          createdAt: Date = .now,
          updatedAt: Date = .now) {
@@ -59,6 +65,7 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
         self.status = status
         self.forwardingTarget = forwardingTarget
         self.disabledAt = disabledAt
+        self.backendMinted = backendMinted
         self.sortIndex = sortIndex
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -68,7 +75,7 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
         EmailAliasSecret(personaId: personaId, tier: tier, localPart: localPart,
                          boundItemId: boundItemId, boundDomain: boundDomain,
                          status: status, forwardingTarget: forwardingTarget,
-                         disabledAt: disabledAt)
+                         disabledAt: disabledAt, backendMinted: backendMinted)
     }
 }
 
@@ -85,11 +92,12 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
     var status: AliasStatus
     var forwardingTarget: String?
     var disabledAt: Date?
+    var backendMinted: Bool
 
     init(personaId: String, tier: AliasTier, localPart: String,
          boundItemId: String? = nil, boundDomain: String? = nil,
          status: AliasStatus = .draft, forwardingTarget: String? = nil,
-         disabledAt: Date? = nil) {
+         disabledAt: Date? = nil, backendMinted: Bool = false) {
         self.personaId = personaId
         self.tier = tier
         self.localPart = localPart
@@ -98,6 +106,7 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
         self.status = status
         self.forwardingTarget = forwardingTarget
         self.disabledAt = disabledAt
+        self.backendMinted = backendMinted
     }
 
     init(from decoder: any Decoder) throws {
@@ -110,5 +119,6 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
         boundDomain = try c.decodeIfPresent(String.self, forKey: .boundDomain)
         forwardingTarget = try c.decodeIfPresent(String.self, forKey: .forwardingTarget)
         disabledAt = try c.decodeIfPresent(Date.self, forKey: .disabledAt)
+        backendMinted = try c.decodeIfPresent(Bool.self, forKey: .backendMinted) ?? false
     }
 }
