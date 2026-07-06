@@ -136,6 +136,31 @@ final class ForwardingInboxTests: XCTestCase {
         XCTAssertNil(repo.inbox(id: manualID))
     }
 
+    // MARK: Bulk-rotation pending set (journal-free resumability)
+
+    func testAliasesNeedingRotationTracksDriftAndCheckpoints() throws {
+        let repo = makeRepo()
+        let persona = try makePersonaWithEmail(repo)
+        let id = try repo.createPersonaAlias(for: persona)!
+        // Reserved, not yet minted → never in the batch (nothing to rotate).
+        XCTAssertTrue(repo.aliasesNeedingRotation.isEmpty)
+        // Minted with the profile destination already applied → no drift.
+        var alias = repo.aliases.first { $0.id == id }!
+        alias.backendMinted = true
+        alias.forwardingTarget = "me@real.com"
+        try repo.updateAlias(alias)
+        XCTAssertTrue(repo.aliasesNeedingRotation.isEmpty)
+        // Default inbox changes → the alias drifts into the batch.
+        let workID = try repo.addManualInbox(email: "work@company.com")
+        try repo.setDefaultInbox(repo.inbox(id: workID)!)
+        XCTAssertEqual(repo.aliasesNeedingRotation.map(\.id), [id])
+        // Checkpoint (what reconcile does after a successful rotate) → batch empties.
+        var rotated = repo.aliases.first { $0.id == id }!
+        rotated.forwardingTarget = "work@company.com"
+        try repo.updateAlias(rotated)
+        XCTAssertTrue(repo.aliasesNeedingRotation.isEmpty)
+    }
+
     func testEraseAllRemovesInboxRecords() throws {
         let repo = makeRepo()
         _ = try repo.addManualInbox(email: "a@x.com")

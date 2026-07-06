@@ -13,6 +13,8 @@ struct PersonaAliasesScreen: View {
     @State private var missingEmail = false
     @State private var pendingPause: EmailAlias?
     @State private var pendingDelete: EmailAlias?
+    @State private var promptReusableLabel = false
+    @State private var reusableLabelDraft = ""
 
     private var persona: Persona? { env.repository.activePersona }
 
@@ -22,6 +24,19 @@ struct PersonaAliasesScreen: View {
                 warningBanner
             }
             .listRowBackground(Color.clear)
+
+            // Where mail lands — masked overview; full addresses live inside.
+            Section {
+                NavigationLink { ForwardingInboxScreen() } label: {
+                    if let persona, let dest = env.repository.newAliasDestination(for: persona) {
+                        LabeledContent { Text(verbatim: EmailMask.masked(dest)) }
+                            label: { Text("Forwarding to") }
+                    } else {
+                        Text("Forwarding inboxes")
+                    }
+                }
+            }
+            .listRowBackground(VaultColors.surface)
 
             if let persona {
                 personaAliasSection(persona)
@@ -79,14 +94,16 @@ struct PersonaAliasesScreen: View {
                 aliasRow(alias, subtitle: alias.label ?? persona.displayName)
             }
             Button {
-                guardEmail(persona) {
-                    if let id = try? env.repository.createPersonaAlias(for: persona),
-                       let created = env.repository.aliases.first(where: { $0.id == id }) {
-                        activate(created)
-                    }
-                }
+                guardEmail(persona) { promptReusableLabel = true }
             } label: {
                 Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
+            }
+            .alert("New reusable address", isPresented: $promptReusableLabel) {
+                TextField("Label", text: $reusableLabelDraft)
+                Button("Cancel", role: .cancel) { reusableLabelDraft = "" }
+                Button("Save") { createReusable(persona) }
+            } message: {
+                Text("Optional label like “Clients”.")
             }
         }
         .listRowBackground(VaultColors.surface)
@@ -137,6 +154,16 @@ struct PersonaAliasesScreen: View {
                     Label { Text("Pause") } icon: { PolarisIcon(Icons.hide) }
                 }
             }
+        }
+    }
+
+    private func createReusable(_ persona: Persona) {
+        let label = reusableLabelDraft.trimmingCharacters(in: .whitespaces)
+        reusableLabelDraft = ""
+        if let id = try? env.repository.createPersonaAlias(for: persona,
+                                                           label: label.isEmpty ? nil : label),
+           let created = env.repository.aliases.first(where: { $0.id == id }) {
+            activate(created)
         }
     }
 
