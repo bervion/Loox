@@ -1,39 +1,60 @@
 import SwiftUI
 
-/// Minimal persona ("identity") switcher: list personas, switch the active one,
-/// and create a new one. Edit, delete, avatars, and isolation policy are deferred
-/// — this is the thin first cut that makes personas real end-to-end.
+/// Persona ("identity") switcher: list, switch, create, edit, and delete
+/// personas — including the isolation policy that drives suggestion/search
+/// isolation. Avatars remain out of scope.
 struct PersonaSwitcherScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
-    @State private var showingCreate = false
-    @State private var newName = ""
-    @State private var newKind: PersonaKind = .personal
+    @State private var editorTarget: PersonaEditorTarget?
+    @State private var blockedReason: PersonaRemovalGate?
 
     var body: some View {
         List {
             Section {
                 ForEach(env.repository.personas) { persona in
                     Button { select(persona) } label: { row(persona) }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) { attemptDelete(persona) } label: {
+                                Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
+                            }
+                            Button { editorTarget = .edit(persona) } label: {
+                                Label { Text("Edit") } icon: { PolarisIcon(Icons.edit) }
+                            }
+                            .tint(Color(rgb: env.theme.active.accent))
+                        }
                 }
             }
             .listRowBackground(VaultColors.surface)
 
             Section {
-                Button { showingCreate = true } label: {
+                Button { editorTarget = .create } label: {
                     Label { Text("Add persona") } icon: { PolarisIcon(Icons.addCircle) }
                 }
             }
             .listRowBackground(VaultColors.surface)
         }
         .navigationTitle(Text("Personas"))
-        .sheet(isPresented: $showingCreate) { createSheet }
+        .sheet(item: $editorTarget) { PersonaEditorSheet(target: $0) }
+        .alert(Text("Can’t delete this identity"), isPresented: blockedBinding, presenting: blockedReason) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { reason in
+            Text(reason == .lastPersona
+                 ? "You need at least one identity."
+                 : "Make another identity the default first.")
+        }
     }
 
     private func row(_ persona: Persona) -> some View {
         Label {
             HStack {
-                Text(persona.displayName).themedForeground(.primary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(persona.displayName).themedForeground(.primary)
+                    if persona.isolationPolicy != .standard {
+                        Text(PersonaKindStyle.policyLabel(persona.isolationPolicy))
+                            .vaultType(.caption).themedForeground(.secondary)
+                    }
+                }
                 Spacer()
                 if persona.id == env.repository.activePersona?.id {
                     PolarisIcon(Icons.checkCircle).themedForeground(.accent)
@@ -49,40 +70,92 @@ struct PersonaSwitcherScreen: View {
         dismiss()
     }
 
-    private var createSheet: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("Name", text: $newName)
-                    Picker("Type", selection: $newKind) {
-                        ForEach(PersonaKind.allCases, id: \.self) { kind in
-                            Text(PersonaKindStyle.label(kind)).tag(kind)
-                        }
-                    }
-                }
-            }
-            .navigationTitle(Text("New persona"))
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { showingCreate = false }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { create() }
-                        .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+    private func attemptDelete(_ persona: Persona) {
+        let gate = env.repository.personaRemovalGate(persona)
+        if gate == .ok {
+            try? env.repository.deletePersona(persona)
+        } else {
+            blockedReason = gate
         }
     }
 
-    private func create() {
-        let name = newName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-        if let id = try? env.repository.addPersona(displayName: name, kind: newKind) {
-            env.repository.setActivePersona(id)
+    private var blockedBinding: Binding<Bool> {
+        Binding(get: { blockedReason != nil }, set: { if !$0 { blockedReason = nil } })
+    }
+}
+
+/// Whether the editor is creating a new persona or editing an existing one.
+enum PersonaEditorTarget: Identifiable {
+    case create
+    case edit(Persona)
+    var id: String { if case .edit(let p) = self { return p.id } else { return "create" } }
+}
+
+/// Create/edit sheet: name, kind, and isolation policy.
+private struct PersonaEditorSheet: View {
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.dismiss) private var dismiss
+    let target: PersonaEditorTarget
+
+    @State private var name = ""
+    @State private var kind: PersonaKind = .personal
+    @State private var policy: PersonaIsolationPolicy = .standard
+
+    private var isEditing: Bool { if case .edit = target { return true } else { return false } }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Name", text: $name)
+                    Picker("Type", selection: $kind) {
+                        ForEach(PersonaKind.allCases, id: \.self) { Text(PersonaKindStyle.label($0)).tag($0) }
+                    }
+                }
+                Section {
+                    Picker("Privacy", selection: $policy) {
+                        ForEach(PersonaIsolationPolicy.allCases, id: \.self) {
+                            Text(PersonaKindStyle.policyLabel($0)).tag($0)
+                        }
+                    }
+                } footer: {
+                    Text(PersonaKindStyle.policyDescription(policy))
+                }
+            }
+            .navigationTitle(Text(isEditing ? "Edit persona" : "New persona"))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .onAppear(perform: seed)
         }
-        newName = ""
-        newKind = .personal
-        showingCreate = false
+    }
+
+    private func seed() {
+        if case .edit(let persona) = target {
+            name = persona.displayName
+            kind = persona.kind
+            policy = persona.isolationPolicy
+        }
+    }
+
+    private func save() {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        switch target {
+        case .create:
+            if let id = try? env.repository.addPersona(displayName: trimmed, kind: kind, isolationPolicy: policy) {
+                env.repository.setActivePersona(id)
+            }
+        case .edit(let persona):
+            var updated = persona
+            updated.displayName = trimmed
+            updated.kind = kind
+            updated.isolationPolicy = policy
+            try? env.repository.updatePersona(updated)
+        }
         dismiss()
     }
 }

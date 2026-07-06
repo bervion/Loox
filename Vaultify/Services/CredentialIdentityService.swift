@@ -69,6 +69,14 @@ enum CredentialIdentityService {
     private static func publish() {
         guard !isRunningUnitTests else { return }
         let token = CredentialIdentityRefreshGate.next()
+        // The QuickType index is host-scoped and persona-agnostic: the OS matches a
+        // saved login by its website at fill time, with no notion of the active
+        // identity. A strictly-anonymous identity's saved login is still an owned
+        // item and will be offered on its own site — this is site-scoped, not
+        // cross-identity correlation inside the app, so it doesn't widen suggestions
+        // across identities. Suppressing a login from QuickType per identity would
+        // need a per-item identity tag (not yet modeled) and is intentionally left
+        // for later; document any change here.
         // One identity per website host, so a login with several websites is suggested
         // on every one of its domains.
         let ownedPasswordIdentities: [ASPasswordCredentialIdentity] = lastOwnedItems.flatMap { item -> [ASPasswordCredentialIdentity] in

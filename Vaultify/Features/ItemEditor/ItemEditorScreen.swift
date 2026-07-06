@@ -21,6 +21,9 @@ struct ItemEditorScreen: View {
     @State private var showAttachmentPicker = false
     @State private var showIconPicker = false
     @State private var didApplyDefaultFolder = false
+    /// Persona-scoped username suggestions for a new login (computed once on appear).
+    /// Empty under a strictAnonymous persona with no own profile (INV-R03 fail-safe).
+    @State private var usernameSuggestions: [String] = []
 
     init(target: EditorTarget, preselectedFolderId: String? = nil) {
         self.target = target
@@ -89,6 +92,30 @@ struct ItemEditorScreen: View {
                 // row width), so zero horizontal inset lines the avatar/title up with them.
                 .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s4, trailing: 0))
 
+                // Persona-scoped username suggestions (tap-to-fill) for a new login.
+                if isNew, draft.category == .login, !usernameSuggestions.isEmpty {
+                    Section {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: Space.s2) {
+                                ForEach(usernameSuggestions, id: \.self) { value in
+                                    Button { applyUsernameSuggestion(value) } label: {
+                                        Text(value)
+                                            .vaultType(.footnote)
+                                            .themedForeground(.accent)
+                                            .padding(.horizontal, Space.s3)
+                                            .padding(.vertical, Space.s2)
+                                            .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("Suggested email")
+                    }
+                    .listRowBackground(VaultColors.surface)
+                }
+
                 // Login gets grouped sections (Credentials · Websites · Custom · Notes);
                 // other categories keep one flat, reorderable field list.
                 if draft.category == .login {
@@ -155,6 +182,9 @@ struct ItemEditorScreen: View {
                     }
                 }
                 ensureLoginNoteField()
+                if isNew, draft.category == .login {
+                    usernameSuggestions = env.repository.usernameSuggestions()
+                }
                 didApplyDefaultFolder = true
                 captureDraftForRestore()
             }
@@ -304,6 +334,17 @@ struct ItemEditorScreen: View {
         }
         draft.fields.append(DynamicField(label: name, kind: .fileRef, value: meta.encoded()))
         Haptics.success()
+    }
+
+    /// Fill the login's username (or email) field from a tapped suggestion. Sets
+    /// only that one field — never auto-writes on its own, so a strictAnonymous
+    /// persona with no suggestion simply sees no chips.
+    private func applyUsernameSuggestion(_ value: String) {
+        if let idx = draft.fields.firstIndex(where: { $0.kind == .username }) {
+            draft.fields[idx].value = value
+        } else if let idx = draft.fields.firstIndex(where: { $0.kind == .email }) {
+            draft.fields[idx].value = value
+        }
     }
 
     /// Login always shows a Notes section, so guarantee the single `.multiline` note

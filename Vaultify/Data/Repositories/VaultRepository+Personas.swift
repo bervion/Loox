@@ -55,26 +55,10 @@ extension VaultRepository {
 
     // MARK: CRUD
 
-    /// Create a new (non-default) persona. Its primary Space defaults to the
-    /// current primary so new items filed under it still have a home.
+    /// Create a new (non-default) persona with the default isolation policy.
     @discardableResult
     func addPersona(displayName: String, kind: PersonaKind) throws -> String {
-        guard let key = session.vaultKey else { throw AuthError.locked }
-        let persona = Persona(displayName: displayName,
-                              kind: kind,
-                              primarySpaceID: folders.first?.id,
-                              sortIndex: (personas.map(\.sortIndex).max() ?? -1) + 1)
-        let record = PersonaRecord(id: persona.id,
-                                   sealed: try sealPersona(persona, key: key),
-                                   isDefault: false,
-                                   sortIndex: persona.sortIndex,
-                                   createdAt: persona.createdAt,
-                                   updatedAt: persona.updatedAt)
-        store.context.insert(record)
-        try store.context.save()
-        reload()
-        noteLocalMutation()
-        return persona.id
+        try addPersona(displayName: displayName, kind: kind, isolationPolicy: .standard)
     }
 
     /// Make `persona` the single default; demotes the previous one. Each flag write
@@ -95,9 +79,11 @@ extension VaultRepository {
     }
 
     /// Switch which persona the UI acts as. Device-local only (no record write, no
-    /// sync) — the active view is a per-device concern.
+    /// sync) — the active view is a per-device concern. Re-mirrors the persona
+    /// context so the AutoFill extension immediately honors the new persona.
     func setActivePersona(_ id: String) {
         session.settings.activePersonaID = id
+        mirrorActivePersonaContext()
     }
 
     /// Link a Space to a persona by re-sealing the folder through `updateFolder`

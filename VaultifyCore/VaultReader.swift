@@ -34,6 +34,23 @@ enum VaultReader {
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
+    /// Best username/email for an item: email, then a username field, then a name/text field.
+    nonisolated static func username(from item: VaultItem) -> String? {
+        if let email = item.fields.first(where: { $0.kind == .email })?.value, !email.isEmpty { return email }
+        if let user = item.fields.first(where: { $0.kind == .username })?.value, !user.isEmpty { return user }
+        if let text = item.fields.first(where: { $0.kind == .text })?.value, !text.isEmpty { return text }
+        return nil
+    }
+
+    /// Resolve a single item by id from the shared store and extract its username.
+    @MainActor static func username(forItemID id: String, key: [UInt8]) -> String? {
+        let store = VaultStore()
+        guard let record = store.allRecords().first(where: {
+            $0.id == id && $0.trashedAt == nil && $0.deletedAt == nil
+        }), let item = decrypt(record, key: key) else { return nil }
+        return username(from: item)
+    }
+
     /// Best username/email to prefill a new login from the user's default identity.
     /// Identities have no password, so they never appear in `logins`; this reads them directly,
     /// filtering on the plaintext `ItemRecord.isDefaultIdentity` column (the sealed payload doesn't
@@ -43,11 +60,22 @@ enum VaultReader {
         guard let record = store.allRecords().first(where: {
             $0.trashedAt == nil && $0.deletedAt == nil && $0.isDefaultIdentity
         }), let item = decrypt(record, key: vaultKey) else { return nil }
-        if let email = item.fields.first(where: { $0.kind == .email })?.value, !email.isEmpty {
-            return email
+        return username(from: item)
+    }
+
+    /// Persona-aware prefill for a NEW login in the extension. Uses the active
+    /// persona's own profile (mirrored opaque item id) when it resolves; under a
+    /// strictAnonymous persona there is NO fallback to the global default identity
+    /// (INV-R03), so it returns "" rather than leaking a personal email.
+    @MainActor static func autofillPrefillUsername(vaultKey: [UInt8]) -> String {
+        let policy = PersonaIsolationPolicy(rawValue:
+            SharedConfig.sharedDefaults.string(forKey: SharedConfig.activePersonaPolicyKey) ?? "") ?? .standard
+        if let itemID = SharedConfig.sharedDefaults.string(forKey: SharedConfig.activePersonaProfileItemKey),
+           let resolved = username(forItemID: itemID, key: vaultKey) {
+            return resolved
         }
-        let name = item.fields.first(where: { $0.kind == .text })?.value
-        return (name?.isEmpty == false) ? name : nil
+        if policy == .strictAnonymous { return "" }
+        return defaultIdentityUsername(vaultKey: vaultKey) ?? ""
     }
 
     /// Non-trashed items that carry a TOTP secret, for 2FA / one-time-code AutoFill.

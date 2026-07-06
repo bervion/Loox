@@ -122,7 +122,7 @@ private struct CredentialListView: View {
             guard !loaded else { return }
             items = VaultReader.logins(vaultKey: vaultKey)
             sharedEntries = SharedCredentialsCache.load(vaultKey: vaultKey)
-            defaultUsername = VaultReader.defaultIdentityUsername(vaultKey: vaultKey) ?? ""
+            defaultUsername = VaultReader.autofillPrefillUsername(vaultKey: vaultKey)
             loaded = true
             if let preferredRecordID {
                 if let hit = sharedEntries.first(where: { $0.itemID == preferredRecordID }) {

@@ -272,8 +272,8 @@ extension VaultRepository {
     /// header search). Equivalent to `.allSpaces`.
     func search(_ query: String) -> [VaultItem] { search(query, scope: .allSpaces) }
 
-    /// Whether widening a search to every Space is currently permitted. Always
-    /// true today; a future isolated/anonymous identity will drive this false so
-    /// its searches can never surface another identity's items.
-    var allSpacesSearchAllowed: Bool { true }
+    /// Whether widening a search to every Space is currently permitted. A
+    /// strictAnonymous persona drives this false so its searches can never surface
+    /// another identity's items (INV-R03); every other policy allows it.
+    var allSpacesSearchAllowed: Bool { activeIsolationPolicy != .strictAnonymous }
 }

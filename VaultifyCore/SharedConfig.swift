@@ -29,6 +29,12 @@ nonisolated enum SharedConfig {
     /// Key under which the app mirrors its in-app language code ("system"|"en"|"vi")
     /// into the shared defaults, so the extension can localize against the same choice.
     static let languageKey = "preferred_language"
+    /// Active persona's isolation policy (raw value), mirrored so the AutoFill
+    /// extension can honor isolation. Opaque enum only — no identity-bearing data.
+    static let activePersonaPolicyKey = "active_persona_policy"
+    /// Active persona's profile item id (opaque UUID), so the extension resolves
+    /// that persona's own email under the Vault Key instead of the global default.
+    static let activePersonaProfileItemKey = "active_persona_profile_item"
 
     /// Routing-only breadcrumb (standard defaults): a CKShare was accepted while
     /// the vault might have been locked/onboarding; the unlocked shell resumes
