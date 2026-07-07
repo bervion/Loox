@@ -79,7 +79,9 @@ import Foundation
                                    nonce: Data(CryptoRandom.bytes(16)),
                                    issuedAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
                                    kind: .rotatePrincipal, newPublicKey: next.signingPublicKey)
-        let signature = try RelayCommandCanonical.sign(command, using: current).signature
+        // V2 bytes: nothing verifies this signature yet (future backend CAS),
+        // so it tracks the canonical live transcript version.
+        let signature = try RelayCommandCanonical.signV2(command, using: current).signature
 
         guard let record = try? await database.record(for: escrowRecordID()) else {
             throw Failure.escrowUnavailable

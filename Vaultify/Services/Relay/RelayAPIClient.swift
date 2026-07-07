@@ -33,7 +33,8 @@ nonisolated enum RelayAPIClient {
     /// JSON body per the relay contract: snake_case keys, base64 blobs. The
     /// transcript the signature covers is rebuilt server-side from these fields —
     /// they MUST mirror the signed command exactly.
-    static func body(for command: RelayCommand, signature: Data, genesisPublicKey: Data?) -> [String: Any] {
+    static func body(for command: RelayCommand, signature: Data, genesisPublicKey: Data?,
+                     commandVersion: UInt8) -> [String: Any] {
         var body: [String: Any] = [
             "kind": Int(command.kind.rawValue),
             "principal_id": command.principalID.base64EncodedString(),
@@ -42,7 +43,12 @@ nonisolated enum RelayAPIClient {
             "issued_at_unix_ms": command.issuedAtUnixMs,
             "signature": signature.base64EncodedString(),
         ]
+        // Wire presence must equal transcript presence: the server rebuilds
+        // the exact signed bytes from these fields, so version and domain
+        // ride together with the shape the signature covers.
+        if commandVersion != 1 { body["command_version"] = Int(commandVersion) }
         if let aliasID = command.aliasID { body["alias_id"] = aliasID }
+        if let domainID = command.domainID { body["domain_id"] = domainID }
         if let destination = command.destination { body["destination"] = destination }
         if let newKey = command.newPublicKey { body["new_public_key"] = newKey.base64EncodedString() }
         // Genesis only: the first createAlias registers the principal.
@@ -58,6 +64,7 @@ nonisolated enum RelayAPIClient {
     static func send(_ command: RelayCommand, signature: Data, genesisPublicKey: Data? = nil,
                      attestKeyId: String? = nil, assertionB64: String? = nil,
                      path: String, method: String = "POST",
+                     commandVersion: UInt8 = RelayCommandCanonical.versionV2,
                      baseURL: URL = RelayConfig.apiBaseURL) async throws -> Data {
         var request = URLRequest(url: baseURL.appending(path: path))
         request.httpMethod = method
@@ -67,7 +74,8 @@ nonisolated enum RelayAPIClient {
             request.setValue(assertionB64, forHTTPHeaderField: "X-Loox-App-Attest-Assertion")
         }
         request.httpBody = try JSONSerialization.data(
-            withJSONObject: body(for: command, signature: signature, genesisPublicKey: genesisPublicKey))
+            withJSONObject: body(for: command, signature: signature,
+                                 genesisPublicKey: genesisPublicKey, commandVersion: commandVersion))
 
         let (data, response): (Data, URLResponse)
         do { (data, response) = try await URLSession.shared.data(for: request) }

@@ -32,18 +32,24 @@ nonisolated struct RelayCommand: Sendable, Equatable {
     var issuedAtUnixMs: Int64
     var kind: RelayCommandKind
     var aliasID: String?
+    /// The alias's mail-domain namespace (registry ID) — V2 transcript only.
+    /// Required on createAlias; optional-must-match on disable/rotate/delete
+    /// (absent = legacy namespace); forbidden on principal-level kinds. The
+    /// V1 transcript cannot express it, which is exactly why V2 exists.
+    var domainID: String?
     var destination: String?
     var newPublicKey: Data?
 
     init(principalID: Data, epoch: UInt64, nonce: Data, issuedAtUnixMs: Int64,
-         kind: RelayCommandKind, aliasID: String? = nil, destination: String? = nil,
-         newPublicKey: Data? = nil) {
+         kind: RelayCommandKind, aliasID: String? = nil, domainID: String? = nil,
+         destination: String? = nil, newPublicKey: Data? = nil) {
         self.principalID = principalID
         self.epoch = epoch
         self.nonce = nonce
         self.issuedAtUnixMs = issuedAtUnixMs
         self.kind = kind
         self.aliasID = aliasID
+        self.domainID = domainID
         self.destination = destination
         self.newPublicKey = newPublicKey
     }

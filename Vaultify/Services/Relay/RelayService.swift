@@ -37,13 +37,6 @@ import Foundation
     /// onto the profile/login. Resumable: a retry after a mint resumes at
     /// rotateDestination rather than re-minting.
     func activate(_ alias: EmailAlias) async throws {
-        // The V1 command transcript cannot express a domain choice, so only the
-        // legacy namespace may reach the backend. Fail closed rather than mint
-        // an alias into a namespace the signed command never authorized; this
-        // gate lifts when the V2 transcript (signed domain_id) ships.
-        guard alias.relayDomainID == AuxiliaryDomainRegistry.legacyEmailDomainID else {
-            throw Failure.rejected("domain_not_supported")
-        }
         guard let persona = repository.personas.first(where: { $0.id == alias.personaId }) else {
             throw Failure.rejected("no_persona")
         }
@@ -60,7 +53,8 @@ import Foundation
             current = repository.aliases.first { $0.id == current.id } ?? current
         }
 
-        try await send(kind: .rotateDestination, aliasID: current.localPart, destination: destination,
+        try await send(kind: .rotateDestination, aliasID: current.localPart,
+                       domainID: Self.wireDomainID(current), destination: destination,
                        path: "/v1/relay/aliases/\(current.localPart)/destination")
 
         var activated = current
@@ -88,7 +82,8 @@ import Foundation
         }?.id
         for alias in repository.aliases(forPersona: persona.id) where alias.backendMinted {
             if let pinned = alias.forwardingInboxID, pinned != profileInboxID { continue }
-            try await send(kind: .rotateDestination, aliasID: alias.localPart, destination: email,
+            try await send(kind: .rotateDestination, aliasID: alias.localPart,
+                           domainID: Self.wireDomainID(alias), destination: email,
                            path: "/v1/relay/aliases/\(alias.localPart)/destination")
             var updated = alias
             updated.forwardingTarget = email
@@ -104,7 +99,8 @@ import Foundation
         pinned.forwardingInboxID = inbox.id
         try repository.updateAlias(pinned)
         guard alias.backendMinted else { return }
-        try await send(kind: .rotateDestination, aliasID: alias.localPart, destination: inbox.email,
+        try await send(kind: .rotateDestination, aliasID: alias.localPart,
+                       domainID: Self.wireDomainID(alias), destination: inbox.email,
                        path: "/v1/relay/aliases/\(alias.localPart)/destination")
         if var live = repository.aliases.first(where: { $0.id == alias.id }) {
             live.forwardingTarget = inbox.email
@@ -120,7 +116,8 @@ import Foundation
         let pending = repository.aliasesNeedingRotation
         for (index, alias) in pending.enumerated() {
             guard let want = repository.resolvedDestination(for: alias) else { continue }
-            try await send(kind: .rotateDestination, aliasID: alias.localPart, destination: want,
+            try await send(kind: .rotateDestination, aliasID: alias.localPart,
+                           domainID: Self.wireDomainID(alias), destination: want,
                            path: "/v1/relay/aliases/\(alias.localPart)/destination")
             if var live = repository.aliases.first(where: { $0.id == alias.id }) {
                 live.forwardingTarget = want
@@ -133,6 +130,7 @@ import Foundation
     func disable(_ alias: EmailAlias) async throws {
         if alias.backendMinted || alias.status == .active {
             try await send(kind: .disableAlias, aliasID: alias.localPart,
+                           domainID: Self.wireDomainID(alias),
                            path: "/v1/relay/aliases/\(alias.localPart)/disable")
         }
         try repository.setAliasStatus(alias, to: .disabled)
@@ -141,6 +139,7 @@ import Foundation
     func delete(_ alias: EmailAlias) async throws {
         if alias.backendMinted || alias.status == .active {
             try await send(kind: .deleteAlias, aliasID: alias.localPart,
+                           domainID: Self.wireDomainID(alias),
                            path: "/v1/relay/aliases/\(alias.localPart)", method: "DELETE")
         }
         try repository.deleteAlias(alias)
@@ -238,7 +237,11 @@ import Foundation
         var current = alias
         for _ in 0..<3 {
             do {
+                // createAlias signs its namespace explicitly, even for the
+                // legacy domain (the create is what fixes the alias's
+                // externally reachable identity — never leave it implied).
                 try await send(kind: .createAlias, aliasID: current.localPart,
+                               domainID: current.relayDomainID,
                                path: "/v1/relay/aliases", genesis: true)
                 return current
             } catch RelayAPIClient.Failure.aliasExists {
@@ -256,8 +259,18 @@ import Foundation
     /// (another device rotated it) — the user sees a spinner, never epoch talk.
     /// Every attempt re-resolves the principal and signs a fresh transcript; a
     /// signature is never reused after any field changes (SEC-PE06/07).
+    /// Alias-scoped commands (disable/rotate/delete) send the domain only for
+    /// non-legacy aliases: absent = legacy is the server's canonical V2 shape,
+    /// which keeps every pre-domain alias's traffic byte-stable. (createAlias
+    /// is the exception — it must always name its namespace explicitly.)
+    private static func wireDomainID(_ alias: EmailAlias) -> String? {
+        alias.relayDomainID == AuxiliaryDomainRegistry.legacyEmailDomainID
+            ? nil : alias.relayDomainID
+    }
+
     @discardableResult
-    private func send(kind: RelayCommandKind, aliasID: String?, destination: String? = nil,
+    private func send(kind: RelayCommandKind, aliasID: String?, domainID: String? = nil,
+                      destination: String? = nil,
                       path: String, method: String = "POST", genesis: Bool = false) async throws -> Data {
         guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
         // Circuit breaker: during a confirmed outage, don't burn signed requests.
@@ -275,8 +288,11 @@ import Foundation
             let command = RelayCommand(principalID: principal.principalID, epoch: principal.epoch,
                                        nonce: Data(CryptoRandom.bytes(16)),
                                        issuedAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
-                                       kind: kind, aliasID: aliasID, destination: effectiveDestination)
-            let signed = try RelayCommandCanonical.sign(command, using: principal)
+                                       kind: kind, aliasID: aliasID, domainID: domainID,
+                                       destination: effectiveDestination)
+            // V2 everywhere (dual-accept is live server-side): the namespace,
+            // when present, is inside the signed bytes — never a loose field.
+            let signed = try RelayCommandCanonical.signV2(command, using: principal)
             let genesisKey = (genesis && principal.epoch == 1) ? principal.signingPublicKey : nil
             let attest = try await relayAssertion(forTranscript: signed.transcript)
 
