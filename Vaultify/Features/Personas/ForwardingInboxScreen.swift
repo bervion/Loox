@@ -80,12 +80,14 @@ struct ForwardingInboxScreen: View {
                     .vaultType(.caption).themedForeground(.secondary)
             }
             Spacer()
+            verificationChip(inbox)
             if inbox.isDefault {
                 Text("Default").vaultType(.caption).themedForeground(.accent)
             }
         }
         .contentShape(Rectangle())
         .contextMenu {
+            verificationMenuItems(inbox)
             if !inbox.isDefault {
                 Button { try? env.repository.setDefaultInbox(inbox) } label: {
                     Label { Text("Set as default") } icon: { PolarisIcon(Icons.checkCircle) }
@@ -103,6 +105,57 @@ struct ForwardingInboxScreen: View {
                     Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
                 }
             }
+        }
+    }
+
+    /// Ownership-verification badge (DEC-DST-01). Muted while unverified so it
+    /// reads as "action available", not "error" — forwarding still works until
+    /// the server enforces verification.
+    @ViewBuilder private func verificationChip(_ inbox: ForwardingInbox) -> some View {
+        switch inbox.verificationStatus {
+        case .verified:
+            Text("Verified").vaultType(.caption).themedForeground(.success)
+        case .pending:
+            Text("Awaiting confirmation").vaultType(.caption).themedForeground(.warning)
+        case .unverified, .revoked:
+            Text("Not verified").vaultType(.caption).themedForeground(.secondary)
+        }
+    }
+
+    @ViewBuilder private func verificationMenuItems(_ inbox: ForwardingInbox) -> some View {
+        switch inbox.verificationStatus {
+        case .verified:
+            EmptyView()
+        case .pending:
+            Button { checkVerification(inbox) } label: {
+                Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
+            }
+            Button { confirmEmail(inbox) } label: {
+                Label { Text("Resend email") } icon: { PolarisIcon("ic_refresh") }
+            }
+        case .unverified, .revoked:
+            Button { confirmEmail(inbox) } label: {
+                Label { Text("Confirm email") } icon: { PolarisIcon(Icons.checkCircle) }
+            }
+        }
+    }
+
+    /// Begin/resend verification: signs a kind-7 command over the exact email;
+    /// the backend sends the confirm link. The user confirms on the web; we only
+    /// poll the result (never self-confirm).
+    private func confirmEmail(_ inbox: ForwardingInbox) {
+        Task {
+            do { _ = try await env.relay.beginDestinationVerification(inbox) }
+            catch let failure as RelayService.Failure { errorMessage = failure.userMessage }
+            catch { errorMessage = appString("Check your connection and iCloud, then try again.") }
+        }
+    }
+
+    private func checkVerification(_ inbox: ForwardingInbox) {
+        Task {
+            do { _ = try await env.relay.refreshDestinationStatus(inbox) }
+            catch let failure as RelayService.Failure { errorMessage = failure.userMessage }
+            catch { errorMessage = appString("Check your connection and iCloud, then try again.") }
         }
     }
 

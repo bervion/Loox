@@ -167,6 +167,60 @@ import Foundation
         }
     }
 
+    // MARK: Destination verification (DEC-DST-01)
+
+    /// Begin (or resend) ownership verification for a forwarding inbox: sign a
+    /// kind-7 command over the EXACT email (the backend derives every hash,
+    /// INV-DST-N01), store the returned opaque destination id, mark it pending.
+    /// Returns the backend state so the UI can show the resend countdown.
+    @discardableResult
+    func beginDestinationVerification(_ inbox: ForwardingInbox) async throws -> RelayAPIClient.DestinationState {
+        let data = try await send(kind: .beginDestinationVerification, aliasID: nil,
+                                  destination: inbox.email, path: "/v1/relay/destinations")
+        let state = try decodeDestinationState(data)
+        try persistVerification(inbox, state: state)
+        return state
+    }
+
+    /// Poll a begun inbox's verification (read-only, budget-free). No-op if it
+    /// was never begun. Persists any status change so the UI reflects `verified`.
+    @discardableResult
+    func refreshDestinationStatus(_ inbox: ForwardingInbox) async throws -> RelayAPIClient.DestinationState? {
+        guard let id = inbox.relayDestinationID else { return nil }
+        let state = try await RelayAPIClient.destinationStatus(id: id)
+        try persistVerification(inbox, state: state)
+        return state
+    }
+
+    private func persistVerification(_ inbox: ForwardingInbox, state: RelayAPIClient.DestinationState) throws {
+        guard var live = repository.forwardingInboxes.first(where: { $0.id == inbox.id }) else { return }
+        live.relayDestinationID = state.destinationId
+        live.verificationStatus = DestinationVerificationStatus(rawValue: state.status) ?? .pending
+        try repository.updateInbox(live)
+    }
+
+    private func decodeDestinationState(_ data: Data) throws -> RelayAPIClient.DestinationState {
+        guard let state = try? JSONDecoder().decode(RelayAPIClient.DestinationState.self, from: data) else {
+            throw Failure.rejected("bad_server_data")
+        }
+        return state
+    }
+
+    /// Translate a rotateDestination target to what the backend expects. Until
+    /// the server enforces verification the raw email is sent; once
+    /// `destinationRoutingRequiresVerification` flips (lockstep with the server),
+    /// forwarding binds the inbox's opaque verified destination_id, and an
+    /// unverified inbox is refused locally (mirrors the server's 403).
+    private func routedDestination(kind: RelayCommandKind, destination: String?) throws -> String? {
+        guard kind == .rotateDestination, let email = destination,
+              RelayConfig.destinationRoutingRequiresVerification else { return destination }
+        guard let inbox = repository.forwardingInboxes.first(where: { $0.email == email }),
+              inbox.verificationStatus == .verified, let id = inbox.relayDestinationID else {
+            throw Failure.rejected("destination_not_verified")
+        }
+        return id
+    }
+
     /// createAlias with collision re-mint (up to 3 tries). Returns the (possibly
     /// re-minted) alias whose local-part the backend accepted.
     private func mint(_ alias: EmailAlias) async throws -> EmailAlias {
@@ -191,13 +245,15 @@ import Foundation
     /// (another device rotated it) — the user sees a spinner, never epoch talk.
     /// Every attempt re-resolves the principal and signs a fresh transcript; a
     /// signature is never reused after any field changes (SEC-PE06/07).
+    @discardableResult
     private func send(kind: RelayCommandKind, aliasID: String?, destination: String? = nil,
-                      path: String, method: String = "POST", genesis: Bool = false) async throws {
+                      path: String, method: String = "POST", genesis: Bool = false) async throws -> Data {
         guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
         // Circuit breaker: during a confirmed outage, don't burn signed requests.
         guard capabilities?.allowRequest(.privateEmail) ?? true else {
             throw Failure.capabilityBlocked(.active, retryAfter: nil)   // renders as "temporarily unavailable"
         }
+        let effectiveDestination = try routedDestination(kind: kind, destination: destination)
         var attempt = 0
         while true {
             attempt += 1
@@ -208,18 +264,19 @@ import Foundation
             let command = RelayCommand(principalID: principal.principalID, epoch: principal.epoch,
                                        nonce: Data(CryptoRandom.bytes(16)),
                                        issuedAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
-                                       kind: kind, aliasID: aliasID, destination: destination)
+                                       kind: kind, aliasID: aliasID, destination: effectiveDestination)
             let signed = try RelayCommandCanonical.sign(command, using: principal)
             let genesisKey = (genesis && principal.epoch == 1) ? principal.signingPublicKey : nil
             let attest = try await relayAssertion(forTranscript: signed.transcript)
 
             do {
-                try await RelayAPIClient.send(command, signature: signed.signature,
-                                              genesisPublicKey: genesisKey,
-                                              attestKeyId: attest?.keyId, assertionB64: attest?.assertionB64,
-                                              path: path, method: method)
+                let responseData = try await RelayAPIClient.send(
+                    command, signature: signed.signature,
+                    genesisPublicKey: genesisKey,
+                    attestKeyId: attest?.keyId, assertionB64: attest?.assertionB64,
+                    path: path, method: method)
                 capabilities?.noteSuccess(.privateEmail)
-                return
+                return responseData
             } catch let failure as RelayAPIClient.Failure {
                 if case .aliasExists = failure {
                     capabilities?.noteServiceResponded(.privateEmail)
