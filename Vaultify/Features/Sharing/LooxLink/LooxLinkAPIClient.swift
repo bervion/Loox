@@ -100,9 +100,10 @@ nonisolated struct LooxLinkAPIClient: Sendable {
             "expires_in_seconds": .int(Int(expiresInSeconds)),
             "envelope": .null,
         ]
-        // Only sent when true: older Workers ignore unknown keys, and the
-        // frozen V1 App Attest transcript doesn't bind this field (V2 must).
-        if oneTime { body["one_time"] = .bool(true) }
+        // Always explicit: the V2 assertion transcript binds one_time (absent
+        // in the body = false on the verifier), so the wire must never be
+        // ambiguous about the burn-after-read flag.
+        body["one_time"] = .bool(oneTime)
         request.httpBody = try JSONEncoder().encode(body)
         if let count = request.httpBody?.count, count > LooxLinkConfig.maxBodyBytes {
             throw LooxLinkAPIError.payloadTooLarge

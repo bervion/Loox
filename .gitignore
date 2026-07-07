@@ -48,3 +48,6 @@ vendor/bundle/
 *.mobileprovision
 *.cer
 fastlane/api_key.json
+
+# Claude Code personal overrides
+.claude/settings.local.json

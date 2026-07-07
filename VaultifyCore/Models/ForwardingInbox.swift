@@ -8,6 +8,16 @@ nonisolated enum ForwardingInboxSource: String, Codable, Sendable {
     case manual
 }
 
+/// Ownership-verification state of a forwarding inbox (DEC-DST-01). Mail only
+/// forwards to a `verified` destination once the server enforces it; the backend
+/// is authoritative (INV-DST-N01), the client only mirrors what it reports.
+nonisolated enum DestinationVerificationStatus: String, Codable, Sendable {
+    case unverified   // never begun, or a fresh inbox
+    case pending      // verification email sent, awaiting the user's web confirm
+    case verified     // backend confirmed inbox control
+    case revoked      // e.g. after Erase Vault — plaintext scrubbed, must re-verify
+}
+
 /// A real inbox that private-email aliases forward to. First-class so the user
 /// can see and change where mail goes without the app copying the raw email
 /// into every alias. The email itself is identity-bearing → sealed at rest
@@ -23,6 +33,11 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
     /// Explicit vault-wide default for NEW aliases. When none is set, a new
     /// alias defaults to its persona's derived profile inbox.
     var isDefault: Bool
+    /// Opaque backend id (128-bit) for this inbox's verified-destination row.
+    /// Set when verification begins; used to poll status and (once the server
+    /// enforces it) to route forwarding by id instead of raw email.
+    var relayDestinationID: String?
+    var verificationStatus: DestinationVerificationStatus
     var sortIndex: Int
     var createdAt: Date
     var updatedAt: Date
@@ -33,6 +48,8 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
          source: ForwardingInboxSource = .manual,
          personaId: String? = nil,
          isDefault: Bool = false,
+         relayDestinationID: String? = nil,
+         verificationStatus: DestinationVerificationStatus = .unverified,
          sortIndex: Int = 0,
          createdAt: Date = .now,
          updatedAt: Date = .now) {
@@ -42,6 +59,8 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
         self.source = source
         self.personaId = personaId
         self.isDefault = isDefault
+        self.relayDestinationID = relayDestinationID
+        self.verificationStatus = verificationStatus
         self.sortIndex = sortIndex
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -49,7 +68,9 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
 
     var secret: ForwardingInboxSecret {
         ForwardingInboxSecret(email: email, label: label, source: source,
-                              personaId: personaId, isDefault: isDefault)
+                              personaId: personaId, isDefault: isDefault,
+                              relayDestinationID: relayDestinationID,
+                              verificationStatus: verificationStatus)
     }
 }
 
@@ -63,15 +84,21 @@ nonisolated struct ForwardingInboxSecret: Codable, Sendable {
     var source: ForwardingInboxSource
     var personaId: String?
     var isDefault: Bool
+    var relayDestinationID: String?
+    var verificationStatus: DestinationVerificationStatus
 
     init(email: String, label: String? = nil,
          source: ForwardingInboxSource = .manual,
-         personaId: String? = nil, isDefault: Bool = false) {
+         personaId: String? = nil, isDefault: Bool = false,
+         relayDestinationID: String? = nil,
+         verificationStatus: DestinationVerificationStatus = .unverified) {
         self.email = email
         self.label = label
         self.source = source
         self.personaId = personaId
         self.isDefault = isDefault
+        self.relayDestinationID = relayDestinationID
+        self.verificationStatus = verificationStatus
     }
 
     init(from decoder: any Decoder) throws {
@@ -81,5 +108,8 @@ nonisolated struct ForwardingInboxSecret: Codable, Sendable {
         source = try c.decodeIfPresent(ForwardingInboxSource.self, forKey: .source) ?? .manual
         personaId = try c.decodeIfPresent(String.self, forKey: .personaId)
         isDefault = try c.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
+        relayDestinationID = try c.decodeIfPresent(String.self, forKey: .relayDestinationID)
+        verificationStatus = try c.decodeIfPresent(DestinationVerificationStatus.self,
+                                                   forKey: .verificationStatus) ?? .unverified
     }
 }

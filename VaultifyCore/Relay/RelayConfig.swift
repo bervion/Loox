@@ -17,6 +17,22 @@ nonisolated enum RelayConfig {
     /// The alias mail domain: an alias is `<local-part>@relay.looxpassword.com`.
     static let emailDomain = "relay.looxpassword.com"
 
+    /// Relay App Attest admission (INV-R02). When enabled, protected mutations
+    /// register the device key with loox-relay and carry a per-command assertion.
+    /// The server runs `ASSERTION_MODE` off/shadow (verify + log; the principal
+    /// signature stays the live auth), so a register/assert failure must never
+    /// block a mutation while `attestationRequired` is false. Flip
+    /// `attestationRequired` in lockstep with the server moving to `required`.
+    static let attestationEnabled = true
+    static let attestationRequired = false
+
+    /// Destination ownership routing (DEC-DST-01). While false, `rotateDestination`
+    /// sends the plaintext email (server `DESTINATION_VERIFICATION_MODE=off`).
+    /// Flip in lockstep with the server moving to `required`: forwarding then
+    /// binds the inbox's opaque verified destination_id, and an unverified inbox
+    /// is refused locally (mirrors the server 403 / ingress 550).
+    static let destinationRoutingRequiresVerification = false
+
     /// Keychain fast-cache account for the sealed principal escrow envelope.
     static let escrowKeychainAccount = "relay_principal_escrow_cache_v1"
     /// CloudKit singleton record for the Vault-Key-sealed principal escrow.

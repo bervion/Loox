@@ -22,6 +22,9 @@ nonisolated enum RelayRetryPolicy {
             return attempt == 1 ? .refreshEpochThenRetry : .fail("epoch_stale")
         case .unauthorized: return .fail("unauthorized")
         case .rateLimited:  return .fail("rate_limited")
+        // Global ceiling, deliberately answered — same "try again later" lane
+        // as rate_limited, never the infrastructure/server_5xx lane.
+        case .capacityReached: return .fail("capacity_reached")
         case .aliasExists:  return .fail("alias_exists")   // mint loop handles upstream
         case .aliasCapReached: return .fail("alias_cap_reached")
         // Handled upstream (verified operator state, never retried); defensive here.
@@ -55,7 +58,9 @@ extension RelayService.Failure {
             return appString("You’re offline. Connect to the internet to change this private address.")
         case .rejected("unauthorized"):
             return appString("Couldn’t verify this device. Unlock Loox and try again.")
-        case .rejected("rate_limited"):
+        case .rejected("rate_limited"), .rejected("capacity_reached"):
+            // capacity_reached = a global ceiling (innocent user) — same gentle
+            // "later" copy; the vault and existing forwarding are unaffected.
             return appString("Too many requests. Please try again shortly.")
         case .rejected("alias_cap_reached"):
             // Backend cap counts active + paused; permanent deletes free space.
