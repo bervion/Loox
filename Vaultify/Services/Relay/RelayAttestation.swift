@@ -64,7 +64,17 @@ nonisolated enum RelayAttestation {
             try KeychainStore.set(Data(keyId.utf8), account: keyIdAccount)
         }
         if (try? KeychainStore.get(account: registeredAccount)) == nil {
-            try await register(keyId: keyId, baseURL: baseURL)
+            do {
+                try await register(keyId: keyId, baseURL: baseURL)
+            } catch {
+                // A key can be attested with Apple only ONCE. If register's
+                // attestKey succeeded but the POST failed (network blip / transient
+                // 4xx), retrying would call attestKey on the same key and fail
+                // forever. Drop the key so the next attempt starts from a fresh
+                // generateKey instead of re-attesting a burned one.
+                resetKey()
+                throw error
+            }
             try KeychainStore.set(Data([1]), account: registeredAccount)
         }
         return keyId
