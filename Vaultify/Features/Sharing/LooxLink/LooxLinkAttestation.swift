@@ -64,7 +64,15 @@ nonisolated enum LooxLinkAttestation {
             try KeychainStore.set(Data(keyId.utf8), account: keyIdAccount)
         }
         if (try? KeychainStore.get(account: registeredAccount)) == nil {
-            try await register(api: api, keyId: keyId)
+            do {
+                try await register(api: api, keyId: keyId)
+            } catch {
+                // A key can be attested with Apple only ONCE — a register that
+                // fails after attestKey burns the key, so retrying re-attests it
+                // and fails forever. Drop it and start fresh next time.
+                resetKey()
+                throw error
+            }
             try KeychainStore.set(Data([1]), account: registeredAccount)
         }
         return keyId
