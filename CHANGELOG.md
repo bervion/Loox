@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.20.0] - 2026-07-07
+
+### Added
+- attestationRequired=true (ASSERTION_MODE go-live) + drop debug logs
+
+
 ## [1.19.3] - 2026-07-07
 
 ### Fixed

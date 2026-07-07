@@ -1,1 +1,1 @@
-This update fixes a syncing issue that could affect secure sharing reliability. Performance and stability improvements included.
+This update strengthens the security checks behind shared links and improves overall app stability. No action needed on your part.

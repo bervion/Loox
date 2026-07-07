@@ -1,1 +1,1 @@
-Bản cập nhật này khắc phục một lỗi đồng bộ có thể ảnh hưởng đến độ ổn định khi chia sẻ an toàn, đồng thời cải thiện hiệu năng chung.
+Bản cập nhật này tăng cường bảo mật cho tính năng chia sẻ liên kết và cải thiện độ ổn định chung của ứng dụng. Bạn không cần thực hiện thao tác gì thêm.
