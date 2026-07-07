@@ -5,7 +5,9 @@ import Foundation
 /// hosts, deep-link hosts, or config endpoints; those stay on the canonical
 /// platform domain.
 nonisolated enum AuxiliaryDomainCapability: String, Codable, Sendable {
-    case privateEmail = "private_email"
+    // Raw values are the signed registry's wire vocabulary
+    // (domain-registry-vectors-v1.json) — do not rename.
+    case privateEmail = "email"
     case shortLink = "short_link"
 }
 
@@ -14,8 +16,9 @@ nonisolated enum AuxiliaryDomainCapability: String, Codable, Sendable {
 /// keep working through `createDisabled` and `retiring`; only an explicit
 /// backend shutdown policy ends them.
 nonisolated enum AuxiliaryDomainLifecycle: String, Codable, Sendable {
+    // Raw values are the signed registry's wire vocabulary (camelCase).
     case active
-    case createDisabled = "create_disabled"
+    case createDisabled
     case retiring
     case retired
 
@@ -54,12 +57,24 @@ nonisolated struct AuxiliaryDomainDescriptor: Codable, Sendable, Equatable, Iden
 /// from anywhere else (sync payloads, future remote config) resolve to nothing
 /// — a host never becomes trusted merely because some payload named it.
 ///
-/// Today this is the bundled registry only. The signed remote registry
-/// (`LOOX-DOMAIN-REGISTRY-V1`, same P256 trust root as the capability
-/// manifest, independent anti-rollback version) replaces `current` once its
-/// byte contract is frozen with the backend — until then, shipping a new
-/// domain means shipping an app update, which is the safe default.
+/// `current` = the last verified signed registry (`LOOX-DOMAIN-REGISTRY-V1`,
+/// same P256 trust root as the capability manifest, independent anti-rollback
+/// version) when one has been applied, else the bundled fallback. Only
+/// signature-verified documents ever reach `applyRemote`.
 nonisolated enum AuxiliaryDomainRegistry {
+
+    /// Verified remote overlay. Reads happen from any isolation (model code,
+    /// UI, extension); writes are rare (one per verified registry apply) —
+    /// a plain lock keeps the whole thing honest without actor ceremony.
+    private static let remoteLock = NSLock()
+    nonisolated(unsafe) private static var remoteDescriptors: [AuxiliaryDomainDescriptor]?
+
+    /// Replace the trusted set with a VERIFIED registry's domains. Callers
+    /// must have checked the signature/env/anti-rollback first (see
+    /// `DomainRegistryVerifier`) — this is trust application, not validation.
+    static func applyRemote(_ descriptors: [AuxiliaryDomainDescriptor]) {
+        remoteLock.withLock { remoteDescriptors = descriptors.isEmpty ? nil : descriptors }
+    }
 
     /// Domain ID stamped on every alias created before domains were explicit,
     /// and the decode fallback for sealed alias blobs missing the field.
@@ -79,7 +94,9 @@ nonisolated enum AuxiliaryDomainRegistry {
             isPrimaryShortLinkChoice: false),
     ]
 
-    static var current: [AuxiliaryDomainDescriptor] { bundled }
+    static var current: [AuxiliaryDomainDescriptor] {
+        remoteLock.withLock { remoteDescriptors } ?? bundled
+    }
 
     static func descriptor(id: String) -> AuxiliaryDomainDescriptor? {
         current.first { $0.id == id }

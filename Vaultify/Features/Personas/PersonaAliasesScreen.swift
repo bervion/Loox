@@ -193,9 +193,10 @@ struct PersonaAliasesScreen: View {
     private func probe() {
         Task {
             await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities)
-            // Manifest refresh piggybacks on the contextual probe — cheap,
-            // ETag-cached server-side, and never on the startup path.
+            // Manifest + domain-registry refresh piggyback on the contextual
+            // probe — cheap, cached server-side, never on the startup path.
             await env.capabilityManifest.refresh()
+            await env.domainRegistry.refresh()
         }
     }
 
