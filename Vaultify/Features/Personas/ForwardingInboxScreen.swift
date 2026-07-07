@@ -7,6 +7,7 @@ import SwiftUI
 /// addresses" (resumable: re-runs finish exactly the stragglers).
 struct ForwardingInboxScreen: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var addingInbox = false
     @State private var newEmail = ""
@@ -45,6 +46,25 @@ struct ForwardingInboxScreen: View {
         .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
         } message: { Text(verbatim: errorMessage ?? "") }
+        // Auto-advance pending → verified: the user confirms on the web, so the
+        // app must poll the result itself rather than wait for a manual tap.
+        .task(id: scenePhase) { await pollPendingVerifications() }
+    }
+
+    /// Poll the read-only status endpoint (~8s) while any inbox is pending and
+    /// the screen is active; stops when nothing is pending or the view goes away
+    /// (the task is cancelled on disappear / scene change). A 404 is an id/config
+    /// issue, not "pending", so it's swallowed here rather than resetting state.
+    private func pollPendingVerifications() async {
+        guard scenePhase == .active else { return }
+        while !Task.isCancelled {
+            let pending = env.repository.forwardingInboxes.filter {
+                $0.verificationStatus == .pending && $0.relayDestinationID != nil
+            }
+            guard !pending.isEmpty else { return }
+            for inbox in pending { _ = try? await env.relay.refreshDestinationStatus(inbox) }
+            try? await Task.sleep(for: .seconds(8))
+        }
     }
 
     /// Rotation drift surface: shows only when some addresses still forward to
