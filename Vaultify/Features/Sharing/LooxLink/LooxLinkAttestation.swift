@@ -22,22 +22,22 @@ nonisolated enum LooxLinkAttestation {
     /// key, fetch a single-use challenge, bind the request via the canonical
     /// hash, and sign it. Returns the headers the Worker verifies.
     static func assertCreateShare(api: LooxLinkAPIClient, ciphertext: Data, iv: Data,
-                                  expiresInSeconds: UInt64) async throws
+                                  expiresInSeconds: UInt64, oneTime: Bool) async throws
         -> LooxLinkAPIClient.AssertionHeaders {
         do {
             return try await assertOnce(api: api, ciphertext: ciphertext, iv: iv,
-                                        expiresInSeconds: expiresInSeconds)
+                                        expiresInSeconds: expiresInSeconds, oneTime: oneTime)
         } catch let error as DCError where error.code == .invalidKey {
             // Reinstall/restore/env-mismatch: the stored key is dead. One
             // fresh key + re-register, then one more attempt — that's the budget.
             resetKey()
             return try await assertOnce(api: api, ciphertext: ciphertext, iv: iv,
-                                        expiresInSeconds: expiresInSeconds)
+                                        expiresInSeconds: expiresInSeconds, oneTime: oneTime)
         }
     }
 
     private static func assertOnce(api: LooxLinkAPIClient, ciphertext: Data, iv: Data,
-                                   expiresInSeconds: UInt64) async throws
+                                   expiresInSeconds: UInt64, oneTime: Bool) async throws
         -> LooxLinkAPIClient.AssertionHeaders {
         let keyId = try await registeredKeyId(api: api)
         let challenge = try await api.getChallenge()
@@ -45,7 +45,7 @@ nonisolated enum LooxLinkAttestation {
             challengeId: challenge.challengeId,
             ciphertext: ciphertext, iv: iv,
             cryptoVersion: LooxLinkConfig.cryptoVersion,
-            expiresInSeconds: expiresInSeconds, envelope: nil)
+            expiresInSeconds: expiresInSeconds, envelope: nil, oneTime: oneTime)
         let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: hash)
         return .init(challengeId: challenge.challengeId, keyId: keyId,
                      assertionB64: assertion.base64EncodedString())

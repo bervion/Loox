@@ -57,7 +57,7 @@ import Foundation
             do {
                 assertion = try await LooxLinkAttestation.assertCreateShare(
                     api: api, ciphertext: cipher.ciphertextRaw, iv: cipher.ivRaw,
-                    expiresInSeconds: expiry)
+                    expiresInSeconds: expiry, oneTime: oneTime)
             } catch {
                 if LooxLinkConfig.attestationRequired { throw error }
                 #if DEBUG
