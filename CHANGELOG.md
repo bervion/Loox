@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.19.1] - 2026-07-07
+
+### Fixed
+- destination-required lockstep + 403 UX + assertion diagnostics
+
+
 ## [1.19.0] - 2026-07-07
 
 ### Added

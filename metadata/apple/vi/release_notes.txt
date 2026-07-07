@@ -1,1 +1,1 @@
-Bản cập nhật này giúp việc xác minh thiết bị khi chia sẻ kho mật khẩu đáng tin cậy hơn: quá trình xác nhận giờ tự động hoàn tất mà không cần làm mới thủ công. Chúng tôi cũng thực hiện một số cải tiến ổn định khác cho ứng dụng.
+Đã sửa lỗi hiển thị thông báo gây nhầm lẫn khi chia sẻ liên kết bảo mật, đồng thời cải thiện độ ổn định khi kiểm tra điểm đến.

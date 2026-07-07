@@ -1,1 +1,1 @@
-This update improves reliability when verifying a new device for shared vault access, so confirmations now complete automatically instead of requiring a manual refresh. We also made small stability improvements under the hood.
+Fixed an issue that could show a confusing error when sharing a secure link, and improved reliability of the destination check.
