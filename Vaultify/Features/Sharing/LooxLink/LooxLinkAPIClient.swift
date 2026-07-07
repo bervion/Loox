@@ -139,9 +139,16 @@ nonisolated struct LooxLinkAPIClient: Sendable {
     /// carries only the share id and the single-purpose shorten token — never
     /// the canonical URL, so the fragment key cannot reach the backend by
     /// construction. Wrong/unknown token or id → indistinguishable 404.
-    func createShortLink(shareId: String, shortenToken: String) async throws -> LooxLinkShortenResponse {
-        var request = makeRequest(path: LooxLinkConfig.shortenPath(shareId: shareId))
-        request.httpBody = try JSONEncoder().encode(["shorten_token": shortenToken])
+    func createShortLink(shareId: String, shortenToken: String,
+                         assertion: AssertionHeaders?) async throws -> LooxLinkShortenResponse {
+        var request = makeRequest(path: LooxLinkConfig.shortenPath)
+        if let assertion {
+            request.setValue(assertion.challengeId, forHTTPHeaderField: "X-Loox-Challenge-Id")
+            request.setValue(assertion.keyId, forHTTPHeaderField: "X-Loox-App-Attest-Key-Id")
+            request.setValue(assertion.assertionB64, forHTTPHeaderField: "X-Loox-App-Attest-Assertion")
+        }
+        request.httpBody = try JSONEncoder().encode(["share_id": shareId,
+                                                     "shorten_token": shortenToken])
         let data = try await send(request)
         return try decodeOrThrow(LooxLinkShortenResponse.self, from: data)
     }

@@ -7,13 +7,15 @@ import Foundation
 /// rollback — quietly keeps the last verified set (or the bundled fallback).
 @MainActor final class DomainRegistryClient {
 
-    static let primaryURL = URL(string: "https://config.looxpassword.com/v1/domain-registry")!
-
     /// The env this build accepts — bound INSIDE the signed payload, so a
     /// staging registry can't steer a production install (or vice versa).
+    /// The fetch URL follows: each env serves its own signed document, and a
+    /// cross-served one fails `wrongEnvironment` regardless of its signature.
     #if DEBUG
+    static let primaryURL = URL(string: "https://config-staging.looxpassword.com/v1/domain-registry")!
     nonisolated static let expectedEnv = "staging"
     #else
+    static let primaryURL = URL(string: "https://config.looxpassword.com/v1/domain-registry")!
     nonisolated static let expectedEnv = "production"
     #endif
 

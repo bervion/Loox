@@ -109,10 +109,25 @@ import Foundation
         guard capabilities?.allowRequest(.shortLink) ?? true else {
             throw LooxLinkAPIError.capability(.active, retryAfter: nil)   // breaker open
         }
+        // App Attest binding for the shorten mutation — same shadow posture
+        // as create-share until the server's independent ladder reaches
+        // required (then failures block instead of falling through).
+        var assertion: LooxLinkAPIClient.AssertionHeaders?
+        if LooxLinkConfig.attestationEnabled, LooxLinkAttestation.isSupported {
+            do {
+                assertion = try await LooxLinkAttestation.assertShortenLink(
+                    api: api, shareId: created.record.shareId, shortenToken: token)
+            } catch {
+                if LooxLinkConfig.shortenAssertionRequired { throw error }
+                #if DEBUG
+                print("[LooxLink] shorten attest failed (shadow mode, continuing): \(error)")
+                #endif
+            }
+        }
         let response: LooxLinkShortenResponse
         do {
             response = try await api.createShortLink(shareId: created.record.shareId,
-                                                     shortenToken: token)
+                                                     shortenToken: token, assertion: assertion)
             capabilities?.noteSuccess(.shortLink)
         } catch {
             note(error, for: .shortLink)
