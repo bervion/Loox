@@ -1,1 +1,1 @@
-Introducing Personas — separate profiles for different parts of your life, each with its own private vault and quick switching. You can also create Private Email addresses to use instead of your real email when signing up, with simple pause and delete controls. AutoFill reliability has been improved.
+This update improves reliability when verifying a new device for shared vault access, so confirmations now complete automatically instead of requiring a manual refresh. We also made small stability improvements under the hood.

@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.19.0] - 2026-07-07
+
+### Added
+- destination ownership verification client (DEC-DST-01 B1)
+- kind-7 beginDestinationVerification command + frozen parity
+- transcript V2 binds one_time + relay capacity/rate taxonomy
+- App Attest assertion on relay control mutations
+
+### Fixed
+- auto-poll pending destination verification
+
+### Changed
+- restore Xcode String Catalog canonical format + ignore settings.local.json
+- mark Phase B1 done in plan
+- Phase B destination-verification plan (B1 backbone / B2 deep-link)
+- BE coordination — normalize/migration decisions + Phase C parity confirmation
+- BE go-live work order + mark Phase A done
+- client-authenticity audit, BE proposal, and Phase A plan
+
+
 ## [1.18.0] - 2026-07-06
 
 ### Added
