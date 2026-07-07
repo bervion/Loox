@@ -10,6 +10,10 @@ nonisolated enum RelayCommandKind: UInt8, Sendable, Equatable {
     case deleteAlias = 4
     case disableAll = 5
     case rotatePrincipal = 6
+    /// Prove control of a forwarding destination (DEC-DST-01). Signs the EXACT
+    /// user-entered address; the backend derives all hashes (INV-DST-N01), so no
+    /// alias is involved (`alias_id` must be absent).
+    case beginDestinationVerification = 7
 }
 
 /// A relay operation authorized by the current principal epoch. This is the
