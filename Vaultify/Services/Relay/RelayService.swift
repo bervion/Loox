@@ -157,22 +157,15 @@ import Foundation
     /// signature remains the live auth (a register bug must not brick a mutation
     /// the assertion isn't yet enforcing). Unsupported devices (simulator) skip it.
     private func relayAssertion(forTranscript transcript: Data) async throws -> RelayAttestation.Assertion? {
-        guard RelayConfig.attestationEnabled, RelayAttestation.isSupported else {
-            #if DEBUG
-            print("[RelayAttest] skipped: enabled=\(RelayConfig.attestationEnabled) supported=\(RelayAttestation.isSupported)")
-            #endif
-            return nil
-        }
+        guard RelayConfig.attestationEnabled, RelayAttestation.isSupported else { return nil }
         do {
             return try await RelayAttestation.assertion(forCommandTranscript: transcript,
                                                         baseURL: RelayConfig.apiBaseURL)
         } catch {
-            // Shadow: swallow so the principal signature stays the live auth, but
-            // surface WHY (register vs generate failure) — the missing assertion
-            // header is otherwise invisible to on-device QA and the server log.
-            #if DEBUG
-            print("[RelayAttest] assertion unavailable (shadow), no header sent: \(error)")
-            #endif
+            // Server is at `required`, so a mutation without a valid assertion is
+            // rejected anyway — hard-fail locally with a clear error rather than
+            // sending a request that 401s. (Unsupported devices are handled by
+            // the guard above.)
             if RelayConfig.attestationRequired { throw Failure.rejected("unauthorized") }
             return nil
         }
