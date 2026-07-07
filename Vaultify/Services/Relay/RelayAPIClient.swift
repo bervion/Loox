@@ -1,9 +1,10 @@
 import Foundation
 
 /// Thin HTTPS client for the relay control API. Every mutating call carries a
-/// principal-signed canonical transcript (the ONLY auth today — App Attest for
-/// relay is deliberately off until its contract + vectors are frozen; do not
-/// send assertion headers here until then).
+/// principal-signed canonical transcript (the logical-authorization layer) and,
+/// when App Attest is enabled, an assertion binding the same command
+/// (`X-Loox-App-Attest-*` headers — app-instance admission, INV-R02). The server
+/// verifies the assertion under `ASSERTION_MODE` (off/shadow/required).
 nonisolated enum RelayAPIClient {
 
     enum Failure: Error, Equatable {
@@ -41,13 +42,21 @@ nonisolated enum RelayAPIClient {
         return body
     }
 
-    /// POST/DELETE a signed command. Throws a mapped `Failure`.
+    /// POST/DELETE a signed command. Throws a mapped `Failure`. When an App
+    /// Attest assertion is supplied it rides as `X-Loox-App-Attest-*` headers
+    /// (the server also uses the key id as a rate dimension); the assertion binds
+    /// the same canonical command the signature covers.
     static func send(_ command: RelayCommand, signature: Data, genesisPublicKey: Data? = nil,
+                     attestKeyId: String? = nil, assertionB64: String? = nil,
                      path: String, method: String = "POST",
                      baseURL: URL = RelayConfig.apiBaseURL) async throws {
         var request = URLRequest(url: baseURL.appending(path: path))
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let attestKeyId, let assertionB64 {
+            request.setValue(attestKeyId, forHTTPHeaderField: "X-Loox-App-Attest-Key-Id")
+            request.setValue(assertionB64, forHTTPHeaderField: "X-Loox-App-Attest-Assertion")
+        }
         request.httpBody = try JSONSerialization.data(
             withJSONObject: body(for: command, signature: signature, genesisPublicKey: genesisPublicKey))
 
@@ -86,6 +95,45 @@ nonisolated enum RelayAPIClient {
         let retryAfter = (body?["retry_after_seconds"] as? Int)
             ?? http.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init)
         return .capability(mode, retryAfter: retryAfter)
+    }
+
+    // MARK: - App Attest (relay-namespaced; separate trust state from loox-link)
+
+    struct AttestChallenge: Decodable {
+        let challengeId: String
+        let challenge: String   // base64url, 256-bit; consumed only at register
+        enum CodingKeys: String, CodingKey { case challengeId = "challenge_id"; case challenge }
+    }
+
+    /// `POST /v1/relay/attestation/challenges` → single-use challenge (201).
+    static func attestChallenge(baseURL: URL = RelayConfig.apiBaseURL) async throws -> AttestChallenge {
+        var request = URLRequest(url: baseURL.appending(path: "/v1/relay/attestation/challenges"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let (data, response) = try await perform(request)
+        return try JSONDecoder().decode(AttestChallenge.self, from: data)
+    }
+
+    /// `POST /v1/relay/attestation/register` → 204. Idempotent per key+backend.
+    static func registerAttestation(attestationObjectB64: String, challengeId: String, keyId: String,
+                                    baseURL: URL = RelayConfig.apiBaseURL) async throws {
+        var request = URLRequest(url: baseURL.appending(path: "/v1/relay/attestation/register"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(challengeId, forHTTPHeaderField: "X-Loox-Challenge-Id")
+        request.setValue(keyId, forHTTPHeaderField: "X-Loox-App-Attest-Key-Id")
+        request.httpBody = try JSONEncoder().encode(["attestation_object_b64": attestationObjectB64])
+        _ = try await perform(request)
+    }
+
+    /// Shared 2xx-or-throw round trip for the attest endpoints.
+    private static func perform(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let data: Data, response: URLResponse
+        do { (data, response) = try await URLSession.shared.data(for: request) }
+        catch { throw Failure.transport }
+        guard let http = response as? HTTPURLResponse else { throw Failure.transport }
+        guard (200...299).contains(http.statusCode) else { throw Failure.server(http.statusCode) }
+        return (data, http)
     }
 
     private static func conflictFailure(from data: Data) -> Failure {

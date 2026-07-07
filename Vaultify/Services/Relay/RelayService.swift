@@ -151,6 +151,22 @@ import Foundation
 
     // MARK: Internals
 
+    /// Relay App Attest assertion for one command (INV-R02), binding the same
+    /// canonical transcript the principal signature covers. Shadow-safe: while
+    /// `attestationRequired` is false any failure is swallowed so the principal
+    /// signature remains the live auth (a register bug must not brick a mutation
+    /// the assertion isn't yet enforcing). Unsupported devices (simulator) skip it.
+    private func relayAssertion(forTranscript transcript: Data) async throws -> RelayAttestation.Assertion? {
+        guard RelayConfig.attestationEnabled, RelayAttestation.isSupported else { return nil }
+        do {
+            return try await RelayAttestation.assertion(forCommandTranscript: transcript,
+                                                        baseURL: RelayConfig.apiBaseURL)
+        } catch {
+            if RelayConfig.attestationRequired { throw Failure.rejected("unauthorized") }
+            return nil
+        }
+    }
+
     /// createAlias with collision re-mint (up to 3 tries). Returns the (possibly
     /// re-minted) alias whose local-part the backend accepted.
     private func mint(_ alias: EmailAlias) async throws -> EmailAlias {
@@ -193,12 +209,15 @@ import Foundation
                                        nonce: Data(CryptoRandom.bytes(16)),
                                        issuedAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
                                        kind: kind, aliasID: aliasID, destination: destination)
-            let signature = try RelayCommandCanonical.sign(command, using: principal).signature
+            let signed = try RelayCommandCanonical.sign(command, using: principal)
             let genesisKey = (genesis && principal.epoch == 1) ? principal.signingPublicKey : nil
+            let attest = try await relayAssertion(forTranscript: signed.transcript)
 
             do {
-                try await RelayAPIClient.send(command, signature: signature,
-                                              genesisPublicKey: genesisKey, path: path, method: method)
+                try await RelayAPIClient.send(command, signature: signed.signature,
+                                              genesisPublicKey: genesisKey,
+                                              attestKeyId: attest?.keyId, assertionB64: attest?.assertionB64,
+                                              path: path, method: method)
                 capabilities?.noteSuccess(.privateEmail)
                 return
             } catch let failure as RelayAPIClient.Failure {
