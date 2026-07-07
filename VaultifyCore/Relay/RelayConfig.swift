@@ -19,12 +19,12 @@ nonisolated enum RelayConfig {
 
     /// Relay App Attest admission (INV-R02). When enabled, protected mutations
     /// register the device key with loox-relay and carry a per-command assertion.
-    /// The server runs `ASSERTION_MODE` off/shadow (verify + log; the principal
-    /// signature stays the live auth), so a register/assert failure must never
-    /// block a mutation while `attestationRequired` is false. Flip
-    /// `attestationRequired` in lockstep with the server moving to `required`.
+    /// The server runs `ASSERTION_MODE=required` (go-live 2026-07-07): a mutation
+    /// without a valid assertion is rejected (401). `attestationRequired = true`
+    /// keeps the client in lockstep — a failed assertion hard-fails locally with
+    /// a clear error instead of a server round-trip that 401s anyway.
     static let attestationEnabled = true
-    static let attestationRequired = false
+    static let attestationRequired = true
 
     /// Destination ownership routing (DEC-DST-01). Server is at
     /// `DESTINATION_VERIFICATION_MODE=required`, so `rotateDestination` binds the

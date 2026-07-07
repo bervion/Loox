@@ -21,12 +21,12 @@ import Foundation
 /// (reinstall/restore/env change) resets to a fresh key + re-register, budgeted
 /// to a single retry — never an endless generate→attest loop.
 nonisolated enum RelayAttestation {
-    // `-v2`: the pre-fix key churn (register-poison + reruns) could leave the
-    // keychain holding a keyId that no longer matches the Enclave key actually
-    // used for generateAssertion, so the header keyId and the signer diverged
-    // (assertion_signature_invalid). Bumping the namespace forces a single clean
-    // generateKey → register → assert cycle on every device — one key, used for
-    // both the header and the signature.
+    // `-v2`: a one-time clean-slate key reset done during go-live triage. The
+    // client crypto here was correct all along — the real cause of the early
+    // assertion_signature_invalid was a server-side verifier bug (it verified
+    // ECDSA over authData‖clientDataHash instead of Apple's actual
+    // ECDSA-SHA256(authData‖clientDataHash) nonce). The reset is harmless and
+    // left every device on a single freshly-registered key, so it stays.
     private static let keyIdAccount = "loox-relay-app-attest-key-id-v2"
     private static let registeredAccount = "loox-relay-app-attest-registered-v2"
 
@@ -52,17 +52,6 @@ nonisolated enum RelayAttestation {
     private static func assertOnce(transcript: Data, baseURL: URL) async throws -> Assertion {
         let keyId = try await registeredKeyId(baseURL: baseURL)
         let clientDataHash = Data(SHA256.hash(data: transcript))
-        #if DEBUG
-        // Compare against the server's per-attempt expected hash: principal-sig
-        // verification (201) proves the transcripts match, so if these hashes
-        // still differ the divergence is a single-vs-double SHA256 in one
-        // clientDataHash construction — the app does a single SHA256, matching
-        // the proven loox-link path.
-        let hex = { (d: Data) in d.map { String(format: "%02x", $0) }.joined() }
-        print("[RelayAttest] keyId=\(keyId)")
-        print("[RelayAttest] transcript(\(transcript.count)B)=\(hex(transcript))")
-        print("[RelayAttest] clientDataHash=\(hex(clientDataHash))")
-        #endif
         let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: clientDataHash)
         return Assertion(keyId: keyId, assertionB64: assertion.base64EncodedString())
     }
