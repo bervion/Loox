@@ -21,8 +21,14 @@ import Foundation
 /// (reinstall/restore/env change) resets to a fresh key + re-register, budgeted
 /// to a single retry — never an endless generate→attest loop.
 nonisolated enum RelayAttestation {
-    private static let keyIdAccount = "loox-relay-app-attest-key-id"
-    private static let registeredAccount = "loox-relay-app-attest-registered"
+    // `-v2`: the pre-fix key churn (register-poison + reruns) could leave the
+    // keychain holding a keyId that no longer matches the Enclave key actually
+    // used for generateAssertion, so the header keyId and the signer diverged
+    // (assertion_signature_invalid). Bumping the namespace forces a single clean
+    // generateKey → register → assert cycle on every device — one key, used for
+    // both the header and the signature.
+    private static let keyIdAccount = "loox-relay-app-attest-key-id-v2"
+    private static let registeredAccount = "loox-relay-app-attest-registered-v2"
 
     struct Assertion { let keyId: String; let assertionB64: String }
 
