@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.19.3] - 2026-07-07
+
+### Fixed
+- reset App Attest key namespace to break stale-key mismatch
+
+### Changed
+- log assertion clientDataHash + keyId (DEBUG) for parity triage
+
+
 ## [1.19.2] - 2026-07-07
 
 ### Fixed

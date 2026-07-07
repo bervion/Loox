@@ -1,1 +1,1 @@
-Fixed an issue where a failed sync setup could leave your device unable to reconnect. Sync now recovers cleanly on the next attempt.
+This update fixes a syncing issue that could affect secure sharing reliability. Performance and stability improvements included.

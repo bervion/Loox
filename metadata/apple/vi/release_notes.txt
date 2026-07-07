@@ -1,1 +1,1 @@
-Đã sửa lỗi khiến thiết bị không thể kết nối lại sau khi thiết lập đồng bộ không thành công. Giờ đây quá trình đồng bộ sẽ tự khắc phục ở lần thử tiếp theo.
+Bản cập nhật này khắc phục một lỗi đồng bộ có thể ảnh hưởng đến độ ổn định khi chia sẻ an toàn, đồng thời cải thiện hiệu năng chung.
