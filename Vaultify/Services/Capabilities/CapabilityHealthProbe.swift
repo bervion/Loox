@@ -13,6 +13,9 @@ import Foundation
         switch id {
         case .privateEmail: return URL(string: "https://api-relay.looxpassword.com/v1/relay/service-state")!
         case .shareLink: return LooxLinkConfig.defaultAPIBase.appending(path: "/v1/link/service-state")
+        // The shortener runs in the same worker until it grows a dedicated
+        // state route — repoint when the short-link service ships one.
+        case .shortLink: return LooxLinkConfig.defaultAPIBase.appending(path: "/v1/link/service-state")
         }
     }
 

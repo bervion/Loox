@@ -9,6 +9,15 @@ struct QuickLinkResultView: View {
 
     @Environment(AppEnvironment.self) private var env
     @State private var copied = false
+    /// In-memory only, like the fragment it carries — the working short link
+    /// exists exactly as long as this screen; history keeps a fragment-free
+    /// note that shortening happened, never a usable URL.
+    @State private var shortURL: URL?
+    @State private var shortening = false
+    @State private var shortenUnavailable = false
+
+    /// What Copy/Share hand out — the short form once minted.
+    private var activeURL: URL { shortURL ?? link.url }
 
     var body: some View {
         VStack(spacing: Space.s5) {
@@ -19,7 +28,7 @@ struct QuickLinkResultView: View {
 
             // Truncated middle: enough to recognize, never the full secret on
             // screen — Copy/Share carry the real thing.
-            Text(verbatim: link.url.absoluteString)
+            Text(verbatim: activeURL.absoluteString)
                 .font(.vaultCode(.footnote))
                 .themedForeground(.secondary)
                 .lineLimit(2)
@@ -49,7 +58,7 @@ struct QuickLinkResultView: View {
             Button {
                 // Sensitive: the URL fragment IS the decryption key — expiring
                 // clipboard semantics apply, and the value is never logged.
-                env.clipboard.copy(link.url.absoluteString, sensitive: true)
+                env.clipboard.copy(activeURL.absoluteString, sensitive: true)
                 copied = true
             } label: {
                 Label { Text(copied ? "Link Copied" : "Copy Link") }
@@ -58,9 +67,28 @@ struct QuickLinkResultView: View {
             }
             .buttonStyle(.themedProminent)
 
-            ShareLink(item: link.url) {
+            ShareLink(item: activeURL) {
                 Label { Text("Share Link") } icon: { PolarisIcon(Icons.share) }
                     .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+            }
+
+            // Optional prettifier, only while this screen holds the working
+            // link (no retroactive shorten from history — by design). The
+            // button exists only once the backend hands out shorten tokens.
+            if link.shortenToken != nil, shortURL == nil, !shortenUnavailable {
+                Button { shorten() } label: {
+                    Label { Text(shortening ? "Creating short link…" : "Shorten Link") }
+                        icon: { PolarisIcon(Icons.magic) }
+                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                }
+                .disabled(shortening)
+            }
+            if shortenUnavailable {
+                // Shortening is presentation sugar: its outage never makes the
+                // created share read as failed.
+                Text("Short links are temporarily unavailable. Your share link is ready to use.")
+                    .vaultType(.footnote).themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
             }
 
             Text("This link can only be revoked from this device.")
@@ -73,5 +101,20 @@ struct QuickLinkResultView: View {
         }
         .padding(Space.gutter)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func shorten() {
+        shortening = true
+        Task {
+            defer { shortening = false }
+            do {
+                let short = try await env.looxLinks.shorten(link)
+                shortURL = short
+                copied = false   // the copy button now carries the short form
+                Haptics.success()
+            } catch {
+                shortenUnavailable = true
+            }
+        }
     }
 }

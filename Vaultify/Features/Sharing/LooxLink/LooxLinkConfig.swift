@@ -106,4 +106,21 @@ nonisolated enum LooxLinkConfig {
     static func shareURL(shareId: String, fragmentKey: String, oneTime: Bool = false) -> URL? {
         URL(string: "\(viewerBase.absoluteString)/s/\(shareId)#k=\(fragmentKey)\(oneTime ? "&o=1" : "")")
     }
+
+    /// Shorten endpoint — contract sketch pending the backend freeze doc;
+    /// this is the single place to update when the exact path lands.
+    static func shortenPath(shareId: String) -> String {
+        "/v1/shares/\(shareId)/short-link"
+    }
+
+    /// The full short link handed to the user: the backend's fragment-free
+    /// base plus the canonical link's fragment reattached locally, verbatim
+    /// (the fragment carries the content key AND flags like the one-time
+    /// hint — it is opaque here and must survive whole). Fragment-bearing
+    /// URLs stay in memory only; history persists the fragment-free base.
+    static func composedShortURL(base: URL, canonicalURL: URL) -> URL? {
+        guard let fragment = URLComponents(url: canonicalURL, resolvingAgainstBaseURL: false)?.fragment,
+              !fragment.isEmpty else { return nil }
+        return URL(string: "\(base.absoluteString)#\(fragment)")
+    }
 }
