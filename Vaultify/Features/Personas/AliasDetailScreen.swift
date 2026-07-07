@@ -41,7 +41,7 @@ struct AliasDetailScreen: View {
 
     @ViewBuilder private func content(_ alias: EmailAlias) -> some View {
         let address = AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                                           relayDomain: RelayConfig.emailDomain)
+                                           relayDomain: alias.emailDomain)
         List {
             Section("Address") {
                 Button {

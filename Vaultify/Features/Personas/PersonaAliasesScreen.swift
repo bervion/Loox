@@ -147,7 +147,7 @@ struct PersonaAliasesScreen: View {
     private func aliasRow(_ alias: EmailAlias, subtitle: String?) -> some View {
         // Full working address only when live+active — AliasAddress guarantees it.
         let address = AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                                           relayDomain: RelayConfig.emailDomain)
+                                           relayDomain: alias.emailDomain)
         return NavigationLink {
             AliasDetailScreen(aliasID: alias.id)
         } label: {
@@ -183,7 +183,8 @@ struct PersonaAliasesScreen: View {
         let label = reusableLabelDraft.trimmingCharacters(in: .whitespaces)
         reusableLabelDraft = ""
         if let id = try? env.repository.createPersonaAlias(for: persona,
-                                                           label: label.isEmpty ? nil : label),
+                                                           label: label.isEmpty ? nil : label,
+                                                           domainID: PrivateEmailDomainDefault.domainID),
            let created = env.repository.aliases.first(where: { $0.id == id }) {
             activate(created)
         }
@@ -192,9 +193,10 @@ struct PersonaAliasesScreen: View {
     private func probe() {
         Task {
             await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities)
-            // Manifest refresh piggybacks on the contextual probe — cheap,
-            // ETag-cached server-side, and never on the startup path.
+            // Manifest + domain-registry refresh piggyback on the contextual
+            // probe — cheap, cached server-side, never on the startup path.
             await env.capabilityManifest.refresh()
+            await env.domainRegistry.refresh()
         }
     }
 

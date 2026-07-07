@@ -114,7 +114,7 @@ struct ItemEditorScreen: View {
                                 ForEach(aliasSuggestions) { alias in
                                     suggestionChip(AliasAddress.display(
                                         localPart: alias.localPart, status: alias.status,
-                                        relayDomain: RelayConfig.emailDomain)) { value in
+                                        relayDomain: alias.emailDomain)) { value in
                                         fillEmail(value)
                                         pendingAliasID = alias.boundItemId == nil ? alias.id : nil
                                     }
@@ -430,13 +430,14 @@ struct ItemEditorScreen: View {
             defer { creatingAlias = false }
             do {
                 let id = try env.repository.createPerSiteAlias(for: persona, boundItemId: nil,
-                                                               domain: host)
+                                                               domain: host,
+                                                               domainID: PrivateEmailDomainDefault.domainID)
                 guard let alias = env.repository.aliases.first(where: { $0.id == id }) else { return }
                 try await env.relay.activate(alias)
                 if let live = env.repository.aliases.first(where: { $0.id == id }),
                    live.status == .active {
                     fillEmail(AliasAddress.display(localPart: live.localPart, status: live.status,
-                                                   relayDomain: RelayConfig.emailDomain))
+                                                   relayDomain: live.emailDomain))
                     pendingAliasID = id
                     Haptics.success()
                 }

@@ -51,6 +51,33 @@ nonisolated enum LooxLinkAttestation {
                      assertionB64: assertion.base64EncodedString())
     }
 
+    /// Assertion for one shorten request (`LOOX-APP-ATTEST-SHORTEN-LINK-V1`).
+    /// Same key/challenge machinery as create-share, its own binding; the
+    /// server CONSUMES the challenge on a successful verify, so every attempt
+    /// fetches a fresh one.
+    static func assertShortenLink(api: LooxLinkAPIClient, shareId: String,
+                                  shortenToken: String) async throws
+        -> LooxLinkAPIClient.AssertionHeaders {
+        do {
+            return try await assertShortenOnce(api: api, shareId: shareId, shortenToken: shortenToken)
+        } catch let error as DCError where error.code == .invalidKey {
+            resetKey()
+            return try await assertShortenOnce(api: api, shareId: shareId, shortenToken: shortenToken)
+        }
+    }
+
+    private static func assertShortenOnce(api: LooxLinkAPIClient, shareId: String,
+                                          shortenToken: String) async throws
+        -> LooxLinkAPIClient.AssertionHeaders {
+        let keyId = try await registeredKeyId(api: api)
+        let challenge = try await api.getChallenge()
+        let hash = LooxLinkCanonical.shortenRequestHash(
+            challengeId: challenge.challengeId, shareId: shareId, shortenToken: shortenToken)
+        let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: hash)
+        return .init(challengeId: challenge.challengeId, keyId: keyId,
+                     assertionB64: assertion.base64EncodedString())
+    }
+
     /// Key id of a key the server has verified — registering first if needed.
     private static func registeredKeyId(api: LooxLinkAPIClient) async throws -> String {
         let keyId: String

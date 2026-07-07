@@ -41,9 +41,26 @@ nonisolated struct LooxLinkCreateResponse: Decodable, Sendable {
     let revokeToken: String
     /// Unix seconds.
     let expiresAt: Int64
+    /// Single-purpose credential for the optional shorten step (deliberately
+    /// NOT the revoke token — possession of "make this prettier" must never
+    /// equal possession of "kill this link"). Absent until the backend ships
+    /// the shortener, which is what hides the Shorten action client-side.
+    let shortenToken: String?
 
     enum CodingKeys: String, CodingKey {
         case shareId = "share_id", revokeToken = "revoke_token", expiresAt = "expires_at"
+        case shortenToken = "shorten_token"
+    }
+}
+
+nonisolated struct LooxLinkShortenResponse: Decodable, Sendable {
+    /// Fragment-free short URL — the backend picks the host; the app never
+    /// chooses a short-link domain and reattaches the fragment locally.
+    let shortURL: String
+    let domainID: String
+
+    enum CodingKeys: String, CodingKey {
+        case shortURL = "short_url", domainID = "domain_id"
     }
 }
 
@@ -116,6 +133,24 @@ nonisolated struct LooxLinkAPIClient: Sendable {
             // link — remap so the UI can't show "this link no longer exists".
             throw LooxLinkAPIError.server(status: 404, code: "not_found")
         }
+    }
+
+    /// Mint a short presentation link for an existing share. The request
+    /// carries only the share id and the single-purpose shorten token — never
+    /// the canonical URL, so the fragment key cannot reach the backend by
+    /// construction. Wrong/unknown token or id → indistinguishable 404.
+    func createShortLink(shareId: String, shortenToken: String,
+                         assertion: AssertionHeaders?) async throws -> LooxLinkShortenResponse {
+        var request = makeRequest(path: LooxLinkConfig.shortenPath)
+        if let assertion {
+            request.setValue(assertion.challengeId, forHTTPHeaderField: "X-Loox-Challenge-Id")
+            request.setValue(assertion.keyId, forHTTPHeaderField: "X-Loox-App-Attest-Key-Id")
+            request.setValue(assertion.assertionB64, forHTTPHeaderField: "X-Loox-App-Attest-Assertion")
+        }
+        request.httpBody = try JSONEncoder().encode(["share_id": shareId,
+                                                     "shorten_token": shortenToken])
+        let data = try await send(request)
+        return try decodeOrThrow(LooxLinkShortenResponse.self, from: data)
     }
 
     /// 204 on success; wrong/unknown token or id → indistinguishable 404.

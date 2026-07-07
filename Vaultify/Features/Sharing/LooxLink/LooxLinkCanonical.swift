@@ -57,4 +57,39 @@ nonisolated enum LooxLinkCanonical {
             ciphertext: ciphertext, iv: iv, cryptoVersion: cryptoVersion,
             expiresInSeconds: expiresInSeconds, envelope: envelope, oneTime: oneTime)))
     }
+
+    // MARK: Shorten-link assertion (LOOX-APP-ATTEST-SHORTEN-LINK-V1)
+
+    static let shortenMagic = "LOOX-APP-ATTEST-SHORTEN-LINK-V1"
+    static let shortenMethod = "POST"
+
+    /// Frozen shorten binding (parity-tested against
+    /// `shorten-link-assertion-vectors-v1.json`):
+    ///     magic (UTF-8, no length prefix)
+    ///     u16 len ‖ method (uppercased)   u16 len ‖ path   u16 len ‖ challengeId
+    ///     u16 len ‖ shareId
+    ///     SHA-256(shortenToken UTF-8)  (32 raw bytes, no length prefix)
+    /// The token is hashed — the raw bearer never enters transcript material.
+    static func shortenTranscript(method: String = shortenMethod,
+                                  path: String = LooxLinkConfig.shortenPath,
+                                  challengeId: String,
+                                  shareId: String, shortenToken: String) -> Data {
+        func u16(_ n: Int) -> Data { var v = UInt16(n).bigEndian; return Data(bytes: &v, count: 2) }
+        func lengthPrefixed(_ s: String) -> Data { let d = Data(s.utf8); return u16(d.count) + d }
+
+        var out = Data(shortenMagic.utf8)
+        out += lengthPrefixed(method.uppercased())
+        out += lengthPrefixed(path)
+        out += lengthPrefixed(challengeId)
+        out += lengthPrefixed(shareId)
+        out += Data(SHA256.hash(data: Data(shortenToken.utf8)))
+        return out
+    }
+
+    /// `clientDataHash` for `generateAssertion` on shorten.
+    static func shortenRequestHash(challengeId: String, shareId: String,
+                                   shortenToken: String) -> Data {
+        Data(SHA256.hash(data: shortenTranscript(challengeId: challengeId,
+                                                 shareId: shareId, shortenToken: shortenToken)))
+    }
 }

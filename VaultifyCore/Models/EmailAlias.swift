@@ -44,6 +44,12 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
     /// retry skips createAlias (which would collide and orphan the first mint).
     /// Also means disable/delete must reach the backend even while still reserved.
     var backendMinted: Bool
+    /// Which trusted mail-domain namespace this alias lives in (registry ID,
+    /// not a raw hostname — hostnames follow config, IDs are stable). The
+    /// domain of an activated alias is immutable: `abc@relay.…` and
+    /// `abc@loox.pw` are different externally reachable identities, so
+    /// "changing domain" means creating a new alias, never mutating this.
+    var relayDomainID: String
     var sortIndex: Int
     var createdAt: Date
     var updatedAt: Date
@@ -60,6 +66,7 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
          forwardingTarget: String? = nil,
          disabledAt: Date? = nil,
          backendMinted: Bool = false,
+         relayDomainID: String = AuxiliaryDomainRegistry.legacyEmailDomainID,
          sortIndex: Int = 0,
          createdAt: Date = .now,
          updatedAt: Date = .now) {
@@ -75,9 +82,16 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
         self.forwardingTarget = forwardingTarget
         self.disabledAt = disabledAt
         self.backendMinted = backendMinted
+        self.relayDomainID = relayDomainID
         self.sortIndex = sortIndex
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+
+    /// The mail domain this alias's address renders under (via the trusted
+    /// registry, falling back to the legacy domain for unknown IDs).
+    var emailDomain: String {
+        AuxiliaryDomainRegistry.emailDomain(forDomainID: relayDomainID)
     }
 
     var secret: EmailAliasSecret {
@@ -86,7 +100,8 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
                          label: label, status: status,
                          forwardingInboxID: forwardingInboxID,
                          forwardingTarget: forwardingTarget,
-                         disabledAt: disabledAt, backendMinted: backendMinted)
+                         disabledAt: disabledAt, backendMinted: backendMinted,
+                         relayDomainID: relayDomainID)
     }
 }
 
@@ -106,12 +121,14 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
     var forwardingTarget: String?
     var disabledAt: Date?
     var backendMinted: Bool
+    var relayDomainID: String
 
     init(personaId: String, tier: AliasTier, localPart: String,
          boundItemId: String? = nil, boundDomain: String? = nil,
          label: String? = nil, status: AliasStatus = .draft,
          forwardingInboxID: String? = nil, forwardingTarget: String? = nil,
-         disabledAt: Date? = nil, backendMinted: Bool = false) {
+         disabledAt: Date? = nil, backendMinted: Bool = false,
+         relayDomainID: String = AuxiliaryDomainRegistry.legacyEmailDomainID) {
         self.personaId = personaId
         self.tier = tier
         self.localPart = localPart
@@ -123,6 +140,7 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
         self.forwardingTarget = forwardingTarget
         self.disabledAt = disabledAt
         self.backendMinted = backendMinted
+        self.relayDomainID = relayDomainID
     }
 
     init(from decoder: any Decoder) throws {
@@ -138,5 +156,9 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
         forwardingTarget = try c.decodeIfPresent(String.self, forKey: .forwardingTarget)
         disabledAt = try c.decodeIfPresent(Date.self, forKey: .disabledAt)
         backendMinted = try c.decodeIfPresent(Bool.self, forKey: .backendMinted) ?? false
+        // Blobs sealed before domains were explicit are all legacy-domain
+        // aliases by construction (there was only one domain to mint on).
+        relayDomainID = try c.decodeIfPresent(String.self, forKey: .relayDomainID)
+            ?? AuxiliaryDomainRegistry.legacyEmailDomainID
     }
 }

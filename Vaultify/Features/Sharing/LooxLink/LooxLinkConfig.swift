@@ -106,4 +106,27 @@ nonisolated enum LooxLinkConfig {
     static func shareURL(shareId: String, fragmentKey: String, oneTime: Bool = false) -> URL? {
         URL(string: "\(viewerBase.absoluteString)/s/\(shareId)#k=\(fragmentKey)\(oneTime ? "&o=1" : "")")
     }
+
+    /// Shorten endpoint — FROZEN by the assertion transcript
+    /// (`LOOX-APP-ATTEST-SHORTEN-LINK-V1` pins method POST + this path; the
+    /// share id travels in the body and inside the signed transcript).
+    static let shortenPath = "/v1/short-links"
+
+    /// Independent fail-closed ladder for the shorten assertion
+    /// (SHORTEN_ASSERTION_MODE off→shadow→required server-side, separate from
+    /// create-share's ASSERTION_MODE). While off/shadow, an assert failure
+    /// only logs and the token-authenticated request proceeds; flip together
+    /// with the server moving to required.
+    static let shortenAssertionRequired = false
+
+    /// The full short link handed to the user: the backend's fragment-free
+    /// base plus the canonical link's fragment reattached locally, verbatim
+    /// (the fragment carries the content key AND flags like the one-time
+    /// hint — it is opaque here and must survive whole). Fragment-bearing
+    /// URLs stay in memory only; history persists the fragment-free base.
+    static func composedShortURL(base: URL, canonicalURL: URL) -> URL? {
+        guard let fragment = URLComponents(url: canonicalURL, resolvingAgainstBaseURL: false)?.fragment,
+              !fragment.isEmpty else { return nil }
+        return URL(string: "\(base.absoluteString)#\(fragment)")
+    }
 }

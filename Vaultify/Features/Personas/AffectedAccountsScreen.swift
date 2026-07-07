@@ -15,7 +15,7 @@ struct AffectedAccountsScreen: View {
             guard let itemId = alias.boundItemId,
                   let item = env.repository.item(id: itemId) else { return nil }
             return (item, AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                                               relayDomain: RelayConfig.emailDomain))
+                                               relayDomain: alias.emailDomain))
         }
     }
 

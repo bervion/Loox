@@ -14,18 +14,28 @@ nonisolated struct LooxLinkRecord: Codable, Identifiable, Equatable, Sendable {
     var expiresAt: Date
     /// Burn after read: the server deletes the share on its first view.
     var oneTime: Bool
+    /// Presentation metadata for an optional short link, WITHOUT its fragment
+    /// — the working link (fragment = key) exists only while the create sheet
+    /// is up, so history can show "was shortened, on which host" but can never
+    /// reconstruct a usable link. Deliberately not a `shortURL` field name a
+    /// future reader might be tempted to copy-paste to a recipient.
+    var shortURLWithoutFragment: String?
+    var shortDomainID: String?
 
     var id: String { shareId }
     var isExpired: Bool { expiresAt <= .now }
 
     init(shareId: String, revokeToken: String, itemId: String,
-         createdAt: Date, expiresAt: Date, oneTime: Bool = false) {
+         createdAt: Date, expiresAt: Date, oneTime: Bool = false,
+         shortURLWithoutFragment: String? = nil, shortDomainID: String? = nil) {
         self.shareId = shareId
         self.revokeToken = revokeToken
         self.itemId = itemId
         self.createdAt = createdAt
         self.expiresAt = expiresAt
         self.oneTime = oneTime
+        self.shortURLWithoutFragment = shortURLWithoutFragment
+        self.shortDomainID = shortDomainID
     }
 
     /// Custom decode so records persisted before `oneTime` existed still load
@@ -38,6 +48,8 @@ nonisolated struct LooxLinkRecord: Codable, Identifiable, Equatable, Sendable {
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         expiresAt = try c.decode(Date.self, forKey: .expiresAt)
         oneTime = try c.decodeIfPresent(Bool.self, forKey: .oneTime) ?? false
+        shortURLWithoutFragment = try c.decodeIfPresent(String.self, forKey: .shortURLWithoutFragment)
+        shortDomainID = try c.decodeIfPresent(String.self, forKey: .shortDomainID)
     }
 }
 
@@ -68,6 +80,14 @@ nonisolated struct LooxLinkRecord: Codable, Identifiable, Equatable, Sendable {
 
     func remove(shareId: String) {
         records.removeAll { $0.shareId == shareId }
+        persist()
+    }
+
+    /// Record that a share was shortened — fragment-free base only.
+    func markShortened(shareId: String, shortURLWithoutFragment: String, domainID: String) {
+        guard let index = records.firstIndex(where: { $0.shareId == shareId }) else { return }
+        records[index].shortURLWithoutFragment = shortURLWithoutFragment
+        records[index].shortDomainID = domainID
         persist()
     }
 

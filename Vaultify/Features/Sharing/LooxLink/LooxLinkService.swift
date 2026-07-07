@@ -16,6 +16,10 @@ import Foundation
     struct CreatedLink {
         let url: URL
         let record: LooxLinkRecord
+        /// Single-purpose shorten credential, alive exactly as long as this
+        /// value (like the URL's fragment key): dismissing the sheet closes
+        /// the shorten window for good. Never persisted anywhere.
+        let shortenToken: String?
     }
 
     enum Failure: LocalizedError {
@@ -91,7 +95,52 @@ import Foundation
             expiresAt: Date(timeIntervalSince1970: TimeInterval(response.expiresAt)),
             oneTime: oneTime)
         records.add(record)
-        return CreatedLink(url: url, record: record)
+        return CreatedLink(url: url, record: record, shortenToken: response.shortenToken)
+    }
+
+    /// Mint a short presentation link for a just-created share. Only callable
+    /// while the create-success sheet still holds the fragment-bearing URL —
+    /// afterwards the token and fragment are gone by design, and a new share
+    /// is the only way to get a shareable link again. Returns the full short
+    /// URL (fragment reattached in memory); the record keeps the fragment-free
+    /// base only. Failure here never disturbs the created share.
+    func shorten(_ created: CreatedLink) async throws -> URL {
+        guard let token = created.shortenToken else { throw Failure.badServerData }
+        guard capabilities?.allowRequest(.shortLink) ?? true else {
+            throw LooxLinkAPIError.capability(.active, retryAfter: nil)   // breaker open
+        }
+        // App Attest binding for the shorten mutation — same shadow posture
+        // as create-share until the server's independent ladder reaches
+        // required (then failures block instead of falling through).
+        var assertion: LooxLinkAPIClient.AssertionHeaders?
+        if LooxLinkConfig.attestationEnabled, LooxLinkAttestation.isSupported {
+            do {
+                assertion = try await LooxLinkAttestation.assertShortenLink(
+                    api: api, shareId: created.record.shareId, shortenToken: token)
+            } catch {
+                if LooxLinkConfig.shortenAssertionRequired { throw error }
+                #if DEBUG
+                print("[LooxLink] shorten attest failed (shadow mode, continuing): \(error)")
+                #endif
+            }
+        }
+        let response: LooxLinkShortenResponse
+        do {
+            response = try await api.createShortLink(shareId: created.record.shareId,
+                                                     shortenToken: token, assertion: assertion)
+            capabilities?.noteSuccess(.shortLink)
+        } catch {
+            note(error, for: .shortLink)
+            throw error
+        }
+        guard let base = URL(string: response.shortURL),
+              let full = LooxLinkConfig.composedShortURL(base: base, canonicalURL: created.url) else {
+            throw Failure.badServerData
+        }
+        records.markShortened(shareId: created.record.shareId,
+                              shortURLWithoutFragment: response.shortURL,
+                              domainID: response.domainID)
+        return full
     }
 
     /// Revoke server-side, then forget locally. A 404 means the link is
@@ -113,16 +162,16 @@ import Foundation
     /// Classify an API failure for the capability store: verified operator
     /// state persists; infra failures feed the breaker; everything else means
     /// the service answered (INV-CAP-07 — no state change from generic errors).
-    private func note(_ error: Error) {
+    private func note(_ error: Error, for id: CapabilityID = .shareLink) {
         switch error {
         case LooxLinkAPIError.capability(let mode, let retryAfter):
-            capabilities?.noteOperatorSignal(.shareLink, .init(mode: mode, retryAfter: retryAfter))
+            capabilities?.noteOperatorSignal(id, .init(mode: mode, retryAfter: retryAfter))
         case LooxLinkAPIError.server(let status, _) where (502...504).contains(status):
-            capabilities?.noteInfrastructureFailure(.shareLink)
+            capabilities?.noteInfrastructureFailure(id)
         case is URLError:
-            capabilities?.noteInfrastructureFailure(.shareLink)
+            capabilities?.noteInfrastructureFailure(id)
         default:
-            capabilities?.noteServiceResponded(.shareLink)
+            capabilities?.noteServiceResponded(id)
         }
     }
 }

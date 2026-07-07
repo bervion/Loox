@@ -6,6 +6,10 @@ import Foundation
 nonisolated enum CapabilityID: String, Codable, Sendable, CaseIterable {
     case shareLink = "share_link"
     case privateEmail = "private_email"
+    /// Short presentation links for Share Vault links. Deliberately its own
+    /// capability: the shortener can be down while canonical share creation
+    /// stays healthy, and a shorten failure must read as its own outage.
+    case shortLink = "short_link"
 }
 
 /// Operator-declared service mode — the BACKEND's vocabulary, verbatim (both

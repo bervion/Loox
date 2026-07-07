@@ -10,8 +10,12 @@ import Foundation
 nonisolated enum RelayCommandCanonical {
     static let magic = RelayConfig.commandMagic   // "LOOX-RELAY-AUTHZ-V1"
     static let version: UInt8 = 1
+    static let magicV2 = "LOOX-RELAY-AUTHZ-V2"
+    static let versionV2: UInt8 = 2
 
-    /// Layout (all length-prefixed except the leading magic/version/tag):
+    /// V1 layout — FROZEN, byte-for-byte the shipped worker contract; it
+    /// cannot express a domain choice (`domainID` is ignored here), which is
+    /// why namespace-bearing commands must sign V2 instead.
     /// `magic` (raw) ‖ `version` ‖ `kind` ‖ blob(principalID) ‖ u64(epoch) ‖
     /// blob(nonce) ‖ i64(issuedAtUnixMs) ‖ optionalString(aliasID) ‖
     /// optionalString(destination) ‖ optionalBlob(newPublicKey).
@@ -31,14 +35,44 @@ nonisolated enum RelayCommandCanonical {
         return w.data
     }
 
+    /// V2 layout (relay-authz-v2-contract.md, frozen vectors
+    /// `relay-authz-command-vectors-v2.json`): V1 base + optString(domainID)
+    /// directly after aliasID. Transcript presence must equal wire presence —
+    /// the signature is what enforces the namespace the server acts on.
+    static func transcriptV2(_ cmd: RelayCommand) -> Data {
+        var w = CanonicalWriter()
+        w.raw(Data(magicV2.utf8))
+        w.byte(versionV2)
+        w.byte(cmd.kind.rawValue)
+        w.blob(cmd.principalID)
+        w.u64(cmd.epoch)
+        w.blob(cmd.nonce)
+        w.i64(cmd.issuedAtUnixMs)
+        w.optionalString(cmd.aliasID)
+        w.optionalString(cmd.domainID)
+        w.optionalString(cmd.destination)
+        w.optionalBlob(cmd.newPublicKey)
+        return w.data
+    }
+
     static func sign(_ cmd: RelayCommand,
                      using identity: RelayPrincipalIdentity) throws -> (transcript: Data, signature: Data) {
         let bytes = transcript(cmd)
         return (bytes, try identity.signature(for: bytes))
     }
 
+    static func signV2(_ cmd: RelayCommand,
+                       using identity: RelayPrincipalIdentity) throws -> (transcript: Data, signature: Data) {
+        let bytes = transcriptV2(cmd)
+        return (bytes, try identity.signature(for: bytes))
+    }
+
     static func verify(_ cmd: RelayCommand, signature: Data, x963PublicKey: Data) -> Bool {
         RelayPrincipalIdentity.verify(transcript(cmd), signature: signature, x963PublicKey: x963PublicKey)
+    }
+
+    static func verifyV2(_ cmd: RelayCommand, signature: Data, x963PublicKey: Data) -> Bool {
+        RelayPrincipalIdentity.verify(transcriptV2(cmd), signature: signature, x963PublicKey: x963PublicKey)
     }
 }
 

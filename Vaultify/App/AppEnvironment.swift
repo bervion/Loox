@@ -52,6 +52,10 @@ import SwiftUI
     /// cache re-applied at init (local, no network); refresh runs from the
     /// capability screens' probe — never on the startup critical path.
     let capabilityManifest: CapabilityManifestClient
+    /// Signed auxiliary-domain registry client (LOOX-DOMAIN-REGISTRY-V1):
+    /// same cache-then-probe posture as the manifest; feeds the trusted
+    /// domain set behind Private Email / short links.
+    let domainRegistry = DomainRegistryClient()
     /// Bounded local history for the notifications screen.
     let notificationHistory = NotificationHistoryStore()
 
@@ -119,6 +123,7 @@ import SwiftUI
         looxLinks.capabilities = capabilities
         // Local-only cache re-verify (no network; INV-CAP-02 intact).
         capabilityManifest.applyCached()
+        domainRegistry.applyCached()
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through

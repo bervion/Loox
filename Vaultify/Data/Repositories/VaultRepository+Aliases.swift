@@ -26,6 +26,7 @@ extension VaultRepository {
                           forwardingTarget: secret.forwardingTarget,
                           disabledAt: secret.disabledAt,
                           backendMinted: secret.backendMinted,
+                          relayDomainID: secret.relayDomainID,
                           sortIndex: record.sortIndex,
                           createdAt: record.createdAt,
                           updatedAt: record.updatedAt)
