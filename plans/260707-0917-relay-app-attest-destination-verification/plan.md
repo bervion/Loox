@@ -15,7 +15,7 @@
 
 | # | Phase | File | BE dependency | Status |
 |---|-------|------|---------------|--------|
-| **A** | Relay App Attest assertion (iOS) | `phase-a-relay-app-attest-assertion.md` | **none** — BE endpoints live (`ASSERTION_MODE=off`) | Ready |
+| **A** | Relay App Attest assertion (iOS) | `phase-a-relay-app-attest-assertion.md` | **none** — BE endpoints live (`ASSERTION_MODE=off`) | ✅ Done (branch `feat/relay-app-attest-assertion`, 324/324) — device QA + BE parity pending |
 | B | Destination ownership verification client | (gated — outline below) | **hard** — `verified_destinations` + kind-7 + verify endpoints greenfield | Blocked on BE |
 | C | Loox Link `one_time` transcript V2 | (gated — outline below) | **hard** — BE freezes V2 field list + vectors | Blocked on BE |
 | D | Required-mode cutover + drop interim token | (gated — outline below) | lockstep with BE mode switch | Blocked on A–C |
