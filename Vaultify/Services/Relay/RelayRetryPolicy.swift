@@ -25,6 +25,8 @@ nonisolated enum RelayRetryPolicy {
         // Global ceiling, deliberately answered — same "try again later" lane
         // as rate_limited, never the infrastructure/server_5xx lane.
         case .capacityReached: return .fail("capacity_reached")
+        // Consent gate, not an outage — surface the re-confirm copy, never retry.
+        case .destinationNotVerified: return .fail("destination_not_verified")
         case .aliasExists:  return .fail("alias_exists")   // mint loop handles upstream
         case .aliasCapReached: return .fail("alias_cap_reached")
         // Handled upstream (verified operator state, never retried); defensive here.
@@ -58,6 +60,10 @@ extension RelayService.Failure {
             return appString("You’re offline. Connect to the internet to change this private address.")
         case .rejected("unauthorized"):
             return appString("Couldn’t verify this device. Unlock Loox and try again.")
+        case .rejected("destination_not_verified"):
+            // Consent gate (DEC-DST-01), not an outage — point the user at the
+            // confirm flow instead of "check your connection".
+            return appString("Confirm your forwarding email before using this private address. Open Forwarding inboxes and tap “Confirm email”.")
         case .rejected("rate_limited"), .rejected("capacity_reached"):
             // capacity_reached = a global ceiling (innocent user) — same gentle
             // "later" copy; the vault and existing forwarding are unaffected.
