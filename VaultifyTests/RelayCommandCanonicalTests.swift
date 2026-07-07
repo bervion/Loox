@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import Vaultify
 
@@ -12,15 +13,15 @@ final class RelayCommandCanonicalTests: XCTestCase {
     private let newPub = Data(repeating: 0x33, count: 65)
 
     private struct Fixture: Decodable {
-        struct Vector: Decodable { let name: String; let canonical_bytes_hex: String }
+        struct Vector: Decodable { let name: String; let canonical_bytes_hex: String; let client_data_hash_hex: String }
         let vectors: [Vector]
     }
 
-    private func loadVectors() throws -> [String: String] {
+    private func loadVectors() throws -> [String: Fixture.Vector] {
         let bundle = Bundle(for: RelayCommandCanonicalTests.self)
         let url = try XCTUnwrap(bundle.url(forResource: "relay-authz-command-vectors-v1", withExtension: "json"))
         let fixture = try JSONDecoder().decode(Fixture.self, from: Data(contentsOf: url))
-        return Dictionary(uniqueKeysWithValues: fixture.vectors.map { ($0.name, $0.canonical_bytes_hex) })
+        return Dictionary(uniqueKeysWithValues: fixture.vectors.map { ($0.name, $0) })
     }
 
     private func command(_ kind: RelayCommandKind, epoch: UInt64,
@@ -41,7 +42,26 @@ final class RelayCommandCanonicalTests: XCTestCase {
             ("rotatePrincipal", command(.rotatePrincipal, epoch: 6, newPublicKey: newPub)),
         ]
         for (name, cmd) in cases {
-            XCTAssertEqual(RelayCommandCanonical.transcript(cmd).hexString, vectors[name], "vector \(name) drifted")
+            XCTAssertEqual(RelayCommandCanonical.transcript(cmd).hexString, vectors[name]?.canonical_bytes_hex, "vector \(name) drifted")
+        }
+    }
+
+    /// The relay App Attest assertion signs clientDataHash = SHA256(canonical
+    /// command bytes). Freeze that hash byte-for-byte so the loox-relay verifier
+    /// (`command-assertion.ts`) and the iOS assertion agree before shadow/required.
+    func testAssertionClientDataHashParity() throws {
+        let vectors = try loadVectors()
+        let cases: [(String, RelayCommand)] = [
+            ("createAlias", command(.createAlias, epoch: 1, aliasID: "alias-1")),
+            ("disableAlias", command(.disableAlias, epoch: 2, aliasID: "alias-1")),
+            ("rotateDestination", command(.rotateDestination, epoch: 3, aliasID: "alias-1", destination: "me@x.com")),
+            ("deleteAlias", command(.deleteAlias, epoch: 4, aliasID: "alias-1")),
+            ("disableAll", command(.disableAll, epoch: 5)),
+            ("rotatePrincipal", command(.rotatePrincipal, epoch: 6, newPublicKey: newPub)),
+        ]
+        for (name, cmd) in cases {
+            let hash = Data(SHA256.hash(data: RelayCommandCanonical.transcript(cmd))).hexString
+            XCTAssertEqual(hash, vectors[name]?.client_data_hash_hex, "clientDataHash \(name) drifted")
         }
     }
 
