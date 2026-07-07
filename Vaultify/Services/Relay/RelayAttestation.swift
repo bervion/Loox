@@ -46,6 +46,17 @@ nonisolated enum RelayAttestation {
     private static func assertOnce(transcript: Data, baseURL: URL) async throws -> Assertion {
         let keyId = try await registeredKeyId(baseURL: baseURL)
         let clientDataHash = Data(SHA256.hash(data: transcript))
+        #if DEBUG
+        // Compare against the server's per-attempt expected hash: principal-sig
+        // verification (201) proves the transcripts match, so if these hashes
+        // still differ the divergence is a single-vs-double SHA256 in one
+        // clientDataHash construction — the app does a single SHA256, matching
+        // the proven loox-link path.
+        let hex = { (d: Data) in d.map { String(format: "%02x", $0) }.joined() }
+        print("[RelayAttest] keyId=\(keyId)")
+        print("[RelayAttest] transcript(\(transcript.count)B)=\(hex(transcript))")
+        print("[RelayAttest] clientDataHash=\(hex(clientDataHash))")
+        #endif
         let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: clientDataHash)
         return Assertion(keyId: keyId, assertionB64: assertion.base64EncodedString())
     }
