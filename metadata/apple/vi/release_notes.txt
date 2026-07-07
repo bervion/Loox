@@ -1,1 +1,1 @@
-Bản cập nhật này tăng cường bảo mật cho tính năng chia sẻ liên kết và cải thiện độ ổn định chung của ứng dụng. Bạn không cần thực hiện thao tác gì thêm.
+Bản cập nhật này tăng cường bảo mật cho tính năng chia sẻ liên kết và bí danh email, bổ sung xác thực thiết bị và kiểm tra tên miền đáng tin cậy, cùng nhiều cải thiện ổn định khác.

@@ -1,1 +1,1 @@
-This update strengthens the security checks behind shared links and improves overall app stability. No action needed on your part.
+This update strengthens the security behind shared links and mail aliases, adding verified device checks and trusted domain validation, along with general stability improvements.

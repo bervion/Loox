@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.21.0] - 2026-07-07
+
+### Added
+- bind shorten to App Attest (LOOX-APP-ATTEST-SHORTEN-LINK-V1)
+- signed auxiliary-domain registry client (LOOX-DOMAIN-REGISTRY-V1)
+- sign the alias namespace — LOOX-RELAY-AUTHZ-V2 client
+- shorten-link scaffold, gated on backend shorten_token
+- per-alias mail-domain namespace via trusted registry
+
+### Changed
+- registry client live, vexla.app aux domains, V2 + shorten-assertion state
+- auxiliary domains + shorten-link scaffold in codebase summary
+
+
 ## [1.20.0] - 2026-07-07
 
 ### Added
