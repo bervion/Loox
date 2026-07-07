@@ -40,6 +40,7 @@ final class RelayCommandCanonicalTests: XCTestCase {
             ("deleteAlias", command(.deleteAlias, epoch: 4, aliasID: "alias-1")),
             ("disableAll", command(.disableAll, epoch: 5)),
             ("rotatePrincipal", command(.rotatePrincipal, epoch: 6, newPublicKey: newPub)),
+            ("beginDestinationVerification", command(.beginDestinationVerification, epoch: 7, destination: "me@x.com")),
         ]
         for (name, cmd) in cases {
             XCTAssertEqual(RelayCommandCanonical.transcript(cmd).hexString, vectors[name]?.canonical_bytes_hex, "vector \(name) drifted")
@@ -58,6 +59,7 @@ final class RelayCommandCanonicalTests: XCTestCase {
             ("deleteAlias", command(.deleteAlias, epoch: 4, aliasID: "alias-1")),
             ("disableAll", command(.disableAll, epoch: 5)),
             ("rotatePrincipal", command(.rotatePrincipal, epoch: 6, newPublicKey: newPub)),
+            ("beginDestinationVerification", command(.beginDestinationVerification, epoch: 7, destination: "me@x.com")),
         ]
         for (name, cmd) in cases {
             let hash = Data(SHA256.hash(data: RelayCommandCanonical.transcript(cmd))).hexString
