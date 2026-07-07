@@ -23,6 +23,8 @@ extension VaultRepository {
                                source: secret.source,
                                personaId: secret.personaId,
                                isDefault: secret.isDefault,
+                               relayDestinationID: secret.relayDestinationID,
+                               verificationStatus: secret.verificationStatus,
                                sortIndex: record.sortIndex,
                                createdAt: record.createdAt,
                                updatedAt: record.updatedAt)

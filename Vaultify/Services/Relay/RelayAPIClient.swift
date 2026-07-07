@@ -50,10 +50,11 @@ nonisolated enum RelayAPIClient {
     /// Attest assertion is supplied it rides as `X-Loox-App-Attest-*` headers
     /// (the server also uses the key id as a rate dimension); the assertion binds
     /// the same canonical command the signature covers.
+    @discardableResult
     static func send(_ command: RelayCommand, signature: Data, genesisPublicKey: Data? = nil,
                      attestKeyId: String? = nil, assertionB64: String? = nil,
                      path: String, method: String = "POST",
-                     baseURL: URL = RelayConfig.apiBaseURL) async throws {
+                     baseURL: URL = RelayConfig.apiBaseURL) async throws -> Data {
         var request = URLRequest(url: baseURL.appending(path: path))
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -70,7 +71,7 @@ nonisolated enum RelayAPIClient {
 
         guard let http = response as? HTTPURLResponse else { throw Failure.transport }
         switch http.statusCode {
-        case 200...299: return
+        case 200...299: return data
         case 401: throw Failure.unauthorized
         case 409: throw conflictFailure(from: data)
         case 429: throw Failure.rateLimited
@@ -131,6 +132,35 @@ nonisolated enum RelayAPIClient {
         request.setValue(keyId, forHTTPHeaderField: "X-Loox-App-Attest-Key-Id")
         request.httpBody = try JSONEncoder().encode(["attestation_object_b64": attestationObjectB64])
         _ = try await perform(request)
+    }
+
+    // MARK: - Destination verification (DEC-DST-01)
+
+    /// Backend state of a forwarding destination. `maskedEmail` absent when
+    /// revoked (plaintext scrubbed); `resendAfterSeconds` present only while
+    /// pending (0 = the next signed begin/resend will actually send mail).
+    struct DestinationState: Decodable {
+        let destinationId: String
+        let status: String            // pending | verified | revoked
+        let maskedEmail: String?
+        let resendAfterSeconds: Int?
+        enum CodingKeys: String, CodingKey {
+            case destinationId = "destination_id"
+            case status
+            case maskedEmail = "masked_email"
+            case resendAfterSeconds = "resend_after_seconds"
+        }
+    }
+
+    /// `GET /v1/relay/destinations/{id}` — read-only, budget-free (the opaque
+    /// 128-bit id is the read capability; no signed command). Poll freely.
+    /// Unknown id → 404 (indistinguishable `not_found`).
+    static func destinationStatus(id: String, baseURL: URL = RelayConfig.apiBaseURL) async throws -> DestinationState {
+        var request = URLRequest(url: baseURL.appending(path: "/v1/relay/destinations/\(id)"))
+        request.httpMethod = "GET"
+        let (data, response) = try await perform(request)
+        _ = response
+        return try JSONDecoder().decode(DestinationState.self, from: data)
     }
 
     /// Shared 2xx-or-throw round trip for the attest endpoints.
