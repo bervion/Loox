@@ -10,6 +10,7 @@ struct AliasEditorSheet: View {
     /// Called with the freshly reserved alias so the parent can activate it.
     var onCreated: ((EmailAlias) -> Void)?
     @State private var selectedItemId: String?
+    @State private var domainID = PrivateEmailDomainDefault.domainID
 
     /// Logins scoped to the active persona's Space (falls back to all logins when
     /// the persona pins no Space) — never surfaces another persona's items.
@@ -35,6 +36,7 @@ struct AliasEditorSheet: View {
                         }
                     }
                 }
+                AliasDomainPickerSection(domainID: $domainID)
                 Section {
                     // Destination = the persona's real email (masked here; full address
                     // lives in the profile). Same source guardEmail() checks upstream.
@@ -58,7 +60,8 @@ struct AliasEditorSheet: View {
 
     private func save() {
         guard let itemId = selectedItemId else { return }
-        if let id = try? env.repository.createPerSiteAlias(for: persona, boundItemId: itemId),
+        if let id = try? env.repository.createPerSiteAlias(for: persona, boundItemId: itemId,
+                                                           domainID: domainID),
            let created = env.repository.aliases.first(where: { $0.id == id }) {
             onCreated?(created)
         }

@@ -10,7 +10,8 @@ extension VaultRepository {
     /// labelled ("Clients"). `reserved`, never `active`, until the relay confirms.
     @discardableResult
     func createPersonaAlias(for persona: Persona, label: String? = nil,
-                            forwardingInboxID: String? = nil) throws -> String? {
+                            forwardingInboxID: String? = nil,
+                            domainID: String = AuxiliaryDomainRegistry.defaultEmailDomainID) throws -> String? {
         try insertAlias(EmailAlias(
             personaId: persona.id,
             tier: .persona,
@@ -19,6 +20,7 @@ extension VaultRepository {
             status: .reserved,
             forwardingInboxID: forwardingInboxID,
             forwardingTarget: newAliasDestination(for: persona),
+            relayDomainID: domainID,
             sortIndex: (aliases.map(\.sortIndex).max() ?? -1) + 1))
     }
 
@@ -27,7 +29,8 @@ extension VaultRepository {
     /// the hint derived from the bound item's first website.
     @discardableResult
     func createPerSiteAlias(for persona: Persona, boundItemId: String?,
-                            domain: String? = nil) throws -> String {
+                            domain: String? = nil,
+                            domainID: String = AuxiliaryDomainRegistry.defaultEmailDomainID) throws -> String {
         let domain = domain ?? boundItemId.flatMap { item(id: $0)?.autofillHosts.first }
         return try insertAlias(EmailAlias(
             personaId: persona.id,
@@ -37,6 +40,7 @@ extension VaultRepository {
             boundDomain: domain,
             status: .reserved,
             forwardingTarget: newAliasDestination(for: persona),
+            relayDomainID: domainID,
             sortIndex: (aliases.map(\.sortIndex).max() ?? -1) + 1))
     }
 

@@ -37,6 +37,13 @@ import Foundation
     /// onto the profile/login. Resumable: a retry after a mint resumes at
     /// rotateDestination rather than re-minting.
     func activate(_ alias: EmailAlias) async throws {
+        // The V1 command transcript cannot express a domain choice, so only the
+        // legacy namespace may reach the backend. Fail closed rather than mint
+        // an alias into a namespace the signed command never authorized; this
+        // gate lifts when the V2 transcript (signed domain_id) ships.
+        guard alias.relayDomainID == AuxiliaryDomainRegistry.legacyEmailDomainID else {
+            throw Failure.rejected("domain_not_supported")
+        }
         guard let persona = repository.personas.first(where: { $0.id == alias.personaId }) else {
             throw Failure.rejected("no_persona")
         }

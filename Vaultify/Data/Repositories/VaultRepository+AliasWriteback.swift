@@ -20,7 +20,7 @@ extension VaultRepository {
 
     private func aliasAddress(_ alias: EmailAlias) -> String {
         AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                             relayDomain: RelayConfig.emailDomain)
+                             relayDomain: alias.emailDomain)
     }
 
     /// Set the persona's REAL email (its aliases' forwarding destination) on the
