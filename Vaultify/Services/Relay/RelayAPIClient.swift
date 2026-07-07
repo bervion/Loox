@@ -18,6 +18,10 @@ nonisolated enum RelayAPIClient {
         /// service answered deliberately, so this must not trip the
         /// infrastructure breaker. Distinct from `capability` (operator state).
         case capacityReached(retryAfter: Int?)
+        /// 403 destination_not_verified — forwarding target isn't a VERIFIED
+        /// destination of this principal (server enforces DEC-DST-01). Not an
+        /// outage: the user must re-confirm the inbox, not "retry the network".
+        case destinationNotVerified
         /// Structured operator state (problem+json `capability_*` / 410 +
         /// X-Loox-Service-State). VERIFIED signal — the only response class
         /// allowed to move the app's operator-mode state (INV-CAP-07).
@@ -73,6 +77,10 @@ nonisolated enum RelayAPIClient {
         switch http.statusCode {
         case 200...299: return data
         case 401: throw Failure.unauthorized
+        case 403:
+            let code = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+                .flatMap { $0?["error"] as? String } ?? ""
+            throw code == "destination_not_verified" ? Failure.destinationNotVerified : Failure.server(403)
         case 409: throw conflictFailure(from: data)
         case 429: throw Failure.rateLimited
         case 410, 503:

@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Confirm your forwarding email before using this private address. Open Forwarding inboxes and tap “Confirm email”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác nhận email nhận thư trước khi dùng địa chỉ riêng này. Mở Hộp thư chuyển tiếp và bấm “Xác nhận email”."
+          }
+        }
+      }
+    },
     "" : {
 
     },
