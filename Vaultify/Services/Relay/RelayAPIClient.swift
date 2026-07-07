@@ -13,7 +13,11 @@ nonisolated enum RelayAPIClient {
         case epochStale            // 409 epoch_stale — refresh principal state
         case aliasExists           // 409 alias_exists — regenerate the local-part
         case aliasCapReached       // 409 alias_cap_reached — active+paused at cap; deletes free space
-        case rateLimited           // 429 — back off (~30/min, 500/day per principal)
+        case rateLimited           // 429 — user-attributable budget; honor Retry-After, never an operator state
+        /// 503 `*_capacity_reached` — a GLOBAL ceiling, not an outage: the
+        /// service answered deliberately, so this must not trip the
+        /// infrastructure breaker. Distinct from `capability` (operator state).
+        case capacityReached(retryAfter: Int?)
         /// Structured operator state (problem+json `capability_*` / 410 +
         /// X-Loox-Service-State). VERIFIED signal — the only response class
         /// allowed to move the app's operator-mode state (INV-CAP-07).
@@ -71,6 +75,9 @@ nonisolated enum RelayAPIClient {
         case 409: throw conflictFailure(from: data)
         case 429: throw Failure.rateLimited
         case 410, 503:
+            // Capacity ceilings answer 503 problem+json (`*_capacity_reached`):
+            // a deliberate reply, so classify BEFORE the operator/infra split.
+            if let capacity = capacityFailure(from: http, data: data) { throw capacity }
             if let signal = capabilitySignal(from: http, data: data) { throw signal }
             throw Failure.server(http.statusCode)   // plain 503 = infrastructure, NOT operator state
         default: throw Failure.server(http.statusCode)
@@ -134,6 +141,16 @@ nonisolated enum RelayAPIClient {
         guard let http = response as? HTTPURLResponse else { throw Failure.transport }
         guard (200...299).contains(http.statusCode) else { throw Failure.server(http.statusCode) }
         return (data, http)
+    }
+
+    /// 503 problem+json capacity codes (e.g. `global_create_capacity_reached`):
+    /// a global ceiling, deliberately answered — never breaker/operator input.
+    private static func capacityFailure(from http: HTTPURLResponse, data: Data) -> Failure? {
+        let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        guard let code = body?["code"] as? String, code.hasSuffix("_capacity_reached") else { return nil }
+        let retryAfter = (body?["retry_after_seconds"] as? Int)
+            ?? http.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init)
+        return .capacityReached(retryAfter: retryAfter)
     }
 
     private static func conflictFailure(from data: Data) -> Failure {
