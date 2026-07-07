@@ -1,1 +1,1 @@
-Fixed an issue that could show a confusing error when sharing a secure link, and improved reliability of the destination check.
+Fixed an issue where a failed sync setup could leave your device unable to reconnect. Sync now recovers cleanly on the next attempt.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.19.2] - 2026-07-07
+
+### Fixed
+- drop App Attest key when register fails after attestKey
+
+
 ## [1.19.1] - 2026-07-07
 
 ### Fixed

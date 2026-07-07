@@ -1,1 +1,1 @@
-Đã sửa lỗi hiển thị thông báo gây nhầm lẫn khi chia sẻ liên kết bảo mật, đồng thời cải thiện độ ổn định khi kiểm tra điểm đến.
+Đã sửa lỗi khiến thiết bị không thể kết nối lại sau khi thiết lập đồng bộ không thành công. Giờ đây quá trình đồng bộ sẽ tự khắc phục ở lần thử tiếp theo.
