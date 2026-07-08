@@ -1,1 +1,1 @@
-Bản cập nhật khắc phục lỗi mã Google Authenticator không hiển thị ở một số tài khoản, đồng thời cập nhật tài liệu ứng dụng.
+Bản cập nhật này tăng độ ổn định: tài liệu chia sẻ tự động làm mới, việc nhận lời mời dùng chung kho mật khẩu cũng chính xác và rõ ràng hơn.

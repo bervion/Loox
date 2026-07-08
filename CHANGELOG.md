@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.2] - 2026-07-08
+
+### Fixed
+- refresh signed documents from app lifecycle, not a feature screen
+- reliable share accept detection + pending visibility
+
+
 ## [1.22.1] - 2026-07-08
 
 ### Fixed

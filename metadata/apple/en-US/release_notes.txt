@@ -1,1 +1,1 @@
-This update fixes an issue where Google Authenticator codes did not appear for some accounts, and refreshes app documentation.
+This update improves reliability: shared documents now refresh automatically, and shared vault invitations are detected more accurately with clearer status updates.
