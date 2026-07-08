@@ -12,16 +12,25 @@ struct NotificationsScreen: View {
     /// shell's push-driven presentation — onFinished clears the inbox entry).
     @State private var presentedApproval: ApprovalCoordinator.PendingOwnerRequest?
     @State private var acceptError: String?
+    /// A pending outgoing share the owner tapped to continue.
+    @State private var resumeShare: ItemShareRecord?
 
     private var invites: [InviteEnvelope] { env.inviteInboxCoordinator.pendingInvites }
     private var requests: [ApprovalCoordinator.PendingOwnerRequest] {
         env.approvalCoordinator.pendingOwnerRequests
     }
+    /// Outgoing shares not yet fully active — the durable "who I invited and
+    /// where it stands" list that was previously buried inside the share sheet.
+    private var outgoingShares: [ItemShareRecord] {
+        env.sharingStore.shares
+            .filter { $0.status != .active }
+            .sorted { $0.createdAtUnixMs > $1.createdAtUnixMs }
+    }
     private var history: [NotificationHistoryStore.Entry] { env.notificationHistory.entries }
 
     var body: some View {
         Group {
-            if invites.isEmpty && requests.isEmpty && history.isEmpty {
+            if invites.isEmpty && requests.isEmpty && outgoingShares.isEmpty && history.isEmpty {
                 ContentUnavailableView {
                     Label { Text("No notifications") } icon: {
                         PolarisIcon(Icons.notification, size: Metric.iconTileLarge)
@@ -43,6 +52,14 @@ struct NotificationsScreen: View {
                         Section("Approval requests") {
                             ForEach(requests) { pending in
                                 requestRow(pending)
+                            }
+                        }
+                        .listRowBackground(VaultColors.surface)
+                    }
+                    if !outgoingShares.isEmpty {
+                        Section("Shares you sent") {
+                            ForEach(outgoingShares) { share in
+                                outgoingRow(share)
                             }
                         }
                         .listRowBackground(VaultColors.surface)
@@ -75,6 +92,12 @@ struct NotificationsScreen: View {
         .task {
             await env.inviteInboxCoordinator.reconcile()
             env.approvalCoordinator.refreshOwnerRequests()
+            // Refresh outgoing share statuses so this list reflects any
+            // acceptance that landed while the app was away.
+            env.ownerShareRefresher.refresh()
+        }
+        .sheet(item: $resumeShare) { share in
+            ShareAccessSheet(itemID: share.itemId, resumeEmail: share.recipientLabel)
         }
         .sheet(item: $presentedApproval) { pending in
             ApprovalRequestSheet(
@@ -121,6 +144,36 @@ struct NotificationsScreen: View {
             .buttonStyle(.borderedProminent)
         }
         .frame(minHeight: Metric.hitMin)
+    }
+
+    private func outgoingRow(_ share: ItemShareRecord) -> some View {
+        Button { resumeShare = share } label: {
+            HStack(spacing: Space.s3) {
+                // Green dot only when the owner can act (profile arrived); the
+                // waiting states are informational, not a call to action.
+                if share.status == .readyForCeremony { pendingDot }
+                PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: share.recipientLabel).vaultType(.body).themedForeground()
+                    Text(outgoingStatusText(share.status))
+                        .vaultType(.footnote).themedForeground(.secondary)
+                }
+                Spacer(minLength: Space.s2)
+                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            }
+            .frame(minHeight: Metric.hitMin)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func outgoingStatusText(_ status: ShareLifecycle) -> LocalizedStringKey {
+        switch status {
+        case .inviteSent: "Waiting for them to accept"
+        case .accepted: "Accepted — finishing on their device"
+        case .readyForCeremony: "Ready — tap to confirm"
+        case .active: ""
+        }
     }
 
     private func historyRow(_ entry: NotificationHistoryStore.Entry) -> some View {

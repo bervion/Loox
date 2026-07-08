@@ -40,6 +40,9 @@ import SwiftUI
     let sharedItems: SharedItemsProjection
     /// Device-local "which items are shared with whom" registry (owner side).
     let sharingStore = SharingStore()
+    /// Off-sheet refresh of outgoing share lifecycle (foreground/unlock), so an
+    /// acceptance landing after the waiting sheet closed still advances status.
+    let ownerShareRefresher: OwnerShareRefresher
     /// Loox Link quick shares: encrypted snapshot links (key in URL fragment).
     let looxLinks = LooxLinkService()
     /// Layer-A network-path precondition for the shared-vault access gate
@@ -106,6 +109,8 @@ import SwiftUI
         self.approvalShare = approvalShare
         self.approvalCoordinator = ApprovalCoordinator(settings: settings,
                                                        shareService: approvalShare)
+        self.ownerShareRefresher = OwnerShareRefresher(
+            store: sharingStore, shareService: approvalShare, settings: settings)
         self.approvalCeremony = ApprovalCeremonyService(session: session,
                                                         repository: repository,
                                                         shareService: approvalShare,

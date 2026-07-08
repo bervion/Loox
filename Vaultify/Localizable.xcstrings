@@ -11604,6 +11604,150 @@
           }
         }
       }
+    },
+    "They accepted — finishing setup on their device…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They accepted — finishing setup on their device…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ đã chấp nhận — đang hoàn tất thiết lập trên máy họ…"
+          }
+        }
+      }
+    },
+    "They've accepted. Their device finishes automatically the next time they open Loox and unlock — this can take a moment.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They've accepted. Their device finishes automatically the next time they open Loox and unlock — this can take a moment."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ đã chấp nhận. Máy họ sẽ tự hoàn tất trong lần tiếp theo họ mở Loox và mở khoá — có thể mất một chút thời gian."
+          }
+        }
+      }
+    },
+    "Invite sent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite sent"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã gửi lời mời"
+          }
+        }
+      }
+    },
+    "Accepted — finishing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepted — finishing"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chấp nhận — đang hoàn tất"
+          }
+        }
+      }
+    },
+    "Ready to confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready to confirm"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sẵn sàng xác nhận"
+          }
+        }
+      }
+    },
+    "Shares you sent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shares you sent"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ bạn đã gửi"
+          }
+        }
+      }
+    },
+    "Waiting for them to accept": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for them to accept"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang chờ họ chấp nhận"
+          }
+        }
+      }
+    },
+    "Accepted — finishing on their device": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepted — finishing on their device"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chấp nhận — đang hoàn tất trên máy họ"
+          }
+        }
+      }
+    },
+    "Ready — tap to confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready — tap to confirm"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sẵn sàng — chạm để xác nhận"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

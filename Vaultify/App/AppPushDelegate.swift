@@ -170,6 +170,11 @@ final class AppPushDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication,
                      userDidAcceptCloudKitShareWith metadata: CKShare.Metadata) {
         Task {
+            // Routing breadcrumb set BEFORE accept (parity with the iOS branch):
+            // without it, a Mac acceptor's profile publish only resumes when the
+            // user happens to open "Shared with Me" — leaving the owner stuck on
+            // "Waiting". A flag with no acceptance behind it is a harmless no-op.
+            UserDefaults.standard.set(true, forKey: SharedConfig.pendingShareAcceptanceKey)
             do {
                 let container = CKContainer(identifier: ApprovalConfig.containerID)
                 _ = try await container.accept(metadata)
