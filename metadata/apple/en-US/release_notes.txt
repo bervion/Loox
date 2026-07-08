@@ -1,1 +1,1 @@
-This update strengthens the security behind shared links and mail aliases, adding verified device checks and trusted domain validation, along with general stability improvements.
+Version 1.22.0: Performance improvements and bug fixes.

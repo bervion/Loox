@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.22.0] - 2026-07-08
+
+### Added
+- one-shot field-scoped browser handoff ("Open on Computer")
+
+### Fixed
+- accept a decoded QR anywhere in the camera frame
+- domain picker invisible until relaunch; add default-domain row
+
+### Changed
+- update docs
+- prod rollout plan, staging drill results, BE finalize handoff
+- re-sync frozen vectors to BE canonical base64url
+- document Loox Quick View + plan and design artifacts
+
+
 ## [1.21.0] - 2026-07-07
 
 ### Added
