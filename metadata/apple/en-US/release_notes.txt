@@ -1,1 +1,1 @@
-Version 1.22.0: Performance improvements and bug fixes.
+This update fixes an issue where Google Authenticator codes did not appear for some accounts, and refreshes app documentation.

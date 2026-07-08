@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.22.1] - 2026-07-08
+
+### Fixed
+- set assertionRequired=true to unhide GA for general users
+
+### Changed
+- update docs
+
+
 ## [1.22.0] - 2026-07-08
 
 ### Added

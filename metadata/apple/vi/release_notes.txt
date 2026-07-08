@@ -1,1 +1,1 @@
-Phiên bản 1.22.0: Cải thiện hiệu suất và sửa lỗi.
+Bản cập nhật khắc phục lỗi mã Google Authenticator không hiển thị ở một số tài khoản, đồng thời cập nhật tài liệu ứng dụng.
