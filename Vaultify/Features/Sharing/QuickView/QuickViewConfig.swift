@@ -60,10 +60,15 @@ nonisolated enum QuickViewConfig {
         #endif
     }
 
-    /// Fail-closed switch — flips together with the server's
-    /// `QUICK_VIEW_ASSERTION_MODE` moving to `required` (backend proposal
-    /// §B5). While shadow, `QuickViewAttestation` never blocks upload/bind on
-    /// an attestation failure (returns `nil` instead of throwing); this flag
-    /// also feeds `QuickViewExposureResolver`'s `assertionRequired` signal.
-    static let assertionRequired = false
+    /// Tracks the server's `ASSERTION_MODE`. Prod is `required` (verified live
+    /// 2026-07-08 — required-before-active, enforced by the worker), so this is
+    /// `true`. Enforcement of the assertion itself is SERVER-side: the client
+    /// always sends the App Attest headers when it can and the prod worker
+    /// rejects an upload that lacks a valid assertion. Client-side this flag
+    /// only feeds `QuickViewExposureResolver`'s `assertionRequired` signal —
+    /// which is what makes the "Open on Computer" entry visible to GENERAL
+    /// (non-beta) users once `exposure = ga` (a general user under `ga` is gated
+    /// on assertion being required, INV-QV-24). Keep it in lockstep with the
+    /// server: while the server is still `shadow`, set this `false`.
+    static let assertionRequired = true
 }
