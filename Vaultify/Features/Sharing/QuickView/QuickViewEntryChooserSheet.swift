@@ -1,0 +1,84 @@
+import SwiftUI
+
+/// "Open on Computer" entry: Scan QR or Enter Code, then the approval sheet.
+/// Both capture paths feed the SAME session client — only the input method
+/// differs.
+struct QuickViewEntryChooserSheet: View {
+    let itemID: String
+    let defaultSelectedFieldIDs: Set<String>
+
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var showScanner = false
+    @State private var showEnterCode = false
+    @State private var flow: QuickViewApprovalFlowModel?
+
+    private var flowPresented: Binding<Bool> {
+        Binding(get: { flow != nil }, set: { if !$0 { flow = nil } })
+    }
+
+    var body: some View {
+        VaultSheetScaffold(title: "Open on Computer") {
+            Form {
+                Section {
+                    optionRow(icon: "ic_shopcodes", title: "Scan QR Code",
+                             subtitle: "Point your camera at the code shown on your computer.") {
+                        showScanner = true
+                    }
+                    optionRow(icon: "ic_text", title: "Enter Code",
+                             subtitle: "Type the code shown on your computer.") {
+                        showEnterCode = true
+                    }
+                } footer: {
+                    Text("You'll pick exactly what to share on the next screen.")
+                }
+                .listRowBackground(VaultColors.surface)
+            }
+        }
+        .sheet(isPresented: $showScanner) {
+            QuickViewScannerSheet { code in startFlow(code: code) }
+        }
+        .sheet(isPresented: $showEnterCode) {
+            QuickViewEnterCodeSheet { code in startFlow(code: code) }
+        }
+        .sheet(isPresented: flowPresented) {
+            if let flow {
+                QuickViewApprovalSheet(flow: flow) { dismiss() }
+            }
+        }
+        // Best-effort background refresh — never blocks the sheet; a session
+        // resolved before this completes just fails closed (generic error)
+        // and the owner can retry, same silent-failure posture as the other
+        // signed-document clients.
+        .task { await env.quickViewSignerKeyset.refresh() }
+    }
+
+    private func startFlow(code: String) {
+        let model = QuickViewApprovalFlowModel(
+            itemID: itemID, defaultSelectedFieldIDs: defaultSelectedFieldIDs,
+            repository: env.repository, history: env.quickViewHistory,
+            capabilities: env.capabilities, signerKeyset: env.quickViewSignerKeyset)
+        flow = model
+        Task { await model.resolve(code: code) }
+    }
+
+    private func optionRow(icon: String, title: LocalizedStringResource,
+                          subtitle: LocalizedStringResource, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: Space.s3) {
+                PolarisIcon(icon, size: Metric.iconUtility).themedForeground(.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title.inAppLocalized).vaultType(.headline).themedForeground()
+                    Text(subtitle.inAppLocalized).vaultType(.footnote).themedForeground(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                PolarisIcon(Icons.chevronRight, size: Metric.iconInline).themedForeground(.iconSecondary)
+            }
+            .contentShape(Rectangle())
+            .padding(.vertical, Space.s1)
+        }
+        .buttonStyle(.plain)
+    }
+}

@@ -29,6 +29,10 @@ import Foundation
     /// Session-scoped: re-applied when the cached manifest re-verifies.
     private(set) var disabledOperations: [CapabilityID: Set<CapabilityOperation>] = [:]
     private(set) var messageKeys: [CapabilityID: String] = [:]
+    /// Verified schema-2+ Quick View exposure (DEC-QV-EXPOSURE-01) — nil when
+    /// no manifest has verified yet, or it predates schema 2 / omits the
+    /// field. Session-scoped like the other manifest-derived state above.
+    private(set) var quickViewExposure: QuickViewExposure?
 
     init(reachability: NetworkReachabilityMonitor, defaults: UserDefaults = .standard) {
         self.reachability = reachability
@@ -112,6 +116,13 @@ import Foundation
         disabledOperations[id] = disabledOps
         messageKeys[id] = messageKey
         setMode(id, signal.mode, retryAfter: signal.retryAfter)
+    }
+
+    /// Verified schema-2+ exposure for Quick View, applied per manifest
+    /// (nil clears it — a schema-1 or field-omitting manifest carries no
+    /// signal, which must NOT be confused with a signed "hidden").
+    func applyQuickViewExposure(_ exposure: QuickViewExposure?) {
+        quickViewExposure = exposure
     }
 
     // MARK: Persistence (operator mode survives relaunch — never the health)

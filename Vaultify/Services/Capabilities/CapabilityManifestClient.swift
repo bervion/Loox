@@ -116,5 +116,9 @@ import Foundation
                                        disabledOps: entry.disabledOperations,
                                        messageKey: entry.messageKey)
         }
+        // Schema-1 manifests and schema-2 manifests omitting the field both
+        // decode `exposure` as nil — the store must reflect that as "no
+        // signal", never coerce it into a signed value.
+        store?.applyQuickViewExposure(manifest.exposure(for: .quickView).flatMap(QuickViewExposure.init(rawValue:)))
     }
 }

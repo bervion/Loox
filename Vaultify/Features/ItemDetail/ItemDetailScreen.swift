@@ -19,6 +19,11 @@ struct ItemDetailScreen: View {
     @State private var selectedShare: ItemShareRecord?
     /// Safety code for a shared item (optional out-of-band comparison).
     @State private var safetyCode: String?
+    /// "Open on Computer" (Loox Quick View) chooser sheet.
+    @State private var showQuickViewChooser = false
+    /// Non-nil when the entry is tapped but blocked (e.g. guard2-only item) —
+    /// shown as an explainer rather than a silently disabled control.
+    @State private var quickViewBlockedReason: String?
 
     /// Owned items come from the vault store; `shared::` ids resolve to the
     /// recipient-side projection (read-only, V1.2).
@@ -28,6 +33,25 @@ struct ItemDetailScreen: View {
 
     private func folder(for item: VaultItem) -> Folder? {
         item.folderId.flatMap { id in env.repository.folders.first { $0.id == id } }
+    }
+
+    /// Multi-layer entry gate (DEC-QV-EXPOSURE-01): the exposure/cohort
+    /// resolver AND the capability's own availability must both allow it —
+    /// an outage here must never surface, since Quick View is fully optional.
+    private var quickViewEntryVisible: Bool {
+        QuickViewExposureProvider.entryVisible(manifestExposure: env.capabilities.quickViewExposure)
+            && env.capabilities.availability(.quickView, operation: .create) == .available
+    }
+
+    /// A guard2-only item (or one with nothing shareable at all) has no
+    /// fields `LooxLinkEnvelope` will ever offer — the entry stays tappable
+    /// but explains why instead of silently doing nothing.
+    private func quickViewDisabledReason(for item: VaultItem) -> String? {
+        guard LooxLinkEnvelope.shareableFields(of: item).isEmpty else { return nil }
+        if item.fields.contains(where: { $0.isExtraProtected }) {
+            return appString("This item's fields are behind Extra Protection, so nothing can be sent to a browser.")
+        }
+        return appString("This item has nothing to send to a browser yet.")
     }
 
     var body: some View {
@@ -87,6 +111,15 @@ struct ItemDetailScreen: View {
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
+                        if quickViewEntryVisible {
+                            Button {
+                                if let reason = quickViewDisabledReason(for: item) {
+                                    quickViewBlockedReason = reason
+                                } else {
+                                    showQuickViewChooser = true
+                                }
+                            } label: { Label("Open on Computer", image: "ic_globe") }
+                        }
                         if let url = item.urlField?.value, !url.isEmpty {
                             ShareLink(item: url) {
                                 Label("Share Website Link", image: Icons.share)
@@ -122,6 +155,19 @@ struct ItemDetailScreen: View {
         .sheet(item: $editing) { ItemEditorScreen(target: $0) }
         .sheet(isPresented: $showLocatedIn) { LocatedInSheet(itemID: itemID) }
         .sheet(isPresented: $showShareAccess) { ShareAccessSheet(itemID: itemID) }
+        .sheet(isPresented: $showQuickViewChooser) {
+            if let item {
+                QuickViewEntryChooserSheet(
+                    itemID: itemID,
+                    defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
+            }
+        }
+        .alert("Can't open on a computer", isPresented: Binding(
+            get: { quickViewBlockedReason != nil }, set: { if !$0 { quickViewBlockedReason = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(verbatim: quickViewBlockedReason ?? "")
+        }
         .sheet(item: $selectedShare) { ShareRecipientDetailSheet(share: $0) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
