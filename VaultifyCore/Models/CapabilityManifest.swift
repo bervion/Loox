@@ -187,9 +187,13 @@ nonisolated enum CapabilityManifestVerifier {
         let nowMs = Int64(now.timeIntervalSince1970 * 1000)
         guard nowMs >= manifest.issuedAt else { throw VerifyError.notYetValid }
         guard nowMs < manifest.expiresAt else { throw VerifyError.expired }
-        // Strict: a re-served OLD version must never re-enable a capability
-        // that a newer manifest retired (BE handoff §5).
-        guard manifest.manifestVersion > highestAcceptedVersion else {
+        // Reject only a STRICTLY older version — a re-served older manifest must
+        // never re-enable a capability a newer one retired. An equal version is
+        // NOT a rollback: it is an idempotent re-serve of the current document,
+        // admitted here so the client's store can run its hash-gated recovery
+        // (the client distinguishes equal-version recovery from a monotonic
+        // advance and is the layer that persists the high-water).
+        guard manifest.manifestVersion >= highestAcceptedVersion else {
             throw VerifyError.rollback(received: manifest.manifestVersion,
                                        highestAccepted: highestAcceptedVersion)
         }

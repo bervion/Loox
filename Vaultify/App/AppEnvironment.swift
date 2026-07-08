@@ -68,6 +68,11 @@ import SwiftUI
     /// (LOOX-QUICK-VIEW-SIGNER-KEYSET-V1) — resolves which key must validate
     /// a scanned/typed session's SESSION-V1 signature (DEC-QV-SIGN-01).
     let quickViewSignerKeyset = QuickViewSignerKeysetClient()
+    /// Centralized lifecycle refresher for every signed control-plane document —
+    /// keeps the manifest/registry/keyset fresh from launch-after-unlock and
+    /// foreground, so freshness never depends on visiting a feature screen
+    /// (INV-CP-01). Non-blocking; assigned once all three clients exist.
+    let controlPlaneRefresher: SignedControlPlaneRefresher
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
@@ -95,6 +100,8 @@ import SwiftUI
         let capabilities = CapabilityStore(reachability: reachability)
         self.capabilities = capabilities
         self.capabilityManifest = CapabilityManifestClient(store: capabilities)
+        self.controlPlaneRefresher = SignedControlPlaneRefresher(
+            documents: [self.capabilityManifest, domainRegistry, quickViewSignerKeyset])
         self.clipboard = ClipboardService(settings: settings)
         let cloudSync = CloudSyncService(store: store, settings: settings)
         self.cloudSync = cloudSync

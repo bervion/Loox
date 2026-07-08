@@ -164,7 +164,9 @@ nonisolated enum DomainRegistryVerifier {
         let nowMs = Int64(now.timeIntervalSince1970 * 1000)
         guard nowMs >= document.issuedAt else { throw VerifyError.notYetValid }
         guard nowMs < document.expiresAt else { throw VerifyError.expired }
-        guard document.registryVersion > highestAcceptedVersion else {
+        // Reject only a strictly older version; an equal version is an idempotent
+        // re-serve admitted for the client store's hash-gated recovery.
+        guard document.registryVersion >= highestAcceptedVersion else {
             throw VerifyError.rollback(received: document.registryVersion,
                                        highestAccepted: highestAcceptedVersion)
         }
