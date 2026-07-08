@@ -11252,6 +11252,16 @@
           }
         }
       }
+    },
+    "New private addresses use this domain." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ riêng mới sẽ dùng miền này."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

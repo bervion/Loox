@@ -15,6 +15,7 @@ struct PersonaAliasesScreen: View {
     @State private var pendingDelete: EmailAlias?
     @State private var promptReusableLabel = false
     @State private var reusableLabelDraft = ""
+    @State private var defaultDomainID = PrivateEmailDomainDefault.domainID
 
     private var persona: Persona? { env.repository.activePersona }
 
@@ -57,6 +58,16 @@ struct PersonaAliasesScreen: View {
                 }
             }
             .listRowBackground(VaultColors.surface)
+
+            // Default mail domain for every create flow that doesn't ask
+            // (reusable-address alert, editor prefill, item-editor quick
+            // action). Reading appliedRevision re-renders this screen when a
+            // registry lands AFTER first render — otherwise the picker would
+            // stay invisible until the next launch.
+            let _ = env.domainRegistry.appliedRevision
+            AliasDomainPickerSection(domainID: $defaultDomainID,
+                                     footer: "New private addresses use this domain.")
+                .listRowBackground(VaultColors.surface)
 
             if let persona {
                 personaAliasSection(persona)

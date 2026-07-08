@@ -28,6 +28,9 @@ enum PrivateEmailDomainDefault {
 /// registry offers a second active domain.
 struct AliasDomainPickerSection: View {
     @Binding var domainID: String
+    /// Optional explainer under the section (e.g. the default-domain row on
+    /// the Private Email screen says what the choice applies to).
+    var footer: LocalizedStringKey?
 
     private var choices: [AuxiliaryDomainDescriptor] {
         AuxiliaryDomainRegistry.creatableEmailDomains
@@ -35,7 +38,7 @@ struct AliasDomainPickerSection: View {
 
     var body: some View {
         if choices.count > 1 {
-            Section("Email Domain") {
+            Section {
                 Picker("Email Domain", selection: $domainID) {
                     ForEach(choices) { domain in
                         // Display names come from the trusted registry verbatim
@@ -55,6 +58,10 @@ struct AliasDomainPickerSection: View {
                     // next alias ("remember my choice", not a one-off).
                     PrivateEmailDomainDefault.domainID = selected
                 }
+            } header: {
+                Text("Email Domain")
+            } footer: {
+                if let footer { Text(footer) }
             }
         }
     }
