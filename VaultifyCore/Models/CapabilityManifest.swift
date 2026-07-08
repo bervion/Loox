@@ -33,10 +33,22 @@ nonisolated struct CapabilityManifest: Codable, Sendable, Equatable {
         /// Per-operation narrow-only overrides: "enabled" | "disabled".
         let operations: [String: String]
         let messageKey: String?
+        /// Schema-2+ operator-declared exposure ("hidden" | "beta" | "ga").
+        /// Absent on the wire (or under schema 1) → defaults to "ga" when the
+        /// canonical transcript is built, but the parsed value stays nil so
+        /// callers can tell "no signal" from "signed ga".
+        let exposure: String?
 
         enum CodingKeys: String, CodingKey {
-            case policy, operations
+            case policy, operations, exposure
             case messageKey = "message_key"
+        }
+
+        init(policy: Policy, operations: [String: String], messageKey: String?, exposure: String? = nil) {
+            self.policy = policy
+            self.operations = operations
+            self.messageKey = messageKey
+            self.exposure = exposure
         }
 
         /// Operations the manifest explicitly disables (narrower than the
@@ -67,12 +79,19 @@ nonisolated struct CapabilityManifest: Codable, Sendable, Equatable {
 
     func entry(for id: CapabilityID) -> Entry? { capabilities[id.rawValue] }
 
+    /// Verified schema-2+ exposure for `id` ("hidden" | "beta" | "ga"), or nil
+    /// when there's no entry, or the manifest predates schema 2 / omits the
+    /// field. Callers must NOT substitute "ga" for nil here — that default only
+    /// applies to the byte-encoded transcript, never to app-side "no signal".
+    func exposure(for id: CapabilityID) -> String? { capabilities[id.rawValue]?.exposure }
+
     /// Canonical signing transcript (must match `loox-config/src/manifest.ts`
-    /// byte-for-byte — parity-tested against the frozen vector):
+    /// byte-for-byte — parity-tested against the frozen vectors):
     ///   raw("LOOX-CAP-MANIFEST-V1") ‖ byte(schema) ‖ u64(version) ‖
     ///   string(key_id) ‖ i64(issued) ‖ i64(expires) ‖ u32(#caps) ‖
     ///   ∀cap sorted: string(name) ‖ string(policy) ‖ u32(#ops) ‖
-    ///     ∀op sorted: string(op) ‖ string(state) — then optString(message_key)
+    ///     ∀op sorted: string(op) ‖ string(state) ‖ optString(message_key) ‖
+    ///     [schema >= 2 only] string(exposure, default "ga")
     var transcript: Data {
         var w = CanonicalWriter()
         w.raw(Data("LOOX-CAP-MANIFEST-V1".utf8))
@@ -100,6 +119,12 @@ nonisolated struct CapabilityManifest: Codable, Sendable, Equatable {
             } else {
                 w.byte(0)
             }
+            // Additive: schema 1 emits nothing here, so a schema-1 manifest's
+            // bytes are untouched. Schema 2+ always emits a plain string
+            // (never optString) — absent on the wire defaults to "ga".
+            if schemaVersion >= 2 {
+                w.string(entry.exposure ?? "ga")
+            }
         }
         return w.data
     }
@@ -109,7 +134,10 @@ nonisolated struct CapabilityManifest: Codable, Sendable, Equatable {
 /// by `key_id` — rotation = the app trusts old+new simultaneously), schema,
 /// freshness window, strict anti-rollback (reject ≤ highest accepted).
 nonisolated enum CapabilityManifestVerifier {
-    static let supportedSchemaVersion = 1
+    /// Schema 1 (no exposure field) and schema 2 (adds per-capability
+    /// `exposure`, additive-only — see `CapabilityManifest.transcript`) are
+    /// both accepted; anything else is rejected as unsupported.
+    static let supportedSchemaVersions = 1...2
 
     enum VerifyError: Error, Equatable {
         case malformedManifest
@@ -122,11 +150,16 @@ nonisolated enum CapabilityManifestVerifier {
         case rollback(received: UInt64, highestAccepted: UInt64)
     }
 
-    /// Operator signing keys (x963 P256), pinned by key_id. From the BE
-    /// handoff 260706; fingerprint eee533bf…9a7da1.
+    /// Operator signing keys (x963 P256), pinned by key_id. Rotated 260708 to a
+    /// NEW key under a NEW id `cap-2026-02` (BE `ROOT_KEY_ID=cap-2026-02`); the
+    /// old `cap-2026-01` key is retired (the rotation replaced it, not overlapped
+    /// it — no pre-release documents were signed by it in the wild). This offline
+    /// config root signs the capability manifest, the domain registry, and the
+    /// Quick View signer keyset — every document's own `key_id` must resolve here.
+    /// fingerprint a4752c43…99f4.
     static let bundledTrustedKeys: [String: Data] = [
-        "cap-2026-01": Data(base64Encoded:
-            "BLwFFtj1orHb/wjU7ryCtg3pJI3soQp0HCUVa+q29MjjcQ3L2I+24ZYwXWnOZV4KPf08Jsv/i8vCLvbEI1WrHxQ=")!,
+        "cap-2026-02": Data(base64Encoded:
+            "BG3XXH5RV6pYe239bvugAR+2vy8xfs2l7Vt58lZ1pYHReh9y0DAmTQRAy8rK7mhtLRmOsOaW0jz7ps289Ipv4sA=")!,
     ]
 
     static func verify(manifestData: Data,
@@ -148,7 +181,7 @@ nonisolated enum CapabilityManifestVerifier {
               key.isValidSignature(signature, for: manifest.transcript) else {
             throw VerifyError.badSignature
         }
-        guard manifest.schemaVersion == supportedSchemaVersion else {
+        guard supportedSchemaVersions.contains(manifest.schemaVersion) else {
             throw VerifyError.unsupportedSchema(manifest.schemaVersion)
         }
         let nowMs = Int64(now.timeIntervalSince1970 * 1000)

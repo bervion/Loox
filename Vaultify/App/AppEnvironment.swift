@@ -58,6 +58,13 @@ import SwiftUI
     let domainRegistry = DomainRegistryClient()
     /// Bounded local history for the notifications screen.
     let notificationHistory = NotificationHistoryStore()
+    /// Quick View ("Open on Computer") device-local attempt history — minimal
+    /// rows only (item id + timestamp + result).
+    let quickViewHistory = QuickViewHistoryStore()
+    /// Signed Quick View runtime session-signer endorsement client
+    /// (LOOX-QUICK-VIEW-SIGNER-KEYSET-V1) — resolves which key must validate
+    /// a scanned/typed session's SESSION-V1 signature (DEC-QV-SIGN-01).
+    let quickViewSignerKeyset = QuickViewSignerKeysetClient()
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
@@ -124,6 +131,7 @@ import SwiftUI
         // Local-only cache re-verify (no network; INV-CAP-02 intact).
         capabilityManifest.applyCached()
         domainRegistry.applyCached()
+        quickViewSignerKeyset.applyCached()
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
@@ -149,6 +157,7 @@ import SwiftUI
         looxLinks.records.wipe()
         sharedItems.wipe()
         notificationHistory.wipe()
+        quickViewHistory.wipe()
         // The AutoFill shared-credentials cache and the projection snapshot outlive
         // an ordinary lock by design (sealed at rest) — Erase Vault is the one
         // place they must go too.

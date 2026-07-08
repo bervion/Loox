@@ -89,9 +89,15 @@ final class QRScannerController: UIViewController, AVCaptureMetadataOutputObject
               let value = object.stringValue,
               let transformed = previewLayer?.transformedMetadataObject(for: object) else { return }
 
-        // Gate: only lock when the code is roughly centered (avoids edge jitter).
+        // Accept a decoded QR anywhere in the visible camera frame. The earlier
+        // gate required the code to be centered inside the focus square, which
+        // silently dropped a QR shown on a computer screen (it appears small /
+        // off-center when the phone frames the whole monitor) — reading to the
+        // user as "the camera never detects". AVFoundation only reports codes it
+        // actually decoded, so firing on any on-frame QR is safe; the focus
+        // animation still snaps to wherever the code sits.
         let center = CGPoint(x: transformed.bounds.midX, y: transformed.bounds.midY)
-        guard overlay.idleRect.insetBy(dx: -32, dy: -32).contains(center) else { return }
+        guard view.bounds.contains(center) else { return }
 
         didFind = true
         UINotificationFeedbackGenerator().notificationOccurred(.success)

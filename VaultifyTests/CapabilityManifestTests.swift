@@ -12,20 +12,61 @@ final class CapabilityManifestTests: XCTestCase {
     private var testKeys: [String: Data] { ["cap-test": signingKey.publicKey.x963Representation] }
     private let now = Date(timeIntervalSince1970: 1_783_330_000)
 
-    // MARK: Frozen parity vector (byte-for-byte, per BE handoff §5)
+    // MARK: Frozen parity vectors (byte-for-byte, per BE handoff §5)
 
-    private func loadVector() throws -> (manifest: CapabilityManifest, canonicalHex: String) {
+    /// The fixture is a named-vector array (schema 1 "baseline" + "additive
+    /// quick_view", schema 2 "schema2 exposure ...") — each entry independently
+    /// asserted byte-for-byte against its own `canonical_bytes_hex`.
+    private func loadVectors() throws -> [(name: String, manifest: CapabilityManifest, canonicalHex: String)] {
         let url = Bundle(for: Self.self).url(forResource: "cap-manifest-vectors-v1", withExtension: "json")!
         let root = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
-        let manifestData = try JSONSerialization.data(withJSONObject: root["manifest"]!)
-        let manifest = try JSONDecoder().decode(CapabilityManifest.self, from: manifestData)
-        return (manifest, root["canonical_bytes_hex"] as! String)
+        let vectors = root["vectors"] as! [[String: Any]]
+        return try vectors.map { vector in
+            let manifestData = try JSONSerialization.data(withJSONObject: vector["manifest"]!)
+            let manifest = try JSONDecoder().decode(CapabilityManifest.self, from: manifestData)
+            return (vector["name"] as! String, manifest, vector["canonical_bytes_hex"] as! String)
+        }
     }
 
-    func testTranscriptMatchesFrozenVectorByteForByte() throws {
-        let (manifest, expectedHex) = try loadVector()
-        let hex = manifest.transcript.map { String(format: "%02x", $0) }.joined()
-        XCTAssertEqual(hex, expectedHex, "canonical transcript drifted from the frozen BE vector")
+    private func vector(named name: String, in vectors: [(name: String, manifest: CapabilityManifest, canonicalHex: String)]) -> (name: String, manifest: CapabilityManifest, canonicalHex: String) {
+        vectors.first { $0.name == name }!
+    }
+
+    /// Schema-1 vectors ("baseline", "additive quick_view") must stay
+    /// byte-identical — the schema-2 `exposure` guard is additive-only and
+    /// must never perturb pre-existing transcripts.
+    func testSchema1VectorsTranscriptUnchanged() throws {
+        let vectors = try loadVectors()
+        for name in ["baseline (private_email + share_link)",
+                     "additive quick_view (private_email + share_link + quick_view)"] {
+            let v = vector(named: name, in: vectors)
+            XCTAssertEqual(v.manifest.schemaVersion, 1)
+            let hex = v.manifest.transcript.map { String(format: "%02x", $0) }.joined()
+            XCTAssertEqual(hex, v.canonicalHex, "schema-1 vector '\(name)' drifted from the frozen BE vector")
+        }
+    }
+
+    /// Schema-2 vector: `exposure` encodes as a plain string appended after
+    /// `optString(message_key)` for every capability, byte-for-byte against
+    /// the BE oracle.
+    func testSchema2ExposureVectorTranscriptMatchesFrozenByteForByte() throws {
+        let vectors = try loadVectors()
+        let v = vector(named: "schema2 exposure (quick_view=beta, others=ga)", in: vectors)
+        XCTAssertEqual(v.manifest.schemaVersion, 2)
+        let hex = v.manifest.transcript.map { String(format: "%02x", $0) }.joined()
+        XCTAssertEqual(hex, v.canonicalHex, "schema-2 exposure transcript drifted from the frozen BE vector")
+        XCTAssertEqual(v.manifest.exposure(for: .quickView), "beta")
+        XCTAssertEqual(v.manifest.exposure(for: .privateEmail), "ga")
+        XCTAssertEqual(v.manifest.exposure(for: .shareLink), "ga")
+    }
+
+    /// A schema-1 manifest (or a schema-2 entry omitting the field) parses
+    /// `exposure` as nil — callers must not coerce that into a signed "ga".
+    func testExposureNilWhenAbsentOrSchema1() throws {
+        let vectors = try loadVectors()
+        let baseline = vector(named: "baseline (private_email + share_link)", in: vectors)
+        XCTAssertNil(baseline.manifest.exposure(for: .privateEmail))
+        XCTAssertNil(baseline.manifest.exposure(for: .shareLink))
     }
 
     // MARK: Signature + freshness + rollback
@@ -93,12 +134,12 @@ final class CapabilityManifestTests: XCTestCase {
     }
 
     func testBundledOperatorKeyPinsAndParses() {
-        let bytes = CapabilityManifestVerifier.bundledTrustedKeys["cap-2026-01"]
+        let bytes = CapabilityManifestVerifier.bundledTrustedKeys["cap-2026-02"]
         XCTAssertNotNil(bytes)
         XCTAssertNotNil(try? P256.Signing.PublicKey(x963Representation: bytes!))
-        // Fingerprint from the BE handoff.
+        // Fingerprint from the BE handoff (rotated 260708).
         let fingerprint = SHA256.hash(data: bytes!).map { String(format: "%02x", $0) }.joined()
-        XCTAssertEqual(fingerprint, "eee533bf2722e0f21f02e813f2934f29cb4991d24fc1a070f11aa635ba9a7da1")
+        XCTAssertEqual(fingerprint, "a4752c4323ce69cd66ca85efc5b772c8cd1b923f6c823affeef0fbc01b5f99f4")
     }
 
     // MARK: Client application (policy + per-operation narrowing + message key)

@@ -16,6 +16,9 @@ import Foundation
         // The shortener runs in the same worker until it grows a dedicated
         // state route — repoint when the short-link service ships one.
         case .shortLink: return LooxLinkConfig.defaultAPIBase.appending(path: "/v1/link/service-state")
+        // Quick View has its OWN dedicated worker (F6) — never the shared
+        // loox-link service-state route.
+        case .quickView: return QuickViewConfig.serviceStateURL
         }
     }
 

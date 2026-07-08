@@ -10,6 +10,10 @@ nonisolated enum CapabilityID: String, Codable, Sendable, CaseIterable {
     /// capability: the shortener can be down while canonical share creation
     /// stays healthy, and a shorten failure must read as its own outage.
     case shortLink = "short_link"
+    /// Loox Quick View — one-shot field-scoped browser handoff. Its own
+    /// capability (distinct worker, distinct outage) so the feature can be
+    /// gated independently via the signed manifest's `quick_view.exposure`.
+    case quickView = "quick_view"
 }
 
 /// Operator-declared service mode — the BACKEND's vocabulary, verbatim (both
