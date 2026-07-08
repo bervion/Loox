@@ -68,10 +68,17 @@ struct VaultShellBehaviors: ViewModifier {
             // verified sheet. Pushes are best-effort — refresh the inbox on
             // every foreground activation too, so a missed push can't strand B.
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { env.approvalCoordinator.refreshOwnerRequests() }
+                if phase == .active {
+                    env.approvalCoordinator.refreshOwnerRequests()
+                    // Owner side: re-resolve outgoing share acceptance off-sheet
+                    // so a share accepted after the waiting sheet closed still
+                    // advances its status (the sheet's own poll is long gone).
+                    env.ownerShareRefresher.refresh()
+                }
             }
             .onAppear {
                 env.approvalCoordinator.refreshOwnerRequests()
+                env.ownerShareRefresher.refresh()
                 // A request fetched while the vault was still locked (cold-launch
                 // notification tap fills the inbox before this shell exists) is
                 // already `first` when we appear — onChange below never fires for

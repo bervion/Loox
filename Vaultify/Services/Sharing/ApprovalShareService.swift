@@ -128,6 +128,19 @@ import Foundation
         return try await database.record(for: id) as? CKShare
     }
 
+    /// Whether the invited recipient has accepted the CKShare — the
+    /// authoritative CloudKit-level signal, set the moment they accept and
+    /// independent of whether their device has published its profile yet. Lets
+    /// the owner distinguish "not accepted" from "accepted, device still
+    /// finishing" without waiting on the profile poll. Best-effort: a fetch
+    /// miss (offline/not-yet-propagated) reads as not-accepted.
+    func participantAccepted(zoneID: CKRecordZone.ID) async -> Bool {
+        guard let share = try? await fetchShare(zoneID: zoneID) else { return false }
+        return share.participants.contains {
+            $0.role != .owner && $0.acceptanceStatus == .accepted
+        }
+    }
+
     // MARK: Participant profile → grant
 
     func fetchParticipantProfile(zoneID: CKRecordZone.ID)

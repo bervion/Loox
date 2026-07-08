@@ -9,6 +9,12 @@ import SwiftUI
 /// the flow never starts (ADR-2).
 struct ShareAccessSheet: View {
     let itemID: String
+    /// Resume entry (from the Notifications "Shares you sent" list): open
+    /// straight into the approval config with this recipient pre-filled, so a
+    /// share left pending after a dismiss/relaunch is continued without
+    /// re-choosing the path or retyping the email. Create Share reuses the
+    /// existing zone (matched by recipient), so no duplicate share is minted.
+    var resumeEmail: String? = nil
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
 
@@ -50,6 +56,8 @@ struct ShareAccessSheet: View {
     @State private var autoInviteSent = false
     /// The bounded poll ran out — surface that waiting continues manually.
     @State private var pollExhausted = false
+    /// One-shot guard so the resume entry seeds the config exactly once.
+    @State private var didAutoResume = false
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -85,6 +93,14 @@ struct ShareAccessSheet: View {
         return nil
     }
 
+    /// Live lifecycle of the share being waited on — drives the waiting copy so
+    /// an accepted-but-not-yet-published recipient reads as "finishing on their
+    /// device" instead of the misleading "waiting for them to accept".
+    private var waitingStatus: ShareLifecycle? {
+        guard case .waiting(let zoneID, _, _) = step else { return nil }
+        return env.sharingStore.shares.first { $0.zoneName == zoneID.zoneName }?.status
+    }
+
     var body: some View {
         VaultSheetScaffold(title: sheetTitle) {
             content
@@ -92,6 +108,13 @@ struct ShareAccessSheet: View {
         .task(id: pollingZoneName) {
             guard let zoneName = pollingZoneName else { return }
             await pollForProfile(zoneName: zoneName)
+        }
+        .onAppear {
+            guard !didAutoResume, let email = resumeEmail else { return }
+            didAutoResume = true
+            recipientEmail = email
+            step = .checking
+            Task { await enter() }
         }
         .confirmationDialog("Revoke access?", isPresented: revokeDialogBinding,
                             titleVisibility: .visible) {
@@ -302,14 +325,22 @@ struct ShareAccessSheet: View {
         for attempt in 0..<80 { // ≈ 10 minutes at the capped interval
             guard !Task.isCancelled else { return }
             if let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) {
+                env.sharingStore.updateStatus(zoneName: zoneName, to: .readyForCeremony)
                 let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
                                                  participantPubKey: profile.participantPubKey)
                 step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
                 return
             }
             // The recipient may have armed their inbox since the last try —
-            // re-attempt the auto-drop on a slower cadence (~every 30-60s).
-            if attempt % 6 == 5 { await retryAutoInviteIfNeeded() }
+            // re-attempt the auto-drop on a slower cadence (~every 30-60s). Same
+            // cadence re-checks CKShare acceptance so the copy can switch to
+            // "accepted, finishing on their device" even before the profile lands.
+            if attempt % 6 == 5 {
+                await retryAutoInviteIfNeeded()
+                if await env.approvalShare.participantAccepted(zoneID: zoneID) {
+                    env.sharingStore.updateStatus(zoneName: zoneName, to: .accepted)
+                }
+            }
             try? await Task.sleep(for: delay)
             delay = min(delay * 2, .seconds(10))
         }
@@ -323,9 +354,16 @@ struct ShareAccessSheet: View {
     private func checkProfileNow() async {
         await retryAutoInviteIfNeeded()
         guard case .waiting(let zoneID, _, _) = step,
-              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw,
-              let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID)
+              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw
         else { return }
+        guard let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) else {
+            // No profile yet, but they may already have accepted — reflect that.
+            if await env.approvalShare.participantAccepted(zoneID: zoneID) {
+                env.sharingStore.updateStatus(zoneName: zoneID.zoneName, to: .accepted)
+            }
+            return
+        }
+        env.sharingStore.updateStatus(zoneName: zoneID.zoneName, to: .readyForCeremony)
         let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
                                          participantPubKey: profile.participantPubKey)
         step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
@@ -526,7 +564,7 @@ struct ShareAccessSheet: View {
                     Section {
                         ForEach(existing) { share in
                             LabeledContent(share.recipientLabel) {
-                                Text(share.fingerprintConfirmed ? "Active" : "Pending")
+                                Text(statusLabel(for: share.status).inAppLocalized)
                                     .themedForeground(.secondary)
                             }
                             .swipeActions(edge: .trailing) {
@@ -561,6 +599,17 @@ struct ShareAccessSheet: View {
         }
     }
 
+    /// Owner-facing lifecycle label for the "Shared with" row. Distinguishes an
+    /// invite still awaiting acceptance from one accepted but not yet confirmed.
+    private func statusLabel(for status: ShareLifecycle) -> LocalizedStringResource {
+        switch status {
+        case .inviteSent: "Invite sent"
+        case .accepted: "Accepted — finishing"
+        case .readyForCeremony: "Ready to confirm"
+        case .active: "Active"
+        }
+    }
+
     private func binding(for field: DynamicField) -> Binding<FieldCapability> {
         Binding(
             get: { capabilities[field.id] ?? (field.kind == .totp ? .totp(.none) : .value(.none)) },
@@ -579,11 +628,17 @@ struct ShareAccessSheet: View {
     }
 
     private func waitingView(shareURL: URL?) -> some View {
-        VStack(spacing: Space.s5) {
+        let accepted = waitingStatus == .accepted
+        return VStack(spacing: Space.s5) {
             ProgressView()
-            Text("Waiting for them to accept…")
+            Text(accepted
+                 ? "They accepted — finishing setup on their device…"
+                 : "Waiting for them to accept…")
                 .vaultType(.section).themedForeground()
-            Text(autoInviteSent
+                .multilineTextAlignment(.center)
+            Text(accepted
+                 ? "They've accepted. Their device finishes automatically the next time they open Loox and unlock — this can take a moment."
+                 : autoInviteSent
                  ? "Their device was notified automatically. If nothing shows up there, send the link below as a backup."
                  : "Send the invitation link — the first share with someone always needs it. After they accept once, future shares notify their device automatically.")
                 .vaultType(.callout).themedForeground(.secondary)
