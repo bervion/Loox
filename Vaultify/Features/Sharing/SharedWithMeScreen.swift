@@ -41,11 +41,13 @@ struct SharedWithMeScreen: View {
         // whenever the vault is unlocked, so the owner's waiting screen can
         // always find the profile once B visits this screen.
         if let identity = try? await env.participantEscrow.ensureIdentity(vaultKey: vaultKey) {
-            // Burn the resume breadcrumb ONLY on success — an offline visit
-            // here must not disable the shell's auto-resume.
-            if (try? await env.approvalRecipient.completeAcceptance(
+            // Burn the resume breadcrumb ONLY once a profile was actually
+            // published (≥1 zone) — an offline visit, or one before the accepted
+            // zone has propagated into the shared DB, publishes nothing and must
+            // not disable the shell's auto-resume.
+            if let published = try? await env.approvalRecipient.completeAcceptance(
                 identity: identity,
-                nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))) != nil {
+                nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000)), published > 0 {
                 UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
             }
             await SharedZoneSubscriptionService().ensureSubscribedIfNeeded(settings: env.settings)

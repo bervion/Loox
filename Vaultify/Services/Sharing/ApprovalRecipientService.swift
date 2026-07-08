@@ -120,10 +120,19 @@ import UIKit
     /// already escrowed by the caller; publish the profile into EVERY accepted
     /// zone (singleton record — re-publish is a harmless overwrite). Callable
     /// after accept, after crash, after onboarding — same result.
-    func completeAcceptance(identity: ParticipantIdentity, nowUnixMs: Int64) async throws {
-        for zoneID in try await acceptedApprovalZones() {
+    ///
+    /// Returns the number of zones a profile was published into. **Zero is not
+    /// success** — it means the accepted CKShare zone has not propagated into
+    /// the shared DB yet (accept just happened) and the caller MUST retry; a
+    /// caller that clears its resume breadcrumb on a zero-zone return would
+    /// permanently strand the owner on "accepted, waiting for their device".
+    @discardableResult
+    func completeAcceptance(identity: ParticipantIdentity, nowUnixMs: Int64) async throws -> Int {
+        let zones = try await acceptedApprovalZones()
+        for zoneID in zones {
             try await publishProfile(identity: identity, zoneID: zoneID, nowUnixMs: nowUnixMs)
         }
+        return zones.count
     }
 
     // MARK: Owner-key pin (TOFU after the one-time fingerprint compare)

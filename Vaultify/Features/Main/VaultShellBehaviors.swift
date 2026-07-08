@@ -17,6 +17,11 @@ struct VaultShellBehaviors: ViewModifier {
     /// coordinator inbox on purpose: inbox refreshes must not swap the sheet
     /// mid-ceremony, and dismissing must not clear the NEXT pending request.
     @State private var presentedApproval: ApprovalCoordinator.PendingOwnerRequest?
+    /// Reentrancy guard: the acceptance resume is driven by both the recipient
+    /// change counter and every foreground activation — only one attempt loop
+    /// should run at a time (the CloudKit work is idempotent, but a second
+    /// concurrent loop is wasted).
+    @State private var resumingShareAcceptance = false
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     func body(content: Content) -> some View {
@@ -74,6 +79,11 @@ struct VaultShellBehaviors: ViewModifier {
                     // so a share accepted after the waiting sheet closed still
                     // advances its status (the sheet's own poll is long gone).
                     env.ownerShareRefresher.refresh()
+                    // Recipient side: finish any pending acceptance now that we're
+                    // foregrounded — the accepted zone may have propagated into
+                    // the shared DB since the last attempt (a single early pass
+                    // right after accept often finds zero zones).
+                    Task { await resumePendingShareAcceptance() }
                 }
             }
             .onAppear {
@@ -127,19 +137,45 @@ struct VaultShellBehaviors: ViewModifier {
     /// Complete an accepted-but-unpublished share: transactional participant
     /// escrow under the Vault Key, then profile publish into every accepted
     /// zone, then arm the shared-DB push subscription. No-op without the flag.
+    ///
+    /// The accepted CKShare zone can lag `container.accept` by seconds, so the
+    /// first pass often enumerates ZERO shared-DB zones. Publishing nothing is
+    /// NOT completion — clearing the breadcrumb there permanently disarms the
+    /// retry and strands the owner on "accepted". So the breadcrumb is cleared
+    /// ONLY once a profile was actually published (≥1 zone); a zero-zone pass
+    /// keeps the flag and retries with backoff, and any leftover is picked up
+    /// by the next foreground/unlock.
     private func resumePendingShareAcceptance() async {
         guard UserDefaults.standard.bool(forKey: SharedConfig.pendingShareAcceptanceKey),
-              let vaultKey = env.session.vaultKey?.bytes else { return }
+              let vaultKey = env.session.vaultKey?.bytes,
+              !resumingShareAcceptance else { return }
+        resumingShareAcceptance = true
+        defer { resumingShareAcceptance = false }
         env.settings.approvalModeEnabled = true
-        do {
-            let identity = try await env.participantEscrow.ensureIdentity(vaultKey: vaultKey)
-            try await env.approvalRecipient.completeAcceptance(
-                identity: identity, nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
-            await SharedZoneSubscriptionService().ensureSubscribedIfNeeded(settings: env.settings)
-            UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
-        } catch {
-            // Flag stays set — retried on the next unlock/foreground pass.
+        var delay: Duration = .seconds(2)
+        for attempt in 0..<6 {
+            guard !Task.isCancelled else { return }
+            do {
+                let identity = try await env.participantEscrow.ensureIdentity(vaultKey: vaultKey)
+                let published = try await env.approvalRecipient.completeAcceptance(
+                    identity: identity, nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
+                if published > 0 {
+                    await SharedZoneSubscriptionService().ensureSubscribedIfNeeded(settings: env.settings)
+                    UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
+                    return
+                }
+                // Zero zones: the accept hasn't materialized a shared-DB zone
+                // yet. Keep the flag and wait for propagation.
+            } catch {
+                // Escrow/publish failure — keep the flag, retry.
+            }
+            if attempt < 5 {
+                try? await Task.sleep(for: delay)
+                delay = min(delay * 2, .seconds(15))
+            }
         }
+        // Flag intentionally left set — a later foreground/unlock, or a visit to
+        // "Shared with Me", completes it once the zone is enumerable.
     }
 
     /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).
