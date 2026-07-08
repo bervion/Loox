@@ -5,7 +5,7 @@ import Foundation
 /// manifest client: never on the startup critical path, and every failure —
 /// 404 (owner hasn't published yet), timeout, bad signature, wrong env,
 /// rollback — quietly keeps the last verified set (or the bundled fallback).
-@MainActor final class DomainRegistryClient {
+@MainActor @Observable final class DomainRegistryClient {
 
     /// The env this build accepts — bound INSIDE the signed payload, so a
     /// staging registry can't steer a production install (or vice versa).
@@ -19,11 +19,17 @@ import Foundation
     nonisolated static let expectedEnv = "production"
     #endif
 
-    private let defaults: UserDefaults
-    private let trustedKeys: [String: Data]
+    /// Bumped on every applied registry. The trusted set itself lives in the
+    /// nonisolated `AuxiliaryDomainRegistry` (model code reads it lock-free);
+    /// views read THIS so a registry that arrives after first render still
+    /// re-renders the domain picker instead of silently never appearing.
+    private(set) var appliedRevision = 0
 
-    private let cacheKey = "domain_registry_v1"
-    private let versionKey = "domain_registry_highest_version"
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let trustedKeys: [String: Data]
+
+    @ObservationIgnored private let cacheKey = "domain_registry_v1"
+    @ObservationIgnored private let versionKey = "domain_registry_highest_version"
 
     init(trustedKeys: [String: Data] = CapabilityManifestVerifier.bundledTrustedKeys,
          defaults: UserDefaults = .standard) {
@@ -31,7 +37,7 @@ import Foundation
         self.defaults = defaults
     }
 
-    private(set) var highestAcceptedVersion: UInt64 {
+    @ObservationIgnored private(set) var highestAcceptedVersion: UInt64 {
         get { UInt64(defaults.string(forKey: versionKey) ?? "") ?? 0 }
         set { defaults.set(String(newValue), forKey: versionKey) }
     }
@@ -48,6 +54,7 @@ import Foundation
             return
         }
         AuxiliaryDomainRegistry.applyRemote(document.descriptors)
+        appliedRevision += 1
     }
 
     func refresh(now: Date = .now) async {
@@ -68,6 +75,7 @@ import Foundation
         highestAcceptedVersion = document.registryVersion
         defaults.set(documentData, forKey: cacheKey)
         AuxiliaryDomainRegistry.applyRemote(document.descriptors)
+        appliedRevision += 1
         return true
     }
 }

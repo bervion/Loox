@@ -24,6 +24,9 @@ struct AliasEditorSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                // Re-render when a verified registry lands mid-session, so
+                // the domain section can appear without reopening the sheet.
+                let _ = env.domainRegistry.appliedRevision
                 if loginItems.isEmpty {
                     Section { Text("No logins to bind yet.").themedForeground(.secondary) }
                 } else {
