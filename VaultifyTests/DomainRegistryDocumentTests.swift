@@ -97,15 +97,20 @@ final class DomainRegistryDocumentTests: XCTestCase {
         }
     }
 
-    func testVerifierRejectsRollback() throws {
+    func testVerifierRejectsStrictlyOlderButAdmitsEqualVersion() throws {
         let key = P256.Signing.PrivateKey()
         let data = try signedDocumentData(registryVersion: 5, key: key)
+        // Strictly older → rollback.
         XCTAssertThrowsError(try DomainRegistryVerifier.verify(
             documentData: data, trustedKeys: trusted(key),
-            expectedEnv: DomainRegistryClient.expectedEnv, now: .now, highestAcceptedVersion: 5)) {
+            expectedEnv: DomainRegistryClient.expectedEnv, now: .now, highestAcceptedVersion: 6)) {
             XCTAssertEqual($0 as? DomainRegistryVerifier.VerifyError,
-                           .rollback(received: 5, highestAccepted: 5))
+                           .rollback(received: 5, highestAccepted: 6))
         }
+        // Equal version → admitted (idempotent re-serve for the client's recovery).
+        XCTAssertNoThrow(try DomainRegistryVerifier.verify(
+            documentData: data, trustedKeys: trusted(key),
+            expectedEnv: DomainRegistryClient.expectedEnv, now: .now, highestAcceptedVersion: 5))
     }
 
     func testVerifierRejectsTamperedDomains() throws {
@@ -133,7 +138,9 @@ final class DomainRegistryDocumentTests: XCTestCase {
         let client = DomainRegistryClient(trustedKeys: trusted(key), defaults: suite)
         XCTAssertTrue(client.accept(documentData: try signedDocumentData(key: key)))
         XCTAssertEqual(AuxiliaryDomainRegistry.current.count, 1)
-        // Anti-rollback persisted: same version again is refused.
-        XCTAssertFalse(client.accept(documentData: try signedDocumentData(key: key)))
+        // Same version again is an idempotent recovery (same canonical transcript),
+        // accepted without advancing/lowering the high-water — not a rollback.
+        XCTAssertTrue(client.accept(documentData: try signedDocumentData(key: key)))
+        XCTAssertEqual(client.highestAcceptedVersion, 5)
     }
 }

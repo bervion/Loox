@@ -112,13 +112,18 @@ final class CapabilityManifestTests: XCTestCase {
             trustedKeys: testKeys, now: now, highestAcceptedVersion: 0)) {
             XCTAssertEqual($0 as? CapabilityManifestVerifier.VerifyError, .badSignature)
         }
-        // STRICT anti-rollback: equal version is rejected too (BE handoff:
-        // reject ≤ highest — a replayed old manifest must never re-enable).
+        // Anti-rollback: a STRICTLY older version is rejected (a replayed older
+        // manifest must never re-enable a capability a newer one retired)...
         XCTAssertThrowsError(try CapabilityManifestVerifier.verify(
-            manifestData: data, trustedKeys: testKeys, now: now, highestAcceptedVersion: 42)) {
+            manifestData: data, trustedKeys: testKeys, now: now, highestAcceptedVersion: 43)) {
             XCTAssertEqual($0 as? CapabilityManifestVerifier.VerifyError,
-                           .rollback(received: 42, highestAccepted: 42))
+                           .rollback(received: 42, highestAccepted: 43))
         }
+        // ...but an EQUAL version is NOT a rollback — it is an idempotent re-serve
+        // of the current document, admitted so the client store can run its
+        // hash-gated recovery (the client decides recovery vs monotonic advance).
+        XCTAssertNoThrow(try CapabilityManifestVerifier.verify(
+            manifestData: data, trustedKeys: testKeys, now: now, highestAcceptedVersion: 42))
         // Unknown key id → pinned-set rejection.
         XCTAssertThrowsError(try CapabilityManifestVerifier.verify(
             manifestData: try signed(sampleManifest(), keyID: "cap-9999"),
@@ -159,8 +164,11 @@ final class CapabilityManifestTests: XCTestCase {
         // Manifest is policy distribution — health/breakers untouched.
         XCTAssertEqual(store.health[.privateEmail], .unknown)
         XCTAssertEqual(client.highestAcceptedVersion, 42)
-        // Equal-version replay rejected (strict), state unchanged.
-        XCTAssertFalse(client.accept(manifestData: try signed(sampleManifest()), now: now))
+        // Equal-version re-serve is an idempotent recovery (same canonical
+        // transcript → hash matches): accepted, high-water neither advanced nor
+        // lowered. (The signature bytes differ per call; the transcript does not.)
+        XCTAssertTrue(client.accept(manifestData: try signed(sampleManifest()), now: now))
+        XCTAssertEqual(client.highestAcceptedVersion, 42)
         defaults.removePersistentDomain(forName: suite)
     }
 

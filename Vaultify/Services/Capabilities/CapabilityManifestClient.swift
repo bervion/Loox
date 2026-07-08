@@ -18,55 +18,71 @@ import Foundation
     static let mirrorRecordName = "current"
     static let mirrorBytesField = "bytes"
 
-    private let defaults: UserDefaults
+    /// Build-environment tag for key scoping. The capability manifest URL is prod
+    /// for BOTH configs and carries no in-payload env binding, so this only scopes
+    /// UserDefaults keys (defensive isolation, INV-CP-AR-06) — it never changes
+    /// which document is fetched.
+    #if DEBUG
+    static let envTag = "staging"
+    #else
+    static let envTag = "production"
+    #endif
+
     private let trustedKeys: [String: Data]
     private weak var store: CapabilityStore?
-
-    private let cacheKey = "capability_manifest_v1"
-    private let versionKey = "capability_manifest_highest_version"
+    private let controlStore: SignedControlPlaneStore
 
     init(store: CapabilityStore,
          trustedKeys: [String: Data] = CapabilityManifestVerifier.bundledTrustedKeys,
          defaults: UserDefaults = .standard) {
         self.store = store
         self.trustedKeys = trustedKeys
-        self.defaults = defaults
+        self.controlStore = SignedControlPlaneStore(
+            family: .capabilityManifest, env: Self.envTag,
+            legacyVersionKey: "capability_manifest_highest_version",
+            legacyCacheKey: "capability_manifest_v1", defaults: defaults)
     }
 
-    private(set) var highestAcceptedVersion: UInt64 {
-        get { UInt64(defaults.string(forKey: versionKey) ?? "") ?? 0 }
-        set { defaults.set(String(newValue), forKey: versionKey) }
-    }
+    var highestAcceptedVersion: UInt64 { controlStore.highestVersion }
 
     /// Re-verify and apply the cached manifest (relaunch path). A cache that
-    /// no longer verifies (expired, key retired) is dropped silently; the
-    /// store then runs on bundled defaults + live per-response signals.
+    /// no longer verifies (expired, key retired) has its bytes dropped silently —
+    /// the high-water survives so a later re-serve of that version still recovers;
+    /// the store then runs on bundled defaults + live per-response signals.
     func applyCached(now: Date = .now) {
-        guard let cached = defaults.data(forKey: cacheKey) else { return }
+        guard let cached = controlStore.currentBytes else { return }
         guard let manifest = try? CapabilityManifestVerifier.verify(
             manifestData: cached, trustedKeys: trustedKeys, now: now,
             highestAcceptedVersion: 0) else {   // rollback-vs-self is meaningless
-            defaults.removeObject(forKey: cacheKey)
+            controlStore.dropBytesKeepingHighWater()
             return
         }
+        controlStore.backfillCanonicalHashIfMissing(canonicalBytes: manifest.transcript)
         apply(manifest)
     }
 
     /// Primary → secondary → give up silently (cache/bundled stay in force).
-    func refresh(now: Date = .now) async {
-        guard !trustedKeys.isEmpty else { return }
-        if let data = await fetchPrimary(), accept(manifestData: data, now: now) { return }
-        if let data = await fetchSecondary() { accept(manifestData: data, now: now) }
+    @discardableResult
+    func refresh(now: Date = .now) async -> Bool {
+        guard !trustedKeys.isEmpty else { return false }
+        if let data = await fetchPrimary(), accept(manifestData: data, now: now) {
+            controlStore.markRefreshSuccess(now: now); return true
+        }
+        if let data = await fetchSecondary(), accept(manifestData: data, now: now) {
+            controlStore.markRefreshSuccess(now: now); return true
+        }
+        return false
     }
 
-    /// Verification + strict anti-rollback + persistence; separated for tests.
+    /// Verification + anti-rollback + atomic persistence; separated for tests.
     @discardableResult
     func accept(manifestData: Data, now: Date = .now) -> Bool {
         guard let manifest = try? CapabilityManifestVerifier.verify(
             manifestData: manifestData, trustedKeys: trustedKeys, now: now,
-            highestAcceptedVersion: highestAcceptedVersion) else { return false }
-        highestAcceptedVersion = manifest.manifestVersion
-        defaults.set(manifestData, forKey: cacheKey)
+            highestAcceptedVersion: controlStore.highestVersion) else { return false }
+        guard controlStore.reconcile(incomingVersion: manifest.manifestVersion,
+                                     canonicalBytes: manifest.transcript,
+                                     signedBytes: manifestData, now: now) == .accepted else { return false }
         apply(manifest)
         return true
     }
@@ -121,4 +137,10 @@ import Foundation
         // signal", never coerce it into a signed value.
         store?.applyQuickViewExposure(manifest.exposure(for: .quickView).flatMap(QuickViewExposure.init(rawValue:)))
     }
+}
+
+extension CapabilityManifestClient: RefreshableControlPlaneDocument {
+    var controlPlaneFamily: SignedControlPlaneStore.Family { .capabilityManifest }
+    var lastRefreshMs: Int64? { controlStore.lastRefreshMs }
+    var hasVerifiedCache: Bool { controlStore.hasVerifiedCache }
 }

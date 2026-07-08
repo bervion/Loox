@@ -204,10 +204,10 @@ struct PersonaAliasesScreen: View {
     private func probe() {
         Task {
             await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities)
-            // Manifest + domain-registry refresh piggyback on the contextual
-            // probe — cheap, cached server-side, never on the startup path.
-            await env.capabilityManifest.refresh()
-            await env.domainRegistry.refresh()
+            // Contextual nudge only — the centralized refresher is the authoritative
+            // freshness path (INV-CP-01); this screen no longer gates control-plane
+            // freshness. Deduped/backoff-aware, so it can't hammer the endpoints.
+            await env.controlPlaneRefresher.refreshNow()
         }
     }
 

@@ -67,6 +67,14 @@ struct RootView: View {
             if env.session.state == .unlocked {
                 env.repository.reload()
                 env.syncNow()
+                // Keep signed control-plane documents fresh without blocking unlock
+                // or render (INV-CP-01/02). Fire-and-forget: the coordinator dedupes
+                // the launch-after-unlock and foreground triggers into one request
+                // per document family and applies its own freshness/backoff.
+                Task {
+                    await env.controlPlaneRefresher.refreshIfNeeded(trigger: .launchAfterUnlock)
+                    await env.controlPlaneRefresher.refreshIfNeeded(trigger: .foreground)
+                }
             }
         case .inactive:
             obscured = true
