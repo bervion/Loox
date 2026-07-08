@@ -121,9 +121,9 @@ final class QuickViewParityTests: XCTestCase {
         XCTAssertEqual(QuickViewSASWordList.words.count, QuickViewSAS.wordCount,
                        "bundled BIP-39 wordlist must be exactly 2048 entries")
         for vector in file.vectors {
-            let sessionID = try XCTUnwrap(Data(hexString: vector.input.session_id))
-            let encHash = try XCTUnwrap(Data(hexString: vector.input.enc_key_hash))
-            let sigHash = try XCTUnwrap(Data(hexString: vector.input.sig_key_hash))
+            let sessionID = try XCTUnwrap(QuickViewWire.base64URLDecode(vector.input.session_id))
+            let encHash = try XCTUnwrap(QuickViewWire.base64URLDecode(vector.input.enc_key_hash))
+            let sigHash = try XCTUnwrap(QuickViewWire.base64URLDecode(vector.input.sig_key_hash))
             let derived = try XCTUnwrap(QuickViewSAS.derive(
                 sessionID: sessionID, encKeyHash: encHash, sigKeyHash: sigHash))
             XCTAssertEqual(derived, vector.display, "SAS vector '\(vector.name)' drifted")
@@ -179,10 +179,10 @@ final class QuickViewParityTests: XCTestCase {
             // instead, blobbing the given hash straight in.
             let transcript = Data(QuickViewPayloadSealer.kdfMagic.utf8)
                 + QuickViewWire.byte(QuickViewPayloadSealer.cryptoVersion)
-                + QuickViewWire.lengthPrefixed(try XCTUnwrap(Data(hexString: i.session_id)))
-                + QuickViewWire.lengthPrefixed(try XCTUnwrap(Data(hexString: i.browser_enc_key_hash)))
-                + QuickViewWire.lengthPrefixed(try XCTUnwrap(Data(hexString: i.browser_sig_key_hash)))
-                + QuickViewWire.lengthPrefixed(try XCTUnwrap(Data(hexString: i.app_eph_pub_hash)))
+                + QuickViewWire.lengthPrefixed(try XCTUnwrap(QuickViewWire.base64URLDecode(i.session_id)))
+                + QuickViewWire.lengthPrefixed(try XCTUnwrap(QuickViewWire.base64URLDecode(i.browser_enc_key_hash)))
+                + QuickViewWire.lengthPrefixed(try XCTUnwrap(QuickViewWire.base64URLDecode(i.browser_sig_key_hash)))
+                + QuickViewWire.lengthPrefixed(try XCTUnwrap(QuickViewWire.base64URLDecode(i.app_eph_pub_hash)))
                 + QuickViewWire.lengthPrefixed(i.env)
             XCTAssertEqual(transcript.hexString, vector.canonical_bytes_hex,
                            "kdf vector '\(vector.name)' transcript drifted")
@@ -196,10 +196,10 @@ final class QuickViewParityTests: XCTestCase {
         XCTAssertEqual(file.aad_magic, QuickViewPayloadSealer.payloadMagic)
         for vector in file.aad_vectors {
             let i = vector.input
-            let sessionID = try XCTUnwrap(Data(hexString: i.session_id))
-            let encHash = try XCTUnwrap(Data(hexString: i.enc_key_hash))
-            let approvalID = try XCTUnwrap(Data(hexString: i.approval_id))
-            let fieldManifestHash = try XCTUnwrap(Data(hexString: i.field_manifest_hash))
+            let sessionID = try XCTUnwrap(QuickViewWire.base64URLDecode(i.session_id))
+            let encHash = try XCTUnwrap(QuickViewWire.base64URLDecode(i.enc_key_hash))
+            let approvalID = try XCTUnwrap(QuickViewWire.base64URLDecode(i.approval_id))
+            let fieldManifestHash = try XCTUnwrap(QuickViewWire.base64URLDecode(i.field_manifest_hash))
             let aad = QuickViewPayloadSealer.aad(
                 sessionID: sessionID, encKeyHash: encHash, approvalID: approvalID,
                 fieldManifestHash: fieldManifestHash, issuedAt: i.issued_at, expiresAt: i.expires_at)
@@ -231,10 +231,10 @@ final class QuickViewParityTests: XCTestCase {
         XCTAssertEqual(file.vectors.count, 9)
         for vector in file.vectors {
             let i = vector.input
-            let sessionIDBytes = try XCTUnwrap(Data(hexString: i.session_id))
-            let aad = try XCTUnwrap(Data(hexString: i.aad))
-            let ciphertext = try XCTUnwrap(Data(hexString: i.ciphertext))
-            let appEphPub = try XCTUnwrap(Data(hexString: i.app_eph_pub))
+            let sessionIDBytes = try XCTUnwrap(QuickViewWire.base64URLDecode(i.session_id))
+            let aad = try XCTUnwrap(QuickViewWire.base64URLDecode(i.aad))
+            let ciphertext = try XCTUnwrap(QuickViewWire.base64URLDecode(i.ciphertext))
+            let appEphPub = try XCTUnwrap(QuickViewWire.base64URLDecode(i.app_eph_pub))
             let body = QuickViewCanonical.canonicalUploadBody(
                 aad: aad, ciphertext: ciphertext, appEphemeralPublicKey: appEphPub)
             let clientData = QuickViewCanonical.assertionClientData(
