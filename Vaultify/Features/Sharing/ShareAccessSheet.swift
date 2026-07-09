@@ -61,11 +61,15 @@ struct ShareAccessSheet: View {
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
-    /// This item's passkeys (matched by relying party, same rule the detail
-    /// screen uses) — each becomes a capability slot in the grant.
+    /// This item's passkeys (matched by relying party, same rule AND same
+    /// source the detail screen uses). Reads the repository's already-decrypted
+    /// list rather than re-decrypting via the live Vault Key: the config form
+    /// renders item fields straight from the decrypted item, so gating the
+    /// passkey rows on a live key made them vanish whenever the key wasn't
+    /// momentarily available even though the detail screen still showed them.
     private var itemPasskeys: [PasskeyInfo] {
-        guard let item, let key = env.session.vaultKey else { return [] }
-        return PasskeyVault(store: env.store).all(key: key)
+        guard let item else { return [] }
+        return env.repository.passkeys
             .filter { item.matchesRelyingParty($0.relyingParty) }
     }
 
@@ -235,11 +239,11 @@ struct ShareAccessSheet: View {
                     = .passkey(.none)
             }
         }
-        if let item, let key = env.session.vaultKey {
-            let allPks = PasskeyVault(store: env.store).all(key: key)
+        if let item {
+            let allPks = env.repository.passkeys
             ShareDiagnostics.log("PASSKEY", "itemHosts=[\(item.autofillHosts.joined(separator: ","))] "
                 + "vaultPasskeys=\(allPks.count) rps=[\(allPks.map { $0.relyingParty }.joined(separator: ","))] "
-                + "matched=\(itemPasskeys.count)")
+                + "matched=\(itemPasskeys.count) liveKey=\(env.session.vaultKey != nil)")
         }
         step = .config
     }
