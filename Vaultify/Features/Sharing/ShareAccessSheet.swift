@@ -387,70 +387,22 @@ struct ShareAccessSheet: View {
         }
         step = .publishing
         do {
-            var sharedValues: [String: Data] = Dictionary(uniqueKeysWithValues:
-                item.fields.compactMap { field in
-                    guard capabilities[field.id]?.isSharedValue == true,
-                          !field.isExtraProtected else { return nil }
-                    return (field.id, Data(field.value.utf8))
-                })
-            // Passkey slots: metadata travels for every granted mode (the
-            // recipient renders + registers QuickType from it); the full
-            // PasskeySecret ships ONLY for hand-over (INV-07/08).
-            var displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []
-            if let vaultKey = env.session.vaultKey {
-                let vault = PasskeyVault(store: env.store)
-                for passkey in itemPasskeys {
-                    let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
-                    guard case .passkey(let mode)? = capabilities[slot], mode != .none,
-                          let secret = vault.secret(credentialID: passkey.credentialID,
-                                                    key: vaultKey) else { continue }
-                    displayPasskeys.append(SharedDisplayEnvelope.PasskeyMeta(
-                        slotId: slot, relyingParty: secret.relyingParty,
-                        userName: secret.userName, userHandle: secret.userHandle,
-                        credentialID: secret.credentialID, flags: secret.flags))
-                    if mode == .shared, let blob = try? JSONEncoder().encode(secret) {
-                        sharedValues[slot] = blob
-                    }
-                }
-            }
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
-            // Field labels/kinds travel in the SEALED envelope so the
-            // recipient renders username as username, password as password.
-            let displayFields = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
-                capabilities[field.id]?.isSharedValue == true || capabilities[field.id]?.isAskEachTimeTOTP == true
-                    ? (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
-                                                                 kind: field.kind.rawValue))
-                    : nil
-            })
-            // Single-device: seal to the recipient's FIRST-enrolled device
-            // (deterministic choice); their other devices stay Tier 0. A
-            // recipient app without a device directory can't honor the
-            // promise — fail loudly, never fall back to the synced key.
+            // Single-device seals to the recipient's first-enrolled device;
+            // the composer fails loudly if that device isn't published yet
+            // (INV-04, never falls back to the synced key). Passkeys + display
+            // metadata are assembled identically to the edit path via the
+            // shared composer so the two can never drift.
             let deviceScope: DeviceScope = allowMultipleDevices ? .multi : .single
-            var allowedDevices: [DeviceHPKEDirectoryEntry] = []
-            if deviceScope == .single {
-                guard let first = profile.deviceHPKEDirectory.min(by: {
-                    ($0.addedAtUnixMs, $0.deviceKeyID.hexString)
-                        < ($1.addedAtUnixMs, $1.deviceKeyID.hexString)
-                }) else {
-                    step = .failed(appString("Single-device sharing needs the recipient to update Loox first."))
-                    return
-                }
-                allowedDevices = [first]
-            }
-            let grant = try await env.approvalShare.publishGrant(
-                itemId: item.id,
-                capabilities: capabilities,
-                sharedValues: sharedValues,
-                displayTitle: item.title.isEmpty ? appString("Shared item") : item.title,
-                displayWebsiteHost: item.urlField?.value.isEmpty == false
-                    ? URL(string: item.urlField!.value)?.host : nil,
-                displayFields: displayFields,
-                participantPubKey: profile.participantPubKey,
-                pinnedDeviceSigningKeys: profile.deviceSigningKeys,
-                epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs,
-                deviceScope: deviceScope, allowedDevices: allowedDevices,
-                displayPasskeys: displayPasskeys)
+            let grant = try await SharedGrantComposer.publish(
+                service: env.approvalShare, store: env.store, item: item,
+                capabilities: capabilities, itemPasskeys: itemPasskeys,
+                vaultKey: env.session.vaultKey,
+                profile: SharedGrantComposer.RecipientProfile(
+                    participantPubKey: profile.participantPubKey,
+                    deviceSigningKeys: profile.deviceSigningKeys,
+                    deviceHPKEDirectory: profile.deviceHPKEDirectory),
+                deviceScope: deviceScope, epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
             // Acceptance is proven — the public invite artifacts have served
             // their purpose; delete them now (owner is the only principal
             // who can — public-db records are creator-delete only).

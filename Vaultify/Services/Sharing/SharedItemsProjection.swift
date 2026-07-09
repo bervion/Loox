@@ -1,6 +1,17 @@
 import CloudKit
 import Foundation
 
+/// Display-only view of a shared passkey for the recipient's in-app detail —
+/// metadata only, never the private key (the key stays AutoFill-only, decision
+/// 260705).
+nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
+    var id: String { slotId }
+    let slotId: String
+    let mode: PasskeyFieldCapability
+    let relyingParty: String
+    let userName: String
+}
+
 /// Recipient-side shared items as first-class `VaultItem`s (V1.2 plan, V1/V2).
 ///
 /// A PROJECTION, not storage: models are rebuilt from the accepted shared
@@ -245,6 +256,18 @@ import Foundation
     /// Shared passkey slots for one item: Tier-1 metadata joined with the
     /// grant capability mode; the private key rides along ONLY when the
     /// owner chose hand-over (the slot blob then carries a PasskeySecret).
+    /// Display-only shared passkeys for a shared item (no key material). Backed
+    /// by the same `cachePasskeys` the AutoFill cache uses; reactive via `items`
+    /// (refresh updates both together, so an item-driven re-render pulls fresh
+    /// entries). Empty until the recipient is authorized (the display envelope
+    /// only decodes then).
+    func sharedPasskeys(itemID: String) -> [SharedPasskeyDisplay] {
+        (cachePasskeys[itemID] ?? []).map {
+            SharedPasskeyDisplay(slotId: $0.slotId, mode: $0.mode,
+                                 relyingParty: $0.relyingParty, userName: $0.userName)
+        }
+    }
+
     private nonisolated static func passkeyEntries(
         grant: AccessGrant, display: SharedDisplayEnvelope?,
         values: [String: Data]) -> [SharedPasskeyEntry] {

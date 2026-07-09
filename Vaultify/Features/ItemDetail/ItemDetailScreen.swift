@@ -72,6 +72,7 @@ struct ItemDetailScreen: View {
                         ItemPasskeysSection(item: item)
                         sharingSection(item)
                     } else {
+                        SharedItemPasskeysSection(itemID: item.id)
                         safetyCodeCard
                     }
                     trashCard(item)
