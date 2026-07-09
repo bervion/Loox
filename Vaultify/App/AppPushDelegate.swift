@@ -136,12 +136,15 @@ final class VaultSceneDelegate: NSObject, UIWindowSceneDelegate {
             // leave a server-side acceptance with no local resume. A flag with
             // no acceptance behind it is harmless (resume no-ops and clears).
             UserDefaults.standard.set(true, forKey: SharedConfig.pendingShareAcceptanceKey)
+            ShareDiagnostics.log("ACCEPT", "native scene accept — breadcrumb set")
             do {
                 let container = CKContainer(identifier: ApprovalConfig.containerID)
                 _ = try await container.accept(metadata)
+                ShareDiagnostics.log("ACCEPT", "native container.accept OK (share=\(metadata.share.recordID.zoneID.zoneName))")
                 NotificationCenter.default.post(name: .vaultShareAccepted, object: nil)
             } catch {
                 // Best-effort: the inviter can re-send; the recipient can re-tap.
+                ShareDiagnostics.log("ACCEPT", "native container.accept ERROR: \(error)")
             }
         }
     }

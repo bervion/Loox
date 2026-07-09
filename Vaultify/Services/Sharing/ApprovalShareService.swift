@@ -135,10 +135,17 @@ import Foundation
     /// finishing" without waiting on the profile poll. Best-effort: a fetch
     /// miss (offline/not-yet-propagated) reads as not-accepted.
     func participantAccepted(zoneID: CKRecordZone.ID) async -> Bool {
-        guard let share = try? await fetchShare(zoneID: zoneID) else { return false }
-        return share.participants.contains {
+        guard let share = try? await fetchShare(zoneID: zoneID) else {
+            ShareDiagnostics.log("OWNER", "participantAccepted: no share for \(zoneID.zoneName)")
+            return false
+        }
+        let statuses = share.participants.map { "\($0.role.rawValue):\($0.acceptanceStatus.rawValue)" }
+        let accepted = share.participants.contains {
             $0.role != .owner && $0.acceptanceStatus == .accepted
         }
+        ShareDiagnostics.log("OWNER", "participantAccepted=\(accepted) zone=\(zoneID.zoneName) "
+            + "participants=[\(statuses.joined(separator: ","))]")
+        return accepted
     }
 
     // MARK: Participant profile → grant
@@ -149,8 +156,10 @@ import Foundation
         let id = CKRecord.ID(recordName: ApprovalConfig.participantProfileRecordName, zoneID: zoneID)
         guard let record = try? await database.record(for: id),
               let profile = ApprovalRecordMapping.participantProfile(from: record) else {
+            ShareDiagnostics.log("OWNER", "fetchParticipantProfile: NONE in \(zoneID.zoneName)")
             throw Failure.noParticipantProfile
         }
+        ShareDiagnostics.log("OWNER", "fetchParticipantProfile: FOUND in \(zoneID.zoneName)")
         return profile
     }
 

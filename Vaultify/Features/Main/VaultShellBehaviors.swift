@@ -146,34 +146,42 @@ struct VaultShellBehaviors: ViewModifier {
     /// keeps the flag and retries with backoff, and any leftover is picked up
     /// by the next foreground/unlock.
     private func resumePendingShareAcceptance() async {
-        guard UserDefaults.standard.bool(forKey: SharedConfig.pendingShareAcceptanceKey),
-              let vaultKey = env.session.vaultKey?.bytes,
-              !resumingShareAcceptance else { return }
+        let flag = UserDefaults.standard.bool(forKey: SharedConfig.pendingShareAcceptanceKey)
+        let unlocked = env.session.vaultKey != nil
+        guard flag, let vaultKey = env.session.vaultKey?.bytes, !resumingShareAcceptance else {
+            ShareDiagnostics.log("RESUME", "skip flag=\(flag) unlocked=\(unlocked) "
+                + "inFlight=\(resumingShareAcceptance)")
+            return
+        }
         resumingShareAcceptance = true
         defer { resumingShareAcceptance = false }
         env.settings.approvalModeEnabled = true
+        ShareDiagnostics.log("RESUME", "begin (flag set, unlocked)")
         var delay: Duration = .seconds(2)
         for attempt in 0..<6 {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else { ShareDiagnostics.log("RESUME", "cancelled"); return }
             do {
                 let identity = try await env.participantEscrow.ensureIdentity(vaultKey: vaultKey)
                 let published = try await env.approvalRecipient.completeAcceptance(
                     identity: identity, nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
+                ShareDiagnostics.log("RESUME", "attempt \(attempt): published=\(published)")
                 if published > 0 {
                     await SharedZoneSubscriptionService().ensureSubscribedIfNeeded(settings: env.settings)
                     UserDefaults.standard.removeObject(forKey: SharedConfig.pendingShareAcceptanceKey)
+                    ShareDiagnostics.log("RESUME", "DONE (breadcrumb cleared)")
                     return
                 }
                 // Zero zones: the accept hasn't materialized a shared-DB zone
                 // yet. Keep the flag and wait for propagation.
             } catch {
-                // Escrow/publish failure — keep the flag, retry.
+                ShareDiagnostics.log("RESUME", "attempt \(attempt) ERROR: \(error)")
             }
             if attempt < 5 {
                 try? await Task.sleep(for: delay)
                 delay = min(delay * 2, .seconds(15))
             }
         }
+        ShareDiagnostics.log("RESUME", "exhausted retries — flag kept")
         // Flag intentionally left set — a later foreground/unlock, or a visit to
         // "Shared with Me", completes it once the zone is enumerable.
     }

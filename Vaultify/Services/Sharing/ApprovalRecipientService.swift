@@ -49,9 +49,11 @@ import UIKit
 
     /// Approval zones this account has accepted (shared DB, `apz-` prefix).
     func acceptedApprovalZones() async throws -> [CKRecordZone.ID] {
-        try await container.sharedCloudDatabase.allRecordZones()
-            .map(\.zoneID)
-            .filter { $0.zoneName.hasPrefix(ApprovalConfig.zonePrefix) }
+        let all = try await container.sharedCloudDatabase.allRecordZones()
+        let approval = all.map(\.zoneID).filter { $0.zoneName.hasPrefix(ApprovalConfig.zonePrefix) }
+        ShareDiagnostics.log("ZONES", "sharedDB total=\(all.count) approval=\(approval.count) "
+            + "names=[\(all.map { $0.zoneID.zoneName }.joined(separator: ","))]")
+        return approval
     }
 
     // MARK: Profile
@@ -131,6 +133,7 @@ import UIKit
         let zones = try await acceptedApprovalZones()
         for zoneID in zones {
             try await publishProfile(identity: identity, zoneID: zoneID, nowUnixMs: nowUnixMs)
+            ShareDiagnostics.log("PUBLISH", "profile published → zone=\(zoneID.zoneName)")
         }
         return zones.count
     }

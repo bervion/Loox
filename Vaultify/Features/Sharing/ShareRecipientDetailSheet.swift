@@ -18,9 +18,21 @@ struct ShareRecipientDetailSheet: View {
     @State private var capabilities: [String: FieldCapability]?
     @State private var loadedGrant: AccessGrant?
     @State private var statusNote: String?
+    /// Device scope of the LIVE grant — preserved on republish so a capability
+    /// edit never silently downgrades single-device to multi.
+    @State private var editingDeviceScope: DeviceScope = .multi
+    /// Passkey hand-over awaiting the irreversibility confirmation (INV-08).
+    @State private var pendingHandOver: (id: String, capability: FieldCapability)?
 
     private var item: VaultItem? { env.repository.item(id: share.itemId) }
     private var zoneID: CKRecordZone.ID { CKRecordZone.ID(zoneName: share.zoneName) }
+
+    /// This item's passkeys (same repository source + RP rule as the detail
+    /// screen and the create sheet).
+    private var itemPasskeys: [PasskeyInfo] {
+        guard let item else { return [] }
+        return env.repository.passkeys.filter { item.matchesRelyingParty($0.relyingParty) }
+    }
 
     var body: some View {
         VaultSheetScaffold(title: "Share Details") {
@@ -45,6 +57,16 @@ struct ShareRecipientDetailSheet: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: errorMessage ?? "")
+        }
+        .confirmationDialog("Hand over this passkey?", isPresented: Binding(
+            get: { pendingHandOver != nil }, set: { if !$0 { pendingHandOver = nil } }),
+            titleVisibility: .visible) {
+            Button("Hand Over — Can't Be Taken Back", role: .destructive) {
+                if let pending = pendingHandOver { capabilities?[pending.id] = pending.capability }
+                pendingHandOver = nil
+            }
+        } message: {
+            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates — a key already handed over can't be pulled back.")
         }
     }
 
@@ -102,6 +124,13 @@ struct ShareRecipientDetailSheet: View {
                 ForEach(item.fields) { field in
                     FieldCapabilityRow(field: field, capability: binding(for: field))
                 }
+                ForEach(itemPasskeys) { passkey in
+                    PasskeyCapabilityRow(passkey: passkey, capability: passkeyBinding(for: passkey),
+                                         requestHandOver: { proposed in
+                                             pendingHandOver = (PasskeySlot.slotId(
+                                                 credentialID: passkey.credentialID), proposed)
+                                         })
+                }
                 Button {
                     Task { await applyCapabilities() }
                 } label: {
@@ -136,6 +165,12 @@ struct ShareRecipientDetailSheet: View {
             set: { capabilities?[field.id] = $0 })
     }
 
+    private func passkeyBinding(for passkey: PasskeyInfo) -> Binding<FieldCapability> {
+        let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
+        return Binding(get: { capabilities?[slot] ?? .passkey(.none) },
+                       set: { capabilities?[slot] = $0 })
+    }
+
     // MARK: Actions
 
     /// Seed the capability editor from the LIVE grant (never a local guess).
@@ -144,10 +179,16 @@ struct ShareRecipientDetailSheet: View {
               let grant = try? await env.approvalShare.fetchGrantFresh(zoneID: zoneID),
               let item else { return }
         loadedGrant = grant
+        // Preserve the live grant's device scope on any republish (INV-04).
+        editingDeviceScope = grant.allowedDeviceKeyBindings.isEmpty ? .multi : .single
         var seeded: [String: FieldCapability] = [:]
         for field in item.fields {
             seeded[field.id] = grant.capabilities[field.id]
                 ?? (field.kind == .totp ? .totp(.none) : .value(.none))
+        }
+        for passkey in itemPasskeys {
+            let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
+            seeded[slot] = grant.capabilities[slot] ?? .passkey(.none)
         }
         capabilities = seeded
     }
@@ -182,23 +223,21 @@ struct ShareRecipientDetailSheet: View {
         defer { busy = false }
         do {
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
-            let sharedValues: [String: Data] = Dictionary(uniqueKeysWithValues:
-                item.fields.compactMap { field in
-                    guard capabilities[field.id]?.isSharedValue == true,
-                          !field.isExtraProtected else { return nil }
-                    return (field.id, Data(field.value.utf8))
-                })
-            _ = try await env.approvalShare.publishGrant(
-                itemId: item.id,
-                capabilities: capabilities,
-                sharedValues: sharedValues,
-                displayTitle: item.title.isEmpty ? appString("Shared item") : item.title,
-                displayWebsiteHost: item.urlField?.value.isEmpty == false
-                    ? URL(string: item.urlField!.value)?.host : nil,
-                displayFields: Self.displayFields(for: item, capabilities: capabilities),
-                participantPubKey: grant.participantPubKey,
-                pinnedDeviceSigningKeys: grant.pinnedDeviceSigningKeys,
-                epoch: grant.epoch + 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
+            // Re-seal to the recipient's CURRENT identity/devices. The shared
+            // composer assembles fields + passkeys + device scope exactly like
+            // the create ceremony and preserves this share's device scope — the
+            // edit path can no longer drop passkeys or widen single→multi.
+            let profile = try await env.approvalShare.fetchParticipantProfile(zoneID: zoneID)
+            _ = try await SharedGrantComposer.publish(
+                service: env.approvalShare, store: env.store, item: item,
+                capabilities: capabilities, itemPasskeys: itemPasskeys,
+                vaultKey: env.session.vaultKey,
+                profile: SharedGrantComposer.RecipientProfile(
+                    participantPubKey: profile.participantPubKey,
+                    deviceSigningKeys: profile.deviceSigningKeys,
+                    deviceHPKEDirectory: profile.deviceHPKEDirectory),
+                deviceScope: editingDeviceScope, epoch: grant.epoch + 1,
+                zoneID: zoneID, nowUnixMs: nowUnixMs)
             statusNote = appString("Access updated.")
             await loadGrant()
         } catch {

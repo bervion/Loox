@@ -144,19 +144,24 @@ import Foundation
     func acceptShare(url shareURL: URL,
                      expectedOwnerParticipantID: String? = nil,
                      expectedRecipientParticipantID: String? = nil) async throws {
+        ShareDiagnostics.log("ACCEPT", "acceptShare via link — fetching metadata")
         let metadata = try await fetchShareMetadata(shareURL: shareURL)
         if let expectedOwnerParticipantID,
            metadata.ownerIdentity.userRecordID?.recordName != expectedOwnerParticipantID {
+            ShareDiagnostics.log("ACCEPT", "owner participant mismatch")
             throw Failure.participantMismatch
         }
         if let expectedRecipientParticipantID,
            (try? await container.userRecordID())?.recordName != expectedRecipientParticipantID {
+            ShareDiagnostics.log("ACCEPT", "recipient participant mismatch")
             throw Failure.participantMismatch
         }
         do {
             _ = try await container.accept(metadata)
+            ShareDiagnostics.log("ACCEPT", "container.accept OK (share=\(metadata.share.recordID.zoneID.zoneName))")
         } catch let error as CKError where error.code == .alreadyShared {
             // Accepting twice is fine — treat as success.
+            ShareDiagnostics.log("ACCEPT", "container.accept alreadyShared (ok)")
         }
         // Same downstream as a native share accept (breadcrumb + resume).
         UserDefaults.standard.set(true, forKey: SharedConfig.pendingShareAcceptanceKey)
