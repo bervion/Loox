@@ -39,9 +39,12 @@ import Foundation
     }
 
     private func refreshAll() async {
-        for record in store.shares where !record.fingerprintConfirmed {
+        let pending = store.shares.filter { !$0.fingerprintConfirmed }
+        ShareDiagnostics.log("OWNER", "refresh: \(pending.count) unconfirmed share(s)")
+        for record in pending {
             let zoneID = CKRecordZone.ID(zoneName: record.zoneName)
             let next = await resolveStatus(zoneID: zoneID)
+            ShareDiagnostics.log("OWNER", "share \(record.zoneName) → \(next)")
             store.updateStatus(zoneName: record.zoneName, to: next)
         }
     }

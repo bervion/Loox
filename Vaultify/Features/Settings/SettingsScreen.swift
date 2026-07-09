@@ -230,6 +230,15 @@ struct SettingsScreen: View {
                 }
                 .listRowBackground(VaultColors.surface)
 
+                #if DEBUG
+                Section("Debug") {
+                    NavigationLink { ShareDiagnosticsView() } label: {
+                        Label { Text(verbatim: "Share Diagnostics") } icon: { PolarisIcon(Icons.share) }
+                    }
+                }
+                .listRowBackground(VaultColors.surface)
+                #endif
+
                 Section {
                     NavigationLink { AboutView() } label: {
                         Label { Text("About") } icon: { PolarisIcon(Icons.info) }
