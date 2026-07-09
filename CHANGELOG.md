@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.23.0] - 2026-07-09
+
+### Added
+- passkey parity in edit-share + recipient in-app display
+
+### Fixed
+- show item passkeys in share config regardless of live key
+- regenerate stale participant escrow instead of failing forever
+
+### Changed
+- log passkey relying-party match in share config (DEBUG)
+- add DEBUG share-handshake diagnostics
+
+
 ## [1.22.3] - 2026-07-09
 
 ### Fixed

@@ -1,1 +1,1 @@
-Cải thiện độ ổn định khi chia sẻ với người liên hệ trong Chế độ Phê duyệt, giúp quá trình thiết lập diễn ra mượt mà hơn.
+Chia sẻ tài khoản đăng nhập giờ bao gồm cả passkey, hiển thị cho cả bạn và người được chia sẻ. Bản cập nhật cũng khắc phục lỗi khiến quyền truy cập chia sẻ đôi khi ngừng hoạt động.
