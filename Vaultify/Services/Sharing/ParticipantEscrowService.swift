@@ -47,11 +47,21 @@ import Foundation
             return identity
         }
         // Cloud copy (another device already created it).
-        if let envelope = try await fetchEscrowEnvelope() {
-            let identity = try ParticipantIdentity.fromEscrow(envelope, vaultKey: vaultKey)
-            try? KeychainStore.set(envelope, account: Self.cacheAccount)
-            ShareDiagnostics.log("ESCROW", "identity from cloud copy")
-            return identity
+        if let record = try await fetchEscrowRecord() {
+            if let envelope = record[ApprovalRecordMapping.Field.sealed] as? Data,
+               let identity = try? ParticipantIdentity.fromEscrow(envelope, vaultKey: vaultKey) {
+                try? KeychainStore.set(envelope, account: Self.cacheAccount)
+                ShareDiagnostics.log("ESCROW", "identity from cloud copy")
+                return identity
+            }
+            // Stale escrow: sealed under a PREVIOUS Vault Key (vault reset /
+            // reinstall left the create-if-not-exists singleton behind). B can
+            // never derive that dead key, so the identity is unusable and any
+            // owner pin on it is already broken — overwrite it in place with a
+            // fresh identity under the CURRENT key so a stuck recipient
+            // recovers instead of failing `authenticationFailure` forever.
+            ShareDiagnostics.log("ESCROW", "cloud escrow UNSEALABLE — regenerating")
+            return try await regenerateEscrow(reusing: record, vaultKey: vaultKey)
         }
         ShareDiagnostics.log("ESCROW", "creating new identity (transactional)")
         // Transactional create: publish MUST succeed before the key is used.
@@ -108,6 +118,31 @@ import Foundation
     private func fetchEscrowEnvelope() async throws -> Data? {
         guard let record = try? await database.record(for: escrowRecordID()) else { return nil }
         return record[ApprovalRecordMapping.Field.sealed] as? Data
+    }
+
+    private func fetchEscrowRecord() async throws -> CKRecord? {
+        try? await database.record(for: escrowRecordID())
+    }
+
+    /// Overwrite a stale (unsealable) escrow in place: reuses the fetched
+    /// record's change tag so the save is a conflict-checked replace of exactly
+    /// the dead envelope. A concurrent regenerate from another device collides
+    /// on the tag — adopt whatever landed if it now unseals, else rethrow so the
+    /// next pass retries.
+    private func regenerateEscrow(reusing record: CKRecord,
+                                  vaultKey: [UInt8]) async throws -> ParticipantIdentity {
+        let identity = ParticipantIdentity.generate()
+        let envelope = try identity.escrowSealed(vaultKey: vaultKey)
+        record[ApprovalRecordMapping.Field.sealed] = envelope as CKRecordValue
+        do {
+            let saved = try await database.modifyRecords(saving: [record], deleting: [],
+                                                         savePolicy: .ifServerRecordUnchanged)
+            for (_, result) in saved.saveResults { _ = try result.get() }
+        } catch let error where Self.isExistingRecordCollision(error) {
+            return try await adoptExisting(vaultKey: vaultKey)
+        }
+        try? KeychainStore.set(envelope, account: Self.cacheAccount)
+        return identity
     }
 
     /// Vault erase / approval teardown.
