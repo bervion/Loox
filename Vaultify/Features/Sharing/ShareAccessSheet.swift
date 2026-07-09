@@ -235,6 +235,12 @@ struct ShareAccessSheet: View {
                     = .passkey(.none)
             }
         }
+        if let item, let key = env.session.vaultKey {
+            let allPks = PasskeyVault(store: env.store).all(key: key)
+            ShareDiagnostics.log("PASSKEY", "itemHosts=[\(item.autofillHosts.joined(separator: ","))] "
+                + "vaultPasskeys=\(allPks.count) rps=[\(allPks.map { $0.relyingParty }.joined(separator: ","))] "
+                + "matched=\(itemPasskeys.count)")
+        }
         step = .config
     }
 
