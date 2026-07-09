@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.22.3] - 2026-07-09
+
+### Fixed
+- retry recipient profile publish instead of burning breadcrumb
+
+
 ## [1.22.2] - 2026-07-08
 
 ### Fixed

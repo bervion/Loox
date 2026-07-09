@@ -1,1 +1,1 @@
-Bản cập nhật này tăng độ ổn định: tài liệu chia sẻ tự động làm mới, việc nhận lời mời dùng chung kho mật khẩu cũng chính xác và rõ ràng hơn.
+Cải thiện độ ổn định khi chia sẻ với người liên hệ trong Chế độ Phê duyệt, giúp quá trình thiết lập diễn ra mượt mà hơn.

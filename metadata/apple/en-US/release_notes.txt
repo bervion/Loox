@@ -1,1 +1,1 @@
-This update improves reliability: shared documents now refresh automatically, and shared vault invitations are detected more accurately with clearer status updates.
+Improved reliability when sharing with contacts under Approval Mode, so setup completes more smoothly.
