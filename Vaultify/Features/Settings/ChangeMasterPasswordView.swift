@@ -18,6 +18,12 @@ struct ChangeMasterPasswordView: View {
 
     var body: some View {
         Form {
+            Section {
+                VaultInfoBanner(.info, icon: Icons.key,
+                                text: "Your Vault Key doesn't change — Face ID unlock and your Emergency Kit keep working.")
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
             Section("Current password") {
                 RevealableSecureField(title: "Current master password", text: $current)
                     .listRowInsets(.init())
@@ -29,6 +35,11 @@ struct ChangeMasterPasswordView: View {
                 PasswordStrengthMeter(password: newPassword)
                 RevealableSecureField(title: "Confirm new password", text: $confirm)
                     .listRowInsets(.init())
+                if !confirm.isEmpty && newPassword != confirm {
+                    Text("Passwords don’t match")
+                        .vaultType(.footnote)
+                        .foregroundStyle(VaultColors.strengthWeak)
+                }
             }
             .listRowBackground(VaultColors.surface)
             if let error {

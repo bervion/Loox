@@ -17,6 +17,8 @@ struct ItemDetailScreen: View {
     @State private var leaveError: String?
     /// Per-recipient management sheet (V1.2 follow-up: multi-recipient shares).
     @State private var selectedShare: ItemShareRecord?
+    /// Resume stepper (design 12b/12c) for a recipient still pending.
+    @State private var resumeShare: ItemShareRecord?
     /// Safety code for a shared item (optional out-of-band comparison).
     @State private var safetyCode: String?
     /// "Open on Computer" (Loox Quick View) chooser sheet.
@@ -170,6 +172,7 @@ struct ItemDetailScreen: View {
             Text(verbatim: quickViewBlockedReason ?? "")
         }
         .sheet(item: $selectedShare) { ShareRecipientDetailSheet(share: $0) }
+        .sheet(item: $resumeShare) { ShareResumeStepperSheet(share: $0) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
                 if let item { try? env.repository.moveToTrash(item); dismiss() }
@@ -432,40 +435,65 @@ struct ItemDetailScreen: View {
         }
     }
 
-    /// Owner side (V4): who this item is shared with — tap manages/revokes.
+    /// Owner side (V4/design 12b): who this item is shared with. Active
+    /// recipients open the management sheet; a pending recipient's row
+    /// carries its own mini 4-segment progress + a Resume badge that opens
+    /// the same stepper sheet Home/Notifications use — one canonical resume
+    /// surface no matter the entry point.
     @ViewBuilder private func sharingSection(_ item: VaultItem) -> some View {
         let shares = env.sharingStore.shares(forItem: item.id)
         if !shares.isEmpty {
-            VStack(spacing: 0) {
-                ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
-                    Button { selectedShare = share } label: {
-                        HStack(spacing: Space.s3) {
-                            PolarisIcon(Icons.share, size: Metric.iconInline)
-                                .themedForeground(.accent)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(verbatim: share.recipientLabel)
-                                    .vaultType(.body).themedForeground()
-                                    .lineLimit(1).truncationMode(.middle)
-                                Text(share.fingerprintConfirmed ? "Active" : "Pending")
-                                    .vaultType(.footnote).themedForeground(.secondary)
-                            }
-                            Spacer(minLength: Space.s2)
-                            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
-                        }
-                        .padding(.horizontal, Space.gutter).padding(.vertical, 12)
-                        .contentShape(.rect)
+            VStack(alignment: .leading, spacing: Space.s2) {
+                Text("Shared with").vaultType(.sectionLabel).themedForeground(.tertiary)
+                VStack(spacing: 0) {
+                    ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
+                        shareRow(share)
+                        if index < shares.count - 1 { Divider().padding(.leading, Space.gutter) }
                     }
-                    .buttonStyle(.plain)
-                    if index < shares.count - 1 { Divider().padding(.leading, Space.gutter) }
+                }
+                .background(VaultColors.surface)
+                .vaultCornerRadius(Radius.md)
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
+                )
+            }
+        }
+    }
+
+    private func shareRow(_ share: ItemShareRecord) -> some View {
+        let isPending = share.status != .active
+        return Button {
+            if isPending { resumeShare = share } else { selectedShare = share }
+        } label: {
+            VStack(alignment: .leading, spacing: Space.s2) {
+                HStack(spacing: Space.s3) {
+                    PolarisIcon(Icons.share, size: Metric.iconInline)
+                        .themedForeground(isPending ? .warning : .accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: share.recipientLabel)
+                            .vaultType(.body).themedForeground()
+                            .lineLimit(1).truncationMode(.middle)
+                        Text(ShareStepper.detailSubtitle(for: share.status).inAppLocalized)
+                            .vaultType(.footnote).themedForeground(isPending ? .warning : .success)
+                    }
+                    Spacer(minLength: Space.s2)
+                    if isPending {
+                        VaultStatusBadge(kind: .action, label: "Resume")
+                    } else {
+                        VaultStatusBadge(kind: .active, label: "Active")
+                        PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                    }
+                }
+                if isPending {
+                    ShareMiniProgressBar(status: share.status)
+                        .padding(.leading, Metric.iconInline + Space.s3)
                 }
             }
-            .background(VaultColors.surface)
-            .vaultCornerRadius(Radius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-            )
+            .padding(.horizontal, Space.gutter).padding(.vertical, 12)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
     }
 
     /// Trashed items can be restored or purged; live items can be moved to Trash.

@@ -151,6 +151,10 @@ struct HomeScreen: View {
             .sheet(isPresented: $showSettings) { SettingsScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
             .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
+            // Anchored at the stable root, NOT inside pendingSharesSection: cancelling
+            // the last pending share removes that conditional view mid-dismiss, which
+            // would strand the sheet binding and re-present a stale record later.
+            .sheet(item: $homeResumeShare) { ShareResumeStepperSheet(share: $0) }
         }
     }
 
@@ -169,6 +173,13 @@ struct HomeScreen: View {
 
                     // 3. Quick actions grid (Reminders-style colour cards)
                     quickActionsGrid
+
+                    // 3b. Shares I sent that are still pending (design 12a):
+                    // first-class, persists across app kill — not tied to
+                    // whichever sheet created it.
+                    if !pendingOutgoingShares.isEmpty {
+                        pendingSharesSection
+                    }
 
                     // 4. Pending approval requests (owner side): one → open the
                     // ceremony directly; several → the notifications inbox.
@@ -200,6 +211,58 @@ struct HomeScreen: View {
             }
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: Pending outgoing shares (design 12a)
+
+    @State private var homeResumeShare: ItemShareRecord?
+
+    /// Shares I sent that haven't reached Active yet — ephemeral by
+    /// construction: once `SharingStore` advances a record to `.active` (or
+    /// it's cancelled/removed) it drops out of this filter and the row
+    /// disappears on its own, no extra bookkeeping needed here.
+    private var pendingOutgoingShares: [ItemShareRecord] {
+        env.sharingStore.shares
+            .filter { $0.status != .active }
+            .sorted { $0.createdAtUnixMs > $1.createdAtUnixMs }
+    }
+
+    private var pendingSharesSection: some View {
+        VStack(spacing: Space.s2) {
+            ForEach(pendingOutgoingShares) { share in
+                Button { homeResumeShare = share } label: {
+                    pendingShareRowLabel(share)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func pendingShareRowLabel(_ share: ItemShareRecord) -> some View {
+        let title = env.repository.item(id: share.itemId)?.title ?? appString("an item")
+        // Status color language: orange = waiting on them, green = waiting on YOU
+        // (ready to confirm the safety code).
+        let waitingOnOwner = share.status == .readyForCeremony
+        return HStack(spacing: Space.s3) {
+            StatusDot(kind: waitingOnOwner ? .active : .pending)
+            PolarisIcon(Icons.share, size: Metric.iconInline)
+                .themedForeground(waitingOnOwner ? .success : .warning)
+            Group {
+                if waitingOnOwner {
+                    Text("Sharing \"\(title)\" · ready to confirm")
+                } else {
+                    Text("Sharing \"\(title)\" · waiting for \(share.recipientLabel)")
+                }
+            }
+            .vaultType(.body).themedForeground()
+            .lineLimit(1).truncationMode(.tail)
+            Spacer(minLength: Space.s2)
+            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
+        }
+        .padding(Space.s4)
+        .frame(minHeight: Metric.hitMin)
+        .background(VaultColors.surface)
+        .vaultCornerRadius(Radius.md)
     }
 
     // MARK: Approval attention row
@@ -495,6 +558,11 @@ struct HomeScreen: View {
                 Text("Add your first login, card, or secure note.")
                     .vaultType(.callout)
                     .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+                Text("Everything is encrypted on this iPhone before it's stored.")
+                    .vaultType(.footnote)
+                    .themedForeground(.tertiary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 300)
             }

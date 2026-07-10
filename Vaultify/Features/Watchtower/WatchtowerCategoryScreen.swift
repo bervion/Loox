@@ -5,9 +5,19 @@ import SwiftUI
 struct WatchtowerCategoryScreen: View {
     let title: LocalizedStringResource
     let issues: [VaultIssue]
+    /// Privacy/context note pinned above the list (e.g. the k-anonymity
+    /// explanation on the breach category). nil for categories without one.
+    var infoNote: LocalizedStringKey? = nil
 
     var body: some View {
         List {
+            if let infoNote {
+                Section {
+                    VaultInfoBanner(.info, icon: Icons.shield, text: infoNote)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+            }
             ForEach(issues) { issue in
                 NavigationLink(value: issue.itemID) {
                     WatchtowerIssueRow(issue: issue)
