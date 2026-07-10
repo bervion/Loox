@@ -114,7 +114,7 @@ struct LoginEditorSections: View {
 
             HStack(spacing: Space.s2) {
                 Text(verbatim: field.wrappedValue.value)
-                    .font(.vaultCode(.subheadline))
+                    .vaultType(.subhead)
                     .themedForeground()
                     .lineLimit(1)
                     .truncationMode(.middle)

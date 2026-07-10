@@ -571,12 +571,19 @@ struct ItemEditorScreen: View {
     private func save() {
         draft.fields.removeAll { $0.isEmpty && $0.label.isEmpty }
         if draft.title.trimmingCharacters(in: .whitespaces).isEmpty {
-            if let field = draft.fields.first(where: { !$0.isEmpty }) {
-                // Fall back to the first field's value — but if that's a website, use just the
-                // domain (no scheme/path/www) so the title reads "google.com", not the full URL.
-                draft.title = (field.kind == .url ? FaviconService.host(from: field.value) : nil) ?? field.value
+            // NEVER derive the title from a secret: the title is plaintext
+            // metadata (lists, search, sync) — a password-only item must not
+            // put its raw password there. Chain: website domain → username or
+            // email → localized "Untitled".
+            if let url = draft.fields.first(where: { $0.kind == .url && !$0.isEmpty }),
+               let host = FaviconService.host(from: url.value) {
+                draft.title = host
+            } else if let user = draft.fields.first(where: {
+                ($0.kind == .username || $0.kind == .email) && !$0.isEmpty && !$0.protected
+            }) {
+                draft.title = user.value
             } else {
-                draft.title = String(localized: draft.category.title)
+                draft.title = appString("Untitled")
             }
         }
         do {

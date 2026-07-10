@@ -15,7 +15,7 @@ struct GlyphResolveText: View {
     @State private var resolvedCount = 0
 
     /// Fixed mask length while concealed — independent of the value's length.
-    private static let maskCount = 16
+    private static let maskCount = 12
     /// Total resolve budget; per-glyph stagger shrinks on long values to stay inside it.
     private static let totalBudget = 0.4
     private static let perGlyph = 0.035

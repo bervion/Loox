@@ -349,10 +349,9 @@ struct HomeScreen: View {
     private var personaSubtitle: String {
         guard let persona = env.repository.activePersona else { return appString("Set up your identity") }
         let kind = PersonaKindStyle.label(persona.kind)
-        // Email is the distinguishing detail when it exists — one clear idea per
-        // line instead of two glued together with a separator glyph.
+        // Kind + email, comma-joined (user-chosen format: "Cá nhân, email…").
         if let email = env.repository.identityUsername(forPersona: persona), !email.isEmpty {
-            return email
+            return "\(kind), \(email)"
         }
         return kind
     }

@@ -54,9 +54,11 @@ struct TotpCardView: View {
                                     : Color(rgb: theme.primaryText))
                         }
                     }
-                    // OTP is a secret/code — the typographic object gets MonoLisa
-                    // (matches ItemDetail's TOTPCodeView), not a system font.
-                    .font(.vaultCode(.title3, weight: .bold))
+                    // SF with tabular digits (user rule: mono is for passwords
+                    // only) — digits keep a stable width so the countdown swap
+                    // never jitters the layout.
+                    .font(.title3.weight(.bold))
+                    .monospacedDigit()
                     .lineLimit(1)
                     // Guards the "123 456" grouping from clipping inside the
                     // fixed 158pt-wide card at accessibility XXL Dynamic Type.
@@ -70,7 +72,9 @@ struct TotpCardView: View {
 
                     // Username distinguishes multiple accounts on the same service
                     // (two GitHub logins would otherwise render identical cards).
-                    if let username = item.subtitle, !username.isEmpty {
+                    // STRICTLY the username field — `item.subtitle` falls back to
+                    // the website URL, which is noise on a code card (user rule).
+                    if let username = item.usernameField?.value, !username.isEmpty {
                         Text(username)
                             .vaultType(.caption)
                             .themedForeground(.tertiary)

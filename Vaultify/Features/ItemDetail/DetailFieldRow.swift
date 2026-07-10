@@ -101,13 +101,10 @@ struct DetailFieldRow: View {
                 Text(urlColored(field.value)).vaultType(.body)
                     .lineLimit(1).truncationMode(.tail)
             default:
-                // Secret values use MonoLisa; free-text notes stay SF. Notes
-                // and revealed secrets wrap to multiple lines; other values
-                // (username, etc.) stay single-line. Alias addresses are long
-                // (local part + relay domain) — a smaller mono size shows them
-                // whole instead of an ugly middle-cut.
-                let valueFont: Font = field.kind == .multiline ? VaultType.body.font
-                    : (privateEmailMatch != nil ? .vaultCode(.footnote) : .vaultCode())
+                // Mono is for SECRETS only (user rule): passwords and protected
+                // values keep MonoLisa; usernames, emails, aliases, and notes
+                // read in SF like the rest of the app.
+                let valueFont: Font = isSecret ? .vaultCode() : VaultType.body.font
                 if isSecret {
                     // Controlled Reveal: glyphs resolve in place left-to-right
                     // instead of a whole-field crossfade between two views.

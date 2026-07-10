@@ -39,8 +39,11 @@ struct PrivateEmailBadge: View {
 
     var body: some View {
         let theme = env.theme.active
+        // Deliberately BELOW the vaultType scale: this is badge chrome, the
+        // smallest text in the app — caption read as loud and clumsy next to a
+        // field label (user feedback). SF, not mono.
         Text("PRIVATE")
-            .vaultType(.caption).fontWeight(.bold)
+            .font(.caption2.weight(.semibold))
             .foregroundStyle(onAccentBackground ? theme.color(.onAccent) : theme.color(.accent))
             .padding(.horizontal, Space.s2)
             .padding(.vertical, 1)
@@ -68,8 +71,12 @@ struct PrivateEmailForwardsToLine: View {
         // label "CHUYỂN TIẾP ĐẾN" broke onto two lines when the email pushed it) —
         // only the destination email compresses, truncating its tail.
         HStack(spacing: 5) {
+            // lineLimit(1) without fixedSize: the label may truncate under
+            // extreme pressure but can never wrap onto two lines NOR force the
+            // row wider than the screen (a rigid label here once pushed the
+            // whole detail layout past the gutters).
             Text("FORWARDS TO").vaultType(.caption).fontWeight(.medium)
-                .lineLimit(1).fixedSize()
+                .lineLimit(1)
             if let destination = match.destination {
                 Text(verbatim: destination).vaultType(.caption)
                     .lineLimit(1).truncationMode(.tail)
