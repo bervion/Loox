@@ -12958,7 +12958,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng email thật thay thế"
+            "value": "Dùng email thật"
           }
         }
       }
@@ -12968,7 +12968,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quản lý email riêng tư…"
+            "value": "Quản lý alias…"
           }
         }
       }

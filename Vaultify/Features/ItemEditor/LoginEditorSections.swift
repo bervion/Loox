@@ -95,19 +95,26 @@ struct LoginEditorSections: View {
     /// with the forwards-to line underneath — mirrors Item Detail's recognition
     /// treatment but adds the editor-only detach affordance.
     private func attachedPrivateEmailRow(field: Binding<DynamicField>, match: PrivateEmailMatch) -> some View {
+        // Mockup layout: badge sits on the LABEL row (convention 1 — "next to the
+        // label", never squeezing the value), the alias gets its own full-width
+        // mono line at a size that fits whole, forwards-to underneath.
         VStack(alignment: .leading, spacing: 6) {
-            TextField("Label", text: Binding(
-                get: { appLabel(field.wrappedValue.label) },
-                set: { field.wrappedValue.label = $0 }
-            ))
-            .vaultType(.caption)
-            .themedForeground(.secondary)
-            .platformAutocapitalization(.words)
+            HStack(spacing: Space.s2) {
+                TextField("Label", text: Binding(
+                    get: { appLabel(field.wrappedValue.label) },
+                    set: { field.wrappedValue.label = $0 }
+                ))
+                .vaultType(.caption)
+                .themedForeground(.secondary)
+                .platformAutocapitalization(.words)
+
+                Spacer(minLength: Space.s2)
+                PrivateEmailBadge()
+            }
 
             HStack(spacing: Space.s2) {
-                PrivateEmailBadge()
                 Text(verbatim: field.wrappedValue.value)
-                    .font(.vaultCode())
+                    .font(.vaultCode(.subheadline))
                     .themedForeground()
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -134,6 +141,9 @@ struct LoginEditorSections: View {
 
     /// Below-card chip row: swap back to the real destination email in one tap,
     /// or jump to Private Email management (pause/delete live there).
+    /// Two chips of the SAME visual rank (mockup: a matched pill pair, never a
+    /// pill next to a bare text link) — both single-line so they sit side by
+    /// side even at SE width.
     private func privateEmailActionsRow(attached: (field: DynamicField, match: PrivateEmailMatch)) -> some View {
         HStack(spacing: Space.s2) {
             if let destination = attached.match.destination {
@@ -148,6 +158,8 @@ struct LoginEditorSections: View {
                         Text("Use real email instead").vaultType(.footnote)
                     }
                     .themedForeground()
+                    .lineLimit(1)
+                    .fixedSize()
                     .padding(.horizontal, Space.s3)
                     .padding(.vertical, Space.s2)
                     .background(VaultColors.surface, in: Capsule())
@@ -158,23 +170,36 @@ struct LoginEditorSections: View {
             Button { showManageAlias = true } label: {
                 Text("Manage alias…")
                     .vaultType(.footnote).themedForeground(.accent)
+                    .lineLimit(1)
+                    .fixedSize()
                     .padding(.horizontal, Space.s3)
                     .padding(.vertical, Space.s2)
+                    .background(VaultColors.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
             }
             .buttonStyle(.plain)
+            Spacer(minLength: 0)
         }
         .padding(.vertical, 2)
+        .listRowSeparator(.hidden)
     }
 
+    /// Soft accent-tinted note box (mockup), not a bare caption over a divider.
     private var privateEmailInfoNote: some View {
-        Label {
-            Text("Switching to your real email keeps the alias alive. Pause or delete it in Private Email.")
-        } icon: {
+        HStack(alignment: .top, spacing: Space.s2) {
             PolarisIcon(Icons.info, size: 14)
+                .themedForeground(.accent)
+                .padding(.top, 1)
+            Text("Switching to your real email keeps the alias alive. Pause or delete it in Private Email.")
+                .vaultType(.footnote)
+                .themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .vaultType(.footnote)
-        .themedForeground(.secondary)
-        .padding(.vertical, 2)
+        .padding(Space.s3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(rgb: env.theme.active.accentSoft).opacity(0.5))
+        .vaultCornerRadius(Radius.sm)
+        .listRowSeparator(.hidden)
     }
 
     // MARK: Websites (multi)

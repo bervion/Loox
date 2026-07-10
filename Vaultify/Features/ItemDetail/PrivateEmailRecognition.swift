@@ -60,13 +60,21 @@ struct PrivateEmailForwardsToLine: View {
 
     var body: some View {
         let theme = env.theme.active
+        // Single line always: the caps label and the status never wrap (the VI
+        // label "CHUYỂN TIẾP ĐẾN" broke onto two lines when the email pushed it) —
+        // only the destination email compresses, truncating its tail.
         HStack(spacing: 5) {
             Text("FORWARDS TO").vaultType(.caption).fontWeight(.medium)
+                .lineLimit(1).fixedSize()
             if let destination = match.destination {
-                Text(verbatim: destination).vaultType(.caption).lineLimit(1).truncationMode(.middle)
+                Text(verbatim: destination).vaultType(.caption)
+                    .lineLimit(1).truncationMode(.tail)
+                    .layoutPriority(-1)
             }
             Circle().fill(dotColor(theme)).frame(width: 6, height: 6)
             Text(statusText).vaultType(.caption)
+                .lineLimit(1).fixedSize()
+            Spacer(minLength: 0)
         }
         .foregroundStyle(onAccentBackground ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
     }
