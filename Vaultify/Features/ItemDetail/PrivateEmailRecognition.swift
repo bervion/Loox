@@ -56,6 +56,10 @@ struct PrivateEmailBadge: View {
 struct PrivateEmailForwardsToLine: View {
     let match: PrivateEmailMatch
     var onAccentBackground = false
+    /// Detail keeps the line minimal (dot only — the dot color already carries
+    /// the state); the editor spells the status out since that's where the
+    /// user manages the alias.
+    var showsStatusText = true
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
@@ -72,8 +76,11 @@ struct PrivateEmailForwardsToLine: View {
                     .layoutPriority(-1)
             }
             Circle().fill(dotColor(theme)).frame(width: 6, height: 6)
-            Text(statusText).vaultType(.caption)
-                .lineLimit(1).fixedSize()
+                .accessibilityLabel(Text(verbatim: statusText))
+            if showsStatusText {
+                Text(statusText).vaultType(.caption)
+                    .lineLimit(1).fixedSize()
+            }
             Spacer(minLength: 0)
         }
         .foregroundStyle(onAccentBackground ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))

@@ -65,7 +65,7 @@ struct DetailFieldRow: View {
                 // always copies `field.value`, i.e. the alias, never the
                 // forwards-to destination shown on this line.
                 if let match, !copied {
-                    PrivateEmailForwardsToLine(match: match)
+                    PrivateEmailForwardsToLine(match: match, showsStatusText: false)
                 }
             }
             Spacer(minLength: 8)
