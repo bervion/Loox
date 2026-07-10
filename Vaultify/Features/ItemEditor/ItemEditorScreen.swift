@@ -155,7 +155,12 @@ struct ItemEditorScreen: View {
                                 }
                             }
                         } label: {
+                            // Full-width label so the WHOLE row is tappable — a bare `Label`
+                            // only registers taps on its text/icon, leaving the rest of the
+                            // row dead (same fix already applied in `LoginEditorSections`).
                             Label { Text("Add Field") } icon: { PolarisIcon(Icons.addCircle) }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
                         .menuStyle(.button)
                         .buttonStyle(.plain)
@@ -163,6 +168,8 @@ struct ItemEditorScreen: View {
 
                         Button { showAttachmentPicker = true } label: {
                             Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -306,7 +313,7 @@ struct ItemEditorScreen: View {
                     .overlay(alignment: .bottomTrailing) {
                         PolarisIcon(Icons.chevronDown, size: 10)
                             .themedForeground(.secondary)
-                            .padding(4)
+                            .padding(Space.s1)
                             .background(VaultColors.surface, in: Circle())
                             .overlay(Circle().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
                             .elevation(.level1)

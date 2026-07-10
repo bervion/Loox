@@ -121,7 +121,7 @@ struct LockScreen: View {
             // avoidance lifts it just above the keyboard when the field is focused.
             if mode == .password {
                 Button("Forgot password?") { showRecovery = true }
-                    .font(.footnote)
+                    .vaultType(.footnote)
                     .padding(.bottom, Space.s8)
                     .transition(.opacity)
             }
@@ -133,8 +133,8 @@ struct LockScreen: View {
         // avoidance intact for password mode.
         .ignoresSafeArea(.container, edges: .vertical)
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: mode)
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: requireSlide)
+        .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: mode)
+        .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: requireSlide)
         .sheet(isPresented: $showRecovery) { RecoveryView() }
         .onAppear {
             // After a shake-lock, wait for the slide; otherwise auto-prompt as usual.
@@ -168,7 +168,7 @@ struct LockScreen: View {
                 Task { await unlock() }
             }
             if let error {
-                Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                Text(error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
             }
         }
     }
@@ -206,7 +206,7 @@ struct LockScreen: View {
             bioFailCount += 1
             Haptics.error()
             if bioFailCount >= maxBioAttempts {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { mode = .password }
+                withAnimation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion)) { mode = .password }
             }
         }
     }

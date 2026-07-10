@@ -8,6 +8,7 @@ struct ChooseThemeView: View {
     @Binding var selection: AppearanceMode
     let onContinue: () -> Void
     @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView {
@@ -45,7 +46,8 @@ struct ChooseThemeView: View {
         VStack(spacing: 0) {
             ForEach(AppearanceMode.allCases) { mode in
                 ThemeOptionRow(mode: mode, isSelected: selection == mode) {
-                    withAnimation(.smooth(duration: 0.2)) { selection = mode }
+                    Haptics.tap()
+                    withAnimation(.vault(.smooth(duration: 0.2), reduceMotion: reduceMotion)) { selection = mode }
                 }
                 if mode != AppearanceMode.allCases.last {
                     Divider().padding(.leading, 54)   // align past the swatch + gap

@@ -1,6 +1,6 @@
 # Phase 6 — Item Editor
 
-**Status**: pending · **Wave**: W2 · **Owns**: `ItemEditor/*` (12 surfaces).
+**Status**: done · **Wave**: W2 · **Owns**: `ItemEditor/*` (12 surfaces).
 Method = canonical protocol + 6 greps (`phase-01`).
 
 ## Protagonist
@@ -23,9 +23,9 @@ Method = canonical protocol + 6 greps (`phase-01`).
   in-scope-cheap, else record for follow-up (do not silently expand scope without noting it).
 
 ## Deliverables / Todo
-`reports/findings-phase-06.md` · `strings-manifest-phase-06.md` · fixes.
-- [ ] Protocol answers (12). [ ] 6 greps. [ ] Save-disabled + discard-dialog states walked.
-- [ ] Icon/attachment grids reflow at SE. [ ] Date-field gap logged. [ ] Fixes + manifest.
+`reports/phase-06-findings.md` · `strings-manifest-phase-06.md` · fixes.
+- [x] Protocol answers (12). [x] 6 greps. [x] Save-disabled + discard-dialog states walked.
+- [x] Icon/attachment grids reflow at SE. [x] Date-field gap logged. [x] Fixes + manifest.
 
 ## Success / Risk
 Success: audit-grep clean; every category form renders SE↔Pro Max, DT XL, EN+VI; discard/save states

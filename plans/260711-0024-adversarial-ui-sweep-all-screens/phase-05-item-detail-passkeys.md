@@ -1,6 +1,6 @@
 # Phase 5 — Item Detail + Passkeys
 
-**Status**: pending · **Wave**: W2 · **Owns**: `ItemDetail/*`, `Passkeys/*` (22 surfaces).
+**Status**: done · **Wave**: W2 · **Owns**: `ItemDetail/*`, `Passkeys/*` (22 surfaces).
 ItemDetail reworked by prior pass → REGRESSION re-review; Passkeys fresh. Method = canonical protocol + 6 greps.
 
 ## Protagonist
@@ -26,10 +26,10 @@ Layer B (website/notes/attachments) contextual, Layer C (history/metadata/delete
 - Toolbar: destructive "Move to Trash" belongs in the "…" menu (Layer C), appears once, with confirm.
 
 ## Deliverables / Todo
-`reports/findings-phase-05.md` · `strings-manifest-phase-05.md` · fixes.
-- [ ] Protocol answers (22). [ ] 6 greps. [ ] Verify NO copy-haptic doubling in any field row.
-- [ ] Walk all 6 SharedAccessGate states + attachment `·` removal. [ ] Passkey delete confirm honesty.
-- [ ] Fixes + manifest.
+`reports/phase-05-findings.md` · `strings-manifest-phase-05.md` · fixes.
+- [x] Protocol answers (16 owned surfaces + `SharedAccessGateView`). [x] 6 greps. [x] Verify NO copy-haptic doubling in any field row (confirmed: single fire in `ClipboardService`).
+- [x] Walk all 6 SharedAccessGate states + attachment `·` removal (already resolved). [x] Passkey delete confirm honesty (already compliant).
+- [x] Fixes + manifest (15 fixed: 4 high/7 medium/4 low; 2 deferred — see findings report).
 
 ## Success / Risk
 Success: audit-grep clean; secrets masked fixed-length and never render pre-gate; destructive actions once,

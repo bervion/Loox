@@ -19,7 +19,7 @@ struct EditorFieldRow: View {
         // in-row type switcher or type icon. Just the (editable) label + the value.
         VStack(alignment: .leading, spacing: 6) {
             TextField("Label", text: localizedLabel)
-                .font(.caption)
+                .vaultType(.caption)
                 .themedForeground(.secondary)
                 .platformAutocapitalization(.words)
             valueEditor
@@ -31,7 +31,7 @@ struct EditorFieldRow: View {
         if field.isExtraProtected {
             HStack(spacing: 6) {
                 PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
-                Text("Protected. Manage in the item view").font(.caption).themedForeground(.secondary)
+                Text("Protected. Manage in the item view").vaultType(.caption).themedForeground(.secondary)
             }
         } else {
             kindEditor
@@ -43,7 +43,13 @@ struct EditorFieldRow: View {
         case .multiline:
             TextField(valuePlaceholder, text: $field.value, axis: .vertical)
                 .lineLimit(2...6)
-        case .password, .totp:
+        // Any `protected` single-line value (password/TOTP, plus template fields sealed at rest
+        // like Card Number, Security Code, ID Number) shares the same controlled-reveal
+        // treatment: masked bullets when unfocused, MonoLisa plaintext only while the user is
+        // actively typing. Storage encryption without matching on-screen masking would leave a
+        // sensitive value visible the whole time it's being edited — this generalizes the
+        // password/TOTP-only masking that existed before to every `protected` kind.
+        case _ where field.protected:
             HStack {
                 // One persistent TextField keeps the keyboard focus stable (swapping
                 // TextField↔SecureField drops first responder). It shows plaintext only while
@@ -51,9 +57,9 @@ struct EditorFieldRow: View {
                 ZStack(alignment: .leading) {
                     TextField(valuePlaceholder, text: $field.value)
                         .focused($valueFocused)
-                        // MonoLisa for a typed password value; SF for the empty
+                        // MonoLisa for a typed secret value; SF for the empty
                         // placeholder and for TOTP secrets.
-                        .font(field.value.isEmpty || field.kind == .totp ? .body : .vaultCode())
+                        .font(field.value.isEmpty || field.kind == .totp ? VaultType.body.font : .vaultCode())
                         .platformAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .opacity(showsPlaintext ? 1 : 0)
@@ -97,15 +103,15 @@ struct EditorFieldRow: View {
             HStack(spacing: 8) {
                 PolarisIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? "ic_attachment", size: 18)
                     .foregroundStyle(Color.accentColor)
-                Text(AttachmentMeta.decode(field.value)?.name ?? "Attachment").font(.subheadline).lineLimit(1)
+                Text(AttachmentMeta.decode(field.value)?.name ?? "Attachment").vaultType(.body).lineLimit(1)
                 Spacer()
                 if let meta = AttachmentMeta.decode(field.value) {
-                    Text(meta.sizeText).font(.caption).themedForeground(.secondary)
+                    Text(meta.sizeText).vaultType(.caption).themedForeground(.secondary)
                 }
             }
         default:
             TextField(valuePlaceholder, text: $field.value)
-                .font(.body)
+                .vaultType(.body)
                 .platformKeyboardType(keyboardType)
                 .platformAutocapitalization(autocapitalization)
                 .autocorrectionDisabled(noAutocorrect)
@@ -201,7 +207,7 @@ struct GenerateChip: View {
             HStack(spacing: 5) {
                 PolarisIcon(Icons.magic, size: 13)
                 Text("Generate strong password")
-                    .font(.caption.weight(.semibold))
+                    .vaultType(.caption).fontWeight(.semibold)
             }
             .foregroundStyle(foreground)
             .padding(.horizontal, Space.s4)

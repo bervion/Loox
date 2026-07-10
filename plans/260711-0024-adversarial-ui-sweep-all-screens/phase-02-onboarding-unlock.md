@@ -1,6 +1,6 @@
 # Phase 2 — Onboarding + Unlock
 
-**Status**: pending · **Wave**: W2 (parallel) · **Owns**: `Onboarding/*`, `Unlock/*` (20 surfaces).
+**Status**: done · **Wave**: W2 (parallel) · **Owns**: `Onboarding/*`, `Unlock/*` (20 surfaces).
 Method = canonical adversarial protocol + 6 audit greps (see `phase-01-shared-primitives.md`).
 
 ## Protagonist per screen
@@ -26,9 +26,14 @@ Method = canonical adversarial protocol + 6 audit greps (see `phase-01-shared-pr
 `reports/findings-phase-02.md` (table) · `strings-manifest-phase-02.md` · fixes to owned files.
 
 ## Todo
-- [ ] Protocol answers for all 20 surfaces. [ ] 6 audit greps → findings.
-- [ ] Verify onboarding scroll survives SE + Dynamic Type AX-XXL (Welcome feature cards, warning card).
-- [ ] Verify Lock error/slide/biometric haptics single-fire. [ ] Apply fixes. [ ] Strings manifest.
+- [x] Protocol answers for all 20 surfaces (24 per registry). [x] 6 audit greps → findings.
+- [x] Verify onboarding scroll survives SE + Dynamic Type AX-XXL (Welcome feature cards, warning
+      card — already safe; found + fixed the same clip risk on 5 more steps: EnableBiometricView,
+      OnboardingDoneStep, JoinMethodChoiceView, JoinByQRView, JoinByRecoveryView via new
+      `OnboardingScrollingStep` helper).
+- [x] Verify Lock error/slide/biometric haptics single-fire (confirmed, no doubling).
+- [x] Apply fixes (see `reports/phase-02-findings.md`).
+- [x] Strings manifest (`strings-manifest-phase-02.md` — empty, no copy changed).
 
 ## Success / Risk
 Success: zero audit-grep hits in owned files; every step renders SE↔Pro Max, light/dark, DT XL, EN+VI;

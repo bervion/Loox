@@ -57,6 +57,7 @@ struct PasskeyDetailSheet: View {
             }
             .confirmationDialog("Delete this passkey?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Delete Passkey", role: .destructive) {
+                    Haptics.error()
                     do {
                         try env.repository.deletePasskey(credentialID: passkey.credentialID)
                         dismiss()

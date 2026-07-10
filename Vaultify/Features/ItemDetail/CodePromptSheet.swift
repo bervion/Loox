@@ -20,7 +20,7 @@ struct CodePromptSheet: View {
         }) {
             Form {
                 if let message {
-                    Section { Text(message.inAppLocalized).font(.footnote).themedForeground(.secondary) }
+                    Section { Text(message.inAppLocalized).vaultType(.footnote).themedForeground(.secondary) }
                     .listRowBackground(VaultColors.surface)
                 }
                 Section {

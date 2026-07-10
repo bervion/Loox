@@ -42,11 +42,11 @@ struct VaultItemRow: View {
                         Text(item.title.isEmpty ? "Untitled" : item.title)
                     }
                 }
-                .font(.body)
+                .vaultType(.body)
                 .lineLimit(1)
                 if let subtitle = item.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.caption)
+                        .vaultType(.caption)
                         .themedForeground(.secondary)
                         .lineLimit(1)
                 }
@@ -69,7 +69,7 @@ struct VaultItemRow: View {
         .overlay(alignment: .topTrailing) {
             if item.pinned {
                 PolarisIcon(Icons.pinFill, size: 11)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color(rgb: env.theme.active.accent))
             }
         }
         .contentShape(.rect)
@@ -107,9 +107,9 @@ struct VaultItemRow: View {
             .foregroundStyle(VaultColors.favoriteStar)
             .frame(width: 16, height: 16)
             .background(Color(rgb: env.theme.active.elevatedBackground),
-                        in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: Radius.xs, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.xs, style: .continuous)
                     .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
             )
             .offset(x: 3, y: 3)
@@ -118,7 +118,7 @@ struct VaultItemRow: View {
     private var sharedChip: some View {
         HStack(spacing: 4) {
             PolarisIcon(Icons.share, size: 9).themedForeground(.accent)
-            Text("Shared").font(.caption2).themedForeground(.secondary)
+            Text("Shared").vaultType(.caption).themedForeground(.secondary)
         }
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
         .background(VaultColors.fill, in: Capsule())
@@ -130,7 +130,7 @@ struct VaultItemRow: View {
     private var sharingBadge: some View {
         HStack(spacing: 3) {
             PolarisIcon(Icons.clock, size: 9).themedForeground(.warning)
-            Text("SHARING…").font(.caption2).fontWeight(.semibold).themedForeground(.warning)
+            Text("SHARING…").vaultType(.caption).fontWeight(.semibold).themedForeground(.warning)
         }
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
         .background(Color(rgb: env.theme.active.warningSoft), in: Capsule())
@@ -139,7 +139,7 @@ struct VaultItemRow: View {
     private func spaceChip(_ folder: Folder) -> some View {
         HStack(spacing: 4) {
             Circle().fill(folder.color.tint).frame(width: 7, height: 7)
-            Text(folder.name).font(.caption2).themedForeground(.secondary)
+            Text(folder.name).vaultType(.caption).themedForeground(.secondary)
                 .lineLimit(1).truncationMode(.tail)
         }
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)

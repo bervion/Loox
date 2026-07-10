@@ -26,7 +26,9 @@ struct LocatedInSheet: View {
                             FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
                             Text(folder.name).themedForeground()
                         } else {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            // Proportional radius matching FolderBadge/CategoryBadge's
+                            // `size * 0.28` sibling convention at the same 30pt tile size.
+                            RoundedRectangle(cornerRadius: 30 * 0.28, style: .continuous)
                                 .fill(VaultColors.fill).frame(width: 30, height: 30)
                             Text("No Space").themedForeground(.secondary)
                         }
@@ -34,7 +36,7 @@ struct LocatedInSheet: View {
                         if canMove {
                             Button { showMovePicker = true } label: {
                                 Label { Text("Move") } icon: { PolarisIcon(Icons.enter) }
-                                    .font(.subheadline.weight(.medium))
+                                    .vaultType(.subhead).fontWeight(.medium)
                             }
                             .buttonStyle(.bordered)
                             .tint(env.theme.active.color(.accent))

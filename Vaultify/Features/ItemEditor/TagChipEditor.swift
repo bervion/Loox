@@ -15,13 +15,18 @@ struct TagChipEditor: View {
                         ForEach(tags, id: \.self) { tag in
                             HStack(spacing: 4) {
                                 PolarisIcon(Icons.hashtag, size: 12).themedForeground(.secondary)
-                                Text(tag).font(.subheadline)
+                                Text(tag).vaultType(.subhead)
                                 Button { remove(tag) } label: {
                                     PolarisIcon(Icons.close, size: 11).themedForeground(.secondary)
                                 }
                                 .buttonStyle(.plain)
+                                // The visible glyph stays small (11pt) so the chip doesn't bulge,
+                                // but the tappable region is padded out toward the 44pt minimum —
+                                // `inset(by: -x)` grows the hit-test path without affecting the
+                                // button's measured layout size (the chip's own frame is unchanged).
+                                .contentShape(Rectangle().inset(by: -(Metric.hitMin - 11) / 2))
                             }
-                            .padding(.horizontal, 10).padding(.vertical, 6)
+                            .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
                             .background(VaultColors.surface, in: Capsule())
                         }
                     }

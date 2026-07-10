@@ -21,7 +21,7 @@ struct TOTPScannerSheet: View {
                     VStack {
                         Spacer()
                         Text("Point the camera at the 2FA QR code")
-                            .font(.subheadline).foregroundStyle(.white)
+                            .vaultType(.subhead).foregroundStyle(.white)
                             .padding(.bottom, 28).shadow(radius: 4)
                     }
                 }
@@ -59,7 +59,7 @@ struct TOTPScannerSheet: View {
     private var controls: some View {
         VStack(spacing: Space.s3) {
             if let error {
-                Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                Text(error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
             }
             PhotosPicker(selection: $photoItem, matching: .images) {
                 Label { Text("Choose a screenshot") } icon: { PolarisIcon(Icons.image) }
@@ -69,7 +69,7 @@ struct TOTPScannerSheet: View {
 
             HStack {
                 TextField("Or paste setup key", text: $manual)
-                    .font(.body)
+                    .vaultType(.body)
                     .platformAutocapitalization(.never)
                     .autocorrectionDisabled()
                 Button("Add") { handle(manual) }.disabled(manual.isEmpty)

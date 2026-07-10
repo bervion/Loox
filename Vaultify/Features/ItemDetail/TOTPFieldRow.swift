@@ -41,7 +41,7 @@ struct CountdownRing: View {
         if onAccent { return env.theme.active.color(.onAccent) }
         if remaining <= 5 { return VaultColors.strengthWeak }     // red — about to expire
         if remaining <= 10 { return VaultColors.strengthMedium }  // yellow — running low
-        return Color.accentColor                                  // blue — plenty of time
+        return env.theme.active.color(.accent)                    // plenty of time, live theme accent
     }
     private var textColor: Color {
         onAccent ? env.theme.active.color(.onAccent) : env.theme.active.color(.secondary)

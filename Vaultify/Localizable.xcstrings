@@ -12530,6 +12530,26 @@
           }
         }
       }
+    },
+    "Couldn't open the file.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể mở tệp này."
+          }
+        }
+      }
+    },
+    "Couldn't read the file.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể đọc tệp này."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

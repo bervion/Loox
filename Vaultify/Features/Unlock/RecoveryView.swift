@@ -65,14 +65,16 @@ struct RecoveryView: View {
                 .background(Color(rgb: theme.accentSoft),
                             in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
             TextField("Recovery key", text: $recoveryKey, axis: .vertical)
-                .font(recoveryKey.isEmpty ? .body : .vaultCode())
+                .font(recoveryKey.isEmpty ? VaultType.body.font : .vaultCode())
                 .platformAutocapitalization(.characters)
                 .autocorrectionDisabled()
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 14)
+        // Matches `RevealableSecureField`'s prominent-field card (same radius +
+        // horizontal inset) so this sheet's field reads consistent with onboarding.
+        .padding(.horizontal, Space.s3)
         .padding(.vertical, Space.s3)
-        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         .elevation(.level2)
     }
 

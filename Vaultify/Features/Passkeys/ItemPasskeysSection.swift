@@ -3,7 +3,6 @@ import SwiftUI
 struct ItemPasskeysSection: View {
     let item: VaultItem
     @Environment(AppEnvironment.self) private var env
-    @Environment(\.colorScheme) private var colorScheme
     @State private var selected: PasskeyInfo?
 
     private var matches: [PasskeyInfo] {
@@ -31,12 +30,10 @@ struct ItemPasskeysSection: View {
                 }
                 .background(VaultColors.surface)
                 .vaultCornerRadius(Radius.md)
-                .overlay(
-                    // Bright edge in light mode, dark edge in dark mode (a plain white ring
-                    // stays white and glares in dark mode).
-                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .strokeBorder(colorScheme == .dark ? Color.black : Color.white, lineWidth: 1)
-                )
+                // Same card treatment as the other detail-screen cards (fields,
+                // shared-with) — elevation over a raw black/white stroke, so the
+                // card definition tracks the live theme instead of a fixed color.
+                .elevation(.level1)
             }
             .sheet(item: $selected) { PasskeyDetailSheet(passkey: $0) }
         }

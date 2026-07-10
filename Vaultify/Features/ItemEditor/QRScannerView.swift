@@ -121,14 +121,14 @@ struct QRScannerView: View {
     var body: some View {
         VStack(spacing: 12) {
             Text("Scan on iPhone")
-                .font(.headline)
+                .vaultType(.headline)
                 .foregroundStyle(.white)
             Text("Use a photo or paste the setup key below instead.")
-                .font(.footnote)
+                .vaultType(.footnote)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
         }
-        .padding()
+        .padding(Space.gutter)
     }
 }
 

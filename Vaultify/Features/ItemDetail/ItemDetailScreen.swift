@@ -116,12 +116,13 @@ struct ItemDetailScreen: View {
             } else if itemID.hasPrefix("shared::") && !env.sharedItems.hasLoaded {
                 // Cold-start restore straight into a shared item: the
                 // projection is still loading — don't flash "not found".
-                ProgressView().frame(maxWidth: .infinity).padding(.top, 120)
+                ProgressView().frame(maxWidth: .infinity)
+                    .padding(.top, Space.s10 + Space.s9 + Space.s2)
             } else {
                 ContentUnavailableView {
                     Label { Text("Item not found") } icon: { PolarisIcon(Icons.alert, size: Metric.iconTileLarge) }
                 }
-                .padding(.top, 80)
+                .padding(.top, Space.s9 + Space.s7)
             }
         }
         .coordinateSpace(name: Self.scrollSpace)
@@ -234,11 +235,13 @@ struct ItemDetailScreen: View {
         .sheet(item: $resumeShare) { ShareResumeStepperSheet(share: $0) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
+                Haptics.error()
                 if let item { try? env.repository.moveToTrash(item); dismiss() }
             }
         }
         .confirmationDialog("Permanently delete this item?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Permanently", role: .destructive) {
+                Haptics.error()
                 if let item { try? env.repository.delete(item); dismiss() }
             }
         } message: {
@@ -258,6 +261,7 @@ struct ItemDetailScreen: View {
         .confirmationDialog("Leave this share?", isPresented: $confirmLeave,
                             titleVisibility: .visible) {
             Button("Leave Share", role: .destructive) {
+                Haptics.error()
                 Task { await leaveShare() }
             }
         } message: {
@@ -391,13 +395,15 @@ struct ItemDetailScreen: View {
     @ViewBuilder private func organization(_ item: VaultItem) -> some View {
         if !item.tags.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: Space.s2) {
                     ForEach(item.tags, id: \.self) { tag in
                         HStack(spacing: 3) {
                             PolarisIcon(Icons.hashtag, size: 11).themedForeground(.secondary)
                             Text(tag).vaultType(.subhead)
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        // Matches `FilterChip`'s pill padding (Space.s3/s2) for a
+                        // consistent chip language across the app.
+                        .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
                         .background(VaultColors.surface, in: Capsule())
                     }
                 }
@@ -552,7 +558,7 @@ struct ItemDetailScreen: View {
                         .padding(.leading, Metric.iconInline + Space.s3)
                 }
             }
-            .padding(.horizontal, Space.gutter).padding(.vertical, 12)
+            .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -585,12 +591,12 @@ struct ItemDetailScreen: View {
     private func actionRow(_ label: LocalizedStringKey, icon: String, color: Color,
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: Space.s3) {
                 PolarisIcon(icon, size: Metric.iconInline).foregroundStyle(color)
-                Text(label).foregroundStyle(color)
+                Text(label).vaultType(.body).foregroundStyle(color)
                 Spacer()
             }
-            .padding(.horizontal, Space.gutter).padding(.vertical, 14)
+            .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(VaultColors.surface,
                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))

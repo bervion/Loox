@@ -24,7 +24,7 @@ struct AttachmentPickerSheet: View {
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label { Text("Choose Photo") } icon: { PolarisIcon(Icons.image) }
                     }
-                    if let error { Text(error).font(.footnote).foregroundStyle(VaultColors.strengthWeak) }
+                    if let error { Text(error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak) }
                 }
                 .listRowBackground(VaultColors.surface)
             }
@@ -38,9 +38,15 @@ struct AttachmentPickerSheet: View {
 
     private func handleFile(_ result: Result<[URL], Error>) {
         guard case let .success(urls) = result, let url = urls.first else { return }
-        guard url.startAccessingSecurityScopedResource() else { error = "Couldn’t open the file."; return }
+        guard url.startAccessingSecurityScopedResource() else {
+            error = appString("Couldn’t open the file.")
+            return
+        }
         defer { url.stopAccessingSecurityScopedResource() }
-        guard let data = try? Data(contentsOf: url) else { error = "Couldn’t read the file."; return }
+        guard let data = try? Data(contentsOf: url) else {
+            error = appString("Couldn’t read the file.")
+            return
+        }
         onPicked(data, url.lastPathComponent, url.pathExtension)
         dismiss()
     }

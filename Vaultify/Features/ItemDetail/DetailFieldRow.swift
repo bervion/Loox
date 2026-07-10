@@ -169,6 +169,10 @@ struct DetailFieldRow: View {
                 .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
+                // Invisible padded hit area: the visual circle stays 30pt, the
+                // tappable region meets the 44pt minimum (rule 6).
+                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                .contentShape(Rectangle())
         }
         // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
         .menuStyle(.button)

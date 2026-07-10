@@ -230,7 +230,8 @@ struct ItemsScreen: View {
 
     /// 30pt rounded leading badge so every row has a consistent tinted icon tile.
     private func leadingTile(_ icon: String, fill: Color, iconColor: Color, iconSize: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
+        // Inset Space.s4 from the groupedCard's Radius.lg edge (row horizontal padding) — concentric, not eyeballed.
+        RoundedRectangle(cornerRadius: Radius.concentric(outer: Radius.lg, inset: Space.s4), style: .continuous)
             .fill(fill)
             .frame(width: 30, height: 30)
             .overlay(PolarisIcon(icon, size: iconSize).foregroundStyle(iconColor))

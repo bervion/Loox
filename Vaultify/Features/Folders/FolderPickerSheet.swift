@@ -55,16 +55,18 @@ struct FolderPickerSheet: View {
     }
 
     @ViewBuilder private func row(name: Text, badge: FolderBadge?, selected: Bool) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Space.s3) {
             if let badge {
                 badge
             } else {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                // Same proportional formula as FolderBadge at this size, so the "None" placeholder
+                // tile is provably consistent with every real folder badge, not just visually close.
+                RoundedRectangle(cornerRadius: 30 * 0.28, style: .continuous)
                     .fill(VaultColors.fill).frame(width: 30, height: 30)
             }
             name.themedForeground()
             Spacer()
-            if selected { PolarisIcon(Icons.check, size: 18).foregroundStyle(Color.accentColor) }
+            if selected { PolarisIcon(Icons.check, size: 18).foregroundStyle(Color(rgb: env.theme.active.accent)) }
         }
         .contentShape(.rect)
     }

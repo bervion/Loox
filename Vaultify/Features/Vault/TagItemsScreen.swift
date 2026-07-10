@@ -23,6 +23,7 @@ struct TagItemsScreen: View {
                         ForEach(VaultSort.allCases) { Text($0.label).tag($0) }
                     }
                 } label: { PolarisIcon("ic_sort", size: 22) }
+                    .accessibilityLabel(Text("Sort"))
             }
         }
         .overlay {

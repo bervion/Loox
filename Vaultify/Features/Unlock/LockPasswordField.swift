@@ -19,7 +19,7 @@ struct LockPasswordField: View {
                 if text.isEmpty {
                     // Placeholder → SF; the typed value keeps MonoLisa below.
                     Text("Enter password")
-                        .font(.body)
+                        .vaultType(.body)
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
                 }
                 SecureField("", text: $text)
@@ -35,11 +35,13 @@ struct LockPasswordField: View {
 
             loginButton
         }
+        // Asymmetric by design: the field hugs the embedded login button (36pt) on the
+        // trailing edge, so the row's total height tracks the button, not a 4pt-grid pick.
         .padding(.leading, 14)
         .padding(.trailing, 6)
         .padding(.vertical, 6)
         .background(Color(rgb: env.theme.active.controlBackground),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         .onAppear { focused = true }
     }
 
@@ -48,9 +50,10 @@ struct LockPasswordField: View {
         // contrasting colour (white on the accent fill; the dark background colour on white).
         let theme = env.theme.active
         let onTint = Color(rgb: theme.isDark ? theme.background : theme.accentForeground)
+        let side: CGFloat = 36
         return Button(action: onSubmit) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
                     .fill(env.theme.uiTint)
                 if busy {
                     ProgressView()
@@ -61,7 +64,10 @@ struct LockPasswordField: View {
                         .foregroundStyle(onTint)
                 }
             }
-            .frame(width: 36, height: 36)
+            .frame(width: side, height: side)
+            // Invisible padded hit area to the 44pt minimum — the visual button stays
+            // snug inside the field row (same technique as `RevealableSecureField`).
+            .contentShape(Rectangle().inset(by: -(Metric.hitMin - side) / 2))
         }
         .buttonStyle(.plain)
         .disabled(text.isEmpty || busy)

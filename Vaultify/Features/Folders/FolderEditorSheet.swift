@@ -83,7 +83,7 @@ struct FolderEditorSheet: View {
     private func delete() {
         guard let folder else { return }
         try? env.repository.deleteFolder(folder)
-        Haptics.success()
+        Haptics.error()
         dismiss()
     }
 }

@@ -7,7 +7,6 @@ import SwiftUI
 struct SharedItemPasskeysSection: View {
     let itemID: String
     @Environment(AppEnvironment.self) private var env
-    @Environment(\.colorScheme) private var colorScheme
 
     private var passkeys: [SharedPasskeyDisplay] {
         env.sharedItems.sharedPasskeys(itemID: itemID)
@@ -30,10 +29,9 @@ struct SharedItemPasskeysSection: View {
                 }
                 .background(VaultColors.surface)
                 .vaultCornerRadius(Radius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .strokeBorder(colorScheme == .dark ? Color.black : Color.white, lineWidth: 1)
-                )
+                // Same card treatment as the other detail-screen cards — elevation
+                // over a raw black/white stroke, tracking the live theme.
+                .elevation(.level1)
             }
         }
     }
