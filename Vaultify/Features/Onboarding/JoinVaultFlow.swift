@@ -311,6 +311,20 @@ private struct JoinByRecoveryView: View {
                         .platformAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .frame(maxWidth: .infinity, alignment: .leading)
+                    // Demotes what used to be a 3rd stacked full-width button (design-dna
+                    // rule 7) into a compact trailing field accessory — same pattern as
+                    // EditorFieldRow's scan-QR glyph (44pt hit target, trailing-aligned).
+                    #if os(iOS)
+                    Button { showScanner = true } label: {
+                        PolarisIcon(Icons.scanCode, size: Metric.iconInline)
+                            .foregroundStyle(Color(rgb: env.theme.active.accent))
+                            .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .trailing)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(busy)
+                    .accessibilityLabel(Text("Scan Setup Code"))
+                    #endif
                 }
                 // Matches `RevealableSecureField`'s prominent-field card (same radius +
                 // horizontal inset) so every onboarding field reads as one family.
@@ -333,16 +347,6 @@ private struct JoinByRecoveryView: View {
 
                 Spacer(minLength: Space.s6)
                 VStack(spacing: Space.s3) {
-                    #if os(iOS)
-                    Button { showScanner = true } label: {
-                        Label { Text("Scan Setup Code") } icon: { PolarisIcon(Icons.scanCode, size: Metric.iconInline) }
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.themedTinted)
-                    .controlSize(.large)
-                    .disabled(busy)
-                    #endif
-
                     Button(action: submit) {
                         Group {
                             if busy { ProgressView() } else { Text("Continue") }

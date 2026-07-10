@@ -75,7 +75,9 @@ struct AppearanceSettingsView: View {
                 }
                 .frame(height: 84)
                 .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .strokeBorder(selected ? Color.accentColor : Color(rgb: preview.separator),
+                    // Live theme accent, not the static asset accent — the ring must
+                    // follow the active preset the moment the user switches it.
+                    .strokeBorder(selected ? env.theme.uiTint : Color(rgb: preview.separator),
                                   lineWidth: selected ? 2.5 : 1))
                 name.vaultType(.caption).themedForeground().lineLimit(1)
             }

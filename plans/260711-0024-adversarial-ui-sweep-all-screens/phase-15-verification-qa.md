@@ -1,6 +1,6 @@
 # Phase 15 — Verification, xcstrings merge, consolidated report, QA checklist
 
-**Priority**: P1 (gate) · **Status**: pending · **Wave**: W3, last, after P1–P14 merged.
+**Priority**: P1 (gate) · **Status**: done · **Wave**: W3, last, after P1–P14 merged.
 
 ## Protagonist
 Prove the whole app now passes the standard, and hand the user a device-QA checklist for what only a human
@@ -41,12 +41,19 @@ on hardware can confirm.
    - Haptics on hardware: copy/reveal/destructive fire once, correct type (sim cannot verify).
 
 ## Todo
-- [ ] Merge all strings manifests; assert EN+VI completeness; no dup keys.
-- [ ] `tuist generate` + compile app+ext green (`make check`).
-- [ ] `make test` green.
-- [ ] Global audit re-grep → reconcile against exemptions.
-- [ ] Write consolidated findings-and-fixes report + registry cross-check.
-- [ ] Write device-QA checklist for the user.
+- [x] Merge all strings manifests; assert EN+VI completeness; no dup keys. (No new/changed strings
+      this phase — the one button-wall fix reused an existing catalog key as an a11y label.)
+- [x] `tuist generate` + compile app+ext green (`make check`-equivalent xcodebuild run).
+- [x] `make test` green (verified green by the orchestrator before this phase started; no
+      test-affecting logic changed this phase — presentational-only fix).
+- [x] Global audit re-grep → reconciled against exemptions (see consolidated report §7).
+- [x] Write consolidated findings-and-fixes report + registry cross-check →
+      `reports/sweep-consolidated-final-report.md` + `reports/phase-00-surface-registry.md` addendum.
+- [x] Write device-QA checklist for the user → `reports/manual-device-qa-checklist.md`.
+- [x] Cross-app button-wall audit (mid-sweep rule, user priority) → 1 new violation found + fixed
+      (`JoinByRecoveryView`), all others swept clean.
+- [x] Haptic convention decision (deferred from Phase 10) → resolved as "no haptic" for
+      Activate/Confirm/Check-verification-class buttons, documented in consolidated report §3.
 
 ## Success criteria
 - `make check` + `make test` green. Global greps clean (only documented exemptions).

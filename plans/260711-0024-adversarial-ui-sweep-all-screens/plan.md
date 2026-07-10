@@ -1,7 +1,7 @@
 ---
 title: "Adversarial UI/UX Sweep — All Screens"
 description: "Challenge every Vaultify screen/sheet against the Design DNA standard until the whole app is consistent, smooth, and comfortable on SE and Pro Max."
-status: pending
+status: done
 priority: P2
 effort: ~5-7d
 branch: feat/design-dna-controlled-reveal
@@ -67,7 +67,7 @@ Then the phase applies the fixes to its OWNED files only.
 | 12 | Sharing — Quick Link + Quick View | `Sharing/QuickLink*`, `Sharing/QuickView/*`, `Sharing/SharedWithMeScreen.swift` | 10 | W2 | done |
 | 13 | Main shell + Mac surfaces | `Main/*`, `App/RootView.swift` (router + PrivacyShield + controlledReveal), `App/VaultifyApp.swift` (review-light) | 16 | W2 | done |
 | 14 | AutoFill extension UI (system material rules) | `VaultifyAutoFill/*` | 11 | W2 | done |
-| 15 | Verification, xcstrings merge, consolidated report, QA checklist | — | — | W3 last | pending |
+| 15 | Verification, xcstrings merge, consolidated report, QA checklist | — | — | W3 last | done |
 
 Screen counts are surface counts (View structs incl. sub-rows/sheets), not file counts. Registry with
 exact per-struct assignment is Phase 0's deliverable (`reports/screen-registry.md`).

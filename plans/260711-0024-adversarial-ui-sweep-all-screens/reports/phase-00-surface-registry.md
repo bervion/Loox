@@ -367,6 +367,24 @@ the struct-grep pattern entirely, but it hosts every `VaultifyAutoFill/*` SwiftU
 **Phase 14** (same file family, already in scope) — noted here for completeness, not counted in the
 224 struct total (it's a class, no `body: some View`).
 
+## Phase 15 addendum: 3 surfaces missed by the original baseline grep (found + reviewed by Phase 14)
+
+Phase 14 flagged that its owned directory (`VaultifyAutoFill/*`) contains 3 more visual/logic
+surfaces than this registry's original 11-row count for that phase — the baseline struct grep
+missed them (likely a private-type or non-`View`-suffix naming pattern gap), but they were still
+reviewed by Phase 14 since they live in its owned directory. Appended here per Phase 15's
+reconciliation pass so the registry total reflects what was actually reviewed:
+
+| Surface | File:line | Kind | Phase | Notes |
+|---|---|---|---|---|
+| UnlockGate | `VaultifyAutoFill/PasskeyActionView.swift` | component | 14 | Unlock form embedded in the passkey-ceremony flow; reviewed by Phase 14 (hit-target fix applied). |
+| PasskeyMigrationGate | `VaultifyAutoFill/PasskeyActionView.swift` | component (private) | 14 | Migration/quarantine housekeeping pass-through, reviewed by Phase 14 (pass, no defect). |
+| PasskeyLargeBlob | `VaultifyAutoFill/PasskeyActionView.swift` | model/directive (no `body`) | 14 | iOS 18 largeBlob extension type mapping, no visual surface; reviewed by Phase 14 (pass, no UI). |
+
+Updated Phase-14 surface count: **11 → 14** (9 originally-registered + these 3). Updated grand
+total: **224 → 227**. Zero unassigned — all 3 already fell under Phase 14's directory ownership
+(`VaultifyAutoFill/*`), this is a registry bookkeeping fix, not a new ownership assignment.
+
 ## Todo status (from phase-00.md)
 
 - [x] Re-ran the struct grep; current count = 187 (matches baseline exactly, tree unchanged since authoring).
