@@ -52,8 +52,8 @@ Then the phase applies the fixes to its OWNED files only.
 
 | # | Phase | Owned scope (dirs) | Screens | Parallel wave | Status |
 |---|-------|--------------------|---------|--------------|--------|
-| 0 | Inventory verification & registry (no code) | — reads all | 187 | W0 first | pending |
-| 1 | Shared primitives & components | `DesignSystem/Components/*`, `DesignSystem/PolarisIcon.swift`, `DesignSystem/Tokens/Elevation.swift`, `VaultifyCore/BrandLogoMark.swift`, `Features/Components/*`, `Capabilities/*` | 33 | W1 (blocks W2) | pending |
+| 0 | Inventory verification & registry (no code) | — reads all | 187 | W0 first | done |
+| 1 | Shared primitives & components | `DesignSystem/Components/*`, `DesignSystem/PolarisIcon.swift`, `DesignSystem/Tokens/Elevation.swift`, `VaultifyCore/BrandLogoMark.swift`, `Features/Components/*`, `Capabilities/*` | 33 | W1 (blocks W2) | done |
 | 2 | Onboarding + Unlock | `Onboarding/*`, `Unlock/*` | 20 | W2 | pending |
 | 3 | Home + Search (re-review) | `Home/*`, `Search/*` | 16 | W2 | pending |
 | 4 | Items + Folders + Vault | `Items/*`, `Folders/*`, `Vault/*` | 20 | W2 | pending |

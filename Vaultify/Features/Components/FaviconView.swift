@@ -6,7 +6,7 @@ import Foundation
 struct FaviconView: View {
     let urlString: String?
     let category: ItemCategory
-    var size: CGFloat = 44
+    var size: CGFloat = Metric.controlMedium
     /// When the item title carries the Loox brand (e.g. "Loox Account"), the avatar
     /// becomes the app icon instead of a favicon/badge. Pass the item title to opt in.
     var title: String? = nil
@@ -62,7 +62,7 @@ struct FaviconView: View {
 /// Reproduces the app icon (`vaultify.icon`): the blue→cyan gradient behind the white
 /// Loox wordmark. Colours match `Path.svg`'s gradient stops.
 struct LooxAppIcon: View {
-    var size: CGFloat = 44
+    var size: CGFloat = Metric.controlMedium
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)

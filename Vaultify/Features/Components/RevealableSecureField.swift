@@ -27,7 +27,7 @@ struct RevealableSecureField: View {
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     Text(title)
-                        .font(.body)
+                        .vaultType(.body)
                         .foregroundStyle(Color(rgb: theme.secondaryText))
                 }
                 Group {
@@ -40,7 +40,7 @@ struct RevealableSecureField: View {
                 .platformAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .platformTextContentType(.password)
-                .font(.body)
+                .vaultType(.body)
                 .focused($focused)
                 .foregroundStyle(Color(rgb: theme.primaryText))
             }
@@ -52,14 +52,19 @@ struct RevealableSecureField: View {
                 } label: {
                     PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: Metric.iconInline)
                         .foregroundStyle(Color(rgb: theme.secondaryText))
+                        // Expand the TAP area to the 44pt WCAG/HIG minimum without growing the
+                        // glyph or the row: `.contentShape` only affects hit-testing, not the
+                        // size this view reports to the parent `HStack`, so the field's height
+                        // stays exactly what its own vertical padding dictates.
+                        .contentShape(Rectangle().inset(by: -(Metric.hitMin - Metric.iconInline) / 2))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, Space.s3)
         .padding(.vertical, Space.s3)
         .background(Color(rgb: prominent ? theme.elevatedBackground : theme.controlBackground),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         .elevation(prominent ? .level2 : .level0)
     }
 }

@@ -19,12 +19,12 @@ struct ThemedProminentButtonStyle: ButtonStyle {
             let bg = isEnabled ? theme.accent : RGBMath.blend(theme.accent, theme.background, 0.55)
             let fg = isEnabled ? theme.accentForeground : RGBMath.blend(theme.accentForeground, bg, 0.4)
             configuration.label
-                .font(.headline)
+                .vaultType(.headline)
                 .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, Space.s4)
                 .background(Color(rgb: bg))
-                .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                .vaultCornerRadius(Radius.sm)
                 .opacity(configuration.isPressed ? 0.85 : 1)
         }
     }
@@ -43,12 +43,12 @@ struct ThemedTintedButtonStyle: ButtonStyle {
             // Opaque control surface stays; disabled only mutes the label colour.
             let fg = isEnabled ? theme.accent : theme.textDisabled
             configuration.label
-                .font(.headline)
+                .vaultType(.headline)
                 .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, Space.s4)
                 .background(Color(rgb: theme.controlBackground))
-                .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                .vaultCornerRadius(Radius.sm)
                 .opacity(configuration.isPressed ? 0.85 : 1)
         }
     }
@@ -68,12 +68,12 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
             let bg = isEnabled ? theme.destructive : RGBMath.blend(theme.destructive, theme.background, 0.55)
             let fg = isEnabled ? RGBMath.onColor(theme.destructive) : RGBMath.blend(RGBMath.onColor(theme.destructive), bg, 0.4)
             configuration.label
-                .font(.headline)
+                .vaultType(.headline)
                 .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, Space.s4)
                 .background(Color(rgb: bg))
-                .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                .vaultCornerRadius(Radius.sm)
                 .opacity(configuration.isPressed ? 0.85 : 1)
         }
     }

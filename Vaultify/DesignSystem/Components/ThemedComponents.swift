@@ -136,8 +136,9 @@ private struct ThemedFormBackgroundModifier: ViewModifier {
 /// An elevated surface that floats over the background / wallpaper and stays legible.
 struct ThemedCard<Content: View>: View {
     @Environment(AppEnvironment.self) private var env
-    var cornerRadius: CGFloat = 16
-    var padding: CGFloat = 16
+    // DS scale: `Radius.lg` (20) is the card tier.
+    var cornerRadius: CGFloat = Radius.lg
+    var padding: CGFloat = Space.s4
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -146,7 +147,7 @@ struct ThemedCard<Content: View>: View {
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(rgb: theme.elevatedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .vaultCornerRadius(cornerRadius)
             .overlay(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(Color(rgb: theme.separator), lineWidth: 0.5))
     }
@@ -154,7 +155,7 @@ struct ThemedCard<Content: View>: View {
 
 extension View {
     /// Wrap the receiver in a themed card surface.
-    func themedCard(cornerRadius: CGFloat = 16, padding: CGFloat = 16) -> some View {
+    func themedCard(cornerRadius: CGFloat = Radius.lg, padding: CGFloat = Space.s4) -> some View {
         ThemedCard(cornerRadius: cornerRadius, padding: padding) { self }
     }
 }

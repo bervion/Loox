@@ -15,6 +15,10 @@ nonisolated enum Metric {
     static let rowHeight: CGFloat = 56
 
     // Icon optical sizes
+    /// Compact icon tier for inline banner/chip glyphs (`VaultInfoBanner`, `CapabilityBannerView`,
+    /// `FilterChip`) — smaller than `iconInline` since these sit beside footnote/subhead text,
+    /// not body rows.
+    static let iconCompact: CGFloat = 16
     static let iconInline: CGFloat = 20    // inline within text / rows
     static let iconUtility: CGFloat = 24   // utility tiles / toolbar
     static let iconTab: CGFloat = 28       // tab bar (icon-only → standard tab-icon size)

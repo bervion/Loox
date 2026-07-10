@@ -96,6 +96,12 @@ A screen passes only if it renders correctly in ALL of:
   fewer columns) rather than shrinking text into illegibility.
 - **Appearance**: light AND dark — no white-on-white / invisible-after-theme-switch; semantic
   roles only (`themedForeground`, `theme.color(role)`), never raw `.white/.black/.gray`.
+
+  **Documented exemptions** (do not re-flag in reviews): camera/QR/favicon surfaces and literal
+  light-dark preview swatches; white text/icons on the fixed decorative quick-action tints;
+  native UISwitch/system-control chrome (the OS draws it); ambient shadows built from black
+  opacity (that is how `Elevation` works by design); proportional avatar/tile corner radii that
+  scale with the tile size (a size-relative pattern, not a magic number).
 - **Accessibility**: Reduce Motion (instant swaps), Reduce Transparency (solid fallbacks),
   VoiceOver (meaningful labels; decorative views hidden).
 - **Locales**: EN and VI both rendered and eyeballed.
