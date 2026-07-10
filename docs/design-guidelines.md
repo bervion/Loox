@@ -86,6 +86,20 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 accent, accentSoft, onAccent, destructive, onDestructive, success, warning`. Derived tokens are computed
 on `AppTheme` so **every** builtin and custom theme gets them without touching constructors.
 
+### Concentricity (nested corner radii)
+
+Radius is a **relationship, not a per-view pick**. When a rounded shape sits inset inside a rounded
+parent (avatar in a card, glyph badge in a tile, embedded tile in a sheet), derive the child radius
+from the parent instead of grabbing a scale token:
+
+```swift
+// R_inner ≈ R_outer − inset, floored at Radius.xs
+.vaultCornerRadius(Radius.concentric(outer: Radius.lg, inset: Space.s4))
+```
+
+A child radius larger than `outer − inset` reads "flared", smaller reads "pinched" — both break the
+visual parallel between the two corners. Standalone (non-nested) shapes keep using the fixed scale.
+
 ## Theme And Contrast
 
 ### Status (resolved)

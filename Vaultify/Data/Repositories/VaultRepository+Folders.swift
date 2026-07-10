@@ -200,6 +200,16 @@ extension VaultRepository {
         scoped(folderId).filter { $0.totpField != nil }
     }
 
+    /// Recently used items (non-nil `lastUsedAt`), persona- and folder-scoped,
+    /// most recent first. `allItems` sorts by `updatedAt` (edit time), which
+    /// says nothing about use — this is the "reach for it again" signal.
+    func recentlyUsed(folder folderId: String?, limit: Int) -> [VaultItem] {
+        Array(scoped(folderId)
+            .filter { $0.lastUsedAt != nil }
+            .sorted { ($0.lastUsedAt ?? .distantPast) > ($1.lastUsedAt ?? .distantPast) }
+            .prefix(limit))
+    }
+
     /// Items needing attention, optionally scoped to a folder, capped at `limit`.
     func itemsNeedingAttention(folder folderId: String?, limit: Int = 4) -> [VaultItem] {
         let source: [VaultItem] = folderId == nil ? items : items.filter { $0.folderId == folderId }
