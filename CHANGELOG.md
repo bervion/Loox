@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.24.0] - 2026-07-11
+
+### Added
+- full payment card treatment with brand detection, formatted entry, and camera scan
+- deferred follow-ups, device feedback fixes, extension space assignment, and private email integration
+- codify the design DNA standard and drop interpunct separators from UI copy
+- Controlled Reveal design pass across copy, item detail, home, search, and unlock
+- concentric radius helper, glyph-resolve text, copy-morph icon, recently-used scoped query
+- flow completion pass across core screens per new design reference
+
+### Fixed
+- recipient row drops the duplicate active badge and the list gains an inline share row
+- title never derives from a secret, plus font and layout corrections from device review
+- detail forwards-to line drops the status text
+- private email rows match the reference design
+- adversarial sweep finale with recovery-join hierarchy, theme ring accent, and consolidated QA deliverables
+- adversarial sweep wave 2 batch 3 across sharing, personas, profile, shell, and autofill
+- adversarial sweep wave 2 batch 2 across home, search, watchtower, generator, settings, and appearance
+- adversarial sweep wave 2 batch 1 across onboarding, unlock, items, folders, item detail, and editor
+- shared primitive sweep for token purity and reveal-button hit target
+- identity strip to top, gate recently-used on vault size, quick actions as 2x2 pills
+
+### Changed
+- surface registry for the adversarial UI sweep and ownership gap fixes
+- app feature map and design DNA audit report
+
+
 ## [1.23.0] - 2026-07-09
 
 ### Added

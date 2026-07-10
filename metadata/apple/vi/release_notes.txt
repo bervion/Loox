@@ -1,1 +1,1 @@
-Chia sẻ tài khoản đăng nhập giờ bao gồm cả passkey, hiển thị cho cả bạn và người được chia sẻ. Bản cập nhật cũng khắc phục lỗi khiến quyền truy cập chia sẻ đôi khi ngừng hoạt động.
+Phiên bản 1.24.0: Cải thiện hiệu suất và sửa lỗi.

@@ -1,1 +1,1 @@
-Sharing a login now includes its passkey, visible to both you and the person you share with. This update also fixes an issue where shared access could occasionally stop working.
+Version 1.24.0: Performance improvements and bug fixes.
