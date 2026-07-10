@@ -12,6 +12,7 @@ import SwiftUI
 struct LockScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Mode { case biometric, password }
     @State private var mode: Mode = .biometric
@@ -79,12 +80,28 @@ struct LockScreen: View {
                     VStack(spacing: Space.s2) {
                         Text("Unlock your vault")
                             .vaultType(.screenTitle)
-                        Text(subtitleText)
-                            .vaultType(.subhead)
-                            .themedForeground(.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                        // While the vault key is being derived/fetched the ∞ draws
+                        // itself — the gate working open (Controlled Reveal). The
+                        // instruction line yields for that moment only.
+                        if bioAuthenticating || busy {
+                            LooxGateMark(animating: true)
+                                .frame(height: 18)
+                                .transition(.opacity)
+                                // Fresh element: the mark itself is accessibility-
+                                // hidden (decorative), but this moment needs a
+                                // VoiceOver announcement.
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(Text("Unlocking"))
+                        } else {
+                            Text(subtitleText)
+                                .vaultType(.subhead)
+                                .themedForeground(.secondary)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
+                    .animation(.vault(Motion.standard, reduceMotion: reduceMotion),
+                               value: bioAuthenticating || busy)
                 }
 
                 if requireSlide {

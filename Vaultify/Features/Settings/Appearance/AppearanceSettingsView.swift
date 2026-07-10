@@ -96,7 +96,7 @@ struct AppearanceSettingsView: View {
         } header: {
             Text("Accent Color")
         } footer: {
-            Text("Accent applies instantly across the app — no restart needed.")
+            Text("Accent applies instantly across the app. No restart needed.")
         }
         .listRowBackground(VaultColors.surface)
     }

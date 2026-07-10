@@ -16,6 +16,7 @@ struct DetailFieldRow: View {
     /// than its absence. Copy/reveal/large-type stay.
     var readOnly = false
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var copied = false
     @State private var revealed = false
     @State private var showLargeType = false
@@ -43,7 +44,7 @@ struct DetailFieldRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
-                    .font(.caption.weight(.medium))
+                    .vaultType(.caption).fontWeight(.medium)
                     .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
                 valueView
             }
@@ -70,29 +71,50 @@ struct DetailFieldRow: View {
 
     @ViewBuilder private var valueView: some View {
         if copied {
-            Text("Copied").font(.body)
+            Text(copiedFeedbackText).vaultType(.body)
         } else {
             switch field.kind {
             case .totp:
                 TOTPCodeView(secret: field.value)
             case .url:
                 // Website → SF, scheme greyed, domain/path in accent, tail-truncated.
-                Text(urlColored(field.value)).font(.body)
+                Text(urlColored(field.value)).vaultType(.body)
                     .lineLimit(1).truncationMode(.tail)
             default:
-                if isSecret && !revealed {
-                    SpoilerText(text: field.value)
+                // Secret values use MonoLisa; free-text notes stay SF. Notes
+                // and revealed secrets wrap to multiple lines; other values
+                // (username, etc.) stay single-line.
+                let valueFont: Font = field.kind == .multiline ? VaultType.body.font : .vaultCode()
+                if isSecret {
+                    // Controlled Reveal: glyphs resolve in place left-to-right
+                    // instead of a whole-field crossfade between two views.
+                    // `.textSelection` takes a concrete (non-uniform) type per
+                    // branch, so the enabled/disabled cases can't share a ternary.
+                    if revealed {
+                        GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
+                            .textSelection(.enabled)
+                    } else {
+                        GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
+                            .textSelection(.disabled)
+                    }
                 } else {
-                    // Secret values use MonoLisa; free-text notes stay SF. Notes
-                    // and revealed secrets wrap to multiple lines; other values
-                    // (username, etc.) stay single-line.
                     Text(field.value)
-                        .font(field.kind == .multiline ? .body : .vaultCode())
-                        .lineLimit(field.kind == .multiline || isSecret ? nil : 1)
+                        .font(valueFont)
+                        .lineLimit(field.kind == .multiline ? nil : 1)
                         .textSelection(.enabled)
                 }
             }
         }
+    }
+
+    /// "Copied" (default) or "Copied · clears in {n}s" for sensitive values with an
+    /// auto-clear delay configured — honest about what actually happens to the pasteboard.
+    private var copiedFeedbackText: String {
+        let seconds = env.settings.clipboardClearSeconds
+        if isSecret, seconds > 0 {
+            return appString("Copied · clears in \(seconds)s")
+        }
+        return appString("Copied")
     }
 
     @ViewBuilder private var trailing: some View {
@@ -106,6 +128,10 @@ struct DetailFieldRow: View {
                                   period: 30, onAccent: copied)
                 }
             }
+            // Copy feedback glyph: clipboard morphs to clipboard-check on copy —
+            // an at-a-glance affordance in addition to the row's accent flash.
+            CopyMorphIcon(copied: copied)
+                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
             menu
         }
     }
@@ -113,7 +139,7 @@ struct DetailFieldRow: View {
     private var strengthBadge: some View {
         let strength = PasswordStrength.evaluate(field.value)
         return HStack(spacing: 5) {
-            Text(strength.title).font(.subheadline).foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
+            Text(strength.title).vaultType(.subhead).foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
             Circle().fill(VaultColors.strength(strength)).frame(width: 9, height: 9)
         }
     }
@@ -125,7 +151,7 @@ struct DetailFieldRow: View {
             // TOTP renders its code live — a Reveal toggle is meaningless there.
             if isSecret, field.kind != .totp {
                 Button {
-                    withAnimation { revealed.toggle() }
+                    withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { revealed.toggle() }
                     if revealed { onUsed() }
                 } label: {
                     Label(revealed ? "Conceal" : "Reveal", image: revealed ? Icons.hide : Icons.reveal)

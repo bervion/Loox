@@ -85,7 +85,7 @@ struct ForwardingInboxScreen: View {
                     }
                 }
             } footer: {
-                Text("Keep Loox open until the update finishes. You can safely retry — finished addresses aren’t repeated.")
+                Text("Keep Loox open until the update finishes. You can safely retry; finished addresses aren’t repeated.")
             }
             .listRowBackground(VaultColors.surface)
         }

@@ -47,8 +47,8 @@ struct JoinVaultFlow: View {
                 // a brand-new vault is being made".
                 CreateMasterPasswordView(
                     onSubmit: completeJoin,
-                    title: "Vault received — protect this device",
-                    subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device — it can match your other device or be different, and it never syncs.")
+                    title: "Vault received. Protect this device",
+                    subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device. It can match your other device or be different, and it never syncs.")
             case .biometric:
                 EnableBiometricView(onEnable: enableBiometricAndFinish) { finish() }
             }
@@ -77,7 +77,7 @@ struct JoinVaultFlow: View {
 
     /// Wrap the received key under the chosen local password, enable sync, and pull.
     private func completeJoin(_ password: String) async -> String? {
-        guard let key = receivedKey else { return appString("Pairing failed — try again with a fresh QR code.") }
+        guard let key = receivedKey else { return appString("Pairing failed. Try again with a fresh QR code.") }
         do {
             // `.bytes` yields a fresh, uniquely-referenced copy → zeroing it works.
             var bytes = key.bytes

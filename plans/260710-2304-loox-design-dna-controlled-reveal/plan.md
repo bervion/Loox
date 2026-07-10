@@ -1,7 +1,7 @@
 ---
 title: "Loox Design DNA — Controlled Reveal"
 description: "UI/UX quality pass over Vaultify iOS driven by the 10-point design-DNA audit (T1+T2+T3): protagonist reorder, typography/concentricity discipline, glyph-resolve reveal, honest copy, search superpower, ∞ gate motion."
-status: pending
+status: completed (zoom transition deferred)
 priority: P2
 effort: ~3-4d
 branch: feat/design-dna-controlled-reveal
@@ -29,13 +29,13 @@ Every changed user-facing string → `Localizable.xcstrings` EN + VI. iOS 17.6 c
 
 | # | Phase | Tier | Value/Risk | Parallel? | Status |
 |---|-------|------|-----------|-----------|--------|
-| 0 | Primitives — `Radius.concentric`, `GlyphResolveText`, `CopyMorphIcon`, recents helper, concentric doc | — | blocking / low | first | pending |
-| 1 | Copy-tone + string catalog sweep (remove `!` and `—`, honest copy, EN+VI) | T1 | high / low | after P0 | pending |
-| 2 | Item Detail — typography, OTP object, trash→menu, card-diet, glyph reveal, copy-morph, bottom cluster | T1+T2+T3 | high / med | after P0 | pending |
-| 3 | Home protagonist reorder + concentric + vaultType sweep + card-diet | T2+T1 | high / med-high | after P0 | pending |
-| 4 | Search superpower — zero-state recents + filter chips + local operators + zoom transition | T2+T3 | high / med | after P0 | pending |
-| 5 | Brand gate motion — ∞ Shape, unlock/lock physics, Controlled Reveal doc | T3 | brand / med | after P0 | pending |
-| 6 | Tests · compile both targets · docs sync | — | gate / low | last | pending |
+| 0 | Primitives — `Radius.concentric`, `GlyphResolveText`, `CopyMorphIcon`, recents helper, concentric doc | — | blocking / low | first | done |
+| 1 | Copy-tone + string catalog sweep (remove `!` and `—`, honest copy, EN+VI) | T1 | high / low | after P0 | done |
+| 2 | Item Detail — typography, OTP object, trash→menu, card-diet, glyph reveal, copy-morph, bottom cluster | T1+T2+T3 | high / med | after P0 | done |
+| 3 | Home protagonist reorder + concentric + vaultType sweep + card-diet | T2+T1 | high / med-high | after P0 | done |
+| 4 | Search superpower — zero-state recents + filter chips + local operators + zoom transition | T2+T3 | high / med | after P0 | done (zoom transition deferred — shared nav files) |
+| 5 | Brand gate motion — ∞ Shape, unlock/lock physics, Controlled Reveal doc | T3 | brand / med | after P0 | done |
+| 6 | Tests · compile both targets · docs sync | — | gate / low | last | done |
 
 **Parallelism:** P0 blocks all. After P0, **P2/P3/P4/P5 own disjoint code files → run in parallel.**
 P1 (copy sweep) should land first as baseline; P2–P5 append their own new string keys.

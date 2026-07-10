@@ -57,7 +57,7 @@ struct ProtectedFieldRow: View {
         } else {
             HStack(spacing: 6) {
                 PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
-                Text("Protected — tap to reveal").font(.subheadline).themedForeground(.secondary)
+                Text("Protected. Tap to reveal").font(.subheadline).themedForeground(.secondary)
             }
         }
     }

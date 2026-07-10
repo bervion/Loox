@@ -31,7 +31,7 @@ struct EditorFieldRow: View {
         if field.isExtraProtected {
             HStack(spacing: 6) {
                 PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
-                Text("Protected — manage in the item view").font(.caption).themedForeground(.secondary)
+                Text("Protected. Manage in the item view").font(.caption).themedForeground(.secondary)
             }
         } else {
             kindEditor

@@ -88,7 +88,7 @@ struct OnboardingFlow: View {
     /// onboarding after a recovery reset), so it never creates a duplicate default.
     private func seedIdentity(_ displayName: String, email: String, tag: String) {
         guard env.repository.activeIdentities.isEmpty else { return }
-        let note = appString("Welcome to Loox! This is your identity — it autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.")
+        let note = appString("Welcome to Loox. This is your identity. It autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.")
         var identity = IdentitySeed.make(
             displayName: displayName, email: email, fallback: appString("Me"),
             note: note, tag: tag)
@@ -111,7 +111,7 @@ struct OnboardingFlow: View {
         }
         fields.append(DynamicField(
             label: "Note", kind: .multiline,
-            value: appString("This is your Loox account — the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.")))
+            value: appString("This is your Loox account, the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.")))
 
         let item = VaultItem(category: .login,
                              title: "\(appString("Loox Account")) (\(displayName))",

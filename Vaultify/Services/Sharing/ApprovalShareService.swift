@@ -24,7 +24,7 @@ import Foundation
             case .invalidRecipientEmail:
                 return appString("Enter the recipient's iCloud email first.")
             case .prerequisitesBlocked:
-                return appString("Sharing isn't available right now — check iCloud and notification permissions.")
+                return appString("Sharing isn't available right now. Check iCloud and notification permissions.")
             case .noParticipantProfile:
                 return appString("They haven't accepted the invitation yet.")
             case .grantMissing:

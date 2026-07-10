@@ -115,7 +115,7 @@ struct WatchtowerScreen: View {
         case .compromised:
             WatchtowerCategoryScreen(
                 title: "Exposed password", issues: pwned,
-                infoNote: "Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
+                infoNote: "Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
         case .reused:
             WatchtowerCategoryScreen(title: "Reused passwords", issues: health.reused)
         case .weak:
@@ -291,7 +291,7 @@ struct WatchtowerScreen: View {
             }
             .toggleStyle(.themed)
 
-            Text("Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
+            Text("Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
                 .vaultType(.footnote)
                 .themedForeground(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

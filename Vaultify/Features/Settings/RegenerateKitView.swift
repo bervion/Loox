@@ -18,7 +18,7 @@ struct RegenerateKitView: View {
                 Label {
                     Text(env.session.hasRecoveryKit
                          ? "An Emergency Kit is set up for this vault."
-                         : "No Emergency Kit yet — generate one to enable recovery.")
+                         : "No Emergency Kit yet. Generate one to enable recovery.")
                 } icon: {
                     PolarisIcon(Icons.shield).foregroundStyle(Color.accentColor)
                 }

@@ -30,7 +30,7 @@ struct SyncSettingsView: View {
             } footer: {
                 // Honest scope: secrets are sealed; a small set of organizational
                 // metadata (folder icon/color/order, flags, timestamps) is not.
-                Text("Your items are end-to-end encrypted before they sync — iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata.")
+                Text("Your items are end-to-end encrypted before they sync. iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata.")
             }
             .listRowBackground(VaultColors.surface)
 

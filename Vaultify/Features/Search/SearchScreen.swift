@@ -12,7 +12,7 @@ struct SearchScreen: View {
     var body: some View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.searchPath) {
-            SearchResultsList(query: search)
+            SearchResultsList(query: search, onSelectFilter: { search = $0 })
                 .navigationTitle("Search")
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
@@ -30,6 +30,9 @@ struct SearchScreen: View {
 struct SearchResultsList: View {
     @Environment(AppEnvironment.self) private var env
     let query: String
+    /// Invoked with an operator keyword when a zero-state quick filter chip is
+    /// tapped — the parent sets the search field's text to it.
+    var onSelectFilter: (String) -> Void = { _ in }
 
     /// Ephemeral per-session scope (never persisted). Seeded once on appear from
     /// the current Home Space.
@@ -62,27 +65,64 @@ struct SearchResultsList: View {
         return out
     }
 
+    /// Local operator + free-text search. Operators (`SearchOperators.parse`)
+    /// always filter WITHIN whatever `scope` already resolved — never widen it
+    /// (see `VaultRepository.scopedItems(scope:)`).
+    ///
+    /// The operator reading must never make results WORSE than plain text
+    /// search: keywords like "code", "security", or "mã" are common words the
+    /// user may genuinely be searching for. When operators were recognized but
+    /// produced nothing, the whole query re-runs as literal free text.
     private var results: [VaultItem] {
+        let parsed = SearchOperators.parse(trimmed)
         switch scope {
         case .sharedWithMe:
-            let tokens = trimmed.lowercased().split(separator: " ")
-            guard !tokens.isEmpty else { return [] }
+            guard !parsed.freeTextTokens.isEmpty || !parsed.operators.isEmpty else { return [] }
+            // Shared projections aren't vault items/audited — only structural
+            // operators (category, has-TOTP) are meaningful here; weak/reused/
+            // passkey simply never match (empty Context), which is correct: we
+            // never run a password audit over someone else's shared item.
+            let operated = env.sharedItems.items.filter { item in
+                SearchOperators.matches(item, operators: parsed.operators, context: .empty)
+                    && parsed.freeTextTokens.allSatisfy { item.searchText.contains($0) }
+            }
+            guard operated.isEmpty, !parsed.operators.isEmpty else { return operated }
+            let literalTokens = trimmed.lowercased().split(separator: " ").map(String.init)
             return env.sharedItems.items.filter { item in
-                tokens.allSatisfy { item.searchText.contains($0) }
+                literalTokens.allSatisfy { item.searchText.contains($0) }
             }
         case .thisSpace, .allSpaces:
+            let base: [VaultItem] = parsed.freeTextTokens.isEmpty
+                ? env.repository.scopedItems(scope: scope)
+                : env.repository.search(parsed.freeTextTokens.joined(separator: " "), scope: scope)
+            guard !parsed.operators.isEmpty else { return base }
+            let context = auditContext(for: base, operators: parsed.operators)
+            let operated = base.filter { SearchOperators.matches($0, operators: parsed.operators, context: context) }
+            // Zero-result fallback: same scope, whole query as literal text.
+            guard operated.isEmpty else { return operated }
             return env.repository.search(trimmed, scope: scope)
         }
+    }
+
+    /// Builds only the signals the recognized operators actually need, computed
+    /// once per query over `pool` (already scope-filtered — never the whole
+    /// vault). `PasswordAudit.analyze` here is therefore scoped-relative: an
+    /// item reused elsewhere in the vault but unique within this scope is not
+    /// flagged "reused" — intentional, matches the scope-isolation invariant.
+    private func auditContext(for pool: [VaultItem], operators: [SearchOperator]) -> SearchOperators.Context {
+        let needsPasswordAudit = operators.contains { $0 == .weakPassword || $0 == .reusedPassword }
+        let health = needsPasswordAudit ? PasswordAudit.analyze(pool) : .empty
+        let needsPasskey = operators.contains(.hasPasskey)
+        return SearchOperators.Context(
+            weakItemIDs: Set(health.weak.map(\.itemID)),
+            reusedItemIDs: Set(health.reused.map(\.itemID)),
+            passkeyItemIDs: needsPasskey ? env.repository.passkeyItemIDs(in: pool) : [])
     }
 
     var body: some View {
         Group {
             if trimmed.isEmpty {
-                ContentUnavailableView {
-                    Label { Text("Search your vault") } icon: { PolarisIcon(Icons.search, size: 48) }
-                } description: {
-                    Text("Find items by name, site, tag, or Space.")
-                }
+                SearchZeroStateView(scope: scope, onSelectFilter: onSelectFilter)
             } else {
                 VStack(spacing: 0) {
                     scopeChips

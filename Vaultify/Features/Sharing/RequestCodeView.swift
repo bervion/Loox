@@ -188,9 +188,9 @@ struct RequestCodeView: View {
             case .rejected:
                 outcome("Request declined", icon: Icons.shieldAlert)
             case .interrupted:
-                outcome("Approval was interrupted — request again", icon: Icons.info)
+                outcome("Approval was interrupted. Request again", icon: Icons.info)
             case .expired:
-                outcome("The code expired — request again", icon: Icons.info)
+                outcome("The code expired. Request again", icon: Icons.info)
             case .failed(let message):
                 Text(verbatim: message).vaultType(.footnote).themedForeground(.destructive)
             }
@@ -293,7 +293,7 @@ private struct ApprovedCodeView: View {
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
             }
-            Text("Use it now — it expires with the current window.")
+            Text("Use it now. It expires with the current window.")
                 .vaultType(.footnote).themedForeground(.secondary)
         }
         .contentShape(.rect)

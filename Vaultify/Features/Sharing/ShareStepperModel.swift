@@ -39,7 +39,7 @@ enum ShareStepper {
                 state: active ? .done : (readyOrLater ? .current : .todo)),
             ShareStepperStep(
                 id: 4, title: "Access active",
-                subtitle: "They can use what you allowed — revoke anytime.",
+                subtitle: "They can use what you allowed. Revoke anytime.",
                 state: active ? .done : .todo),
         ]
     }

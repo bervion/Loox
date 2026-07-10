@@ -394,7 +394,7 @@ struct ItemEditorScreen: View {
         .alert(Text("Add an email first"), isPresented: $aliasMissingEmail) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Add an email to this identity’s profile — that’s where your aliases forward to.")
+            Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
         }
         .alert(Text("Couldn’t reach the relay"), isPresented: $aliasError) {
             Button("OK", role: .cancel) {}

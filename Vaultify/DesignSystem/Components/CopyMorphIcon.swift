@@ -2,8 +2,9 @@ import SwiftUI
 
 /// Copy-action feedback glyph: the clipboard icon morphs into clipboard-check
 /// when `copied` flips on (opacity + scale crossfade of two Polaris icons — no
-/// SF Symbols) with a light haptic tick. Reduce Motion swaps instantly. The
-/// parent owns the `copied` state and its reset timing.
+/// SF Symbols). Reduce Motion swaps instantly. Purely visual: the haptic for a
+/// copy comes from `ClipboardService.copy` — firing another one here would
+/// double-buzz. The parent owns the `copied` state and its reset timing.
 struct CopyMorphIcon: View {
     let copied: Bool
     var size: CGFloat = Metric.iconInline
@@ -20,9 +21,6 @@ struct CopyMorphIcon: View {
                 .scaleEffect(copied ? 1 : 0.6)
         }
         .animation(.vault(Motion.spring, reduceMotion: reduceMotion), value: copied)
-        .onChange(of: copied) { _, nowCopied in
-            if nowCopied { Haptics.tap() }
-        }
         // Decorative feedback — the row/button announces the copy itself.
         .accessibilityHidden(true)
     }

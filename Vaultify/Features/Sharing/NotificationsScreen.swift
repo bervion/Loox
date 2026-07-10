@@ -168,8 +168,8 @@ struct NotificationsScreen: View {
     private func outgoingStatusText(_ status: ShareLifecycle) -> LocalizedStringKey {
         switch status {
         case .inviteSent: "Waiting for them to accept"
-        case .accepted: "Accepted — finishing on their device"
-        case .readyForCeremony: "Ready — tap to confirm"
+        case .accepted: "Accepted. Finishing on their device"
+        case .readyForCeremony: "Ready. Tap to confirm"
         case .active: ""
         }
     }

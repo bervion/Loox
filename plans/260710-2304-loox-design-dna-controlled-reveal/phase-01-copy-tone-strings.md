@@ -1,6 +1,6 @@
 # Phase 1 — Copy-tone + string catalog sweep
 
-**Tier:** T1 · **Priority:** P1 · **Status:** pending · **Depends:** P0 · **Owns:** xcstrings baseline
+**Tier:** T1 · **Priority:** P1 · **Status:** completed · **Depends:** P0 · **Owns:** xcstrings baseline
 
 Enforce "short / calm / confident" copy. Remove `!` and `—` (em-dash) from user-facing EN + VI strings.
 
@@ -38,12 +38,12 @@ runtime via the in-app language toggle. No logic change.
 5. `make check` (string catalog compiles into both targets).
 
 ## Todo
-- [ ] Catalog `!`/`—` sweep EN
-- [ ] Catalog `!`/`—` sweep VI mirror
-- [ ] Onboarding welcome note rewritten
-- [ ] sharedBadge string de-em-dashed (hand to P2)
-- [ ] `Copied · clears in {n}s` key EN+VI
-- [ ] grep confirms zero stray `!`/`—` in touched literals
+- [x] Catalog `!`/`—` sweep EN
+- [x] Catalog `!`/`—` sweep VI mirror
+- [x] Onboarding welcome note rewritten
+- [ ] sharedBadge string de-em-dashed (hand to P2) — left for P2 per file ownership; suggested rewrite in report
+- [x] `Copied · clears in {n}s` key EN+VI
+- [x] grep confirms zero stray `!`/`—` in touched literals
 
 ## Success criteria
 - No `!` or `—` in user-facing EN/VI strings in the app's copy surfaces.

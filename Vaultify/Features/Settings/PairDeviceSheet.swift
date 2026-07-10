@@ -61,7 +61,7 @@ struct PairDeviceSheet: View {
         case .done:
             statusLayout(icon: Icons.checkCircle, tint: VaultColors.strengthStrong,
                          title: "Device Paired",
-                         detail: "Continue on your new device — it will finish setting up and download your vault.")
+                         detail: "Continue on your new device. It will finish setting up and download your vault.")
         case .failed(let message):
             VStack(spacing: Space.s4) {
                 PolarisIcon(Icons.shieldAlert, size: 48).foregroundStyle(VaultColors.strengthWeak)

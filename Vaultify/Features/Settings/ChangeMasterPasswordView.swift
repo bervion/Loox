@@ -20,7 +20,7 @@ struct ChangeMasterPasswordView: View {
         Form {
             Section {
                 VaultInfoBanner(.info, icon: Icons.key,
-                                text: "Your Vault Key doesn't change — Face ID unlock and your Emergency Kit keep working.")
+                                text: "Your Vault Key doesn't change. Face ID unlock and your Emergency Kit keep working.")
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }

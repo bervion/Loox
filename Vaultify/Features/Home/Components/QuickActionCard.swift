@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Reminders-style quick-action card: a colour tile with the icon in a glyph badge
-/// (top-left), an optional live count (top-right), and the label (bottom-left). Laid out
-/// two-up on Home. Each action keeps its decorative tint (accent / teal / purple / green).
+/// Compact quick-action tile: a colour tile with the icon centered and the label below,
+/// laid out in a single row on Home (compressed from the old 2×2 grid — Home DNA #1: the
+/// protagonist is credential content, quick actions are secondary). An optional live count
+/// renders as a small corner badge rather than a prominent number, per the same rationale.
 ///
 /// Surface is **tinted Liquid Glass on iOS 26** (interactive), with a flat colour fill on
 /// older OSes / Reduce Transparency. These are action controls (like the tab bar), not data
@@ -26,7 +27,7 @@ struct QuickActionCard: View {
     }
 }
 
-/// The visual content of a quick-action card, usable as a plain view — e.g. as the label
+/// The visual content of a quick-action tile, usable as a plain view — e.g. as the label
 /// of a `Menu` so the Add action can present an item-type menu instead of a single tap.
 struct QuickActionCardLabel: View {
     let icon: String
@@ -34,44 +35,54 @@ struct QuickActionCardLabel: View {
     let fill: Color
     var count: Int? = nil
 
+    /// Outer tile corner radius — shared by every quick-action tile so the glyph badge's
+    /// concentric inset (below) stays consistent regardless of which action it is.
+    fileprivate static let tileRadius = Radius.lg
+    /// Tile inner padding — the "inset" half of the concentric-radius formula for the badge.
+    fileprivate static let tilePadding = Space.s3
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: Space.s2) {
-                // Icon glyph — a Liquid-Glass badge inset into the card surface.
+        VStack(spacing: Space.s2) {
+            ZStack(alignment: .topTrailing) {
                 Color.clear
-                    .frame(width: 34, height: 34)
+                    .frame(width: 30, height: 30)
                     .modifier(GlyphBadgeSurface())
-                    .overlay(PolarisIcon(icon, size: 19).foregroundStyle(.white))
+                    .overlay(PolarisIcon(icon, size: 16).foregroundStyle(.white))
 
-                Spacer(minLength: Space.s2)
-
-                if let count {
-                    Text("\(count)")
-                        .font(.system(.title).weight(.bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
+                if let count, count > 0 {
+                    countBadge(count)
+                        .offset(x: 8, y: -8)
                 }
             }
 
-            Spacer(minLength: Space.s4)
-
             Text(label)
-                .vaultType(.subhead)
+                .vaultType(.caption)
                 .fontWeight(.semibold)
                 .foregroundStyle(.white)
-                .multilineTextAlignment(.leading)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
-        .padding(Space.s4)
-        .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
+        .padding(.horizontal, Space.s2)
+        .padding(.vertical, Self.tilePadding)
+        .frame(maxWidth: .infinity, minHeight: Metric.controlLarge + Space.s6)
         .modifier(QuickActionCardSurface(fill: fill))
-        .contentShape(.rect(cornerRadius: Radius.lg))
+        .contentShape(.rect(cornerRadius: Self.tileRadius))
+    }
+
+    /// Small corner badge — counts are secondary information now, not the tile's headline.
+    @ViewBuilder
+    private func countBadge(_ count: Int) -> some View {
+        Text("\(min(count, 99))")
+            .vaultType(.caption)
+            .fontWeight(.bold)
+            .foregroundStyle(fill)
+            .padding(3)
+            .frame(minWidth: 16, minHeight: 16)
+            .background(.white, in: Circle())
     }
 }
 
-/// Card surface: tinted Liquid Glass on iOS 26 (interactive), flat colour fill otherwise.
+/// Tile surface: tinted Liquid Glass on iOS 26 (interactive), flat colour fill otherwise.
 /// Mirrors the tab-bar surface's guard strategy (`#if compiler` + `#available` + Reduce
 /// Transparency fallback) so a pre-Xcode-26 CI build never sees the `glassEffect` symbol.
 private struct QuickActionCardSurface: ViewModifier {
@@ -79,7 +90,7 @@ private struct QuickActionCardSurface: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: QuickActionCardLabel.tileRadius, style: .continuous)
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(.regular.tint(fill).interactive(), in: shape)
@@ -93,12 +104,15 @@ private struct QuickActionCardSurface: ViewModifier {
 }
 
 /// Glyph badge surface: clear Liquid Glass on iOS 26 (reads as a glass well inset into the
-/// tinted card), else a subtle dark fill. Same guard strategy as the card surface.
+/// tinted tile), else a subtle dark fill. Same guard strategy as the tile surface. Radius is
+/// concentric to the tile's own radius + inset so the nested corners stay visually parallel
+/// (Design DNA #3) instead of pinched or flared.
 private struct GlyphBadgeSurface: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+        let radius = Radius.concentric(outer: QuickActionCardLabel.tileRadius, inset: QuickActionCardLabel.tilePadding)
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
             content.glassEffect(.regular, in: shape)
@@ -112,11 +126,11 @@ private struct GlyphBadgeSurface: ViewModifier {
 }
 
 /// Wraps content in a `GlassEffectContainer` on iOS 26 so every `glassEffect` inside shares
-/// one backdrop layer: a dense glass cluster (the 4 cards + their badges = 8 glass views)
-/// then renders in a single offscreen pass and updates together, instead of each re-sampling
-/// independently. This removes the "glassEffect tried to update multiple times per frame"
-/// warning on theme changes and cuts the GPU cost (each glass otherwise needs ~3 offscreen
-/// textures). No-op on older OSes.
+/// one backdrop layer: a dense glass cluster (4 tiles + their badges) then renders in a
+/// single offscreen pass and updates together, instead of each re-sampling independently.
+/// This removes the "glassEffect tried to update multiple times per frame" warning on theme
+/// changes and cuts the GPU cost (each glass otherwise needs ~3 offscreen textures). No-op on
+/// older OSes.
 struct VaultGlassGroup<Content: View>: View {
     @ViewBuilder var content: Content
 

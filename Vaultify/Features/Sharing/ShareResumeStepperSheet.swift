@@ -167,7 +167,7 @@ struct ShareResumeStepperSheet: View {
             case .accepted:
                 // They already accepted — re-sending the invite would be
                 // misleading; the wait is on their device publishing a profile.
-                Text("\(share.recipientLabel) accepted. Waiting for their device to finish setting up — usually right after they unlock Loox.")
+                Text("\(share.recipientLabel) accepted. Waiting for their device to finish setting up, usually right after they unlock Loox.")
                     .vaultType(.footnote).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
                 secondaryRow
@@ -252,7 +252,7 @@ struct ShareResumeStepperSheet: View {
             env.sharingStore.updateStatus(zoneName: share.zoneName, to: .accepted)
         }
         if liveShare.status == before {
-            noticeMessage = appString("No update yet — you'll see the step advance once they act.")
+            noticeMessage = appString("No update yet. You'll see the step advance once they act.")
         }
     }
 

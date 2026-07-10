@@ -102,7 +102,7 @@ struct PersonaAliasesScreen: View {
         .alert(Text("Add an email first"), isPresented: $missingEmail) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Add an email to this identity’s profile — that’s where your aliases forward to.")
+            Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
         }
     }
 

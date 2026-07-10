@@ -118,7 +118,7 @@ struct SettingsScreen: View {
                 } header: {
                     Text("Security")
                 } footer: {
-                    Text("Auto-Lock counts both time away from the app and idle time in it — \"Immediately\" locks the moment you leave, longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
+                    Text("Auto-Lock counts both time away from the app and idle time in it. \"Immediately\" locks the moment you leave; longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
                 }
                 .listRowBackground(VaultColors.surface)
 

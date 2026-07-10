@@ -100,6 +100,25 @@ from the parent instead of grabbing a scale token:
 A child radius larger than `outer − inset` reads "flared", smaller reads "pinched" — both break the
 visual parallel between the two corners. Standalone (non-nested) shapes keep using the fixed scale.
 
+## Loox Motion Language: Controlled Reveal
+
+The product physics of Loox is **reveal / conceal**: nothing is exposed before it needs to be, and
+every hidden↔visible state change speaks the same motion vocabulary. Do not invent a new effect for
+a new surface — pick the matching verb:
+
+| Transition | Verb | Shipped primitive |
+| --- | --- | --- |
+| Secret field reveal | glyphs **resolve** in place (dots → characters, left to right, fixed budget) | `GlyphResolveText` (`DesignSystem/Components/GlyphResolveText.swift`) |
+| Unlock | locked world **blurs away**, vault resolves behind it | `AnyTransition.controlledReveal` (`App/RootView.swift`) |
+| Lock | lock screen **contracts back in**; unlocked content vanishes instantly beneath (privacy) | same transition, insertion side |
+| Key derivation in flight | the ∞ **draws itself open** (gate working) | `LooxGateMark` / `LooxGateShape` (`DesignSystem/Components/LooxGateShape.swift`) |
+| Copy confirmation | clipboard glyph **morphs** to check + haptic tick | `CopyMorphIcon` (`DesignSystem/Components/CopyMorphIcon.swift`) |
+
+Rules: every verb collapses to an instant swap under Reduce Motion (`Animation.vault(_:reduceMotion:)`);
+motion never gates or delays a security result (the session flip always wins); durations stay inside the
+`Motion` token range (≤ ~0.4s). Whole-field crossfades on secrets are the anti-pattern — the value should
+read as *decrypting*, not fading in.
+
 ## Theme And Contrast
 
 ### Status (resolved)

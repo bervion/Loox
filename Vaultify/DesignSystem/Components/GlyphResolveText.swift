@@ -25,7 +25,10 @@ struct GlyphResolveText: View {
             .font(font)
             .lineLimit(isRevealed ? nil : 1)
             .accessibilityLabel(isRevealed ? Text(verbatim: text) : Text("Hidden value"))
-            .task(id: isRevealed) { await resolve() }
+            // Keyed on the revealed VALUE too: if the text changes while revealed
+            // (edit/sync), the resolve re-runs instead of leaving stale mask dots.
+            // The id is an in-memory Equatable only — never logged or persisted.
+            .task(id: isRevealed ? "revealed:\(text)" : "concealed") { await resolve() }
     }
 
     /// Resolved prefix + dot remainder while animating; the fixed mask when concealed.

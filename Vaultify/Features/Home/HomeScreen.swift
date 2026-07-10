@@ -1,8 +1,13 @@
 import SwiftUI
 
-/// Home tab — DS-spec composition (Phase 5):
-/// Header → Search entry → Quick actions → TOTP scroller → Needs Attention →
-/// Favorites → All items → Empty state when vault is empty.
+/// Home tab — credential-first composition (Design DNA pass, Phase 3):
+/// Header → pending shares / approval alerts → TOTP scroller → Needs Attention →
+/// Recently Used → Favorites → All items → profile strip → compact quick actions →
+/// Empty state when vault is empty.
+///
+/// The protagonist of this screen is "find and use a credential instantly" — live
+/// credential content leads the scroll, profile identity and secondary actions
+/// (Add/Generate/2FA/Watchtower) sit below it as a thin strip + compact row.
 ///
 /// `selectedFolderId` nil = "All Spaces" (no folder filter). Every section is
 /// filtered by the selected folder and renders only when non-empty.
@@ -39,6 +44,12 @@ struct HomeScreen: View {
 
     private var favoriteItems: [VaultItem] {
         env.repository.favorites(folder: selectedFolderId)
+    }
+
+    /// Capped small (5) so it stays a quick "reach for it again" strip rather than
+    /// duplicating the All items list below it.
+    private var recentlyUsedItems: [VaultItem] {
+        env.repository.recentlyUsed(folder: selectedFolderId, limit: 5)
     }
 
     private var allItems: [VaultItem] {
@@ -168,33 +179,36 @@ struct HomeScreen: View {
                 VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    // 2. Profile entry (avatar + name + email) → opens the Profile sheet.
-                    profileRow
+                    // Protagonist band — live/urgent credential content leads the screen
+                    // (find & use a credential instantly). Order: time-sensitive share/approval
+                    // alerts, then TOTP, Needs Attention, Recently Used, Favorites, All items.
 
-                    // 3. Quick actions grid (Reminders-style colour cards)
-                    quickActionsGrid
-
-                    // 3b. Shares I sent that are still pending (design 12a):
-                    // first-class, persists across app kill — not tied to
-                    // whichever sheet created it.
+                    // 1. Shares I sent that are still pending (design 12a): first-class,
+                    // persists across app kill — not tied to whichever sheet created it.
                     if !pendingOutgoingShares.isEmpty {
                         pendingSharesSection
                     }
 
-                    // 4. Pending approval requests (owner side): one → open the
+                    // 2. Pending approval requests (owner side): one → open the
                     // ceremony directly; several → the notifications inbox.
                     if !env.approvalCoordinator.pendingOwnerRequests.isEmpty {
                         approvalAttentionRow
                     }
 
-                    // 5. TOTP scroller (only when items with TOTP exist)
+                    // 3. TOTP scroller (only when items with TOTP exist)
                     if !totpItems.isEmpty {
                         totpSection
                     }
 
-                    // 5. Needs attention (max 4)
+                    // 4. Needs attention (max 4)
                     if !attentionItems.isEmpty {
                         attentionSection
+                    }
+
+                    // 5. Recently used — "reach for it again" signal, distinct from All
+                    // items' edit-time sort. Capped small so it never duplicates All items.
+                    if !recentlyUsedItems.isEmpty {
+                        recentlyUsedSection
                     }
 
                     // 6. Favorites
@@ -204,6 +218,12 @@ struct HomeScreen: View {
 
                     // 7. All items (pinned first)
                     allItemsSection
+
+                    // 8. Profile identity strip (thin — no longer the protagonist).
+                    profileRow
+
+                    // 9. Compact quick-actions row (Add/Generate/2FA/Watchtower).
+                    quickActionsRow
                 }
                 .padding(.horizontal, Space.gutter)
                 // Bottom inset so the floating tab bar never obscures the last row.
@@ -324,70 +344,65 @@ struct HomeScreen: View {
         return kind
     }
 
-    /// Profile entry row above the quick actions: avatar + "Profile" title + the default
-    /// identity's name & email. Tapping opens the Profile sheet (same as the old header icon).
+    /// Thin single-line identity strip below the protagonist band: small avatar + active
+    /// persona name + chevron. No longer a weighted card (Home's protagonist is credential
+    /// content, not profile) — persona kind/email still reaches VoiceOver via the
+    /// accessibility label so the active-persona semantics stay discoverable (INV-R03).
     private var profileRow: some View {
         Button { uiState.homePath.append(ProfileRoute()) } label: {
             HStack(spacing: Space.s3) {
                 profileAvatar
-                VStack(alignment: .leading, spacing: 2) {
-                    // The active persona is the header identity — always visible so it's
-                    // clear which identity you're acting as. Tapping opens Profile to switch.
-                    Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
-                        .vaultType(.headline).themedForeground().lineLimit(1)
-                    Text(verbatim: personaSubtitle)
-                        .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
-                }
+                Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
+                    .vaultType(.subhead).themedForeground().lineLimit(1)
                 Spacer(minLength: Space.s2)
                 PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
-            .padding(Space.s4)
+            .padding(.horizontal, Space.s2)
+            .padding(.vertical, Space.s2)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(rgb: env.theme.active.elevatedBackground))
-            .vaultCornerRadius(Radius.lg)
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-            )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: "\(env.repository.activePersona?.displayName ?? appString("Profile")), \(personaSubtitle)"))
     }
 
-    /// 44pt circular avatar — stored image, letter-avatar, or a person glyph when no identity.
+    /// 28pt compact avatar — stored image, letter-avatar, or a person glyph when no identity.
+    /// Radius is concentric to the (removed) card scale so it stays visually consistent with
+    /// other inset-avatar treatments in the app.
     @ViewBuilder private var profileAvatar: some View {
-        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        let avatarSize: CGFloat = 28
+        let cornerRadius = Radius.concentric(outer: Radius.lg, inset: Space.s4)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         // The ACTIVE persona's own card — never another persona's (an anonymous
         // persona must not wear the personal photo).
         if let identity = env.repository.activeProfileItem {
             if let image = env.repository.avatarImage(for: identity.id) {
                 Image(platformImage: image).resizable().scaledToFill()
-                    .frame(width: 44, height: 44).clipShape(shape)
+                    .frame(width: avatarSize, height: avatarSize).clipShape(shape)
             } else {
-                ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: 44)
+                ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: avatarSize)
                     .clipShape(shape)
             }
         } else {
-            PolarisIcon(Icons.person, size: Metric.iconUtility)
+            PolarisIcon(Icons.person, size: Metric.iconInline)
                 .themedForeground(.accent)
-                .frame(width: 44, height: 44)
+                .frame(width: avatarSize, height: avatarSize)
                 .background(Color(rgb: env.theme.active.accentSoft), in: shape)
         }
     }
 
     // MARK: Quick actions
 
-    /// Reminders-style quick-action cards in a 2-up grid: Add · Generate (top row),
-    /// 2FA · Watchtower (bottom row). 2FA and Watchtower carry a live count badge.
-    private var quickActionsGrid: some View {
-        // One GlassEffectContainer for all 8 glass views (4 cards + 4 badges) → a single
+    /// Compact single-row quick actions: Add · Generate · 2FA · Watchtower. Compressed from
+    /// the old 2×2 grid — this band is secondary now (protagonist = credential content
+    /// above), so counts on 2FA/Watchtower shrink to a small corner badge rather than a
+    /// prominent number. All 4 destinations stay reachable in one row.
+    private var quickActionsRow: some View {
+        // One GlassEffectContainer for all glass views (4 tiles + badges) → a single
         // backdrop layer; fixes the per-frame glass-update warning on theme changes.
         VaultGlassGroup {
-        LazyVGrid(
-            columns: [GridItem(.flexible(), spacing: Space.s3),
-                      GridItem(.flexible(), spacing: Space.s3)],
-            spacing: Space.s3
-        ) {
+        HStack(spacing: Space.s3) {
             // Add — presents the item-type menu (uses ic_page_add, matches the header).
             Menu {
                 newItemMenuItems
@@ -398,8 +413,8 @@ struct HomeScreen: View {
                     fill: Color(rgb: env.theme.active.accent)
                 )
             }
-            // Plain card menu — macOS would otherwise draw a bordered pull-down button
-            // around the whole card, breaking the 2-up grid's visual consistency.
+            // Plain tile menu — macOS would otherwise draw a bordered pull-down button
+            // around the whole tile, breaking the compact row's visual consistency.
             .menuStyle(.button)
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
@@ -463,6 +478,22 @@ struct HomeScreen: View {
                         onOpen: { uiState.homePath.append($0.id) },
                         showDivider: idx < attentionItems.count - 1
                     )
+                }
+            }
+        }
+    }
+
+    // MARK: Recently used
+
+    private var recentlyUsedSection: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            homeSectionHeader(
+                title: LocalizedStringResource("Recently Used").inAppLocalized
+            )
+
+            groupedCard {
+                ForEach(Array(recentlyUsedItems.enumerated()), id: \.element.id) { idx, item in
+                    itemRow(item, showDivider: idx < recentlyUsedItems.count - 1)
                 }
             }
         }
@@ -622,7 +653,10 @@ struct HomeScreen: View {
         .padding(.bottom, Space.s1)
     }
 
-    /// Grouped card container (surface-base, Radius.lg, hairline stroke).
+    /// Grouped card container (surface-base, Radius.lg). Card-diet: the hairline stroke is
+    /// dropped in favor of `.elevation(.level1)` — the soft shadow plus the
+    /// elevatedBackground/groupedBackground contrast still reads as grouped in both light
+    /// and dark mode without an extra border line.
     @ViewBuilder
     private func groupedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
@@ -630,10 +664,7 @@ struct HomeScreen: View {
         }
         .background(Color(rgb: env.theme.active.elevatedBackground))
         .vaultCornerRadius(Radius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-        )
+        .elevation(.level1)
     }
 
     /// A tappable item row reusing VaultItemRow inside the grouped card.

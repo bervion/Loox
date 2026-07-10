@@ -496,12 +496,12 @@
         }
       }
     },
-    "Accent applies instantly across the app — no restart needed.": {
+    "Accent applies instantly across the app. No restart needed.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Màu nhấn áp dụng tức thì cho toàn bộ ứng dụng — không cần khởi động lại."
+            "value": "Màu nhấn áp dụng tức thì cho toàn bộ ứng dụng. Không cần khởi động lại."
           }
         }
       }
@@ -526,34 +526,34 @@
         }
       }
     },
-    "Accepted — finishing": {
+    "Accepted. Finishing": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accepted — finishing"
+            "value": "Accepted. Finishing"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã chấp nhận — đang hoàn tất"
+            "value": "Đã chấp nhận. Đang hoàn tất"
           }
         }
       }
     },
-    "Accepted — finishing on their device": {
+    "Accepted. Finishing on their device": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accepted — finishing on their device"
+            "value": "Accepted. Finishing on their device"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã chấp nhận — đang hoàn tất trên máy họ"
+            "value": "Đã chấp nhận. Đang hoàn tất trên máy họ"
           }
         }
       }
@@ -578,18 +578,18 @@
         }
       }
     },
-    "Access is tied to this iCloud account — only they can accept, and there's no link that works for anyone else.": {
+    "Access is tied to this iCloud account. Only they can accept, and no link works for anyone else.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Access is tied to this iCloud account — only they can accept, and there's no link that works for anyone else."
+            "value": "Access is tied to this iCloud account. Only they can accept, and no link works for anyone else."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quyền truy cập gắn với tài khoản iCloud này — chỉ họ mới có thể chấp nhận, không có liên kết nào dùng được cho người khác."
+            "value": "Quyền truy cập gắn với tài khoản iCloud này. Chỉ họ mới có thể chấp nhận, không có liên kết nào dùng được cho người khác."
           }
         }
       }
@@ -730,12 +730,12 @@
         }
       }
     },
-    "Add an email to this identity’s profile — that’s where your aliases forward to.": {
+    "Add an email to this identity’s profile. That’s where your aliases forward to.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm email vào hồ sơ của danh tính này — đó là nơi email ẩn danh chuyển thư về."
+            "value": "Thêm email vào hồ sơ của danh tính này. Đó là nơi email ẩn danh chuyển thư về."
           }
         }
       }
@@ -1165,12 +1165,12 @@
         }
       }
     },
-    "Anyone who has this kit and access to your iCloud can restore your vault — no master password needed. Keep it offline and private.": {
+    "Anyone who has this kit and access to your iCloud can restore your vault, no master password needed. Keep it offline and private.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bất kỳ ai có bộ kit này và quyền truy cập iCloud của bạn đều có thể khôi phục kho — không cần mật khẩu chính. Hãy giữ nó ngoại tuyến và riêng tư."
+            "value": "Bất kỳ ai có bộ kit này và quyền truy cập iCloud của bạn đều có thể khôi phục kho, không cần mật khẩu chính. Hãy giữ nó ngoại tuyến và riêng tư."
           }
         }
       }
@@ -1261,18 +1261,18 @@
         }
       }
     },
-    "Approval was interrupted — request again": {
+    "Approval was interrupted. Request again": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Approval was interrupted — request again"
+            "value": "Approval was interrupted. Request again"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phê duyệt bị gián đoạn — hãy yêu cầu lại"
+            "value": "Phê duyệt bị gián đoạn. Hãy yêu cầu lại"
           }
         }
       }
@@ -1293,12 +1293,12 @@
         }
       }
     },
-    "Approval-based access over iCloud — you stay in control of every use.": {
+    "Approval-based access over iCloud. You stay in control of every use.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cấp quyền qua iCloud với cơ chế phê duyệt — bạn kiểm soát mỗi lần sử dụng."
+            "value": "Cấp quyền qua iCloud với cơ chế phê duyệt. Bạn kiểm soát mỗi lần sử dụng."
           }
         }
       }
@@ -1465,19 +1465,18 @@
         }
       }
     },
-    "Ask %@ to read the code shown on their device. Confirm only if both codes match exactly — this is what proves you're sharing with the right person.": {
-      "extractionState": "stale",
+    "Ask %@ to read the code shown on their device. Confirm only if both codes match exactly. This is what proves you're sharing with the right person.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ask %@ to read the code shown on their device. Confirm only if both codes match exactly — this is what proves you're sharing with the right person."
+            "value": "Ask %@ to read the code shown on their device. Confirm only if both codes match exactly. This is what proves you're sharing with the right person."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhờ %@ đọc mã hiển thị trên thiết bị của họ. Chỉ xác nhận khi hai mã trùng khớp hoàn toàn — đây là cách chứng minh bạn đang chia sẻ đúng người."
+            "value": "Nhờ %@ đọc mã hiển thị trên thiết bị của họ. Chỉ xác nhận khi hai mã trùng khớp hoàn toàn. Đây là cách chứng minh bạn đang chia sẻ đúng người."
           }
         }
       }
@@ -1585,12 +1584,12 @@
         }
       }
     },
-    "Auto-Lock counts both time away from the app and idle time in it — \"Immediately\" locks the moment you leave, longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.": {
+    "Auto-Lock counts both time away from the app and idle time in it. \"Immediately\" locks the moment you leave; longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động khoá tính cả thời gian rời app lẫn thời gian không thao tác trong app — \"Ngay lập tức\" khoá ngay khi bạn rời đi, các mốc dài hơn cho phép bạn sao chép sang app khác rồi quay lại mà không phải xác thực lại.\n\nNâng cấp passkey tự động có thể tạo passkey ở chế độ nền với khoá công khai chỉ ghi. Việc đọc hoặc dùng passkey vẫn yêu cầu mở khoá kho."
+            "value": "Tự động khoá tính cả thời gian rời app lẫn thời gian không thao tác trong app. \"Ngay lập tức\" khoá ngay khi bạn rời đi; các mốc dài hơn cho phép bạn sao chép sang app khác rồi quay lại mà không phải xác thực lại.\n\nNâng cấp passkey tự động có thể tạo passkey ở chế độ nền với khoá công khai chỉ ghi. Việc đọc hoặc dùng passkey vẫn yêu cầu mở khoá kho."
           }
         }
       }
@@ -2336,13 +2335,12 @@
         }
       }
     },
-    "Coming soon — a receive-only private email relay.": {
-      "extractionState": "stale",
+    "Coming soon: a receive-only private email relay.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sắp ra mắt — dịch vụ chuyển tiếp email riêng tư chỉ nhận."
+            "value": "Sắp ra mắt: dịch vụ chuyển tiếp email riêng tư chỉ nhận."
           }
         }
       }
@@ -2546,12 +2544,12 @@
         }
       }
     },
-    "Continue on your new device — it will finish setting up and download your vault.": {
+    "Continue on your new device. It will finish setting up and download your vault.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tiếp tục trên thiết bị mới — thiết bị sẽ hoàn tất thiết lập và tải kho của bạn về."
+            "value": "Tiếp tục trên thiết bị mới. Thiết bị sẽ hoàn tất thiết lập và tải kho của bạn về."
           }
         }
       }
@@ -2818,12 +2816,12 @@
         }
       }
     },
-    "Create an encrypted link that opens anywhere — no app needed. Expires automatically.": {
+    "Create an encrypted link that opens anywhere, no app needed. Expires automatically.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo liên kết mã hoá mở được ở bất kỳ đâu — không cần cài ứng dụng. Tự động hết hạn."
+            "value": "Tạo liên kết mã hoá mở được ở bất kỳ đâu, không cần cài ứng dụng. Tự động hết hạn."
           }
         }
       }
@@ -4057,13 +4055,13 @@
         }
       }
     },
-    "Every account you own — your money, your photos, your conversations — hangs on a handful of passwords. We think the thing that holds them should answer to you, and no one else.": {
+    "Every account you own, your money, your photos, your conversations, hangs on a handful of passwords. We think the thing that holds them should answer to you, and no one else.": {
       "comment": "About: hero sub body.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi tài khoản bạn có — tiền bạc, ảnh, những cuộc trò chuyện — đều phụ thuộc vào vài mật khẩu. Chúng tôi tin rằng thứ nắm giữ chúng phải chịu trách nhiệm với bạn, và không ai khác."
+            "value": "Mọi tài khoản bạn có, tiền bạc, ảnh, những cuộc trò chuyện, đều phụ thuộc vào vài mật khẩu. Chúng tôi tin rằng thứ nắm giữ chúng phải chịu trách nhiệm với bạn, và không ai khác."
           }
         }
       }
@@ -4103,23 +4101,23 @@
         }
       }
     },
-    "Everything is encrypted on this iPhone. The server stores only ciphertext — the decryption key travels inside the link and is never sent to any server.": {
+    "Everything is encrypted on this iPhone. The server stores only ciphertext; the decryption key travels inside the link and is never sent to any server.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi thứ được mã hoá ngay trên iPhone này. Máy chủ chỉ lưu bản mã — khoá giải mã nằm trong liên kết và không bao giờ được gửi tới máy chủ."
+            "value": "Mọi thứ được mã hoá ngay trên iPhone này. Máy chủ chỉ lưu bản mã; khoá giải mã nằm trong liên kết và không bao giờ được gửi tới máy chủ."
           }
         }
       }
     },
-    "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone — to iCloud, to another device — it leaves already locked. We couldn't read it if we wanted to. Nobody can.": {
+    "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.": {
       "comment": "About: promise 1 body.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi thứ đều được niêm phong bằng AES-256 trước khi chạm vào bộ nhớ. Nếu dữ liệu rời iPhone của bạn — lên iCloud, sang thiết bị khác — nó rời đi trong trạng thái đã khoá. Chúng tôi muốn đọc cũng không được. Không ai đọc được."
+            "value": "Mọi thứ đều được niêm phong bằng AES-256 trước khi chạm vào bộ nhớ. Nếu dữ liệu rời iPhone của bạn, lên iCloud, sang thiết bị khác, nó rời đi trong trạng thái đã khoá. Chúng tôi muốn đọc cũng không được. Không ai đọc được."
           }
         }
       }
@@ -4166,13 +4164,13 @@
         }
       }
     },
-    "Export everything, anytime, in formats other apps read. Your Emergency Kit recovers your vault without us. A lock that only locks in is a cage — Loox is a door, and you hold the key.": {
+    "Export everything, anytime, in formats other apps read. Your Emergency Kit recovers your vault without us. A lock that only locks in is a cage. Loox is a door, and you hold the key.": {
       "comment": "About: promise 3 body.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xuất mọi thứ, bất cứ lúc nào, ở định dạng các app khác đọc được. Emergency Kit khôi phục kho của bạn mà không cần đến chúng tôi. Ổ khoá chỉ biết nhốt là cái lồng — Loox là cánh cửa, và bạn giữ chìa khoá."
+            "value": "Xuất mọi thứ, bất cứ lúc nào, ở định dạng các app khác đọc được. Emergency Kit khôi phục kho của bạn mà không cần đến chúng tôi. Ổ khoá chỉ biết nhốt là cái lồng. Loox là cánh cửa, và bạn giữ chìa khoá."
           }
         }
       }
@@ -4238,18 +4236,18 @@
         }
       }
     },
-    "Extra-protected — not shareable": {
+    "Extra-protected, not shareable": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Extra-protected — not shareable"
+            "value": "Extra-protected, not shareable"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bảo vệ tăng cường — không thể chia sẻ"
+            "value": "Bảo vệ tăng cường, không thể chia sẻ"
           }
         }
       }
@@ -4650,12 +4648,12 @@
         }
       }
     },
-    "Hand Over — Can't Be Taken Back": {
+    "Hand Over: Can't Be Taken Back": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giao hẳn — không thể rút lại"
+            "value": "Giao hẳn: không thể rút lại"
           }
         }
       }
@@ -5228,15 +5226,14 @@
         }
       }
     },
-    "Items are end-to-end encrypted before they sync. iCloud stores only ciphertext — neither Apple nor anyone else can read your vault.": {
+    "Items are end-to-end encrypted before they sync. iCloud stores only ciphertext; neither Apple nor anyone else can read your vault.": {
       "comment": "A description of how iCloud sync works.",
-      "extractionState": "stale",
       "isCommentAutoGenerated": true,
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục được mã hóa đầu cuối trước khi đồng bộ. iCloud chỉ lưu bản mã — cả Apple lẫn bất kỳ ai khác đều không đọc được kho của bạn."
+            "value": "Các mục được mã hóa đầu cuối trước khi đồng bộ. iCloud chỉ lưu bản mã; cả Apple lẫn bất kỳ ai khác đều không đọc được kho của bạn."
           }
         }
       }
@@ -5295,12 +5292,12 @@
         }
       }
     },
-    "Keep Loox open until the update finishes. You can safely retry — finished addresses aren’t repeated.": {
+    "Keep Loox open until the update finishes. You can safely retry; finished addresses aren’t repeated.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giữ Loox mở đến khi cập nhật xong. Có thể thử lại an toàn — địa chỉ đã xong sẽ không lặp lại."
+            "value": "Giữ Loox mở đến khi cập nhật xong. Có thể thử lại an toàn; địa chỉ đã xong sẽ không lặp lại."
           }
         }
       }
@@ -6312,14 +6309,14 @@
         }
       }
     },
-    "No Emergency Kit yet — generate one to enable recovery.": {
+    "No Emergency Kit yet. Generate one to enable recovery.": {
       "comment": "A description of the Emergency Kit.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có Bộ khôi phục — hãy tạo một bộ để bật khả năng khôi phục."
+            "value": "Chưa có Bộ khôi phục. Hãy tạo một bộ để bật khả năng khôi phục."
           }
         }
       }
@@ -6413,12 +6410,12 @@
         }
       }
     },
-    "No need to wait here — they'll get a notification, and we'll ping you the moment they accept. You can track it anytime from Home.": {
+    "No need to wait here. They'll get a notification, and we'll ping you the moment they accept. You can track it anytime from Home.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn không cần đợi ở đây — họ sẽ nhận được thông báo, và chúng tôi sẽ báo cho bạn ngay khi họ chấp nhận. Bạn có thể theo dõi bất cứ lúc nào từ Home."
+            "value": "Bạn không cần đợi ở đây. Họ sẽ nhận được thông báo, và chúng tôi sẽ báo cho bạn ngay khi họ chấp nhận. Bạn có thể theo dõi bất cứ lúc nào từ Home."
           }
         }
       }
@@ -7077,22 +7074,22 @@
         }
       }
     },
-    "Pairing failed — try again with a fresh QR code.": {
+    "Pairing failed. Try again with a fresh QR code.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ghép nối thất bại — hãy thử lại với mã QR mới."
+            "value": "Ghép nối thất bại. Hãy thử lại với mã QR mới."
           }
         }
       }
     },
-    "Pairing succeeded. Now create a master password to unlock Loox on this device — it can match your other device or be different, and it never syncs.": {
+    "Pairing succeeded. Now create a master password to unlock Loox on this device. It can match your other device or be different, and it never syncs.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ghép nối thành công. Giờ hãy tạo mật khẩu chính để mở khóa Loox trên thiết bị này — có thể giống thiết bị kia hoặc khác, và không bao giờ được đồng bộ."
+            "value": "Ghép nối thành công. Giờ hãy tạo mật khẩu chính để mở khóa Loox trên thiết bị này. Có thể giống thiết bị kia hoặc khác, và không bao giờ được đồng bộ."
           }
         }
       }
@@ -7698,24 +7695,24 @@
         }
       }
     },
-    "Protected — manage in the item view": {
+    "Protected. Manage in the item view": {
       "comment": "A description of a field that is protected and cannot be edited.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã bảo vệ — quản lý trong màn hình mục"
+            "value": "Đã bảo vệ. Quản lý trong màn hình mục"
           }
         }
       }
     },
-    "Protected — tap to reveal": {
+    "Protected. Tap to reveal": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã bảo vệ — chạm để hiện"
+            "value": "Đã bảo vệ. Chạm để hiện"
           }
         }
       }
@@ -7805,18 +7802,18 @@
         }
       }
     },
-    "Ready — tap to confirm": {
+    "Ready. Tap to confirm": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ready — tap to confirm"
+            "value": "Ready. Tap to confirm"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sẵn sàng — chạm để xác nhận"
+            "value": "Sẵn sàng. Chạm để xác nhận"
           }
         }
       }
@@ -8749,13 +8746,12 @@
         }
       }
     },
-    "Send the invitation link — the first share with someone always needs it. After they accept once, future shares notify their device automatically.": {
-      "extractionState": "stale",
+    "Send the invitation link. The first share with someone always needs it. After they accept once, future shares notify their device automatically.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gửi liên kết mời — lần chia sẻ đầu tiên với một người luôn cần liên kết. Sau khi họ chấp nhận một lần, những lần chia sẻ sau sẽ tự động thông báo tới thiết bị của họ."
+            "value": "Gửi liên kết mời. Lần chia sẻ đầu tiên với một người luôn cần liên kết. Sau khi họ chấp nhận một lần, những lần chia sẻ sau sẽ tự động thông báo tới thiết bị của họ."
           }
         }
       }
@@ -9039,13 +9035,13 @@
         }
       }
     },
-    "Share a password, pair a device, open on a computer — every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.": {
+    "Share a password, pair a device, open on a computer. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.": {
       "comment": "About: promise 2 body.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ mật khẩu, ghép nối thiết bị, mở trên máy tính — mỗi lần trao tay đều buộc hai bên đối chiếu mã trước khi bất cứ thứ gì di chuyển. Một nghi thức nhỏ, có chủ đích. Bí mật xứng đáng được như vậy."
+            "value": "Chia sẻ mật khẩu, ghép nối thiết bị, mở trên máy tính. Mỗi lần trao tay đều buộc hai bên đối chiếu mã trước khi bất cứ thứ gì di chuyển. Một nghi thức nhỏ, có chủ đích. Bí mật xứng đáng được như vậy."
           }
         }
       }
@@ -9314,18 +9310,18 @@
         }
       }
     },
-    "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use — the secret never leaves your vault.": {
+    "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use. The secret never leaves your vault.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use — the secret never leaves your vault."
+            "value": "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use. The secret never leaves your vault."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giá trị được chia sẻ sẽ hiển thị với họ và không thể thu hồi sau này. Mã \"Hỏi mỗi lần\" cần bạn phê duyệt cho từng lần dùng — bí mật không bao giờ rời kho của bạn."
+            "value": "Giá trị được chia sẻ sẽ hiển thị với họ và không thể thu hồi sau này. Mã \"Hỏi mỗi lần\" cần bạn phê duyệt cho từng lần dùng. Bí mật không bao giờ rời kho của bạn."
           }
         }
       }
@@ -9389,18 +9385,12 @@
         }
       }
     },
-    "Shared with you — you can use what's listed here, but not edit it.": {
+    "Shared with you. You can use what's listed here, but not edit it.": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Shared with you — you can use what's listed here, but not edit it."
-          }
-        },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Được chia sẻ với bạn — bạn có thể dùng những gì liệt kê ở đây, nhưng không chỉnh sửa được."
+            "value": "Được chia sẻ với bạn. Bạn có thể dùng những gì liệt kê ở đây, nhưng không chỉnh sửa được."
           }
         }
       }
@@ -9451,18 +9441,18 @@
         }
       }
     },
-    "Sharing isn't available right now — check iCloud and notification permissions.": {
+    "Sharing isn't available right now. Check iCloud and notification permissions.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sharing isn't available right now — check iCloud and notification permissions."
+            "value": "Sharing isn't available right now. Check iCloud and notification permissions."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiện chưa thể chia sẻ — hãy kiểm tra iCloud và quyền thông báo."
+            "value": "Hiện chưa thể chia sẻ. Hãy kiểm tra iCloud và quyền thông báo."
           }
         }
       }
@@ -9487,15 +9477,14 @@
         }
       }
     },
-    "Short or low-entropy — easy to crack.": {
+    "Short or low-entropy, easy to crack.": {
       "comment": "A description of why a password is considered weak.",
-      "extractionState": "stale",
       "isCommentAutoGenerated": true,
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ngắn hoặc độ ngẫu nhiên thấp — dễ bị bẻ khóa."
+            "value": "Ngắn hoặc độ ngẫu nhiên thấp, dễ bị bẻ khóa."
           }
         }
       }
@@ -9556,18 +9545,18 @@
         }
       }
     },
-    "Sign in to iCloud to share access. Sharing uses an encrypted approval transport — it does not turn on vault sync.": {
+    "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign in to iCloud to share access. Sharing uses an encrypted approval transport — it does not turn on vault sync."
+            "value": "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đăng nhập iCloud để chia sẻ quyền truy cập. Tính năng này dùng kênh phê duyệt mã hóa — không bật đồng bộ kho."
+            "value": "Đăng nhập iCloud để chia sẻ quyền truy cập. Tính năng này dùng kênh phê duyệt mã hóa; không bật đồng bộ kho."
           }
         }
       }
@@ -9864,12 +9853,12 @@
         }
       }
     },
-    "Still waiting — you can close this screen and finish later, or tap Check Now.": {
+    "Still waiting. You can close this screen and finish later, or tap Check Now.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vẫn đang chờ — bạn có thể đóng màn hình này và hoàn tất sau, hoặc bấm Kiểm tra ngay."
+            "value": "Vẫn đang chờ. Bạn có thể đóng màn hình này và hoàn tất sau, hoặc bấm Kiểm tra ngay."
           }
         }
       }
@@ -9890,23 +9879,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cất ở nơi an toàn (cùng hộ chiếu, di chúc, hoặc ngăn kéo có khóa)."
-          }
-        }
-      }
-    },
-    "Store it somewhere safe and offline — it is shown only once.": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Store it somewhere safe and offline — it is shown only once."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hãy lưu ở nơi an toàn, ngoại tuyến — chỉ hiển thị một lần."
           }
         }
       }
@@ -10200,18 +10172,18 @@
         }
       }
     },
-    "The code expired — request again": {
+    "The code expired. Request again": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The code expired — request again"
+            "value": "The code expired. Request again"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã đã hết hạn — hãy yêu cầu lại"
+            "value": "Mã đã hết hạn. Hãy yêu cầu lại"
           }
         }
       }
@@ -10439,12 +10411,12 @@
         }
       }
     },
-    "Their device was notified automatically too — the Messages link below is just a backup.": {
+    "Their device was notified automatically too. The Messages link below is just a backup.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thiết bị của họ cũng đã được thông báo tự động — liên kết Messages bên dưới chỉ là phương án dự phòng."
+            "value": "Thiết bị của họ cũng đã được thông báo tự động. Liên kết Messages bên dưới chỉ là phương án dự phòng."
           }
         }
       }
@@ -10490,19 +10462,18 @@
         }
       }
     },
-    "They accepted — finishing setup on their device…": {
-      "extractionState": "stale",
+    "They accepted. Finishing setup on their device…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "They accepted — finishing setup on their device…"
+            "value": "They accepted. Finishing setup on their device…"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ đã chấp nhận — đang hoàn tất thiết lập trên máy họ…"
+            "value": "Họ đã chấp nhận. Đang hoàn tất thiết lập trên máy họ…"
           }
         }
       }
@@ -10517,12 +10488,12 @@
         }
       }
     },
-    "They can use what you allowed — revoke anytime.": {
+    "They can use what you allowed. Revoke anytime.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ có thể dùng những gì bạn cho phép — thu hồi bất cứ lúc nào."
+            "value": "Họ có thể dùng những gì bạn cho phép. Thu hồi bất cứ lúc nào."
           }
         }
       }
@@ -10595,18 +10566,18 @@
         }
       }
     },
-    "They received a one-time code. It expires with the current window — nothing else was shared.": {
+    "They received a one-time code. It expires with the current window; nothing else was shared.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "They received a one-time code. It expires with the current window — nothing else was shared."
+            "value": "They received a one-time code. It expires with the current window; nothing else was shared."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ đã nhận một mã dùng một lần. Mã hết hạn theo chu kỳ hiện tại — không có gì khác được chia sẻ."
+            "value": "Họ đã nhận một mã dùng một lần. Mã hết hạn theo chu kỳ hiện tại; không có gì khác được chia sẻ."
           }
         }
       }
@@ -10621,44 +10592,44 @@
         }
       }
     },
-    "They'll be able to use it without asking you, on their own device. Revoking later only stops updates — a key already handed over can't be pulled back.": {
+    "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a key already handed over can't be pulled back.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "They'll be able to use it without asking you, on their own device. Revoking later only stops updates — a key already handed over can't be pulled back."
+            "value": "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a key already handed over can't be pulled back."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ sẽ dùng được mà không cần hỏi bạn, trên máy của họ. Thu hồi sau chỉ dừng cập nhật — key đã giao thì không thể lấy lại."
+            "value": "Họ sẽ dùng được mà không cần hỏi bạn, trên máy của họ. Thu hồi sau chỉ dừng cập nhật; key đã giao thì không thể lấy lại."
           }
         }
       }
     },
-    "They'll be able to use it without asking you, on their own device. Revoking later only stops updates — a secret already handed over can't be pulled back. To truly revoke it, change it at the website.": {
+    "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a secret already handed over can't be pulled back. To truly revoke it, change it at the website.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ sẽ dùng được mà không cần hỏi bạn, ngay trên thiết bị của họ. Thu hồi sau này chỉ chặn cập nhật — bí mật đã giao thì không rút lại được. Muốn thu hồi thật sự, hãy đổi nó tại trang web."
+            "value": "Họ sẽ dùng được mà không cần hỏi bạn, ngay trên thiết bị của họ. Thu hồi sau này chỉ chặn cập nhật; bí mật đã giao thì không rút lại được. Muốn thu hồi thật sự, hãy đổi nó tại trang web."
           }
         }
       }
     },
-    "They've accepted. Their device finishes automatically the next time they open Loox and unlock — this can take a moment.": {
+    "They've accepted. Their device finishes automatically the next time they open Loox and unlock. This can take a moment.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "They've accepted. Their device finishes automatically the next time they open Loox and unlock — this can take a moment."
+            "value": "They've accepted. Their device finishes automatically the next time they open Loox and unlock. This can take a moment."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ đã chấp nhận. Máy họ sẽ tự hoàn tất trong lần tiếp theo họ mở Loox và mở khoá — có thể mất một chút thời gian."
+            "value": "Họ đã chấp nhận. Máy họ sẽ tự hoàn tất trong lần tiếp theo họ mở Loox và mở khoá. Có thể mất một chút thời gian."
           }
         }
       }
@@ -10819,12 +10790,12 @@
         }
       }
     },
-    "This is your Loox account — the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.": {
+    "This is your Loox account, the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đây là tài khoản Loox của bạn — danh tính cho két này. Giữ email an toàn; bạn có thể cần đến khi thiết lập đồng bộ hoặc khôi phục truy cập."
+            "value": "Đây là tài khoản Loox của bạn, danh tính cho két này. Giữ email an toàn; bạn có thể cần đến khi thiết lập đồng bộ hoặc khôi phục truy cập."
           }
         }
       }
@@ -11016,15 +10987,14 @@
         }
       }
     },
-    "This recovery key can restore your vault if you forget your master password. Store it somewhere safe and offline — it is shown only once.": {
+    "This recovery key can restore your vault if you forget your master password. Store it somewhere safe and offline. It is shown only once.": {
       "comment": "A description of the Emergency Kit.",
-      "extractionState": "stale",
       "isCommentAutoGenerated": true,
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa khôi phục này có thể khôi phục kho nếu bạn quên mật khẩu chính. Hãy lưu ở nơi an toàn, ngoại tuyến — chỉ hiển thị một lần."
+            "value": "Khóa khôi phục này có thể khôi phục kho nếu bạn quên mật khẩu chính. Hãy lưu ở nơi an toàn, ngoại tuyến. Chỉ hiển thị một lần."
           }
         }
       }
@@ -11580,18 +11550,18 @@
         }
       }
     },
-    "Use it now — it expires with the current window.": {
+    "Use it now. It expires with the current window.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Use it now — it expires with the current window."
+            "value": "Use it now. It expires with the current window."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng ngay — mã hết hạn theo chu kỳ hiện tại."
+            "value": "Dùng ngay. Mã hết hạn theo chu kỳ hiện tại."
           }
         }
       }
@@ -11658,25 +11628,24 @@
         }
       }
     },
-    "Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.": {
+    "Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.": {
       "comment": "A description of how the HIBP check works.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng k-ẩn danh — chỉ năm ký tự đầu của mã băm SHA-1 mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
+            "value": "Dùng k-ẩn danh. Chỉ năm ký tự đầu của mã băm SHA-1 mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
           }
         }
       }
     },
-    "Uses k-anonymity — only the first five characters of each password’s SHA-1 hash are sent. Passwords never leave your device.": {
-      "extractionState": "stale",
+    "Uses k-anonymity. Only the first five characters of each password’s SHA-1 hash are sent. Passwords never leave your device.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng k-ẩn danh — chỉ năm ký tự đầu của mã băm SHA-1 mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
+            "value": "Dùng k-ẩn danh. Chỉ năm ký tự đầu của mã băm SHA-1 mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
           }
         }
       }
@@ -11741,12 +11710,12 @@
         }
       }
     },
-    "Vault received — protect this device": {
+    "Vault received. Protect this device": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã nhận kho — bảo vệ thiết bị này"
+            "value": "Đã nhận kho. Bảo vệ thiết bị này"
           }
         }
       }
@@ -11945,13 +11914,13 @@
         }
       }
     },
-    "We didn't invent a new need. We took one of the oldest needs on the internet — keeping secrets — and made it 10× better.": {
+    "We didn't invent a new need. We took one of the oldest needs on the internet, keeping secrets, and made it 10× better.": {
       "comment": "About: refusal block main paragraph.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chúng tôi không tạo ra một nhu cầu mới. Chúng tôi lấy một trong những nhu cầu lâu đời nhất trên internet — giữ bí mật — và làm nó tốt hơn 10 lần."
+            "value": "Chúng tôi không tạo ra một nhu cầu mới. Chúng tôi lấy một trong những nhu cầu lâu đời nhất trên internet, giữ bí mật, và làm nó tốt hơn 10 lần."
           }
         }
       }
@@ -12048,12 +12017,12 @@
         }
       }
     },
-    "Welcome to Loox! This is your identity — it autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.": {
+    "Welcome to Loox. This is your identity. It autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chào mừng đến với Loox! Đây là danh tính của bạn — tự động điền tên, email và thông tin vào biểu mẫu. Mọi thứ luôn được mã hóa trên thiết bị này; chỉnh sửa hoặc thêm bất cứ lúc nào."
+            "value": "Chào mừng đến với Loox. Đây là danh tính của bạn. Nó tự động điền tên, email và thông tin vào biểu mẫu. Mọi thứ luôn được mã hóa trên thiết bị này; chỉnh sửa hoặc thêm bất cứ lúc nào."
           }
         }
       }
@@ -12104,12 +12073,12 @@
         }
       }
     },
-    "When off, everything is encrypted for the first device they enrolled — their other devices only see a locked placeholder.": {
+    "When off, everything is encrypted for the first device they enrolled. Their other devices only see a locked placeholder.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khi tắt, mọi thứ được mã hoá riêng cho thiết bị đầu tiên họ đăng ký — các thiết bị khác của họ chỉ thấy trạng thái bị khoá."
+            "value": "Khi tắt, mọi thứ được mã hoá riêng cho thiết bị đầu tiên họ đăng ký. Các thiết bị khác của họ chỉ thấy trạng thái bị khoá."
           }
         }
       }
@@ -12326,12 +12295,12 @@
         }
       }
     },
-    "Your items are end-to-end encrypted before they sync — iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata.": {
+    "Your items are end-to-end encrypted before they sync. iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục được mã hóa đầu-cuối trước khi đồng bộ — iCloud không bao giờ thấy tiêu đề, mật khẩu hay ghi chú. Chi tiết tổ chức như biểu tượng nhóm, màu sắc và mốc thời gian đồng bộ dưới dạng siêu dữ liệu thông thường."
+            "value": "Các mục được mã hóa đầu-cuối trước khi đồng bộ. iCloud không bao giờ thấy tiêu đề, mật khẩu hay ghi chú. Chi tiết tổ chức như biểu tượng nhóm, màu sắc và mốc thời gian đồng bộ dưới dạng siêu dữ liệu thông thường."
           }
         }
       }
@@ -12438,13 +12407,13 @@
         }
       }
     },
-    "Your Vault Key doesn't change — Face ID unlock and your Emergency Kit keep working.": {
+    "Your Vault Key doesn't change. Face ID unlock and your Emergency Kit keep working.": {
       "comment": "Change Master Password: reassurance banner.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vault Key của bạn không đổi — mở khoá bằng Face ID và Emergency Kit vẫn hoạt động bình thường."
+            "value": "Vault Key của bạn không đổi. Mở khoá bằng Face ID và Emergency Kit vẫn hoạt động bình thường."
           }
         }
       }
@@ -12504,13 +12473,13 @@
         }
       }
     },
-    "%@ accepted. Waiting for their device to finish setting up — usually right after they unlock Loox.": {
+    "%@ accepted. Waiting for their device to finish setting up, usually right after they unlock Loox.": {
       "comment": "Resume share sheet: recipient accepted, waiting for profile.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ đã chấp nhận. Đang chờ thiết bị của họ hoàn tất thiết lập — thường ngay sau khi họ mở khoá Loox."
+            "value": "%@ đã chấp nhận. Đang chờ thiết bị của họ hoàn tất thiết lập, thường ngay sau khi họ mở khoá Loox."
           }
         }
       }
@@ -12526,13 +12495,13 @@
         }
       }
     },
-    "No update yet — you'll see the step advance once they act.": {
+    "No update yet. You'll see the step advance once they act.": {
       "comment": "Resume share sheet: Check Now found no status change.",
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có cập nhật — bước sẽ tự tiến lên khi họ thao tác."
+            "value": "Chưa có cập nhật. Bước sẽ tự tiến lên khi họ thao tác."
           }
         }
       }
@@ -12544,6 +12513,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đang chia sẻ \"%@\" · sẵn sàng xác nhận"
+          }
+        }
+      }
+    },
+    "Copied · clears in %llds": {
+      "comment": "Clipboard copy feedback shown when the item is sensitive and clipboardClearSeconds > 0; %lld is the countdown in seconds.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã sao chép · tự xoá sau %llds"
+          }
+        }
+      }
+    },
+    "Copy Password": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép mật khẩu"
+          }
+        }
+      }
+    },
+    "Created %@ · Modified %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tạo %@ · Sửa lần cuối %@"
+          }
+        }
+      }
+    },
+    "Quick filters": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bộ lọc nhanh"
+          }
+        }
+      }
+    },
+    "Unlocking": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang mở khóa"
           }
         }
       }

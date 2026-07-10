@@ -203,7 +203,7 @@ struct ApprovalRequestSheet: View {
             Text(decision == .approved ? "Code sent" : "Request rejected")
                 .vaultType(.section).themedForeground()
             if decision == .approved {
-                Text("They received a one-time code. It expires with the current window — nothing else was shared.")
+                Text("They received a one-time code. It expires with the current window; nothing else was shared.")
                     .vaultType(.callout).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
             }
