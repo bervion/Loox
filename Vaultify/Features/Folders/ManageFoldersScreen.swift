@@ -38,6 +38,7 @@ struct ManageFoldersScreen: View {
         .toolbar {
             ToolbarItem(placement: .platformPrimaryAction) {
                 Button { creating = true } label: { PolarisIcon(Icons.add, size: Metric.iconUtility) }
+                    .accessibilityLabel(Text("New Space"))
             }
             #if os(iOS)
             // EditButton drives list edit mode (reorder) — iOS-only; macOS has no edit mode.

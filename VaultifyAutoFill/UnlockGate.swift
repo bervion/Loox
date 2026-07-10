@@ -108,6 +108,7 @@ struct UnlockGate<Content: View>: View {
                         Label("Unlock with \(BiometricAuth.displayName)", systemImage: "faceid")
                             .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.bordered)
                     .controlSize(.large)
                     .disabled(unlocking)
                 }

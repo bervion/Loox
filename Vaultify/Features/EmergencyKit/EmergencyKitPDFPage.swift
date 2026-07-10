@@ -108,7 +108,7 @@ struct EmergencyKitPDFPage: View {
     private var warningBanner: some View {
         HStack(alignment: .top, spacing: 10) {
             PolarisIcon(Icons.alert, size: 18).foregroundStyle(Color(red: 0.72, green: 0.42, blue: 0.0))
-            Text(appString("Anyone who has this kit and access to your iCloud can restore your vault — no master password needed. Keep it offline and private."))
+            Text(appString("Anyone who has this kit and access to your iCloud can restore your vault, no master password needed. Keep it offline and private."))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color(red: 0.5, green: 0.32, blue: 0.0))
                 .fixedSize(horizontal: false, vertical: true)

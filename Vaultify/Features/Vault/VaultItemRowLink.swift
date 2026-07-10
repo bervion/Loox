@@ -24,6 +24,10 @@ struct VaultItemRowLink: View {
 
     var body: some View {
         NavigationLink(value: item.id) { VaultItemRow(item: item, showSpace: showSpace, highlight: highlight) }
+            // Deferred zoom (Design DNA #5): no-op unless the enclosing stack injected
+            // `\.vaultZoomNamespace` (currently Search) — matches `ZoomTransitionDestination`
+            // in `vaultNavigationDestinations()` by `item.id`.
+            .modifier(ZoomTransitionSource(id: item.id))
             .swipeActions(edge: .trailing) {
                 if !isSharedProjection {
                     Button(role: .destructive) {
@@ -35,7 +39,10 @@ struct VaultItemRowLink: View {
             }
             .swipeActions(edge: .leading) {
                 if !isSharedProjection {
-                    Button { try? env.repository.toggleFavorite(item) } label: {
+                    Button {
+                        try? env.repository.toggleFavorite(item)
+                        Haptics.tap()
+                    } label: {
                         Label("Favorite", image: item.favorite ? Icons.starFill : Icons.star)
                     }
                     .tint(VaultColors.strengthMedium)
@@ -43,7 +50,10 @@ struct VaultItemRowLink: View {
             }
             .contextMenu {
                 if !isSharedProjection {
-                    Button { env.repository.togglePin(item) } label: {
+                    Button {
+                        env.repository.togglePin(item)
+                        Haptics.tap()
+                    } label: {
                         Label(item.pinned ? "Unpin" : "Pin", image: item.pinned ? Icons.pinFill : Icons.pin)
                     }
                     Button {

@@ -63,9 +63,9 @@ struct ProfileScreen: View {
                 HStack(spacing: Space.s3) {
                     PolarisIcon(PersonaKindStyle.icon(persona.kind), size: Metric.iconUtility)
                         .themedForeground(.accent)
-                        .frame(width: 44, height: 44)
+                        .frame(width: Metric.controlMedium, height: Metric.controlMedium)
                         .background(Color(rgb: env.theme.active.accentSoft),
-                                    in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: persona.displayName).vaultType(.headline).themedForeground()
                         Text(verbatim: personaMeta(persona)).vaultType(.footnote).themedForeground(.secondary)
@@ -109,7 +109,7 @@ struct ProfileScreen: View {
         if persona.isolationPolicy != .standard {
             parts.append(PersonaKindStyle.policyLabel(persona.isolationPolicy))
         }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 
     private func personaRowLabel(_ title: LocalizedStringKey, icon: String) -> some View {

@@ -30,7 +30,7 @@ struct SyncSettingsView: View {
             } footer: {
                 // Honest scope: secrets are sealed; a small set of organizational
                 // metadata (folder icon/color/order, flags, timestamps) is not.
-                Text("Your items are end-to-end encrypted before they sync — iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata.")
+                Text("Your items are end-to-end encrypted before they sync. iCloud never sees titles, passwords, or notes. Organizational details like folder icons, colors, and timestamps sync as regular metadata.")
             }
             .listRowBackground(VaultColors.surface)
 
@@ -38,7 +38,7 @@ struct SyncSettingsView: View {
                 Section {
                     Label {
                         Text("To use iCloud Sync, enable the iCloud capability (CloudKit) for the app target in Xcode and sign in to iCloud on this device.")
-                            .font(.footnote).themedForeground(.secondary)
+                            .vaultType(.footnote).themedForeground(.secondary)
                     } icon: {
                         PolarisIcon(Icons.info).foregroundStyle(VaultColors.strengthMedium)
                     }
@@ -87,7 +87,7 @@ struct SyncSettingsView: View {
             TextField("Participant iCloud email", text: $spikeEmail)
                 .platformAutocapitalization(.never)
                 .autocorrectionDisabled()
-            Button("1 · Owner: create share") {
+            Button("1. Owner: create share") {
                 Task { await ApprovalSpike.shared.startOwner(participantEmail: spikeEmail,
                                                              settings: env.settings) }
             }
@@ -95,10 +95,10 @@ struct SyncSettingsView: View {
             if let url = ApprovalSpike.shared.shareURL {
                 ShareLink("Send share link to participant", item: url)
             }
-            Button("2 · Requester: send request") {
+            Button("2. Requester: send request") {
                 Task { await ApprovalSpike.shared.sendRequest(settings: env.settings) }
             }
-            Button("3 · Owner: approve pending") {
+            Button("3. Owner: approve pending") {
                 Task { await ApprovalSpike.shared.approvePending() }
             }
             Text(ApprovalSpike.shared.status).font(.footnote).themedForeground(.secondary)
@@ -113,7 +113,7 @@ struct SyncSettingsView: View {
     /// The app deliberately has no Files-app sharing, so diagnostics live
     /// here instead of a Documents log file.
     private var inviteInboxDebugSection: some View {
-        Section("Invite Inbox (DEBUG · V1.1)") {
+        Section("Invite Inbox (DEBUG V1.1)") {
             Button("Arm / re-arm inbox (B)") {
                 Task {
                     guard let identity = await debugIdentity() else { return }
@@ -148,7 +148,7 @@ struct SyncSettingsView: View {
     /// Vault-key-gated participant identity for the debug buttons.
     private func debugIdentity() async -> ParticipantIdentity? {
         guard let vaultKey = env.session.vaultKey?.bytes else {
-            inboxDiagnostics = "vault is locked — unlock first"
+            inboxDiagnostics = "vault is locked, unlock first"
             return nil
         }
         guard let identity = try? await env.participantEscrow.ensureIdentity(vaultKey: vaultKey) else {
@@ -168,7 +168,7 @@ struct SyncSettingsView: View {
         case .success(let date):
             LabeledContent("Last sync", value: date.formatted(date: .omitted, time: .shortened))
         case .error(let message):
-            Text(message).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
+            Text(message).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
         }
     }
 }

@@ -54,8 +54,15 @@ struct TotpCardView: View {
                                     : Color(rgb: theme.primaryText))
                         }
                     }
+                    // SF with tabular digits (user rule: mono is for passwords
+                    // only) — digits keep a stable width so the countdown swap
+                    // never jitters the layout.
                     .font(.title3.weight(.bold))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    // Guards the "123 456" grouping from clipping inside the
+                    // fixed 158pt-wide card at accessibility XXL Dynamic Type.
+                    .minimumScaleFactor(0.7)
                     .animation(reduceMotion ? nil : .easeInOut(duration: Motion.fast), value: copied)
 
                     Text(item.title.isEmpty ? "Untitled" : item.title)
@@ -65,7 +72,9 @@ struct TotpCardView: View {
 
                     // Username distinguishes multiple accounts on the same service
                     // (two GitHub logins would otherwise render identical cards).
-                    if let username = item.subtitle, !username.isEmpty {
+                    // STRICTLY the username field — `item.subtitle` falls back to
+                    // the website URL, which is noise on a code card (user rule).
+                    if let username = item.usernameField?.value, !username.isEmpty {
                         Text(username)
                             .vaultType(.caption)
                             .themedForeground(.tertiary)
@@ -90,8 +99,9 @@ struct TotpCardView: View {
 
     private func copyCode(_ code: String?) {
         guard let code, !copied else { return }
+        // ClipboardService fires Haptics.success on copy — do not add a second
+        // haptic here (would double-buzz on every 2FA code copy).
         env.clipboard.copy(code, label: "2FA code")
-        Haptics.tap()
         copied = true
         // Flash duration matches DS: 1100 ms.
         Task {

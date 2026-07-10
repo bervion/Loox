@@ -83,14 +83,14 @@ struct PersonaAliasesScreen: View {
         // Pause is reversible later (relay keeps the row) — calm confirmation, not destructive.
         .confirmationDialog("Pause forwarding?", isPresented: pauseBinding,
                             titleVisibility: .visible, presenting: pendingPause) { alias in
-            Button("Pause forwarding") { disableAlias(alias) }
+            Button("Pause forwarding") { Haptics.tap(); disableAlias(alias) }
         } message: { _ in
             Text("New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later.")
         }
         // Permanent delete: address can never be restored or re-issued (backend tombstone).
         .confirmationDialog("Delete this private address permanently?", isPresented: deleteBinding,
                             titleVisibility: .visible, presenting: pendingDelete) { alias in
-            Button("Delete permanently", role: .destructive) { remove(alias) }
+            Button("Delete permanently", role: .destructive) { Haptics.error(); remove(alias) }
         } message: { _ in
             Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
         }
@@ -102,7 +102,7 @@ struct PersonaAliasesScreen: View {
         .alert(Text("Add an email first"), isPresented: $missingEmail) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Add an email to this identity’s profile — that’s where your aliases forward to.")
+            Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
         }
     }
 
@@ -250,8 +250,10 @@ struct PersonaAliasesScreen: View {
             do { try await operation() }
             catch let failure as RelayService.Failure {
                 errorMessage = failure.userMessage
+                Haptics.error()
             } catch {
                 errorMessage = appString("Check your connection and iCloud, then try again.")
+                Haptics.error()
             }
         }
     }

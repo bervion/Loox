@@ -87,7 +87,7 @@ struct LargeTypeView: View {
         Button { copy() } label: {
             // Text only (no icon), in SF — not the MonoLisa code font.
             Text(copied ? "Copied" : "Copy")
-                .font(.body)
+                .vaultType(.body)
                 .foregroundStyle(theme.color(copied ? .accent : .primary))
         }
         .accessibilityLabel(Text("Copy"))
@@ -113,12 +113,14 @@ struct LargeTypeView: View {
                 Group {
                     if totpCopied {
                         Text("Copied")
-                            .font(.body.weight(.semibold))
+                            .vaultType(.body).fontWeight(.semibold)
                             .foregroundStyle(theme.color(.onAccent))
                     } else {
                         HStack(spacing: Space.s3) {
+                            // OTP is a typographic object (rule 4): same MonoLisa
+                            // treatment as `TOTPCodeView`'s live code, not raw SF.
                             Text(TOTPCodeView.format(code))
-                                .font(.title3.weight(.bold)).monospacedDigit()
+                                .font(.vaultCode(.title3, weight: .semibold)).monospacedDigit()
                                 .themedForeground(.primary)
                             CountdownRing(remaining: remaining, period: 30)
                         }
@@ -159,7 +161,7 @@ struct LargeTypeView: View {
                                            : SecretColoring.color(for: character, theme: theme))
                 .frame(maxWidth: .infinity)
             Text("\(index + 1)")
-                .font(.caption2)
+                .vaultType(.caption)
                 .foregroundStyle(isEntered ? theme.color(.onAccent).opacity(0.85)
                                            : theme.color(.secondary))
         }

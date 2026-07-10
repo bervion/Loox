@@ -22,7 +22,7 @@ struct Level2SettingsView: View {
             Section {
                 Label {
                     Text("A second password for your most sensitive fields. Items can use this or their own code. If you forget it, those fields cannot be recovered.")
-                        .font(.footnote).themedForeground(.secondary)
+                        .vaultType(.footnote).themedForeground(.secondary)
                 } icon: {
                     PolarisIcon(Icons.lockFill).foregroundStyle(Color.accentColor)
                 }

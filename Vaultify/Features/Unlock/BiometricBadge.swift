@@ -36,6 +36,9 @@ struct BiometricBadge: View {
                 }
             }
             .frame(width: side, height: side)
+            // Invisible padded hit area to the 44pt minimum — the visual badge stays
+            // sized to match the logo's corner (same technique as `RevealableSecureField`).
+            .contentShape(Rectangle().inset(by: -(Metric.hitMin - side) / 2))
             .elevation(.level2)
         }
         .buttonStyle(.plain)

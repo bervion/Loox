@@ -330,16 +330,23 @@ import UserNotifications
         }
     }
 
-    /// Mirror the active persona's isolation policy + profile item id into the
-    /// App Group so the AutoFill extension (which can't read the app's local
-    /// `activePersonaID`) honors isolation. Only an opaque enum + UUID cross over —
-    /// no identity-bearing plaintext; the extension resolves the email under the
-    /// Vault Key. Called on every reload and every active-persona switch.
+    /// Mirror the active persona's isolation policy + profile item id + Space
+    /// context into the App Group so the AutoFill extension (which can't read the
+    /// app's local `activePersonaID` / `SettingsStore`) honors isolation and defaults
+    /// a newly saved login into the right Space. Only opaque ids/flags cross over —
+    /// no identity-bearing plaintext; the extension resolves names under the Vault
+    /// Key. Called on every reload, every active-persona switch, AND every Home
+    /// Space selection change (see `HomeScreen`'s `onChange(of: selectedFolderId)`).
     func mirrorActivePersonaContext() {
         let defaults = SharedConfig.sharedDefaults
         let persona = activePersona
         defaults.set(persona?.isolationPolicy.rawValue, forKey: SharedConfig.activePersonaPolicyKey)
         defaults.set(persona?.primaryProfileItemID, forKey: SharedConfig.activePersonaProfileItemKey)
+        defaults.set(persona?.id, forKey: SharedConfig.activePersonaIdKey)
+        defaults.set(persona?.isDefault ?? false, forKey: SharedConfig.activePersonaIsDefaultKey)
+        defaults.set(persona?.primarySpaceID, forKey: SharedConfig.activePersonaPrimarySpaceKey)
+        let lastSpace = persona.flatMap { session.settings.lastSelectedSpace(persona: $0.id) }
+        defaults.set(lastSpace, forKey: SharedConfig.activePersonaLastSpaceKey)
     }
 
     // MARK: CRUD
@@ -368,7 +375,9 @@ import UserNotifications
         try store.context.save()
         reload()
         noteLocalMutation()
-        RotationNotificationService.shared.schedule(item: item, passwordChangedAt: record.passwordChangedAt)
+        if SettingsStore.isRotationRemindersEnabled() {
+            RotationNotificationService.shared.schedule(item: item, passwordChangedAt: record.passwordChangedAt)
+        }
     }
 
     func update(_ item: VaultItem) throws {
@@ -399,8 +408,10 @@ import UserNotifications
         try store.context.save()
         reload()
         noteLocalMutation()
-        RotationNotificationService.shared.schedule(
-            item: updated, passwordChangedAt: record.passwordChangedAt)
+        if SettingsStore.isRotationRemindersEnabled() {
+            RotationNotificationService.shared.schedule(
+                item: updated, passwordChangedAt: record.passwordChangedAt)
+        }
     }
 
     func toggleFavorite(_ item: VaultItem) throws {

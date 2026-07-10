@@ -10,13 +10,13 @@ import UIKit
 struct ShareDiagnosticsView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var text = ""
-    @State private var userRecordID = "—"
+    @State private var userRecordID = "unknown"
 
     var body: some View {
         List {
             Section("State") {
                 row("Pending breadcrumb",
-                    UserDefaults.standard.bool(forKey: SharedConfig.pendingShareAcceptanceKey) ? "SET" : "—")
+                    UserDefaults.standard.bool(forKey: SharedConfig.pendingShareAcceptanceKey) ? "SET" : "not set")
                 row("Approval mode", env.settings.approvalModeEnabled ? "ON" : "off")
                 row("Vault unlocked", env.session.vaultKey != nil ? "yes" : "LOCKED")
                 row("CloudKit configured", CloudSyncService.isConfigured ? "yes" : "NO")
@@ -26,7 +26,7 @@ struct ShareDiagnosticsView: View {
             .listRowBackground(VaultColors.surface)
 
             Section {
-                Text(text.isEmpty ? "— no diagnostics yet —" : text)
+                Text(text.isEmpty ? "No diagnostics yet." : text)
                     .font(.system(.caption2, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)

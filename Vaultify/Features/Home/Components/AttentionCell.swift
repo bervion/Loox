@@ -89,7 +89,9 @@ struct AttentionCell: View {
 
             Spacer(minLength: Space.s2)
 
-            // "Đổi" action button
+            // "Đổi" action button — the visible capsule stays compact; an
+            // invisible frame pads the actual hit area to Metric.hitMin so a
+            // near-miss opens Edit, not the row's own onOpen tap (below).
             Button {
                 onEdit(item)
             } label: {
@@ -111,6 +113,8 @@ struct AttentionCell: View {
                     )
             }
             .buttonStyle(.plain)
+            .frame(minHeight: Metric.hitMin)
+            .contentShape(Rectangle())
         }
         .padding(.horizontal, Space.s4)
         .padding(.vertical, Space.s3)

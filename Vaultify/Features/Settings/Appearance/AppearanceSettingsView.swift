@@ -33,7 +33,7 @@ struct AppearanceSettingsView: View {
                               preview: BuiltinThemes.palette(builtin))
                 }
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, Space.s2)
         } header: {
             Text("Theme")
         }
@@ -45,6 +45,7 @@ struct AppearanceSettingsView: View {
     private func themeCard(_ ref: AppThemeReference, name: Text, preview: AppTheme) -> some View {
         let selected = current == ref
         return Button {
+            Haptics.tap()
             env.theme.setTheme(ref)
         } label: {
             VStack(spacing: 7) {
@@ -74,9 +75,11 @@ struct AppearanceSettingsView: View {
                 }
                 .frame(height: 84)
                 .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .strokeBorder(selected ? Color.accentColor : Color(rgb: preview.separator),
+                    // Live theme accent, not the static asset accent — the ring must
+                    // follow the active preset the moment the user switches it.
+                    .strokeBorder(selected ? env.theme.uiTint : Color(rgb: preview.separator),
                                   lineWidth: selected ? 2.5 : 1))
-                name.font(.caption).themedForeground().lineLimit(1)
+                name.vaultType(.caption).themedForeground().lineLimit(1)
             }
             .contentShape(.rect)
         }
@@ -87,16 +90,16 @@ struct AppearanceSettingsView: View {
 
     private var accentSection: some View {
         Section {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 46), spacing: Space.s3)], spacing: Space.s3) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 50), spacing: Space.s3)], spacing: Space.s3) {
                 ForEach(AccentPreset.allCases) { preset in
                     accentSwatch(preset)
                 }
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, Space.s2)
         } header: {
             Text("Accent Color")
         } footer: {
-            Text("Accent applies instantly across the app — no restart needed.")
+            Text("Accent applies instantly across the app. No restart needed.")
         }
         .listRowBackground(VaultColors.surface)
     }
@@ -107,13 +110,19 @@ struct AppearanceSettingsView: View {
         let activeBase = settings.accentOverride(for: current)?.base ?? .blue
         let isSelected = activeBase == preset
         let isDark = env.theme.active.isDark
+        let ringColor = env.theme.active.color(.iconPrimary)
         return Button {
+            Haptics.tap()
             env.theme.setAccent(AppAccentColor(base: preset), for: current)
         } label: {
             Circle()
                 .fill(Color(rgb: preset.rgb(isDark: isDark)))
                 .frame(width: Metric.controlSmall, height: Metric.controlSmall)
-                .overlay(Circle().strokeBorder(Color.primary.opacity(isSelected ? 0.9 : 0), lineWidth: 2).padding(-3))
+                .overlay(Circle().strokeBorder(ringColor.opacity(isSelected ? 0.9 : 0), lineWidth: 2).padding(-3))
+                // Pad the 34pt visual swatch to a ≥44pt tap target (Metric.hitMin) —
+                // the circle itself stays the design-system control-small size.
+                .padding(Space.s2)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

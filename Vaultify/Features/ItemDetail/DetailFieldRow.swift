@@ -6,6 +6,10 @@ import Foundation
 /// menu (Copy / Reveal / Open) and, for passwords, a strength badge.
 struct DetailFieldRow: View {
     let field: DynamicField
+    /// The owning item's category — only used to scope the Card Number field's
+    /// grouped-display + brand-badge + digits-only-copy treatment to genuine `.card`
+    /// items. Defaults to `.custom` (never matches), so every other caller is unaffected.
+    var category: ItemCategory = .custom
     /// The item's 2FA secret, surfaced as a floating code in the Large Type viewer.
     var totpSecret: String? = nil
     var onChange: (DynamicField) -> Void = { _ in }
@@ -16,6 +20,7 @@ struct DetailFieldRow: View {
     /// than its absence. Copy/reveal/large-type stay.
     var readOnly = false
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var copied = false
     @State private var revealed = false
     @State private var showLargeType = false
@@ -24,8 +29,17 @@ struct DetailFieldRow: View {
     private var theme: AppTheme { env.theme.active }
     private var isSecret: Bool { field.protected || field.kind.isSecret }
 
+    /// Whether this is the card template's Card Number field — the one field that gets
+    /// digit grouping + a brand badge on the detail screen.
+    private var isCardNumber: Bool {
+        category == .card && field.kind == .monospace && field.label == "Card Number"
+    }
+
     private var copyValue: String {
         if field.kind == .totp { return TOTPGenerator.code(forStoredValue: field.value) ?? field.value }
+        // Defensive: storage is written digits-only by `CardNumberFieldEditor`, but a
+        // legacy value (typed before this feature existed) could still hold spaces.
+        if isCardNumber { return PaymentCard.digitsOnly(field.value) }
         return field.value
     }
 
@@ -39,13 +53,38 @@ struct DetailFieldRow: View {
         }
     }
 
+    /// Recognizes when this field's value is one of the active persona's
+    /// private-email aliases (INV-R03) — drives the PRIVATE badge + forwards-to
+    /// line convention shared with the Editor.
+    private var privateEmailMatch: PrivateEmailMatch? {
+        PrivateEmailMatch.resolve(kind: field.kind, value: field.value, repository: env.repository)
+    }
+
     private var normalBody: some View {
-        HStack(spacing: 12) {
+        let match = privateEmailMatch
+        return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                fieldLabelText(field.label)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
+                HStack(spacing: 6) {
+                    fieldLabelText(field.label)
+                        .vaultType(.caption).fontWeight(.medium)
+                        .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
+                    if match != nil {
+                        PrivateEmailBadge(onAccentBackground: copied)
+                    }
+                    // Shown regardless of reveal state — the network name doesn't leak
+                    // the secret, and it's useful even while the value stays masked.
+                    if isCardNumber, let brand = PaymentCard.brand(for: field.value) {
+                        CardBrandBadge(brand: brand, onAccentBackground: copied)
+                    }
+                }
                 valueView
+                // Value already renders alias text (Controlled Reveal doesn't
+                // apply here — the field isn't secret) — copy() below still
+                // always copies `field.value`, i.e. the alias, never the
+                // forwards-to destination shown on this line.
+                if let match, !copied {
+                    PrivateEmailForwardsToLine(match: match, showsStatusText: false)
+                }
             }
             Spacer(minLength: 8)
             trailing
@@ -70,29 +109,59 @@ struct DetailFieldRow: View {
 
     @ViewBuilder private var valueView: some View {
         if copied {
-            Text("Copied").font(.body)
+            Text(copiedFeedbackText).vaultType(.body)
         } else {
             switch field.kind {
             case .totp:
                 TOTPCodeView(secret: field.value)
             case .url:
                 // Website → SF, scheme greyed, domain/path in accent, tail-truncated.
-                Text(urlColored(field.value)).font(.body)
+                Text(urlColored(field.value)).vaultType(.body)
                     .lineLimit(1).truncationMode(.tail)
-            default:
-                if isSecret && !revealed {
-                    SpoilerText(text: field.value)
+            case .monospace where isCardNumber:
+                // Grouped display only — storage (`field.value`) stays digits-only;
+                // `GlyphResolveText` resolves the FORMATTED string so a revealed card
+                // number reads in its real 4-4-4-4 (or Amex 4-6-5) grouping.
+                let formatted = PaymentCard.formattedForDisplay(field.value)
+                if revealed {
+                    GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                        .textSelection(.enabled)
                 } else {
-                    // Secret values use MonoLisa; free-text notes stay SF. Notes
-                    // and revealed secrets wrap to multiple lines; other values
-                    // (username, etc.) stay single-line.
+                    GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                        .textSelection(.disabled)
+                }
+            default:
+                // Mono is for SECRETS only (user rule): passwords and protected
+                // values keep MonoLisa; usernames, emails, aliases, and notes
+                // read in SF like the rest of the app.
+                let valueFont: Font = isSecret ? .vaultCode() : VaultType.body.font
+                if isSecret {
+                    // Controlled Reveal: glyphs resolve in place left-to-right
+                    // instead of a whole-field crossfade between two views.
+                    // `.textSelection` takes a concrete (non-uniform) type per
+                    // branch, so the enabled/disabled cases can't share a ternary.
+                    if revealed {
+                        GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
+                            .textSelection(.enabled)
+                    } else {
+                        GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
+                            .textSelection(.disabled)
+                    }
+                } else {
                     Text(field.value)
-                        .font(field.kind == .multiline ? .body : .vaultCode())
-                        .lineLimit(field.kind == .multiline || isSecret ? nil : 1)
+                        .font(valueFont)
+                        .lineLimit(field.kind == .multiline ? nil : 1)
                         .textSelection(.enabled)
                 }
             }
         }
+    }
+
+    /// Always the short "Copied" — the auto-clear detail made the label long
+    /// enough to wrap the row's value line, which reads as a layout glitch at
+    /// the exact moment of feedback. The clear behavior itself is unchanged.
+    private var copiedFeedbackText: String {
+        appString("Copied")
     }
 
     @ViewBuilder private var trailing: some View {
@@ -106,6 +175,10 @@ struct DetailFieldRow: View {
                                   period: 30, onAccent: copied)
                 }
             }
+            // Copy feedback glyph: clipboard morphs to clipboard-check on copy —
+            // an at-a-glance affordance in addition to the row's accent flash.
+            CopyMorphIcon(copied: copied)
+                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
             menu
         }
     }
@@ -113,7 +186,7 @@ struct DetailFieldRow: View {
     private var strengthBadge: some View {
         let strength = PasswordStrength.evaluate(field.value)
         return HStack(spacing: 5) {
-            Text(strength.title).font(.subheadline).foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
+            Text(strength.title).vaultType(.subhead).foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
             Circle().fill(VaultColors.strength(strength)).frame(width: 9, height: 9)
         }
     }
@@ -125,7 +198,7 @@ struct DetailFieldRow: View {
             // TOTP renders its code live — a Reveal toggle is meaningless there.
             if isSecret, field.kind != .totp {
                 Button {
-                    withAnimation { revealed.toggle() }
+                    withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { revealed.toggle() }
                     if revealed { onUsed() }
                 } label: {
                     Label(revealed ? "Conceal" : "Reveal", image: revealed ? Icons.hide : Icons.reveal)
@@ -143,6 +216,10 @@ struct DetailFieldRow: View {
                 .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
+                // Invisible padded hit area: the visual circle stays 30pt, the
+                // tappable region meets the 44pt minimum (rule 6).
+                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                .contentShape(Rectangle())
         }
         // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
         .menuStyle(.button)

@@ -30,7 +30,13 @@ extension View {
     /// Items, and Search resolve item detail + folder/tag/category/archive/trash.
     func vaultNavigationDestinations() -> some View {
         self
-            .navigationDestination(for: String.self) { ItemDetailScreen(itemID: $0) }
+            .navigationDestination(for: String.self) { id in
+                // Deferred zoom (Design DNA #5): no-op unless the enclosing stack injected
+                // `\.vaultZoomNamespace` (currently Search) — every other caller of this
+                // shared modifier gets the ordinary push, unaffected.
+                ItemDetailScreen(itemID: id)
+                    .modifier(ZoomTransitionDestination(id: id))
+            }
             .navigationDestination(for: VaultRoute.self) { route in
                 switch route {
                 case .folder(let id): FolderItemsScreen(folderId: id)

@@ -39,7 +39,7 @@ struct VaultInfoBanner: View {
     var body: some View {
         let theme = env.theme.active
         HStack(alignment: .top, spacing: Space.s3) {
-            PolarisIcon(icon ?? defaultIcon, size: 16)
+            PolarisIcon(icon ?? defaultIcon, size: Metric.iconCompact)
                 .foregroundStyle(theme.color(tintRole))
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: Space.s1) {

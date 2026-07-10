@@ -72,14 +72,16 @@ struct NameStepView: View {
                 .autocorrectionDisabled(id == .email)
                 .submitLabel(submit)
                 .focused($focus, equals: id)
-                .font(.body)
+                .vaultType(.body)
                 .foregroundStyle(Color(rgb: theme.primaryText))
                 .onSubmit { id == .name ? (focus = .email) : onContinue(name, email) }
         }
-        .padding(.horizontal, 14)
+        // Matches `RevealableSecureField`'s prominent-field card exactly (same
+        // radius + horizontal inset) so sibling onboarding fields read as one family.
+        .padding(.horizontal, Space.s3)
         .padding(.vertical, Space.s3)
         .background(Color(rgb: theme.elevatedBackground),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         .elevation(.level2)
     }
 

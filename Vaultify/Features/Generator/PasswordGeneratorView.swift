@@ -21,6 +21,7 @@ struct PasswordGeneratorView: View {
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Latest generated value, owned by the parent sheet so its header buttons can read it.
     @Binding var output: String
     /// When set, a checkmark header button feeds the value back and dismisses.
@@ -74,9 +75,11 @@ struct PasswordGeneratorView: View {
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
-        // Local copy toast — the main shell's toast sits behind this sheet, so show our own.
-        .overlay(alignment: .bottom) { copyToast }
-        .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
+        // The main shell's toast sits behind this sheet, so show the shared overlay
+        // again here (same component the shell/onboarding use — no reinventing it).
+        .overlay(alignment: .bottom) { CopyToastOverlay() }
+        .animation(.vault(.spring(duration: 0.3), reduceMotion: reduceMotion),
+                   value: env.clipboard.recentCopyLabel)
         .onAppear {
             if output.isEmpty { regenerate() }
             // Warm the diceware word list off the main thread. Its lazy `static let`
@@ -102,7 +105,7 @@ struct PasswordGeneratorView: View {
                     if onUse != nil {
                         HeaderIconButton(Icons.checkCircle, role: .accent,
                                          accessibilityLabel: "Use Password") {
-                            onUse?(output); dismiss()
+                            Haptics.tap(); onUse?(output); dismiss()
                         }
                         .disabled(output.isEmpty)
                     }
@@ -122,9 +125,10 @@ struct PasswordGeneratorView: View {
                 HStack(spacing: Space.s2) {
                     valueText
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    // Clipboard glyph flips to the check variant while copied,
-                    // then reverts with the `copied` state (~1.2s).
-                    PolarisIcon(copied ? Icons.copyDone : Icons.copy, size: 18)
+                    // Clipboard glyph morphs to the check variant while copied,
+                    // then reverts with the `copied` state (~1.2s) — shared primitive
+                    // so the copy affordance matches item detail's rows 1:1.
+                    CopyMorphIcon(copied: copied, size: 18)
                         .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.iconSecondary))
                 }
                 .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
@@ -167,23 +171,6 @@ struct PasswordGeneratorView: View {
         }
         .font(.vaultCode(.title3, weight: .medium))
         .monospacedDigit()
-    }
-
-    /// Transient "copied" toast shown over the generator sheet.
-    @ViewBuilder private var copyToast: some View {
-        if let label = env.clipboard.recentCopyLabel {
-            HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
-                    .foregroundStyle(env.theme.active.color(.success))
-                Text(appString("Copied \(label)")).vaultType(.subhead).fontWeight(.medium)
-            }
-            .padding(.horizontal, Space.s4)
-            .padding(.vertical, Space.s3)
-            .background(.regularMaterial, in: Capsule())
-            .elevation(.level2)
-            .padding(.bottom, Space.s6)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
     }
 
     @ViewBuilder private var passwordControls: some View {

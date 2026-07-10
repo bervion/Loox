@@ -68,7 +68,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | --- | --- | --- |
 | Spacing (4pt grid) | `Space.s1…s10`, `Space.gutter`, `Space.contentMax` | `DesignSystem/Tokens/Spacing.swift` |
 | Corner radius | `Radius.xs/sm/md/lg/xl/pill` + `.vaultCornerRadius(_)` | `DesignSystem/Tokens/Radius.swift` |
-| Control / icon / row sizing | `Metric.hitMin/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge` | `DesignSystem/Tokens/Metrics.swift` |
+| Control / icon / row sizing | `Metric.hitMin/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge/badgeTile/iconPickerTile` | `DesignSystem/Tokens/Metrics.swift` |
 | Legacy custom tab-bar layout | `TabBarMetric.*` | `DesignSystem/Tokens/Metrics.swift` |
 | Elevation (soft shadow) | `.elevation(.level1/.level2/.level3/.sheet)` | `DesignSystem/Tokens/Elevation.swift` |
 | Motion | `Motion.spring/standard/fast/base/medium/slow/pressScale`, `.vault(_,reduceMotion:)` | `DesignSystem/Tokens/Motion.swift` |
@@ -79,12 +79,46 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
 | Card / divider / form bg | `ThemedCard`, `.themedCard()`, `ThemedDivider`, `.appBackground()`, `.themedFormBackground()` | `DesignSystem/Components/ThemedComponents.swift` |
 | Buttons | `.buttonStyle(.themedProminent/.themedTinted/.themedDestructive)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
+| Compact inline buttons (row-adjacent, not full-width) | `.buttonStyle(.themedCompact/.themedCompactProminent)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
 | Switch | `.toggleStyle(.themed)` | `DesignSystem/Components/ThemedToggleStyle.swift` |
 | Icons | `PolarisIcon(Icons.<name>, size: Metric.icon*)` | `DesignSystem/PolarisIcon.swift` |
 
 `ThemeRole` values: `primary, secondary, tertiary, disabled, iconPrimary, iconSecondary, iconDisabled,
 accent, accentSoft, onAccent, destructive, onDestructive, success, warning`. Derived tokens are computed
 on `AppTheme` so **every** builtin and custom theme gets them without touching constructors.
+
+### Concentricity (nested corner radii)
+
+Radius is a **relationship, not a per-view pick**. When a rounded shape sits inset inside a rounded
+parent (avatar in a card, glyph badge in a tile, embedded tile in a sheet), derive the child radius
+from the parent instead of grabbing a scale token:
+
+```swift
+// R_inner ≈ R_outer − inset, floored at Radius.xs
+.vaultCornerRadius(Radius.concentric(outer: Radius.lg, inset: Space.s4))
+```
+
+A child radius larger than `outer − inset` reads "flared", smaller reads "pinched" — both break the
+visual parallel between the two corners. Standalone (non-nested) shapes keep using the fixed scale.
+
+## Loox Motion Language: Controlled Reveal
+
+The product physics of Loox is **reveal / conceal**: nothing is exposed before it needs to be, and
+every hidden↔visible state change speaks the same motion vocabulary. Do not invent a new effect for
+a new surface — pick the matching verb:
+
+| Transition | Verb | Shipped primitive |
+| --- | --- | --- |
+| Secret field reveal | glyphs **resolve** in place (dots → characters, left to right, fixed budget) | `GlyphResolveText` (`DesignSystem/Components/GlyphResolveText.swift`) |
+| Unlock | locked world **blurs away**, vault resolves behind it | `AnyTransition.controlledReveal` (`App/RootView.swift`) |
+| Lock | lock screen **contracts back in**; unlocked content vanishes instantly beneath (privacy) | same transition, insertion side |
+| Key derivation in flight | the ∞ **draws itself open** (gate working) | `LooxGateMark` / `LooxGateShape` (`DesignSystem/Components/LooxGateShape.swift`) |
+| Copy confirmation | clipboard glyph **morphs** to check + haptic tick | `CopyMorphIcon` (`DesignSystem/Components/CopyMorphIcon.swift`) |
+
+Rules: every verb collapses to an instant swap under Reduce Motion (`Animation.vault(_:reduceMotion:)`);
+motion never gates or delays a security result (the session flip always wins); durations stay inside the
+`Motion` token range (≤ ~0.4s). Whole-field crossfades on secrets are the anti-pattern — the value should
+read as *decrypting*, not fading in.
 
 ## Theme And Contrast
 

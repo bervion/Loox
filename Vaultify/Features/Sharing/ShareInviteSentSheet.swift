@@ -27,11 +27,11 @@ struct ShareInviteSentSheet: View {
                     .vaultType(.section).themedForeground()
                     .multilineTextAlignment(.center)
                 if accepted {
-                    Text("They've accepted. Their device finishes automatically the next time they open Loox and unlock — this can take a moment.")
+                    Text("They've accepted. Their device finishes automatically the next time they open Loox and unlock. This can take a moment.")
                         .vaultType(.callout).themedForeground(.secondary)
                         .multilineTextAlignment(.center)
                 } else {
-                    Text("No need to wait here — they'll get a notification, and we'll ping you the moment they accept. You can track it anytime from Home.")
+                    Text("No need to wait here. They'll get a notification, and we'll ping you the moment they accept. You can track it anytime from Home.")
                         .vaultType(.callout).themedForeground(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -44,10 +44,10 @@ struct ShareInviteSentSheet: View {
         HStack(spacing: Space.s2) {
             StatusDot(kind: accepted ? .active : .pending, size: 7)
             if accepted {
-                Text("Sharing \"\(itemTitle)\" · finishing on their device")
+                Text("Sharing \"\(itemTitle)\" is finishing on their device")
                     .vaultType(.footnote).themedForeground().lineLimit(1)
             } else {
-                Text("Sharing \"\(itemTitle)\" · waiting for \(recipientLabel)")
+                Text("Sharing \"\(itemTitle)\" is waiting for \(recipientLabel)")
                     .vaultType(.footnote).themedForeground().lineLimit(1)
             }
         }

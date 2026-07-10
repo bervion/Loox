@@ -16,7 +16,7 @@ struct CapabilityBannerView: View {
         if let content {
             VStack(alignment: .leading, spacing: Space.s2) {
                 Label { Text(content.title).vaultType(.subhead).themedForeground(.primary) }
-                    icon: { PolarisIcon(content.icon, size: 15) }
+                    icon: { PolarisIcon(content.icon, size: Metric.iconCompact) }
                 if let custom = CapabilityMessageKey.localized(messageKey) {
                     Text(verbatim: custom)
                         .vaultType(.footnote)

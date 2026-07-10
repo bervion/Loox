@@ -49,7 +49,7 @@ struct VaultStatusBadge: View {
                 .foregroundStyle(tint)
         }
         .padding(.horizontal, Space.s2)
-        .padding(.vertical, 3)
+        .padding(.vertical, Space.s1)
         .background(tint.opacity(0.12), in: Capsule())
     }
 }

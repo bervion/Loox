@@ -34,10 +34,10 @@ struct FilterChip: View {
         let theme = env.theme.active
         Button(action: action) {
             HStack(spacing: 6) {
-                if let icon { PolarisIcon(icon, size: 15) }
-                Text(title).font(.subheadline.weight(.medium))
+                if let icon { PolarisIcon(icon, size: Metric.iconCompact) }
+                Text(title).vaultType(.subhead).fontWeight(.medium)
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, Space.s3)
             .padding(.vertical, Space.s2)
             .background(isSelected ? theme.color(.accent) : VaultColors.surface,
                         in: Capsule())

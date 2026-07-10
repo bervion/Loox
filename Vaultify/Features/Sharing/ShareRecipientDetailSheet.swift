@@ -61,12 +61,12 @@ struct ShareRecipientDetailSheet: View {
         .confirmationDialog("Hand over this passkey?", isPresented: Binding(
             get: { pendingHandOver != nil }, set: { if !$0 { pendingHandOver = nil } }),
             titleVisibility: .visible) {
-            Button("Hand Over — Can't Be Taken Back", role: .destructive) {
+            Button("Hand Over: Can't Be Taken Back", role: .destructive) {
                 if let pending = pendingHandOver { capabilities?[pending.id] = pending.capability }
                 pendingHandOver = nil
             }
         } message: {
-            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates — a key already handed over can't be pulled back.")
+            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a key already handed over can't be pulled back.")
         }
     }
 
@@ -152,7 +152,7 @@ struct ShareRecipientDetailSheet: View {
             Button(role: .destructive) {
                 confirmRevoke = true
             } label: {
-                Text("Revoke Access").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                Text("Revoke Access").frame(maxWidth: .infinity)
             }
             .disabled(busy)
         }

@@ -8,6 +8,7 @@ struct PersonaSwitcherScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editorTarget: PersonaEditorTarget?
     @State private var blockedReason: PersonaRemovalGate?
+    @State private var pendingDelete: Persona?
 
     var body: some View {
         List {
@@ -43,6 +44,15 @@ struct PersonaSwitcherScreen: View {
                  ? "You need at least one identity."
                  : "Make another identity the default first.")
         }
+        .confirmationDialog("Delete this identity permanently?", isPresented: deleteBinding,
+                            titleVisibility: .visible, presenting: pendingDelete) { persona in
+            Button("Delete permanently", role: .destructive) {
+                Haptics.error()
+                try? env.repository.deletePersona(persona)
+            }
+        } message: { _ in
+            Text("This also permanently deletes its private email addresses. Its logins and other items move to your default identity.")
+        }
     }
 
     private func row(_ persona: Persona) -> some View {
@@ -73,7 +83,7 @@ struct PersonaSwitcherScreen: View {
     private func attemptDelete(_ persona: Persona) {
         let gate = env.repository.personaRemovalGate(persona)
         if gate == .ok {
-            try? env.repository.deletePersona(persona)
+            pendingDelete = persona
         } else {
             blockedReason = gate
         }
@@ -81,6 +91,10 @@ struct PersonaSwitcherScreen: View {
 
     private var blockedBinding: Binding<Bool> {
         Binding(get: { blockedReason != nil }, set: { if !$0 { blockedReason = nil } })
+    }
+
+    private var deleteBinding: Binding<Bool> {
+        Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })
     }
 }
 

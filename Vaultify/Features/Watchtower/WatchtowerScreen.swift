@@ -30,6 +30,13 @@ struct WatchtowerScreen: View {
         health.analyzedCount > 0 && totalIssueCount == 0
     }
 
+    /// Nothing to analyze yet (no items with a password, no 2FA-capable logins). Distinct
+    /// from `allClear`: without this the "To fix" card rendered with zero rows — a hollow
+    /// scaffold with a header and no content.
+    private var emptyVault: Bool {
+        health.analyzedCount == 0 && totalIssueCount == 0
+    }
+
     private var totalIssueCount: Int {
         health.weak.count + health.reused.count + pwned.count + health.missing2FA.count
     }
@@ -115,7 +122,7 @@ struct WatchtowerScreen: View {
         case .compromised:
             WatchtowerCategoryScreen(
                 title: "Exposed password", issues: pwned,
-                infoNote: "Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
+                infoNote: "Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
         case .reused:
             WatchtowerCategoryScreen(title: "Reused passwords", issues: health.reused)
         case .weak:
@@ -160,7 +167,9 @@ struct WatchtowerScreen: View {
             }
             .padding(.horizontal, Space.gutter)
 
-            if allClear {
+            if emptyVault {
+                emptyVaultView
+            } else if allClear {
                 allClearView
             } else {
                 issueSection
@@ -266,6 +275,22 @@ struct WatchtowerScreen: View {
         return entries
     }
 
+    // MARK: - Empty vault
+
+    private var emptyVaultView: some View {
+        HStack(spacing: Space.s3) {
+            PolarisIcon(Icons.shield, size: Metric.iconInline)
+                .themedForeground(.secondary)
+            Text("Add a password to see your vault's security score.")
+                .vaultType(.callout)
+                .themedForeground(.secondary)
+        }
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .themedCard()
+        .padding(.horizontal, Space.gutter)
+    }
+
     // MARK: - All-clear
 
     private var allClearView: some View {
@@ -291,7 +316,7 @@ struct WatchtowerScreen: View {
             }
             .toggleStyle(.themed)
 
-            Text("Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
+            Text("Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
                 .vaultType(.footnote)
                 .themedForeground(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -334,7 +359,7 @@ struct WatchtowerScreen: View {
             }
             if count > 0 {
                 results.append(PasswordAudit.issue(item, kind: .pwned,
-                                                   detail: "Seen \(count) times in breaches"))
+                                                   detail: appString("Seen \(count) times in breaches")))
             }
         }
         pwned = results

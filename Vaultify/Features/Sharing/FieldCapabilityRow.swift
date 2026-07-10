@@ -28,7 +28,7 @@ struct FieldCapabilityRow: View {
                     .themedForeground()
                     .lineLimit(1)
                 if !shareable {
-                    Text(field.isExtraProtected ? "Extra-protected — not shareable"
+                    Text(field.isExtraProtected ? "Extra-protected, not shareable"
                                                 : "Attachments aren’t shareable")
                         .vaultType(.footnote)
                         .themedForeground(.secondary)

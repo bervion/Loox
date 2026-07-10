@@ -72,7 +72,7 @@ nonisolated enum PasswordAudit {
                 weak.append(issue(item, kind: .weak))
             }
             if counts[password, default: 0] > 1 {
-                reused.append(issue(item, kind: .reused, detail: "Used by \(counts[password]!) items"))
+                reused.append(issue(item, kind: .reused, detail: appString("Used by \(counts[password]!) items")))
             }
         }
 

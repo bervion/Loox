@@ -34,7 +34,7 @@ struct TrustFingerprintView: View {
                 onConfirm()
             } label: {
                 Text("Activate Sharing")
-                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
         }

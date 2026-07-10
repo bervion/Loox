@@ -16,9 +16,11 @@ enum VaultWriter {
     /// `updatedAt = now` and `dirty = true` (the `ItemRecord` default) so the app pushes it to
     /// CloudKit on its next sync. Fields use the correct `FieldKind`s so the item survives the
     /// reader's `passwordField != nil` filter and resolves via `usernameField`/`urlField`.
+    /// `folderId` links the item to a Space (persona ownership is derived from the Space, never
+    /// stored directly on the item — mirrors `VaultRepository`'s only linkage path). Nil = Unfiled.
     @discardableResult
     static func createLogin(site: String, username: String, password: String,
-                            vaultKey: [UInt8]) throws -> String {
+                            folderId: String? = nil, vaultKey: [UInt8]) throws -> String {
         guard !password.isEmpty else { throw Failure.emptyPassword }
         let now = Date()
         let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -35,7 +37,7 @@ enum VaultWriter {
         let id = UUID().uuidString
         let title = trimmedSite.isEmpty ? (trimmedUser.isEmpty ? "Login" : trimmedUser)
                                         : siteTitle(trimmedSite)
-        let secret = ItemSecret(title: title, category: .login, fields: fields)
+        let secret = ItemSecret(title: title, category: .login, folderId: folderId, fields: fields)
         let sealed = try AESGCM.seal(JSONEncoder().encode(secret), key: vaultKey)
 
         let store = try VaultStore(recoverable: false)

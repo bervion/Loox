@@ -96,7 +96,7 @@ let project = Project(
                 // Accept CKShare invitations (Approval Mode: owner shares an
                 // approval zone with a looked-up participant).
                 "CKSharingSupported": true,
-                "NSCameraUsageDescription": "Loox uses the camera to scan 2FA setup QR codes.",
+                "NSCameraUsageDescription": "Loox uses the camera to scan 2FA setup QR codes and payment cards.",
                 "NSFaceIDUsageDescription": "Loox uses Face ID to unlock your vault.",
                 "UIApplicationSupportsIndirectInputEvents": true,
                 "UIApplicationSceneManifest": [

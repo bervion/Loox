@@ -8,6 +8,7 @@ struct SettingsScreen: View {
     @State private var confirmErase = false
     @State private var erasing = false
     @State private var relayBlockErase = false
+    @State private var confirmApprovalModeOff = false
 
     /// Erase, but tear down live relay aliases first. If the vault has active
     /// aliases and the relay can't be reached, the erase is BLOCKED (an "erase"
@@ -57,6 +58,26 @@ struct SettingsScreen: View {
         Binding(
             get: { SharedConfig.automaticPasskeyUpgradesEnabled },
             set: { SharedConfig.automaticPasskeyUpgradesEnabled = $0 })
+    }
+
+    /// Approval Mode (ADR-2): deliberately independent of `iCloudSyncEnabled` — turning
+    /// this on/off must never touch vault-item sync. Turning ON is immediate (arms
+    /// listening; harmless with no shares yet). Turning OFF only pauses the approval
+    /// listening services (`OwnerShareRefresher`, `ApprovalCoordinator`,
+    /// `InviteInboxCoordinator`, `SharedZoneSubscriptionService` all early-return on this
+    /// flag) — it does not revoke or delete any existing CKShare, so a confirmation
+    /// states that plainly instead of silently flipping.
+    private var approvalModeBinding: Binding<Bool> {
+        Binding(
+            get: { env.settings.approvalModeEnabled },
+            set: { isOn in
+                if isOn {
+                    env.settings.approvalModeEnabled = true
+                    Haptics.tap()
+                } else {
+                    confirmApprovalModeOff = true
+                }
+            })
     }
 
     /// Ask iOS to turn Loox on as the AutoFill (password / passkey) provider. On iOS 18+
@@ -118,7 +139,7 @@ struct SettingsScreen: View {
                 } header: {
                     Text("Security")
                 } footer: {
-                    Text("Auto-Lock counts both time away from the app and idle time in it — \"Immediately\" locks the moment you leave, longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
+                    Text("Auto-Lock counts both time away from the app and idle time in it. \"Immediately\" locks the moment you leave; longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")
                 }
                 .listRowBackground(VaultColors.surface)
 
@@ -165,6 +186,13 @@ struct SettingsScreen: View {
                         Text("Never").tag(0)
                     } label: {
                         Label { Text("Clear clipboard") } icon: { PolarisIcon(Icons.copy) }
+                    }
+                }
+                .listRowBackground(VaultColors.surface)
+
+                Section("Notifications") {
+                    NavigationLink { NotificationsSettingsView() } label: {
+                        Label { Text("Notifications") } icon: { PolarisIcon(Icons.notification) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -218,6 +246,17 @@ struct SettingsScreen: View {
                 .listRowBackground(VaultColors.surface)
 
                 Section {
+                    Toggle(isOn: approvalModeBinding) {
+                        Label { Text("Approval Mode") } icon: { PolarisIcon(Icons.share) }
+                    }
+                } header: {
+                    Text("Sharing")
+                } footer: {
+                    Text("Share a login with someone and approve each request before they can use it, over iCloud. Independent of iCloud Sync above.")
+                }
+                .listRowBackground(VaultColors.surface)
+
+                Section {
                     // Deliberate lock: the lock screen requires a slide before Face ID,
                     // otherwise the camera re-opens the vault the instant it locks.
                     Button { env.session.lock(deliberate: true) } label: {
@@ -255,6 +294,14 @@ struct SettingsScreen: View {
                 Button("Erase Everything", role: .destructive) { eraseWithRelayTeardown() }
             } message: {
                 Text("This permanently deletes every item and key on this device. This cannot be undone.")
+            }
+            .confirmationDialog("Turn off Approval Mode?", isPresented: $confirmApprovalModeOff, titleVisibility: .visible) {
+                Button("Turn Off", role: .destructive) {
+                    env.settings.approvalModeEnabled = false
+                    Haptics.tap()
+                }
+            } message: {
+                Text("Logins you already shared stay shared. New approval requests and invites pause until you turn this back on.")
             }
         }
     }

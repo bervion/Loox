@@ -15,11 +15,22 @@ nonisolated enum Metric {
     static let rowHeight: CGFloat = 56
 
     // Icon optical sizes
+    /// Compact icon tier for inline banner/chip glyphs (`VaultInfoBanner`, `CapabilityBannerView`,
+    /// `FilterChip`) — smaller than `iconInline` since these sit beside footnote/subhead text,
+    /// not body rows.
+    static let iconCompact: CGFloat = 16
     static let iconInline: CGFloat = 20    // inline within text / rows
     static let iconUtility: CGFloat = 24   // utility tiles / toolbar
     static let iconTab: CGFloat = 28       // tab bar (icon-only → standard tab-icon size)
     static let iconTile: CGFloat = 32      // leading row tile
     static let iconTileLarge: CGFloat = 40
+
+    /// Row-leading folder/Space badge tile (`FolderBadge`, `ItemsScreen`/`FolderPickerSheet`
+    /// row leading tiles, "None" placeholder tile) — distinct from `iconTile` (32) since this
+    /// size recurs specifically for the folder badge family.
+    static let badgeTile: CGFloat = 30
+    /// Icon-picker grid tile (`IconColorPicker`'s curated-icon grid cell).
+    static let iconPickerTile: CGFloat = 50
 }
 
 /// Floating icon-only tab bar layout (Design System: Threads-style minimal bar).

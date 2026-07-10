@@ -132,14 +132,14 @@ struct NotificationsScreen: View {
             }
             Spacer(minLength: Space.s2)
             Button("Not Now") { env.inviteInboxCoordinator.dismiss(invite) }
-                .buttonStyle(.bordered)
+                .buttonStyle(.themedCompact)
             Button("Accept") {
                 Task {
                     do { try await env.inviteInboxCoordinator.accept(invite) }
                     catch { acceptError = error.localizedDescription }
                 }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.themedCompactProminent)
         }
         .frame(minHeight: Metric.hitMin)
     }
@@ -168,8 +168,8 @@ struct NotificationsScreen: View {
     private func outgoingStatusText(_ status: ShareLifecycle) -> LocalizedStringKey {
         switch status {
         case .inviteSent: "Waiting for them to accept"
-        case .accepted: "Accepted — finishing on their device"
-        case .readyForCeremony: "Ready — tap to confirm"
+        case .accepted: "Accepted. Finishing on their device"
+        case .readyForCeremony: "Ready. Tap to confirm"
         case .active: ""
         }
     }

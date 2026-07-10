@@ -26,11 +26,35 @@ struct ItemDetailScreen: View {
     /// Non-nil when the entry is tapped but blocked (e.g. guard2-only item) —
     /// shown as an explainer rather than a silently disabled control.
     @State private var quickViewBlockedReason: String?
+    /// True once the password row has scrolled past the top of the viewport —
+    /// drives the T3 bottom "Copy Password" cluster's fade-in.
+    @State private var passwordFieldOffscreen = false
+
+    /// Named coordinate space for the scroll view, so the password row's frame
+    /// (reported via `PasswordFieldFramePreferenceKey`) can be read relative to
+    /// the viewport rather than the whole screen — no iOS-18-only scroll API.
+    private static let scrollSpace = "itemDetailScroll"
 
     /// Owned items come from the vault store; `shared::` ids resolve to the
     /// recipient-side projection (read-only, V1.2).
     private var item: VaultItem? {
         env.repository.item(id: itemID) ?? env.sharedItems.item(id: itemID)
+    }
+
+    /// T3: the bottom "Copy Password" cluster only ever applies to an OWNED
+    /// login item that actually has a password to copy. Shared projections are
+    /// excluded outright: their values render only behind `SharedAccessGateView`
+    /// (INV-01), and this overlay must not offer a copy path outside that gate.
+    private func showsCopyPasswordCluster(_ item: VaultItem) -> Bool {
+        item.sharedOrigin == nil
+            && item.category == .login
+            && !(item.passwordField?.value.isEmpty ?? true)
+    }
+
+    private func copyPassword(_ item: VaultItem) {
+        guard let field = item.passwordField, !field.value.isEmpty else { return }
+        env.clipboard.copy(field.value, label: field.label, sensitive: true)
+        env.repository.markUsed(item)
     }
 
     private func folder(for item: VaultItem) -> Folder? {
@@ -77,19 +101,42 @@ struct ItemDetailScreen: View {
                         SharedItemPasskeysSection(itemID: item.id)
                         safetyCodeCard
                     }
-                    trashCard(item)
+                    // Progressive disclosure: a live owned item shows no destructive
+                    // card here at all (Move to Trash lives in the "…" menu). Trashed
+                    // items keep Restore/Delete; shared projections keep Leave Share.
+                    if item.isTrashed || item.sharedOrigin != nil {
+                        trashCard(item)
+                    }
                     metadata(item)
                 }
                 .padding(Space.gutter)
+                // Reserve room so the floating "Copy Password" cluster (T3) never
+                // covers the metadata row for a login item that could show it.
+                .padding(.bottom, showsCopyPasswordCluster(item) ? Metric.controlLarge + Space.s7 : 0)
             } else if itemID.hasPrefix("shared::") && !env.sharedItems.hasLoaded {
                 // Cold-start restore straight into a shared item: the
                 // projection is still loading — don't flash "not found".
-                ProgressView().frame(maxWidth: .infinity).padding(.top, 120)
+                ProgressView().frame(maxWidth: .infinity)
+                    .padding(.top, Space.s10 + Space.s9 + Space.s2)
             } else {
                 ContentUnavailableView {
                     Label { Text("Item not found") } icon: { PolarisIcon(Icons.alert, size: Metric.iconTileLarge) }
                 }
-                .padding(.top, 80)
+                .padding(.top, Space.s9 + Space.s7)
+            }
+        }
+        .coordinateSpace(name: Self.scrollSpace)
+        .onPreferenceChange(PasswordFieldFramePreferenceKey.self) { frame in
+            // The row's bottom edge has scrolled above the viewport's top edge —
+            // fail-closed to "on screen" (hidden cluster) if the row hasn't
+            // reported a frame yet (e.g. no password field / not laid out).
+            passwordFieldOffscreen = frame != .zero && frame.maxY <= 0
+        }
+        .overlay(alignment: .bottom) {
+            if let item, showsCopyPasswordCluster(item) {
+                BottomCopyPasswordCluster(visible: passwordFieldOffscreen) {
+                    copyPassword(item)
+                }
             }
         }
         // Grouped (gray) page background so the white surface cards read as cards — like Home.
@@ -143,6 +190,19 @@ struct ItemDetailScreen: View {
                                 } label: { Label("Archive", image: Icons.archive) }
                             }
                         }
+                        // Progressive disclosure (T1): the only destructive action for a
+                        // live item now lives here instead of an always-visible card —
+                        // reuses the same confirm dialog + last-identity gate as before.
+                        if !item.isTrashed {
+                            Divider()
+                            Button(role: .destructive) {
+                                if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
+                                    showLastIdentityBlock = true
+                                } else {
+                                    confirmTrash = true
+                                }
+                            } label: { Label("Move to Trash", image: Icons.trash) }
+                        }
                     } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
                 }
             } else if item?.sharedOrigin != nil {
@@ -175,11 +235,13 @@ struct ItemDetailScreen: View {
         .sheet(item: $resumeShare) { ShareResumeStepperSheet(share: $0) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
+                Haptics.error()
                 if let item { try? env.repository.moveToTrash(item); dismiss() }
             }
         }
         .confirmationDialog("Permanently delete this item?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Permanently", role: .destructive) {
+                Haptics.error()
                 if let item { try? env.repository.delete(item); dismiss() }
             }
         } message: {
@@ -199,6 +261,7 @@ struct ItemDetailScreen: View {
         .confirmationDialog("Leave this share?", isPresented: $confirmLeave,
                             titleVisibility: .visible) {
             Button("Leave Share", role: .destructive) {
+                Haptics.error()
                 Task { await leaveShare() }
             }
         } message: {
@@ -303,8 +366,8 @@ struct ItemDetailScreen: View {
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.title.isEmpty ? "Untitled" : item.title)
-                        .font(.title2.bold()).lineLimit(1).truncationMode(.tail)
-                    Text(item.category.title).font(.subheadline).themedForeground(.secondary)
+                        .vaultType(.screenTitle).lineLimit(1).truncationMode(.tail)
+                    Text(item.category.title).vaultType(.subhead).themedForeground(.secondary)
                 }
                 Spacer(minLength: 0)
             }
@@ -332,13 +395,15 @@ struct ItemDetailScreen: View {
     @ViewBuilder private func organization(_ item: VaultItem) -> some View {
         if !item.tags.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: Space.s2) {
                     ForEach(item.tags, id: \.self) { tag in
                         HStack(spacing: 3) {
                             PolarisIcon(Icons.hashtag, size: 11).themedForeground(.secondary)
-                            Text(tag).font(.subheadline)
+                            Text(tag).vaultType(.subhead)
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        // Matches `FilterChip`'s pill padding (Space.s3/s2) for a
+                        // consistent chip language across the app.
+                        .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
                         .background(VaultColors.surface, in: Capsule())
                     }
                 }
@@ -361,15 +426,28 @@ struct ItemDetailScreen: View {
             : []
         return VStack(spacing: 0) {
             ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
-                if isShared {
-                    // Read-only: mutation affordances hidden, reveal/copy stay.
-                    DetailFieldRow(field: field, readOnly: true)
-                } else {
-                    DetailFieldRow(field: field,
-                                   totpSecret: field.kind == .totp ? nil : totpSecret,
-                                   onChange: { update($0, in: item) },
-                                   onRemove: { remove(field, in: item) },
-                                   onUsed: { env.repository.markUsed(item) })
+                Group {
+                    if isShared {
+                        // Read-only: mutation affordances hidden, reveal/copy stay.
+                        DetailFieldRow(field: field, category: item.category, readOnly: true)
+                    } else {
+                        DetailFieldRow(field: field,
+                                       category: item.category,
+                                       totpSecret: field.kind == .totp ? nil : totpSecret,
+                                       onChange: { update($0, in: item) },
+                                       onRemove: { remove(field, in: item) },
+                                       onUsed: { env.repository.markUsed(item) })
+                    }
+                }
+                // Reports the password row's on-screen position (T3 bottom cluster) —
+                // no-op for every other field kind.
+                .background {
+                    if field.kind == .password {
+                        GeometryReader { proxy in
+                            Color.clear.preference(key: PasswordFieldFramePreferenceKey.self,
+                                                    value: proxy.frame(in: .named(Self.scrollSpace)))
+                        }
+                    }
                 }
                 if index < fields.count - 1 || !requestFieldIds.isEmpty {
                     Divider().padding(.leading, Space.gutter)
@@ -381,7 +459,7 @@ struct ItemDetailScreen: View {
                     // this IS the item's TOTP field, just owner-gated.
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Verification code")
-                            .font(.caption.weight(.medium))
+                            .vaultType(.caption).fontWeight(.medium)
                             .foregroundStyle(env.theme.active.color(.accent))
                         RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId)
                     }
@@ -396,23 +474,17 @@ struct ItemDetailScreen: View {
         }
         .background(VaultColors.surface)
         .vaultCornerRadius(Radius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-        )
+        // Elevation over hairline stroke — a true semantic card, but the shadow
+        // alone separates it from the grouped background (card ≠ page in both
+        // light and dark, see VaultColors.surface vs .groupedBackground).
+        .elevation(.level1)
     }
 
-    /// Origin banner for a shared projection (read-only semantics up front).
+    /// Origin banner for a shared projection (read-only semantics up front) — a
+    /// flat tinted banner, not another stroked card competing with the fields card.
     private var sharedBadge: some View {
-        HStack(spacing: Space.s2) {
-            PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.accent)
-            Text("Shared with you — you can use what's listed here, but not edit it.")
-                .vaultType(.footnote).themedForeground(.secondary)
-        }
-        .padding(Space.s3)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(VaultColors.surface)
-        .vaultCornerRadius(Radius.md)
+        VaultInfoBanner(.info, icon: Icons.shield,
+                         text: "Shared with you. You can use what's listed here, but not edit it.")
     }
 
     /// Discreet verification affordance — matches the code on the owner's
@@ -446,17 +518,33 @@ struct ItemDetailScreen: View {
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text("Shared with").vaultType(.sectionLabel).themedForeground(.tertiary)
                 VStack(spacing: 0) {
-                    ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
+                    ForEach(shares) { share in
                         shareRow(share)
-                        if index < shares.count - 1 { Divider().padding(.leading, Space.gutter) }
+                        Divider().padding(.leading, Space.gutter)
+                    }
+                    // In-flow entry to add another recipient — the toolbar share
+                    // icon stays, but sharing again from where the recipients
+                    // already live is the natural next tap.
+                    if !item.isTrashed {
+                        Button { showShareAccess = true } label: {
+                            HStack(spacing: Space.s3) {
+                                PolarisIcon(Icons.addCircle, size: Metric.iconInline)
+                                    .themedForeground(.accent)
+                                Text("Share this item")
+                                    .vaultType(.body)
+                                    .foregroundStyle(env.theme.uiTint)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, Space.gutter).padding(.vertical, 12)
+                            .frame(minHeight: Metric.hitMin)
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .background(VaultColors.surface)
                 .vaultCornerRadius(Radius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-                )
+                .elevation(.level1)
             }
         }
     }
@@ -481,7 +569,9 @@ struct ItemDetailScreen: View {
                     if isPending {
                         VaultStatusBadge(kind: .action, label: "Resume")
                     } else {
-                        VaultStatusBadge(kind: .active, label: "Active")
+                        // No status badge here: the subtitle already says the
+                        // share is active — the duplicate pill only squeezed
+                        // the recipient's email into an ellipsis.
                         PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                     }
                 }
@@ -490,13 +580,16 @@ struct ItemDetailScreen: View {
                         .padding(.leading, Metric.iconInline + Space.s3)
                 }
             }
-            .padding(.horizontal, Space.gutter).padding(.vertical, 12)
+            .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
     }
 
-    /// Trashed items can be restored or purged; live items can be moved to Trash.
+    /// Destructive-action card: rendered ONLY for a trashed item (Restore/Delete) or a
+    /// shared projection (Leave Share). A live owned item has no card here at all —
+    /// "Move to Trash" moved into the "…" menu (progressive disclosure; Archive lives
+    /// there too, so this avoided a second destructive card competing for attention).
     @ViewBuilder
     private func trashCard(_ item: VaultItem) -> some View {
         if item.sharedOrigin != nil {
@@ -514,43 +607,33 @@ struct ItemDetailScreen: View {
                     confirmDelete = true
                 }
             }
-        } else {
-            actionRow("Move to Trash", icon: Icons.trash, color: env.theme.active.color(.destructive)) {
-                if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
-                    showLastIdentityBlock = true
-                } else {
-                    confirmTrash = true
-                }
-            }
         }
     }
 
     private func actionRow(_ label: LocalizedStringKey, icon: String, color: Color,
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: Space.s3) {
                 PolarisIcon(icon, size: Metric.iconInline).foregroundStyle(color)
-                Text(label).foregroundStyle(color)
+                Text(label).vaultType(.body).foregroundStyle(color)
                 Spacer()
             }
-            .padding(.horizontal, Space.gutter).padding(.vertical, 14)
+            .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(VaultColors.surface,
                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-            )
+            .elevation(.level1)
         }
         .buttonStyle(.plain)
     }
 
+    /// Single compact metadata line — two rows of near-identical low-priority
+    /// text read as noise; one line reads as a caption.
     private func metadata(_ item: VaultItem) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Created \(item.createdAt.formatted(date: .abbreviated, time: .shortened))")
-            Text("Modified \(item.updatedAt.formatted(date: .abbreviated, time: .shortened))")
-        }
-        .font(.caption).themedForeground(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, Space.s1)
+        let created = item.createdAt.formatted(date: .abbreviated, time: .shortened)
+        let modified = item.updatedAt.formatted(date: .abbreviated, time: .shortened)
+        return Text(appString("Created \(created), modified \(modified)"))
+            .vaultType(.caption).themedForeground(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, Space.s1)
     }
 }

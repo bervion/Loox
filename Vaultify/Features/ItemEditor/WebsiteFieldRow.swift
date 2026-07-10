@@ -13,14 +13,14 @@ struct WebsiteFieldRow: View {
             // Empty built-in placeholder + a gray Text overlay: the default placeholder here
             // picks up the app accent tint (shows blue), so draw our own neutral one.
             TextField("", text: $field.value)
-                .font(.body)
+                .vaultType(.body)
                 .platformKeyboardType(.url)
                 .platformAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .overlay(alignment: .leading) {
                     if field.value.isEmpty {
                         Text(verbatim: "https://example.com")
-                            .font(.body)
+                            .vaultType(.body)
                             .themedForeground(.tertiary)
                             .allowsHitTesting(false)
                     }

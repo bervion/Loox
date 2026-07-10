@@ -49,7 +49,7 @@ struct AboutView: View {
                     .themedForeground(.accent)
             }
             .fixedSize(horizontal: false, vertical: true)
-            Text("Every account you own — your money, your photos, your conversations — hangs on a handful of passwords. We think the thing that holds them should answer to you, and no one else.")
+            Text("Every account you own, your money, your photos, your conversations, hangs on a handful of passwords. We think the thing that holds them should answer to you, and no one else.")
                 .vaultType(.body)
                 .themedForeground(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -67,7 +67,7 @@ struct AboutView: View {
             Text("Why we built Loox")
                 .vaultType(.sectionLabel)
                 .foregroundStyle(AboutInk.highlight)
-            Text("We didn't invent a new need. We took one of the oldest needs on the internet — keeping secrets — and made it 10× better.")
+            Text("We didn't invent a new need. We took one of the oldest needs on the internet, keeping secrets, and made it 10× better.")
                 .vaultType(.headline)
                 .foregroundStyle(AboutInk.text)
                 .fixedSize(horizontal: false, vertical: true)
@@ -93,13 +93,13 @@ struct AboutView: View {
 
             promiseCard(number: 1, tint: env.theme.active.color(.accent),
                         title: "Your device is the vault",
-                        body: "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone — to iCloud, to another device — it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
+                        body: "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
             promiseCard(number: 2, tint: QuickActionCard.tealFill,
                         title: "Trust is verified, never assumed",
-                        body: "Share a password, pair a device, open on a computer — every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")
+                        body: "Share a password, pair a device, open on a computer. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")
             promiseCard(number: 3, tint: QuickActionCard.purpleFill,
                         title: "You can always walk away",
-                        body: "Export everything, anytime, in formats other apps read. Your Emergency Kit recovers your vault without us. A lock that only locks in is a cage — Loox is a door, and you hold the key.")
+                        body: "Export everything, anytime, in formats other apps read. Your Emergency Kit recovers your vault without us. A lock that only locks in is a cage. Loox is a door, and you hold the key.")
         }
     }
 
@@ -107,7 +107,11 @@ struct AboutView: View {
                              title: LocalizedStringKey, body: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             Text(verbatim: "\(number)")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                // Dynamic-Type-scalable large-title text style (still rounded/heavy for the
+                // decorative numeral look) instead of a fixed pixel size, so it keeps pace
+                // with the surrounding vaultType body copy at accessibility sizes.
+                .font(.system(.largeTitle, design: .rounded))
+                .fontWeight(.heavy)
                 .foregroundStyle(tint.opacity(0.35))
             Text(title)
                 .vaultType(.headline)
@@ -206,8 +210,8 @@ struct AboutView: View {
         HStack(alignment: .top, spacing: Space.s3) {
             PolarisIcon(icon, size: 22).foregroundStyle(Color.accentColor).frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.medium))
-                Text(detail).font(.caption).themedForeground(.secondary)
+                Text(title).vaultType(.subhead).fontWeight(.medium).themedForeground(.primary)
+                Text(detail).vaultType(.caption).themedForeground(.secondary)
             }
         }
     }

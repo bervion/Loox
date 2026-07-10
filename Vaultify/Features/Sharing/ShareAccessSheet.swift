@@ -106,7 +106,7 @@ struct ShareAccessSheet: View {
     }
 
     var body: some View {
-        VaultSheetScaffold(title: sheetTitle) {
+        VaultSheetScaffold(title: sheetTitle, trailing: { toolbarTrailing }) {
             content
         }
         .task(id: pollingZoneName) {
@@ -136,14 +136,14 @@ struct ShareAccessSheet: View {
         // delivered secret is not revocable by us.
         .confirmationDialog("Hand over this secret?", isPresented: handOverDialogBinding,
                             titleVisibility: .visible) {
-            Button("Hand Over — Can't Be Taken Back", role: .destructive) {
+            Button("Hand Over: Can't Be Taken Back", role: .destructive) {
                 if let pending = pendingHandOver {
                     capabilities[pending.id] = pending.capability
                 }
                 pendingHandOver = nil
             }
         } message: {
-            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates — a secret already handed over can't be pulled back. To truly revoke it, change it at the website.")
+            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a secret already handed over can't be pulled back. To truly revoke it, change it at the website.")
         }
     }
 
@@ -172,6 +172,24 @@ struct ShareAccessSheet: View {
         case .choose: "Share"
         case .quickLink: "Quick Link"
         default: "Share Access"
+        }
+    }
+
+    /// Low-frequency manual escape hatch for the waiting step, demoted off the
+    /// primary action row into the toolbar overflow (action-hierarchy rule):
+    /// the button stack below only ever shows the ranked next step.
+    @ViewBuilder private var toolbarTrailing: some View {
+        if case .waiting = step {
+            Menu {
+                Button {
+                    Task { await checkProfileNow() }
+                } label: { Text("Check Now") }
+            } label: {
+                PolarisIcon("ic_menu_horizontal", size: Metric.iconInline)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
         }
     }
 
@@ -213,7 +231,7 @@ struct ShareAccessSheet: View {
                     step = .config
                 } label: {
                     Text("Try Again")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
             }
@@ -437,12 +455,12 @@ struct ShareAccessSheet: View {
             Section {
                 shareOptionRow(icon: Icons.globe,
                                title: "Quick Link",
-                               subtitle: "Create an encrypted link that opens anywhere — no app needed. Expires automatically.") {
+                               subtitle: "Create an encrypted link that opens anywhere, no app needed. Expires automatically.") {
                     step = .quickLink
                 }
                 shareOptionRow(icon: Icons.shield,
                                title: "Share with a Loox user",
-                               subtitle: "Approval-based access over iCloud — you stay in control of every use.") {
+                               subtitle: "Approval-based access over iCloud. You stay in control of every use.") {
                     step = .checking
                     Task { await enter() }
                 }
@@ -485,7 +503,7 @@ struct ShareAccessSheet: View {
                     .platformAutocapitalization(.never)
                     .autocorrectionDisabled()
             } footer: {
-                Text("Access is tied to this iCloud account — only they can accept, and there's no link that works for anyone else.")
+                Text("Access is tied to this iCloud account. Only they can accept, and no link works for anyone else.")
             }
             .listRowBackground(VaultColors.surface)
 
@@ -508,7 +526,7 @@ struct ShareAccessSheet: View {
                 } header: {
                     Text("What they can use")
                 } footer: {
-                    Text("Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use — the secret never leaves your vault.")
+                    Text("Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use. The secret never leaves your vault.")
                 }
                 .listRowBackground(VaultColors.surface)
 
@@ -517,7 +535,7 @@ struct ShareAccessSheet: View {
                         Label { Text("Allow use on multiple devices") } icon: { PolarisIcon(Icons.apps) }
                     }
                 } footer: {
-                    Text("When off, everything is encrypted for the first device they enrolled — their other devices only see a locked placeholder.")
+                    Text("When off, everything is encrypted for the first device they enrolled. Their other devices only see a locked placeholder.")
                 }
                 .listRowBackground(VaultColors.surface)
 
@@ -551,7 +569,7 @@ struct ShareAccessSheet: View {
                     Task { await createShare() }
                 } label: {
                     Text("Create Share")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 .disabled(!recipientEmail.contains("@") || !hasGrantedCapability)
@@ -566,7 +584,7 @@ struct ShareAccessSheet: View {
     private func statusLabel(for status: ShareLifecycle) -> LocalizedStringResource {
         switch status {
         case .inviteSent: "Invite sent"
-        case .accepted: "Accepted — finishing"
+        case .accepted: "Accepted. Finishing"
         case .readyForCeremony: "Ready to confirm"
         case .active: "Active"
         }
@@ -602,23 +620,31 @@ struct ShareAccessSheet: View {
                 ShareInviteSentSheet(recipientLabel: recipientEmail, itemTitle: title, accepted: accepted)
 
                 if !accepted && autoInviteSent {
-                    Text("Their device was notified automatically too — the Messages link below is just a backup.")
+                    Text("Their device was notified automatically too. The Messages link below is just a backup.")
                         .vaultType(.footnote).themedForeground(.tertiary)
                         .multilineTextAlignment(.center)
                 }
                 if pollExhausted {
-                    Text("Still waiting — you can close this screen and finish later, or tap Check Now.")
+                    Text("Still waiting. You can close this screen and finish later, or check again from the menu above.")
                         .vaultType(.footnote).themedForeground(.secondary)
                         .multilineTextAlignment(.center)
                 }
 
+                // Action hierarchy: exactly one filled primary + at most one
+                // quiet secondary. Before acceptance the single most useful
+                // thing the owner can do is help the recipient find the
+                // invite (nudge); "Done" is the quiet fallback since the
+                // pending state already persists and resurfaces elsewhere.
+                // Once accepted there is nothing left to nudge — Done becomes
+                // the primary. "Check Now" is a low-frequency escape hatch,
+                // demoted to the toolbar overflow (see `toolbarTrailing`).
                 VStack(spacing: Space.s3) {
-                    Button { dismiss() } label: {
-                        Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-                    }
-                    .buttonStyle(.themedProminent)
-
-                    if let shareURL {
+                    if accepted {
+                        Button { dismiss() } label: {
+                            Text("Done").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.themedProminent)
+                    } else if let shareURL {
                         #if os(iOS)
                         // Primary nudge: iMessage with the recipient pre-filled
                         // (the share sheet can't preselect one; the compose
@@ -628,8 +654,9 @@ struct ShareAccessSheet: View {
                                 showMessageCompose = true
                             } label: {
                                 Label { Text("Nudge via Messages") } icon: { PolarisIcon(Icons.share) }
-                                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                                    .frame(maxWidth: .infinity)
                             }
+                            .buttonStyle(.themedProminent)
                             .sheet(isPresented: $showMessageCompose) {
                                 MessageComposeView(
                                     recipients: [normalizedEmail],
@@ -638,23 +665,28 @@ struct ShareAccessSheet: View {
                         } else {
                             ShareLink(item: shareURL) {
                                 Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
-                                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                                    .frame(maxWidth: .infinity)
                             }
+                            .buttonStyle(.themedProminent)
                         }
                         #else
                         ShareLink(item: shareURL) {
                             Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
-                                .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                                .frame(maxWidth: .infinity)
                         }
+                        .buttonStyle(.themedProminent)
                         #endif
-                    }
-                    // Manual escape hatch: the background poll has a bounded
-                    // budget — this button re-checks on demand so a long wait
-                    // can't strand the owner on this screen.
-                    Button {
-                        Task { await checkProfileNow() }
-                    } label: {
-                        Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        Button { dismiss() } label: {
+                            Text("Done").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.themedTinted)
+                    } else {
+                        // Rare fallback (no invite URL minted) — Done is the
+                        // only available action.
+                        Button { dismiss() } label: {
+                            Text("Done").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.themedProminent)
                     }
                 }
 
@@ -689,7 +721,7 @@ struct ShareAccessSheet: View {
             PolarisIcon(Icons.info, size: Metric.iconTile)
                 .themedForeground(.warning)
             Text(blocker == .iCloudUnavailable
-                 ? "Sign in to iCloud to share access. Sharing uses an encrypted approval transport — it does not turn on vault sync."
+                 ? "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync."
                  : "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access.")
                 .vaultType(.callout).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
@@ -700,7 +732,7 @@ struct ShareAccessSheet: View {
                 Task { await enter() }
             } label: {
                 Text("Check Again")
-                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
         }

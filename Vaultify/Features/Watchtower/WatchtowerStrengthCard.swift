@@ -9,9 +9,12 @@ struct WatchtowerStrengthBar: View {
     let value: Int
 
     @State private var shown: CGFloat = 0   // animates 0 → value on entry
+    @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // Spectrum colours matching the DS StrengthBar definition (right → left fade)
+    // Fixed illustrative spectrum matching the DS StrengthBar definition (right → left
+    // fade) — a full-scale legend, not a per-item semantic status, so it intentionally
+    // does not shift with theme/accent (mirrors the reference design 1:1).
     private static let spectrum: [Color] = [
         Color(red: 0x22/255, green: 0xC5/255, blue: 0x5E/255),
         Color(red: 0x65/255, green: 0xD4/255, blue: 0x3A/255),
@@ -27,9 +30,11 @@ struct WatchtowerStrengthBar: View {
         GeometryReader { geo in
             let fillWidth = max(14, geo.size.width * shown / 100)
             HStack(spacing: Space.s1) {
-                // Solid success fill portion — grows in from 0 on entry
+                // Solid success fill portion — grows in from 0 on entry. Routed
+                // through the theme's `.success` role (not a fixed hex) so it stays
+                // WCAG-legible and on-brand across every accent preset + appearance.
                 Capsule()
-                    .fill(Color(red: 0x22/255, green: 0xC5/255, blue: 0x5E/255))
+                    .fill(env.theme.active.color(.success))
                     .frame(width: fillWidth)
 
                 // Remaining spectrum segments

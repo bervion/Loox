@@ -20,7 +20,7 @@ nonisolated enum VaultKeyPairing {
             switch self {
             case .invalidPayload: return appString("That QR code isn’t a Loox pairing code.")
             case .unknownVersion: return appString("This pairing code needs a newer app version.")
-            case .invalidEnvelope: return appString("Pairing failed — try again with a fresh QR code.")
+            case .invalidEnvelope: return appString("Pairing failed. Try again with a fresh QR code.")
             }
         }
     }

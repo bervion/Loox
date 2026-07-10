@@ -1,8 +1,13 @@
 import SwiftUI
 
-/// Home tab — DS-spec composition (Phase 5):
-/// Header → Search entry → Quick actions → TOTP scroller → Needs Attention →
-/// Favorites → All items → Empty state when vault is empty.
+/// Home tab — credential-first composition (Design DNA pass, Phase 3):
+/// Header → pending shares / approval alerts → TOTP scroller → Needs Attention →
+/// Recently Used → Favorites → All items → profile strip → compact quick actions →
+/// Empty state when vault is empty.
+///
+/// The protagonist of this screen is "find and use a credential instantly" — live
+/// credential content leads the scroll, profile identity and secondary actions
+/// (Add/Generate/2FA/Watchtower) sit below it as a thin strip + compact row.
 ///
 /// `selectedFolderId` nil = "All Spaces" (no folder filter). Every section is
 /// filtered by the selected folder and renders only when non-empty.
@@ -17,6 +22,9 @@ struct HomeScreen: View {
     @State private var showGenerator = false
     @State private var showTotpList = false
     @State private var showFolderPicker = false
+    /// Presents the "New Space" sheet from the persona-empty state's primary CTA
+    /// (reuses the existing folder-creation flow — see `personaEmptyState`).
+    @State private var showCreateSpaceFromEmptyState = false
     @State private var selectedFolderId: String?
     /// Guards the once-per-launch restore of the remembered Space so it can't
     /// clobber a selection the user makes after launch.
@@ -39,6 +47,12 @@ struct HomeScreen: View {
 
     private var favoriteItems: [VaultItem] {
         env.repository.favorites(folder: selectedFolderId)
+    }
+
+    /// Capped small (5) so it stays a quick "reach for it again" strip rather than
+    /// duplicating the All items list below it.
+    private var recentlyUsedItems: [VaultItem] {
+        env.repository.recentlyUsed(folder: selectedFolderId, limit: 5)
     }
 
     private var allItems: [VaultItem] {
@@ -107,6 +121,12 @@ struct HomeScreen: View {
                     // A vault that's empty but RECEIVING shares still has a feed.
                     if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
                         emptyVaultState
+                    } else if env.repository.activePersonaItems.isEmpty && env.sharedItems.items.isEmpty {
+                        // The vault overall has data, but the ACTIVE persona has nothing to
+                        // show (no owned Space yet, or an owned Space with zero items) — the
+                        // global gate above would otherwise fall through to `scrollContent`
+                        // and render the "All Spaces (0)" scaffolding with an empty card.
+                        personaEmptyState
                     } else {
                         scrollContent
                     }
@@ -133,7 +153,12 @@ struct HomeScreen: View {
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
             .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
-            .onChange(of: selectedFolderId) { env.settings.setLastSelectedSpace($1, persona: activePersonaKey) }
+            // Also re-mirror into the App Group so the AutoFill extension defaults a
+            // newly saved login into this same Space (see `mirrorActivePersonaContext`).
+            .onChange(of: selectedFolderId) {
+                env.settings.setLastSelectedSpace($1, persona: activePersonaKey)
+                env.repository.mirrorActivePersonaContext()
+            }
             // Switching the active persona re-drives the Home filter to that persona's Space.
             .onChange(of: env.repository.activePersona?.id) { applyRememberedSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
@@ -151,6 +176,10 @@ struct HomeScreen: View {
             .sheet(isPresented: $showSettings) { SettingsScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
             .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
+            // Persona-empty state's "Create a Space" CTA — reuses the standard Space
+            // creation flow; the newly owned Space then satisfies the persona-scoped
+            // gate above on its own (no manual filter/state wiring needed here).
+            .sheet(isPresented: $showCreateSpaceFromEmptyState) { FolderEditorSheet(folder: nil) }
             // Anchored at the stable root, NOT inside pendingSharesSection: cancelling
             // the last pending share removes that conditional view mid-dismiss, which
             // would strand the sheet binding and re-present a stale record later.
@@ -168,33 +197,44 @@ struct HomeScreen: View {
                 VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    // 2. Profile entry (avatar + name + email) → opens the Profile sheet.
+                    // 0. Identity context line — a thin "acting as" strip, not a card.
+                    // Sits at the very top so which persona you're operating as is
+                    // always visible (INV-R03 discoverability) without competing with
+                    // the protagonist band below.
                     profileRow
 
-                    // 3. Quick actions grid (Reminders-style colour cards)
-                    quickActionsGrid
+                    // Protagonist band — live/urgent credential content leads the screen
+                    // (find & use a credential instantly). Order: time-sensitive share/approval
+                    // alerts, then TOTP, Needs Attention, Recently Used, Favorites, All items.
 
-                    // 3b. Shares I sent that are still pending (design 12a):
-                    // first-class, persists across app kill — not tied to
-                    // whichever sheet created it.
+                    // 1. Shares I sent that are still pending (design 12a): first-class,
+                    // persists across app kill — not tied to whichever sheet created it.
                     if !pendingOutgoingShares.isEmpty {
                         pendingSharesSection
                     }
 
-                    // 4. Pending approval requests (owner side): one → open the
+                    // 2. Pending approval requests (owner side): one → open the
                     // ceremony directly; several → the notifications inbox.
                     if !env.approvalCoordinator.pendingOwnerRequests.isEmpty {
                         approvalAttentionRow
                     }
 
-                    // 5. TOTP scroller (only when items with TOTP exist)
+                    // 3. TOTP scroller (only when items with TOTP exist)
                     if !totpItems.isEmpty {
                         totpSection
                     }
 
-                    // 5. Needs attention (max 4)
+                    // 4. Needs attention (max 4)
                     if !attentionItems.isEmpty {
                         attentionSection
+                    }
+
+                    // 5. Recently used — "reach for it again" signal, distinct from All
+                    // items' edit-time sort. Only shown once the vault is big enough for
+                    // it to add signal: on a small vault everything is already on screen
+                    // and this strip just duplicates the list right below it.
+                    if !recentlyUsedItems.isEmpty, allItems.count > 5 {
+                        recentlyUsedSection
                     }
 
                     // 6. Favorites
@@ -204,6 +244,10 @@ struct HomeScreen: View {
 
                     // 7. All items (pinned first)
                     allItemsSection
+
+                    // 8. Quick-actions grid (Add/Generate/2FA/Watchtower) — secondary,
+                    // 2×2 horizontal pills so Vietnamese labels never truncate.
+                    quickActionsGrid
                 }
                 .padding(.horizontal, Space.gutter)
                 // Bottom inset so the floating tab bar never obscures the last row.
@@ -249,9 +293,9 @@ struct HomeScreen: View {
                 .themedForeground(waitingOnOwner ? .success : .warning)
             Group {
                 if waitingOnOwner {
-                    Text("Sharing \"\(title)\" · ready to confirm")
+                    Text("Sharing \"\(title)\" is ready to confirm")
                 } else {
-                    Text("Sharing \"\(title)\" · waiting for \(share.recipientLabel)")
+                    Text("Sharing \"\(title)\" is waiting for \(share.recipientLabel)")
                 }
             }
             .vaultType(.body).themedForeground()
@@ -318,21 +362,22 @@ struct HomeScreen: View {
     private var personaSubtitle: String {
         guard let persona = env.repository.activePersona else { return appString("Set up your identity") }
         let kind = PersonaKindStyle.label(persona.kind)
+        // Kind + email, comma-joined (user-chosen format: "Cá nhân, email…").
         if let email = env.repository.identityUsername(forPersona: persona), !email.isEmpty {
-            return "\(kind) · \(email)"
+            return "\(kind), \(email)"
         }
         return kind
     }
 
-    /// Profile entry row above the quick actions: avatar + "Profile" title + the default
-    /// identity's name & email. Tapping opens the Profile sheet (same as the old header icon).
+    /// Identity card at the top of the scroll: avatar + active persona name + email
+    /// on a white surface card. The user chose the card treatment over a thin strip —
+    /// the identity deserves a visible anchor, and the card reads cleanly against the
+    /// grouped background without competing with the credential band below.
     private var profileRow: some View {
         Button { uiState.homePath.append(ProfileRoute()) } label: {
             HStack(spacing: Space.s3) {
                 profileAvatar
                 VStack(alignment: .leading, spacing: 2) {
-                    // The active persona is the header identity — always visible so it's
-                    // clear which identity you're acting as. Tapping opens Profile to switch.
                     Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
                         .vaultType(.headline).themedForeground().lineLimit(1)
                     Text(verbatim: personaSubtitle)
@@ -345,49 +390,51 @@ struct HomeScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(rgb: env.theme.active.elevatedBackground))
             .vaultCornerRadius(Radius.lg)
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-            )
+            .elevation(.level1)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: "\(env.repository.activePersona?.displayName ?? appString("Profile")), \(personaSubtitle)"))
     }
 
-    /// 44pt circular avatar — stored image, letter-avatar, or a person glyph when no identity.
+    /// 44pt avatar — stored image, letter-avatar, or a person glyph when no identity.
+    /// Radius concentric to the card (outer lg, inset s4) so nested corners stay parallel.
     @ViewBuilder private var profileAvatar: some View {
-        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        let avatarSize: CGFloat = 44
+        let cornerRadius = Radius.concentric(outer: Radius.lg, inset: Space.s4)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         // The ACTIVE persona's own card — never another persona's (an anonymous
         // persona must not wear the personal photo).
         if let identity = env.repository.activeProfileItem {
             if let image = env.repository.avatarImage(for: identity.id) {
                 Image(platformImage: image).resizable().scaledToFill()
-                    .frame(width: 44, height: 44).clipShape(shape)
+                    .frame(width: avatarSize, height: avatarSize).clipShape(shape)
             } else {
-                ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: 44)
+                ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: avatarSize)
                     .clipShape(shape)
             }
         } else {
-            PolarisIcon(Icons.person, size: Metric.iconUtility)
+            PolarisIcon(Icons.person, size: Metric.iconInline)
                 .themedForeground(.accent)
-                .frame(width: 44, height: 44)
+                .frame(width: avatarSize, height: avatarSize)
                 .background(Color(rgb: env.theme.active.accentSoft), in: shape)
         }
     }
 
     // MARK: Quick actions
 
-    /// Reminders-style quick-action cards in a 2-up grid: Add · Generate (top row),
-    /// 2FA · Watchtower (bottom row). 2FA and Watchtower carry a live count badge.
+    /// Quick actions as a 2×2 grid of horizontal pills: Add · Generate · 2FA · Watchtower.
+    /// Half-width pills give Vietnamese labels ("Tạo mật khẩu") room to render whole —
+    /// a single row of four truncated them. Still secondary to the credential content
+    /// above: counts on 2FA/Watchtower stay a small trailing badge, not a headline.
     private var quickActionsGrid: some View {
-        // One GlassEffectContainer for all 8 glass views (4 cards + 4 badges) → a single
+        // One GlassEffectContainer for all glass views (4 pills + badges) → a single
         // backdrop layer; fixes the per-frame glass-update warning on theme changes.
         VaultGlassGroup {
-        LazyVGrid(
-            columns: [GridItem(.flexible(), spacing: Space.s3),
-                      GridItem(.flexible(), spacing: Space.s3)],
-            spacing: Space.s3
-        ) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3),
+                            GridItem(.flexible(), spacing: Space.s3)],
+                  spacing: Space.s3) {
             // Add — presents the item-type menu (uses ic_page_add, matches the header).
             Menu {
                 newItemMenuItems
@@ -398,8 +445,8 @@ struct HomeScreen: View {
                     fill: Color(rgb: env.theme.active.accent)
                 )
             }
-            // Plain card menu — macOS would otherwise draw a bordered pull-down button
-            // around the whole card, breaking the 2-up grid's visual consistency.
+            // Plain tile menu — macOS would otherwise draw a bordered pull-down button
+            // around the whole tile, breaking the compact row's visual consistency.
             .menuStyle(.button)
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
@@ -452,7 +499,7 @@ struct HomeScreen: View {
     private var attentionSection: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             homeSectionHeader(
-                title: LocalizedStringResource("Needs Attention · \(attentionItems.count)").inAppLocalized
+                title: LocalizedStringResource("Needs Attention (\(attentionItems.count))").inAppLocalized
             )
 
             groupedCard {
@@ -463,6 +510,22 @@ struct HomeScreen: View {
                         onOpen: { uiState.homePath.append($0.id) },
                         showDivider: idx < attentionItems.count - 1
                     )
+                }
+            }
+        }
+    }
+
+    // MARK: Recently used
+
+    private var recentlyUsedSection: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            homeSectionHeader(
+                title: LocalizedStringResource("Recently Used").inAppLocalized
+            )
+
+            groupedCard {
+                ForEach(Array(recentlyUsedItems.enumerated()), id: \.element.id) { idx, item in
+                    itemRow(item, showDivider: idx < recentlyUsedItems.count - 1)
                 }
             }
         }
@@ -501,28 +564,43 @@ struct HomeScreen: View {
     /// "All" section header — the Space switcher (name + item count + chevron) opening the
     /// picker, with the Sort action trailing. The switcher moved here from the top header bar.
     private var allItemsHeader: some View {
-        HStack(alignment: .lastTextBaseline) {
+        // .center (not .lastTextBaseline): both sides render the same
+        // `.sectionLabel` style, so centering is visually identical while
+        // staying correct once the invisible hit-target frames below add height.
+        HStack(alignment: .center) {
             Button { showFolderPicker = true } label: {
                 HStack(spacing: Space.s1) {
                     spaceTitleText.vaultType(.sectionLabel)
-                    Text(verbatim: "· \(allItems.count)").vaultType(.sectionLabel)
+                    Text(verbatim: "(\(allItems.count))").vaultType(.sectionLabel)
                     PolarisIcon(Icons.chevronDown, size: 12).themedForeground(.tertiary)
                 }
                 .themedForeground(.tertiary)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .frame(minHeight: Metric.hitMin)
+            .contentShape(Rectangle())
 
             Spacer()
 
-            Button {
-                sortOrder = sortOrder == .updated ? .title : .updated
+            // A real menu with a checkmark, not a silent toggle — tapping "Sort"
+            // and seeing nothing happen read as a dead button.
+            Menu {
+                Picker("Sort", selection: $sortOrder) {
+                    ForEach(VaultSort.allCases) { sort in
+                        Text(sort.label).tag(sort)
+                    }
+                }
             } label: {
                 Text(LocalizedStringResource("Sort").inAppLocalized)
                     .vaultType(.sectionLabel)
                     .foregroundStyle(env.theme.uiTint)
+                    .frame(minHeight: Metric.hitMin)
+                    .contentShape(Rectangle())
             }
+            .menuStyle(.button)
             .buttonStyle(.plain)
+            .menuIndicator(.hidden)
         }
         .padding(.bottom, Space.s1)
     }
@@ -582,6 +660,68 @@ struct HomeScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    /// Shown when the vault overall has data, but the ACTIVE persona has nothing
+    /// (no owned Space yet, or an owned Space with zero items) — e.g. a persona
+    /// whose only Space was deleted, or one just switched to for the first time.
+    /// Distinct from `emptyVaultState`: this is per-identity, not "first run".
+    private var personaEmptyState: some View {
+        VStack(spacing: Space.s6) {
+            ZStack {
+                Circle()
+                    .fill(Color(rgb: env.theme.active.accentSoft))
+                    .frame(width: 116, height: 116)
+                    .elevation(.level1)
+                PolarisIcon(env.repository.activePersonaSpaces.isEmpty ? Icons.folder : Icons.lockFill, size: 52)
+                    .themedForeground(.accent)
+            }
+
+            VStack(spacing: Space.s2) {
+                Text("Nothing here yet")
+                    .vaultType(.screenTitle)
+                    .themedForeground(.primary)
+                    .multilineTextAlignment(.center)
+                Text(personaEmptyStateSubtitle)
+                    .vaultType(.callout)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+            }
+
+            if env.repository.activePersonaSpaces.isEmpty {
+                // No owned Space: steer to creating one first (a new item here would
+                // otherwise fall back to Unfiled, which only the default identity owns).
+                Button { showCreateSpaceFromEmptyState = true } label: {
+                    HStack(spacing: Space.s2) {
+                        PolarisIcon(Icons.addCircle, size: Metric.iconInline)
+                        Text("Create a Space")
+                    }
+                }
+                .buttonStyle(.themedProminent)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s2)
+            } else {
+                Menu {
+                    newItemMenuItems
+                } label: {
+                    HStack(spacing: Space.s2) {
+                        PolarisIcon(Icons.add, size: Metric.iconInline)
+                        Text("Add Item")
+                    }
+                }
+                .buttonStyle(.themedProminent)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s2)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var personaEmptyStateSubtitle: LocalizedStringKey {
+        env.repository.activePersonaSpaces.isEmpty
+            ? "This identity doesn’t have a Space yet. Create one to start adding items."
+            : "Add your first item to this identity’s vault."
+    }
+
     // MARK: Add-item menu
 
     /// Item-type menu shared by the header "+", the Add quick action, and the empty
@@ -605,7 +745,10 @@ struct HomeScreen: View {
         action: LocalizedStringResource? = nil,
         onAction: (() -> Void)? = nil
     ) -> some View {
-        HStack(alignment: .lastTextBaseline) {
+        // .center (not .lastTextBaseline): title and action share the same
+        // `.sectionLabel` style, so centering is visually identical while
+        // staying correct once the action's invisible hit-target frame adds height.
+        HStack(alignment: .center) {
             Text(title)
                 .vaultType(.sectionLabel)
                 .themedForeground(.tertiary)
@@ -617,12 +760,17 @@ struct HomeScreen: View {
                         .foregroundStyle(env.theme.uiTint)
                 }
                 .buttonStyle(.plain)
+                .frame(minHeight: Metric.hitMin)
+                .contentShape(Rectangle())
             }
         }
         .padding(.bottom, Space.s1)
     }
 
-    /// Grouped card container (surface-base, Radius.lg, hairline stroke).
+    /// Grouped card container (surface-base, Radius.lg). Card-diet: the hairline stroke is
+    /// dropped in favor of `.elevation(.level1)` — the soft shadow plus the
+    /// elevatedBackground/groupedBackground contrast still reads as grouped in both light
+    /// and dark mode without an extra border line.
     @ViewBuilder
     private func groupedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
@@ -630,10 +778,7 @@ struct HomeScreen: View {
         }
         .background(Color(rgb: env.theme.active.elevatedBackground))
         .vaultCornerRadius(Radius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-        )
+        .elevation(.level1)
     }
 
     /// A tappable item row reusing VaultItemRow inside the grouped card.

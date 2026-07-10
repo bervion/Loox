@@ -11,8 +11,8 @@ struct SlideToUnlock: View {
     @State private var offsetX: CGFloat = 0
     @State private var completed = false
 
-    private let height: CGFloat = 56
-    private let inset: CGFloat = 4
+    private let height: CGFloat = Metric.rowHeight
+    private let inset: CGFloat = Space.s1
     private var knob: CGFloat { height - inset * 2 }
 
     var body: some View {

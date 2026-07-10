@@ -7,6 +7,11 @@ struct PolarisIcon: View {
     let name: String
     var size: CGFloat
 
+    /// `size` default (26) is an intentional fallback only — every call site is expected to
+    /// pass an explicit `Metric` tier (`iconCompact/iconInline/iconUtility/iconTab/iconTile/…`).
+    /// Kept as a plain default (not a `Metric` constant) because it back-stops ~20 existing
+    /// Settings-row call sites that omit `size:`; changing this value would reflow every one
+    /// of them at once, so it stays fixed rather than snapped to a token.
     init(_ name: String, size: CGFloat = 26) {
         self.name = name
         self.size = size

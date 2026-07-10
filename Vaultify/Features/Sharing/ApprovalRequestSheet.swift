@@ -124,12 +124,15 @@ struct ApprovalRequestSheet: View {
             .background(VaultColors.surface)
             .vaultCornerRadius(Radius.md)
 
+            // Action hierarchy: Approve is the single filled primary (the
+            // expected path); Reject is the quiet secondary — same tap
+            // target height, softer tinted style so it never competes.
             VStack(spacing: Space.s3) {
                 Button {
                     Task { await ceremony.approve(pending) }
                 } label: {
                     Text("Approve with Face ID")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 Button {
@@ -138,8 +141,9 @@ struct ApprovalRequestSheet: View {
                     }
                 } label: {
                     Text("Reject")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.themedTinted)
             }
         }
         .padding(Space.gutter)
@@ -203,7 +207,7 @@ struct ApprovalRequestSheet: View {
             Text(decision == .approved ? "Code sent" : "Request rejected")
                 .vaultType(.section).themedForeground()
             if decision == .approved {
-                Text("They received a one-time code. It expires with the current window — nothing else was shared.")
+                Text("They received a one-time code. It expires with the current window; nothing else was shared.")
                     .vaultType(.callout).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -211,7 +215,7 @@ struct ApprovalRequestSheet: View {
                 onFinished()
                 dismiss()
             } label: {
-                Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                Text("Done").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
         }
@@ -222,7 +226,7 @@ struct ApprovalRequestSheet: View {
         .task {
             env.notificationHistory.log(
                 decision == .approved ? .approvalApproved : .approvalRejected,
-                label: requesterLabel.map { "\($0) · \(itemTitle)" } ?? itemTitle)
+                label: requesterLabel.map { "\($0): \(itemTitle)" } ?? itemTitle)
             try? await Task.sleep(for: .seconds(1.5))
             onFinished()
             dismiss()
@@ -240,7 +244,7 @@ struct ApprovalRequestSheet: View {
                 onFinished()
                 dismiss()
             } label: {
-                Text("Close").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                Text("Close").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
         }

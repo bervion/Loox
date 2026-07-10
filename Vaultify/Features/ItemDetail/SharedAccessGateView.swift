@@ -64,7 +64,7 @@ struct SharedAccessGateView<Content: View>: View {
                     Button {
                         Task { await authorizer.refresh(itemID: itemID, env: env) }
                     } label: {
-                        Text("Try Again").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        Text("Try Again").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.themedProminent)
                 }

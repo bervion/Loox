@@ -5,6 +5,7 @@ import SwiftUI
 /// onboarding route until `settings.onboardingCompleted` flips at the end.
 struct OnboardingFlow: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var step: Step = .welcome
     @State private var recoveryKey = ""
     /// Captured at the name step so the Emergency Kit PDF can print "Created for {name}"
@@ -51,11 +52,11 @@ struct OnboardingFlow: View {
                 OnboardingDoneStep { env.settings.onboardingCompleted = true }
             }
         }
-        .animation(.smooth(duration: 0.35), value: step)
+        .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
         // Onboarding has no MainTabView, so it hosts its own copy-toast overlay
         // (Emergency Kit's Copy button would otherwise give only a haptic).
         .overlay(alignment: .bottom) { CopyToastOverlay() }
-        .animation(.spring(duration: 0.3), value: env.clipboard.recentCopyLabel)
+        .animation(.vault(.spring(duration: 0.3), reduceMotion: reduceMotion), value: env.clipboard.recentCopyLabel)
         .task(id: step) {
             if step == .emergencyKit, recoveryKey.isEmpty {
                 recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""
@@ -88,7 +89,7 @@ struct OnboardingFlow: View {
     /// onboarding after a recovery reset), so it never creates a duplicate default.
     private func seedIdentity(_ displayName: String, email: String, tag: String) {
         guard env.repository.activeIdentities.isEmpty else { return }
-        let note = appString("Welcome to Loox! This is your identity — it autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.")
+        let note = appString("Welcome to Loox. This is your identity. It autofills your name, email, and details into forms. Everything stays encrypted on this device; edit or add more anytime.")
         var identity = IdentitySeed.make(
             displayName: displayName, email: email, fallback: appString("Me"),
             note: note, tag: tag)
@@ -111,7 +112,7 @@ struct OnboardingFlow: View {
         }
         fields.append(DynamicField(
             label: "Note", kind: .multiline,
-            value: appString("This is your Loox account — the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.")))
+            value: appString("This is your Loox account, the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.")))
 
         let item = VaultItem(category: .login,
                              title: "\(appString("Loox Account")) (\(displayName))",
@@ -275,18 +276,20 @@ private struct OnboardingDoneStep: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            PolarisIcon(Icons.checkCircle, size: 72).foregroundStyle(VaultColors.strengthStrong)
-            OnboardingStepHeader(
-                "You’re all set",
-                subtitle: recap)
-            Spacer()
-            Button(action: onFinish) {
-                Text("Open Loox").frame(maxWidth: .infinity)
+        OnboardingScrollingStep {
+            VStack(spacing: 0) {
+                Spacer(minLength: Space.s8)
+                PolarisIcon(Icons.checkCircle, size: 72).foregroundStyle(VaultColors.strengthStrong)
+                OnboardingStepHeader(
+                    "You’re all set",
+                    subtitle: recap)
+                Spacer(minLength: Space.s6)
+                Button(action: onFinish) {
+                    Text("Open Loox").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.themedProminent).controlSize(.large)
+                .padding(.horizontal, Space.s6).padding(.bottom, Space.s6)
             }
-            .buttonStyle(.themedProminent).controlSize(.large)
-            .padding(.horizontal, Space.s6).padding(.bottom, Space.s6)
         }
     }
 }

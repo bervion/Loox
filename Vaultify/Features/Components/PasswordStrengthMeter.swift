@@ -32,12 +32,13 @@ struct PasswordStrengthMeter: View {
                         Text(String(localized: strength.title))
                     }
                 }
-                .font(.caption)
+                .vaultType(.caption)
                 .foregroundStyle(password.isEmpty ? env.theme.active.color(.secondary) : color)
                 Spacer()
                 if !password.isEmpty {
                     Text("\(bits) bits")
-                        .font(.caption2.monospacedDigit())
+                        .vaultType(.caption)
+                        .monospacedDigit()
                         .themedForeground(.secondary)
                 }
             }

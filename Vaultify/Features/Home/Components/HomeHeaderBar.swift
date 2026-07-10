@@ -39,8 +39,12 @@ struct HomeHeaderBar: View {
                             .overlay(alignment: .topTrailing) {
                                 if notificationCount > 0 {
                                     Text(verbatim: notificationCount > 9 ? "9+" : "\(notificationCount)")
-                                        .font(.caption2.bold())
-                                        .foregroundStyle(.white)
+                                        .vaultType(.caption)
+                                        .fontWeight(.bold)
+                                        // WCAG-derived on-color for the destructive-tinted
+                                        // badge (not a decorative quick-action tile — the
+                                        // white exemption doesn't cover this one).
+                                        .foregroundStyle(Color(rgb: env.theme.active.onDestructive))
                                         .frame(minWidth: 16, minHeight: 16)
                                         .background(env.theme.active.color(.destructive),
                                                     in: Circle())
@@ -212,11 +216,14 @@ struct HomeFolderPickerSheet: View {
         .buttonStyle(.plain)
     }
 
-    /// 30pt rounded leading tile with a centred Polaris icon.
+    /// 30pt rounded leading tile with a centred Polaris icon. Radius matches
+    /// `FolderBadge`'s size-relative formula (`size * 0.28`) so this pseudo-row's
+    /// tile stays visually consistent with the real Space tiles in the same list.
     private func tile(_ icon: String, fill: Color, iconColor: Color) -> some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
+        let size: CGFloat = 30
+        return RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
             .fill(fill)
-            .frame(width: 30, height: 30)
+            .frame(width: size, height: size)
             .overlay(PolarisIcon(icon, size: 17).foregroundStyle(iconColor))
     }
 }

@@ -188,9 +188,9 @@ struct RequestCodeView: View {
             case .rejected:
                 outcome("Request declined", icon: Icons.shieldAlert)
             case .interrupted:
-                outcome("Approval was interrupted — request again", icon: Icons.info)
+                outcome("Approval was interrupted. Request again", icon: Icons.info)
             case .expired:
-                outcome("The code expired — request again", icon: Icons.info)
+                outcome("The code expired. Request again", icon: Icons.info)
             case .failed(let message):
                 Text(verbatim: message).vaultType(.footnote).themedForeground(.destructive)
             }
@@ -221,7 +221,7 @@ struct RequestCodeView: View {
             Task { await model.sendRequest(deviceId: deviceId) }
         } label: {
             Label { Text(title) } icon: { PolarisIcon(Icons.shield, size: Metric.iconInline) }
-                .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                .frame(maxWidth: .infinity)
         }
         .buttonStyle(.themedProminent)
     }
@@ -273,10 +273,14 @@ private struct ApprovedCodeView: View {
         // with the "Copied" flash, CountdownRing, and the "…" menu
         // (Copy / Large Type) — only the code's origin differs.
         VStack(alignment: .leading, spacing: Space.s2) {
-            HStack(spacing: 12) {
+            HStack(spacing: Space.s3) {
+                // Codes are a typographic object (design DNA #4), same face as
+                // the app's own TOTP rows — not a raw system font.
                 Text(verbatim: copied ? appString("Copied") : TOTPCodeView.format(code))
-                    .font(.body.weight(.bold))
+                    .font(.vaultCode(.title3, weight: .semibold))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .themedForeground(copied ? .accent : .primary)
                 Spacer()
                 CountdownRing(remaining: remainingSeconds, period: 30)
@@ -288,12 +292,16 @@ private struct ApprovedCodeView: View {
                         .themedForeground(.secondary)
                         .frame(width: 30, height: 30)
                         .background(Circle().fill(VaultColors.fill))
+                        // Invisible padded hit area: the visual circle stays
+                        // 30pt, the tappable region meets the 44pt minimum.
+                        .frame(width: Metric.hitMin, height: Metric.hitMin)
+                        .contentShape(Rectangle())
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
             }
-            Text("Use it now — it expires with the current window.")
+            Text("Use it now. It expires with the current window.")
                 .vaultType(.footnote).themedForeground(.secondary)
         }
         .contentShape(.rect)

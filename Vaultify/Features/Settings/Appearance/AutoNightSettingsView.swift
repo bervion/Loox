@@ -48,7 +48,12 @@ struct AutoNightSettingsView: View {
                             Spacer()
                             Text(verbatim: "\(Int(threshold * 100))%").themedForeground(.secondary)
                         }
-                        Slider(value: brightnessBinding, in: 0...1)
+                        // Tick on each whole-percent change while dragging, firm tap on release —
+                        // mirrors the generator's length slider (PasswordGeneratorView.countSlider).
+                        Slider(value: brightnessBinding, in: 0...1,
+                               onEditingChanged: { editing in
+                                   if editing { Haptics.prepareSelection() } else { Haptics.tap() }
+                               })
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -77,7 +82,7 @@ struct AutoNightSettingsView: View {
     }
 
     private func modeRow(_ title: Text, _ value: Mode) -> some View {
-        Button { apply(value) } label: {
+        Button { Haptics.tap(); apply(value) } label: {
             HStack {
                 title.themedForeground()
                 Spacer()
@@ -118,7 +123,13 @@ struct AutoNightSettingsView: View {
 
     private var brightnessBinding: Binding<Double> {
         Binding(get: { threshold },
-                set: { threshold = $0; env.theme.setAutoNight(.brightness(threshold: $0)) })
+                set: { newValue in
+                    if Int((newValue * 100).rounded()) != Int((threshold * 100).rounded()) {
+                        Haptics.selectionTick()
+                    }
+                    threshold = newValue
+                    env.theme.setAutoNight(.brightness(threshold: newValue))
+                })
     }
 
     private static func date(minutes: Int) -> Date {

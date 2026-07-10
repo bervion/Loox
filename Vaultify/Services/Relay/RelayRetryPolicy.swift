@@ -55,7 +55,7 @@ extension RelayService.Failure {
         case .vaultLocked:
             return appString("Unlock Loox and try again.")
         case .missingDestination:
-            return appString("Add an email to this identity’s profile — that’s where your aliases forward to.")
+            return appString("Add an email to this identity’s profile. That’s where your aliases forward to.")
         case .network:
             return appString("You’re offline. Connect to the internet to change this private address.")
         case .rejected("unauthorized"):

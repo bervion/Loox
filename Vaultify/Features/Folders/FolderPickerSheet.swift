@@ -27,7 +27,7 @@ struct FolderPickerSheet: View {
                         ForEach(env.repository.folders) { folder in
                             Button { select(folder.id) } label: {
                                 row(name: Text(folder.name),
-                                    badge: FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30),
+                                    badge: FolderBadge(icon: folder.iconAsset, color: folder.color, size: Metric.badgeTile),
                                     selected: folderId == folder.id)
                             }
                             .buttonStyle(.plain)
@@ -55,16 +55,18 @@ struct FolderPickerSheet: View {
     }
 
     @ViewBuilder private func row(name: Text, badge: FolderBadge?, selected: Bool) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Space.s3) {
             if let badge {
                 badge
             } else {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(VaultColors.fill).frame(width: 30, height: 30)
+                // Same proportional formula as FolderBadge at this size, so the "None" placeholder
+                // tile is provably consistent with every real folder badge, not just visually close.
+                RoundedRectangle(cornerRadius: Metric.badgeTile * 0.28, style: .continuous)
+                    .fill(VaultColors.fill).frame(width: Metric.badgeTile, height: Metric.badgeTile)
             }
             name.themedForeground()
             Spacer()
-            if selected { PolarisIcon(Icons.check, size: 18).foregroundStyle(Color.accentColor) }
+            if selected { PolarisIcon(Icons.check, size: 18).foregroundStyle(Color(rgb: env.theme.active.accent)) }
         }
         .contentShape(.rect)
     }

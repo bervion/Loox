@@ -21,6 +21,11 @@ struct MacToolbarSearchField: View {
                     searchQuery = ""
                 } label: {
                     PolarisIcon(Icons.close, size: 12).themedForeground(.secondary)
+                        // Mac is pointer-driven (no 44pt thumb-target rule), but a bare
+                        // 12pt glyph is still too fussy to click precisely — pad the hit
+                        // box out to the toolbar-icon optical size without growing the
+                        // visible glyph.
+                        .contentShape(Rectangle().inset(by: -(Metric.iconUtility - 12) / 2))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Clear"))
@@ -63,6 +68,9 @@ struct MacDetailHeader: View {
                 }
             } label: {
                 PolarisIcon(Icons.moreHorizontal, size: 16).themedForeground(.secondary)
+                    // Same pointer-target padding as the search field's clear button —
+                    // click box grows, visible glyph stays 16pt.
+                    .contentShape(Rectangle().inset(by: -(Metric.iconUtility - 16) / 2))
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -98,10 +106,14 @@ struct MacSearchSuggestionsPanel: View {
                         HStack(spacing: Space.s3) {
                             ItemThumbnail(title: item.title, category: item.category,
                                           iconAsset: item.iconAsset, size: 22)
-                            Text(item.title).fontWeight(.semibold).lineLimit(1)
-                            if let subtitle = item.subtitle {
-                                Text(verbatim: "— \(subtitle)")
-                                    .themedForeground(.secondary).lineLimit(1)
+                            // Title + subtitle stack on two lines — real layout, not an
+                            // em-dash glue character, per the copy standard.
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(item.title).fontWeight(.semibold).lineLimit(1)
+                                if let subtitle = item.subtitle {
+                                    Text(verbatim: subtitle)
+                                        .vaultType(.footnote).themedForeground(.secondary).lineLimit(1)
+                                }
                             }
                             Spacer(minLength: 0)
                         }

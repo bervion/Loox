@@ -72,7 +72,11 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
 ## Design System (READ before ANY UI work)
 
 Source of truth: **`Design System/`** (web spec: tokens, components, iOS UI kit) +
-**`docs/design-guidelines.md`** (the SwiftUI contract). The app is token-driven — never
+**`docs/design-guidelines.md`** (the SwiftUI contract) + **`docs/design-dna-standard.md`**
+(the MANDATORY acceptance bar: 10 DNA rules, haptics vocabulary, multi-device matrix, and the
+adversarial review protocol — every screen you build or touch must pass its checklist; design
+for the LONGEST localized label, usually VI). Copy style: no "!", no "—", no "·" separators in
+user-facing strings — separate ideas with layout or words. The app is token-driven — never
 hardcode visual constants. Four layers: foundation tokens → semantic tokens → components →
 feature screens (screens only compose, never invent visual language).
 

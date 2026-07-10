@@ -15,6 +15,8 @@ struct CreateLoginView: View {
     @State private var site: String
     @State private var username: String
     @State private var password: String
+    @State private var folderId: String?
+    @State private var spaces: [VaultSpaceReader.Space] = []
     @State private var errorMessage: String?
 
     init(host: String, defaultUsername: String, vaultKey: [UInt8],
@@ -35,13 +37,20 @@ struct CreateLoginView: View {
                 header: { Text("Username") }
             Section {
                 HStack {
-                    Text(password).font(.body.monospaced()).lineLimit(1).minimumScaleFactor(0.6)
+                    Text(password).font(.body.monospaced()).lineLimit(1).minimumScaleFactor(0.7)
                     Spacer()
                     Button("Regenerate") { password = PasswordGenerator.generate(PasswordOptions()) }
                         .buttonStyle(.borderless)
                 }
             } header: { Text("Password") } footer: {
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+            }
+            // Only the ACTIVE persona's own Spaces are offered (INV-R03) — never
+            // another persona's, even by name. "Save to" (not "Space") sidesteps an
+            // existing source-string collision with the password generator's literal
+            // "Space" (spacebar character) key, which carries an unrelated VI string.
+            if !spaces.isEmpty {
+                Section { spacePicker } header: { Text("Save to") }
             }
             Section {
                 Button(action: save) {
@@ -52,12 +61,27 @@ struct CreateLoginView: View {
         }
         .navigationTitle("New login")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            spaces = VaultSpaceReader.activePersonaSpaces(vaultKey: vaultKey)
+            folderId = VaultSpaceReader.defaultSpaceId(vaultKey: vaultKey)
+        }
+    }
+
+    /// Menu-style Picker so the ≥44pt row stays compact — matches the rest of this
+    /// Form's system styling (no design-system tokens; the extension only links
+    /// VaultifyCore).
+    private var spacePicker: some View {
+        Picker(selection: $folderId) {
+            Text("Unfiled").tag(String?.none)
+            ForEach(spaces) { space in Text(space.name).tag(String?.some(space.id)) }
+        } label: { Text("Save to") }
     }
 
     private func save() {
         do {
             let id = try VaultWriter.createLogin(site: site, username: username,
-                                                 password: password, vaultKey: vaultKey)
+                                                 password: password, folderId: folderId,
+                                                 vaultKey: vaultKey)
             indexCredential(recordID: id)
             onSaved(username, password)
         } catch {

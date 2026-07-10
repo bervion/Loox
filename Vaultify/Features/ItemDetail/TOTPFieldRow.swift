@@ -7,9 +7,14 @@ struct TOTPCodeView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             Text(TOTPGenerator.code(forStoredValue: secret, date: context.date).map(Self.format) ?? "Invalid secret")
-                // Verification code → SF, bold, tabular digits.
-                .font(.body.weight(.bold))
+                // OTP as a typographic object: MonoLisa title3, semibold — the
+                // code is the field's whole reason for being, not a body row.
+                .font(.vaultCode(.title3, weight: .semibold))
                 .monospacedDigit()
+                .lineLimit(1)
+                // Guards against clipping at accessibility XXL Dynamic Type sizes
+                // (title3 scales aggressively; the "123 456" grouping must survive).
+                .minimumScaleFactor(0.7)
         }
     }
 
@@ -36,7 +41,7 @@ struct CountdownRing: View {
         if onAccent { return env.theme.active.color(.onAccent) }
         if remaining <= 5 { return VaultColors.strengthWeak }     // red — about to expire
         if remaining <= 10 { return VaultColors.strengthMedium }  // yellow — running low
-        return Color.accentColor                                  // blue — plenty of time
+        return env.theme.active.color(.accent)                    // plenty of time, live theme accent
     }
     private var textColor: Color {
         onAccent ? env.theme.active.color(.onAccent) : env.theme.active.color(.secondary)
@@ -49,7 +54,7 @@ struct CountdownRing: View {
                 .trim(from: 0, to: CGFloat(remaining) / CGFloat(max(period, 1)))
                 .stroke(progressColor, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text("\(remaining)").font(.caption2.monospacedDigit()).foregroundStyle(textColor)
+            Text("\(remaining)").vaultType(.caption).monospacedDigit().foregroundStyle(textColor)
         }
         .frame(width: 26, height: 26)
         .animation(.linear(duration: 0.5), value: remaining)

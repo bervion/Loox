@@ -65,6 +65,7 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
                 DynamicField(label: "Card Number", kind: .monospace, protected: true),
                 DynamicField(label: "Expiry", kind: .text),
                 DynamicField(label: "Security Code", kind: .monospace, protected: true),
+                DynamicField(label: "PIN", kind: .number, protected: true),
             ]
         case .identity:
             return [

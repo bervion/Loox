@@ -13,6 +13,9 @@ struct LoginEditorSections: View {
     var onAddAttachment: () -> Void
     @Environment(AppEnvironment.self) private var env
     @State private var selectedPasskey: PasskeyInfo?
+    /// Present the alias's management screen (pause/delete live there, not in
+    /// the editor — the editor only ever attaches/detaches a field).
+    @State private var showManageAlias = false
 
     /// Field kinds shown in the Credentials section, in template order.
     private let credentialKinds: Set<FieldKind> = [.username, .email, .password, .totp]
@@ -29,7 +32,11 @@ struct LoginEditorSections: View {
     private var credentialsSection: some View {
         Section("Credentials") {
             ForEach(credentialFields) { field in
-                EditorFieldRow(field: fieldBinding(field), onScanTOTP: { onScanTOTP(field.id) })
+                if let match = privateEmailMatch(for: field) {
+                    attachedPrivateEmailRow(field: fieldBinding(field), match: match)
+                } else {
+                    EditorFieldRow(field: fieldBinding(field), onScanTOTP: { onScanTOTP(field.id) })
+                }
             }
             .onMove { moveFields(from: $0, to: $1, in: credentialIndices) }
             // Passkeys can't be created here (the OS mints them via WebAuthn). Tapping a row
@@ -40,9 +47,159 @@ struct LoginEditorSections: View {
                 Button { selectedPasskey = passkey } label: { passkeyRow(passkey) }
                     .buttonStyle(.plain)
             }
+            if let attached = attachedPrivateEmail {
+                privateEmailActionsRow(attached: attached)
+                privateEmailInfoNote
+            }
         }
         .listRowBackground(VaultColors.surface)
         .sheet(item: $selectedPasskey) { PasskeyDetailSheet(passkey: $0) }
+        .sheet(isPresented: $showManageAlias) {
+            if let attached = attachedPrivateEmail {
+                // `AliasDetailScreen` is normally a NavigationLink push target (its
+                // back button comes free); presented here as a sheet root instead, so
+                // it needs its own explicit close action.
+                NavigationStack {
+                    AliasDetailScreen(aliasID: attached.match.alias.id)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Close") { showManageAlias = false }
+                            }
+                        }
+                }
+            }
+        }
+    }
+
+    // MARK: Private email recognition (attached alias)
+
+    /// Whether `field` (email/username) currently holds one of the active
+    /// persona's aliases (INV-R03) — regardless of the alias's live status, so
+    /// a paused alias still shows the PRIVATE treatment instead of silently
+    /// reverting to a plain-email look.
+    private func privateEmailMatch(for field: DynamicField) -> PrivateEmailMatch? {
+        guard field.kind == .email || field.kind == .username else { return nil }
+        return PrivateEmailMatch.resolve(kind: field.kind, value: field.value, repository: env.repository)
+    }
+
+    /// The single Credentials field (there's at most one email/username field
+    /// per login template) currently attached to an alias, if any.
+    private var attachedPrivateEmail: (field: DynamicField, match: PrivateEmailMatch)? {
+        for field in credentialFields {
+            if let match = privateEmailMatch(for: field) { return (field, match) }
+        }
+        return nil
+    }
+
+    /// The attached-alias row: badge + mono value + a small detach (×) button,
+    /// with the forwards-to line underneath — mirrors Item Detail's recognition
+    /// treatment but adds the editor-only detach affordance.
+    private func attachedPrivateEmailRow(field: Binding<DynamicField>, match: PrivateEmailMatch) -> some View {
+        // Mockup layout: badge sits on the LABEL row (convention 1 — "next to the
+        // label", never squeezing the value), the alias gets its own full-width
+        // mono line at a size that fits whole, forwards-to underneath.
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: Space.s2) {
+                TextField("Label", text: Binding(
+                    get: { appLabel(field.wrappedValue.label) },
+                    set: { field.wrappedValue.label = $0 }
+                ))
+                .vaultType(.caption)
+                .themedForeground(.secondary)
+                .platformAutocapitalization(.words)
+
+                Spacer(minLength: Space.s2)
+                PrivateEmailBadge()
+            }
+
+            HStack(spacing: Space.s2) {
+                Text(verbatim: field.wrappedValue.value)
+                    .vaultType(.subhead)
+                    .themedForeground()
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: Space.s2)
+                Button {
+                    // Detach only: the alias itself is untouched (INV kept alive) —
+                    // pause/delete lives in Private Email management, not here.
+                    field.wrappedValue.value = ""
+                    Haptics.tap()
+                } label: {
+                    PolarisIcon(Icons.close, size: 12)
+                        .themedForeground(.secondary)
+                        .padding(6)
+                        .background(VaultColors.fill, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Detach private email"))
+            }
+
+            PrivateEmailForwardsToLine(match: match)
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Below-card chip row: swap back to the real destination email in one tap,
+    /// or jump to Private Email management (pause/delete live there).
+    /// Two chips of the SAME visual rank (mockup: a matched pill pair, never a
+    /// pill next to a bare text link) — both single-line so they sit side by
+    /// side even at SE width.
+    private func privateEmailActionsRow(attached: (field: DynamicField, match: PrivateEmailMatch)) -> some View {
+        HStack(spacing: Space.s2) {
+            if let destination = attached.match.destination {
+                Button {
+                    if let idx = draft.fields.firstIndex(where: { $0.id == attached.field.id }) {
+                        draft.fields[idx].value = destination
+                    }
+                    Haptics.tap()
+                } label: {
+                    HStack(spacing: 5) {
+                        PolarisIcon(Icons.person, size: 12)
+                        Text("Use real email instead").vaultType(.footnote)
+                    }
+                    .themedForeground()
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.horizontal, Space.s3)
+                    .padding(.vertical, Space.s2)
+                    .background(VaultColors.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
+                }
+                .buttonStyle(.plain)
+            }
+            Button { showManageAlias = true } label: {
+                Text("Manage alias…")
+                    .vaultType(.footnote).themedForeground(.accent)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.horizontal, Space.s3)
+                    .padding(.vertical, Space.s2)
+                    .background(VaultColors.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 2)
+        .listRowSeparator(.hidden)
+    }
+
+    /// Soft accent-tinted note box (mockup), not a bare caption over a divider.
+    private var privateEmailInfoNote: some View {
+        HStack(alignment: .top, spacing: Space.s2) {
+            PolarisIcon(Icons.info, size: 14)
+                .themedForeground(.accent)
+                .padding(.top, 1)
+            Text("Switching to your real email keeps the alias alive. Pause or delete it in Private Email.")
+                .vaultType(.footnote)
+                .themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(Space.s3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(rgb: env.theme.active.accentSoft).opacity(0.5))
+        .vaultCornerRadius(Radius.sm)
+        .listRowSeparator(.hidden)
     }
 
     // MARK: Websites (multi)

@@ -23,10 +23,10 @@ struct ProtectedFieldRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
-                    .font(.caption.weight(.medium))
+                    .vaultType(.caption).fontWeight(.medium)
                     .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
                 value
-                if let error { Text(error).font(.caption).foregroundStyle(copied ? theme.color(.onAccent) : VaultColors.strengthWeak) }
+                if let error { Text(error).vaultType(.caption).foregroundStyle(copied ? theme.color(.onAccent) : VaultColors.strengthWeak) }
             }
             Spacer(minLength: 8)
             trailing
@@ -51,13 +51,13 @@ struct ProtectedFieldRow: View {
 
     @ViewBuilder private var value: some View {
         if copied {
-            Text("Copied").font(.body)
+            Text("Copied").vaultType(.body)
         } else if let plaintext {
             Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
         } else {
             HStack(spacing: 6) {
                 PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
-                Text("Protected — tap to reveal").font(.subheadline).themedForeground(.secondary)
+                Text("Protected. Tap to reveal").vaultType(.subhead).themedForeground(.secondary)
             }
         }
     }
@@ -79,6 +79,10 @@ struct ProtectedFieldRow: View {
                 .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
+                // Invisible padded hit area: the visual circle stays 30pt, the
+                // tappable region meets the 44pt minimum (rule 6).
+                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                .contentShape(Rectangle())
         }
         // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
         .menuStyle(.button)
@@ -107,6 +111,9 @@ struct ProtectedFieldRow: View {
         if let text = try? SecretGuard.openLevel2(field.value, l2Key: key) {
             withAnimation { plaintext = text }
             onUsed()
+            // Crossing the Extra Protection boundary is a risky state (rule:
+            // haptics vocabulary), distinct from the plain `.success` on copy.
+            Haptics.warning()
         } else {
             error = appString("Couldn’t decrypt this field.")
         }
@@ -128,6 +135,9 @@ struct ProtectedFieldRow: View {
             let text = try await SecretGuard.openCustom(field.value, code: code)
             withAnimation { plaintext = text }
             onUsed()
+            // Crossing the Extra Protection boundary is a risky state (rule:
+            // haptics vocabulary), distinct from the plain `.success` on copy.
+            Haptics.warning()
             return nil
         } catch {
             return appString("Incorrect code.")

@@ -15,9 +15,9 @@ struct ItemCard: View {
         VStack(alignment: .leading, spacing: Space.s2) {
             FaviconView(urlString: item.urlField?.value, category: item.category, size: 36, title: item.title)
             Text(item.title.isEmpty ? "Untitled" : item.title)
-                .font(.subheadline.weight(.medium)).lineLimit(1).themedForeground()
+                .vaultType(.subhead).fontWeight(.medium).lineLimit(1).themedForeground()
             if let sub = item.subtitle, !sub.isEmpty {
-                Text(sub).font(.caption).themedForeground(.secondary).lineLimit(1)
+                Text(sub).vaultType(.caption).themedForeground(.secondary).lineLimit(1)
             }
         }
         .frame(width: 132, alignment: .leading)

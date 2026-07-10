@@ -40,3 +40,23 @@ struct OnboardingStepHeader: View {
         .padding(.top, Space.gutter)
     }
 }
+
+/// Fills the screen and centers its content (via the caller's own `Spacer`s) when it
+/// fits, but becomes a real `ScrollView` the moment large Dynamic Type or a short
+/// screen (SE) would otherwise clip a fixed-height onboarding step. Every onboarding
+/// step body should be wrapped in this instead of a bare `VStack` between two
+/// unbounded `Spacer()`s, which clips silently at accessibility text sizes.
+struct OnboardingScrollingStep<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                content
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+    }
+}

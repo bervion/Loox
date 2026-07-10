@@ -8,6 +8,7 @@ import SwiftUI
 /// No first-run seeding happens on this path (see `VaultSession.joinVault`).
 struct JoinVaultFlow: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let onCancel: () -> Void
 
     private enum Step: Equatable { case choice, qrPairing, recoveryEntry, password, biometric }
@@ -47,13 +48,13 @@ struct JoinVaultFlow: View {
                 // a brand-new vault is being made".
                 CreateMasterPasswordView(
                     onSubmit: completeJoin,
-                    title: "Vault received — protect this device",
-                    subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device — it can match your other device or be different, and it never syncs.")
+                    title: "Vault received. Protect this device",
+                    subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device. It can match your other device or be different, and it never syncs.")
             case .biometric:
                 EnableBiometricView(onEnable: enableBiometricAndFinish) { finish() }
             }
         }
-        .animation(.smooth(duration: 0.35), value: step)
+        .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
         // Backing out of the password step abandons the hand-off — drop the key
         // (SecureBytes deinit zeroes it) instead of leaving it parked in state.
         .onChange(of: step) { _, newStep in
@@ -77,7 +78,7 @@ struct JoinVaultFlow: View {
 
     /// Wrap the received key under the chosen local password, enable sync, and pull.
     private func completeJoin(_ password: String) async -> String? {
-        guard let key = receivedKey else { return appString("Pairing failed — try again with a fresh QR code.") }
+        guard let key = receivedKey else { return appString("Pairing failed. Try again with a fresh QR code.") }
         do {
             // `.bytes` yields a fresh, uniquely-referenced copy → zeroing it works.
             var bytes = key.bytes
@@ -121,34 +122,36 @@ private struct JoinMethodChoiceView: View {
     let onBack: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: Space.s8)
-            OnboardingStepHeader(
-                "Set Up from Another Device",
-                subtitle: "Restore your existing vault on this device.",
-                style: .compact)
+        OnboardingScrollingStep {
+            VStack(spacing: 0) {
+                Spacer(minLength: Space.s8)
+                OnboardingStepHeader(
+                    "Set Up from Another Device",
+                    subtitle: "Restore your existing vault on this device.",
+                    style: .compact)
 
-            VStack(spacing: Space.s3) {
-                JoinOptionCard(icon: Icons.scanCode,
-                               title: "Pair with QR Code",
-                               detail: "Show a QR code here and approve it on a device that already has your vault.",
-                               action: onQR)
-                JoinOptionCard(icon: Icons.key,
-                               title: "Use Recovery Key",
-                               detail: "Enter the recovery key from your Emergency Kit.",
-                               action: onRecovery)
-            }
-            .padding(.horizontal, Space.s6)
-            .padding(.top, Space.s6)
+                VStack(spacing: Space.s3) {
+                    JoinOptionCard(icon: Icons.scanCode,
+                                   title: "Pair with QR Code",
+                                   detail: "Show a QR code here and approve it on a device that already has your vault.",
+                                   action: onQR)
+                    JoinOptionCard(icon: Icons.key,
+                                   title: "Use Recovery Key",
+                                   detail: "Enter the recovery key from your Emergency Kit.",
+                                   action: onRecovery)
+                }
+                .padding(.horizontal, Space.s6)
+                .padding(.top, Space.s6)
 
-            Spacer()
-            Button(action: onBack) {
-                Text("Back").frame(maxWidth: .infinity)
+                Spacer(minLength: Space.s6)
+                Button(action: onBack) {
+                    Text("Back").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .padding(.horizontal, Space.s6)
+                .padding(.bottom, Space.s6)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.s6)
         }
     }
 }
@@ -199,56 +202,58 @@ private struct JoinByQRView: View {
     @State private var waitTask: Task<Void, Never>?
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: Space.s8)
-            OnboardingStepHeader(
-                "Pair with QR Code",
-                subtitle: "On your other device, open Settings → iCloud Sync → Pair New Device, then scan this code.",
-                style: .compact)
+        OnboardingScrollingStep {
+            VStack(spacing: 0) {
+                Spacer(minLength: Space.s8)
+                OnboardingStepHeader(
+                    "Pair with QR Code",
+                    subtitle: "On your other device, open Settings → iCloud Sync → Pair New Device, then scan this code.",
+                    style: .compact)
 
-            QRCodeView(payload: session.qrPayload)
-                .frame(maxWidth: 260)
-                .padding(.top, Space.s6)
+                QRCodeView(payload: session.qrPayload)
+                    .frame(maxWidth: 260)
+                    .padding(.top, Space.s6)
 
-            Group {
-                if let errorMessage {
-                    Text(errorMessage)
-                        .vaultType(.footnote)
-                        .foregroundStyle(VaultColors.strengthWeak)
-                        .multilineTextAlignment(.center)
-                } else {
-                    HStack(spacing: Space.s2) {
-                        ProgressView()
-                        Text("Waiting for your other device…")
-                            .vaultType(.subhead).themedForeground(.secondary)
+                Group {
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .vaultType(.footnote)
+                            .foregroundStyle(VaultColors.strengthWeak)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        HStack(spacing: Space.s2) {
+                            ProgressView()
+                            Text("Waiting for your other device…")
+                                .vaultType(.subhead).themedForeground(.secondary)
+                        }
                     }
                 }
-            }
-            .padding(.horizontal, Space.s6)
-            .padding(.top, Space.s5)
+                .padding(.horizontal, Space.s6)
+                .padding(.top, Space.s5)
 
-            Spacer()
-            VStack(spacing: Space.s3) {
-                if errorMessage != nil {
-                    Button {
-                        // A fresh session (new ephemeral key + pairing id) — the old QR is dead.
-                        session = VaultKeyPairing.makeSession()
-                        errorMessage = nil
-                        startWaiting()
-                    } label: {
-                        Text("Start Over").frame(maxWidth: .infinity)
+                Spacer(minLength: Space.s6)
+                VStack(spacing: Space.s3) {
+                    if errorMessage != nil {
+                        Button {
+                            // A fresh session (new ephemeral key + pairing id) — the old QR is dead.
+                            session = VaultKeyPairing.makeSession()
+                            errorMessage = nil
+                            startWaiting()
+                        } label: {
+                            Text("Start Over").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.themedProminent)
+                        .controlSize(.large)
                     }
-                    .buttonStyle(.themedProminent)
+                    Button(action: onBack) {
+                        Text("Back").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
                     .controlSize(.large)
                 }
-                Button(action: onBack) {
-                    Text("Back").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .padding(.horizontal, Space.s6)
+                .padding(.bottom, Space.s6)
             }
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.s6)
         }
         .onAppear(perform: startWaiting)
         .onDisappear { waitTask?.cancel() }
@@ -287,72 +292,80 @@ private struct JoinByRecoveryView: View {
     @State private var showScanner = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: Space.s8)
-            OnboardingStepHeader(
-                "Use Recovery Key",
-                subtitle: "Scan the Setup Code on your Emergency Kit, or type the recovery key. Your vault will download from iCloud.",
-                style: .compact)
+        OnboardingScrollingStep {
+            VStack(spacing: 0) {
+                Spacer(minLength: Space.s8)
+                OnboardingStepHeader(
+                    "Use Recovery Key",
+                    subtitle: "Scan the Setup Code on your Emergency Kit, or type the recovery key. Your vault will download from iCloud.",
+                    style: .compact)
 
-            HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.key, size: Metric.iconInline)
-                    .foregroundStyle(Color(rgb: env.theme.active.accent))
-                    .frame(width: Metric.controlSmall, height: Metric.controlSmall)
-                    .background(Color(rgb: env.theme.active.accentSoft),
-                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                TextField("Recovery key", text: $recoveryKey, axis: .vertical)
-                    .font(recoveryKey.isEmpty ? .body : .vaultCode())
-                    .platformAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, Space.s3)
-            .background(Color(rgb: env.theme.active.elevatedBackground),
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .elevation(.level2)
-            .padding(.horizontal, Space.s6)
-            .padding(.top, Space.s6)
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .vaultType(.footnote)
-                    .foregroundStyle(VaultColors.strengthWeak)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Space.s6)
-                    .padding(.top, Space.s4)
-            }
-
-            Spacer()
-            VStack(spacing: Space.s3) {
-                #if os(iOS)
-                Button { showScanner = true } label: {
-                    Label { Text("Scan Setup Code") } icon: { PolarisIcon(Icons.scanCode, size: Metric.iconInline) }
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.themedTinted)
-                .controlSize(.large)
-                .disabled(busy)
-                #endif
-
-                Button(action: submit) {
-                    Group {
-                        if busy { ProgressView() } else { Text("Continue") }
+                HStack(spacing: Space.s2) {
+                    PolarisIcon(Icons.key, size: Metric.iconInline)
+                        .foregroundStyle(Color(rgb: env.theme.active.accent))
+                        .frame(width: Metric.controlSmall, height: Metric.controlSmall)
+                        .background(Color(rgb: env.theme.active.accentSoft),
+                                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                    TextField("Recovery key", text: $recoveryKey, axis: .vertical)
+                        .font(recoveryKey.isEmpty ? VaultType.body.font : .vaultCode())
+                        .platformAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Demotes what used to be a 3rd stacked full-width button (design-dna
+                    // rule 7) into a compact trailing field accessory — same pattern as
+                    // EditorFieldRow's scan-QR glyph (44pt hit target, trailing-aligned).
+                    #if os(iOS)
+                    Button { showScanner = true } label: {
+                        PolarisIcon(Icons.scanCode, size: Metric.iconInline)
+                            .foregroundStyle(Color(rgb: env.theme.active.accent))
+                            .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .trailing)
+                            .contentShape(Rectangle())
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.plain)
+                    .disabled(busy)
+                    .accessibilityLabel(Text("Scan Setup Code"))
+                    #endif
                 }
-                .buttonStyle(.themedProminent)
-                .controlSize(.large)
-                .disabled(recoveryKey.isEmpty || busy)
+                // Matches `RevealableSecureField`'s prominent-field card (same radius +
+                // horizontal inset) so every onboarding field reads as one family.
+                .padding(.horizontal, Space.s3)
+                .padding(.vertical, Space.s3)
+                .background(Color(rgb: env.theme.active.elevatedBackground),
+                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                .elevation(.level2)
+                .padding(.horizontal, Space.s6)
+                .padding(.top, Space.s6)
 
-                Button(action: onBack) {
-                    Text("Back").frame(maxWidth: .infinity)
+                if let errorMessage {
+                    Text(errorMessage)
+                        .vaultType(.footnote)
+                        .foregroundStyle(VaultColors.strengthWeak)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Space.s6)
+                        .padding(.top, Space.s4)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+
+                Spacer(minLength: Space.s6)
+                VStack(spacing: Space.s3) {
+                    Button(action: submit) {
+                        Group {
+                            if busy { ProgressView() } else { Text("Continue") }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.themedProminent)
+                    .controlSize(.large)
+                    .disabled(recoveryKey.isEmpty || busy)
+
+                    Button(action: onBack) {
+                        Text("Back").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+                .padding(.horizontal, Space.s6)
+                .padding(.bottom, Space.s6)
             }
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.s6)
         }
         #if os(iOS)
         .sheet(isPresented: $showScanner) {
@@ -417,6 +430,10 @@ private struct RecoveryScannerSheet: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
                 .background(.black.opacity(0.35), in: Capsule())
+                // The visible pill stays compact; the tappable region still meets the
+                // 44pt minimum via invisible frame growth (background sizes to the
+                // smaller content above, so the capsule itself doesn't grow).
+                .frame(minHeight: Metric.hitMin)
                 Spacer()
                 Text("Scan Setup Code")
                     .vaultType(.headline).foregroundStyle(.white)

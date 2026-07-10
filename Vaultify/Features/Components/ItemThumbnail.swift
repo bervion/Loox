@@ -10,7 +10,7 @@ struct ItemThumbnail: View {
     let title: String
     let category: ItemCategory
     let iconAsset: String?
-    var size: CGFloat = 56
+    var size: CGFloat = Metric.rowHeight
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)

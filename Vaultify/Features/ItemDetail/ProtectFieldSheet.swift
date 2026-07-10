@@ -63,7 +63,7 @@ struct ProtectFieldSheet: View {
             Section {
                 Label {
                     Text("Set an Extra Protection password in Settings → Security first.")
-                        .font(.footnote).themedForeground(.secondary)
+                        .vaultType(.footnote).themedForeground(.secondary)
                 } icon: { PolarisIcon(Icons.alert).foregroundStyle(VaultColors.strengthMedium) }
             }
             .listRowBackground(VaultColors.surface)
@@ -77,7 +77,7 @@ struct ProtectFieldSheet: View {
             }
             .listRowBackground(VaultColors.surface)
         } else {
-            Section { Text("This field will be protected with your Extra Password.").font(.footnote).themedForeground(.secondary) }
+            Section { Text("This field will be protected with your Extra Password.").vaultType(.footnote).themedForeground(.secondary) }
             .listRowBackground(VaultColors.surface)
         }
     }

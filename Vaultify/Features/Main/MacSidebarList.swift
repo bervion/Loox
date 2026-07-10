@@ -37,6 +37,9 @@ struct MacSidebarList: View {
                         Spacer()
                         Button { creatingSpace = true } label: {
                             PolarisIcon(Icons.add, size: 12)
+                                // Pointer target padding, matching MacHeaderBar's clear/
+                                // overflow buttons — visible glyph stays 12pt.
+                                .contentShape(Rectangle().inset(by: -(Metric.iconUtility - 12) / 2))
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(Text("Create New Space"))
@@ -85,7 +88,7 @@ struct MacSidebarList: View {
                         PolarisIcon(Icons.person, size: 16).themedForeground(.secondary)
                     }
                 }
-                .frame(width: 28, height: 28)
+                .frame(width: Metric.iconTile, height: Metric.iconTile)
                 .clipShape(Circle())
                 Text(verbatim: env.repository.defaultIdentity?.title ?? appString("Profile"))
                     .fontWeight(.medium)

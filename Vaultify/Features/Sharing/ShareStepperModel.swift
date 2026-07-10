@@ -39,7 +39,7 @@ enum ShareStepper {
                 state: active ? .done : (readyOrLater ? .current : .todo)),
             ShareStepperStep(
                 id: 4, title: "Access active",
-                subtitle: "They can use what you allowed — revoke anytime.",
+                subtitle: "They can use what you allowed. Revoke anytime.",
                 state: active ? .done : .todo),
         ]
     }
@@ -48,8 +48,8 @@ enum ShareStepper {
     /// "Shared with" list, design 12b).
     static func detailSubtitle(for status: ShareLifecycle) -> LocalizedStringResource {
         switch status {
-        case .inviteSent: "Invite sent · waiting to accept"
-        case .accepted: "Accepted · finishing on their device"
+        case .inviteSent: "Invite sent. Waiting to accept"
+        case .accepted: "Accepted. Finishing on their device"
         case .readyForCeremony: "Ready to confirm"
         case .active: "Active"
         }

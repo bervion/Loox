@@ -47,7 +47,7 @@ struct ImportView: View {
             if !parsed.isEmpty || !parsedPasskeys.isEmpty {
                 Section("Preview (\(parsed.count + parsedPasskeys.count))") {
                     ForEach(parsed.prefix(6)) { VaultItemRow(item: $0.item) }
-                    if parsed.count > 6 { Text("and \(parsed.count - 6) more…").font(.footnote).themedForeground(.secondary) }
+                    if parsed.count > 6 { Text("and \(parsed.count - 6) more…").vaultType(.footnote).themedForeground(.secondary) }
                     if !parsedPasskeys.isEmpty {
                         Label {
                             Text("\(parsedPasskeys.count) passkeys")
@@ -82,20 +82,35 @@ struct ImportView: View {
     private func handle(_ result: Result<[URL], Error>) {
         error = nil; parsed = []; parsedPasskeys = []; encryptedData = nil
         guard case let .success(urls) = result, let url = urls.first else {
-            if case let .failure(failure) = result { error = failure.localizedDescription }
+            if case let .failure(failure) = result {
+                error = failure.localizedDescription
+                Haptics.error()
+            }
             return
         }
-        guard url.startAccessingSecurityScopedResource() else { error = "Couldn’t open the file."; return }
+        guard url.startAccessingSecurityScopedResource() else {
+            error = appString("Couldn’t open the file.")
+            Haptics.error()
+            return
+        }
         defer { url.stopAccessingSecurityScopedResource() }
-        guard let data = try? Data(contentsOf: url) else { error = "Couldn’t read the file."; return }
+        guard let data = try? Data(contentsOf: url) else {
+            error = appString("Couldn’t read the file.")
+            Haptics.error()
+            return
+        }
 
         if (try? JSONDecoder().decode(VaultBackup.EncryptedBackup.self, from: data)) != nil {
             encryptedData = data
         } else if let text = String(data: data, encoding: .utf8) {
             parsed = VaultBackup.parseCSVWithFolders(text).map { ImportRow(item: $0.item, folderName: $0.folderName) }
-            if parsed.isEmpty { error = "No items found in that file." }
+            if parsed.isEmpty {
+                error = appString("No items found in that file.")
+                Haptics.error()
+            }
         } else {
-            error = "Unsupported file format."
+            error = appString("Unsupported file format.")
+            Haptics.error()
         }
     }
 
@@ -106,9 +121,13 @@ struct ImportView: View {
             parsed = imported.items.map { ImportRow(item: $0.item, folderName: $0.folderName) }
             parsedPasskeys = imported.passkeys
             encryptedData = nil
-            if parsed.isEmpty && parsedPasskeys.isEmpty { error = "Backup contained no records." }
+            if parsed.isEmpty && parsedPasskeys.isEmpty {
+                error = appString("Backup contained no records.")
+                Haptics.error()
+            }
         } catch {
-            self.error = "Couldn’t decrypt — check the password."
+            self.error = appString("Couldn’t decrypt, check the password.")
+            Haptics.error()
         }
         working = false
     }
@@ -116,7 +135,8 @@ struct ImportView: View {
     private func performImport() {
         error = nil
         guard parsedPasskeys.isEmpty || env.session.vaultKey != nil else {
-            error = "Unlock your vault before importing passkeys."
+            error = appString("Unlock your vault before importing passkeys.")
+            Haptics.error()
             return
         }
         var folderCache: [String: String] = [:]   // lowercased name → folder id
@@ -138,7 +158,8 @@ struct ImportView: View {
             Haptics.success()
             dismiss()
         } catch {
-            self.error = "Import failed before all records could be saved."
+            self.error = appString("Import failed before all records could be saved.")
+            Haptics.error()
         }
     }
 

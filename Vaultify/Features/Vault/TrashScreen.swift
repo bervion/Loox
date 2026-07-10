@@ -17,7 +17,7 @@ struct TrashScreen: View {
                 List {
                     Section {
                         Text("Items in Trash are still encrypted. Deleting them is permanent.")
-                            .font(.footnote).themedForeground(.secondary)
+                            .vaultType(.footnote).themedForeground(.secondary)
                     }
                     .listRowBackground(VaultColors.surface)
                     ForEach(env.repository.trashed) { item in
@@ -49,7 +49,10 @@ struct TrashScreen: View {
             }
         }
         .confirmationDialog("Permanently delete all trashed items?", isPresented: $confirmEmpty, titleVisibility: .visible) {
-            Button("Empty Trash", role: .destructive) { try? env.repository.emptyTrash() }
+            Button("Empty Trash", role: .destructive) {
+                try? env.repository.emptyTrash()
+                Haptics.error()
+            }
         }
     }
 }

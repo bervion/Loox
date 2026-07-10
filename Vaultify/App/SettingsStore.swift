@@ -59,6 +59,11 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// shared group (so the AutoFill extension can use Face ID). Guards the one-time migration.
     var biometricKeyMigratedToSharedGroup: Bool { didSet { defaults.set(biometricKeyMigratedToSharedGroup, forKey: Key.biometricKeyMigrated) } }
     var hibpEnabled: Bool { didSet { defaults.set(hibpEnabled, forKey: Key.hibp) } }
+    /// Master switch for rotation-reminder local notifications. Default ON so existing
+    /// behavior is preserved for users who never touch this new setting. Gated at the
+    /// `RotationNotificationService.schedule` call sites via `isRotationRemindersEnabled()`
+    /// below rather than inside the service itself (kept untouched, no restructure).
+    var rotationRemindersEnabled: Bool { didSet { defaults.set(rotationRemindersEnabled, forKey: Key.rotationReminders) } }
     var iCloudSyncEnabled: Bool { didSet { defaults.set(iCloudSyncEnabled, forKey: Key.icloud) } }
     /// Approval Mode transport (CKShare grants/requests/responses). Deliberately
     /// SEPARATE from `iCloudSyncEnabled`: enabling approval sharing must never
@@ -116,6 +121,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         biometricUnlockEnabled = d.bool(forKey: Key.biometric)
         biometricKeyMigratedToSharedGroup = d.bool(forKey: Key.biometricKeyMigrated)
         hibpEnabled = d.object(forKey: Key.hibp) as? Bool ?? true
+        rotationRemindersEnabled = d.object(forKey: Key.rotationReminders) as? Bool ?? true
         iCloudSyncEnabled = d.bool(forKey: Key.icloud)
         approvalModeEnabled = d.bool(forKey: Key.approvalMode)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
@@ -129,6 +135,13 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         appResourceLocale = appLocale(forCode: preferredLanguage)
     }
 
+    /// Cheap, dependency-free read of the rotation-reminders preference for call sites
+    /// that don't otherwise hold a `SettingsStore` instance (e.g. `VaultRepository`,
+    /// which schedules rotation notifications on item save/update).
+    nonisolated static func isRotationRemindersEnabled() -> Bool {
+        UserDefaults.standard.object(forKey: Key.rotationReminders) as? Bool ?? true
+    }
+
     private enum Key {
         static let onboarding = "onboarding_completed"
         static let autoLock = "auto_lock_timeout"
@@ -136,6 +149,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let biometric = "biometric_unlock_enabled"
         static let biometricKeyMigrated = "biometric_key_migrated_shared_group"
         static let hibp = "hibp_enabled"
+        static let rotationReminders = "rotation_reminders_enabled"
         static let icloud = "icloud_sync_enabled"
         static let approvalMode = "approval_mode_enabled"
         static let favicons = "show_website_icons"

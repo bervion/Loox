@@ -36,6 +36,26 @@ nonisolated enum SharedConfig {
     /// that persona's own email under the Vault Key instead of the global default.
     static let activePersonaProfileItemKey = "active_persona_profile_item"
 
+    /// Active persona's own id (opaque UUID) — lets the extension scope its Space
+    /// picker to Spaces owned by this persona (INV-R03), mirroring the app's
+    /// `activePersonaSpaces` partition filter. Distinct key from the app's local
+    /// `SettingsStore` selection (different `UserDefaults` suite) — named
+    /// separately here to avoid ambiguity when auditing shared-defaults keys.
+    static let activePersonaIdKey = "active_persona_id_mirror"
+    /// Whether the mirrored active persona is the converged default persona.
+    /// Needed to replicate `VaultRepository.spaces(for:)`: a Space with no
+    /// `personaId` link belongs to the DEFAULT persona, not to any other.
+    static let activePersonaIsDefaultKey = "active_persona_is_default_mirror"
+    /// The active persona's `primarySpaceID` (opaque folder id), mirrored so a new
+    /// item saved in the extension can fall back to it when there's no remembered
+    /// Home Space selection (or it's stale). Mirrors `VaultRepository.primarySpaceId`.
+    static let activePersonaPrimarySpaceKey = "active_persona_primary_space"
+    /// The Home Space (folder id) last selected in-app for the active persona —
+    /// mirrors `SettingsStore.lastSelectedSpace(persona:)` for that one persona only
+    /// (the app's per-persona dictionary lives in `UserDefaults.standard`, which the
+    /// extension cannot read). Absence means "All Spaces" was selected.
+    static let activePersonaLastSpaceKey = "active_persona_last_selected_space"
+
     /// Routing-only breadcrumb (standard defaults): a CKShare was accepted while
     /// the vault might have been locked/onboarding; the unlocked shell resumes
     /// the acceptance (participant escrow + profile publish) then clears it.

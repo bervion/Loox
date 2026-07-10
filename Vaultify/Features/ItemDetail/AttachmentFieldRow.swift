@@ -18,19 +18,19 @@ struct AttachmentFieldRow: View {
         HStack(spacing: 12) {
             if let meta {
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .fill(Color.accentColor.opacity(0.14))
+                    .fill(env.theme.active.color(.accent).opacity(0.14))
                     .frame(width: 44, height: 44)
-                    .overlay(PolarisIcon(meta.iconAsset, size: 22).foregroundStyle(Color.accentColor))
+                    .overlay(PolarisIcon(meta.iconAsset, size: 22).foregroundStyle(env.theme.active.color(.accent)))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(meta.name).font(.body).lineLimit(1)
-                    Text("\(meta.ext.uppercased()) · \(meta.sizeText)").font(.caption).themedForeground(.secondary)
+                    Text(meta.name).vaultType(.body).themedForeground().lineLimit(1)
+                    Text("\(meta.ext.uppercased()), \(meta.sizeText)").vaultType(.caption).themedForeground(.secondary)
                 }
                 Spacer(minLength: 8)
                 menu(meta)
             } else {
-                Text("Attachment unavailable").font(.subheadline).themedForeground(.secondary)
+                Text("Attachment unavailable").vaultType(.subhead).themedForeground(.secondary)
             }
-            if let error { Text(error).font(.caption).foregroundStyle(VaultColors.strengthWeak) }
+            if let error { Text(error).vaultType(.caption).foregroundStyle(VaultColors.strengthWeak) }
         }
         .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -51,6 +51,10 @@ struct AttachmentFieldRow: View {
                 .themedForeground(.secondary)
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(VaultColors.fill))
+                // Invisible padded hit area: the visual circle stays 30pt, the
+                // tappable region meets the 44pt minimum (rule 6).
+                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                .contentShape(Rectangle())
         }
         // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
         .menuStyle(.button)
