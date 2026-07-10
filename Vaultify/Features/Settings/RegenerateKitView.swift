@@ -11,6 +11,7 @@ struct RegenerateKitView: View {
     @State private var showExporter = false
     @State private var pdfFile: EmergencyKitPDFFile?
     @State private var exportError: String?
+    @State private var generateError: String?
 
     var body: some View {
         Form {
@@ -59,6 +60,9 @@ struct RegenerateKitView: View {
                     Label { Text(env.session.hasRecoveryKit ? "Regenerate Kit" : "Generate Kit") } icon: { PolarisIcon(Icons.refresh) }
                 }
                 .disabled(busy)
+                if let generateError {
+                    Text(generateError).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                }
             }
             .listRowBackground(VaultColors.surface)
         }
@@ -75,6 +79,7 @@ struct RegenerateKitView: View {
                       defaultFilename: "Loox Emergency Kit") { result in
             if case .failure(let error) = result, (error as NSError).code != NSUserCancelledError {
                 exportError = appString("Couldn’t save the Emergency Kit. Please try again.")
+                Haptics.error()
             } else {
                 exportError = nil
                 if case .success = result { Haptics.success() }
@@ -96,9 +101,14 @@ struct RegenerateKitView: View {
     }
 
     private func regenerate() async {
-        busy = true
-        newKey = (try? await env.session.generateRecoveryKit()) ?? ""
+        busy = true; generateError = nil
+        do {
+            newKey = try await env.session.generateRecoveryKit()
+            Haptics.success()
+        } catch {
+            generateError = appString("Couldn’t generate a new recovery key. Please try again.")
+            Haptics.error()
+        }
         busy = false
-        if !newKey.isEmpty { Haptics.success() }
     }
 }

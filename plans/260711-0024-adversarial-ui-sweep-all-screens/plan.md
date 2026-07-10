@@ -55,13 +55,13 @@ Then the phase applies the fixes to its OWNED files only.
 | 0 | Inventory verification & registry (no code) | — reads all | 187 | W0 first | done |
 | 1 | Shared primitives & components | `DesignSystem/Components/*`, `DesignSystem/PolarisIcon.swift`, `DesignSystem/Tokens/Elevation.swift`, `VaultifyCore/BrandLogoMark.swift`, `Features/Components/*`, `Capabilities/*` | 33 | W1 (blocks W2) | done |
 | 2 | Onboarding + Unlock | `Onboarding/*`, `Unlock/*` | 20 | W2 | done |
-| 3 | Home + Search (re-review) | `Home/*`, `Search/*` | 16 | W2 | pending |
+| 3 | Home + Search (re-review) | `Home/*`, `Search/*` | 16 | W2 | done |
 | 4 | Items + Folders + Vault | `Items/*`, `Folders/*`, `Vault/*` | 20 | W2 | done |
 | 5 | Item Detail + Passkeys (re-review detail) | `ItemDetail/*`, `Passkeys/*` | 22 | W2 | done |
 | 6 | Item Editor | `ItemEditor/*` | 12 | W2 | done |
-| 7 | Watchtower + Generator | `Watchtower/*`, `Generator/*` | 10 | W2 | pending |
-| 8 | Settings core + Security + Data | `Settings/*` (excl `Appearance/`), `ImportExport/*`, `EmergencyKit/*` | 16 | W2 | pending |
-| 9 | Appearance + About | `Settings/Appearance/*`, `Settings/AboutView.swift`, `DesignSystem/Wallpaper/*` (flag-gated engine, review-light) | 6+ | W2 | pending |
+| 7 | Watchtower + Generator | `Watchtower/*`, `Generator/*` | 10 | W2 | done |
+| 8 | Settings core + Security + Data | `Settings/*` (excl `Appearance/`), `ImportExport/*`, `EmergencyKit/*` | 16 | W2 | done |
+| 9 | Appearance + About | `Settings/Appearance/*`, `Settings/AboutView.swift`, `DesignSystem/Wallpaper/*` (flag-gated engine, review-light) | 6+ | W2 | done |
 | 10 | Personas + Profile | `Personas/*`, `Profile/*` | 14 | W2 | pending |
 | 11 | Sharing — owner flow + approval + recipient | `Sharing/*` (excl `QuickView/`, `QuickLink*`) | 16 | W2 | pending |
 | 12 | Sharing — Quick Link + Quick View | `Sharing/QuickLink*`, `Sharing/QuickView/*`, `Sharing/SharedWithMeScreen.swift` | 10 | W2 | pending |
@@ -110,3 +110,10 @@ Details: `phase-00 … phase-15`.
 - Phase 0 registry: 224 surfaces total (187 View + 37 ButtonStyle/Modifier/Shape/Representable), 0 unassigned — `reports/phase-00-surface-registry.md`.
 - `Vaultify/Security/UserActivityMonitor.swift`: review-EXEMPT (non-visual security monitor; no UI surface).
 - Mac/iPad shell documentation gap in `docs/app-feature-map-ui-ux.md`: follow-up docs task, NOT in this sweep.
+
+## Mid-sweep standard addition (260711, user-requested)
+"Action hierarchy — no button walls" rule added to design-dna-standard.md AFTER phases 2/4/5/6/8/9
+completed. Phase 15 MUST run a cross-cutting button-hierarchy audit over the WHOLE app (all phases,
+including completed ones): flag any screen/sheet state with 3+ stacked buttons or rank-inconsistent
+button sizes; completion screens (link created / share sent / kit generated) are priority suspects.
+User-named hot spot: QuickLink post-create result surface (phase 12) — too many buttons, weak layout.

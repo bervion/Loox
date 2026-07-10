@@ -366,7 +366,7 @@ struct HomeScreen: View {
                 Spacer(minLength: 0)
             }
             .padding(.vertical, Space.s1)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: Metric.hitMin, alignment: .leading)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -374,7 +374,7 @@ struct HomeScreen: View {
         .accessibilityLabel(Text(verbatim: "\(env.repository.activePersona?.displayName ?? appString("Profile")), \(personaSubtitle)"))
     }
 
-    /// 28pt compact avatar — stored image, letter-avatar, or a person glyph when no identity.
+    /// 24pt compact avatar — stored image, letter-avatar, or a person glyph when no identity.
     /// Radius is concentric to the (removed) card scale so it stays visually consistent with
     /// other inset-avatar treatments in the app.
     @ViewBuilder private var profileAvatar: some View {
@@ -541,7 +541,10 @@ struct HomeScreen: View {
     /// "All" section header — the Space switcher (name + item count + chevron) opening the
     /// picker, with the Sort action trailing. The switcher moved here from the top header bar.
     private var allItemsHeader: some View {
-        HStack(alignment: .lastTextBaseline) {
+        // .center (not .lastTextBaseline): both sides render the same
+        // `.sectionLabel` style, so centering is visually identical while
+        // staying correct once the invisible hit-target frames below add height.
+        HStack(alignment: .center) {
             Button { showFolderPicker = true } label: {
                 HStack(spacing: Space.s1) {
                     spaceTitleText.vaultType(.sectionLabel)
@@ -552,6 +555,8 @@ struct HomeScreen: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .frame(minHeight: Metric.hitMin)
+            .contentShape(Rectangle())
 
             Spacer()
 
@@ -563,6 +568,8 @@ struct HomeScreen: View {
                     .foregroundStyle(env.theme.uiTint)
             }
             .buttonStyle(.plain)
+            .frame(minHeight: Metric.hitMin)
+            .contentShape(Rectangle())
         }
         .padding(.bottom, Space.s1)
     }
@@ -645,7 +652,10 @@ struct HomeScreen: View {
         action: LocalizedStringResource? = nil,
         onAction: (() -> Void)? = nil
     ) -> some View {
-        HStack(alignment: .lastTextBaseline) {
+        // .center (not .lastTextBaseline): title and action share the same
+        // `.sectionLabel` style, so centering is visually identical while
+        // staying correct once the action's invisible hit-target frame adds height.
+        HStack(alignment: .center) {
             Text(title)
                 .vaultType(.sectionLabel)
                 .themedForeground(.tertiary)
@@ -657,6 +667,8 @@ struct HomeScreen: View {
                         .foregroundStyle(env.theme.uiTint)
                 }
                 .buttonStyle(.plain)
+                .frame(minHeight: Metric.hitMin)
+                .contentShape(Rectangle())
             }
         }
         .padding(.bottom, Space.s1)

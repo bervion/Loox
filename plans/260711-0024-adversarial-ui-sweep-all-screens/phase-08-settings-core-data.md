@@ -1,6 +1,6 @@
 # Phase 8 — Settings core + Security + Data
 
-**Status**: pending · **Wave**: W2 · **Owns**: `Settings/*` (excl `Appearance/`), `ImportExport/*`,
+**Status**: done · **Wave**: W2 · **Owns**: `Settings/*` (excl `Appearance/`), `ImportExport/*`,
 `EmergencyKit/*` (16 surfaces). Method = canonical protocol + 6 greps (`phase-01`).
 
 ## Protagonist
@@ -28,9 +28,9 @@ Settings = "change one behavior and get out". Each sub-screen = one setting task
   ownership: this file is P8's; Mac shell chrome is P13's).
 
 ## Deliverables / Todo
-`reports/findings-phase-08.md` · `strings-manifest-phase-08.md` · fixes.
-- [ ] Protocol answers (16). [ ] 6 greps. [ ] Verify Online-toggle-vs-status wiring untouched.
-- [ ] Pair/import/export state machines walked. [ ] PDF exemption noted. [ ] Fixes + manifest.
+`reports/phase-08-findings.md` · `strings-manifest-phase-08.md` · fixes.
+- [x] Protocol answers (13 surfaces). [x] 6 greps. [x] Verify Online-toggle-vs-status wiring untouched.
+- [x] Pair/import/export state machines walked. [x] PDF exemption noted. [x] Fixes + manifest.
 
 ## Success / Risk
 Success: audit-grep clean (PDF exempt); every sub-screen one-task; destructive copy honest+confirmed; state

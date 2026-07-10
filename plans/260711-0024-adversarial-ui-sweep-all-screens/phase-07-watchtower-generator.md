@@ -1,6 +1,6 @@
 # Phase 7 — Watchtower + Generator
 
-**Status**: pending · **Wave**: W2 · **Owns**: `Watchtower/*`, `Generator/*` (10 surfaces).
+**Status**: done · **Wave**: W2 · **Owns**: `Watchtower/*`, `Generator/*` (10 surfaces).
 Method = canonical protocol + 6 greps (`phase-01`).
 
 ## Protagonist
@@ -22,9 +22,17 @@ Watchtower = "what should I fix, in order". Generator = "produce a strong value 
   only when opened from editor. Passphrase/PIN modes reflow controls at SE + Dynamic Type XL.
 
 ## Deliverables / Todo
-`reports/findings-phase-07.md` · `strings-manifest-phase-07.md` · fixes.
-- [ ] Protocol answers (10). [ ] 6 greps. [ ] Ring/bar Reduce-Motion instant-value verified.
-- [ ] Band colors semantic. [ ] Generator copy/slider haptics single-fire. [ ] Fixes + manifest.
+`reports/phase-07-findings.md` · `strings-manifest-phase-07.md` · fixes.
+- [x] Protocol answers (10). [x] 6 greps. [x] Ring/bar Reduce-Motion instant-value verified.
+- [x] Band colors semantic. [x] Generator copy/slider haptics single-fire. [x] Fixes + manifest.
+
+Done 260711. See `reports/phase-07-findings.md` for the full table. Highlights: empty-vault
+scaffolding bug fixed, an unlocalized HIBP detail string fixed (+ a sibling one flagged
+out-of-scope in `PasswordAudit.swift`), score-ring safety gradient rewired from fixed hex to
+`theme.destructive/warning/success` (RGBMath.blend), strength-bar fill routed to `theme.color(.success)`,
+CategoryRow title lineLimit 1→2 (EN title clipped at SE), Generator's copy icon/toast switched to
+the shared `CopyMorphIcon`/`CopyToastOverlay` primitives (was reinventing both), missing haptic on
+"Use Password" added. Compile green (app + AutoFill extension).
 
 ## Success / Risk
 Success: audit-grep clean; score/strength motion collapses under Reduce Motion; category empty/all-clear/

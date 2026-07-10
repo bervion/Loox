@@ -55,6 +55,15 @@ attachments. Layer C (management): history, metadata, tags, delete — behind me
 the fold. A normal user should almost never SEE layer C. Destructive actions appear exactly
 once per screen, in the menu, with confirmation.
 
+**Action hierarchy — no button walls.** A screen or sheet state shows at most ONE filled
+primary action plus at most one quiet secondary (text or tinted style). Three or more stacked
+buttons is a defect: rank the actions by the frequency map, keep the top one primary, demote
+the rest into a menu, a share sheet, the toolbar, or the next step of the flow. Button size
+follows rank — primary is full-width `controlLarge`; a secondary never visually outweighs the
+primary; two adjacent buttons never differ in size or style without a rank reason. Completion
+screens (link created, share sent, kit generated) are the classic offenders: the user's next
+action is almost always exactly one thing — design for that one thing.
+
 ### 8. Personality lives in micro-detail — "calm intelligence"
 Copy is short, still, confident. Never exclamation marks, never emoji cheerleading, never
 em-dashes ("—") in UI strings, and never interpunct separators ("·") — separate ideas with

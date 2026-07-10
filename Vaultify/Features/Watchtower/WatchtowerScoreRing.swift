@@ -48,11 +48,6 @@ struct WatchtowerScoreRing: View {
 
     private static let introDuration: Double = 1.8
 
-    // Safety palette: low = red (danger) → mid = amber → high = green (safe).
-    private static let dangerRGB = (0xE5, 0x48, 0x4D)   // #E5484D
-    private static let warnRGB   = (0xF5, 0xA6, 0x23)   // #F5A623
-    private static let safeRGB   = (0x22, 0xC5, 0x5E)   // #22C55E
-
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -88,7 +83,7 @@ struct WatchtowerScoreRing: View {
         .frame(width: Geo.baseWidth, height: Geo.baseHeight)
         .onAppear { trigger() }
         .onChange(of: score) { _, _ in trigger() }
-        .accessibilityLabel(Text("Security score: \(score)"))
+        .accessibilityLabel(Text("Security score: \(score), ") + Text(band.label))
     }
 
     // MARK: - Intro trigger
@@ -129,7 +124,7 @@ struct WatchtowerScoreRing: View {
                        bw: CGFloat, scale: CGFloat, theme: AppTheme, band: ScoreBand,
                        size: CGSize) -> some View {
         let f = needleFraction(p)
-        let tipColor = safetyColor(f)
+        let tipColor = safetyColor(f, theme: theme)
         ZStack {
             Canvas { ctx, _ in
                 drawTrack(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, theme: theme)
@@ -140,8 +135,11 @@ struct WatchtowerScoreRing: View {
             }
             .frame(width: size.width, height: size.height)
 
+            // Band label uses the DISCRETE semantic role (not the continuous sweep
+            // tint) so it always matches the exact 80/50 thresholds, never an
+            // interpolated in-between hue.
             scoreReadout(displayed: Int((f * 100).rounded()), band: band,
-                         color: safetyColor(targetFraction), cy: cy, scale: scale)
+                         color: theme.color(band.role), cy: cy, scale: scale)
         }
     }
 
@@ -238,27 +236,19 @@ struct WatchtowerScoreRing: View {
 
     // MARK: - Colour + easing
 
-    /// Safety colour for a fraction: red (0) → amber (0.5) → green (1).
-    private func safetyColor(_ f: CGFloat) -> Color {
-        let t = max(0, min(1, f))
-        let (r, g, b): (CGFloat, CGFloat, CGFloat)
+    /// Safety colour for a fraction: destructive (0) → warning (0.5) → success (1),
+    /// blended between the ACTIVE THEME's semantic roles (not fixed hex) so the
+    /// sweep stays WCAG-legible and on-brand across every accent preset and both
+    /// light/dark appearances.
+    private func safetyColor(_ f: CGFloat, theme: AppTheme) -> Color {
+        let t = Double(max(0, min(1, f)))
         if t < 0.5 {
-            let k = t / 0.5
-            r = lerp(Self.dangerRGB.0, Self.warnRGB.0, k)
-            g = lerp(Self.dangerRGB.1, Self.warnRGB.1, k)
-            b = lerp(Self.dangerRGB.2, Self.warnRGB.2, k)
+            return Color(rgb: RGBMath.blend(theme.destructive, theme.warning, t / 0.5))
         } else {
-            let k = (t - 0.5) / 0.5
-            r = lerp(Self.warnRGB.0, Self.safeRGB.0, k)
-            g = lerp(Self.warnRGB.1, Self.safeRGB.1, k)
-            b = lerp(Self.warnRGB.2, Self.safeRGB.2, k)
+            return Color(rgb: RGBMath.blend(theme.warning, theme.success, (t - 0.5) / 0.5))
         }
-        return Color(red: r / 255, green: g / 255, blue: b / 255)
     }
 
-    private func lerp(_ a: Int, _ b: Int, _ t: CGFloat) -> CGFloat {
-        CGFloat(a) + (CGFloat(b) - CGFloat(a)) * t
-    }
     private func clamp01(_ x: CGFloat) -> CGFloat { max(0, min(1, x)) }
     private func easeOut(_ t: CGFloat) -> CGFloat { 1 - pow(1 - t, 3) }
     private func easeInOut(_ t: CGFloat) -> CGFloat {

@@ -1,6 +1,6 @@
 # Phase 3 — Home + Search (re-review)
 
-**Status**: pending · **Wave**: W2 · **Owns**: `Home/*`, `Search/*` (16 surfaces).
+**Status**: done · **Wave**: W2 · **Owns**: `Home/*`, `Search/*` (16 surfaces).
 Both reworked by the prior DNA pass → REGRESSION + consistency re-review; expect fewer NEW findings.
 Method = canonical protocol + 6 greps (`phase-01`).
 
@@ -23,9 +23,9 @@ Home = "find and use a credential instantly". Search = "narrow the pool to the o
   Search-all-Spaces is a real escape, not a dead end. Strictly-anonymous persona blocks All-Spaces (fail-closed).
 
 ## Deliverables / Todo
-`reports/findings-phase-03.md` · `strings-manifest-phase-03.md` · fixes.
-- [ ] Protocol answers (16). [ ] 6 greps. [ ] SE 2×2 reflow check. [ ] OTP haptic single-fire.
-- [ ] Search zero-state + operator-fallback states walked. [ ] Fixes + manifest.
+`reports/phase-03-findings.md` · `strings-manifest-phase-03-sweep.md` · fixes.
+- [x] Protocol answers (18 surfaces). [x] 6 greps. [x] SE 2×2 reflow check (already compliant). [x] OTP haptic single-fire (doubled Haptics.tap() removed).
+- [x] Search zero-state + operator-fallback states walked. [x] Fixes + manifest.
 
 ## Success / Risk
 Success: audit-grep clean; Home reads credential-first at first glance on SE and Pro Max; Search zero/one/

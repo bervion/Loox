@@ -52,7 +52,10 @@ struct CategoryRow: View {
                     Text(title)
                         .vaultType(.body)
                         .themedForeground(.primary)
-                        .lineLimit(1)
+                        // 2 lines: the longest EN title ("Set up two-factor
+                        // authentication") clips at SE width with lineLimit(1) once
+                        // the icon tile + count badge + chevron eat into the row.
+                        .lineLimit(2)
                     Text(verbatim: subtitle)
                         .vaultType(.footnote)
                         .themedForeground(.secondary)

@@ -1,6 +1,6 @@
 # Phase 9 — Appearance + About
 
-**Status**: pending · **Wave**: W2 · **Owns**: `Settings/Appearance/*`, `Settings/AboutView.swift`, `DesignSystem/Wallpaper/*` (engine is flag-gated OFF — review-light: only verify nothing leaks into current UI) (6+ surfaces).
+**Status**: done · **Wave**: W2 · **Owns**: `Settings/Appearance/*`, `Settings/AboutView.swift`, `DesignSystem/Wallpaper/*` (engine is flag-gated OFF — review-light: only verify nothing leaks into current UI) (6+ surfaces).
 Method = canonical protocol + 6 greps (`phase-01`).
 
 ## Protagonist
@@ -23,9 +23,9 @@ Appearance = "make it look the way I want, live". About = "understand and trust 
 - Accent swatch grid: 7 swatches must reflow (not squeeze) at SE and Dynamic Type — 4-per-row → fewer rows.
 
 ## Deliverables / Todo
-`reports/findings-phase-09.md` · `strings-manifest-phase-09.md` · fixes.
-- [ ] Protocol answers (6). [ ] 6 greps (swatch exemption noted). [ ] Theme-switch invisible-content audit
-  across BOTH theme cards × 7 accents × light/dark. [ ] Confirm wallpaper/custom-theme stay gated. [ ] Fixes + manifest.
+`reports/phase-09-findings.md` · `strings-manifest-phase-09.md` · fixes.
+- [x] Protocol answers (5, per adversarial protocol). [x] 6 greps (swatch exemption noted). [x] Theme-switch invisible-content audit
+  across BOTH theme cards × 7 accents × light/dark. [x] Confirm wallpaper/custom-theme stay gated. [x] Fixes + manifest.
 
 ## Success / Risk
 Success: audit-grep clean (preview swatches exempt); zero invisible content after any theme/accent switch;

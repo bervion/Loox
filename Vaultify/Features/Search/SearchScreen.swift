@@ -224,6 +224,7 @@ private struct ScopeChip: View {
                 .themedForeground(isActive ? .accent : .secondary)
                 .padding(.horizontal, Space.s3)
                 .padding(.vertical, Space.s2)
+                .frame(minHeight: Metric.hitMin)
                 .background(
                     Color(rgb: isActive ? env.theme.active.accentSoft : env.theme.active.surfacePressed),
                     in: Capsule()

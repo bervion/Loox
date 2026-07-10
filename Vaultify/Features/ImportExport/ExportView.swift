@@ -113,8 +113,10 @@ struct ExportView: View {
             } else {
                 exportURL = try write(Data(VaultBackup.makeCSV(items, folderNames: folderNames).utf8), name: "loox-export.csv")
             }
+            Haptics.success()
         } catch {
             self.error = error.localizedDescription
+            Haptics.error()
         }
         working = false
     }

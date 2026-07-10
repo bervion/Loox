@@ -107,7 +107,11 @@ struct AboutView: View {
                              title: LocalizedStringKey, body: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             Text(verbatim: "\(number)")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                // Dynamic-Type-scalable large-title text style (still rounded/heavy for the
+                // decorative numeral look) instead of a fixed pixel size, so it keeps pace
+                // with the surrounding vaultType body copy at accessibility sizes.
+                .font(.system(.largeTitle, design: .rounded))
+                .fontWeight(.heavy)
                 .foregroundStyle(tint.opacity(0.35))
             Text(title)
                 .vaultType(.headline)
@@ -206,8 +210,8 @@ struct AboutView: View {
         HStack(alignment: .top, spacing: Space.s3) {
             PolarisIcon(icon, size: 22).foregroundStyle(Color.accentColor).frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.medium))
-                Text(detail).font(.caption).themedForeground(.secondary)
+                Text(title).vaultType(.subhead).fontWeight(.medium).themedForeground(.primary)
+                Text(detail).vaultType(.caption).themedForeground(.secondary)
             }
         }
     }

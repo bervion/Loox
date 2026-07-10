@@ -38,7 +38,7 @@ struct SyncSettingsView: View {
                 Section {
                     Label {
                         Text("To use iCloud Sync, enable the iCloud capability (CloudKit) for the app target in Xcode and sign in to iCloud on this device.")
-                            .font(.footnote).themedForeground(.secondary)
+                            .vaultType(.footnote).themedForeground(.secondary)
                     } icon: {
                         PolarisIcon(Icons.info).foregroundStyle(VaultColors.strengthMedium)
                     }
@@ -148,7 +148,7 @@ struct SyncSettingsView: View {
     /// Vault-key-gated participant identity for the debug buttons.
     private func debugIdentity() async -> ParticipantIdentity? {
         guard let vaultKey = env.session.vaultKey?.bytes else {
-            inboxDiagnostics = "vault is locked — unlock first"
+            inboxDiagnostics = "vault is locked, unlock first"
             return nil
         }
         guard let identity = try? await env.participantEscrow.ensureIdentity(vaultKey: vaultKey) else {
@@ -168,7 +168,7 @@ struct SyncSettingsView: View {
         case .success(let date):
             LabeledContent("Last sync", value: date.formatted(date: .omitted, time: .shortened))
         case .error(let message):
-            Text(message).font(.footnote).foregroundStyle(VaultColors.strengthWeak)
+            Text(message).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
         }
     }
 }

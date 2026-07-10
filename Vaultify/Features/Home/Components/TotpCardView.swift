@@ -54,8 +54,13 @@ struct TotpCardView: View {
                                     : Color(rgb: theme.primaryText))
                         }
                     }
-                    .font(.title3.weight(.bold))
-                    .monospacedDigit()
+                    // OTP is a secret/code — the typographic object gets MonoLisa
+                    // (matches ItemDetail's TOTPCodeView), not a system font.
+                    .font(.vaultCode(.title3, weight: .bold))
+                    .lineLimit(1)
+                    // Guards the "123 456" grouping from clipping inside the
+                    // fixed 158pt-wide card at accessibility XXL Dynamic Type.
+                    .minimumScaleFactor(0.7)
                     .animation(reduceMotion ? nil : .easeInOut(duration: Motion.fast), value: copied)
 
                     Text(item.title.isEmpty ? "Untitled" : item.title)
@@ -90,8 +95,9 @@ struct TotpCardView: View {
 
     private func copyCode(_ code: String?) {
         guard let code, !copied else { return }
+        // ClipboardService fires Haptics.success on copy — do not add a second
+        // haptic here (would double-buzz on every 2FA code copy).
         env.clipboard.copy(code, label: "2FA code")
-        Haptics.tap()
         copied = true
         // Flash duration matches DS: 1100 ms.
         Task {

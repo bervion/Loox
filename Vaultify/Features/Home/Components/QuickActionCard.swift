@@ -76,7 +76,7 @@ struct QuickActionCardLabel: View {
             .vaultType(.caption)
             .fontWeight(.bold)
             .foregroundStyle(fill)
-            .padding(3)
+            .padding(Space.s1)
             .frame(minWidth: 18, minHeight: 18)
             .background(.white.opacity(0.92), in: Circle())
     }
