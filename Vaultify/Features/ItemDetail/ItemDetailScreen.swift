@@ -517,9 +517,28 @@ struct ItemDetailScreen: View {
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text("Shared with").vaultType(.sectionLabel).themedForeground(.tertiary)
                 VStack(spacing: 0) {
-                    ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
+                    ForEach(shares) { share in
                         shareRow(share)
-                        if index < shares.count - 1 { Divider().padding(.leading, Space.gutter) }
+                        Divider().padding(.leading, Space.gutter)
+                    }
+                    // In-flow entry to add another recipient — the toolbar share
+                    // icon stays, but sharing again from where the recipients
+                    // already live is the natural next tap.
+                    if !item.isTrashed {
+                        Button { showShareAccess = true } label: {
+                            HStack(spacing: Space.s3) {
+                                PolarisIcon(Icons.addCircle, size: Metric.iconInline)
+                                    .themedForeground(.accent)
+                                Text("Share this item")
+                                    .vaultType(.body)
+                                    .foregroundStyle(env.theme.uiTint)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, Space.gutter).padding(.vertical, 12)
+                            .frame(minHeight: Metric.hitMin)
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .background(VaultColors.surface)
@@ -549,7 +568,9 @@ struct ItemDetailScreen: View {
                     if isPending {
                         VaultStatusBadge(kind: .action, label: "Resume")
                     } else {
-                        VaultStatusBadge(kind: .active, label: "Active")
+                        // No status badge here: the subtitle already says the
+                        // share is active — the duplicate pill only squeezed
+                        // the recipient's email into an ellipsis.
                         PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                     }
                 }

@@ -12982,6 +12982,16 @@
           }
         }
       }
+    },
+    "Share this item": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ mục này"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
