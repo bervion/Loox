@@ -5,3 +5,4 @@
 - [P3 Alias Model plan](vaultify-p3-alias-model-plan.md) — local-only EmailAlias mirroring Persona; RelayFeature flag OFF gates .active; AliasAddress hides @domain pre-relay; phase 4 deferred
 - [Persona↔Space partition plan](vaultify-persona-space-partition-plan.md) — Folder.personaId = partition key; active persona filters whole app; backfill→default; fail-closed INV-R03; 4 phases; primarySpaceID leak reconcile
 - [Relay Destination + Alias Mgmt plan](vaultify-relay-destination-alias-mgmt-plan.md) — per-alias real email via rotateDestination(kind=3); activate=createAlias→rotate; backendMinted resumable; "Private email" write-back; AliasDetailScreen; 5 phases
+- [Loox UI/UX redesign plan](vaultify-loox-ui-ux-redesign-plan.md) — 13-đợt design→flow polish; 7 phase (P0 primitives→P5 sharing→P6 defer); giữ tab bar+header; plans/260710-2135-loox-ui-ux-redesign/
