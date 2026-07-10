@@ -179,6 +179,12 @@ struct HomeScreen: View {
                 VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
+                    // 0. Identity context line — a thin "acting as" strip, not a card.
+                    // Sits at the very top so which persona you're operating as is
+                    // always visible (INV-R03 discoverability) without competing with
+                    // the protagonist band below.
+                    profileRow
+
                     // Protagonist band — live/urgent credential content leads the screen
                     // (find & use a credential instantly). Order: time-sensitive share/approval
                     // alerts, then TOTP, Needs Attention, Recently Used, Favorites, All items.
@@ -206,8 +212,10 @@ struct HomeScreen: View {
                     }
 
                     // 5. Recently used — "reach for it again" signal, distinct from All
-                    // items' edit-time sort. Capped small so it never duplicates All items.
-                    if !recentlyUsedItems.isEmpty {
+                    // items' edit-time sort. Only shown once the vault is big enough for
+                    // it to add signal: on a small vault everything is already on screen
+                    // and this strip just duplicates the list right below it.
+                    if !recentlyUsedItems.isEmpty, allItems.count > 5 {
                         recentlyUsedSection
                     }
 
@@ -219,11 +227,9 @@ struct HomeScreen: View {
                     // 7. All items (pinned first)
                     allItemsSection
 
-                    // 8. Profile identity strip (thin — no longer the protagonist).
-                    profileRow
-
-                    // 9. Compact quick-actions row (Add/Generate/2FA/Watchtower).
-                    quickActionsRow
+                    // 8. Quick-actions grid (Add/Generate/2FA/Watchtower) — secondary,
+                    // 2×2 horizontal pills so Vietnamese labels never truncate.
+                    quickActionsGrid
                 }
                 .padding(.horizontal, Space.gutter)
                 // Bottom inset so the floating tab bar never obscures the last row.
@@ -344,21 +350,20 @@ struct HomeScreen: View {
         return kind
     }
 
-    /// Thin single-line identity strip below the protagonist band: small avatar + active
-    /// persona name + chevron. No longer a weighted card (Home's protagonist is credential
-    /// content, not profile) — persona kind/email still reaches VoiceOver via the
-    /// accessibility label so the active-persona semantics stay discoverable (INV-R03).
+    /// Identity context line at the top of the scroll: small avatar + active persona
+    /// name in secondary weight + chevron. Reads as "acting as …", not a card — the
+    /// protagonist band below keeps the visual weight. Persona kind/email still
+    /// reaches VoiceOver via the accessibility label (INV-R03 discoverability).
     private var profileRow: some View {
         Button { uiState.homePath.append(ProfileRoute()) } label: {
-            HStack(spacing: Space.s3) {
+            HStack(spacing: Space.s2) {
                 profileAvatar
                 Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
-                    .vaultType(.subhead).themedForeground().lineLimit(1)
-                Spacer(minLength: Space.s2)
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                    .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
+                PolarisIcon(Icons.chevronRight, size: 12).themedForeground(.tertiary)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, Space.s2)
-            .padding(.vertical, Space.s2)
+            .padding(.vertical, Space.s1)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
@@ -371,7 +376,7 @@ struct HomeScreen: View {
     /// Radius is concentric to the (removed) card scale so it stays visually consistent with
     /// other inset-avatar treatments in the app.
     @ViewBuilder private var profileAvatar: some View {
-        let avatarSize: CGFloat = 28
+        let avatarSize: CGFloat = 24
         let cornerRadius = Radius.concentric(outer: Radius.lg, inset: Space.s4)
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         // The ACTIVE persona's own card — never another persona's (an anonymous
@@ -394,15 +399,17 @@ struct HomeScreen: View {
 
     // MARK: Quick actions
 
-    /// Compact single-row quick actions: Add · Generate · 2FA · Watchtower. Compressed from
-    /// the old 2×2 grid — this band is secondary now (protagonist = credential content
-    /// above), so counts on 2FA/Watchtower shrink to a small corner badge rather than a
-    /// prominent number. All 4 destinations stay reachable in one row.
-    private var quickActionsRow: some View {
-        // One GlassEffectContainer for all glass views (4 tiles + badges) → a single
+    /// Quick actions as a 2×2 grid of horizontal pills: Add · Generate · 2FA · Watchtower.
+    /// Half-width pills give Vietnamese labels ("Tạo mật khẩu") room to render whole —
+    /// a single row of four truncated them. Still secondary to the credential content
+    /// above: counts on 2FA/Watchtower stay a small trailing badge, not a headline.
+    private var quickActionsGrid: some View {
+        // One GlassEffectContainer for all glass views (4 pills + badges) → a single
         // backdrop layer; fixes the per-frame glass-update warning on theme changes.
         VaultGlassGroup {
-        HStack(spacing: Space.s3) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3),
+                            GridItem(.flexible(), spacing: Space.s3)],
+                  spacing: Space.s3) {
             // Add — presents the item-type menu (uses ic_page_add, matches the header).
             Menu {
                 newItemMenuItems

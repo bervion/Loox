@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Compact quick-action tile: a colour tile with the icon centered and the label below,
-/// laid out in a single row on Home (compressed from the old 2×2 grid — Home DNA #1: the
-/// protagonist is credential content, quick actions are secondary). An optional live count
-/// renders as a small corner badge rather than a prominent number, per the same rationale.
+/// Compact quick-action pill: a tinted horizontal pill with the icon badge leading and
+/// the label beside it, laid out 2×2 on Home. Half-width pills fit full Vietnamese labels
+/// (a single row of four truncated them) while keeping the band visually secondary to the
+/// credential content above (Home DNA #1). An optional live count renders as a small
+/// trailing badge rather than a prominent number, per the same rationale.
 ///
 /// Surface is **tinted Liquid Glass on iOS 26** (interactive), with a flat colour fill on
 /// older OSes / Reduce Transparency. These are action controls (like the tab bar), not data
@@ -35,41 +36,40 @@ struct QuickActionCardLabel: View {
     let fill: Color
     var count: Int? = nil
 
-    /// Outer tile corner radius — shared by every quick-action tile so the glyph badge's
+    /// Outer pill corner radius — shared by every quick-action pill so the glyph badge's
     /// concentric inset (below) stays consistent regardless of which action it is.
-    fileprivate static let tileRadius = Radius.lg
-    /// Tile inner padding — the "inset" half of the concentric-radius formula for the badge.
-    fileprivate static let tilePadding = Space.s3
+    fileprivate static let tileRadius = Radius.md
+    /// Pill inner padding — the "inset" half of the concentric-radius formula for the badge.
+    fileprivate static let tilePadding = Space.s2
 
     var body: some View {
-        VStack(spacing: Space.s2) {
-            ZStack(alignment: .topTrailing) {
-                Color.clear
-                    .frame(width: 30, height: 30)
-                    .modifier(GlyphBadgeSurface())
-                    .overlay(PolarisIcon(icon, size: 16).foregroundStyle(.white))
-
-                if let count, count > 0 {
-                    countBadge(count)
-                        .offset(x: 8, y: -8)
-                }
-            }
+        HStack(spacing: Space.s2) {
+            Color.clear
+                .frame(width: 28, height: 28)
+                .modifier(GlyphBadgeSurface())
+                .overlay(PolarisIcon(icon, size: 15).foregroundStyle(.white))
 
             Text(label)
-                .vaultType(.caption)
+                .vaultType(.subhead)
                 .fontWeight(.semibold)
                 .foregroundStyle(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.85)
+
+            Spacer(minLength: 0)
+
+            if let count, count > 0 {
+                countBadge(count)
+            }
         }
-        .padding(.horizontal, Space.s2)
+        .padding(.horizontal, Self.tilePadding)
         .padding(.vertical, Self.tilePadding)
-        .frame(maxWidth: .infinity, minHeight: Metric.controlLarge + Space.s6)
+        .frame(maxWidth: .infinity, minHeight: Metric.hitMin)
         .modifier(QuickActionCardSurface(fill: fill))
         .contentShape(.rect(cornerRadius: Self.tileRadius))
     }
 
-    /// Small corner badge — counts are secondary information now, not the tile's headline.
+    /// Small trailing badge — counts are secondary information now, not the pill's headline.
     @ViewBuilder
     private func countBadge(_ count: Int) -> some View {
         Text("\(min(count, 99))")
@@ -77,8 +77,8 @@ struct QuickActionCardLabel: View {
             .fontWeight(.bold)
             .foregroundStyle(fill)
             .padding(3)
-            .frame(minWidth: 16, minHeight: 16)
-            .background(.white, in: Circle())
+            .frame(minWidth: 18, minHeight: 18)
+            .background(.white.opacity(0.92), in: Circle())
     }
 }
 
