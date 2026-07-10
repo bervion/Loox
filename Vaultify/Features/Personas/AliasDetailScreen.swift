@@ -61,14 +61,14 @@ struct AliasDetailScreen: View {
                     labelDraft = alias.label ?? ""
                     editingLabel = true
                 } label: {
-                    LabeledContent { Text(verbatim: alias.label ?? "—") } label: { Text("Label") }
+                    LabeledContent { Text(verbatim: alias.label ?? appString("None")) } label: { Text("Label") }
                 }
             }
             .listRowBackground(VaultColors.surface)
 
             Section {
                 // Masked in overview; the full address appears only when editing.
-                LabeledContent { Text(verbatim: alias.forwardingTarget.map(EmailMask.masked) ?? "—") }
+                LabeledContent { Text(verbatim: alias.forwardingTarget.map(EmailMask.masked) ?? appString("None")) }
                     label: { Text("Forwards to") }
                 // Per-alias inbox pin — offered once there's a choice to make.
                 if env.repository.forwardingInboxes.count > 1 {
@@ -127,13 +127,16 @@ struct AliasDetailScreen: View {
             Text("Mail to your aliases will forward here. Changing it re-points every alias of this identity.")
         }
         .confirmationDialog("Pause forwarding?", isPresented: $confirmPause, titleVisibility: .visible) {
-            Button("Pause forwarding") { run { try await env.relay.disable(alias) } }
+            Button("Pause forwarding") { Haptics.tap(); run { try await env.relay.disable(alias) } }
         } message: {
             Text("New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later.")
         }
         .confirmationDialog("Delete this private address permanently?", isPresented: $confirmDelete,
                             titleVisibility: .visible) {
-            Button("Delete permanently", role: .destructive) { run { try await env.relay.delete(alias) } }
+            Button("Delete permanently", role: .destructive) {
+                Haptics.error()
+                run { try await env.relay.delete(alias) }
+            }
         } message: {
             Text(verbatim: address + "\n")
                 + Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
@@ -162,7 +165,7 @@ struct AliasDetailScreen: View {
         if let persona, let fallback = env.repository.defaultInbox(for: persona) {
             return inboxTitle(fallback)
         }
-        return "—"
+        return appString("None")
     }
 
     private func pick(_ inbox: ForwardingInbox, for alias: EmailAlias) {
@@ -188,8 +191,13 @@ struct AliasDetailScreen: View {
         Task {
             defer { busy = false }
             do { try await operation() }
-            catch let failure as RelayService.Failure { errorMessage = failure.userMessage }
-            catch { errorMessage = appString("Check your connection and iCloud, then try again.") }
+            catch let failure as RelayService.Failure {
+                errorMessage = failure.userMessage
+                Haptics.error()
+            } catch {
+                errorMessage = appString("Check your connection and iCloud, then try again.")
+                Haptics.error()
+            }
         }
     }
 

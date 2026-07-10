@@ -16,6 +16,7 @@ struct ForwardingInboxScreen: View {
     @State private var rotationDone = 0
     @State private var rotationTotal = 0
     @State private var errorMessage: String?
+    @State private var pendingDeleteInbox: ForwardingInbox?
 
     var body: some View {
         List {
@@ -46,6 +47,15 @@ struct ForwardingInboxScreen: View {
         .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
         } message: { Text(verbatim: errorMessage ?? "") }
+        .confirmationDialog("Delete this inbox?", isPresented: deleteInboxBinding,
+                            titleVisibility: .visible, presenting: pendingDeleteInbox) { inbox in
+            Button("Delete", role: .destructive) {
+                Haptics.error()
+                try? env.repository.deleteInbox(inbox)
+            }
+        } message: { _ in
+            Text("You can add it again later if you need to.")
+        }
         // Auto-advance pending → verified: the user confirms on the web, so the
         // app must poll the result itself rather than wait for a manual tap.
         .task(id: scenePhase) { await pollPendingVerifications() }
@@ -114,14 +124,14 @@ struct ForwardingInboxScreen: View {
                 }
             }
             if inbox.source == .manual {
-                Button(role: .destructive) { try? env.repository.deleteInbox(inbox) } label: {
+                Button(role: .destructive) { pendingDeleteInbox = inbox } label: {
                     Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
                 }
             }
         }
         .swipeActions(edge: .trailing) {
             if inbox.source == .manual {
-                Button(role: .destructive) { try? env.repository.deleteInbox(inbox) } label: {
+                Button(role: .destructive) { pendingDeleteInbox = inbox } label: {
                     Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
                 }
             }
@@ -166,16 +176,26 @@ struct ForwardingInboxScreen: View {
     private func confirmEmail(_ inbox: ForwardingInbox) {
         Task {
             do { _ = try await env.relay.beginDestinationVerification(inbox) }
-            catch let failure as RelayService.Failure { errorMessage = failure.userMessage }
-            catch { errorMessage = appString("Check your connection and iCloud, then try again.") }
+            catch let failure as RelayService.Failure {
+                errorMessage = failure.userMessage
+                Haptics.error()
+            } catch {
+                errorMessage = appString("Check your connection and iCloud, then try again.")
+                Haptics.error()
+            }
         }
     }
 
     private func checkVerification(_ inbox: ForwardingInbox) {
         Task {
             do { _ = try await env.relay.refreshDestinationStatus(inbox) }
-            catch let failure as RelayService.Failure { errorMessage = failure.userMessage }
-            catch { errorMessage = appString("Check your connection and iCloud, then try again.") }
+            catch let failure as RelayService.Failure {
+                errorMessage = failure.userMessage
+                Haptics.error()
+            } catch {
+                errorMessage = appString("Check your connection and iCloud, then try again.")
+                Haptics.error()
+            }
         }
     }
 
@@ -211,13 +231,19 @@ struct ForwardingInboxScreen: View {
             } catch let failure as RelayService.Failure {
                 // Finished aliases are checkpointed — the section re-offers the rest.
                 errorMessage = failure.userMessage
+                Haptics.error()
             } catch {
                 errorMessage = appString("Check your connection and iCloud, then try again.")
+                Haptics.error()
             }
         }
     }
 
     private var errorBinding: Binding<Bool> {
         Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+    }
+
+    private var deleteInboxBinding: Binding<Bool> {
+        Binding(get: { pendingDeleteInbox != nil }, set: { if !$0 { pendingDeleteInbox = nil } })
     }
 }

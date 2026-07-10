@@ -20,13 +20,17 @@ struct ProfileAvatarView: View {
                     .foregroundStyle(badgeForeground)
                     .frame(width: 30, height: 30)
                     .background(badgeBackground,
-                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: Radius.xs, style: .continuous))
                     // Ring in the page color so the badge reads as a separate chip.
-                    .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: Radius.xs, style: .continuous)
                         .strokeBorder(Color(rgb: env.theme.active.groupedBackground), lineWidth: 2))
                     // Nudge past the avatar's bottom-right corner for a lifted look.
                     .offset(x: 6, y: 6)
+                    // Hit-test only (no layout/visual change): pads the 30pt chip up to the
+                    // 44pt minimum tap target so a thumb doesn't need pixel precision.
+                    .contentShape(Rectangle().inset(by: -7))
             }
+            .accessibilityLabel(Text("Change photo"))
         }
         .onChange(of: picked) { _, newItem in
             guard let newItem else { return }

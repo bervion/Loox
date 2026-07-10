@@ -98,10 +98,14 @@ struct MacSearchSuggestionsPanel: View {
                         HStack(spacing: Space.s3) {
                             ItemThumbnail(title: item.title, category: item.category,
                                           iconAsset: item.iconAsset, size: 22)
-                            Text(item.title).fontWeight(.semibold).lineLimit(1)
-                            if let subtitle = item.subtitle {
-                                Text(verbatim: "— \(subtitle)")
-                                    .themedForeground(.secondary).lineLimit(1)
+                            // Title + subtitle stack on two lines — real layout, not an
+                            // em-dash glue character, per the copy standard.
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(item.title).fontWeight(.semibold).lineLimit(1)
+                                if let subtitle = item.subtitle {
+                                    Text(verbatim: subtitle)
+                                        .vaultType(.footnote).themedForeground(.secondary).lineLimit(1)
+                                }
                             }
                             Spacer(minLength: 0)
                         }

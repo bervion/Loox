@@ -124,6 +124,9 @@ struct ApprovalRequestSheet: View {
             .background(VaultColors.surface)
             .vaultCornerRadius(Radius.md)
 
+            // Action hierarchy: Approve is the single filled primary (the
+            // expected path); Reject is the quiet secondary — same tap
+            // target height, softer tinted style so it never competes.
             VStack(spacing: Space.s3) {
                 Button {
                     Task { await ceremony.approve(pending) }
@@ -140,6 +143,7 @@ struct ApprovalRequestSheet: View {
                     Text("Reject")
                         .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                 }
+                .buttonStyle(.themedTinted)
             }
         }
         .padding(Space.gutter)

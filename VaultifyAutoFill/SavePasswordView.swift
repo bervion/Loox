@@ -32,8 +32,8 @@ private struct SaveConfirmView: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent("Website", value: host.isEmpty ? "—" : host)
-                LabeledContent("Username", value: username.isEmpty ? "—" : username)
+                LabeledContent("Website", value: host.isEmpty ? appString("Not provided") : host)
+                LabeledContent("Username", value: username.isEmpty ? appString("Not provided") : username)
             } footer: {
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
             }

@@ -86,6 +86,7 @@ struct PasskeyCeremonyView: View {
                                 approvalTask?.cancel()
                                 onCancel(.userCanceled)
                             }
+                            .buttonStyle(.bordered)
                         }
                         .frame(maxWidth: .infinity)
                     } else {

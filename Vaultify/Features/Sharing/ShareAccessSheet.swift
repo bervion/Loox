@@ -106,7 +106,7 @@ struct ShareAccessSheet: View {
     }
 
     var body: some View {
-        VaultSheetScaffold(title: sheetTitle) {
+        VaultSheetScaffold(title: sheetTitle, trailing: { toolbarTrailing }) {
             content
         }
         .task(id: pollingZoneName) {
@@ -172,6 +172,24 @@ struct ShareAccessSheet: View {
         case .choose: "Share"
         case .quickLink: "Quick Link"
         default: "Share Access"
+        }
+    }
+
+    /// Low-frequency manual escape hatch for the waiting step, demoted off the
+    /// primary action row into the toolbar overflow (action-hierarchy rule):
+    /// the button stack below only ever shows the ranked next step.
+    @ViewBuilder private var toolbarTrailing: some View {
+        if case .waiting = step {
+            Menu {
+                Button {
+                    Task { await checkProfileNow() }
+                } label: { Text("Check Now") }
+            } label: {
+                PolarisIcon("ic_menu_horizontal", size: Metric.iconInline)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
         }
     }
 
@@ -607,18 +625,26 @@ struct ShareAccessSheet: View {
                         .multilineTextAlignment(.center)
                 }
                 if pollExhausted {
-                    Text("Still waiting. You can close this screen and finish later, or tap Check Now.")
+                    Text("Still waiting. You can close this screen and finish later, or check again from the menu above.")
                         .vaultType(.footnote).themedForeground(.secondary)
                         .multilineTextAlignment(.center)
                 }
 
+                // Action hierarchy: exactly one filled primary + at most one
+                // quiet secondary. Before acceptance the single most useful
+                // thing the owner can do is help the recipient find the
+                // invite (nudge); "Done" is the quiet fallback since the
+                // pending state already persists and resurfaces elsewhere.
+                // Once accepted there is nothing left to nudge — Done becomes
+                // the primary. "Check Now" is a low-frequency escape hatch,
+                // demoted to the toolbar overflow (see `toolbarTrailing`).
                 VStack(spacing: Space.s3) {
-                    Button { dismiss() } label: {
-                        Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-                    }
-                    .buttonStyle(.themedProminent)
-
-                    if let shareURL {
+                    if accepted {
+                        Button { dismiss() } label: {
+                            Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        }
+                        .buttonStyle(.themedProminent)
+                    } else if let shareURL {
                         #if os(iOS)
                         // Primary nudge: iMessage with the recipient pre-filled
                         // (the share sheet can't preselect one; the compose
@@ -630,6 +656,7 @@ struct ShareAccessSheet: View {
                                 Label { Text("Nudge via Messages") } icon: { PolarisIcon(Icons.share) }
                                     .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                             }
+                            .buttonStyle(.themedProminent)
                             .sheet(isPresented: $showMessageCompose) {
                                 MessageComposeView(
                                     recipients: [normalizedEmail],
@@ -640,21 +667,26 @@ struct ShareAccessSheet: View {
                                 Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
                                     .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                             }
+                            .buttonStyle(.themedProminent)
                         }
                         #else
                         ShareLink(item: shareURL) {
                             Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
                                 .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                         }
+                        .buttonStyle(.themedProminent)
                         #endif
-                    }
-                    // Manual escape hatch: the background poll has a bounded
-                    // budget — this button re-checks on demand so a long wait
-                    // can't strand the owner on this screen.
-                    Button {
-                        Task { await checkProfileNow() }
-                    } label: {
-                        Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        Button { dismiss() } label: {
+                            Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        }
+                        .buttonStyle(.themedTinted)
+                    } else {
+                        // Rare fallback (no invite URL minted) — Done is the
+                        // only available action.
+                        Button { dismiss() } label: {
+                            Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        }
+                        .buttonStyle(.themedProminent)
                     }
                 }
 

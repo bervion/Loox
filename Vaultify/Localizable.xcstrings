@@ -12623,6 +12623,76 @@
           }
         }
       }
+    },
+    "Not provided": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa cung cấp"
+          }
+        }
+      }
+    },
+    "Still waiting. You can close this screen and finish later, or check again from the menu above.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vẫn đang chờ. Bạn có thể đóng màn hình này và hoàn tất sau, hoặc kiểm tra lại từ menu phía trên."
+          }
+        }
+      }
+    },
+    "Delete this identity permanently?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa vĩnh viễn danh tính này?"
+          }
+        }
+      }
+    },
+    "This also permanently deletes its private email addresses. Its logins and other items move to your default identity.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thao tác này cũng xóa vĩnh viễn các địa chỉ email riêng tư của danh tính này. Thông tin đăng nhập và các mục khác sẽ chuyển sang danh tính mặc định của bạn."
+          }
+        }
+      }
+    },
+    "Delete this inbox?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xóa hộp thư này?"
+          }
+        }
+      }
+    },
+    "You can add it again later if you need to.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn có thể thêm lại sau nếu cần."
+          }
+        }
+      }
+    },
+    "Change photo": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đổi ảnh"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -46,7 +46,9 @@ struct VaultTabBar: View {
 
     private func select(_ tab: VaultTab) {
         guard selection != tab else { return }
-        Haptics.selection()
+        // Minor selection change → `.tap()`, matching the app-wide haptic vocabulary
+        // (every other selection/toggle site uses `.tap()`, not `.selection()`).
+        Haptics.tap()
         if reduceMotion {
             selection = tab
         } else {

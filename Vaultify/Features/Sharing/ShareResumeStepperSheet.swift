@@ -34,7 +34,8 @@ struct ShareResumeStepperSheet: View {
     private var itemTitle: String { item?.title.isEmpty == false ? item!.title : appString("this item") }
 
     var body: some View {
-        VaultSheetScaffold(title: LocalizedStringResource("Sharing \"\(itemTitle)\"")) {
+        VaultSheetScaffold(title: LocalizedStringResource("Sharing \"\(itemTitle)\""),
+                           trailing: { toolbarTrailing }) {
             ScrollView {
                 VStack(spacing: Space.s5) {
                     Text("with \(share.recipientLabel), started \(startedText)")
@@ -79,6 +80,25 @@ struct ShareResumeStepperSheet: View {
             }
         }
         #endif
+    }
+
+    /// Cancelling the invite is destructive, once-per-screen, and low
+    /// frequency next to "keep going" — demoted to the toolbar overflow
+    /// (action-hierarchy rule) instead of sitting beside Check Now.
+    @ViewBuilder private var toolbarTrailing: some View {
+        if liveShare.status != .active {
+            Menu {
+                Button(role: .destructive) {
+                    confirmCancel = true
+                } label: { Label("Cancel Invite", image: Icons.trash) }
+            } label: {
+                PolarisIcon("ic_menu_horizontal", size: Metric.iconInline)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .disabled(busy)
+        }
     }
 
     private var startedText: String {
@@ -140,6 +160,10 @@ struct ShareResumeStepperSheet: View {
 
     // MARK: Actions
 
+    /// One filled primary per state (the ranked next step) plus at most one
+    /// quiet secondary ("Check Now" — a manual refresh, not the expected
+    /// action). Cancelling the invite is destructive and demoted to the
+    /// toolbar overflow (`toolbarTrailing`) instead of standing beside it.
     @ViewBuilder private var actionButtons: some View {
         VStack(spacing: Space.s3) {
             switch liveShare.status {
@@ -162,7 +186,7 @@ struct ShareResumeStepperSheet: View {
                         .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                 }
                 .buttonStyle(.themedProminent)
-                secondaryRow
+                checkNowButton
 
             case .accepted:
                 // They already accepted — re-sending the invite would be
@@ -170,7 +194,7 @@ struct ShareResumeStepperSheet: View {
                 Text("\(share.recipientLabel) accepted. Waiting for their device to finish setting up, usually right after they unlock Loox.")
                     .vaultType(.footnote).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
-                secondaryRow
+                checkNowButton
 
             case .inviteSent:
                 Button {
@@ -185,27 +209,19 @@ struct ShareResumeStepperSheet: View {
                 }
                 .buttonStyle(.themedProminent)
                 .disabled(busy)
-                secondaryRow
+                checkNowButton
             }
         }
     }
 
-    private var secondaryRow: some View {
-        HStack(spacing: Space.s5) {
-            Button {
-                Task { await checkNow() }
-            } label: {
-                Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-            }
-            .disabled(busy)
-
-            Button(role: .destructive) {
-                confirmCancel = true
-            } label: {
-                Text("Cancel Invite").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-            }
-            .disabled(busy)
+    private var checkNowButton: some View {
+        Button {
+            Task { await checkNow() }
+        } label: {
+            Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
         }
+        .buttonStyle(.themedTinted)
+        .disabled(busy)
     }
 
     /// Idempotent — re-mints/re-fetches the SAME CKShare URL (no new zone,

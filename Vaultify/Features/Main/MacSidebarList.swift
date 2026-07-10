@@ -85,7 +85,7 @@ struct MacSidebarList: View {
                         PolarisIcon(Icons.person, size: 16).themedForeground(.secondary)
                     }
                 }
-                .frame(width: 28, height: 28)
+                .frame(width: Metric.iconTile, height: Metric.iconTile)
                 .clipShape(Circle())
                 Text(verbatim: env.repository.defaultIdentity?.title ?? appString("Profile"))
                     .fontWeight(.medium)

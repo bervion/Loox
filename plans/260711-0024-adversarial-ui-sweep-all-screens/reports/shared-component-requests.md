@@ -40,3 +40,14 @@ decorative digit/glyph route through the same token instead of each screen hand-
 **Not blocking:** the current inline call is Dynamic-Type-scalable (uses `.largeTitle` text style,
 not a fixed point size) so it already meets the accessibility bar; only the "not routed through
 `vaultType`" grep-cleanliness point remains. Low severity, deferred to Phase 1/15.
+
+## From Phase 11 (Sharing owner/approval/recipient) — seconds the Phase 5 compact-button request
+
+**Finding:** `NotificationsScreen.inviteRow`'s "Not Now"/"Accept" pair uses native
+`.buttonStyle(.bordered)` / `.buttonStyle(.borderedProminent)` rather than the app's themed
+styles, for the same reason Phase 5 already flagged: `ThemedTintedButtonStyle` /
+`ThemedProminentButtonStyle` both hardcode `.frame(maxWidth: .infinity)`, so there is no themed
+equivalent sized to content for a compact inline row action. Low severity, deferred (not
+blocking — native styles already resolve to a correct, accessible, WCAG-compliant tint here).
+Adds a second real call site to the Phase 5 `ThemedCompactButtonStyle` ask above — worth
+prioritizing if a third turns up.

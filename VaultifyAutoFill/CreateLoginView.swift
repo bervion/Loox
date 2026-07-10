@@ -35,7 +35,7 @@ struct CreateLoginView: View {
                 header: { Text("Username") }
             Section {
                 HStack {
-                    Text(password).font(.body.monospaced()).lineLimit(1).minimumScaleFactor(0.6)
+                    Text(password).font(.body.monospaced()).lineLimit(1).minimumScaleFactor(0.7)
                     Spacer()
                     Button("Regenerate") { password = PasswordGenerator.generate(PasswordOptions()) }
                         .buttonStyle(.borderless)

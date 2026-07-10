@@ -1,6 +1,6 @@
 # Phase 12 — Sharing: Quick Link + Quick View + Shared-with-Me
 
-**Status**: pending · **Wave**: W2 · **Owns**: `Sharing/QuickLink*`, `Sharing/QuickView/*`,
+**Status**: done · **Wave**: W2 · **Owns**: `Sharing/QuickLink*`, `Sharing/QuickView/*`,
 `Sharing/SharedWithMeScreen.swift` (10 surfaces). Method = canonical protocol + 6 greps (`phase-01`).
 
 ## Protagonist
@@ -26,9 +26,14 @@ browser, once". Shared-with-Me = "use what someone shared, read-only".
   the detail screen + gate; this phase owns only the list surface).
 
 ## Deliverables / Todo
-`reports/findings-phase-12.md` · `strings-manifest-phase-12.md` · fixes.
-- [ ] Protocol answers (10). [ ] 6 greps. [ ] Walk QuickLink capability-button states + QuickView state machine.
-- [ ] Non-shareable/masked previews via role. [ ] SAS + expiry legibility at SE. [ ] Fixes + manifest.
+`reports/phase-12-findings.md` · `strings-manifest-phase-12.md` · fixes.
+- [x] Protocol answers (9 surfaces). [x] 6 greps. [x] Walk QuickLink capability-button states + QuickView state machine.
+- [x] Non-shareable/masked previews via role. [x] SAS + expiry legibility at SE. [x] Fixes + manifest.
+- [x] Action-hierarchy redesign of `QuickLinkResultView` (user-named hot spot): 4-button wall →
+  1 primary (Copy, `controlLarge`) + 1 quiet secondary (Done, `.themedTinted`) + a small demoted
+  utility row (Share + Shorten). Zero flow/copy change. Single-primary CTAs elsewhere bumped to
+  `controlLarge` for rank consistency (QuickLinkView create/retry, QuickViewEnterCode continue,
+  QuickViewApprovalSheet approve/done/close).
 
 ## Success / Risk
 Success: audit-grep clean; secret previews masked; capability states message-not-crash; QuickView SAS/expiry

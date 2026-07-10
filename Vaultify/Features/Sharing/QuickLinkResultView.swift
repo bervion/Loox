@@ -3,6 +3,12 @@ import SwiftUI
 /// Success screen after a quick link is minted: the link (the ONLY place the
 /// decryption key exists once this screen closes), copy/share actions, and
 /// the honesty notes (bearer semantics + device-local revoke).
+///
+/// Action hierarchy: Copy is the one thing almost everyone does next, so it's
+/// the only filled primary. Done is the quiet secondary. Share and the
+/// optional Shorten step are occasional extras — they live in a small
+/// utility row, the same shape as the system share sheet's own quick-action
+/// row, so this screen never reads as a wall of equal-weight buttons.
 struct QuickLinkResultView: View {
     let link: LooxLinkService.CreatedLink
     let onDone: () -> Void
@@ -55,34 +61,46 @@ struct QuickLinkResultView: View {
                     .vaultType(.footnote).themedForeground(.secondary)
             }
 
-            Button {
-                // Sensitive: the URL fragment IS the decryption key — expiring
-                // clipboard semantics apply, and the value is never logged.
-                env.clipboard.copy(activeURL.absoluteString, sensitive: true)
-                copied = true
-            } label: {
-                Label { Text(copied ? "Link Copied" : "Copy Link") }
-                    icon: { PolarisIcon(copied ? Icons.copyDone : Icons.copy) }
-                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-            }
-            .buttonStyle(.themedProminent)
-
-            ShareLink(item: activeURL) {
-                Label { Text("Share Link") } icon: { PolarisIcon(Icons.share) }
-                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-            }
-
-            // Optional prettifier, only while this screen holds the working
-            // link (no retroactive shorten from history — by design). The
-            // button exists only once the backend hands out shorten tokens.
-            if link.shortenToken != nil, shortURL == nil, !shortenUnavailable {
-                Button { shorten() } label: {
-                    Label { Text(shortening ? "Creating short link…" : "Shorten Link") }
-                        icon: { PolarisIcon(Icons.magic) }
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+            // ONE filled primary + one quiet secondary — the only two actions
+            // most people need right after a link is created.
+            VStack(spacing: Space.s3) {
+                Button {
+                    // Sensitive: the URL fragment IS the decryption key — expiring
+                    // clipboard semantics apply, and the value is never logged.
+                    env.clipboard.copy(activeURL.absoluteString, sensitive: true)
+                    copied = true
+                } label: {
+                    Label { Text(copied ? "Link Copied" : "Copy Link") }
+                        icon: { PolarisIcon(copied ? Icons.copyDone : Icons.copy) }
+                        .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
                 }
-                .disabled(shortening)
+                .buttonStyle(.themedProminent)
+
+                Button { onDone() } label: {
+                    Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                }
+                .buttonStyle(.themedTinted)
             }
+
+            // Occasional extras, demoted below the primary/secondary pair —
+            // same shape as the system share sheet's own small action row.
+            HStack(spacing: Space.s6) {
+                ShareLink(item: activeURL) {
+                    utilityAction(icon: Icons.share, title: "Share Link")
+                }
+                // Optional prettifier, only while this screen holds the working
+                // link (no retroactive shorten from history — by design). The
+                // action exists only once the backend hands out shorten tokens.
+                if link.shortenToken != nil, shortURL == nil, !shortenUnavailable {
+                    Button { shorten() } label: {
+                        utilityAction(icon: Icons.magic,
+                                      title: shortening ? "Creating short link…" : "Shorten Link")
+                    }
+                    .disabled(shortening)
+                }
+            }
+            .buttonStyle(.plain)
+
             if shortenUnavailable {
                 // Shortening is presentation sugar: its outage never makes the
                 // created share read as failed.
@@ -94,13 +112,22 @@ struct QuickLinkResultView: View {
             Text("This link can only be revoked from this device.")
                 .vaultType(.footnote).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
-
-            Button { onDone() } label: {
-                Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-            }
         }
         .padding(Space.gutter)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Small icon-over-label control for the demoted extras row. Still a
+    /// full ≥44pt hit target even though it reads visually light.
+    private func utilityAction(icon: String, title: LocalizedStringResource) -> some View {
+        VStack(spacing: Space.s1) {
+            PolarisIcon(icon, size: Metric.iconInline).themedForeground(.accent)
+            Text(title)
+                .vaultType(.footnote).themedForeground(.accent)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
     }
 
     private func shorten() {
@@ -111,7 +138,7 @@ struct QuickLinkResultView: View {
                 let short = try await env.looxLinks.shorten(link)
                 shortURL = short
                 copied = false   // the copy button now carries the short form
-                Haptics.success()
+                Haptics.tap()    // minor cosmetic change, not a success/copy event
             } catch {
                 shortenUnavailable = true
             }

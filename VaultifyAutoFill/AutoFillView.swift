@@ -92,7 +92,8 @@ private enum CredentialRow: Identifiable {
 
 /// Post-unlock login picker. Loads logins + the default-identity prefill once, then auto-selects a
 /// preferred record (the QuickType path) or shows the list with a "Create new login" entry. Shared
-/// credentials (`SharedCredentialsCache`) are merged in read-only, marked "· Shared".
+/// credentials (`SharedCredentialsCache`) are merged in read-only, marked with a "Shared" tag as a
+/// separate label (not an interpunct-joined string).
 private struct CredentialListView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?

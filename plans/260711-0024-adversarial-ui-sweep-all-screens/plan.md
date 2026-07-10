@@ -62,11 +62,11 @@ Then the phase applies the fixes to its OWNED files only.
 | 7 | Watchtower + Generator | `Watchtower/*`, `Generator/*` | 10 | W2 | done |
 | 8 | Settings core + Security + Data | `Settings/*` (excl `Appearance/`), `ImportExport/*`, `EmergencyKit/*` | 16 | W2 | done |
 | 9 | Appearance + About | `Settings/Appearance/*`, `Settings/AboutView.swift`, `DesignSystem/Wallpaper/*` (flag-gated engine, review-light) | 6+ | W2 | done |
-| 10 | Personas + Profile | `Personas/*`, `Profile/*` | 14 | W2 | pending |
-| 11 | Sharing — owner flow + approval + recipient | `Sharing/*` (excl `QuickView/`, `QuickLink*`) | 16 | W2 | pending |
-| 12 | Sharing — Quick Link + Quick View | `Sharing/QuickLink*`, `Sharing/QuickView/*`, `Sharing/SharedWithMeScreen.swift` | 10 | W2 | pending |
-| 13 | Main shell + Mac surfaces | `Main/*`, `App/RootView.swift` (router + PrivacyShield + controlledReveal), `App/VaultifyApp.swift` (review-light) | 16 | W2 | pending |
-| 14 | AutoFill extension UI (system material rules) | `VaultifyAutoFill/*` | 11 | W2 | pending |
+| 10 | Personas + Profile | `Personas/*`, `Profile/*` | 14 | W2 | done |
+| 11 | Sharing — owner flow + approval + recipient | `Sharing/*` (excl `QuickView/`, `QuickLink*`) | 16 | W2 | done |
+| 12 | Sharing — Quick Link + Quick View | `Sharing/QuickLink*`, `Sharing/QuickView/*`, `Sharing/SharedWithMeScreen.swift` | 10 | W2 | done |
+| 13 | Main shell + Mac surfaces | `Main/*`, `App/RootView.swift` (router + PrivacyShield + controlledReveal), `App/VaultifyApp.swift` (review-light) | 16 | W2 | done |
+| 14 | AutoFill extension UI (system material rules) | `VaultifyAutoFill/*` | 11 | W2 | done |
 | 15 | Verification, xcstrings merge, consolidated report, QA checklist | — | — | W3 last | pending |
 
 Screen counts are surface counts (View structs incl. sub-rows/sheets), not file counts. Registry with
