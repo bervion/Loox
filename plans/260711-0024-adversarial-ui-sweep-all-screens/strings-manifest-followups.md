@@ -97,3 +97,49 @@ gated by the same `CapabilityStore.availability(.privateEmail, operation: .creat
 `createPrivateEmail()`'s success path no longer fires `Haptics.success()` — matched to
 `PersonaAliasesScreen`'s own alias-creation flow, which stays silent on success and only surfaces
 `Haptics.error()` on failure.
+
+## New keys — Payment card overhaul (brand detection, formatting, PIN field, camera scan)
+
+Card template gains a PIN field; Card Number/Expiry/Security Code get dedicated editors
+(`CardNumberFieldEditor.swift`, `ExpiryFieldEditor.swift`, `CardCodeFieldEditor.swift` — brand
+grouping, Luhn hint, numeric keypads) plus an optional camera scan (`CardScannerSheet.swift`,
+VisionKit `DataScannerViewController`, hidden where unsupported e.g. Simulator). `Text(_:)`
+literals and `TextField` title-string literals auto-extract on build; keys below need VI added on
+merge. Brand badge text (`VISA`, `MASTERCARD`, …) is rendered `Text(_ string: String)` verbatim —
+proper nouns, deliberately NOT run through the catalog, no VI needed. `Cancel` already exists —
+reused for the scanner sheet's toolbar, not re-listed.
+
+| Key (source, as extracted) | EN | VI | Context |
+| --- | --- | --- | --- |
+| `Enter card number` | Enter card number | Nhập số thẻ | `CardNumberFieldEditor` placeholder |
+| `Check the card number` | Check the card number | Kiểm tra lại số thẻ | Subtle hint shown under the Card Number field once its digit count is complete but fails the Luhn checksum — never blocks saving |
+| `MM/YY` | MM/YY | MM/YY | `ExpiryFieldEditor` placeholder for a recognized (or empty/new) expiry value — a universal payment-format convention, identical in both languages (Vietnamese banks print the same "MM/YY" shape) |
+| `Scan Card` | Scan Card | Quét thẻ | Editor's "Scan Card" row label (top of the Card template's Fields section, hidden where camera scanning is unsupported) and the scanner sheet's navigation title (same key, reused) |
+| `Point the camera at your card` | Point the camera at your card | Hướng camera vào thẻ của bạn | `CardScannerSheet` overlay instruction over the live camera preview |
+
+Notes: no new icon assets for Polaris — the "Scan Card" row and the scanner sheet's affordance use
+SF Symbol `creditcard.viewfinder` (user-granted 260711 exception scoped to the payment-card
+context only; see `docs/design-dna-standard.md` acceptance-matrix note). `Icons.close` unaffected.
+Haptics: capture fires `Haptics.tap()` once per successful scan (stable-frame match), matching the
+"selection/minor action" vocabulary row — no separate validation haptic for the Luhn hint (visual
+only, per the haptics vocabulary's "none" row for non-destructive hints).
+
+## New keys — Home persona-empty state (Issue 1: no-Space / persona-empty scaffolding fix)
+
+`HomeScreen.personaEmptyState`: a calm empty state shown when the vault overall has data but the
+ACTIVE persona has nothing to show (no owned Space yet, or an owned Space with zero items) —
+previously this fell through to `scrollContent` and rendered the "All Spaces (0)" scaffolding with
+an empty card (see investigation report). `Text(_:)` literals auto-extract on build; keys below
+need VI added on merge. `Add Item` reuses the existing key (already in the catalog).
+
+| Key (source, as extracted) | EN | VI | Context |
+| --- | --- | --- | --- |
+| `Nothing here yet` | Nothing here yet | Chưa có gì ở đây | `personaEmptyState` title — active persona has no reachable items |
+| `This identity doesn’t have a Space yet. Create one to start adding items.` | This identity doesn’t have a Space yet. Create one to start adding items. | Danh tính này chưa có Không gian nào. Tạo một cái để bắt đầu thêm mục. | Subtitle shown when `activePersonaSpaces` is empty (steers to creating a Space first, never "Add Item" here — a new item would otherwise fall back to Unfiled, which only the default identity owns) |
+| `Add your first item to this identity’s vault.` | Add your first item to this identity’s vault. | Thêm mục đầu tiên vào kho của danh tính này. | Subtitle shown when the persona already owns a Space but it has zero items |
+| `Create a Space` | Create a Space | Tạo Không gian | Primary CTA when the active persona owns no Space — opens `FolderEditorSheet(folder: nil)` (reused, unmodified) |
+
+Notes: no new icon assets — reuses `Icons.folder` / `Icons.lockFill` / `Icons.addCircle` / `Icons.add`
+(the same icons and Space-creation flow already used elsewhere on Home). No new haptics: both CTAs
+are plain buttons that open a sheet/menu, matching the existing `emptyVaultState`'s own "Add Item"
+button (no haptic — the sheet/menu presentation itself is the feedback).

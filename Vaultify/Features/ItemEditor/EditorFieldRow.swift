@@ -5,6 +5,15 @@ import SwiftUI
 struct EditorFieldRow: View {
     @Binding var field: DynamicField
     var onScanTOTP: () -> Void = {}
+    /// The owning item's category — only used to scope the card-specific editors (Card
+    /// Number/Expiry/Security Code/PIN) below to genuine `.card` items, via label+kind
+    /// match. Defaults to `.custom` (never matches those labels) so every existing call
+    /// site that doesn't pass it explicitly (Login's Credentials/Custom sections) is
+    /// unaffected.
+    var category: ItemCategory = .custom
+    /// The card's Card Number value (if any), so the Security Code editor can resolve the
+    /// CVV length from the sibling field's brand (Amex: 4 digits, else 3).
+    var siblingCardNumber: String? = nil
     @FocusState private var valueFocused: Bool
     #if os(iOS)
     @Environment(\.editMode) private var editMode
@@ -51,6 +60,18 @@ struct EditorFieldRow: View {
                 .lineLimit(2...6)
         case .date:
             DateFieldEditor(value: $field.value)
+        // Card-specific editors, scoped to genuine `.card` items via label+kind match
+        // (template labels are stable English source strings — see `ItemCategory`).
+        // Checked before the generic `protected` case below so Card Number/Security Code
+        // (both `.monospace`, `protected: true`) get the card-aware treatment instead.
+        case .monospace where category == .card && field.label == "Card Number":
+            CardNumberFieldEditor(value: $field.value)
+        case .text where category == .card && field.label == "Expiry":
+            ExpiryFieldEditor(value: $field.value)
+        case .monospace where category == .card && field.label == "Security Code":
+            CardCodeFieldEditor(value: $field.value, maxLength: cvvLength, placeholder: valuePlaceholder)
+        case .number where category == .card && field.label == "PIN":
+            CardCodeFieldEditor(value: $field.value, maxLength: 6, placeholder: valuePlaceholder)
         // Any `protected` single-line value (password/TOTP, plus template fields sealed at rest
         // like Card Number, Security Code, ID Number) shares the same controlled-reveal
         // treatment: masked bullets when unfocused, MonoLisa plaintext only while the user is
@@ -143,6 +164,12 @@ struct EditorFieldRow: View {
     /// Bullet-masked rendering shown when the secret field isn't focused. Capped so a long
     /// secret can't overflow the row.
     private var maskedValue: String { String(repeating: "•", count: 16) }
+
+    /// Security Code (CVV) length resolved from the sibling Card Number's detected brand
+    /// (Amex: 4 digits, everything else including an unresolved brand: 3).
+    private var cvvLength: Int {
+        siblingCardNumber.flatMap { PaymentCard.brand(for: $0)?.cvvLength } ?? 4
+    }
 
     /// Field-specific value placeholder (e.g. password → "Enter password") instead of a
     /// generic "Value", so the empty field hints what to type.

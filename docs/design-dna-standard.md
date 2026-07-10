@@ -110,7 +110,9 @@ A screen passes only if it renders correctly in ALL of:
   light-dark preview swatches; white text/icons on the fixed decorative quick-action tints;
   native UISwitch/system-control chrome (the OS draws it); ambient shadows built from black
   opacity (that is how `Elevation` works by design); proportional avatar/tile corner radii that
-  scale with the tile size (a size-relative pattern, not a magic number).
+  scale with the tile size (a size-relative pattern, not a magic number); SF Symbols inside the
+  PAYMENT CARD context only (user-granted 260711 — `creditcard` etc. read better there; brand
+  identification stays a text badge, never a third-party logo asset).
 - **Accessibility**: Reduce Motion (instant swaps), Reduce Transparency (solid fallbacks),
   VoiceOver (meaningful labels; decorative views hidden).
 - **Locales**: EN and VI both rendered and eyeballed.

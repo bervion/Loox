@@ -22,6 +22,9 @@ struct HomeScreen: View {
     @State private var showGenerator = false
     @State private var showTotpList = false
     @State private var showFolderPicker = false
+    /// Presents the "New Space" sheet from the persona-empty state's primary CTA
+    /// (reuses the existing folder-creation flow — see `personaEmptyState`).
+    @State private var showCreateSpaceFromEmptyState = false
     @State private var selectedFolderId: String?
     /// Guards the once-per-launch restore of the remembered Space so it can't
     /// clobber a selection the user makes after launch.
@@ -118,6 +121,12 @@ struct HomeScreen: View {
                     // A vault that's empty but RECEIVING shares still has a feed.
                     if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
                         emptyVaultState
+                    } else if env.repository.activePersonaItems.isEmpty && env.sharedItems.items.isEmpty {
+                        // The vault overall has data, but the ACTIVE persona has nothing to
+                        // show (no owned Space yet, or an owned Space with zero items) — the
+                        // global gate above would otherwise fall through to `scrollContent`
+                        // and render the "All Spaces (0)" scaffolding with an empty card.
+                        personaEmptyState
                     } else {
                         scrollContent
                     }
@@ -167,6 +176,10 @@ struct HomeScreen: View {
             .sheet(isPresented: $showSettings) { SettingsScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
             .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
+            // Persona-empty state's "Create a Space" CTA — reuses the standard Space
+            // creation flow; the newly owned Space then satisfies the persona-scoped
+            // gate above on its own (no manual filter/state wiring needed here).
+            .sheet(isPresented: $showCreateSpaceFromEmptyState) { FolderEditorSheet(folder: nil) }
             // Anchored at the stable root, NOT inside pendingSharesSection: cancelling
             // the last pending share removes that conditional view mid-dismiss, which
             // would strand the sheet binding and re-present a stale record later.
@@ -645,6 +658,68 @@ struct HomeScreen: View {
             .padding(.top, Space.s2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Shown when the vault overall has data, but the ACTIVE persona has nothing
+    /// (no owned Space yet, or an owned Space with zero items) — e.g. a persona
+    /// whose only Space was deleted, or one just switched to for the first time.
+    /// Distinct from `emptyVaultState`: this is per-identity, not "first run".
+    private var personaEmptyState: some View {
+        VStack(spacing: Space.s6) {
+            ZStack {
+                Circle()
+                    .fill(Color(rgb: env.theme.active.accentSoft))
+                    .frame(width: 116, height: 116)
+                    .elevation(.level1)
+                PolarisIcon(env.repository.activePersonaSpaces.isEmpty ? Icons.folder : Icons.lockFill, size: 52)
+                    .themedForeground(.accent)
+            }
+
+            VStack(spacing: Space.s2) {
+                Text("Nothing here yet")
+                    .vaultType(.screenTitle)
+                    .themedForeground(.primary)
+                    .multilineTextAlignment(.center)
+                Text(personaEmptyStateSubtitle)
+                    .vaultType(.callout)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+            }
+
+            if env.repository.activePersonaSpaces.isEmpty {
+                // No owned Space: steer to creating one first (a new item here would
+                // otherwise fall back to Unfiled, which only the default identity owns).
+                Button { showCreateSpaceFromEmptyState = true } label: {
+                    HStack(spacing: Space.s2) {
+                        PolarisIcon(Icons.addCircle, size: Metric.iconInline)
+                        Text("Create a Space")
+                    }
+                }
+                .buttonStyle(.themedProminent)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s2)
+            } else {
+                Menu {
+                    newItemMenuItems
+                } label: {
+                    HStack(spacing: Space.s2) {
+                        PolarisIcon(Icons.add, size: Metric.iconInline)
+                        Text("Add Item")
+                    }
+                }
+                .buttonStyle(.themedProminent)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s2)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var personaEmptyStateSubtitle: LocalizedStringKey {
+        env.repository.activePersonaSpaces.isEmpty
+            ? "This identity doesn’t have a Space yet. Create one to start adding items."
+            : "Add your first item to this identity’s vault."
     }
 
     // MARK: Add-item menu

@@ -429,9 +429,10 @@ struct ItemDetailScreen: View {
                 Group {
                     if isShared {
                         // Read-only: mutation affordances hidden, reveal/copy stay.
-                        DetailFieldRow(field: field, readOnly: true)
+                        DetailFieldRow(field: field, category: item.category, readOnly: true)
                     } else {
                         DetailFieldRow(field: field,
+                                       category: item.category,
                                        totpSecret: field.kind == .totp ? nil : totpSecret,
                                        onChange: { update($0, in: item) },
                                        onRemove: { remove(field, in: item) },

@@ -6,6 +6,10 @@ import Foundation
 /// menu (Copy / Reveal / Open) and, for passwords, a strength badge.
 struct DetailFieldRow: View {
     let field: DynamicField
+    /// The owning item's category — only used to scope the Card Number field's
+    /// grouped-display + brand-badge + digits-only-copy treatment to genuine `.card`
+    /// items. Defaults to `.custom` (never matches), so every other caller is unaffected.
+    var category: ItemCategory = .custom
     /// The item's 2FA secret, surfaced as a floating code in the Large Type viewer.
     var totpSecret: String? = nil
     var onChange: (DynamicField) -> Void = { _ in }
@@ -25,8 +29,17 @@ struct DetailFieldRow: View {
     private var theme: AppTheme { env.theme.active }
     private var isSecret: Bool { field.protected || field.kind.isSecret }
 
+    /// Whether this is the card template's Card Number field — the one field that gets
+    /// digit grouping + a brand badge on the detail screen.
+    private var isCardNumber: Bool {
+        category == .card && field.kind == .monospace && field.label == "Card Number"
+    }
+
     private var copyValue: String {
         if field.kind == .totp { return TOTPGenerator.code(forStoredValue: field.value) ?? field.value }
+        // Defensive: storage is written digits-only by `CardNumberFieldEditor`, but a
+        // legacy value (typed before this feature existed) could still hold spaces.
+        if isCardNumber { return PaymentCard.digitsOnly(field.value) }
         return field.value
     }
 
@@ -57,6 +70,11 @@ struct DetailFieldRow: View {
                         .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
                     if match != nil {
                         PrivateEmailBadge(onAccentBackground: copied)
+                    }
+                    // Shown regardless of reveal state — the network name doesn't leak
+                    // the secret, and it's useful even while the value stays masked.
+                    if isCardNumber, let brand = PaymentCard.brand(for: field.value) {
+                        CardBrandBadge(brand: brand, onAccentBackground: copied)
                     }
                 }
                 valueView
@@ -100,6 +118,18 @@ struct DetailFieldRow: View {
                 // Website → SF, scheme greyed, domain/path in accent, tail-truncated.
                 Text(urlColored(field.value)).vaultType(.body)
                     .lineLimit(1).truncationMode(.tail)
+            case .monospace where isCardNumber:
+                // Grouped display only — storage (`field.value`) stays digits-only;
+                // `GlyphResolveText` resolves the FORMATTED string so a revealed card
+                // number reads in its real 4-4-4-4 (or Amex 4-6-5) grouping.
+                let formatted = PaymentCard.formattedForDisplay(field.value)
+                if revealed {
+                    GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                        .textSelection(.enabled)
+                } else {
+                    GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                        .textSelection(.disabled)
+                }
             default:
                 // Mono is for SECRETS only (user rule): passwords and protected
                 // values keep MonoLisa; usernames, emails, aliases, and notes

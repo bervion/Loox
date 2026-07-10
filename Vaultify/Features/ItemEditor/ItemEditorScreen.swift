@@ -20,6 +20,7 @@ struct ItemEditorScreen: View {
     @State private var scanningFieldID: String?
     @State private var showAttachmentPicker = false
     @State private var showIconPicker = false
+    @State private var showCardScanner = false
     @State private var didApplyDefaultFolder = false
     /// Persona-scoped username suggestions for a new login (computed once on appear).
     /// Empty under a strictAnonymous persona with no own profile (INV-R03 fail-safe).
@@ -155,9 +156,32 @@ struct ItemEditorScreen: View {
                         onAddAttachment: { showAttachmentPicker = true })
                 } else {
                     Section("Fields") {
+                        // Scan Card: only offered for the Card template, and only where
+                        // VisionKit live-text scanning can actually run (hidden on the
+                        // Simulator) — manual entry below always remains available.
+                        if draft.category == .card, CardScannerSheet.isAvailable {
+                            Button { showCardScanner = true } label: {
+                                // SF Symbol here is a user-granted exception scoped to the
+                                // payment-card context only (`creditcard.viewfinder` reads
+                                // as a card-scan affordance better than any Polaris asset;
+                                // see `docs/design-dna-standard.md` acceptance-matrix note).
+                                Label {
+                                    Text("Scan Card")
+                                } icon: {
+                                    Image(systemName: "creditcard.viewfinder")
+                                        .font(.system(size: 17))
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+
                         ForEach($draft.fields) { $field in
                             EditorFieldRow(field: $field,
-                                           onScanTOTP: { scanningFieldID = field.id })
+                                           onScanTOTP: { scanningFieldID = field.id },
+                                           category: draft.category,
+                                           siblingCardNumber: cardNumberFieldValue)
                         }
                         .onDelete { draft.fields.remove(atOffsets: $0) }
                         .onMove { draft.fields.move(fromOffsets: $0, toOffset: $1) }
@@ -249,6 +273,10 @@ struct ItemEditorScreen: View {
                         draft.fields[index].value = secret
                     }
                 }
+            }
+            // Full-screen (not a sheet): the camera preview deserves the whole screen.
+            .platformFullScreenCover(isPresented: $showCardScanner) {
+                CardScannerSheet { result in applyCardScan(result) }
             }
             .sheet(isPresented: $showAttachmentPicker) {
                 AttachmentPickerSheet { data, name, ext in addAttachment(data, name: name, ext: ext) }
@@ -371,6 +399,28 @@ struct ItemEditorScreen: View {
         }
         draft.fields.append(DynamicField(label: name, kind: .fileRef, value: meta.encoded()))
         Haptics.success()
+    }
+
+    /// The card template's Card Number field value, if present — passed to `EditorFieldRow`
+    /// so the sibling Security Code field can resolve its CVV length from the detected brand.
+    private var cardNumberFieldValue: String? {
+        draft.fields.first { $0.kind == .monospace && $0.label == "Card Number" }?.value
+    }
+
+    /// Fills the Card Number/Expiry/Cardholder fields from a completed camera scan. Only
+    /// ever fills a field that's currently empty — a scan never overwrites something the
+    /// user already typed. The scanner already fired its own capture haptic; no second one
+    /// here (one physical event, one haptic).
+    private func applyCardScan(_ result: CardScanResult) {
+        func fill(label: String, kind: FieldKind, with newValue: String?) {
+            guard let newValue, !newValue.isEmpty,
+                  let index = draft.fields.firstIndex(where: { $0.kind == kind && $0.label == label }),
+                  draft.fields[index].value.isEmpty else { return }
+            draft.fields[index].value = newValue
+        }
+        fill(label: "Card Number", kind: .monospace, with: result.numberDigits)
+        fill(label: "Expiry", kind: .text, with: result.expiry)
+        fill(label: "Cardholder", kind: .text, with: result.cardholderName)
     }
 
     /// Fill the login's username (or email) field from a tapped suggestion. Sets

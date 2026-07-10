@@ -12992,6 +12992,96 @@
           }
         }
       }
+    },
+    "MM/YY": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MM/YY"
+          }
+        }
+      }
+    },
+    "Scan Card": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quét thẻ"
+          }
+        }
+      }
+    },
+    "Point the camera at your card": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hướng camera vào thẻ của bạn"
+          }
+        }
+      }
+    },
+    "Enter card number": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập số thẻ"
+          }
+        }
+      }
+    },
+    "Check the card number": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra lại số thẻ"
+          }
+        }
+      }
+    },
+    "Nothing here yet": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa có gì ở đây"
+          }
+        }
+      }
+    },
+    "This identity doesn’t have a Space yet. Create one to start adding items.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danh tính này chưa có Không gian nào. Tạo một cái để bắt đầu thêm mục."
+          }
+        }
+      }
+    },
+    "Add your first item to this identity’s vault.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm mục đầu tiên vào kho của danh tính này."
+          }
+        }
+      }
+    },
+    "Create a Space": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo Không gian"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
