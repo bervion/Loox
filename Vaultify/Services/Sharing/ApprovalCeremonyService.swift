@@ -22,7 +22,7 @@ import UIKit
     enum CeremonyState: Equatable {
         case idle
         case authenticating
-        case waitingForFreshWindow(boundaryUnixMs: Int64)
+        case waitingForFreshWindow(boundaryUnixMs: Int64, periodSeconds: UInt32)
         case issuing
         case finished(ApprovalDecision)
         case failed(String)
@@ -107,7 +107,7 @@ import UIKit
             // the freshness budget.
             while !policy.canIssueNow(atUnixMs: nowUnixMs, period: period) {
                 let boundary = TOTPWindow.periodEndUnixMs(atUnixMs: nowUnixMs, period: period)
-                state = .waitingForFreshWindow(boundaryUnixMs: boundary)
+                state = .waitingForFreshWindow(boundaryUnixMs: boundary, periodSeconds: period)
                 let waitMs = boundary - nowUnixMs
                 if waitMs > 0 {
                     try await Task.sleep(for: .milliseconds(waitMs))

@@ -8,11 +8,22 @@ import SwiftUI
 struct VaultItemRow: View {
     let item: VaultItem
     var showSpace = true
+    /// Search query whose tokens are emphasized inside the title (search results
+    /// only) — shows *why* a row matched. nil elsewhere.
+    var highlight: String? = nil
     @Environment(AppEnvironment.self) private var env
 
     private var folder: Folder? {
         guard showSpace, let id = item.folderId else { return nil }
         return env.repository.folders.first { $0.id == id }
+    }
+
+    /// This item is owned here AND has an outgoing share that hasn't reached
+    /// Active yet (design 12a "SHARING…" item badge). Recipient-side
+    /// projections never own `SharingStore` records, so this is naturally
+    /// empty for them.
+    private var hasPendingShare: Bool {
+        env.sharingStore.shares(forItem: item.id).contains { $0.status != .active }
     }
 
     var body: some View {
@@ -24,9 +35,15 @@ struct VaultItemRow: View {
                     if item.favorite { favoriteBadge }
                 }
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title.isEmpty ? "Untitled" : item.title)
-                    .font(.body)
-                    .lineLimit(1)
+                Group {
+                    if let highlighted = highlightedTitle {
+                        Text(highlighted)
+                    } else {
+                        Text(item.title.isEmpty ? "Untitled" : item.title)
+                    }
+                }
+                .font(.body)
+                .lineLimit(1)
                 if let subtitle = item.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(.caption)
@@ -44,6 +61,8 @@ struct VaultItemRow: View {
             // chip slot is free for the "Shared" marker.
             if item.sharedOrigin != nil {
                 sharedChip.layoutPriority(1)
+            } else if hasPendingShare {
+                sharingBadge.layoutPriority(1)
             }
         }
         // Pinned → a pin glyph overlaid at the row's outermost top-right corner.
@@ -54,6 +73,30 @@ struct VaultItemRow: View {
             }
         }
         .contentShape(.rect)
+    }
+
+    /// Title with each query token tinted accent + semibold (case/diacritic
+    /// insensitive, so Vietnamese input matches unaccented storage and vice
+    /// versa). nil when there is no query or the title is empty.
+    private var highlightedTitle: AttributedString? {
+        guard let highlight, !highlight.isEmpty, !item.title.isEmpty else { return nil }
+        let title = item.title
+        var attributed = AttributedString(title)
+        let accent = env.theme.active.color(.accent)
+        for token in highlight.split(separator: " ") {
+            var searchStart = title.startIndex
+            while searchStart < title.endIndex,
+                  let r = title.range(of: token,
+                                      options: [.caseInsensitive, .diacriticInsensitive],
+                                      range: searchStart..<title.endIndex) {
+                if let ar = Range(r, in: attributed) {
+                    attributed[ar].foregroundColor = accent
+                    attributed[ar].font = .body.weight(.semibold)
+                }
+                searchStart = r.upperBound
+            }
+        }
+        return attributed
     }
 
     /// Star badge for the favorite state — yellow star on a small rounded-square tile filled
@@ -79,6 +122,18 @@ struct VaultItemRow: View {
         }
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
         .background(VaultColors.fill, in: Capsule())
+    }
+
+    /// Design 12a: "SHARING…" — an outgoing share on this item is still
+    /// pending (invite sent / accepted / ready to confirm), visible right in
+    /// the list without opening the item.
+    private var sharingBadge: some View {
+        HStack(spacing: 3) {
+            PolarisIcon(Icons.clock, size: 9).themedForeground(.warning)
+            Text("SHARING…").font(.caption2).fontWeight(.semibold).themedForeground(.warning)
+        }
+        .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
+        .background(Color(rgb: env.theme.active.warningSoft), in: Capsule())
     }
 
     private func spaceChip(_ folder: Folder) -> some View {

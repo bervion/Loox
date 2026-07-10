@@ -589,62 +589,83 @@ struct ShareAccessSheet: View {
                 set: { if !$0 { pendingHandOver = nil } })
     }
 
+    /// Design 10f: the owner is never made to watch a spinner here — the
+    /// calm "invite sent" card replaces the old polling screen, with an
+    /// explicit Done that closes the sheet outright (the pending state now
+    /// persists in `SharingStore` and resurfaces on Home / Item Detail /
+    /// Notifications regardless of whether this sheet stays open).
     private func waitingView(shareURL: URL?) -> some View {
         let accepted = waitingStatus == .accepted
-        return VStack(spacing: Space.s5) {
-            ProgressView()
-            Text(accepted
-                 ? "They accepted — finishing setup on their device…"
-                 : "Waiting for them to accept…")
-                .vaultType(.section).themedForeground()
-                .multilineTextAlignment(.center)
-            Text(accepted
-                 ? "They've accepted. Their device finishes automatically the next time they open Loox and unlock — this can take a moment."
-                 : autoInviteSent
-                 ? "Their device was notified automatically. If nothing shows up there, send the link below as a backup."
-                 : "Send the invitation link — the first share with someone always needs it. After they accept once, future shares notify their device automatically.")
-                .vaultType(.callout).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-            if pollExhausted {
-                Text("Still waiting — you can close this screen and finish later, or tap Check Now.")
-                    .vaultType(.footnote).themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            if let shareURL {
-                #if os(iOS)
-                // Primary: iMessage with the recipient pre-filled (the share
-                // sheet can't preselect one; the compose window can).
-                if MessageComposeView.canSendText {
-                    Button {
-                        showMessageCompose = true
-                    } label: {
-                        Label { Text("Send via Messages") } icon: { PolarisIcon(Icons.share) }
-                            .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+        let title = item?.title.isEmpty == false ? item!.title : appString("this item")
+        return ScrollView {
+            VStack(spacing: Space.s5) {
+                ShareInviteSentSheet(recipientLabel: recipientEmail, itemTitle: title, accepted: accepted)
+
+                if !accepted && autoInviteSent {
+                    Text("Their device was notified automatically too — the Messages link below is just a backup.")
+                        .vaultType(.footnote).themedForeground(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
+                if pollExhausted {
+                    Text("Still waiting — you can close this screen and finish later, or tap Check Now.")
+                        .vaultType(.footnote).themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(spacing: Space.s3) {
+                    Button { dismiss() } label: {
+                        Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                     }
                     .buttonStyle(.themedProminent)
-                    .sheet(isPresented: $showMessageCompose) {
-                        MessageComposeView(
-                            recipients: [normalizedEmail],
-                            body: appString("I shared an item with you in Loox Password. Open this link on your iPhone to accept: \(shareURL.absoluteString)"))
+
+                    if let shareURL {
+                        #if os(iOS)
+                        // Primary nudge: iMessage with the recipient pre-filled
+                        // (the share sheet can't preselect one; the compose
+                        // window can).
+                        if MessageComposeView.canSendText {
+                            Button {
+                                showMessageCompose = true
+                            } label: {
+                                Label { Text("Nudge via Messages") } icon: { PolarisIcon(Icons.share) }
+                                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                            }
+                            .sheet(isPresented: $showMessageCompose) {
+                                MessageComposeView(
+                                    recipients: [normalizedEmail],
+                                    body: appString("I shared an item with you in Loox Password. Open this link on your iPhone to accept: \(shareURL.absoluteString)"))
+                            }
+                        } else {
+                            ShareLink(item: shareURL) {
+                                Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
+                                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                            }
+                        }
+                        #else
+                        ShareLink(item: shareURL) {
+                            Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
+                                .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        }
+                        #endif
+                    }
+                    // Manual escape hatch: the background poll has a bounded
+                    // budget — this button re-checks on demand so a long wait
+                    // can't strand the owner on this screen.
+                    Button {
+                        Task { await checkProfileNow() }
+                    } label: {
+                        Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
                     }
                 }
-                #endif
-                ShareLink(item: shareURL) {
-                    Label { Text("Share Another Way") } icon: { PolarisIcon(Icons.share) }
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+
+                if !accepted {
+                    Text("First time sharing with someone? A Messages nudge helps them find the invite.")
+                        .vaultType(.footnote).themedForeground(.tertiary)
+                        .multilineTextAlignment(.center)
                 }
             }
-            // Manual escape hatch: the background poll has a bounded budget —
-            // this button re-checks on demand so a long wait can't strand the
-            // owner on this screen.
-            Button {
-                Task { await checkProfileNow() }
-            } label: {
-                Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
-            }
+            .padding(Space.gutter)
         }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var doneView: some View {

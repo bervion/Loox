@@ -31,8 +31,22 @@ struct SharedAccessGateView<Content: View>: View {
             case .authorized:
                 content()
             case .offline:
-                stateCard(icon: Icons.globe, tint: .warning,
-                          message: "You need an internet connection to view this shared item.")
+                // Design 9b: secrets stay sealed before this gate passes —
+                // metadata (item title/type/sharer, rendered by the caller
+                // above this view) is the only thing shown while offline.
+                // Auto-recheck already happens via `gateKey` below (it
+                // includes reachability); `Try Again` is the manual twin.
+                VStack(spacing: Space.s2) {
+                    VaultInfoBanner(.warning, icon: Icons.globe,
+                                    title: "You're offline",
+                                    text: "You need an internet connection to view this shared item. Its secrets stay sealed until access is verified.",
+                                    actionLabel: "Try Again") {
+                        Task { await authorizer.refresh(itemID: itemID, env: env) }
+                    }
+                    Text("Re-checks automatically when the connection returns.")
+                        .vaultType(.footnote).themedForeground(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
             case .verifying:
                 VStack(spacing: Space.s3) {
                     ProgressView()

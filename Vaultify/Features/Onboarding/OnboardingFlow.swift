@@ -264,6 +264,15 @@ private struct WelcomeBackdrop: View {
 
 private struct OnboardingDoneStep: View {
     let onFinish: () -> Void
+    @Environment(AppEnvironment.self) private var env
+
+    /// Recap what onboarding actually set up — mention biometrics only when the
+    /// user turned them on, so the "Not now" path stays truthful.
+    private var recap: LocalizedStringKey {
+        env.settings.biometricUnlockEnabled
+            ? "Vault created, Emergency Kit saved, \(BiometricAuth.displayName) on. Add your first item to get started."
+            : "Vault created and Emergency Kit saved. Add your first item to get started."
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -271,7 +280,7 @@ private struct OnboardingDoneStep: View {
             PolarisIcon(Icons.checkCircle, size: 72).foregroundStyle(VaultColors.strengthStrong)
             OnboardingStepHeader(
                 "You’re all set",
-                subtitle: "Your vault is ready. Add your first item to get started.")
+                subtitle: recap)
             Spacer()
             Button(action: onFinish) {
                 Text("Open Loox").frame(maxWidth: .infinity)

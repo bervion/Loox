@@ -46,8 +46,12 @@ struct TotpCardView: View {
                             Text("Copied")
                                 .foregroundStyle(theme.color(.success))
                         } else {
+                            // Code mirrors the ring's ≤5 s warning so an about-to-expire
+                            // code is obvious before the user copies it.
                             Text(formatCode(code))
-                                .foregroundStyle(Color(rgb: theme.primaryText))
+                                .foregroundStyle(remaining <= 5
+                                    ? theme.color(.warning)
+                                    : Color(rgb: theme.primaryText))
                         }
                     }
                     .font(.title3.weight(.bold))
@@ -58,6 +62,15 @@ struct TotpCardView: View {
                         .vaultType(.footnote)
                         .themedForeground(.secondary)
                         .lineLimit(1)
+
+                    // Username distinguishes multiple accounts on the same service
+                    // (two GitHub logins would otherwise render identical cards).
+                    if let username = item.subtitle, !username.isEmpty {
+                        Text(username)
+                            .vaultType(.caption)
+                            .themedForeground(.tertiary)
+                            .lineLimit(1)
+                    }
                 }
             }
             .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))

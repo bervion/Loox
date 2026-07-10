@@ -7,6 +7,8 @@ import SwiftUI
 struct VaultItemRowLink: View {
     let item: VaultItem
     var showSpace = true
+    /// Search query forwarded to `VaultItemRow` for match highlighting.
+    var highlight: String? = nil
     @Environment(AppEnvironment.self) private var env
     @State private var showLastIdentityBlock = false
 
@@ -21,7 +23,7 @@ struct VaultItemRowLink: View {
     private var isSharedProjection: Bool { item.sharedOrigin != nil }
 
     var body: some View {
-        NavigationLink(value: item.id) { VaultItemRow(item: item, showSpace: showSpace) }
+        NavigationLink(value: item.id) { VaultItemRow(item: item, showSpace: showSpace, highlight: highlight) }
             .swipeActions(edge: .trailing) {
                 if !isSharedProjection {
                     Button(role: .destructive) {

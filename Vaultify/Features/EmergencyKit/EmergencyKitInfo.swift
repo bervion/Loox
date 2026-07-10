@@ -17,9 +17,11 @@ struct EmergencyKitInfo {
     var iCloudAccount: String
     var createdAt: Date
 
-    /// Where to reach for help, printed under the instructions. Placeholder until a real
-    /// support address is decided — single source so it is trivial to change.
-    var supportContact: String = "support@looxpassword.com"
+    /// Where to reach for help — printed under the kit instructions and shown on the
+    /// About page. Placeholder until a real support address is decided — single source
+    /// so it is trivial to change.
+    static let defaultSupportContact = "support@looxpassword.com"
+    var supportContact: String = EmergencyKitInfo.defaultSupportContact
 
     /// QR "Setup Code" payload — the recovery key exactly as displayed. A new device scans
     /// it on the "Use Recovery Key" screen instead of typing. The key alone decrypts nothing

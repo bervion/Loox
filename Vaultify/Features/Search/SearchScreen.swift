@@ -124,7 +124,7 @@ struct SearchResultsList: View {
         if results.isEmpty {
             emptyInScope
         } else {
-            List(results) { VaultItemRowLink(item: $0) }
+            List(results) { VaultItemRowLink(item: $0, highlight: trimmed) }
                 .platformInsetGroupedListStyle()
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)

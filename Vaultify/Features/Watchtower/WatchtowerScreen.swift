@@ -113,7 +113,9 @@ struct WatchtowerScreen: View {
     private func categoryScreen(for category: WatchtowerCategory) -> some View {
         switch category {
         case .compromised:
-            WatchtowerCategoryScreen(title: "Exposed password", issues: pwned)
+            WatchtowerCategoryScreen(
+                title: "Exposed password", issues: pwned,
+                infoNote: "Uses k-anonymity — only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
         case .reused:
             WatchtowerCategoryScreen(title: "Reused passwords", issues: health.reused)
         case .weak:

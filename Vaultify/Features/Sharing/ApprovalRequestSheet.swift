@@ -69,8 +69,8 @@ struct ApprovalRequestSheet: View {
             requestDetails
         case .authenticating:
             progress("Confirming it's you…")
-        case .waitingForFreshWindow:
-            progress("Preparing a fresh verification code…")
+        case .waitingForFreshWindow(let boundaryUnixMs, let periodSeconds):
+            issuingView(boundaryUnixMs: boundaryUnixMs, periodSeconds: periodSeconds)
         case .issuing:
             progress("Sending the code…")
         case .finished(let decision):
@@ -144,6 +144,46 @@ struct ApprovalRequestSheet: View {
         }
         .padding(Space.gutter)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Design 9c: rather than send the current TOTP code (which may have
+    /// only seconds left to live), `ApprovalCeremonyService` waits for the
+    /// next fresh window before issuing — this view says so explicitly,
+    /// with a live countdown to the boundary the ceremony is already timed
+    /// against (no separate timer, just a display of the same boundary).
+    private func issuingView(boundaryUnixMs: Int64, periodSeconds: UInt32) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remainingMs = max(0, boundaryUnixMs - Int64(context.date.timeIntervalSince1970 * 1000))
+            let remainingSeconds = Int((remainingMs + 999) / 1000)
+            let period = Int(periodSeconds)
+            VStack(spacing: Space.s4) {
+                ProgressView()
+                Text("Preparing a fresh verification code…")
+                    .vaultType(.section).themedForeground()
+                    .multilineTextAlignment(.center)
+                if let requesterLabel {
+                    Text("Loox waits for the next \(period)-second window so \(requesterLabel) gets a full-life code. The old one is never sent.")
+                        .vaultType(.callout).themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text("Loox waits for the next \(period)-second window so they get a full-life code. The old one is never sent.")
+                        .vaultType(.callout).themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                HStack(spacing: Space.s2) {
+                    CountdownRing(remaining: min(remainingSeconds, period), period: period)
+                    Text("New window in \(remainingSeconds)s")
+                        .vaultType(.footnote).fontWeight(.semibold).themedForeground(.warning)
+                }
+                .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+                .background(VaultColors.surface, in: Capsule())
+                Text("This sheet stays open while the code is being issued.")
+                    .vaultType(.footnote).themedForeground(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(Space.gutter)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private func progress(_ message: LocalizedStringKey) -> some View {

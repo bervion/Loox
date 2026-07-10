@@ -18,6 +18,7 @@ struct ExportView: View {
     @State private var exportURL: URL?
     @State private var working = false
     @State private var error: String?
+    @State private var confirmPlainExport = false
 
     private var canExport: Bool {
         guard !env.repository.items.isEmpty || !env.repository.passkeys.isEmpty else { return false }
@@ -55,11 +56,23 @@ struct ExportView: View {
             }
 
             Section {
-                Button { Task { await generate() } } label: {
-                    Text("Create Export").frame(maxWidth: .infinity)
+                if mode == .csv {
+                    // Plaintext export gets deliberate friction: a destructive-styled
+                    // CTA plus a confirmation, so it can't be created in passing.
+                    Button(role: .destructive) { confirmPlainExport = true } label: {
+                        Text("Create Unencrypted Export")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .foregroundStyle(env.theme.active.color(.destructive))
+                    }
+                    .disabled(!canExport || working)
+                } else {
+                    Button { Task { await generate() } } label: {
+                        Text("Create Export").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.themedProminent)
+                    .disabled(!canExport || working)
                 }
-                .buttonStyle(.themedProminent)
-                .disabled(!canExport || working)
             }
             .listRowBackground(VaultColors.surface)
 
@@ -78,6 +91,12 @@ struct ExportView: View {
         .navigationTitle("Export")
         .platformNavigationBarTitleDisplayMode(.inline)
         .overlay { if working { ProgressView().controlSize(.large) } }
+        .confirmationDialog("Create an unencrypted export?",
+                            isPresented: $confirmPlainExport, titleVisibility: .visible) {
+            Button("Create Unencrypted Export", role: .destructive) { Task { await generate() } }
+        } message: {
+            Text("Anyone who gets this file can read every password in it. Delete it as soon as you're done.")
+        }
     }
 
     private func generate() async {

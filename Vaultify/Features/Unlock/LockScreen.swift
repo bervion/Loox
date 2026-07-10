@@ -48,6 +48,11 @@ struct LockScreen: View {
     /// Sub-header under the logo — names the biometric option when it's available,
     /// otherwise points straight at the password.
     private var subtitleText: LocalizedStringKey {
+        // Deliberate lock (shake / Lock Now) → explain why biometrics wait for
+        // the slide instead of firing on the owner's face right away.
+        if requireSlide {
+            return "You locked Loox yourself, so it stays locked until you slide to confirm."
+        }
         if mode == .biometric && canUseBiometrics {
             return "Sign in with \(BiometricAuth.displayName) or enter your Loox Password."
         }

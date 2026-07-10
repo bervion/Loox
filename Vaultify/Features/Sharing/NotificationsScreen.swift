@@ -96,9 +96,7 @@ struct NotificationsScreen: View {
             // acceptance that landed while the app was away.
             env.ownerShareRefresher.refresh()
         }
-        .sheet(item: $resumeShare) { share in
-            ShareAccessSheet(itemID: share.itemId, resumeEmail: share.recipientLabel)
-        }
+        .sheet(item: $resumeShare) { ShareResumeStepperSheet(share: $0) }
         .sheet(item: $presentedApproval) { pending in
             ApprovalRequestSheet(
                 pending: pending,
