@@ -124,19 +124,24 @@ extension EnvironmentValues {
 struct VaultHeaderScrollSpacer: View {
     @Binding var scrolledUnder: Bool
 
+    /// Breathing room between the header's visual bottom and the first content
+    /// section. s6 keeps the screen airy without the ~90pt dead band the old s10
+    /// left above the first card (user-flagged on the Items tab).
+    private static let headerGap = Space.s6
+
     var body: some View {
         Color.clear
-            .frame(height: Space.s10 + Metric.hitMin)
+            .frame(height: Self.headerGap + Metric.hitMin)
             .background(
                 GeometryReader { proxy in
                     // Reveal only once content has scrolled far enough to actually sit
                     // beneath the header — i.e. past the gap between where content starts
                     // (this spacer's full height) and the header's visual bottom edge.
-                    // Gap = spacerHeight − headerHeight = Space.s10 − 2·Space.s2 (the
+                    // Gap = spacerHeight − headerHeight = headerGap − 2·Space.s2 (the
                     // shared Metric.hitMin cancels), so the blur doesn't trigger on the
                     // first pixel of scroll. (iOS 26 ignores this — native edge effect.)
                     Color.clear
-                        .onChange(of: proxy.frame(in: .scrollView).minY < -(Space.s10 - Space.s2 * 2)) { _, under in
+                        .onChange(of: proxy.frame(in: .scrollView).minY < -(Self.headerGap - Space.s2 * 2)) { _, under in
                             scrolledUnder = under
                         }
                 }

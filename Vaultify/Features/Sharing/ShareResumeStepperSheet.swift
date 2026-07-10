@@ -174,7 +174,7 @@ struct ShareResumeStepperSheet: View {
                     .vaultType(.footnote).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
                 Button { dismiss() } label: {
-                    Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    Text("Done").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
 
@@ -183,7 +183,7 @@ struct ShareResumeStepperSheet: View {
                     continueShare = true
                 } label: {
                     Text("Continue to Activate")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 checkNowButton
@@ -201,10 +201,10 @@ struct ShareResumeStepperSheet: View {
                     Task { await sendNudge() }
                 } label: {
                     if busy {
-                        ProgressView().frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        ProgressView().frame(maxWidth: .infinity)
                     } else {
                         Label { Text("Send Invite via Messages") } icon: { PolarisIcon(Icons.share) }
-                            .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 .buttonStyle(.themedProminent)
@@ -218,7 +218,7 @@ struct ShareResumeStepperSheet: View {
         Button {
             Task { await checkNow() }
         } label: {
-            Text("Check Now").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+            Text("Check Now").frame(maxWidth: .infinity)
         }
         .buttonStyle(.themedTinted)
         .disabled(busy)

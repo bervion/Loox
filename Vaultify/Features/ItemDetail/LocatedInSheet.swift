@@ -36,10 +36,8 @@ struct LocatedInSheet: View {
                         if canMove {
                             Button { showMovePicker = true } label: {
                                 Label { Text("Move") } icon: { PolarisIcon(Icons.enter) }
-                                    .vaultType(.subhead).fontWeight(.medium)
                             }
-                            .buttonStyle(.bordered)
-                            .tint(env.theme.active.color(.accent))
+                            .buttonStyle(.themedCompact)
                         }
                     }
                 }

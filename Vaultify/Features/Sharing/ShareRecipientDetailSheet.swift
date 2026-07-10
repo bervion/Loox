@@ -152,7 +152,7 @@ struct ShareRecipientDetailSheet: View {
             Button(role: .destructive) {
                 confirmRevoke = true
             } label: {
-                Text("Revoke Access").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                Text("Revoke Access").frame(maxWidth: .infinity)
             }
             .disabled(busy)
         }

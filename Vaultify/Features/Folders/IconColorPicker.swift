@@ -41,9 +41,9 @@ struct IconColorPicker: View {
                         let selected = name == icon
                         PolarisIcon(name, size: Metric.iconUtility)
                             .foregroundStyle(selected ? color.tint : env.theme.active.color(.primary))
-                            .frame(width: 50, height: 50)
+                            .frame(width: Metric.iconPickerTile, height: Metric.iconPickerTile)
                             .background(
-                                // 50 * 0.28 = Radius.md — same proportional tile convention as
+                                // Metric.iconPickerTile * 0.28 = Radius.md — same proportional tile convention as
                                 // FolderBadge/FaviconView at this size class.
                                 RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                                     .fill(selected ? color.tint.opacity(0.16) : VaultColors.surface)

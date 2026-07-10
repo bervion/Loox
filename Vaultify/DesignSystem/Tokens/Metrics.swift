@@ -24,6 +24,13 @@ nonisolated enum Metric {
     static let iconTab: CGFloat = 28       // tab bar (icon-only → standard tab-icon size)
     static let iconTile: CGFloat = 32      // leading row tile
     static let iconTileLarge: CGFloat = 40
+
+    /// Row-leading folder/Space badge tile (`FolderBadge`, `ItemsScreen`/`FolderPickerSheet`
+    /// row leading tiles, "None" placeholder tile) — distinct from `iconTile` (32) since this
+    /// size recurs specifically for the folder badge family.
+    static let badgeTile: CGFloat = 30
+    /// Icon-picker grid tile (`IconColorPicker`'s curated-icon grid cell).
+    static let iconPickerTile: CGFloat = 50
 }
 
 /// Floating icon-only tab bar layout (Design System: Threads-style minimal bar).

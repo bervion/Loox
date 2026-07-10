@@ -61,71 +61,80 @@ struct LockScreen: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        // Scroll-safe: at accessibility text sizes on an SE-width screen the fixed
+        // Spacer-centered stack below (logo + title/subtitle + password field/forgot
+        // link) can outgrow the screen and clip. `OnboardingScrollingStep` (shared with
+        // the onboarding flow) keeps the exact same Spacer-centered layout when it fits
+        // and only becomes a real ScrollView once it doesn't — so default text sizes
+        // render byte-identical to the un-wrapped VStack, while AX-XXL gets a safety
+        // net. Purely presentational: no change to biometric/slide/attempt logic below.
+        OnboardingScrollingStep {
+            VStack(spacing: 0) {
+                Spacer()
 
-            VStack(spacing: Space.s7) {
-                VStack(spacing: Space.s4) {
-                    BrandLogoMark.hero
-                        .overlay(alignment: .bottomTrailing) {
-                            if mode == .biometric && !requireSlide {
-                                BiometricBadge(authenticating: bioAuthenticating) {
-                                    triggerBiometric()
+                VStack(spacing: Space.s7) {
+                    VStack(spacing: Space.s4) {
+                        BrandLogoMark.hero
+                            .overlay(alignment: .bottomTrailing) {
+                                if mode == .biometric && !requireSlide {
+                                    BiometricBadge(authenticating: bioAuthenticating) {
+                                        triggerBiometric()
+                                    }
+                                    .offset(x: 6, y: 6)
+                                    .transition(.scale.combined(with: .opacity))
                                 }
-                                .offset(x: 6, y: 6)
-                                .transition(.scale.combined(with: .opacity))
+                            }
+
+                        VStack(spacing: Space.s2) {
+                            Text("Unlock your vault")
+                                .vaultType(.screenTitle)
+                            // While the vault key is being derived/fetched the ∞ draws
+                            // itself — the gate working open (Controlled Reveal). The
+                            // instruction line yields for that moment only.
+                            if bioAuthenticating || busy {
+                                LooxGateMark(animating: true)
+                                    .frame(height: 18)
+                                    .transition(.opacity)
+                                    // Fresh element: the mark itself is accessibility-
+                                    // hidden (decorative), but this moment needs a
+                                    // VoiceOver announcement.
+                                    .accessibilityElement(children: .ignore)
+                                    .accessibilityLabel(Text("Unlocking"))
+                            } else {
+                                Text(subtitleText)
+                                    .vaultType(.subhead)
+                                    .themedForeground(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-
-                    VStack(spacing: Space.s2) {
-                        Text("Unlock your vault")
-                            .vaultType(.screenTitle)
-                        // While the vault key is being derived/fetched the ∞ draws
-                        // itself — the gate working open (Controlled Reveal). The
-                        // instruction line yields for that moment only.
-                        if bioAuthenticating || busy {
-                            LooxGateMark(animating: true)
-                                .frame(height: 18)
-                                .transition(.opacity)
-                                // Fresh element: the mark itself is accessibility-
-                                // hidden (decorative), but this moment needs a
-                                // VoiceOver announcement.
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityLabel(Text("Unlocking"))
-                        } else {
-                            Text(subtitleText)
-                                .vaultType(.subhead)
-                                .themedForeground(.secondary)
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        .animation(.vault(Motion.standard, reduceMotion: reduceMotion),
+                                   value: bioAuthenticating || busy)
                     }
-                    .animation(.vault(Motion.standard, reduceMotion: reduceMotion),
-                               value: bioAuthenticating || busy)
-                }
 
-                if requireSlide {
-                    // Shake-locked → confirm by sliding before any Face ID prompt.
-                    SlideToUnlock { confirmSlide() }
+                    if requireSlide {
+                        // Shake-locked → confirm by sliding before any Face ID prompt.
+                        SlideToUnlock { confirmSlide() }
+                            .transition(.opacity)
+                    } else if mode == .password {
+                        passwordSection
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .padding(.horizontal, Space.s8)
+
+                Spacer()
+
+                // "Forgot password?" pinned to the bottom (password mode only). Keyboard
+                // avoidance lifts it just above the keyboard when the field is focused.
+                if mode == .password {
+                    Button("Forgot password?") { showRecovery = true }
+                        .vaultType(.footnote)
+                        .padding(.bottom, Space.s8)
                         .transition(.opacity)
-                } else if mode == .password {
-                    passwordSection
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .padding(.horizontal, Space.s8)
-
-            Spacer()
-
-            // "Forgot password?" pinned to the bottom (password mode only). Keyboard
-            // avoidance lifts it just above the keyboard when the field is focused.
-            if mode == .password {
-                Button("Forgot password?") { showRecovery = true }
-                    .vaultType(.footnote)
-                    .padding(.bottom, Space.s8)
-                    .transition(.opacity)
-            }
-        }
+        } // OnboardingScrollingStep
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Centre in the full screen (not just the safe area) so the logo lines up with the
         // LaunchScreen logo — otherwise the larger top inset (Dynamic Island) drops it ~12pt,

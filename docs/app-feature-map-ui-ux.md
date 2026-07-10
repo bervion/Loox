@@ -388,9 +388,20 @@ Extension dùng material hệ thống (không dùng token app). Mọi luồng đ
 7. **Hành động không hoàn tác** — luôn có dialog xác nhận với nút đỏ, copy nói rõ hệ quả ("Can't Be Taken Back", "cannot be undone", "previous recovery key will stop working").
 8. **Bí mật trên màn hình** — spoiler/che mặc định, tap-to-copy có toast, clipboard tự xoá, privacy shield trong App Switcher, không render secret trước khi qua cổng xác thực.
 
+## 16. Shell đa nền tảng (Mac/iPad — bổ sung sau registry sweep 260711)
+
+`AdaptiveRootView` chọn shell theo size class: iPhone dùng `MainTabView` (native TabView,
+icon-only, Search tab role .search trên iOS 18+); regular-width (iPad/Mac) dùng sidebar
+(`VaultSidebarView`/`VaultSidebarList`). macOS có chrome riêng: `MacRootView` (3 cột),
+`MacHeaderBar` (search suggestions panel), `MacSidebarList`, `MacItemListColumn`,
+`MacSettingsView` (native Settings window qua openSettings). `VaultTabBar`/`VaultTabBarBackground`
+là shell cũ đang dormant có chủ đích (giữ code, không dùng runtime — xem design-guidelines).
+Mac hiện là trải nghiệm review-light: iPhone-first, sync đa thiết bị chưa hoạt động
+(Vault Key không sync — xem plan iPad+Mac).
+
 ## Ghi chú cho team design (gap hiện tại đáng cân nhắc)
 
-- Field kiểu **Date** trong editor đang là ô text thường — cần design date picker.
-- **Approval Mode** không có toggle trong Settings (bật ngầm khi tạo/nhận share) — cân nhắc có cần surface không.
+- ~~Field kiểu **Date** trong editor đang là ô text thường~~ — đã có DatePicker (follow-up 260711).
+- ~~**Approval Mode** không có toggle trong Settings~~ — đã surface toggle (follow-up 260711).
 - Theme chỉ surface **Day/Night**; wallpaper picker + custom theme editor có sẵn code nhưng đang tắt (có thể bật lại sau).
-- Không có màn Settings riêng cho Notifications.
+- ~~Không có màn Settings riêng cho Notifications~~ — đã có surface Notifications (follow-up 260711).

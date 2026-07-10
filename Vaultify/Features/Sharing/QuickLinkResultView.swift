@@ -26,11 +26,16 @@ struct QuickLinkResultView: View {
     private var activeURL: URL { shortURL ?? link.url }
 
     var body: some View {
-        VStack(spacing: Space.s5) {
-            PolarisIcon(Icons.checkCircle, size: Metric.iconTile)
-                .themedForeground(.success)
-            Text("Link ready")
-                .vaultType(.section).themedForeground()
+        // Left-aligned, top-anchored (DNA: typography is architecture — bold and
+        // leading at key moments, not a centered float). Content reads top-down;
+        // the action pair sits at the bottom of the sheet where the thumb is.
+        VStack(alignment: .leading, spacing: Space.s5) {
+            HStack(spacing: Space.s2) {
+                PolarisIcon(Icons.checkCircle, size: Metric.iconUtility)
+                    .themedForeground(.success)
+                Text("Link ready")
+                    .vaultType(.screenTitle).themedForeground()
+            }
 
             // Truncated middle: enough to recognize, never the full secret on
             // screen — Copy/Share carry the real thing.
@@ -39,27 +44,28 @@ struct QuickLinkResultView: View {
                 .themedForeground(.secondary)
                 .lineLimit(2)
                 .truncationMode(.middle)
-                .multilineTextAlignment(.center)
                 .padding(Space.s4)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(VaultColors.surface)
                 .vaultCornerRadius(Radius.md)
 
-            Text("Anyone with this link can view the shared fields until it expires or you revoke it. Send it over a channel you trust.")
-                .vaultType(.callout).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
+            VStack(alignment: .leading, spacing: Space.s2) {
+                Text("Anyone with this link can view the shared fields until it expires or you revoke it. Send it over a channel you trust.")
+                    .vaultType(.callout).themedForeground(.secondary)
 
-            // One lifetime story each: one-time links lead with burn-on-open
-            // (the 24h fallback stays in the config footer); timed links show
-            // their expiry.
-            if link.record.oneTime {
-                Text("This link disappears after it's opened once.")
-                    .vaultType(.footnote).themedForeground(.warning)
-                    .multilineTextAlignment(.center)
-            } else {
-                Text("Expires \(link.record.expiresAt.formatted(Date.RelativeFormatStyle(presentation: .named).locale(appResourceLocale)))")
-                    .vaultType(.footnote).themedForeground(.secondary)
+                // One lifetime story each: one-time links lead with burn-on-open
+                // (the 24h fallback stays in the config footer); timed links show
+                // their expiry.
+                if link.record.oneTime {
+                    Text("This link disappears after it's opened once.")
+                        .vaultType(.footnote).themedForeground(.warning)
+                } else {
+                    Text("Expires \(link.record.expiresAt.formatted(Date.RelativeFormatStyle(presentation: .named).locale(appResourceLocale)))")
+                        .vaultType(.footnote).themedForeground(.secondary)
+                }
             }
+
+            Spacer(minLength: Space.s4)
 
             // ONE filled primary + one quiet secondary — the only two actions
             // most people need right after a link is created.
@@ -72,12 +78,12 @@ struct QuickLinkResultView: View {
                 } label: {
                     Label { Text(copied ? "Link Copied" : "Copy Link") }
                         icon: { PolarisIcon(copied ? Icons.copyDone : Icons.copy) }
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
 
                 Button { onDone() } label: {
-                    Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    Text("Done").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedTinted)
             }
@@ -100,21 +106,22 @@ struct QuickLinkResultView: View {
                 }
             }
             .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
 
-            if shortenUnavailable {
-                // Shortening is presentation sugar: its outage never makes the
-                // created share read as failed.
-                Text("Short links are temporarily unavailable. Your share link is ready to use.")
-                    .vaultType(.footnote).themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
+            Group {
+                if shortenUnavailable {
+                    // Shortening is presentation sugar: its outage never makes the
+                    // created share read as failed.
+                    Text("Short links are temporarily unavailable. Your share link is ready to use.")
+                } else {
+                    Text("This link can only be revoked from this device.")
+                }
             }
-
-            Text("This link can only be revoked from this device.")
-                .vaultType(.footnote).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
+            .vaultType(.footnote).themedForeground(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     /// Small icon-over-label control for the demoted extras row. Still a

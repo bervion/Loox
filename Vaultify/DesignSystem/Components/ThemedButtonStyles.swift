@@ -40,14 +40,16 @@ struct ThemedTintedButtonStyle: ButtonStyle {
         @Environment(\.isEnabled) private var isEnabled
         var body: some View {
             let theme = env.theme.active
-            // Opaque control surface stays; disabled only mutes the label colour.
+            // Soft ACCENT fill, not a neutral control surface: on the grouped
+            // sheet background a gray fill disappears entirely (same gray on
+            // gray) — the tinted rank must still read as a button.
             let fg = isEnabled ? theme.accent : theme.textDisabled
             configuration.label
                 .vaultType(.headline)
                 .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
-                .background(Color(rgb: theme.controlBackground))
+                .background(Color(rgb: theme.accentSoft))
                 .vaultCornerRadius(Radius.sm)
                 .opacity(configuration.isPressed ? 0.85 : 1)
         }
@@ -75,6 +77,62 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
                 .background(Color(rgb: bg))
                 .vaultCornerRadius(Radius.sm)
                 .opacity(configuration.isPressed ? 0.85 : 1)
+        }
+    }
+}
+
+/// Compact themed button, sized to its content instead of `maxWidth: .infinity` — for an inline
+/// secondary action placed next to a row label (e.g. `LocatedInSheet`'s "Move" button beside the
+/// current Space's folder badge, `NotificationsScreen`'s "Not Now"/"Accept" invite-row pair).
+/// Shares `theme.accent`/`theme.controlBackground` semantics with `ThemedProminentButtonStyle` /
+/// `ThemedTintedButtonStyle`; pick `.prominent` for the row's primary action, `.tinted` (default)
+/// for the secondary one.
+struct ThemedCompactButtonStyle: ButtonStyle {
+    enum Emphasis {
+        case tinted
+        case prominent
+    }
+
+    var emphasis: Emphasis = .tinted
+
+    func makeBody(configuration: Configuration) -> some View {
+        StyledButton(emphasis: emphasis, configuration: configuration)
+    }
+
+    private struct StyledButton: View {
+        let emphasis: Emphasis
+        let configuration: ButtonStyleConfiguration
+        @Environment(AppEnvironment.self) private var env
+        @Environment(\.isEnabled) private var isEnabled
+        var body: some View {
+            let (bg, fg) = fillAndForeground()
+            configuration.label
+                .vaultType(.subhead).fontWeight(.medium)
+                .foregroundStyle(Color(rgb: fg))
+                .padding(.horizontal, Space.s4)
+                .padding(.vertical, Space.s2)
+                .background(Color(rgb: bg))
+                .vaultCornerRadius(Radius.sm)
+                // The pill above stays visually compact; this floor only grows the
+                // invisible hit region so short labels still clear the 44pt minimum.
+                .frame(minHeight: Metric.hitMin)
+                .contentShape(.rect)
+                .opacity(configuration.isPressed ? 0.85 : 1)
+        }
+
+        // Plain (non-`@ViewBuilder`) function — a `switch` inline inside `body` gets
+        // misparsed as a view-building switch by the ViewBuilder inference, so the
+        // fill/foreground branch lives here instead.
+        private func fillAndForeground() -> (bg: UInt32, fg: UInt32) {
+            let theme = env.theme.active
+            switch emphasis {
+            case .prominent:
+                let bg = isEnabled ? theme.accent : RGBMath.blend(theme.accent, theme.background, 0.55)
+                let fg = isEnabled ? theme.accentForeground : RGBMath.blend(theme.accentForeground, bg, 0.4)
+                return (bg, fg)
+            case .tinted:
+                return (theme.controlBackground, isEnabled ? theme.accent : theme.textDisabled)
+            }
         }
     }
 }
@@ -109,4 +167,10 @@ extension ButtonStyle where Self == ThemedTintedButtonStyle {
 }
 extension ButtonStyle where Self == ThemedDestructiveButtonStyle {
     static var themedDestructive: ThemedDestructiveButtonStyle { .init() }
+}
+extension ButtonStyle where Self == ThemedCompactButtonStyle {
+    /// Secondary inline action (soft tint on `controlBackground`).
+    static var themedCompact: ThemedCompactButtonStyle { .init() }
+    /// Primary inline action (filled `accent`) for a compact row pair.
+    static var themedCompactProminent: ThemedCompactButtonStyle { .init(emphasis: .prominent) }
 }

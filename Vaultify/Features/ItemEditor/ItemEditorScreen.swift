@@ -98,36 +98,52 @@ struct ItemEditorScreen: View {
                 // row width), so zero horizontal inset lines the avatar/title up with them.
                 .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s4, trailing: 0))
 
-                // Persona-scoped email suggestions for a new login: create a private
-                // email (relay), reuse an existing alias for this site, or fill a
-                // plain username suggestion.
-                if isNew, draft.category == .login,
-                   RelayFeature.activeAliasesEnabled || !usernameSuggestions.isEmpty {
+                // Persona-scoped email suggestions: create a private email (relay),
+                // reuse an existing alias for this site (also the "switch back to
+                // private email" path when editing a login that currently holds the
+                // real address), or fill a plain username suggestion. Hidden once the
+                // Credentials field already holds an attached alias — that state gets
+                // its own recognition + detach treatment inside `LoginEditorSections`.
+                if draft.category == .login, attachedPrivateEmailMatch == nil,
+                   (RelayFeature.activeAliasesEnabled && (createAliasAvailable || !aliasSuggestions.isEmpty))
+                       || (isNew && !usernameSuggestions.isEmpty) {
                     Section {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: Space.s2) {
-                                if RelayFeature.activeAliasesEnabled {
-                                    createPrivateEmailChip
-                                }
-                                // Reuse before create: an existing alias for this
-                                // site/persona is never re-minted.
-                                ForEach(aliasSuggestions) { alias in
-                                    suggestionChip(AliasAddress.display(
-                                        localPart: alias.localPart, status: alias.status,
-                                        relayDomain: alias.emailDomain)) { value in
-                                        fillEmail(value)
-                                        pendingAliasID = alias.boundItemId == nil ? alias.id : nil
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text("Suggested email")
+                                .vaultType(.caption).fontWeight(.medium)
+                                .themedForeground(.secondary)
+                                .padding(.horizontal, Space.gutter)
+                            // Full-bleed horizontal scroller (no card wrapper) — the
+                            // section owns zero side insets below, so this ScrollView
+                            // already spans the whole row width; only its own content
+                            // gets the gutter inset, letting chips scroll edge-to-edge
+                            // instead of clipping at a boxed card border.
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: Space.s2) {
+                                    if RelayFeature.activeAliasesEnabled, createAliasAvailable {
+                                        createPrivateEmailChip
+                                    }
+                                    // Reuse before create: an existing alias for this
+                                    // site/persona is never re-minted.
+                                    ForEach(aliasSuggestions) { alias in
+                                        suggestionChip(AliasAddress.display(
+                                            localPart: alias.localPart, status: alias.status,
+                                            relayDomain: alias.emailDomain)) { _ in
+                                            selectAliasSuggestion(alias)
+                                        }
+                                    }
+                                    ForEach(usernameSuggestions, id: \.self) { value in
+                                        suggestionChip(value) { applyUsernameSuggestion($0) }
                                     }
                                 }
-                                ForEach(usernameSuggestions, id: \.self) { value in
-                                    suggestionChip(value) { applyUsernameSuggestion($0) }
-                                }
+                                .padding(.horizontal, Space.gutter)
+                                .padding(.vertical, 2)
                             }
                         }
-                    } header: {
-                        Text("Suggested email")
                     }
-                    .listRowBackground(VaultColors.surface)
+                    .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s2, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
 
                 // Login gets grouped sections (Credentials · Websites · Custom · Notes);
@@ -368,12 +384,34 @@ struct ItemEditorScreen: View {
         }
     }
 
-    // MARK: Private email (create-login integration)
+    // MARK: Private email (editor integration)
 
     /// Live reuse candidates for this draft's site, scoped to the active persona.
     private var aliasSuggestions: [EmailAlias] {
         env.repository.aliasSuggestions(forItem: isNew ? nil : draft.id,
                                         host: draft.autofillHost)
+    }
+
+    /// Whether the Credentials email/username field already holds one of the
+    /// active persona's aliases — while true, the top suggestion row hides (the
+    /// attached-alias recognition + detach lives in `LoginEditorSections` instead).
+    private var attachedPrivateEmailMatch: PrivateEmailMatch? {
+        guard draft.category == .login else { return nil }
+        for field in draft.fields where field.kind == .email || field.kind == .username {
+            if let match = PrivateEmailMatch.resolve(kind: field.kind, value: field.value,
+                                                     repository: env.repository) {
+                return match
+            }
+        }
+        return nil
+    }
+
+    /// Same capability gate `PersonaAliasesScreen` uses for alias creation
+    /// (INV-CAP-02: never at startup, contextual only) — reused here so the
+    /// inline "Create private email" affordance hides cleanly instead of
+    /// offering a tap that's guaranteed to fail while the relay is unavailable.
+    private var createAliasAvailable: Bool {
+        env.capabilities.availability(.privateEmail, operation: .create) == .available
     }
 
     private var createPrivateEmailChip: some View {
@@ -410,11 +448,20 @@ struct ItemEditorScreen: View {
         }
     }
 
+    /// Max chip width so a long alias/username can't blow out the row at SE
+    /// width — text truncates in the MIDDLE so both the distinguishing prefix
+    /// and the `@domain` suffix stay legible (a tail truncation would hide the
+    /// domain entirely, the part that actually tells two aliases apart).
+    private let suggestionChipMaxWidth: CGFloat = 180
+
     private func suggestionChip(_ value: String, apply: @escaping (String) -> Void) -> some View {
         Button { apply(value) } label: {
             Text(verbatim: value)
                 .vaultType(.footnote)
                 .themedForeground(.accent)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: suggestionChipMaxWidth, alignment: .leading)
                 .padding(.horizontal, Space.s3)
                 .padding(.vertical, Space.s2)
                 .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
@@ -424,7 +471,10 @@ struct ItemEditorScreen: View {
 
     /// Reserve → activate a per-site alias and fill it in. On failure the alias
     /// stays `reserved` (resumable, manageable in Private Email) — never
-    /// auto-deleted, and the address is never shown as usable (INV-PE02).
+    /// auto-deleted, and the address is never shown as usable (INV-PE02). No
+    /// success haptic on the happy path — matches `PersonaAliasesScreen`'s own
+    /// alias-creation flow, which stays silent on success and only surfaces a
+    /// haptic (`Haptics.error()`) on failure.
     private func createPrivateEmail() {
         guard let persona = env.repository.activePersona else { return }
         guard env.repository.newAliasDestination(for: persona) != nil else {
@@ -433,10 +483,13 @@ struct ItemEditorScreen: View {
         }
         creatingAlias = true
         let host = draft.autofillHost
+        // An existing item's id is already stable — bind immediately instead of
+        // deferring to save (which only ever runs `bindPendingAlias()` for new items).
+        let boundItemId = isNew ? nil : draft.id
         Task {
             defer { creatingAlias = false }
             do {
-                let id = try env.repository.createPerSiteAlias(for: persona, boundItemId: nil,
+                let id = try env.repository.createPerSiteAlias(for: persona, boundItemId: boundItemId,
                                                                domain: host,
                                                                domainID: PrivateEmailDomainDefault.domainID)
                 guard let alias = env.repository.aliases.first(where: { $0.id == id }) else { return }
@@ -445,12 +498,30 @@ struct ItemEditorScreen: View {
                    live.status == .active {
                     fillEmail(AliasAddress.display(localPart: live.localPart, status: live.status,
                                                    relayDomain: live.emailDomain))
-                    pendingAliasID = id
-                    Haptics.success()
+                    if isNew { pendingAliasID = id }
                 }
             } catch {
                 aliasError = true
+                Haptics.error()
             }
+        }
+    }
+
+    /// Fill a reused alias suggestion into the login's email field. An existing
+    /// item's id is already stable, so an unbound reusable alias binds right
+    /// away (mirrors `createPrivateEmail`'s immediate bind); a brand-new item
+    /// defers binding to `bindPendingAlias()` at save, since it has no id yet.
+    private func selectAliasSuggestion(_ alias: EmailAlias) {
+        fillEmail(AliasAddress.display(localPart: alias.localPart, status: alias.status,
+                                       relayDomain: alias.emailDomain))
+        guard alias.boundItemId == nil else { return }
+        if isNew {
+            pendingAliasID = alias.id
+        } else {
+            var updated = alias
+            updated.boundItemId = draft.id
+            if updated.boundDomain == nil { updated.boundDomain = draft.autofillHost }
+            try? env.repository.updateAlias(updated)
         }
     }
 

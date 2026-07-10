@@ -132,14 +132,14 @@ struct NotificationsScreen: View {
             }
             Spacer(minLength: Space.s2)
             Button("Not Now") { env.inviteInboxCoordinator.dismiss(invite) }
-                .buttonStyle(.bordered)
+                .buttonStyle(.themedCompact)
             Button("Accept") {
                 Task {
                     do { try await env.inviteInboxCoordinator.accept(invite) }
                     catch { acceptError = error.localizedDescription }
                 }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.themedCompactProminent)
         }
         .frame(minHeight: Metric.hitMin)
     }

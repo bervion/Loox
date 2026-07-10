@@ -40,13 +40,33 @@ struct DetailFieldRow: View {
         }
     }
 
+    /// Recognizes when this field's value is one of the active persona's
+    /// private-email aliases (INV-R03) — drives the PRIVATE badge + forwards-to
+    /// line convention shared with the Editor.
+    private var privateEmailMatch: PrivateEmailMatch? {
+        PrivateEmailMatch.resolve(kind: field.kind, value: field.value, repository: env.repository)
+    }
+
     private var normalBody: some View {
-        HStack(spacing: 12) {
+        let match = privateEmailMatch
+        return HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                fieldLabelText(field.label)
-                    .vaultType(.caption).fontWeight(.medium)
-                    .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
+                HStack(spacing: 6) {
+                    fieldLabelText(field.label)
+                        .vaultType(.caption).fontWeight(.medium)
+                        .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
+                    if match != nil {
+                        PrivateEmailBadge(onAccentBackground: copied)
+                    }
+                }
                 valueView
+                // Value already renders alias text (Controlled Reveal doesn't
+                // apply here — the field isn't secret) — copy() below still
+                // always copies `field.value`, i.e. the alias, never the
+                // forwards-to destination shown on this line.
+                if let match, !copied {
+                    PrivateEmailForwardsToLine(match: match)
+                }
             }
             Spacer(minLength: 8)
             trailing
@@ -107,14 +127,11 @@ struct DetailFieldRow: View {
         }
     }
 
-    /// "Copied" (default) or "Copied. Clears in {n}s" for sensitive values with an
-    /// auto-clear delay configured — honest about what actually happens to the pasteboard.
+    /// Always the short "Copied" — the auto-clear detail made the label long
+    /// enough to wrap the row's value line, which reads as a layout glitch at
+    /// the exact moment of feedback. The clear behavior itself is unchanged.
     private var copiedFeedbackText: String {
-        let seconds = env.settings.clipboardClearSeconds
-        if isSecret, seconds > 0 {
-            return appString("Copied. Clears in \(seconds)s")
-        }
-        return appString("Copied")
+        appString("Copied")
     }
 
     @ViewBuilder private var trailing: some View {

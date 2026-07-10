@@ -221,7 +221,7 @@ struct RequestCodeView: View {
             Task { await model.sendRequest(deviceId: deviceId) }
         } label: {
             Label { Text(title) } icon: { PolarisIcon(Icons.shield, size: Metric.iconInline) }
-                .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                .frame(maxWidth: .infinity)
         }
         .buttonStyle(.themedProminent)
     }

@@ -231,7 +231,7 @@ struct ShareAccessSheet: View {
                     step = .config
                 } label: {
                     Text("Try Again")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
             }
@@ -569,7 +569,7 @@ struct ShareAccessSheet: View {
                     Task { await createShare() }
                 } label: {
                     Text("Create Share")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 .disabled(!recipientEmail.contains("@") || !hasGrantedCapability)
@@ -641,7 +641,7 @@ struct ShareAccessSheet: View {
                 VStack(spacing: Space.s3) {
                     if accepted {
                         Button { dismiss() } label: {
-                            Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                            Text("Done").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.themedProminent)
                     } else if let shareURL {
@@ -654,7 +654,7 @@ struct ShareAccessSheet: View {
                                 showMessageCompose = true
                             } label: {
                                 Label { Text("Nudge via Messages") } icon: { PolarisIcon(Icons.share) }
-                                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                                    .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.themedProminent)
                             .sheet(isPresented: $showMessageCompose) {
@@ -665,26 +665,26 @@ struct ShareAccessSheet: View {
                         } else {
                             ShareLink(item: shareURL) {
                                 Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
-                                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                                    .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.themedProminent)
                         }
                         #else
                         ShareLink(item: shareURL) {
                             Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
-                                .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                                .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.themedProminent)
                         #endif
                         Button { dismiss() } label: {
-                            Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                            Text("Done").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.themedTinted)
                     } else {
                         // Rare fallback (no invite URL minted) — Done is the
                         // only available action.
                         Button { dismiss() } label: {
-                            Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                            Text("Done").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.themedProminent)
                     }
@@ -732,7 +732,7 @@ struct ShareAccessSheet: View {
                 Task { await enter() }
             } label: {
                 Text("Check Again")
-                    .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
         }

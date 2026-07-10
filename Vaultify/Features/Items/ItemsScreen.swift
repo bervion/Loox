@@ -83,7 +83,7 @@ struct ItemsScreen: View {
                 ForEach(env.repository.activePersonaSpaces) { folder in
                     navRow(VaultRoute.folder(folder.id), title: Text(verbatim: folder.name),
                            count: env.repository.itemCount(for: folder.id), showDivider: true) {
-                        FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
+                        FolderBadge(icon: folder.iconAsset, color: folder.color, size: Metric.badgeTile)
                     }
                 }
                 if env.repository.unfiledCount > 0 {
@@ -160,7 +160,7 @@ struct ItemsScreen: View {
             HStack(spacing: Space.s3) {
                 PolarisIcon(Icons.addCircle, size: 22)
                     .foregroundStyle(Color(rgb: env.theme.active.accent))
-                    .frame(width: 30)
+                    .frame(width: Metric.badgeTile)
                 Text("Create Space").foregroundStyle(Color(rgb: env.theme.active.accent))
                 Spacer()
             }
@@ -221,19 +221,19 @@ struct ItemsScreen: View {
                     Rectangle()
                         .fill(Color(rgb: env.theme.active.separator))
                         .frame(height: 0.5)
-                        .padding(.leading, Space.s4 + 30 + Space.s3)
+                        .padding(.leading, Space.s4 + Metric.badgeTile + Space.s3)
                 }
             }
         }
         .buttonStyle(.plain)
     }
 
-    /// 30pt rounded leading badge so every row has a consistent tinted icon tile.
+    /// `Metric.badgeTile` rounded leading badge so every row has a consistent tinted icon tile.
     private func leadingTile(_ icon: String, fill: Color, iconColor: Color, iconSize: CGFloat) -> some View {
         // Inset Space.s4 from the groupedCard's Radius.lg edge (row horizontal padding) — concentric, not eyeballed.
         RoundedRectangle(cornerRadius: Radius.concentric(outer: Radius.lg, inset: Space.s4), style: .continuous)
             .fill(fill)
-            .frame(width: 30, height: 30)
+            .frame(width: Metric.badgeTile, height: Metric.badgeTile)
             .overlay(PolarisIcon(icon, size: iconSize).foregroundStyle(iconColor))
     }
 }

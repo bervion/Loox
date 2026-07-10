@@ -68,7 +68,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | --- | --- | --- |
 | Spacing (4pt grid) | `Space.s1…s10`, `Space.gutter`, `Space.contentMax` | `DesignSystem/Tokens/Spacing.swift` |
 | Corner radius | `Radius.xs/sm/md/lg/xl/pill` + `.vaultCornerRadius(_)` | `DesignSystem/Tokens/Radius.swift` |
-| Control / icon / row sizing | `Metric.hitMin/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge` | `DesignSystem/Tokens/Metrics.swift` |
+| Control / icon / row sizing | `Metric.hitMin/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge/badgeTile/iconPickerTile` | `DesignSystem/Tokens/Metrics.swift` |
 | Legacy custom tab-bar layout | `TabBarMetric.*` | `DesignSystem/Tokens/Metrics.swift` |
 | Elevation (soft shadow) | `.elevation(.level1/.level2/.level3/.sheet)` | `DesignSystem/Tokens/Elevation.swift` |
 | Motion | `Motion.spring/standard/fast/base/medium/slow/pressScale`, `.vault(_,reduceMotion:)` | `DesignSystem/Tokens/Motion.swift` |
@@ -79,6 +79,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
 | Card / divider / form bg | `ThemedCard`, `.themedCard()`, `ThemedDivider`, `.appBackground()`, `.themedFormBackground()` | `DesignSystem/Components/ThemedComponents.swift` |
 | Buttons | `.buttonStyle(.themedProminent/.themedTinted/.themedDestructive)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
+| Compact inline buttons (row-adjacent, not full-width) | `.buttonStyle(.themedCompact/.themedCompactProminent)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
 | Switch | `.toggleStyle(.themed)` | `DesignSystem/Components/ThemedToggleStyle.swift` |
 | Icons | `PolarisIcon(Icons.<name>, size: Metric.icon*)` | `DesignSystem/PolarisIcon.swift` |
 

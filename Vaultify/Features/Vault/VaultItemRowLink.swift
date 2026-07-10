@@ -24,6 +24,10 @@ struct VaultItemRowLink: View {
 
     var body: some View {
         NavigationLink(value: item.id) { VaultItemRow(item: item, showSpace: showSpace, highlight: highlight) }
+            // Deferred zoom (Design DNA #5): no-op unless the enclosing stack injected
+            // `\.vaultZoomNamespace` (currently Search) — matches `ZoomTransitionDestination`
+            // in `vaultNavigationDestinations()` by `item.id`.
+            .modifier(ZoomTransitionSource(id: item.id))
             .swipeActions(edge: .trailing) {
                 if !isSharedProjection {
                     Button(role: .destructive) {

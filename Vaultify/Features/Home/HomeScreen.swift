@@ -144,7 +144,12 @@ struct HomeScreen: View {
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
             .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
-            .onChange(of: selectedFolderId) { env.settings.setLastSelectedSpace($1, persona: activePersonaKey) }
+            // Also re-mirror into the App Group so the AutoFill extension defaults a
+            // newly saved login into this same Space (see `mirrorActivePersonaContext`).
+            .onChange(of: selectedFolderId) {
+                env.settings.setLastSelectedSpace($1, persona: activePersonaKey)
+                env.repository.mirrorActivePersonaContext()
+            }
             // Switching the active persona re-drives the Home filter to that persona's Space.
             .onChange(of: env.repository.activePersona?.id) { applyRememberedSpace() }
             .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
@@ -352,21 +357,28 @@ struct HomeScreen: View {
         return kind
     }
 
-    /// Identity context line at the top of the scroll: small avatar + active persona
-    /// name in secondary weight + chevron. Reads as "acting as …", not a card — the
-    /// protagonist band below keeps the visual weight. Persona kind/email still
-    /// reaches VoiceOver via the accessibility label (INV-R03 discoverability).
+    /// Identity card at the top of the scroll: avatar + active persona name + email
+    /// on a white surface card. The user chose the card treatment over a thin strip —
+    /// the identity deserves a visible anchor, and the card reads cleanly against the
+    /// grouped background without competing with the credential band below.
     private var profileRow: some View {
         Button { uiState.homePath.append(ProfileRoute()) } label: {
-            HStack(spacing: Space.s2) {
+            HStack(spacing: Space.s3) {
                 profileAvatar
-                Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
-                    .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
-                PolarisIcon(Icons.chevronRight, size: 12).themedForeground(.tertiary)
-                Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
+                        .vaultType(.headline).themedForeground().lineLimit(1)
+                    Text(verbatim: personaSubtitle)
+                        .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: Space.s2)
+                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
-            .padding(.vertical, Space.s1)
-            .frame(maxWidth: .infinity, minHeight: Metric.hitMin, alignment: .leading)
+            .padding(Space.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(rgb: env.theme.active.elevatedBackground))
+            .vaultCornerRadius(Radius.lg)
+            .elevation(.level1)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -374,11 +386,10 @@ struct HomeScreen: View {
         .accessibilityLabel(Text(verbatim: "\(env.repository.activePersona?.displayName ?? appString("Profile")), \(personaSubtitle)"))
     }
 
-    /// 24pt compact avatar — stored image, letter-avatar, or a person glyph when no identity.
-    /// Radius is concentric to the (removed) card scale so it stays visually consistent with
-    /// other inset-avatar treatments in the app.
+    /// 44pt avatar — stored image, letter-avatar, or a person glyph when no identity.
+    /// Radius concentric to the card (outer lg, inset s4) so nested corners stay parallel.
     @ViewBuilder private var profileAvatar: some View {
-        let avatarSize: CGFloat = 24
+        let avatarSize: CGFloat = 44
         let cornerRadius = Radius.concentric(outer: Radius.lg, inset: Space.s4)
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         // The ACTIVE persona's own card — never another persona's (an anonymous
@@ -560,16 +571,24 @@ struct HomeScreen: View {
 
             Spacer()
 
-            Button {
-                sortOrder = sortOrder == .updated ? .title : .updated
+            // A real menu with a checkmark, not a silent toggle — tapping "Sort"
+            // and seeing nothing happen read as a dead button.
+            Menu {
+                Picker("Sort", selection: $sortOrder) {
+                    ForEach(VaultSort.allCases) { sort in
+                        Text(sort.label).tag(sort)
+                    }
+                }
             } label: {
                 Text(LocalizedStringResource("Sort").inAppLocalized)
                     .vaultType(.sectionLabel)
                     .foregroundStyle(env.theme.uiTint)
+                    .frame(minHeight: Metric.hitMin)
+                    .contentShape(Rectangle())
             }
+            .menuStyle(.button)
             .buttonStyle(.plain)
-            .frame(minHeight: Metric.hitMin)
-            .contentShape(Rectangle())
+            .menuIndicator(.hidden)
         }
         .padding(.bottom, Space.s1)
     }

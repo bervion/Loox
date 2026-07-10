@@ -75,7 +75,7 @@ struct QuickLinkView: View {
                     step = .config
                 } label: {
                     Text("Try Again")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
             }
@@ -184,7 +184,7 @@ struct QuickLinkView: View {
             Task { await create() }
         } label: {
             Text("Create Link")
-                .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                .frame(maxWidth: .infinity)
         }
         .buttonStyle(.themedProminent)
         .listRowInsets(EdgeInsets())

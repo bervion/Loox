@@ -132,7 +132,7 @@ struct ApprovalRequestSheet: View {
                     Task { await ceremony.approve(pending) }
                 } label: {
                     Text("Approve with Face ID")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 Button {
@@ -141,7 +141,7 @@ struct ApprovalRequestSheet: View {
                     }
                 } label: {
                     Text("Reject")
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedTinted)
             }
@@ -215,7 +215,7 @@ struct ApprovalRequestSheet: View {
                 onFinished()
                 dismiss()
             } label: {
-                Text("Done").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                Text("Done").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
         }
@@ -244,7 +244,7 @@ struct ApprovalRequestSheet: View {
                 onFinished()
                 dismiss()
             } label: {
-                Text("Close").frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                Text("Close").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
         }

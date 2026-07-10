@@ -41,7 +41,7 @@ struct QuickViewEnterCodeSheet: View {
                     dismiss()
                     onSubmit(code)
                 } label: {
-                    Text("Continue").frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                    Text("Continue").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 .disabled(raw.count < QuickViewHumanCode.length)

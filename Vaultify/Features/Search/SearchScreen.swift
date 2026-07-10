@@ -8,6 +8,10 @@ struct SearchScreen: View {
     @Environment(UIStateStore.self) private var uiState
     @State private var search = ""
     @State private var searchPresented = false
+    /// Deferred zoom source (Design DNA #5): shared between the result rows
+    /// (`VaultItemRowLink`, via `ZoomTransitionSource`) and the pushed `ItemDetailScreen`
+    /// (via `ZoomTransitionDestination`), both living inside this stack.
+    @Namespace private var zoomNamespace
 
     var body: some View {
         @Bindable var uiState = uiState
@@ -17,6 +21,7 @@ struct SearchScreen: View {
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
                 .platformAutocapitalization(.never)
+                .environment(\.vaultZoomNamespace, zoomNamespace)
                 .vaultNavigationDestinations()
         }
         .onAppear { searchPresented = true }

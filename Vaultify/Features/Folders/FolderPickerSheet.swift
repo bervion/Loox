@@ -27,7 +27,7 @@ struct FolderPickerSheet: View {
                         ForEach(env.repository.folders) { folder in
                             Button { select(folder.id) } label: {
                                 row(name: Text(folder.name),
-                                    badge: FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30),
+                                    badge: FolderBadge(icon: folder.iconAsset, color: folder.color, size: Metric.badgeTile),
                                     selected: folderId == folder.id)
                             }
                             .buttonStyle(.plain)
@@ -61,8 +61,8 @@ struct FolderPickerSheet: View {
             } else {
                 // Same proportional formula as FolderBadge at this size, so the "None" placeholder
                 // tile is provably consistent with every real folder badge, not just visually close.
-                RoundedRectangle(cornerRadius: 30 * 0.28, style: .continuous)
-                    .fill(VaultColors.fill).frame(width: 30, height: 30)
+                RoundedRectangle(cornerRadius: Metric.badgeTile * 0.28, style: .continuous)
+                    .fill(VaultColors.fill).frame(width: Metric.badgeTile, height: Metric.badgeTile)
             }
             name.themedForeground()
             Spacer()

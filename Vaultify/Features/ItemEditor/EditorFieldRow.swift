@@ -40,9 +40,17 @@ struct EditorFieldRow: View {
 
     @ViewBuilder private var kindEditor: some View {
         switch field.kind {
+        // A protected multiline value (SSH Private Key, Recovery Codes) gets its own
+        // masked-editing treatment (Controlled Reveal) — checked before the plain
+        // `.multiline` case below so non-protected multiline fields (Note, Address,
+        // Public Key) keep the always-visible editor.
+        case .multiline where field.protected:
+            MaskedMultilineFieldEditor(value: $field.value, placeholder: valuePlaceholder)
         case .multiline:
             TextField(valuePlaceholder, text: $field.value, axis: .vertical)
                 .lineLimit(2...6)
+        case .date:
+            DateFieldEditor(value: $field.value)
         // Any `protected` single-line value (password/TOTP, plus template fields sealed at rest
         // like Card Number, Security Code, ID Number) shares the same controlled-reveal
         // treatment: masked bullets when unfocused, MonoLisa plaintext only while the user is
