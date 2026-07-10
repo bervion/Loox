@@ -107,12 +107,12 @@ struct DetailFieldRow: View {
         }
     }
 
-    /// "Copied" (default) or "Copied · clears in {n}s" for sensitive values with an
+    /// "Copied" (default) or "Copied. Clears in {n}s" for sensitive values with an
     /// auto-clear delay configured — honest about what actually happens to the pasteboard.
     private var copiedFeedbackText: String {
         let seconds = env.settings.clipboardClearSeconds
         if isSecret, seconds > 0 {
-            return appString("Copied · clears in \(seconds)s")
+            return appString("Copied. Clears in \(seconds)s")
         }
         return appString("Copied")
     }

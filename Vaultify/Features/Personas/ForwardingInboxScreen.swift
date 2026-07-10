@@ -183,7 +183,7 @@ struct ForwardingInboxScreen: View {
         if let label = inbox.label, !label.isEmpty { return label }
         if inbox.source == .personaProfile {
             let persona = env.repository.personas.first { $0.id == inbox.personaId }
-            return persona.map { "\(appString("Profile email")) · \($0.displayName)" }
+            return persona.map { "\(appString("Profile email")) (\($0.displayName))" }
                 ?? appString("Profile email")
         }
         return appString("Inbox")

@@ -275,9 +275,9 @@ struct HomeScreen: View {
                 .themedForeground(waitingOnOwner ? .success : .warning)
             Group {
                 if waitingOnOwner {
-                    Text("Sharing \"\(title)\" · ready to confirm")
+                    Text("Sharing \"\(title)\" is ready to confirm")
                 } else {
-                    Text("Sharing \"\(title)\" · waiting for \(share.recipientLabel)")
+                    Text("Sharing \"\(title)\" is waiting for \(share.recipientLabel)")
                 }
             }
             .vaultType(.body).themedForeground()
@@ -344,8 +344,10 @@ struct HomeScreen: View {
     private var personaSubtitle: String {
         guard let persona = env.repository.activePersona else { return appString("Set up your identity") }
         let kind = PersonaKindStyle.label(persona.kind)
+        // Email is the distinguishing detail when it exists — one clear idea per
+        // line instead of two glued together with a separator glyph.
         if let email = env.repository.identityUsername(forPersona: persona), !email.isEmpty {
-            return "\(kind) · \(email)"
+            return email
         }
         return kind
     }
@@ -474,7 +476,7 @@ struct HomeScreen: View {
     private var attentionSection: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             homeSectionHeader(
-                title: LocalizedStringResource("Needs Attention · \(attentionItems.count)").inAppLocalized
+                title: LocalizedStringResource("Needs Attention (\(attentionItems.count))").inAppLocalized
             )
 
             groupedCard {
@@ -543,7 +545,7 @@ struct HomeScreen: View {
             Button { showFolderPicker = true } label: {
                 HStack(spacing: Space.s1) {
                     spaceTitleText.vaultType(.sectionLabel)
-                    Text(verbatim: "· \(allItems.count)").vaultType(.sectionLabel)
+                    Text(verbatim: "(\(allItems.count))").vaultType(.sectionLabel)
                     PolarisIcon(Icons.chevronDown, size: 12).themedForeground(.tertiary)
                 }
                 .themedForeground(.tertiary)

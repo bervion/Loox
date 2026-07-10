@@ -44,10 +44,10 @@ struct ShareInviteSentSheet: View {
         HStack(spacing: Space.s2) {
             StatusDot(kind: accepted ? .active : .pending, size: 7)
             if accepted {
-                Text("Sharing \"\(itemTitle)\" · finishing on their device")
+                Text("Sharing \"\(itemTitle)\" is finishing on their device")
                     .vaultType(.footnote).themedForeground().lineLimit(1)
             } else {
-                Text("Sharing \"\(itemTitle)\" · waiting for \(recipientLabel)")
+                Text("Sharing \"\(itemTitle)\" is waiting for \(recipientLabel)")
                     .vaultType(.footnote).themedForeground().lineLimit(1)
             }
         }

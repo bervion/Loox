@@ -109,7 +109,7 @@ struct ProfileScreen: View {
         if persona.isolationPolicy != .standard {
             parts.append(PersonaKindStyle.policyLabel(persona.isolationPolicy))
         }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 
     private func personaRowLabel(_ title: LocalizedStringKey, icon: String) -> some View {

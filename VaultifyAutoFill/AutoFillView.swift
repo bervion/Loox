@@ -190,11 +190,11 @@ private struct CredentialListView: View {
                         HStack(spacing: 4) {
                             Text(user).font(.caption).foregroundStyle(.secondary)
                             if row.isShared {
-                                Text("· Shared").font(.caption).foregroundStyle(.secondary)
+                                Text("Shared").font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     } else if row.isShared {
-                        Text("· Shared").font(.caption).foregroundStyle(.secondary)
+                        Text("Shared").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }

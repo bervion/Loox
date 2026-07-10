@@ -604,7 +604,7 @@ struct ItemDetailScreen: View {
     private func metadata(_ item: VaultItem) -> some View {
         let created = item.createdAt.formatted(date: .abbreviated, time: .shortened)
         let modified = item.updatedAt.formatted(date: .abbreviated, time: .shortened)
-        return Text(appString("Created \(created) · Modified \(modified)"))
+        return Text(appString("Created \(created), modified \(modified)"))
             .vaultType(.caption).themedForeground(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, Space.s1)
     }

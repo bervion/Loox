@@ -37,7 +37,7 @@ struct ShareResumeStepperSheet: View {
         VaultSheetScaffold(title: LocalizedStringResource("Sharing \"\(itemTitle)\"")) {
             ScrollView {
                 VStack(spacing: Space.s5) {
-                    Text("with \(share.recipientLabel) · started \(startedText)")
+                    Text("with \(share.recipientLabel), started \(startedText)")
                         .vaultType(.footnote).themedForeground(.secondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)

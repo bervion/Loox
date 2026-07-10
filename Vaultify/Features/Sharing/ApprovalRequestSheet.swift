@@ -222,7 +222,7 @@ struct ApprovalRequestSheet: View {
         .task {
             env.notificationHistory.log(
                 decision == .approved ? .approvalApproved : .approvalRejected,
-                label: requesterLabel.map { "\($0) · \(itemTitle)" } ?? itemTitle)
+                label: requesterLabel.map { "\($0): \(itemTitle)" } ?? itemTitle)
             try? await Task.sleep(for: .seconds(1.5))
             onFinished()
             dismiss()

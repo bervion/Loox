@@ -87,7 +87,7 @@ struct SyncSettingsView: View {
             TextField("Participant iCloud email", text: $spikeEmail)
                 .platformAutocapitalization(.never)
                 .autocorrectionDisabled()
-            Button("1 · Owner: create share") {
+            Button("1. Owner: create share") {
                 Task { await ApprovalSpike.shared.startOwner(participantEmail: spikeEmail,
                                                              settings: env.settings) }
             }
@@ -95,10 +95,10 @@ struct SyncSettingsView: View {
             if let url = ApprovalSpike.shared.shareURL {
                 ShareLink("Send share link to participant", item: url)
             }
-            Button("2 · Requester: send request") {
+            Button("2. Requester: send request") {
                 Task { await ApprovalSpike.shared.sendRequest(settings: env.settings) }
             }
-            Button("3 · Owner: approve pending") {
+            Button("3. Owner: approve pending") {
                 Task { await ApprovalSpike.shared.approvePending() }
             }
             Text(ApprovalSpike.shared.status).font(.footnote).themedForeground(.secondary)
@@ -113,7 +113,7 @@ struct SyncSettingsView: View {
     /// The app deliberately has no Files-app sharing, so diagnostics live
     /// here instead of a Documents log file.
     private var inviteInboxDebugSection: some View {
-        Section("Invite Inbox (DEBUG · V1.1)") {
+        Section("Invite Inbox (DEBUG V1.1)") {
             Button("Arm / re-arm inbox (B)") {
                 Task {
                     guard let identity = await debugIdentity() else { return }

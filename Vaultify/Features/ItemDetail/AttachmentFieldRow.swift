@@ -23,7 +23,7 @@ struct AttachmentFieldRow: View {
                     .overlay(PolarisIcon(meta.iconAsset, size: 22).foregroundStyle(Color.accentColor))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(meta.name).font(.body).lineLimit(1)
-                    Text("\(meta.ext.uppercased()) · \(meta.sizeText)").font(.caption).themedForeground(.secondary)
+                    Text("\(meta.ext.uppercased()), \(meta.sizeText)").font(.caption).themedForeground(.secondary)
                 }
                 Spacer(minLength: 8)
                 menu(meta)
