@@ -77,15 +77,22 @@ struct PasskeyDetailSheet: View {
         case .backedUp:
             badge(Text("Backed up"), icon: Icons.checkCircle, role: .success)
         case .backupEligible:
-            badge(Text("Backup eligible"), icon: Icons.sync, role: .secondary)
+            // SF icloud: the eligibility is specifically iCloud Keychain backup —
+            // the generic sync arrows read as "refreshing", not the feature.
+            badge(Text("Backup eligible"), systemName: "icloud", role: .secondary)
         case .deviceBound:
             badge(Text("This device only"), icon: Icons.lockFill, role: .secondary)
         }
     }
 
-    private func badge(_ text: Text, icon: String, role: ThemeRole) -> some View {
+    private func badge(_ text: Text, icon: String? = nil, systemName: String? = nil,
+                       role: ThemeRole) -> some View {
         HStack(spacing: Space.s1) {
-            PolarisIcon(icon, size: 13)
+            if let systemName {
+                Image(systemName: systemName).font(.system(size: 12, weight: .medium))
+            } else if let icon {
+                PolarisIcon(icon, size: 13)
+            }
             text.vaultType(.caption)
         }
         .foregroundStyle(env.theme.active.color(role))

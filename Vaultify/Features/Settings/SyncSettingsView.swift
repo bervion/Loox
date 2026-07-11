@@ -25,7 +25,9 @@ struct SyncSettingsView: View {
         Form {
             Section {
                 Toggle(isOn: syncBinding) {
-                    Label { Text("iCloud Sync") } icon: { PolarisIcon(Icons.sync) }
+                    // SF icloud: Polaris has no honest iCloud glyph (the generic
+                    // sync arrows read as "refresh", not the iCloud feature).
+                    Label { Text("iCloud Sync") } icon: { Image(systemName: "icloud.fill") }
                 }
             } footer: {
                 // Honest scope: secrets are sealed; a small set of organizational
@@ -36,20 +38,17 @@ struct SyncSettingsView: View {
 
             if !CloudSyncService.isConfigured {
                 Section {
-                    Label {
-                        Text("To use iCloud Sync, enable the iCloud capability (CloudKit) for the app target in Xcode and sign in to iCloud on this device.")
-                            .vaultType(.footnote).themedForeground(.secondary)
-                    } icon: {
-                        PolarisIcon(Icons.info).foregroundStyle(VaultColors.strengthMedium)
-                    }
+                    VaultInfoBanner(.warning,
+                                    text: "To use iCloud Sync, enable the iCloud capability (CloudKit) for the app target in Xcode and sign in to iCloud on this device.")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                 }
-                .listRowBackground(VaultColors.surface)
             }
 
             if env.settings.iCloudSyncEnabled {
                 Section {
                     Button { env.syncNow() } label: {
-                        Label { Text("Sync Now") } icon: { PolarisIcon(Icons.refresh) }
+                        Label { Text("Sync Now") } icon: { Image(systemName: "arrow.clockwise.icloud") }
                     }
                     .disabled(env.cloudSync.status == .syncing)
                     statusRow
@@ -168,7 +167,8 @@ struct SyncSettingsView: View {
         case .success(let date):
             LabeledContent("Last sync", value: date.formatted(date: .omitted, time: .shortened))
         case .error(let message):
-            Text(message).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
+            Text(message).vaultType(.footnote)
+                .foregroundStyle(env.theme.active.color(.destructive))
         }
     }
 }
