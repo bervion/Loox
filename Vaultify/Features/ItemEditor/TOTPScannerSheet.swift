@@ -46,7 +46,7 @@ struct TOTPScannerSheet: View {
         // NavigationStack toolbar Cancel can fail to render on macOS sheets — guarantee
         // a working close control plus a non-collapsed sheet size.
         .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: { PolarisIcon(Icons.close, size: 16) }
+            Button { dismiss() } label: { PolarisIcon(Icons.close, size: Metric.iconInline) }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.cancelAction)
                 .accessibilityLabel(Text("Close"))

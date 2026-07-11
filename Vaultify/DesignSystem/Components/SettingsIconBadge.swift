@@ -6,15 +6,29 @@ import SwiftUI
 /// decorative settings tiles, same class as the system's own icon grid); tints are
 /// appearance-dynamic so dark mode keeps the hues from glowing.
 struct SettingsIconBadge: View {
-    let icon: String
+    /// Polaris asset name (default) …
+    var icon: String? = nil
+    /// … or an SF Symbol, ONLY for domain glyphs the Polaris set has no honest
+    /// shape for (iCloud, and future Apple-platform notions) — user-granted
+    /// exemption 260711, mirroring the payment-card SF grant.
+    var systemName: String? = nil
     let tint: Color
 
     var body: some View {
         RoundedRectangle(cornerRadius: 6.5, style: .continuous)
             .fill(tint)
             .frame(width: 29, height: 29)
-            .overlay(PolarisIcon(icon, size: 16).foregroundStyle(.white))
+            .overlay(glyph.foregroundStyle(.white))
             .accessibilityHidden(true)   // the row's text labels the control
+    }
+
+    @ViewBuilder private var glyph: some View {
+        if let systemName {
+            Image(systemName: systemName)
+                .font(.system(size: 14, weight: .semibold))
+        } else {
+            PolarisIcon(icon ?? Icons.info, size: 16)
+        }
     }
 }
 

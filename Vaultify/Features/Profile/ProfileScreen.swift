@@ -89,7 +89,7 @@ struct ProfileScreen: View {
                 }
                 Divider().overlay(Color(rgb: env.theme.active.separator))
                 NavigationLink { PersonaSwitcherScreen() } label: {
-                    personaRowLabel("Manage personas", icon: Icons.person)
+                    personaRowLabel("Manage personas", icon: Icons.identityCard)
                 }
                 NavigationLink { PersonaAliasesScreen() } label: {
                     personaRowLabel("Private Email", icon: Icons.mail)
@@ -119,6 +119,9 @@ struct ProfileScreen: View {
             Spacer()
             PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
         }
+        // Full list-row height: the bare HStack rows sat ~24pt tall — cramped
+        // against each other and under the 44pt hit minimum (DNA rule 6).
+        .frame(minHeight: Metric.hitMin)
         .contentShape(.rect)
     }
 
@@ -127,7 +130,9 @@ struct ProfileScreen: View {
             title: "Identity",
             emptyTitle: "No identity yet",
             chooseLabel: identity == nil ? "Choose identity" : "Change identity",
-            icon: Icons.person,
+            // Swap glyph, not a person: the row switches WHICH identity fills this
+            // card — a person icon here read as "the identity itself".
+            icon: Icons.orderRepeat,
             selected: identity,
             pool: identities,
             onEdit: { if let identity { editing = .edit(identity) } },

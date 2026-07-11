@@ -11,21 +11,21 @@ struct ProfileAvatarView: View {
 
     var body: some View {
         // Resolve themed colors on the main actor before the Sendable PhotosPicker label closure.
-        let badgeForeground = Color(rgb: env.theme.active.accentForeground)
-        let badgeBackground = Color(rgb: env.theme.active.accent)
+        let badgeForeground = Color(rgb: env.theme.active.accent)
+        let badgeBackground = Color(rgb: env.theme.active.elevatedBackground)
+        let badgeRing = Color(rgb: env.theme.active.separator)
         return ZStack(alignment: .bottomTrailing) {
             avatar
+            // Camera badge: a quiet surface CIRCLE with an accent glyph (system
+            // Contacts convention), tucked ON the avatar corner — the old solid
+            // accent square floating off the corner shouted louder than the photo.
             PhotosPicker(selection: $picked, matching: .images) {
                 PolarisIcon(Icons.camera, size: 15)
                     .foregroundStyle(badgeForeground)
                     .frame(width: 30, height: 30)
-                    .background(badgeBackground,
-                                in: RoundedRectangle(cornerRadius: Radius.xs, style: .continuous))
-                    // Ring in the page color so the badge reads as a separate chip.
-                    .overlay(RoundedRectangle(cornerRadius: Radius.xs, style: .continuous)
-                        .strokeBorder(Color(rgb: env.theme.active.groupedBackground), lineWidth: 2))
-                    // Nudge past the avatar's bottom-right corner for a lifted look.
-                    .offset(x: 6, y: 6)
+                    .background(badgeBackground, in: Circle())
+                    .overlay(Circle().strokeBorder(badgeRing, lineWidth: 0.5))
+                    .elevation(.level1)
                     // Hit-test only (no layout/visual change): pads the 30pt chip up to the
                     // 44pt minimum tap target so a thumb doesn't need pixel precision.
                     .contentShape(Rectangle().inset(by: -7))

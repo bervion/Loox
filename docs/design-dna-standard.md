@@ -110,6 +110,8 @@ A screen passes only if it renders correctly in ALL of:
   light-dark preview swatches; the fixed decorative quick-action glyph tints (soft-chip
   style since 260711 — labels use text roles); the Settings icon badge tiles
   (`SettingsIconBadge` — white glyph on fixed system-Settings hues, user-granted 260711);
+  SF Symbols for Apple-platform notions Polaris has no honest glyph for (iCloud —
+  `icloud.fill` in the Settings badge; user-granted 260711);
   native UISwitch/system-control chrome (the OS draws it); ambient shadows built from black
   opacity (that is how `Elevation` works by design); proportional avatar/tile corner radii that
   scale with the tile size (a size-relative pattern, not a magic number); SF Symbols inside the

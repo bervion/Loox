@@ -52,6 +52,8 @@ enum Icons {
     static let layoutSection = "ic_layout_section"
     static let enter = "ic_enter"
     static let close = "ic_x"
+    static let identityCard = "ic_identity_card"
+    static let orderRepeat = "ic_order_repeat"
     static let chevronRight = "ic_chevron_right"
     static let chevronDown = "ic_chevron_down"
     static let arrowRight = "ic_arrow_right"

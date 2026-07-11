@@ -231,7 +231,7 @@ struct SettingsScreen: View {
 
                 Section("Data") {
                     NavigationLink { SyncSettingsView() } label: {
-                        Label { Text("iCloud Sync") } icon: { SettingsIconBadge(icon: Icons.sync, tint: SettingsBadgeTint.blue) }
+                        Label { Text("iCloud Sync") } icon: { SettingsIconBadge(systemName: "icloud.fill", tint: SettingsBadgeTint.blue) }
                     }
                     NavigationLink { PasskeysScreen() } label: {
                         Label { Text("Passkeys") } icon: { SettingsIconBadge(icon: Icons.passkey, tint: SettingsBadgeTint.purple) }
