@@ -89,6 +89,23 @@ final class AccentContrastGuardTests: XCTestCase {
         }
     }
 
+    /// The ON track must always separate from its white knob — the native iOS
+    /// green holds ~2.05:1 against the knob, so 2.0 is the stock-feel floor.
+    /// (Regression for the mono-on-dark case: white accent = white track = lost knob.)
+    func testSwitchTrackSeparatesFromWhiteKnob() {
+        for (name, base) in themes {
+            for preset in AccentPreset.allCases {
+                let theme = base.recolored(accent: preset.rgb(isDark: base.isDark))
+                XCTAssertGreaterThanOrEqual(
+                    RGBMath.contrastRatio(theme.switchOn, 0xFFFFFF), 2.0,
+                    "\(name)/\(preset) switch track vs knob")
+            }
+        }
+        let mono = BuiltinThemes.night.recolored(accent: 0xFFFFFF)
+        XCTAssertGreaterThanOrEqual(RGBMath.contrastRatio(mono.switchOn, 0xFFFFFF), 2.0)
+        XCTAssertNotEqual(mono.switchOn, 0xFFFFFF, "white accent must not stay a white track")
+    }
+
     // MARK: - Extreme inputs (future custom theme / import path)
 
     func testBlackAccentOnNightStaysVisible() {

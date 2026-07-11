@@ -53,7 +53,13 @@ nonisolated struct AppTheme: Sendable, Equatable {
         var accent = RGBMath.ensureContrast(rawAccent, on: groupedBackground, floor: 3.0)
         accent = RGBMath.ensureContrast(accent, on: elevatedBackground, floor: 3.0)
         theme.accent = accent
-        theme.switchOn = accent
+        // The themed toggle draws a WHITE knob on the ON track (native UISwitch
+        // anatomy) — a white/near-white accent (mono on dark) makes knob and
+        // track one shape. Guard the track against the knob at 2.0:1, the ratio
+        // the native iOS green track keeps against its own knob (~2.05:1), so
+        // every preset feels stock and extreme accents settle into a deliberate
+        // gray instead of vanishing.
+        theme.switchOn = RGBMath.ensureContrast(accent, on: 0xFFFFFF, floor: 2.0)
         theme.checkmark = accent
         // White-preferred on-accent (iOS convention for coloured controls) so text/icons on
         // filled accent buttons read white on saturated accents (e.g. dark-mode blue), only
