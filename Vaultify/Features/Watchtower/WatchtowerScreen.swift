@@ -285,9 +285,8 @@ struct WatchtowerScreen: View {
                 .vaultType(.callout)
                 .themedForeground(.secondary)
         }
-        .padding(Space.s4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .themedCard()
+        .themedCard()   // themedCard already pads Space.s4 — no extra padding
         .padding(.horizontal, Space.gutter)
     }
 
@@ -301,9 +300,8 @@ struct WatchtowerScreen: View {
                 .vaultType(.callout)
                 .themedForeground(.secondary)
         }
-        .padding(Space.s4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .themedCard()
+        .themedCard()   // themedCard already pads Space.s4 — no extra padding
         .padding(.horizontal, Space.gutter)
     }
 
@@ -321,8 +319,7 @@ struct WatchtowerScreen: View {
                 .themedForeground(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(Space.s4)
-        .themedCard()
+        .themedCard()   // themedCard already pads Space.s4 — no extra padding
         .padding(.horizontal, Space.gutter)
     }
 
