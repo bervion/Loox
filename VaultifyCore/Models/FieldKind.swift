@@ -48,7 +48,7 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
         case .password: return "ic_lock"
         case .totp: return "ic_clock"
         case .url: return "ic_globe"
-        case .email: return "ic_mail"
+        case .email: return "ic_email"
         case .number: return "ic_hashtag"
         case .phone: return "ic_phone"
         case .multiline: return "ic_note"

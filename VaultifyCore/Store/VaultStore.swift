@@ -34,6 +34,7 @@ final class VaultStore {
         return try ModelContainer(for: ItemRecord.self, PasskeyRecord.self, FolderRecord.self,
                                   PersonaRecord.self, EmailAliasRecord.self,
                                   ForwardingInboxRecord.self,
+                                  AuditReportRecord.self, FindingStateRecord.self,
                                   configurations: configuration)
     }
 
@@ -46,6 +47,8 @@ final class VaultStore {
         try context.delete(model: PersonaRecord.self)
         try context.delete(model: EmailAliasRecord.self)
         try context.delete(model: ForwardingInboxRecord.self)
+        try context.delete(model: AuditReportRecord.self)
+        try context.delete(model: FindingStateRecord.self)
         try context.save()
     }
 

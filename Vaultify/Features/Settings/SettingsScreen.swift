@@ -225,7 +225,7 @@ struct SettingsScreen: View {
                 }
                 .listRowBackground(VaultColors.surface)
 
-                Section("Watchtower") {
+                Section("Security") {
                     Toggle(isOn: $settings.hibpEnabled) {
                         Label { Text("Check for known breaches") } icon: { SettingsIconBadge(icon: Icons.shield, tint: SettingsBadgeTint.green) }
                     }

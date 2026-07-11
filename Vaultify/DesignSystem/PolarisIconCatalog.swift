@@ -122,6 +122,7 @@ enum PolarisIconCatalog {
         "ic_shield_check_mark",
         "ic_shield_none",
         "ic_shield_pending",
+        "ic_shield_person",
         "ic_sort",
         "ic_sort_ascending",
         "ic_sort_descending",

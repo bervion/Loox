@@ -32,7 +32,7 @@ enum VaultTab: Int, CaseIterable, Identifiable {
         switch self {
         case .home: return LocalizedStringResource("Home").inAppLocalized
         case .items: return LocalizedStringResource("Items").inAppLocalized
-        case .watchtower: return LocalizedStringResource("Watchtower").inAppLocalized
+        case .watchtower: return LocalizedStringResource("Security").inAppLocalized
         case .search: return LocalizedStringResource("Search").inAppLocalized
         }
     }

@@ -174,7 +174,7 @@ struct MacRootView: View {
         switch filter {
         case .allItems: return "All Items"
         case .favorites: return "Favorites"
-        case .watchtower: return "Watchtower"
+        case .watchtower: return "Security"
         case .archive: return "Archive"
         case .trash: return "Recently Deleted"
         case .space(let id):

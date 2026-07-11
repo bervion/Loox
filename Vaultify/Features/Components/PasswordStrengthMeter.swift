@@ -7,8 +7,17 @@ struct PasswordStrengthMeter: View {
     var emptyLabel: LocalizedStringKey = "Enter a master password"
     @Environment(AppEnvironment.self) private var env
 
-    private var strength: PasswordStrength { PasswordStrength.evaluate(password) }
-    private var bits: Int { Int(PasswordStrength.entropyBits(password)) }
+    private var result: StrengthResult { PasswordStrengthEngine.evaluate(password) }
+    private var strength: PasswordStrength {
+        switch result.grade {
+        case .veryWeak, .weak: return .weak
+        case .fair: return .medium
+        case .strong, .excellent: return .strong
+        }
+    }
+    /// Bits from the SAME estimate that drives the label (log2 of guesses) —
+    /// the old character-class entropy would contradict the pattern-aware grade.
+    private var bits: Int { Int(result.log10Guesses * 3.3219) }
     private var color: Color { VaultColors.strength(strength) }
 
     var body: some View {
