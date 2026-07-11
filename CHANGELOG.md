@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.25.0] - 2026-07-11
+
+### Added
+- floating chip tab bar for pre-iOS-26
+- 1Password-style gauge choreography with 1000-scale readout
+
+### Fixed
+- never start CloudKit sync inside the XCTest host
+- Loox brand avatar on detail and black tile in light mode
+- reliable entry formatting, brand mark tiles, scanner reticle
+- remember the explicit All Spaces filter choice
+- drop doubled Space.s4 padding on status card rows
+
+### Changed
+- lower iOS deployment target to 17.3
+- quiet quick-action tiles
+
+
 ## [1.24.0] - 2026-07-11
 
 ### Added

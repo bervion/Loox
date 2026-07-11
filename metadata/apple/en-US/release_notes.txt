@@ -1,1 +1,1 @@
-Version 1.24.0: Performance improvements and bug fixes.
+This update adds a smoother tab bar and a clearer vault strength score. Several visual fixes improve avatars, icons, and layout consistency across screens. Under the hood, sync reliability has also been improved.
