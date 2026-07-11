@@ -132,7 +132,11 @@ struct VaultGlassGroup<Content: View>: View {
     var body: some View {
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *) {
-            GlassEffectContainer { content }
+            // spacing 0: glass shapes must only merge when they actually overlap.
+            // The default merge distance coalesced two CLEAR tiles sitting one
+            // grid gap apart into a single notched blob (the tinted tiles hid
+            // this — their fills masked the union).
+            GlassEffectContainer(spacing: 0) { content }
         } else {
             content
         }

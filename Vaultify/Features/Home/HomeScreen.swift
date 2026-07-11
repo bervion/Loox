@@ -436,35 +436,40 @@ struct HomeScreen: View {
     private var quickActionsGrid: some View {
         // One GlassEffectContainer for all glass views (4 pills + badges) → a single
         // backdrop layer; fixes the per-frame glass-update warning on theme changes.
+        // NON-lazy rows on purpose: LazyVGrid cell recycling churned the glass
+        // identities when a persona switch re-rendered Home, leaving the first
+        // row as empty coalesced glass blobs on iOS 26.
         VaultGlassGroup {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3),
-                            GridItem(.flexible(), spacing: Space.s3)],
-                  spacing: Space.s3) {
-            // Add — presents the item-type menu (uses ic_page_add, matches the header).
-            Menu {
-                newItemMenuItems
-            } label: {
-                QuickActionCardLabel(
-                    icon: Icons.pageAdd,
-                    label: LocalizedStringResource("Add Item").inAppLocalized,
-                    tint: Color(rgb: env.theme.active.accent)
-                )
-            }
-            // Plain tile menu — macOS would otherwise draw a bordered pull-down button
-            // around the whole tile, breaking the compact row's visual consistency.
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .accessibilityLabel(Text("Add Item"))
+        VStack(spacing: Space.s3) {
+            HStack(spacing: Space.s3) {
+                // Add — presents the item-type menu (uses ic_page_add, matches the header).
+                Menu {
+                    newItemMenuItems
+                } label: {
+                    QuickActionCardLabel(
+                        icon: Icons.pageAdd,
+                        label: LocalizedStringResource("Add Item").inAppLocalized,
+                        tint: Color(rgb: env.theme.active.accent)
+                    )
+                }
+                // Plain tile menu — macOS would otherwise draw a bordered pull-down button
+                // around the whole tile, breaking the compact row's visual consistency.
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .accessibilityLabel(Text("Add Item"))
 
-            QuickActionCard.generate {
-                showGenerator = true
+                QuickActionCard.generate {
+                    showGenerator = true
+                }
             }
-            QuickActionCard.totp(count: totpItems.count) {
-                showTotpList = true
-            }
-            QuickActionCard.watchtower(count: watchtowerIssueCount) {
-                NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil)
+            HStack(spacing: Space.s3) {
+                QuickActionCard.totp(count: totpItems.count) {
+                    showTotpList = true
+                }
+                QuickActionCard.watchtower(count: watchtowerIssueCount) {
+                    NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil)
+                }
             }
         }
         }
