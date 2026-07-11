@@ -129,22 +129,12 @@
     },
     "%lld can use 2FA" : {
       "comment" : "Watchtower category subtitle: count of items that support 2FA.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld mục hỗ trợ 2FA"
-          }
-        }
-      }
-    },
-    "%lld of %lld passwords are strong" : {
-      "comment" : "Password-strength drill-down summary line under the strength bar.",
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld trong %lld mật khẩu đạt mức mạnh"
           }
         }
       }
@@ -162,6 +152,7 @@
     },
     "%lld easy to guess" : {
       "comment" : "Watchtower category subtitle: count of items with weak passwords.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -171,13 +162,44 @@
         }
       }
     },
+    "%lld identical copies" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld bản sao giống hệt"
+          }
+        }
+      }
+    },
     "%lld in a data breach" : {
       "comment" : "Watchtower category subtitle: count of items found in data breaches.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld mục trong rò rỉ dữ liệu"
+          }
+        }
+      }
+    },
+    "%lld items" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mục"
+          }
+        }
+      }
+    },
+    "%lld items disagree on the password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mục không khớp mật khẩu"
           }
         }
       }
@@ -213,6 +235,27 @@
         }
       }
     },
+    "%lld of %lld checks" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld trong %2$lld bước kiểm tra"
+          }
+        }
+      }
+    },
+    "%lld of %lld passwords are strong" : {
+      "comment" : "Password-strength drill-down summary line under the strength bar.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld trong %lld mật khẩu đạt mức mạnh"
+          }
+        }
+      }
+    },
     "%lld passkeys" : {
       "localizations" : {
         "vi" : {
@@ -225,6 +268,7 @@
     },
     "%lld share a password" : {
       "comment" : "Watchtower category subtitle: count of items sharing a password.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -655,6 +699,16 @@
         }
       }
     },
+    "Act now" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xử lý ngay"
+          }
+        }
+      }
+    },
     "Activate" : {
       "localizations" : {
         "vi" : {
@@ -953,6 +1007,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tài khoản bị ảnh hưởng"
+          }
+        }
+      }
+    },
+    "Affected items" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục bị ảnh hưởng"
           }
         }
       }
@@ -1620,6 +1684,66 @@
         }
       }
     },
+    "Audit complete" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã kiểm tra xong"
+          }
+        }
+      }
+    },
+    "Audit history" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lịch sử kiểm tra"
+          }
+        }
+      }
+    },
+    "Audit recency and item upkeep" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mức độ kiểm tra gần đây và chăm sóc mục"
+          }
+        }
+      }
+    },
+    "Audit report" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Báo cáo kiểm tra"
+          }
+        }
+      }
+    },
+    "Authentication" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác thực"
+          }
+        }
+      }
+    },
+    "Authentication options" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tùy chọn xác thực"
+          }
+        }
+      }
+    },
     "Authenticator Codes" : {
       "localizations" : {
         "vi" : {
@@ -1804,6 +1928,16 @@
         }
       }
     },
+    "Based on %lld items" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dựa trên %lld mục"
+          }
+        }
+      }
+    },
     "Biometric unlock failed." : {
       "comment" : "Error message when biometric authentication fails.",
       "isCommentAutoGenerated" : true,
@@ -1834,6 +1968,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Độ sáng"
+          }
+        }
+      }
+    },
+    "Broken verification codes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã xác minh bị hỏng"
           }
         }
       }
@@ -2043,6 +2187,16 @@
         }
       }
     },
+    "Changes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thay đổi"
+          }
+        }
+      }
+    },
     "Check Again" : {
       "localizations" : {
         "en" : {
@@ -2127,6 +2281,7 @@
     },
     "Checking breaches…" : {
       "comment" : "A loading message displayed when checking for breaches.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "vi" : {
@@ -2181,6 +2336,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chọn ảnh chụp màn hình"
+          }
+        }
+      }
+    },
+    "Choose a Space" : {
+      "comment" : "Folder picker sheet title. Distinct key from \"Space\", which the password generator uses for the whitespace separator character.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn nhóm"
           }
         }
       }
@@ -2253,17 +2419,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chọn icon"
-          }
-        }
-      }
-    },
-    "Choose a Space" : {
-      "comment" : "Folder picker sheet title. Distinct key from \"Space\", which the password generator uses for the whitespace separator character.",
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chọn nhóm"
           }
         }
       }
@@ -2603,6 +2758,16 @@
         }
       }
     },
+    "Conflicting logins" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng nhập mâu thuẫn"
+          }
+        }
+      }
+    },
     "Connect to the internet so your private-email aliases can be turned off before erasing." : {
       "localizations" : {
         "vi" : {
@@ -2639,6 +2804,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiếp tục"
+          }
+        }
+      }
+    },
+    "Continue fixing %lld issues" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp tục xử lý %lld vấn đề"
           }
         }
       }
@@ -3768,6 +3943,16 @@
         }
       }
     },
+    "Dismiss this finding" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ qua phát hiện này"
+          }
+        }
+      }
+    },
     "Done" : {
       "localizations" : {
         "en" : {
@@ -3795,12 +3980,52 @@
         }
       }
     },
+    "Duplicate and conflicting items" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục trùng lặp và mâu thuẫn"
+          }
+        }
+      }
+    },
+    "Duplicate items" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục trùng lặp"
+          }
+        }
+      }
+    },
+    "Duplicates, conflicts, and broken data" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trùng lặp, mâu thuẫn và dữ liệu hỏng"
+          }
+        }
+      }
+    },
     "Edit" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chỉnh sửa"
+          }
+        }
+      }
+    },
+    "Edit item" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sửa mục"
           }
         }
       }
@@ -4289,6 +4514,16 @@
         }
       }
     },
+    "Estimated fix time: %lld minutes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thời gian xử lý ước tính: %lld phút"
+          }
+        }
+      }
+    },
     "Every account you own, your money, your photos, your conversations, hangs on a handful of passwords. We think the thing that holds them should answer to you, and no one else." : {
       "comment" : "About: hero sub body.",
       "localizations" : {
@@ -4356,6 +4591,26 @@
         }
       }
     },
+    "Excellent" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xuất sắc"
+          }
+        }
+      }
+    },
+    "Excellent vault health. No open issues in the last audit." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kho của bạn rất tốt. Không còn vấn đề nào trong lần kiểm tra gần nhất."
+          }
+        }
+      }
+    },
     "Expires %@" : {
       "localizations" : {
         "vi" : {
@@ -4411,11 +4666,22 @@
     },
     "Exposed password" : {
       "comment" : "Watchtower category: compromised passwords found in breaches.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mật khẩu bị lộ"
+          }
+        }
+      }
+    },
+    "Exposure" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mức phơi nhiễm"
           }
         }
       }
@@ -4612,11 +4878,32 @@
     },
     "Fix %lld issues below to raise your vault's security score." : {
       "comment" : "Watchtower subtitle: number of issues to fix.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khắc phục %lld vấn đề bên dưới để nâng điểm bảo mật của kho."
+          }
+        }
+      }
+    },
+    "Fix important issues" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xử lý vấn đề quan trọng"
+          }
+        }
+      }
+    },
+    "Fix issues" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xử lý vấn đề"
           }
         }
       }
@@ -5023,6 +5310,16 @@
         }
       }
     },
+    "How resistant your passwords are to guessing" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu của bạn chống đoán tốt đến đâu"
+          }
+        }
+      }
+    },
     "How your data is protected" : {
       "comment" : "A section that describes how Vaultify protects user data.",
       "isCommentAutoGenerated" : true,
@@ -5054,6 +5351,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gạch nối"
+          }
+        }
+      }
+    },
+    "I no longer use this account" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tôi không còn dùng tài khoản này"
           }
         }
       }
@@ -5197,6 +5504,16 @@
         }
       }
     },
+    "Ignore this finding" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ qua phát hiện này"
+          }
+        }
+      }
+    },
     "Immediately" : {
       "localizations" : {
         "vi" : {
@@ -5257,6 +5574,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nhập giao diện"
+          }
+        }
+      }
+    },
+    "important issues" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vấn đề quan trọng"
+          }
+        }
+      }
+    },
+    "Improve" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nên cải thiện"
           }
         }
       }
@@ -5505,6 +5842,16 @@
         }
       }
     },
+    "items with passwords" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mục có mật khẩu"
+          }
+        }
+      }
+    },
     "Items you add will appear here." : {
       "localizations" : {
         "vi" : {
@@ -5567,6 +5914,36 @@
         }
       }
     },
+    "Known leaks" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rò rỉ đã biết"
+          }
+        }
+      }
+    },
+    "Known-leak checks did not complete in this audit. Run the audit again with an internet connection." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra rò rỉ chưa hoàn tất trong lần này. Hãy chạy lại khi có kết nối internet."
+          }
+        }
+      }
+    },
+    "Known-leak checks use privacy-preserving queries. Your full password is never sent." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra rò rỉ dùng truy vấn bảo vệ quyền riêng tư. Mật khẩu đầy đủ không bao giờ được gửi đi."
+          }
+        }
+      }
+    },
     "Label" : {
       "localizations" : {
         "vi" : {
@@ -5615,6 +5992,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lớn nhất"
+          }
+        }
+      }
+    },
+    "Last audited %lld days ago" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã kiểm tra %lld ngày trước"
+          }
+        }
+      }
+    },
+    "Last audited today" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã kiểm tra hôm nay"
           }
         }
       }
@@ -5734,6 +6131,16 @@
         }
       }
     },
+    "Local checks are complete. Known-leak checks need an internet connection." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra trên máy đã xong. Kiểm tra rò rỉ cần kết nối internet."
+          }
+        }
+      }
+    },
     "Located In" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5770,6 +6177,46 @@
         }
       }
     },
+    "Logins missing details" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng nhập thiếu thông tin"
+          }
+        }
+      }
+    },
+    "Logins without a credential" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng nhập không có thông tin xác thực"
+          }
+        }
+      }
+    },
+    "Logins without a username" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng nhập chưa có tên người dùng"
+          }
+        }
+      }
+    },
+    "Logins without a website" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng nhập chưa có trang web"
+          }
+        }
+      }
+    },
     "Logins you already shared stay shared. New approval requests and invites pause until you turn this back on." : {
       "localizations" : {
         "vi" : {
@@ -5800,6 +6247,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nhấn giữ một giao diện tuỳ chỉnh để sửa, xuất hoặc xoá."
+          }
+        }
+      }
+    },
+    "Long-unreviewed items" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục lâu chưa xem lại"
           }
         }
       }
@@ -5906,6 +6363,26 @@
         }
       }
     },
+    "Loox will review:" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox sẽ xem xét:"
+          }
+        }
+      }
+    },
+    "Loox will stop reminding you about this finding. It returns if the underlying check changes." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox sẽ ngừng nhắc bạn về phát hiện này. Nó sẽ xuất hiện lại nếu nội dung kiểm tra thay đổi."
+          }
+        }
+      }
+    },
     "Lowercase (a–z)" : {
       "comment" : "A toggle to include lowercase letters in the password.",
       "isCommentAutoGenerated" : true,
@@ -5945,6 +6422,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư gửi tới email ẩn danh sẽ chuyển về đây. Đổi địa chỉ này sẽ cập nhật cho mọi email ẩn danh của danh tính này."
+          }
+        }
+      }
+    },
+    "Maintain" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo trì"
           }
         }
       }
@@ -6181,6 +6668,16 @@
         }
       }
     },
+    "Most checks happen on this device." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hầu hết kiểm tra diễn ra ngay trên thiết bị này."
+          }
+        }
+      }
+    },
     "Move" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6351,6 +6848,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không bao giờ gợi ý hay tìm trong các danh tính khác của bạn."
+          }
+        }
+      }
+    },
+    "New" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mới"
           }
         }
       }
@@ -6534,6 +7041,16 @@
         }
       }
     },
+    "Next issue" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vấn đề tiếp theo"
+          }
+        }
+      }
+    },
     "Night" : {
       "localizations" : {
         "vi" : {
@@ -6631,6 +7148,16 @@
         }
       }
     },
+    "No changes compared with the previous audit." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có thay đổi so với lần kiểm tra trước."
+          }
+        }
+      }
+    },
     "No Emergency Kit yet. Generate one to enable recovery." : {
       "comment" : "A description of the Emergency Kit.",
       "isCommentAutoGenerated" : true,
@@ -6672,6 +7199,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không có vấn đề"
+          }
+        }
+      }
+    },
+    "No issues were found in this audit." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy vấn đề nào trong lần kiểm tra này."
           }
         }
       }
@@ -6738,6 +7275,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không còn khả dụng"
+          }
+        }
+      }
+    },
+    "No longer monitored" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không còn theo dõi"
           }
         }
       }
@@ -6966,6 +7513,16 @@
         }
       }
     },
+    "Not reviewed in %lld years" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld năm chưa xem lại"
+          }
+        }
+      }
+    },
     "Not verified" : {
       "localizations" : {
         "vi" : {
@@ -7145,6 +7702,16 @@
         }
       }
     },
+    "Old and incomplete credentials" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thông tin đăng nhập cũ và chưa đầy đủ"
+          }
+        }
+      }
+    },
     "On a new device, choose “Set up from another device” → “Use Recovery Key” and scan this code to restore your vault." : {
       "localizations" : {
         "vi" : {
@@ -7313,6 +7880,16 @@
         }
       }
     },
+    "Open security settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở cài đặt bảo mật"
+          }
+        }
+      }
+    },
     "Open Settings" : {
       "localizations" : {
         "vi" : {
@@ -7330,6 +7907,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mở Vaultify"
+          }
+        }
+      }
+    },
+    "Open website" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở trang web"
           }
         }
       }
@@ -7442,6 +8029,16 @@
         }
       }
     },
+    "out of 1000" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trên 1000"
+          }
+        }
+      }
+    },
     "Overall password strength" : {
       "comment" : "Watchtower overall password strength card title.",
       "localizations" : {
@@ -7539,6 +8136,36 @@
         }
       }
     },
+    "Passkeys and verification codes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passkey và mã xác minh"
+          }
+        }
+      }
+    },
+    "Passkeys and verification codes saved in Loox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passkey và mã xác minh đã lưu trong Loox"
+          }
+        }
+      }
+    },
+    "Passkeys available" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Có thể thêm passkey"
+          }
+        }
+      }
+    },
     "Passkeys you create with Loox will appear here." : {
       "localizations" : {
         "en" : {
@@ -7613,6 +8240,36 @@
         }
       }
     },
+    "Password quality" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chất lượng mật khẩu"
+          }
+        }
+      }
+    },
+    "Password reuse" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng lại mật khẩu"
+          }
+        }
+      }
+    },
+    "Password strength" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ mạnh mật khẩu"
+          }
+        }
+      }
+    },
     "Password will be visible on this computer." : {
       "localizations" : {
         "vi" : {
@@ -7631,6 +8288,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mật khẩu không khớp"
+          }
+        }
+      }
+    },
+    "Passwords found in known leaks" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu xuất hiện trong các vụ rò rỉ"
+          }
+        }
+      }
+    },
+    "Passwords that include account details" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu chứa thông tin tài khoản"
           }
         }
       }
@@ -8449,6 +9126,16 @@
         }
       }
     },
+    "recommended improvements" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cải thiện được đề xuất"
+          }
+        }
+      }
+    },
     "Recover" : {
       "localizations" : {
         "vi" : {
@@ -8555,6 +9242,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Từ chối"
+          }
+        }
+      }
+    },
+    "Remind me later" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhắc tôi sau"
           }
         }
       }
@@ -8703,6 +9400,16 @@
         }
       }
     },
+    "Resolved" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã xử lý"
+          }
+        }
+      }
+    },
     "Restore" : {
       "localizations" : {
         "vi" : {
@@ -8758,6 +9465,26 @@
       "comment" : "A section header for a list of email aliases that can be reused.",
       "isCommentAutoGenerated" : true
     },
+    "Reuse isolation" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cách ly dùng lại"
+          }
+        }
+      }
+    },
+    "Reused and duplicate passwords" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu dùng lại và trùng lặp"
+          }
+        }
+      }
+    },
     "Reused passwords" : {
       "comment" : "Watchtower category: reused passwords.",
       "localizations" : {
@@ -8808,6 +9535,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xem tài khoản bị ảnh hưởng"
+          }
+        }
+      }
+    },
+    "Review suggested" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nên xem lại"
+          }
+        }
+      }
+    },
+    "Reviewed" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã xem xét"
+          }
+        }
+      }
+    },
+    "Reviewing your vault privately" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang xem xét kho của bạn một cách riêng tư"
           }
         }
       }
@@ -8913,6 +9670,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nhắc nhở đổi mật khẩu"
+          }
+        }
+      }
+    },
+    "Run the audit again to verify your fixes and update the score." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chạy kiểm tra lại để xác nhận các thay đổi và cập nhật điểm."
+          }
+        }
+      }
+    },
+    "Run Vault Audit" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra kho lưu trữ"
+          }
+        }
+      }
+    },
+    "Run your first audit to see your vault's health score." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chạy lần kiểm tra đầu tiên để xem điểm sức khỏe kho của bạn."
+          }
+        }
+      }
+    },
+    "Run your first audit to start tracking progress." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chạy lần kiểm tra đầu tiên để bắt đầu theo dõi tiến bộ."
           }
         }
       }
@@ -9484,6 +10281,7 @@
     },
     "Set up two-factor authentication" : {
       "comment" : "Watchtower category: enable two-factor authentication.",
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -10386,6 +11184,16 @@
         }
       }
     },
+    "Start Audit" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu kiểm tra"
+          }
+        }
+      }
+    },
     "Start Over" : {
       "localizations" : {
         "vi" : {
@@ -10448,6 +11256,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vẫn đang chờ. Bạn có thể đóng màn hình này và hoàn tất sau, hoặc bấm Kiểm tra ngay."
+          }
+        }
+      }
+    },
+    "Stop reminders for this finding" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngừng nhắc về phát hiện này"
           }
         }
       }
@@ -10976,6 +11794,46 @@
         }
       }
     },
+    "The saved one-time code secret cannot produce a code. Signing in with it would fail." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa mã một lần đã lưu không tạo được mã. Đăng nhập bằng nó sẽ thất bại."
+          }
+        }
+      }
+    },
+    "The saved website address could not be read as a valid link." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ trang web đã lưu không đọc được thành liên kết hợp lệ."
+          }
+        }
+      }
+    },
+    "The saved website address uses http, which sends data unencrypted." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ trang web đã lưu dùng http, gửi dữ liệu không mã hóa."
+          }
+        }
+      }
+    },
+    "The score is the sum of the six areas above. Fix an issue and run the audit again to see the change." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Điểm là tổng của sáu hạng mục trên. Xử lý một vấn đề rồi chạy kiểm tra lại để thấy thay đổi."
+          }
+        }
+      }
+    },
     "The share service sent an unexpected response." : {
       "localizations" : {
         "vi" : {
@@ -11006,6 +11864,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khóa kho chỉ được giải phóng sau khi xác thực Face ID / Touch ID."
+          }
+        }
+      }
+    },
+    "The website address contains unusual characters that can imitate another site. Worth a quick review." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ trang web chứa ký tự bất thường có thể giả dạng trang khác. Nên xem lại nhanh."
+          }
+        }
+      }
+    },
+    "The website address is a raw IP address. If this is not intentional, review it." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Địa chỉ trang web là địa chỉ IP thô. Nếu không phải chủ ý, hãy xem lại."
           }
         }
       }
@@ -11057,6 +11935,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tên giao diện"
+          }
+        }
+      }
+    },
+    "These accounts share one password. A breach of any one of them could put the others at risk." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các tài khoản này dùng chung một mật khẩu. Một tài khoản bị lộ có thể kéo theo các tài khoản còn lại."
+          }
+        }
+      }
+    },
+    "These items are identical copies, usually left over from an import." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các mục này là bản sao giống hệt nhau, thường sót lại sau khi nhập dữ liệu."
+          }
+        }
+      }
+    },
+    "These items use the same site and username but different passwords. One of them is likely out of date." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các mục này cùng trang và tên người dùng nhưng khác mật khẩu. Nhiều khả năng một mục đã cũ."
           }
         }
       }
@@ -11382,6 +12290,16 @@
         }
       }
     },
+    "This is not an account password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đây không phải mật khẩu tài khoản"
+          }
+        }
+      }
+    },
     "This is taking longer than usual." : {
       "localizations" : {
         "en" : {
@@ -11437,6 +12355,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "mục này"
+          }
+        }
+      }
+    },
+    "This item could use a quick review." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục này nên được xem lại nhanh."
+          }
+        }
+      }
+    },
+    "This item has not been reviewed in years. A quick check keeps it trustworthy." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục này đã nhiều năm chưa được xem lại. Kiểm tra nhanh giúp nó luôn đáng tin."
           }
         }
       }
@@ -11527,6 +12465,16 @@
         }
       }
     },
+    "This login has no password, passkey, or verification code saved." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng nhập này chưa lưu mật khẩu, passkey hay mã xác minh nào."
+          }
+        }
+      }
+    },
     "This pairing code needs a newer app version." : {
       "localizations" : {
         "vi" : {
@@ -11543,6 +12491,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passkey này không còn khả dụng."
+          }
+        }
+      }
+    },
+    "This password appears in a known leaked-password dataset. Anyone can try leaked passwords first." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu này xuất hiện trong tập dữ liệu mật khẩu bị rò rỉ. Kẻ tấn công luôn thử mật khẩu rò rỉ trước tiên."
+          }
+        }
+      }
+    },
+    "This password contains details saved with the account, such as the username or website. Anyone targeting this account could guess it." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu này chứa thông tin lưu cùng tài khoản, như tên người dùng hoặc trang web. Ai nhắm vào tài khoản này đều có thể đoán ra."
+          }
+        }
+      }
+    },
+    "This password follows patterns that cracking tools try early, such as common words, dates, or keyboard rows." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu này theo các mẫu mà công cụ dò thử rất sớm, như từ thông dụng, ngày tháng hoặc dãy phím."
           }
         }
       }
@@ -11658,6 +12636,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Màn hình này sẽ giữ mở trong khi mã đang được cấp."
+          }
+        }
+      }
+    },
+    "This site supports passkeys, but Loox does not currently have one saved for this account." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang này hỗ trợ passkey, nhưng Loox hiện chưa lưu passkey nào cho tài khoản này."
+          }
+        }
+      }
+    },
+    "This site supports verification codes, but no code is saved in Loox for this account." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang này hỗ trợ mã xác minh, nhưng chưa có mã nào được lưu trong Loox cho tài khoản này."
           }
         }
       }
@@ -11944,6 +12942,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riêng cho %@"
+          }
+        }
+      }
+    },
+    "unique passwords" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mật khẩu duy nhất"
           }
         }
       }
@@ -12373,6 +13381,26 @@
         }
       }
     },
+    "Vault Audit" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra kho"
+          }
+        }
+      }
+    },
+    "Vault cleanup" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dọn dẹp kho"
+          }
+        }
+      }
+    },
     "Vault created and Emergency Kit saved. Add your first item to get started." : {
       "comment" : "Onboarding done recap when biometrics were skipped.",
       "localizations" : {
@@ -12391,6 +13419,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã tạo kho, đã lưu Emergency Kit, đã bật %@. Thêm mục đầu tiên để bắt đầu."
+          }
+        }
+      }
+    },
+    "Vault Health" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sức khỏe kho"
+          }
+        }
+      }
+    },
+    "Vault integrity" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toàn vẹn dữ liệu"
           }
         }
       }
@@ -12446,6 +13494,16 @@
         }
       }
     },
+    "Verification codes available" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Có thể thêm mã xác minh"
+          }
+        }
+      }
+    },
     "Verified" : {
       "localizations" : {
         "en" : {
@@ -12490,6 +13548,16 @@
         }
       }
     },
+    "Very weak" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rất yếu"
+          }
+        }
+      }
+    },
     "via iCloud" : {
       "localizations" : {
         "vi" : {
@@ -12506,6 +13574,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xem tất cả"
+          }
+        }
+      }
+    },
+    "View full report" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem báo cáo đầy đủ"
           }
         }
       }
@@ -12580,6 +13658,7 @@
       }
     },
     "Watchtower" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -12683,6 +13762,16 @@
         }
       }
     },
+    "websites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trang web"
+          }
+        }
+      }
+    },
     "Websites" : {
       "localizations" : {
         "vi" : {
@@ -12693,12 +13782,52 @@
         }
       }
     },
+    "Websites that cannot be read" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang web không đọc được"
+          }
+        }
+      }
+    },
+    "Websites using an IP address" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang web dùng địa chỉ IP"
+          }
+        }
+      }
+    },
+    "Websites using http" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang web dùng http"
+          }
+        }
+      }
+    },
     "Websites will no longer offer this passkey. You may lose access if it is your only sign-in method." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Các website sẽ không còn gợi ý passkey này. Bạn có thể mất quyền truy cập nếu đây là cách đăng nhập duy nhất."
+          }
+        }
+      }
+    },
+    "Websites with unusual characters" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang web có ký tự bất thường"
           }
         }
       }
@@ -12785,6 +13914,16 @@
         }
       }
     },
+    "Whether one breach could spread to other accounts" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một vụ rò rỉ có lan sang tài khoản khác không"
+          }
+        }
+      }
+    },
     "Who guards them?" : {
       "comment" : "About: hero headline line 2 (accent).",
       "localizations" : {
@@ -12792,6 +13931,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vậy ai canh giữ chúng?"
+          }
+        }
+      }
+    },
+    "Why this score" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vì sao có điểm này"
           }
         }
       }
@@ -12855,6 +14004,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bạn luôn có thể rời đi"
+          }
+        }
+      }
+    },
+    "You have walked the whole queue." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã đi hết danh sách cần xử lý."
           }
         }
       }
