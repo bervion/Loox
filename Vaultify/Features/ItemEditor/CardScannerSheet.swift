@@ -37,12 +37,7 @@ struct CardScannerSheet: View {
                     onCapture(result)
                     dismiss()
                 }
-                VStack {
-                    Spacer()
-                    Text("Point the camera at your card")
-                        .vaultType(.subhead).foregroundStyle(.white)
-                        .padding(.bottom, 28).shadow(radius: 4)
-                }
+                CardScanReticleOverlay()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.black)
@@ -53,9 +48,77 @@ struct CardScannerSheet: View {
             .preferredColorScheme(.dark)
             .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    // Explicit white — the app accent can be dark enough to sink into
+                    // the camera preview (camera surface: literal white is exempt).
+                    Button("Cancel") { dismiss() }.tint(.white)
+                }
             }
         }
+    }
+}
+
+/// Card-shaped reticle over the live preview: dims everything except an ISO-ratio
+/// (1.586:1) rounded window, outlines it, and anchors the guidance line below it — the
+/// user instantly knows where to hold the card. Literal white/black are fine here (camera
+/// surface exemption); the overlay never intercepts touches and is purely decorative to
+/// VoiceOver except the guidance text.
+private struct CardScanReticleOverlay: View {
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width * 0.78
+            let height = width / 1.586
+            let frame = CGRect(x: (geo.size.width - width) / 2,
+                               y: geo.size.height * 0.42 - height / 2,
+                               width: width, height: height)
+            ZStack {
+                // Dim outside the card window (even-odd punch-out).
+                Path { path in
+                    path.addRect(CGRect(origin: .zero, size: geo.size))
+                    path.addRoundedRect(in: frame,
+                                        cornerSize: CGSize(width: Radius.lg, height: Radius.lg),
+                                        style: .continuous)
+                }
+                .fill(Color.black.opacity(0.45), style: FillStyle(eoFill: true))
+                .accessibilityHidden(true)
+
+                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                    .strokeBorder(.white.opacity(0.7), lineWidth: 1.5)
+                    .frame(width: frame.width, height: frame.height)
+                    .position(x: frame.midX, y: frame.midY)
+                    .accessibilityHidden(true)
+
+                cornerBrackets(frame)
+                    .accessibilityHidden(true)
+
+                Text("Point the camera at your card")
+                    .vaultType(.subhead)
+                    .foregroundStyle(.white)
+                    .shadow(radius: 4)
+                    .position(x: frame.midX, y: frame.maxY + 40)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// Four bold corner brackets on the window — the familiar scan-UI affordance.
+    private func cornerBrackets(_ frame: CGRect) -> some View {
+        let arm: CGFloat = 22
+        let inset: CGFloat = Radius.lg
+        return Path { path in
+            // Each bracket: two arms meeting at the corner, following the rounded edge.
+            for (corner, dx, dy) in [(CGPoint(x: frame.minX, y: frame.minY), 1.0, 1.0),
+                                     (CGPoint(x: frame.maxX, y: frame.minY), -1.0, 1.0),
+                                     (CGPoint(x: frame.minX, y: frame.maxY), 1.0, -1.0),
+                                     (CGPoint(x: frame.maxX, y: frame.maxY), -1.0, -1.0)] {
+                path.move(to: CGPoint(x: corner.x, y: corner.y + dy * (inset + arm)))
+                path.addLine(to: CGPoint(x: corner.x, y: corner.y + dy * inset))
+                path.addQuadCurve(to: CGPoint(x: corner.x + dx * inset, y: corner.y),
+                                  control: corner)
+                path.addLine(to: CGPoint(x: corner.x + dx * (inset + arm), y: corner.y))
+            }
+        }
+        .stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
     }
 }
 

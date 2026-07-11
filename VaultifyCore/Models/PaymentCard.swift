@@ -150,6 +150,19 @@ nonisolated enum CardExpiryFormat {
     /// Formats raw typed digits into "MM/YY", inserting the slash as soon as 2 digits are
     /// present and clamping the month once both its digits are known. Caps at 4 digits
     /// (2-digit month + 2-digit year) — 5 characters once the slash is included.
+    /// Deletion-aware variant for as-you-type editing. The plain `autoFormat` re-inserts
+    /// the slash immediately, so backspacing "12/" → "12" would bounce right back to
+    /// "12/" and the user could never delete past it. When the edit is exactly "the
+    /// slash was deleted", drop the month's trailing digit too ("12/" → "1").
+    static func autoFormat(_ input: String, previous: String) -> String {
+        if input.count < previous.count,
+           previous.hasSuffix("/"),
+           input == String(previous.dropLast()) {
+            return autoFormat(String(input.dropLast()))
+        }
+        return autoFormat(input)
+    }
+
     static func autoFormat(_ input: String) -> String {
         var digits = String(input.filter(\.isNumber).prefix(4))
         guard !digits.isEmpty else { return "" }

@@ -135,6 +135,24 @@ final class PaymentCardTests: XCTestCase {
         XCTAssertEqual(CardExpiryFormat.autoFormat("122899999"), "12/28")
     }
 
+    // Deletion-aware overload: backspacing the slash must also drop the month's trailing
+    // digit — the plain formatter would re-insert the slash immediately and the user
+    // could never delete past it.
+    func testExpiryAutoFormatDeletingSlashDropsMonthDigit() {
+        XCTAssertEqual(CardExpiryFormat.autoFormat("12", previous: "12/"), "1")
+        XCTAssertEqual(CardExpiryFormat.autoFormat("01", previous: "01/"), "0")
+    }
+
+    func testExpiryAutoFormatDeletionElsewhereFormatsNormally() {
+        // Deleting a year digit ("12/8" → "12/") keeps the slash.
+        XCTAssertEqual(CardExpiryFormat.autoFormat("12/", previous: "12/8"), "12/")
+        // Forward typing through the overload behaves like the plain formatter.
+        XCTAssertEqual(CardExpiryFormat.autoFormat("12", previous: "1"), "12/")
+        XCTAssertEqual(CardExpiryFormat.autoFormat("12/3", previous: "12/"), "12/3")
+        // Clearing the field entirely stays empty.
+        XCTAssertEqual(CardExpiryFormat.autoFormat("", previous: "1"), "")
+    }
+
     func testExpiryKnownPatternMatching() {
         XCTAssertTrue(CardExpiryFormat.matchesKnownPattern("12/28"))
         XCTAssertTrue(CardExpiryFormat.matchesKnownPattern("12/2028"))

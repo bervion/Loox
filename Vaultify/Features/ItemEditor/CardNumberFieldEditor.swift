@@ -22,11 +22,16 @@ struct CardNumberFieldEditor: View {
         return digits.count >= minLength && !PaymentCard.isLuhnValid(digits)
     }
 
+    /// Local mirror of the field text — formatting happens in `onChange` (assign-back
+    /// re-enters once, then stops). The previous reformat-via-Binding-getter pattern
+    /// dropped mid-keystroke pushes on iOS 17+, so the grouping never appeared on device.
+    @State private var text = ""
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 ZStack(alignment: .leading) {
-                    TextField("Enter card number", text: formattedBinding)
+                    TextField("Enter card number", text: $text)
                         .focused($focused)
                         .font(value.isEmpty ? VaultType.body.font : .vaultCode())
                         .platformKeyboardType(.numberPad)
@@ -56,37 +61,47 @@ struct CardNumberFieldEditor: View {
                     .themedForeground(.secondary)
             }
         }
-    }
-
-    /// Displays the brand-grouped, spaced representation while editing; writes back
-    /// digits-only (capped to the resolved brand's max length) into storage on every
-    /// keystroke — a simple "reformat on change" approach, acceptable for a plain `TextField`.
-    private var formattedBinding: Binding<String> {
-        Binding(
-            get: { PaymentCard.formattedForInput(value) },
-            set: { value = PaymentCard.normalizedForStorage($0) }
-        )
+        .onAppear { text = PaymentCard.formattedForInput(value) }
+        .onChange(of: text) { _, new in
+            // Equal to the storage projection = text was just synced FROM storage
+            // (onAppear seed, reformat re-entry, scan fill) — nothing to format.
+            guard new != PaymentCard.formattedForInput(value) else { return }
+            let formatted = PaymentCard.formattedForInput(new)
+            if formatted != new { text = formatted }
+            value = PaymentCard.normalizedForStorage(new)
+        }
+        // External write (camera scan fill) while the editor is mounted.
+        .onChange(of: value) { _, new in
+            let formatted = PaymentCard.formattedForInput(new)
+            if text != formatted { text = formatted }
+        }
     }
 }
 
-/// TEXT-only network badge (no logo assets — third-party marks are trademarked). Mirrors
-/// `PrivateEmailBadge`'s capsule chrome so both "recognized value" badges read consistently.
+/// Network badge: a SELF-DRAWN generic mark tile (user-approved 260711) — evocative
+/// colours/lettering rendered from our own SVGs in `Assets.xcassets/CardBrands`, never a
+/// third-party logo asset (trademark). The tile carries its own background, so it reads on
+/// any surface, including the tap-to-copy accent flash.
 struct CardBrandBadge: View {
     let brand: CardBrand
-    /// True while the host row is mid tap-to-copy flash (accent background) — matches
-    /// `PrivateEmailBadge`'s on-accent tint swap.
+    /// True while the host row is mid tap-to-copy flash (accent background). The mark tile
+    /// is self-contained, so no tint swap is needed — kept so call sites stay unchanged.
     var onAccentBackground = false
-    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        let theme = env.theme.active
-        Text(brand.displayName)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(onAccentBackground ? theme.color(.onAccent) : theme.color(.accent))
-            .lineLimit(1)
-            .padding(.horizontal, Space.s2)
-            .padding(.vertical, 1)
-            .background(onAccentBackground ? theme.color(.onAccent).opacity(0.22) : theme.color(.accentSoft),
-                       in: Capsule())
+        Image(brand.markAssetName)
+            .resizable()
+            .aspectRatio(48 / 32, contentMode: .fit)
+            .frame(height: 22)
+            .accessibilityLabel(Text(brand.displayName))
+    }
+}
+
+extension CardBrand {
+    /// Asset-catalog name of the self-drawn mark tile. Lives here (app target), not in
+    /// `PaymentCard.swift` — VaultifyCore compiles into the AutoFill extension, which
+    /// doesn't bundle the app's asset catalog.
+    var markAssetName: String {
+        "card_brand_\(rawValue.lowercased())"
     }
 }
