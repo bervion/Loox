@@ -1,1 +1,1 @@
-Bản cập nhật này bổ sung biểu tượng huy hiệu nhiều màu cho giao diện gọn gàng hơn, hỗ trợ riêng cho trường số điện thoại, và cải thiện khả năng đọc trên các màn hình email riêng tư, hồ sơ và chuyển đổi Space.
+Bản cập nhật cải thiện các màn hình chi tiết bảo mật và tinh chỉnh chỉ báo trạng thái, lịch sử tìm kiếm, hộp thư chuyển tiếp để trải nghiệm rõ ràng và nhất quán hơn.

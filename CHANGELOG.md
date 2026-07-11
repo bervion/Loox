@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.1] - 2026-07-11
+
+### Fixed
+- DNA-standard security subscreens and honest iCloud/mail glyphs
+- item-row status line, search recents card, forwarding inbox detail
+
+
 ## [1.26.0] - 2026-07-11
 
 ### Added
