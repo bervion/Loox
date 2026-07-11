@@ -1,19 +1,19 @@
 import SwiftUI
 
-/// Compact quick-action pill: a tinted horizontal pill with the icon badge leading and
-/// the label beside it, laid out 2×2 on Home. Half-width pills fit full Vietnamese labels
-/// (a single row of four truncated them) while keeping the band visually secondary to the
-/// credential content above (Home DNA #1). An optional live count renders as a small
-/// trailing badge rather than a prominent number, per the same rationale.
+/// Quiet quick-action tile: an elevated surface with a soft-tinted glyph chip and a
+/// primary-text label, laid out 2×2 on Home. The earlier fully-tinted pills read louder
+/// than the credential list they sit under — Home's protagonist (DNA #1) — and four
+/// saturated hues in a band broke the "calm intelligence" bar (DNA #8). The only
+/// saturated ink now is the small glyph chip; the tile itself matches the app's card
+/// surfaces. Half-width tiles fit full Vietnamese labels (a single row of four truncated
+/// them); an optional live count renders as a small soft badge, not a headline.
 ///
-/// Surface is **tinted Liquid Glass on iOS 26** (interactive), with a flat colour fill on
-/// older OSes / Reduce Transparency. These are action controls (like the tab bar), not data
-/// rows, so glass is appropriate. Foreground is always white — the tints are dark enough for
-/// legible white text/icons in both light and dark mode.
+/// Surface is **clear Liquid Glass on iOS 26** (interactive — these are action controls,
+/// like the tab bar), with an elevated card fill on older OSes / Reduce Transparency.
 struct QuickActionCard: View {
     let icon: String
     let label: LocalizedStringResource
-    let fill: Color
+    let tint: Color
     var count: Int? = nil
     let action: () -> Void
 
@@ -21,7 +21,7 @@ struct QuickActionCard: View {
 
     var body: some View {
         Button(action: action) {
-            QuickActionCardLabel(icon: icon, label: label, fill: fill, count: count)
+            QuickActionCardLabel(icon: icon, label: label, tint: tint, count: count)
         }
         .buttonStyle(QuickActionButtonStyle(reduceMotion: reduceMotion))
         .accessibilityLabel(Text(label))
@@ -33,28 +33,39 @@ struct QuickActionCard: View {
 struct QuickActionCardLabel: View {
     let icon: String
     let label: LocalizedStringResource
-    let fill: Color
+    let tint: Color
     var count: Int? = nil
 
-    /// Outer pill corner radius — shared by every quick-action pill so the glyph badge's
+    @Environment(AppEnvironment.self) private var env
+
+    /// Outer tile corner radius — shared by every quick-action tile so the glyph chip's
     /// concentric inset (below) stays consistent regardless of which action it is.
     fileprivate static let tileRadius = Radius.md
-    /// Pill inner padding — the "inset" half of the concentric-radius formula for the badge.
+    /// Tile inner padding — the "inset" half of the concentric-radius formula for the chip.
     fileprivate static let tilePadding = Space.s2
 
     var body: some View {
         HStack(spacing: Space.s2) {
+            // Soft-tinted glyph chip (same language as the Watchtower category tiles):
+            // tint at 14% for the well, full tint for the glyph.
             Color.clear
                 .frame(width: 28, height: 28)
-                .modifier(GlyphBadgeSurface())
-                .overlay(PolarisIcon(icon, size: 15).foregroundStyle(.white))
+                .background(
+                    tint.opacity(0.14),
+                    in: RoundedRectangle(
+                        cornerRadius: Radius.concentric(outer: Self.tileRadius,
+                                                        inset: Self.tilePadding),
+                        style: .continuous))
+                .overlay(PolarisIcon(icon, size: 15).foregroundStyle(tint))
 
             Text(label)
                 .vaultType(.subhead)
                 .fontWeight(.semibold)
-                .foregroundStyle(.white)
+                .themedForeground(.primary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                // 0.75 floor: "Generate Password" is the longest label and needs it at
+                // SE width; DNA allows scale-down as a last resort, never below 0.7.
+                .minimumScaleFactor(0.75)
 
             Spacer(minLength: 0)
 
@@ -65,72 +76,56 @@ struct QuickActionCardLabel: View {
         .padding(.horizontal, Self.tilePadding)
         .padding(.vertical, Self.tilePadding)
         .frame(maxWidth: .infinity, minHeight: Metric.hitMin)
-        .modifier(QuickActionCardSurface(fill: fill))
+        .modifier(QuickActionCardSurface(tileRadius: Self.tileRadius))
         .contentShape(.rect(cornerRadius: Self.tileRadius))
     }
 
-    /// Small trailing badge — counts are secondary information now, not the pill's headline.
+    /// Small trailing badge — counts are secondary information, not the tile's headline.
     @ViewBuilder
     private func countBadge(_ count: Int) -> some View {
         Text("\(min(count, 99))")
             .vaultType(.caption)
             .fontWeight(.bold)
-            .foregroundStyle(fill)
+            .foregroundStyle(tint)
             .padding(Space.s1)
             .frame(minWidth: 18, minHeight: 18)
-            .background(.white.opacity(0.92), in: Circle())
+            .background(tint.opacity(0.14), in: Circle())
     }
 }
 
-/// Tile surface: tinted Liquid Glass on iOS 26 (interactive), flat colour fill otherwise.
-/// Mirrors the tab-bar surface's guard strategy (`#if compiler` + `#available` + Reduce
-/// Transparency fallback) so a pre-Xcode-26 CI build never sees the `glassEffect` symbol.
+/// Tile surface: clear interactive Liquid Glass on iOS 26, elevated card fill with a
+/// hairline border otherwise. Mirrors the tab-bar surface's guard strategy
+/// (`#if compiler` + `#available` + Reduce Transparency fallback) so a pre-Xcode-26
+/// CI build never sees the `glassEffect` symbol.
 private struct QuickActionCardSurface: ViewModifier {
-    let fill: Color
+    let tileRadius: CGFloat
+    @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: QuickActionCardLabel.tileRadius, style: .continuous)
+        let theme = env.theme.active
+        let shape = RoundedRectangle(cornerRadius: tileRadius, style: .continuous)
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
-            content.glassEffect(.regular.tint(fill).interactive(), in: shape)
+            content.glassEffect(.regular.interactive(), in: shape)
         } else {
-            content.background(fill, in: shape)
+            content
+                .background(Color(rgb: theme.elevatedBackground), in: shape)
+                .overlay(shape.strokeBorder(Color(rgb: theme.separator), lineWidth: 0.5))
         }
         #else
-        content.background(fill, in: shape)
-        #endif
-    }
-}
-
-/// Glyph badge surface: clear Liquid Glass on iOS 26 (reads as a glass well inset into the
-/// tinted tile), else a subtle dark fill. Same guard strategy as the tile surface. Radius is
-/// concentric to the tile's own radius + inset so the nested corners stay visually parallel
-/// (Design DNA #3) instead of pinched or flared.
-private struct GlyphBadgeSurface: ViewModifier {
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    func body(content: Content) -> some View {
-        let radius = Radius.concentric(outer: QuickActionCardLabel.tileRadius, inset: QuickActionCardLabel.tilePadding)
-        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        #if compiler(>=6.2)
-        if #available(iOS 26, macOS 26, *), !reduceTransparency {
-            content.glassEffect(.regular, in: shape)
-        } else {
-            content.background(Color.black.opacity(0.18), in: shape)
-        }
-        #else
-        content.background(Color.black.opacity(0.18), in: shape)
+        content
+            .background(Color(rgb: theme.elevatedBackground), in: shape)
+            .overlay(shape.strokeBorder(Color(rgb: theme.separator), lineWidth: 0.5))
         #endif
     }
 }
 
 /// Wraps content in a `GlassEffectContainer` on iOS 26 so every `glassEffect` inside shares
-/// one backdrop layer: a dense glass cluster (4 tiles + their badges) then renders in a
-/// single offscreen pass and updates together, instead of each re-sampling independently.
-/// This removes the "glassEffect tried to update multiple times per frame" warning on theme
-/// changes and cuts the GPU cost (each glass otherwise needs ~3 offscreen textures). No-op on
-/// older OSes.
+/// one backdrop layer: a dense glass cluster (4 tiles) then renders in a single offscreen
+/// pass and updates together, instead of each re-sampling independently. This removes the
+/// "glassEffect tried to update multiple times per frame" warning on theme changes and cuts
+/// the GPU cost (each glass otherwise needs ~3 offscreen textures). No-op on older OSes.
 struct VaultGlassGroup<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -162,31 +157,31 @@ private struct QuickActionButtonStyle: ButtonStyle {
 // MARK: - Convenience factories for the canonical Home quick actions
 
 extension QuickActionCard {
-    /// Teal — decorative, fixed per DS spec.
-    static let tealFill = VaultColors.dynamic(light: 0x0E8A7D, dark: 0x1DB8A6)
-    /// Purple — decorative, fixed per DS spec.
-    static let purpleFill = VaultColors.dynamic(light: 0x7C3AED, dark: 0x9D65F5)
-    /// Green — decorative, fixed per DS spec.
-    static let greenFill = VaultColors.dynamic(light: 0x0A8F3C, dark: 0x1DB356)
+    /// Teal — decorative glyph tint, fixed per DS spec.
+    static let tealTint = VaultColors.dynamic(light: 0x0E8A7D, dark: 0x1DB8A6)
+    /// Purple — decorative glyph tint, fixed per DS spec.
+    static let purpleTint = VaultColors.dynamic(light: 0x7C3AED, dark: 0x9D65F5)
+    /// Green — decorative glyph tint, fixed per DS spec.
+    static let greenTint = VaultColors.dynamic(light: 0x0A8F3C, dark: 0x1DB356)
 
     static func generate(action: @escaping () -> Void) -> QuickActionCard {
         QuickActionCard(
             icon: Icons.refresh,
             label: LocalizedStringResource("Generate Password").inAppLocalized,
-            fill: tealFill, action: action)
+            tint: tealTint, action: action)
     }
 
     static func totp(count: Int, action: @escaping () -> Void) -> QuickActionCard {
         QuickActionCard(
             icon: Icons.clock,
             label: LocalizedStringResource("2FA Codes").inAppLocalized,
-            fill: purpleFill, count: count, action: action)
+            tint: purpleTint, count: count, action: action)
     }
 
     static func watchtower(count: Int, action: @escaping () -> Void) -> QuickActionCard {
         QuickActionCard(
             icon: Icons.watchtower,
             label: LocalizedStringResource("Watchtower").inAppLocalized,
-            fill: greenFill, count: count, action: action)
+            tint: greenTint, count: count, action: action)
     }
 }
