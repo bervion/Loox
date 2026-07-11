@@ -66,11 +66,12 @@ struct HomeScreen: View {
         return sorted.filter(\.pinned) + sorted.filter { !$0.pinned }
     }
 
-    /// Whole-vault security issues (weak + reused + missing 2FA) for the Watchtower badge —
-    /// matches the Watchtower screen's synchronous count (HIBP/pwned excluded; that needs the
-    /// network). Not folder-scoped: Watchtower audits the entire vault.
+    /// Security issues (weak + reused + missing 2FA) for the Watchtower badge —
+    /// matches the Watchtower screen's synchronous count (HIBP/pwned excluded; that
+    /// needs the network). Scoped to the ACTIVE persona, exactly like the
+    /// Watchtower screen, so the badge and the screen never disagree.
     private func recomputeWatchtowerCount() {
-        let health = PasswordAudit.analyze(env.repository.items)
+        let health = PasswordAudit.analyze(env.repository.activePersonaItems)
         watchtowerIssueCount = health.weak.count + health.reused.count + health.missing2FA.count
     }
 
@@ -124,14 +125,17 @@ struct HomeScreen: View {
             ZStack(alignment: .top) {
                 Group {
                     // A vault that's empty but RECEIVING shares still has a feed.
+                    // Empty states keep the PROFILE ROW: with no Space or vault the
+                    // way out is often switching persona — hiding the switcher
+                    // stranded the user on the empty identity.
                     if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
-                        emptyVaultState
+                        emptyStateScaffold { emptyVaultState }
                     } else if env.repository.activePersonaItems.isEmpty && env.sharedItems.items.isEmpty {
                         // The vault overall has data, but the ACTIVE persona has nothing to
                         // show (no owned Space yet, or an owned Space with zero items) — the
                         // global gate above would otherwise fall through to `scrollContent`
                         // and render the "All Spaces (0)" scaffolding with an empty card.
-                        personaEmptyState
+                        emptyStateScaffold { personaEmptyState }
                     } else {
                         scrollContent
                     }
@@ -436,35 +440,40 @@ struct HomeScreen: View {
     private var quickActionsGrid: some View {
         // One GlassEffectContainer for all glass views (4 pills + badges) → a single
         // backdrop layer; fixes the per-frame glass-update warning on theme changes.
+        // NON-lazy rows on purpose: LazyVGrid cell recycling churned the glass
+        // identities when a persona switch re-rendered Home, leaving the first
+        // row as empty coalesced glass blobs on iOS 26.
         VaultGlassGroup {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3),
-                            GridItem(.flexible(), spacing: Space.s3)],
-                  spacing: Space.s3) {
-            // Add — presents the item-type menu (uses ic_page_add, matches the header).
-            Menu {
-                newItemMenuItems
-            } label: {
-                QuickActionCardLabel(
-                    icon: Icons.pageAdd,
-                    label: LocalizedStringResource("Add Item").inAppLocalized,
-                    tint: Color(rgb: env.theme.active.accent)
-                )
-            }
-            // Plain tile menu — macOS would otherwise draw a bordered pull-down button
-            // around the whole tile, breaking the compact row's visual consistency.
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .accessibilityLabel(Text("Add Item"))
+        VStack(spacing: Space.s3) {
+            HStack(spacing: Space.s3) {
+                // Add — presents the item-type menu (uses ic_page_add, matches the header).
+                Menu {
+                    newItemMenuItems
+                } label: {
+                    QuickActionCardLabel(
+                        icon: Icons.pageAdd,
+                        label: LocalizedStringResource("Add Item").inAppLocalized,
+                        tint: Color(rgb: env.theme.active.accent)
+                    )
+                }
+                // Plain tile menu — macOS would otherwise draw a bordered pull-down button
+                // around the whole tile, breaking the compact row's visual consistency.
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .accessibilityLabel(Text("Add Item"))
 
-            QuickActionCard.generate {
-                showGenerator = true
+                QuickActionCard.generate {
+                    showGenerator = true
+                }
             }
-            QuickActionCard.totp(count: totpItems.count) {
-                showTotpList = true
-            }
-            QuickActionCard.watchtower(count: watchtowerIssueCount) {
-                NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil)
+            HStack(spacing: Space.s3) {
+                QuickActionCard.totp(count: totpItems.count) {
+                    showTotpList = true
+                }
+                QuickActionCard.watchtower(count: watchtowerIssueCount) {
+                    NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil)
+                }
             }
         }
         }
@@ -625,6 +634,27 @@ struct HomeScreen: View {
     }
 
     // MARK: Empty vault state
+
+    /// Shared chrome for both empty states: the header spacer + the persona
+    /// profile row above the empty content, inside a scroll view — the same
+    /// top structure as `scrollContent`, so switching identity stays possible
+    /// (and the header blur keeps working) even when there is nothing to list.
+    private func emptyStateScaffold<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
+                VStack(alignment: .leading, spacing: Space.s6) {
+                    profileRow
+                    content()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, Space.s8)
+                }
+                .padding(.horizontal, Space.gutter)
+                .padding(.bottom, TabBarMetric.contentBottomInset)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
 
     private var emptyVaultState: some View {
         VStack(spacing: Space.s6) {

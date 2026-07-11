@@ -31,6 +31,7 @@ struct ItemEditorScreen: View {
     @State private var pendingAliasID: String?
     @State private var aliasMissingEmail = false
     @State private var aliasError = false
+    @State private var showEmailSuggestions = false
 
     init(target: EditorTarget, preselectedFolderId: String? = nil) {
         self.target = target
@@ -99,53 +100,12 @@ struct ItemEditorScreen: View {
                 // row width), so zero horizontal inset lines the avatar/title up with them.
                 .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s4, trailing: 0))
 
-                // Persona-scoped email suggestions: create a private email (relay),
-                // reuse an existing alias for this site (also the "switch back to
-                // private email" path when editing a login that currently holds the
-                // real address), or fill a plain username suggestion. Hidden once the
-                // Credentials field already holds an attached alias — that state gets
-                // its own recognition + detach treatment inside `LoginEditorSections`.
-                if draft.category == .login, attachedPrivateEmailMatch == nil,
-                   (RelayFeature.activeAliasesEnabled && (createAliasAvailable || !aliasSuggestions.isEmpty))
-                       || (isNew && !usernameSuggestions.isEmpty) {
-                    Section {
-                        VStack(alignment: .leading, spacing: Space.s2) {
-                            Text("Suggested email")
-                                .vaultType(.caption).fontWeight(.medium)
-                                .themedForeground(.secondary)
-                                .padding(.horizontal, Space.gutter)
-                            // Full-bleed horizontal scroller (no card wrapper) — the
-                            // section owns zero side insets below, so this ScrollView
-                            // already spans the whole row width; only its own content
-                            // gets the gutter inset, letting chips scroll edge-to-edge
-                            // instead of clipping at a boxed card border.
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: Space.s2) {
-                                    if RelayFeature.activeAliasesEnabled, createAliasAvailable {
-                                        createPrivateEmailChip
-                                    }
-                                    // Reuse before create: an existing alias for this
-                                    // site/persona is never re-minted.
-                                    ForEach(aliasSuggestions) { alias in
-                                        suggestionChip(AliasAddress.display(
-                                            localPart: alias.localPart, status: alias.status,
-                                            relayDomain: alias.emailDomain)) { _ in
-                                            selectAliasSuggestion(alias)
-                                        }
-                                    }
-                                    ForEach(usernameSuggestions, id: \.self) { value in
-                                        suggestionChip(value) { applyUsernameSuggestion($0) }
-                                    }
-                                }
-                                .padding(.horizontal, Space.gutter)
-                                .padding(.vertical, 2)
-                            }
-                        }
-                    }
-                    .listRowInsets(EdgeInsets(top: Space.s2, leading: 0, bottom: Space.s2, trailing: 0))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
+                // Email suggestions moved OFF the page: they now live behind the
+                // floating "Private Email" bubble that appears while the
+                // username/email field is focused (same pattern as the password
+                // generate bubble) and open as a bottom sheet — the old always-on
+                // horizontal chip strip washed into the background and scrolled
+                // awkwardly above the form.
 
                 // Login gets grouped sections (Credentials · Websites · Custom · Notes);
                 // other categories keep one flat, reorderable field list.
@@ -293,19 +253,121 @@ struct ItemEditorScreen: View {
             GeometryReader { proxy in
                 if let value {
                     let rect = proxy[value.bounds]
-                    GenerateChip {
-                        // Resign the focused field before presenting the generator
-                        // sheet. Otherwise it stays first responder behind the sheet
-                        // and re-raises the keyboard when a menu opens inside it.
-                        dismissKeyboard()
-                        generatingFieldID = value.fieldID
+                    Group {
+                        if value.kind == .password {
+                            GenerateChip {
+                                // Resign the focused field before presenting the generator
+                                // sheet. Otherwise it stays first responder behind the sheet
+                                // and re-raises the keyboard when a menu opens inside it.
+                                dismissKeyboard()
+                                generatingFieldID = value.fieldID
+                            }
+                        } else if privateEmailBubbleAvailable {
+                            PrivateEmailChip {
+                                dismissKeyboard()
+                                showEmailSuggestions = true
+                            }
+                        }
                     }
-                        .offset(x: rect.minX, y: rect.maxY + 4)
-                        .transition(.scale(scale: 0.9, anchor: .topLeading).combined(with: .opacity))
+                    .offset(x: rect.minX, y: rect.maxY + 4)
+                    .transition(.scale(scale: 0.9, anchor: .topLeading).combined(with: .opacity))
                 }
             }
             .animation(.spring(response: 0.32, dampingFraction: 0.82), value: value?.fieldID)
         }
+        // Email suggestions: create a per-site private email (relay), reuse an
+        // existing alias (also the "switch back to private email" path when the
+        // login currently holds the real address), or fill a plain username
+        // suggestion. Opened from the floating bubble on the focused field.
+        .sheet(isPresented: $showEmailSuggestions) { emailSuggestionSheet }
+    }
+
+    /// Whether the floating private-email bubble has anything to offer. Hidden once
+    /// the Credentials field already holds an attached alias — that state gets its
+    /// own recognition + detach treatment inside `LoginEditorSections`.
+    private var privateEmailBubbleAvailable: Bool {
+        draft.category == .login && attachedPrivateEmailMatch == nil
+            && ((RelayFeature.activeAliasesEnabled && (createAliasAvailable || !aliasSuggestions.isEmpty))
+                || (isNew && !usernameSuggestions.isEmpty))
+    }
+
+    /// Bottom sheet listing the private-email actions as full rows — the previous
+    /// horizontal chip strip washed into the grouped background and clipped long
+    /// addresses; rows give each suggestion honest width and a clear tap target.
+    private var emailSuggestionSheet: some View {
+        VaultSheetScaffold(title: "Suggested email",
+                           leading: { EmptyView() },
+                           trailing: { SheetDismissButton("Done") }) {
+            List {
+                if RelayFeature.activeAliasesEnabled, createAliasAvailable {
+                    Section {
+                        Button { createPrivateEmail() } label: {
+                            HStack(spacing: Space.s3) {
+                                if creatingAlias {
+                                    ProgressView().controlSize(.small)
+                                } else {
+                                    PolarisIcon(Icons.mail, size: Metric.iconInline).themedForeground(.accent)
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Create private email").vaultType(.body).themedForeground(.accent)
+                                    if let host = draft.autofillHost {
+                                        Text("Unique for \(host)")
+                                            .vaultType(.caption).themedForeground(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                        .disabled(creatingAlias)
+                    }
+                    .listRowBackground(VaultColors.surface)
+                }
+                if !aliasSuggestions.isEmpty {
+                    // Reuse before create: an existing alias for this site/persona
+                    // is never re-minted.
+                    Section("Reuse") {
+                        ForEach(aliasSuggestions) { alias in
+                            Button {
+                                selectAliasSuggestion(alias)
+                                showEmailSuggestions = false
+                            } label: {
+                                Text(verbatim: AliasAddress.display(
+                                    localPart: alias.localPart, status: alias.status,
+                                    relayDomain: alias.emailDomain))
+                                    .vaultType(.body).themedForeground(.primary)
+                                    .lineLimit(1).truncationMode(.middle)
+                            }
+                        }
+                    }
+                    .listRowBackground(VaultColors.surface)
+                }
+                if isNew, !usernameSuggestions.isEmpty {
+                    Section("Usernames") {
+                        ForEach(usernameSuggestions, id: \.self) { value in
+                            Button {
+                                applyUsernameSuggestion(value)
+                                showEmailSuggestions = false
+                            } label: {
+                                Text(verbatim: value)
+                                    .vaultType(.body).themedForeground(.primary)
+                                    .lineLimit(1).truncationMode(.middle)
+                            }
+                        }
+                    }
+                    .listRowBackground(VaultColors.surface)
+                }
+            }
+            .alert(Text("Add an email first"), isPresented: $aliasMissingEmail) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
+            }
+            .alert(Text("Couldn’t reach the relay"), isPresented: $aliasError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Check your connection and iCloud, then try again.")
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     // MARK: Header pieces
@@ -464,61 +526,6 @@ struct ItemEditorScreen: View {
         env.capabilities.availability(.privateEmail, operation: .create) == .available
     }
 
-    private var createPrivateEmailChip: some View {
-        Button { createPrivateEmail() } label: {
-            HStack(spacing: Space.s2) {
-                if creatingAlias {
-                    ProgressView().controlSize(.small)
-                } else {
-                    PolarisIcon(Icons.mail, size: 13).themedForeground(.accent)
-                }
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Create private email").vaultType(.footnote).themedForeground(.accent)
-                    if let host = draft.autofillHost {
-                        Text("Unique for \(host)")
-                            .vaultType(.caption).themedForeground(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal, Space.s3)
-            .padding(.vertical, Space.s2)
-            .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .disabled(creatingAlias)
-        .alert(Text("Add an email first"), isPresented: $aliasMissingEmail) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
-        }
-        .alert(Text("Couldn’t reach the relay"), isPresented: $aliasError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Check your connection and iCloud, then try again.")
-        }
-    }
-
-    /// Max chip width so a long alias/username can't blow out the row at SE
-    /// width — text truncates in the MIDDLE so both the distinguishing prefix
-    /// and the `@domain` suffix stay legible (a tail truncation would hide the
-    /// domain entirely, the part that actually tells two aliases apart).
-    private let suggestionChipMaxWidth: CGFloat = 180
-
-    private func suggestionChip(_ value: String, apply: @escaping (String) -> Void) -> some View {
-        Button { apply(value) } label: {
-            Text(verbatim: value)
-                .vaultType(.footnote)
-                .themedForeground(.accent)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .frame(maxWidth: suggestionChipMaxWidth, alignment: .leading)
-                .padding(.horizontal, Space.s3)
-                .padding(.vertical, Space.s2)
-                .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-
     /// Reserve → activate a per-site alias and fill it in. On failure the alias
     /// stays `reserved` (resumable, manageable in Private Email) — never
     /// auto-deleted, and the address is never shown as usable (INV-PE02). No
@@ -549,6 +556,7 @@ struct ItemEditorScreen: View {
                     fillEmail(AliasAddress.display(localPart: live.localPart, status: live.status,
                                                    relayDomain: live.emailDomain))
                     if isNew { pendingAliasID = id }
+                    showEmailSuggestions = false   // filled — the sheet's job is done
                 }
             } catch {
                 aliasError = true

@@ -27,8 +27,10 @@ struct PressableSurfaceStyle: ButtonStyle {
 
 // MARK: - CategoryRow
 
-/// A tappable row representing one issue category in the "Cần xử lý" list.
-/// Shows an icon tile, title, subtitle ("N mục…"), a count badge, and a chevron.
+/// Row content for one issue category in the "Cần xử lý" list: icon tile, title,
+/// subtitle ("N mục…"), a count badge, and a chevron. A plain LABEL by design —
+/// the host wraps it in a `NavigationLink` (the previous inner `Button` with an
+/// empty action swallowed the link's tap, so the rows navigated nowhere).
 struct CategoryRow: View {
     let icon: String
     let tintRole: ThemeRole
@@ -37,46 +39,39 @@ struct CategoryRow: View {
     /// because string-interpolated counts cannot be expressed as LocalizedStringResource.
     let subtitle: String
     let count: Int
-    let onTap: () -> Void
-
-    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        let theme = env.theme.active
-        Button(action: onTap) {
-            HStack(spacing: Space.s3) {
-                // Icon tile: tinted rounded square (soft background variant)
-                IconTileBadge(icon: icon, tintRole: tintRole, size: Metric.iconTile)
+        HStack(spacing: Space.s3) {
+            // Icon tile: tinted rounded square (soft background variant)
+            IconTileBadge(icon: icon, tintRole: tintRole, size: Metric.iconTile)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .vaultType(.body)
-                        .themedForeground(.primary)
-                        // 2 lines: the longest EN title ("Set up two-factor
-                        // authentication") clips at SE width with lineLimit(1) once
-                        // the icon tile + count badge + chevron eat into the row.
-                        .lineLimit(2)
-                    Text(verbatim: subtitle)
-                        .vaultType(.footnote)
-                        .themedForeground(.secondary)
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                // Count badge
-                CountBadge(count: count, tintRole: tintRole)
-
-                PolarisIcon(Icons.chevronRight, size: 14)
-                    .themedForeground(.tertiary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .vaultType(.body)
+                    .themedForeground(.primary)
+                    // 2 lines: the longest EN title ("Set up two-factor
+                    // authentication") clips at SE width with lineLimit(1) once
+                    // the icon tile + count badge + chevron eat into the row.
+                    .lineLimit(2)
+                Text(verbatim: subtitle)
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, Space.s4)
-            .frame(minHeight: Metric.rowHeight)
-            .contentShape(.rect)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Count badge
+            CountBadge(count: count, tintRole: tintRole)
+
+            PolarisIcon(Icons.chevronRight, size: 14)
+                .themedForeground(.tertiary)
         }
-        .buttonStyle(PressableSurfaceStyle(theme: theme))
+        .padding(.horizontal, Space.s4)
+        .frame(minHeight: Metric.rowHeight)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(title))
         .accessibilityValue(Text(subtitle))
-        .accessibilityAddTraits(.isButton)
     }
 }
 
