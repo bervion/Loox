@@ -18,19 +18,24 @@ struct WatchtowerStrengthScreen: View {
         let strength: PasswordStrength
     }
 
-    /// Every analyzed password in the active persona's vault, weakest first.
-    private var entries: [Entry] {
-        env.repository.activePersonaItems.compactMap { item in
+    /// Cached in state: the pattern-aware engine over every password is far too
+    /// costly per render (same reasoning as HomeScreen's cached analyze).
+    @State private var all: [Entry] = []
+    @State private var overallStrength = 100
+
+    private func refresh() {
+        let items = env.repository.activePersonaItems
+        all = items.compactMap { item in
             guard let password = item.passwordField?.value, !password.isEmpty else { return nil }
             return Entry(id: item.id,
                          title: item.title.isEmpty ? appString("Untitled") : item.title,
                          subtitle: item.subtitle,
                          strength: PasswordStrength.evaluate(password))
         }
+        overallStrength = PasswordAudit.analyze(items).overallStrength
     }
 
     var body: some View {
-        let all = entries
         let toFix = all.filter { $0.strength != .strong }
             .sorted { $0.strength < $1.strength }
         let strongCount = all.count - toFix.count
@@ -38,7 +43,7 @@ struct WatchtowerStrengthScreen: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    WatchtowerStrengthBar(value: PasswordAudit.analyze(env.repository.activePersonaItems).overallStrength)
+                    WatchtowerStrengthBar(value: overallStrength)
                     Text("\(strongCount) of \(all.count) passwords are strong")
                         .vaultType(.callout)
                         .themedForeground(.secondary)
@@ -76,6 +81,8 @@ struct WatchtowerStrengthScreen: View {
         .themedFormBackground()
         .navigationTitle(Text("Overall password strength"))
         .platformNavigationBarTitleDisplayMode(.inline)
+        .task { refresh() }
+        .onChange(of: env.repository.items.count) { refresh() }
     }
 
     private func distributionRow(_ tier: PasswordStrength, count: Int) -> some View {

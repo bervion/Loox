@@ -25,10 +25,11 @@ nonisolated func watchtowerGaugeAmber(_ theme: AppTheme) -> UInt32 {
     RGBMath.blend(theme.warning, 0xF5A623, 0.55)
 }
 
+/// Bands on the REAL 0–1000 audit scale (proposal thresholds 800/500).
 nonisolated func scoreBand(for score: Int) -> ScoreBand {
-    if score >= 80 {
+    if score >= 800 {
         return ScoreBand(label: "Fairly secure", role: .success)
-    } else if score >= 50 {
+    } else if score >= 500 {
         return ScoreBand(label: "Needs attention", role: .warning)
     } else {
         return ScoreBand(label: "At risk", role: .destructive)
@@ -125,12 +126,11 @@ struct WatchtowerScoreRing: View {
     @State private var settled = true
     @State private var introTask: Task<Void, Never>?
 
-    private var targetFraction: CGFloat { CGFloat(max(0, min(100, score))) / 100 }
+    private var targetFraction: CGFloat { CGFloat(max(0, min(1000, score))) / 1000 }
 
-    /// Display value on the 0–1000 scale (1Password-style): the audit still
-    /// scores 0–100; only the readout is ×10 — bigger figure, longer odometer
-    /// roll. Band thresholds and the gauge fraction stay on the audit scale.
-    private var displayTarget: Int { max(0, min(100, score)) * 10 }
+    /// The audit now scores on a real 0–1000 scale (six pillars) — the readout
+    /// shows it directly; the old ×10 display shim is gone.
+    private var displayTarget: Int { max(0, min(1000, score)) }
 
     var body: some View {
         let theme = env.theme.active

@@ -1,64 +1,71 @@
 import SwiftUI
 
-/// Typed navigation values for the Watchtower drill-downs.
+/// Typed navigation values for the Security tab drill-downs.
 /// Declared at file scope (not private) so NavigationLink can infer the type.
 enum WatchtowerCategory: Hashable {
-    case compromised, reused, weak, missing2FA
     /// The "Overall password strength" card → per-item strength breakdown.
     case strength
+    /// The Run Vault Audit flow (preflight → running → result).
+    case audit
+    /// Pillar breakdown behind the score (tap the ring).
+    case whyScore
+    /// Full report of the latest audit.
+    case fullReport
+    /// All findings of one rule (ruleID payload).
+    case findingGroup(String)
+    /// Sequential remediation queue ("Fix important issues").
+    case fixQueue
+    /// Score trend across saved audits.
+    case history
+    /// Diff of one history entry (index into the newest-first list).
+    case historyDetail(Int)
 }
 
-/// Watchtower — vault health monitor.
-///
-/// Layout (per DS Watchtower.jsx):
-///   Title "Watchtower"
-///   → WatchtowerScoreRing (270° speedometer, hero element)
-///   → Subtitle "Fix N issues below…"
-///   → WatchtowerStrengthCard  ┐ revealed ~0.3 s after ring sweep starts
-///   → "To fix" section        ┘ so the ring animates as the hero moment
-///   → HIBP toggle (bottom)
-///   → All-clear state when issueCount == 0
+/// Security — vault health overview (user-facing name; the code keeps the
+/// Watchtower prefix). Shows the LATEST COMPLETED audit: score ring, the three
+/// action groups (Act now / Improve / Maintain), and the Run Vault Audit entry.
+/// The score only ever changes when an audit completes (verify-first, never
+/// optimistic).
 struct WatchtowerScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
 
-    @State private var health = VaultHealth.empty
-    @State private var pwned: [VaultIssue] = []
-    @State private var checking = false
+    @State private var controller = AuditRunController()
+    @State private var latestPayload: AuditReportPayload?
+    @State private var health = VaultHealth.empty     // strength card + empty state
     @State private var editorTarget: EditorTarget?
     @State private var scrolledUnder = false
-    /// Bumped by pull-to-refresh so the gauge/bar intro replays (see
+    /// Bumped when new audit data arrives so the gauge intro replays (see
     /// `WatchtowerIntroGate` — tab switches alone never replay it).
     @State private var refreshCount = 0
 
-    /// Data-context identity for the intro animations: persona switch or an
-    /// explicit refresh changes it; a mere tab revisit does not.
+    /// Data-context identity for the intro animations: persona switch or a
+    /// completed audit changes it; a mere tab revisit does not.
     private var introKey: String {
         "\(env.repository.activePersona?.id ?? "-")|\(refreshCount)"
     }
 
-    private var allClear: Bool {
-        health.analyzedCount > 0 && totalIssueCount == 0
+    private var personaID: String? { env.repository.activePersona?.id }
+
+    private var sections: AuditGroupSections? {
+        let dismissed = dismissedFingerprints
+        if let report = controller.lastRun {
+            return AuditGroupSections.from(report: report, dismissed: dismissed)
+        }
+        if let latestPayload {
+            return AuditGroupSections.from(payload: latestPayload, dismissed: dismissed)
+        }
+        return nil
     }
 
-    /// Nothing to analyze yet (no items with a password, no 2FA-capable logins). Distinct
-    /// from `allClear`: without this the "To fix" card rendered with zero rows — a hollow
-    /// scaffold with a header and no content.
+    private var dismissedFingerprints: Set<String> {
+        Set(env.store.findingStates(personaID: personaID)
+            .filter { $0.value.status != FindingStatus.open.rawValue }
+            .map(\.key))
+    }
+
     private var emptyVault: Bool {
-        health.analyzedCount == 0 && totalIssueCount == 0
-    }
-
-    private var totalIssueCount: Int {
-        health.weak.count + health.reused.count + pwned.count + health.missing2FA.count
-    }
-
-    private var hibpBinding: Binding<Bool> {
-        Binding(
-            get: { env.settings.hibpEnabled },
-            set: { isOn in
-                env.settings.hibpEnabled = isOn
-                if isOn { Task { await runHIBP() } } else { pwned = [] }
-            })
+        health.analyzedCount == 0 && env.repository.activePersonaItems.isEmpty
     }
 
     var body: some View {
@@ -77,15 +84,11 @@ struct WatchtowerScreen: View {
                 }
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
-                .refreshable {
-                    refreshCount += 1   // an explicit reload IS an intro moment
-                    await fullAudit()
-                }
+                .refreshable { reload() }
 
                 // Floating header overlays the scroll content — glass blurs beneath.
-                VaultScreenHeader("Watchtower") {
+                VaultScreenHeader("Security") {
                     HeaderActionCluster {
-                        // Add — menu to choose item type to create
                         Menu {
                             ForEach(ItemCategory.allCases) { category in
                                 Button {
@@ -98,7 +101,6 @@ struct WatchtowerScreen: View {
                             PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
                         }
-                        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
                         .menuStyle(.button)
                         .buttonStyle(.plain)
                         .menuIndicator(.hidden)
@@ -112,76 +114,164 @@ struct WatchtowerScreen: View {
                              fallback: Color(rgb: env.theme.active.groupedBackground))
             .platformHiddenNavigationBar()
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
-            // Item detail navigation (tapping a row in WatchtowerCategoryScreen)
             .navigationDestination(for: String.self) { itemID in
                 ItemDetailScreen(itemID: itemID)
             }
-            // Category drill-down navigation
             .navigationDestination(for: WatchtowerCategory.self) { category in
                 categoryScreen(for: category)
             }
-            .overlay { if checking { checkingOverlay } }
-            .task { await fullAudit() }
-            // Watchtower audits the ACTIVE persona's vault — switching persona
-            // re-audits (and the introKey change replays the gauge intro).
-            .onChange(of: env.repository.activePersona?.id) {
-                Task { await fullAudit() }
-            }
+            .task { reload() }
+            // Security audits the ACTIVE persona's vault — switching persona reloads.
+            .onChange(of: env.repository.activePersona?.id) { reload() }
             .onChange(of: env.repository.items.count) {
                 health = PasswordAudit.analyze(env.repository.activePersonaItems)
+            }
+            // A completed run IS a data moment: refresh the payload + replay intro.
+            .onChange(of: controller.phase) { _, phase in
+                if phase == .finished { reload() }
+            }
+            // Lock mid-run: the plaintext snapshot inside the running task must
+            // not outlive the session — cancel immediately.
+            .onChange(of: env.session.vaultKey == nil) { _, locked in
+                if locked { controller.cancel() }
             }
         }
     }
 
-    // MARK: - Category screen factory
+    private func reload() {
+        health = PasswordAudit.analyze(env.repository.activePersonaItems)
+        if let key = env.session.vaultKey {
+            latestPayload = AuditReportStore(store: env.store).latest(personaID: personaID, key: key)
+        }
+        refreshCount += 1
+    }
+
+    // MARK: - Destinations
 
     @ViewBuilder
     private func categoryScreen(for category: WatchtowerCategory) -> some View {
         switch category {
-        case .compromised:
-            WatchtowerCategoryScreen(
-                title: "Exposed password", issues: pwned,
-                infoNote: "Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
-        case .reused:
-            WatchtowerCategoryScreen(title: "Reused passwords", issues: health.reused)
-        case .weak:
-            WatchtowerCategoryScreen(title: "Weak passwords", issues: health.weak)
-        case .missing2FA:
-            WatchtowerCategoryScreen(title: "Set up two-factor authentication", issues: health.missing2FA)
         case .strength:
             WatchtowerStrengthScreen()
+        case .audit:
+            VaultAuditFlowScreen(controller: controller)
+        case .whyScore:
+            if let latestPayload { WhyThisScoreScreen(payload: latestPayload) }
+        case .fullReport:
+            if let latestPayload { AuditFullReportScreen(payload: latestPayload) }
+        case .findingGroup(let ruleID):
+            findingGroupScreen(ruleID: ruleID)
+        case .fixQueue:
+            AuditFixQueueScreen(findings: queuedFindings,
+                                ruleVersions: controller.lastRun?.ruleVersions
+                                    ?? latestPayload?.ruleVersions ?? [:])
+        case .history:
+            AuditHistoryScreen()
+        case .historyDetail(let index):
+            AuditHistoryDetailScreen(index: index)
         }
     }
 
-    // MARK: - Score ring + subtitle
+    /// Queue source: full findings from this session's run, else saved digests.
+    private var queuedFindings: [QueuedFinding] {
+        if let report = controller.lastRun { return report.findings.map(QueuedFinding.init) }
+        return latestPayload?.findings.map(QueuedFinding.init) ?? []
+    }
+
+    @ViewBuilder
+    private func findingGroupScreen(ruleID: String) -> some View {
+        let itemIDs = sections.map {
+            ($0.actNow + $0.improve + $0.maintain).first { $0.ruleID == ruleID }?.itemIDs ?? []
+        } ?? []
+        let itemsByID = Dictionary(uniqueKeysWithValues: env.repository.activePersonaItems
+            .map { ($0.id, $0) })
+        let issues = itemIDs.compactMap { itemsByID[$0] }.map { item in
+            VaultIssue(itemID: item.id,
+                       itemTitle: item.title.isEmpty ? appString("Untitled") : item.title,
+                       category: item.category, kind: .weak, detail: nil)
+        }
+        WatchtowerCategoryScreen(
+            title: AuditFindingCopy.title(ruleID: ruleID),
+            issues: issues,
+            infoNote: LocalizedStringKey(String(localized: AuditFindingCopy.explanation(ruleID: ruleID))))
+    }
+
+    // MARK: - Score ring + audit meta
 
     private var ringSection: some View {
         VStack(spacing: 0) {
             HStack {
                 Spacer()
-                WatchtowerScoreRing(score: health.score, introKey: introKey)
+                NavigationLink(value: WatchtowerCategory.whyScore) {
+                    WatchtowerScoreRing(score: latestPayload?.score ?? 0, introKey: introKey)
+                }
+                .buttonStyle(.plain)
+                .disabled(latestPayload == nil)
+                .accessibilityLabel(Text("Vault Health"))
+                .accessibilityHint(Text("Why this score"))
                 Spacer()
             }
             .padding(.vertical, Space.s2)
 
-            if totalIssueCount > 0 {
-                Text("Fix \(totalIssueCount) issues below to raise your vault's security score.")
-                    .vaultType(.callout)
-                    .themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Space.s7)
-                    .padding(.bottom, Space.s3)
+            VStack(spacing: Space.s1) {
+                if let latestPayload {
+                    Text(verbatim: lastAuditedText(latestPayload.completedAt))
+                        .vaultType(.footnote)
+                        .themedForeground(.tertiary)
+                    if latestPayload.confidenceLimited {
+                        Text(verbatim: appString("Based on \(latestPayload.analyzedItemCount) items"))
+                            .vaultType(.footnote)
+                            .themedForeground(.tertiary)
+                    }
+                } else if !emptyVault {
+                    Text("Run your first audit to see your vault's health score.")
+                        .vaultType(.callout)
+                        .themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Space.s7)
+                }
             }
+            .padding(.bottom, Space.s3)
         }
+    }
+
+    private func lastAuditedText(_ date: Date) -> String {
+        let days = Calendar.current.dateComponents([.day], from: date, to: .now).day ?? 0
+        return days == 0
+            ? appString("Last audited today")
+            : appString("Last audited \(days) days ago")
     }
 
     // MARK: - Main content
 
     @ViewBuilder
     private var contentSection: some View {
-        // Shown immediately alongside the ring; the strength bar runs its own
-        // grow-in animation (see WatchtowerStrengthBar) so it animates in sync.
         VStack(spacing: Space.s5) {
+            if !emptyVault {
+                NavigationLink(value: WatchtowerCategory.audit) {
+                    HStack(spacing: Space.s3) {
+                        PolarisIcon(Icons.shield, size: Metric.iconInline)
+                        Text("Run Vault Audit")
+                            .vaultType(.headline)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                }
+                .buttonStyle(.themedProminent)
+                .padding(.horizontal, Space.gutter)
+            }
+
+            if let sections, sections.actNowCount > 0 {
+                NavigationLink(value: WatchtowerCategory.fixQueue) {
+                    Text(verbatim: appString("Continue fixing \(sections.actNowCount) issues"))
+                        .vaultType(.body)
+                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                }
+                .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
+                                                   base: Color(rgb: env.theme.active.elevatedBackground),
+                                                   cornerRadius: Radius.md, bordered: true))
+                .padding(.horizontal, Space.gutter)
+            }
+
             NavigationLink(value: WatchtowerCategory.strength) {
                 WatchtowerStrengthCard(overallStrength: health.overallStrength, introKey: introKey)
             }
@@ -192,10 +282,42 @@ struct WatchtowerScreen: View {
 
             if emptyVault {
                 emptyVaultView
-            } else if allClear {
+            } else if let sections, !sections.isEmpty {
+                if !sections.actNow.isEmpty {
+                    AuditGroupSectionView(title: LocalizedStringResource("Act now").inAppLocalized,
+                                          rows: sections.actNow, tintRole: .destructive)
+                }
+                if !sections.improve.isEmpty {
+                    AuditGroupSectionView(title: LocalizedStringResource("Improve").inAppLocalized,
+                                          rows: sections.improve, tintRole: .warning)
+                }
+                if !sections.maintain.isEmpty {
+                    AuditGroupSectionView(title: LocalizedStringResource("Maintain").inAppLocalized,
+                                          rows: sections.maintain, tintRole: .accent)
+                }
+            } else if sections != nil {
                 allClearView
-            } else {
-                issueSection
+            }
+
+            if latestPayload != nil {
+                NavigationLink(value: WatchtowerCategory.history) {
+                    HStack(spacing: Space.s3) {
+                        PolarisIcon(Icons.clock, size: Metric.iconInline)
+                            .themedForeground(.secondary)
+                        Text("Audit history")
+                            .vaultType(.body)
+                            .themedForeground(.primary)
+                        Spacer()
+                        PolarisIcon(Icons.chevronRight, size: 14)
+                            .themedForeground(.tertiary)
+                    }
+                    .padding(Space.s4)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
+                                                   base: Color(rgb: env.theme.active.elevatedBackground),
+                                                   cornerRadius: Radius.lg, bordered: true))
+                .padding(.horizontal, Space.gutter)
             }
 
             hibpToggleSection
@@ -203,102 +325,7 @@ struct WatchtowerScreen: View {
         .padding(.top, Space.s4)
     }
 
-    // MARK: - "To fix" issue list
-
-    @ViewBuilder
-    private var issueSection: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text("To fix")
-                .vaultType(.sectionLabel)
-                .themedForeground(.secondary)
-                .padding(.horizontal, Space.gutter)
-                .padding(.bottom, Space.s1)
-
-            ThemedCard(cornerRadius: Radius.lg, padding: 0) {
-                VStack(spacing: 0) {
-                    categoryRowList
-                }
-            }
-            .padding(.horizontal, Space.gutter)
-        }
-    }
-
-    @ViewBuilder
-    private var categoryRowList: some View {
-        let entries = activeCategoryEntries
-        ForEach(entries) { entry in
-            NavigationLink(value: entry.category) {
-                CategoryRow(
-                    icon: entry.icon,
-                    tintRole: entry.tintRole,
-                    title: entry.title,
-                    subtitle: entry.subtitle,
-                    count: entry.count
-                )
-            }
-            .buttonStyle(PressableSurfaceStyle(theme: env.theme.active))
-
-            // Divider after every entry except the last
-            if entry.id != entries.last?.id {
-                ThemedDivider()
-                    .padding(.leading, Space.gutter + Metric.iconTile + Space.s3)
-            }
-        }
-    }
-
-    // Build the ordered list of non-zero issue categories
-    private struct CategoryEntry: Identifiable {
-        var id: WatchtowerCategory { category }
-        let category: WatchtowerCategory
-        let icon: String
-        let tintRole: ThemeRole
-        let title: LocalizedStringResource
-        let subtitle: String
-        let count: Int
-    }
-
-    private var activeCategoryEntries: [CategoryEntry] {
-        var entries: [CategoryEntry] = []
-        if !pwned.isEmpty {
-            entries.append(CategoryEntry(
-                category: .compromised,
-                icon: Icons.shieldAlert,
-                tintRole: .destructive,
-                title: "Exposed password",
-                subtitle: appString("\(pwned.count) in a data breach"),
-                count: pwned.count))
-        }
-        if !health.reused.isEmpty {
-            entries.append(CategoryEntry(
-                category: .reused,
-                icon: Icons.copy,
-                tintRole: .warning,
-                title: "Reused passwords",
-                subtitle: appString("\(health.reused.count) share a password"),
-                count: health.reused.count))
-        }
-        if !health.weak.isEmpty {
-            entries.append(CategoryEntry(
-                category: .weak,
-                icon: Icons.lock,
-                tintRole: .warning,
-                title: "Weak passwords",
-                subtitle: appString("\(health.weak.count) easy to guess"),
-                count: health.weak.count))
-        }
-        if !health.missing2FA.isEmpty {
-            entries.append(CategoryEntry(
-                category: .missing2FA,
-                icon: Icons.checkCircle,
-                tintRole: .accent,
-                title: "Set up two-factor authentication",
-                subtitle: appString("\(health.missing2FA.count) can use 2FA"),
-                count: health.missing2FA.count))
-        }
-        return entries
-    }
-
-    // MARK: - Empty vault
+    // MARK: - Empty vault / all clear
 
     private var emptyVaultView: some View {
         HStack(spacing: Space.s3) {
@@ -309,26 +336,30 @@ struct WatchtowerScreen: View {
                 .themedForeground(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .themedCard()   // themedCard already pads Space.s4 — no extra padding
+        .themedCard()
         .padding(.horizontal, Space.gutter)
     }
-
-    // MARK: - All-clear
 
     private var allClearView: some View {
         HStack(spacing: Space.s3) {
             PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
                 .themedForeground(.success)
-            Text("Every password is strong and unique.")
+            Text("Excellent vault health. No open issues in the last audit.")
                 .vaultType(.callout)
                 .themedForeground(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .themedCard()   // themedCard already pads Space.s4 — no extra padding
+        .themedCard()
         .padding(.horizontal, Space.gutter)
     }
 
     // MARK: - HIBP toggle
+
+    private var hibpBinding: Binding<Bool> {
+        Binding(
+            get: { env.settings.hibpEnabled },
+            set: { env.settings.hibpEnabled = $0 })
+    }
 
     private var hibpToggleSection: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -342,46 +373,7 @@ struct WatchtowerScreen: View {
                 .themedForeground(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .themedCard()   // themedCard already pads Space.s4 — no extra padding
+        .themedCard()
         .padding(.horizontal, Space.gutter)
-    }
-
-    // MARK: - Checking overlay
-
-    private var checkingOverlay: some View {
-        ProgressView("Checking breaches…")
-            .padding(Space.s5)
-            .background(.regularMaterial,
-                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-    }
-
-    // MARK: - Audit logic
-
-    private func fullAudit() async {
-        health = PasswordAudit.analyze(env.repository.activePersonaItems)
-        if env.settings.hibpEnabled { await runHIBP() }
-    }
-
-    private func runHIBP() async {
-        guard !checking else { return }
-        checking = true
-        defer { checking = false }
-        var cache: [String: Int] = [:]
-        var results: [VaultIssue] = []
-        for item in env.repository.activePersonaItems {
-            guard let password = item.passwordField?.value, !password.isEmpty else { continue }
-            let count: Int
-            if let cached = cache[password] {
-                count = cached
-            } else {
-                count = await HIBPService.pwnedCount(password: password)
-                cache[password] = count
-            }
-            if count > 0 {
-                results.append(PasswordAudit.issue(item, kind: .pwned,
-                                                   detail: appString("Seen \(count) times in breaches")))
-            }
-        }
-        pwned = results
     }
 }

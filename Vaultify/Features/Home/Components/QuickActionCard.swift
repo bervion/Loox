@@ -185,7 +185,7 @@ extension QuickActionCard {
     static func watchtower(count: Int, action: @escaping () -> Void) -> QuickActionCard {
         QuickActionCard(
             icon: Icons.watchtower,
-            label: LocalizedStringResource("Watchtower").inAppLocalized,
+            label: LocalizedStringResource("Security").inAppLocalized,
             tint: greenTint, count: count, action: action)
     }
 }

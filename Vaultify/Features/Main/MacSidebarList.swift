@@ -18,7 +18,7 @@ struct MacSidebarList: View {
             Section {
                 row("All Items", icon: Icons.apps, tag: .allItems)
                 row("Favorites", icon: Icons.star, tag: .favorites)
-                row("Watchtower", icon: Icons.organization, tag: .watchtower)
+                row("Security", icon: Icons.organization, tag: .watchtower)
             }
 
             if !env.repository.folders.isEmpty {
