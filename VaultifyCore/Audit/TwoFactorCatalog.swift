@@ -70,22 +70,23 @@ nonisolated enum TwoFactorCatalog {
     /// Returns `true` if the item is confidently matched to a 2FA-supporting service.
     /// Host match on the URL is primary; title match is a conservative fallback.
     nonisolated static func supports2FA(_ item: VaultItem) -> Bool {
-        if let host = host(from: item.urlField?.value) {
-            return domains.contains { host == $0 || host.hasSuffix("." + $0) }
+        supports2FA(urls: item.urlField.map { [$0.value] } ?? [], title: item.title)
+    }
+
+    /// Raw-values variant for audit snapshots (items can carry multiple websites).
+    /// Any confidently-matched host wins; title is only consulted when NO URL
+    /// yields a host (same false-positive guard as the item overload).
+    nonisolated static func supports2FA(urls: [String], title: String) -> Bool {
+        let hosts = urls.compactMap { DomainNormalizer.host(from: $0) }
+        if !hosts.isEmpty {
+            if hosts.contains(where: { h in domains.contains { h == $0 || h.hasSuffix("." + $0) } }) {
+                return true
+            }
+            // The richer curated dataset extends (never replaces) the legacy list.
+            return ServiceCapabilityCatalog.capability(urls: urls)?.supportsTOTP == true
         }
-        // Only fall back to title when no URL is present (reduces false positives).
-        let title = item.title.lowercased()
+        let title = title.lowercased()
         return titleFragments.contains { title.contains($0) }
     }
 
-    /// Lowercased host from a possibly scheme-less URL string (strips scheme, path,
-    /// userinfo, and port). Returns nil for an empty/blank input.
-    private static func host(from raw: String?) -> String? {
-        guard var s = raw?.trimmingCharacters(in: .whitespaces).lowercased(), !s.isEmpty else { return nil }
-        if let scheme = s.range(of: "://") { s = String(s[scheme.upperBound...]) }
-        if let slash = s.firstIndex(of: "/") { s = String(s[..<slash]) }
-        if let at = s.lastIndex(of: "@") { s = String(s[s.index(after: at)...]) }
-        if let colon = s.firstIndex(of: ":") { s = String(s[..<colon]) }
-        return s.isEmpty ? nil : s
-    }
 }
