@@ -99,10 +99,12 @@ struct AuditGroupSectionView: View {
                 VStack(spacing: 0) {
                     ForEach(rows) { row in
                         NavigationLink(value: WatchtowerCategory.findingGroup(row.ruleID)) {
+                            // No subtitle: the count badge already carries the
+                            // number — a "3 items" line under it says it twice.
                             CategoryRow(icon: Self.icon(for: row.ruleID),
                                         tintRole: tintRole,
                                         title: AuditFindingCopy.title(ruleID: row.ruleID),
-                                        subtitle: appString("\(row.itemIDs.count) items"),
+                                        subtitle: "",
                                         count: row.findingCount)
                         }
                         .buttonStyle(PressableSurfaceStyle(theme: env.theme.active))

@@ -53,10 +53,15 @@ struct CategoryRow: View {
                     // authentication") clips at SE width with lineLimit(1) once
                     // the icon tile + count badge + chevron eat into the row.
                     .lineLimit(2)
-                Text(verbatim: subtitle)
-                    .vaultType(.footnote)
-                    .themedForeground(.secondary)
-                    .lineLimit(1)
+                // Empty = single-line row. The audit group rows pass no subtitle
+                // by design: "3 mục" under a title next to a "3" badge is the
+                // same fact twice, and the doubled line made rows read heavy.
+                if !subtitle.isEmpty {
+                    Text(verbatim: subtitle)
+                        .vaultType(.footnote)
+                        .themedForeground(.secondary)
+                        .lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
