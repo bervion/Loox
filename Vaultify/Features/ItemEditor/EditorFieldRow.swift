@@ -192,6 +192,7 @@ struct EditorFieldRow: View {
         case .email: return .emailAddress
         case .url: return .url
         case .number: return .numberPad
+        case .phone: return .phonePad   // has '+' — numberPad can't type international numbers
         default: return .default
         }
     }

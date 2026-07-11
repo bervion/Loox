@@ -9,10 +9,19 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
     case url
     case email
     case number
+    case phone
     case multiline
     case monospace
     case date
     case fileRef
+
+    /// A kind this build doesn't know (an item synced/imported from a NEWER app
+    /// version) decodes as `.text` instead of failing the whole item — plain
+    /// display and editing is always a safe degradation.
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = FieldKind(rawValue: raw) ?? .text
+    }
 
     /// Whether values of this kind are encrypted at rest and masked in the UI by default.
     var defaultsProtected: Bool {
@@ -41,6 +50,7 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
         case .url: return "ic_globe"
         case .email: return "ic_mail"
         case .number: return "ic_hashtag"
+        case .phone: return "ic_phone"
         case .multiline: return "ic_note"
         case .monospace: return "ic_metafields"
         case .date: return "ic_calendar"
@@ -60,6 +70,7 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
         case .url: return "Website"
         case .email: return "Email"
         case .number: return "Number"
+        case .phone: return "Phone"
         case .multiline: return "Note"
         case .monospace: return "Monospace"
         case .date: return "Date"
@@ -76,6 +87,7 @@ nonisolated enum FieldKind: String, Codable, CaseIterable, Sendable {
         case .url: "Website"
         case .email: "Email"
         case .number: "Number"
+        case .phone: "Phone"
         case .multiline: "Note"
         case .monospace: "Monospace"
         case .date: "Date"

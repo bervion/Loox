@@ -11,7 +11,7 @@ struct GeneratorScreen: View {
         VaultSheetScaffold(
             title: nil,
             leading: {
-                Button { dismiss() } label: { PolarisIcon(Icons.close, size: 18) }
+                Button { dismiss() } label: { PolarisIcon(Icons.close, size: Metric.iconInline) }
                     .accessibilityLabel(Text("Close"))
             },
             trailing: { EmptyView() }
@@ -34,7 +34,7 @@ struct PasswordGeneratorSheet: View {
         VaultSheetScaffold(
             title: nil,
             leading: {
-                Button { dismiss() } label: { PolarisIcon(Icons.close, size: 18) }
+                Button { dismiss() } label: { PolarisIcon(Icons.close, size: Metric.iconInline) }
                     .accessibilityLabel(Text("Cancel"))
             },
             trailing: { EmptyView() }

@@ -25,8 +25,11 @@ nonisolated extension AppTheme {
     var textDisabled: UInt32 { placeholderText }
 
     // MARK: Accent
-    /// Low-emphasis selected background (the resolved `selection` tint).
-    var accentSoft: UInt32 { selection }
+    /// Low-emphasis accent surface (banners, soft chips, secondary buttons).
+    /// The raw `selection` tint is tuned for LIST-ROW selection and is so pale
+    /// it sinks into the grouped background in light mode — pull it 15% toward
+    /// the accent so soft surfaces read as deliberate tinted chips everywhere.
+    var accentSoft: UInt32 { RGBMath.blend(selection, accent, 0.15) }
     /// Deepened accent for pressed filled controls.
     var accentPress: UInt32 { RGBMath.blend(accent, 0x000000, 0.16) }
 

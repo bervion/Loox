@@ -14,7 +14,7 @@ import UIKit
 /// macOS AutoFill work in a later phase.)
 
 enum PlatformKeyboardType {
-    case `default`, emailAddress, url, numberPad, decimalPad, numbersAndPunctuation
+    case `default`, emailAddress, url, numberPad, decimalPad, numbersAndPunctuation, phonePad
     #if os(iOS)
     var uiKit: UIKeyboardType {
         switch self {
@@ -24,6 +24,7 @@ enum PlatformKeyboardType {
         case .numberPad: .numberPad
         case .decimalPad: .decimalPad
         case .numbersAndPunctuation: .numbersAndPunctuation
+        case .phonePad: .phonePad
         }
     }
     #endif

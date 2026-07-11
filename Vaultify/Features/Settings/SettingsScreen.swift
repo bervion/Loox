@@ -17,7 +17,7 @@ struct SettingsScreen: View {
     /// One Online Features row: preference toggle + operator/runtime status.
     /// The toggle mutates ONLY the user preference (INV-CAP-09).
     private func onlineFeatureRow(_ id: CapabilityID, title: LocalizedStringKey,
-                                  icon: String) -> some View {
+                                  icon: String, tint: Color) -> some View {
         Toggle(isOn: Binding(
             get: { env.capabilities.userPreference(id) },
             set: { env.capabilities.setUserPreference(id, enabled: $0) })) {
@@ -28,7 +28,7 @@ struct SettingsScreen: View {
                         env.capabilities.availability(id, operation: .create)))
                         .vaultType(.caption).themedForeground(.secondary)
                 }
-            } icon: { PolarisIcon(icon) }
+            } icon: { SettingsIconBadge(icon: icon, tint: tint) }
         }
     }
 
@@ -107,34 +107,34 @@ struct SettingsScreen: View {
                 Section {
                     if BiometricAuth.isAvailable {
                         Toggle(isOn: biometricBinding) {
-                            Label { Text("Unlock with \(BiometricAuth.displayName)") } icon: { PolarisIcon(BiometricAuth.iconAsset) }
+                            Label { Text("Unlock with \(BiometricAuth.displayName)") } icon: { SettingsIconBadge(icon: BiometricAuth.iconAsset, tint: SettingsBadgeTint.green) }
                         }
                     }
                     Picker(selection: $settings.autoLock) {
                         ForEach(AutoLockTimeout.allCases) { Text($0.title).tag($0) }
                     } label: {
-                        Label { Text("Auto-Lock") } icon: { PolarisIcon(Icons.clock) }
+                        Label { Text("Auto-Lock") } icon: { SettingsIconBadge(icon: Icons.clock, tint: SettingsBadgeTint.indigo) }
                     }
                     Toggle(isOn: $settings.shakeToLock) {
-                        Label { Text("Shake to lock") } icon: { PolarisIcon(Icons.alert) }
+                        Label { Text("Shake to lock") } icon: { SettingsIconBadge(icon: Icons.alert, tint: SettingsBadgeTint.orange) }
                     }
                     NavigationLink {
                         ChangeMasterPasswordView()
                     } label: {
-                        Label { Text("Change Master Password") } icon: { PolarisIcon(Icons.key) }
+                        Label { Text("Change Master Password") } icon: { SettingsIconBadge(icon: Icons.key, tint: SettingsBadgeTint.blue) }
                     }
                     NavigationLink {
                         RegenerateKitView()
                     } label: {
-                        Label { Text("Emergency Kit") } icon: { PolarisIcon(Icons.shield) }
+                        Label { Text("Emergency Kit") } icon: { SettingsIconBadge(icon: Icons.shield, tint: SettingsBadgeTint.red) }
                     }
                     NavigationLink {
                         Level2SettingsView()
                     } label: {
-                        Label { Text("Extra Protection") } icon: { PolarisIcon(Icons.lockFill) }
+                        Label { Text("Extra Protection") } icon: { SettingsIconBadge(icon: Icons.lockFill, tint: SettingsBadgeTint.gray) }
                     }
                     Toggle(isOn: automaticPasskeyBinding) {
-                        Label { Text("Automatic passkey upgrades") } icon: { PolarisIcon(Icons.passkey) }
+                        Label { Text("Automatic passkey upgrades") } icon: { SettingsIconBadge(icon: Icons.passkey, tint: SettingsBadgeTint.purple) }
                     }
                 } header: {
                     Text("Security")
@@ -145,10 +145,10 @@ struct SettingsScreen: View {
 
                 Section {
                     Button(action: setUpPasswordAutoFill) {
-                        Label { Text("Set up password AutoFill") } icon: { PolarisIcon(Icons.key) }
+                        Label { Text("Set up password AutoFill") } icon: { SettingsIconBadge(icon: Icons.key, tint: SettingsBadgeTint.blue) }
                     }
                     Button(action: setUpVerificationCodes) {
-                        Label { Text("Set up verification codes") } icon: { PolarisIcon(Icons.clock) }
+                        Label { Text("Set up verification codes") } icon: { SettingsIconBadge(icon: Icons.clock, tint: SettingsBadgeTint.teal) }
                     }
                 } header: {
                     Text("AutoFill")
@@ -161,7 +161,7 @@ struct SettingsScreen: View {
                     // Personas + Email aliases now live in Profile (identities belong with
                     // the profile, not buried in Settings).
                     NavigationLink { ManageFoldersScreen() } label: {
-                        Label { Text("Spaces") } icon: { PolarisIcon(Icons.folder) }
+                        Label { Text("Spaces") } icon: { SettingsIconBadge(icon: Icons.folder, tint: SettingsBadgeTint.orange) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -170,14 +170,14 @@ struct SettingsScreen: View {
                 // and operator availability are independent axes — an outage
                 // shows in the status text but NEVER flips the toggle.
                 Section("Online Features") {
-                    onlineFeatureRow(.privateEmail, title: "Private Email", icon: Icons.mail)
-                    onlineFeatureRow(.shareLink, title: "Share Links", icon: Icons.share)
+                    onlineFeatureRow(.privateEmail, title: "Private Email", icon: Icons.mail, tint: SettingsBadgeTint.teal)
+                    onlineFeatureRow(.shareLink, title: "Share Links", icon: Icons.share, tint: SettingsBadgeTint.green)
                 }
                 .listRowBackground(VaultColors.surface)
 
                 Section("Privacy") {
                     Toggle(isOn: $settings.hideInAppSwitcher) {
-                        Label { Text("Hide contents in App Switcher") } icon: { PolarisIcon(Icons.hide) }
+                        Label { Text("Hide contents in App Switcher") } icon: { SettingsIconBadge(icon: Icons.hide, tint: SettingsBadgeTint.indigo) }
                     }
                     Picker(selection: $settings.clipboardClearSeconds) {
                         Text("After 15s").tag(15)
@@ -185,21 +185,21 @@ struct SettingsScreen: View {
                         Text("After 1 min").tag(60)
                         Text("Never").tag(0)
                     } label: {
-                        Label { Text("Clear clipboard") } icon: { PolarisIcon(Icons.copy) }
+                        Label { Text("Clear clipboard") } icon: { SettingsIconBadge(icon: Icons.copy, tint: SettingsBadgeTint.gray) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
 
                 Section("Notifications") {
                     NavigationLink { NotificationsSettingsView() } label: {
-                        Label { Text("Notifications") } icon: { PolarisIcon(Icons.notification) }
+                        Label { Text("Notifications") } icon: { SettingsIconBadge(icon: Icons.notification, tint: SettingsBadgeTint.red) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
 
                 Section {
                     Toggle(isOn: $settings.showWebsiteIcons) {
-                        Label { Text("Show website icons") } icon: { PolarisIcon(Icons.globe) }
+                        Label { Text("Show website icons") } icon: { SettingsIconBadge(icon: Icons.globe, tint: SettingsBadgeTint.blue) }
                     }
                 } footer: {
                     Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
@@ -210,44 +210,44 @@ struct SettingsScreen: View {
                     NavigationLink {
                         AppearanceSettingsView()
                     } label: {
-                        Label { Text("Theme & Wallpaper") } icon: { PolarisIcon("ic_apps_filled") }
+                        Label { Text("Theme & Wallpaper") } icon: { SettingsIconBadge(icon: "ic_apps_filled", tint: SettingsBadgeTint.pink) }
                     }
                     Picker(selection: $settings.preferredLanguage) {
                         Text("System").tag("system")
                         Text("English").tag("en")
                         Text("Tiếng Việt").tag("vi")
                     } label: {
-                        Label { Text("Language") } icon: { PolarisIcon(Icons.language) }
+                        Label { Text("Language") } icon: { SettingsIconBadge(icon: Icons.language, tint: SettingsBadgeTint.blue) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
 
                 Section("Watchtower") {
                     Toggle(isOn: $settings.hibpEnabled) {
-                        Label { Text("Check for known breaches") } icon: { PolarisIcon(Icons.shield) }
+                        Label { Text("Check for known breaches") } icon: { SettingsIconBadge(icon: Icons.shield, tint: SettingsBadgeTint.green) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
 
                 Section("Data") {
                     NavigationLink { SyncSettingsView() } label: {
-                        Label { Text("iCloud Sync") } icon: { PolarisIcon(Icons.sync) }
+                        Label { Text("iCloud Sync") } icon: { SettingsIconBadge(systemName: "icloud.fill", tint: SettingsBadgeTint.blue) }
                     }
                     NavigationLink { PasskeysScreen() } label: {
-                        Label { Text("Passkeys") } icon: { PolarisIcon(Icons.passkey) }
+                        Label { Text("Passkeys") } icon: { SettingsIconBadge(icon: Icons.passkey, tint: SettingsBadgeTint.purple) }
                     }
                     NavigationLink { ImportView() } label: {
-                        Label { Text("Import") } icon: { PolarisIcon(Icons.importData) }
+                        Label { Text("Import") } icon: { SettingsIconBadge(icon: Icons.importData, tint: SettingsBadgeTint.teal) }
                     }
                     NavigationLink { ExportView() } label: {
-                        Label { Text("Export") } icon: { PolarisIcon(Icons.exportData) }
+                        Label { Text("Export") } icon: { SettingsIconBadge(icon: Icons.exportData, tint: SettingsBadgeTint.orange) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
 
                 Section {
                     Toggle(isOn: approvalModeBinding) {
-                        Label { Text("Approval Mode") } icon: { PolarisIcon(Icons.share) }
+                        Label { Text("Approval Mode") } icon: { SettingsIconBadge(icon: Icons.share, tint: SettingsBadgeTint.green) }
                     }
                 } header: {
                     Text("Sharing")
@@ -260,11 +260,11 @@ struct SettingsScreen: View {
                     // Deliberate lock: the lock screen requires a slide before Face ID,
                     // otherwise the camera re-opens the vault the instant it locks.
                     Button { env.session.lock(deliberate: true) } label: {
-                        Label { Text("Lock Now") } icon: { PolarisIcon(Icons.lockFill) }
+                        Label { Text("Lock Now") } icon: { SettingsIconBadge(icon: Icons.lockFill, tint: SettingsBadgeTint.gray) }
                     }
                     Button(role: .destructive) { confirmErase = true } label: {
                         Label { Text("Erase Vault").foregroundStyle(env.theme.active.color(.destructive)) }
-                            icon: { PolarisIcon(Icons.delete).foregroundStyle(env.theme.active.color(.destructive)) }
+                            icon: { SettingsIconBadge(icon: Icons.delete, tint: SettingsBadgeTint.red) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -272,7 +272,7 @@ struct SettingsScreen: View {
                 #if DEBUG
                 Section("Debug") {
                     NavigationLink { ShareDiagnosticsView() } label: {
-                        Label { Text(verbatim: "Share Diagnostics") } icon: { PolarisIcon(Icons.share) }
+                        Label { Text(verbatim: "Share Diagnostics") } icon: { SettingsIconBadge(icon: Icons.share, tint: SettingsBadgeTint.gray) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -280,7 +280,7 @@ struct SettingsScreen: View {
 
                 Section {
                     NavigationLink { AboutView() } label: {
-                        Label { Text("About") } icon: { PolarisIcon(Icons.info) }
+                        Label { Text("About") } icon: { SettingsIconBadge(icon: Icons.info, tint: SettingsBadgeTint.gray) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)

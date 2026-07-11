@@ -574,12 +574,18 @@ struct HomeScreen: View {
         // staying correct once the invisible hit-target frames below add height.
         HStack(alignment: .center) {
             Button { showFolderPicker = true } label: {
+                // Interactive switcher must not dress as a static section label:
+                // the Space name reads in primary ink and the chevron takes the
+                // accent (matching Sort across the row), so "this opens a picker"
+                // is visible without tapping. Count stays quiet.
                 HStack(spacing: Space.s1) {
                     spaceTitleText.vaultType(.sectionLabel)
+                        .themedForeground(.primary)
                     Text(verbatim: "(\(allItems.count))").vaultType(.sectionLabel)
-                    PolarisIcon(Icons.chevronDown, size: 12).themedForeground(.tertiary)
+                        .themedForeground(.tertiary)
+                    PolarisIcon(Icons.chevronDown, size: 12)
+                        .foregroundStyle(env.theme.uiTint)
                 }
-                .themedForeground(.tertiary)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)

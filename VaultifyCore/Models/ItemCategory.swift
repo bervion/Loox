@@ -71,8 +71,7 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
             return [
                 DynamicField(label: "Full Name", kind: .text),
                 DynamicField(label: "Email", kind: .email),
-                // Phone uses .text (not .number): numberPad can't type '+', spaces, or parens.
-                DynamicField(label: "Phone", kind: .text),
+                DynamicField(label: "Phone", kind: .phone),
                 DynamicField(label: "Address", kind: .multiline),
                 DynamicField(label: "Date of Birth", kind: .date),
                 DynamicField(label: "ID Number", kind: .monospace, protected: true),

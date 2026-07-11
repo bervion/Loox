@@ -67,7 +67,7 @@ struct ItemEditorScreen: View {
                 Button {
                     hasChanges ? (confirmDiscard = true) : dismiss()
                 } label: {
-                    PolarisIcon(Icons.close, size: 16)
+                    PolarisIcon(Icons.close, size: Metric.iconInline)
                 }
                 .accessibilityLabel(Text("Cancel"))
             },
