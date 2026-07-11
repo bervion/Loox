@@ -128,7 +128,7 @@ struct EditorFieldRow: View {
             // Drawing it at Form level escapes the row-cell clipping an in-row overlay hits.
             .anchorPreference(key: GenerateChipAnchorKey.self, value: .bounds) { anchor in
                 field.kind == .password && valueFocused
-                    ? GenerateChipAnchor(fieldID: field.id, bounds: anchor) : nil
+                    ? GenerateChipAnchor(fieldID: field.id, kind: .password, bounds: anchor) : nil
             }
         case .fileRef:
             HStack(spacing: 8) {
@@ -146,6 +146,14 @@ struct EditorFieldRow: View {
                 .platformKeyboardType(keyboardType)
                 .platformAutocapitalization(autocapitalization)
                 .autocorrectionDisabled(noAutocorrect)
+                .focused($valueFocused)
+                // Username/email on a login publish their anchor while focused —
+                // the editor floats the private-email bubble there (the same
+                // pattern as the password field's generate bubble).
+                .anchorPreference(key: GenerateChipAnchorKey.self, value: .bounds) { anchor in
+                    (field.kind == .username || field.kind == .email) && valueFocused
+                        ? GenerateChipAnchor(fieldID: field.id, kind: field.kind, bounds: anchor) : nil
+                }
         }
     }
 
@@ -214,10 +222,12 @@ struct EditorFieldRow: View {
 
 // MARK: - Floating generate bubble (drawn at Form level via preference anchor)
 
-/// The password field's frame + id, published while it's focused so the editor can float the
-/// generate bubble at this anchor (over the table, not clipped by the row cell).
+/// A focused field's frame + id + kind, published so the editor can float a helper
+/// bubble at this anchor (over the table, not clipped by the row cell): the generate
+/// bubble for passwords, the private-email bubble for username/email fields.
 struct GenerateChipAnchor: Equatable {
     let fieldID: String
+    let kind: FieldKind
     let bounds: Anchor<CGRect>
 }
 
@@ -233,6 +243,28 @@ struct GenerateChipAnchorKey: PreferenceKey {
 /// translucent glass on dark, whereas white reads cleanly.
 struct GenerateChip: View {
     let action: () -> Void
+
+    var body: some View {
+        FloatingFieldChip(icon: Icons.magic, title: Text("Generate strong password"), action: action)
+    }
+}
+
+/// Floating private-email bubble for a focused username/email field — opens the
+/// suggestion sheet (create a per-site alias, reuse one). Same chrome as GenerateChip.
+struct PrivateEmailChip: View {
+    let action: () -> Void
+
+    var body: some View {
+        FloatingFieldChip(icon: Icons.mail, title: Text("Private Email"), action: action)
+    }
+}
+
+/// Shared chrome for the floating field bubbles (glass capsule, accent-in-light /
+/// neutral-in-dark foreground, full-capsule tap target).
+struct FloatingFieldChip: View {
+    let icon: String
+    let title: Text
+    let action: () -> Void
     @Environment(AppEnvironment.self) private var env
 
     private var foreground: Color {
@@ -243,9 +275,8 @@ struct GenerateChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                PolarisIcon(Icons.magic, size: 13)
-                Text("Generate strong password")
-                    .vaultType(.caption).fontWeight(.semibold)
+                PolarisIcon(icon, size: 13)
+                title.vaultType(.caption).fontWeight(.semibold)
             }
             .foregroundStyle(foreground)
             .padding(.horizontal, Space.s4)
