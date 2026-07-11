@@ -1,1 +1,1 @@
-Bản cập nhật này bổ sung thanh điều hướng mượt hơn và điểm đánh giá độ mạnh kho mật khẩu rõ ràng hơn. Nhiều lỗi hiển thị được sửa giúp ảnh đại diện, biểu tượng và bố cục nhất quán hơn. Độ tin cậy đồng bộ cũng được cải thiện.
+Bản cập nhật này bổ sung biểu tượng huy hiệu nhiều màu cho giao diện gọn gàng hơn, hỗ trợ riêng cho trường số điện thoại, và cải thiện khả năng đọc trên các màn hình email riêng tư, hồ sơ và chuyển đổi Space.

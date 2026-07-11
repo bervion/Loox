@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.26.0] - 2026-07-11
+
+### Added
+- iOS-style colored icon badges
+- dedicated phone kind with phonePad and decode fallback
+
+### Fixed
+- private email screen reads addresses-first, stronger soft surfaces
+- calmer avatar camera badge, identity icons, 44pt rows, bar-glyph sizes
+- Space switcher reads as a control, not a section label
+
+
 ## [1.25.0] - 2026-07-11
 
 ### Added

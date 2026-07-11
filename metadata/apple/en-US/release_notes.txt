@@ -1,1 +1,1 @@
-This update adds a smoother tab bar and a clearer vault strength score. Several visual fixes improve avatars, icons, and layout consistency across screens. Under the hood, sync reliability has also been improved.
+This update introduces colored icon badges for a cleaner look, adds dedicated support for phone number fields, and improves readability across private email, profile, and Space switcher screens.
