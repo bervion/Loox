@@ -42,11 +42,15 @@ nonisolated enum PasswordStrength: Int, Sendable, Comparable, CaseIterable {
         return base * (0.55 + 0.45 * repetitionFactor)
     }
 
+    /// Delegates to the pattern-aware engine so "Password1!" no longer scores
+    /// high on character classes alone. The legacy 3-tier API stays for UI
+    /// consumers; audit rules use `PasswordGrade` directly for finer severity.
     static func evaluate(_ password: String) -> PasswordStrength {
-        let bits = entropyBits(password)
-        if bits < 50 { return .weak }
-        if bits < 100 { return .medium }
-        return .strong
+        switch PasswordStrengthEngine.evaluate(password).grade {
+        case .veryWeak, .weak: return .weak
+        case .fair: return .medium
+        case .strong, .excellent: return .strong
+        }
     }
 }
 
