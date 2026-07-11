@@ -42,8 +42,10 @@ struct ThemedTintedButtonStyle: ButtonStyle {
             let theme = env.theme.active
             // Soft ACCENT fill, not a neutral control surface: on the grouped
             // sheet background a gray fill disappears entirely (same gray on
-            // gray) — the tinted rank must still read as a button.
-            let fg = isEnabled ? theme.accent : theme.textDisabled
+            // gray) — the tinted rank must still read as a button. The label is
+            // TEXT rank: `accentText` clears 4.5:1 on the soft fill, where the
+            // raw fill-tuned accent sits as low as 3.05:1 on some presets.
+            let fg = isEnabled ? theme.accentText : theme.textDisabled
             configuration.label
                 .vaultType(.headline)
                 .foregroundStyle(Color(rgb: fg))
@@ -131,7 +133,8 @@ struct ThemedCompactButtonStyle: ButtonStyle {
                 let fg = isEnabled ? theme.accentForeground : RGBMath.blend(theme.accentForeground, bg, 0.4)
                 return (bg, fg)
             case .tinted:
-                return (theme.controlBackground, isEnabled ? theme.accent : theme.textDisabled)
+                // TEXT rank on a control fill — see ThemedTintedButtonStyle.
+                return (theme.controlBackground, isEnabled ? theme.accentText : theme.textDisabled)
             }
         }
     }

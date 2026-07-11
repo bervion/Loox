@@ -39,6 +39,29 @@ nonisolated enum RGBMath {
         contrastRatio(0xFFFFFF, background) >= 3.0 ? 0xFFFFFF : 0x000000
     }
 
+    /// Smallest adjustment of `color` that clears `floor` contrast against
+    /// `background` — the Controlled Contrast guard. NON-DESTRUCTIVE by
+    /// contract: a color that already passes is returned byte-identical, so
+    /// curated presets keep their exact brand hue. A failing color blends
+    /// toward `onColor(background)` (a luminance shift — hue preserved as far
+    /// as linear blending allows) by binary search for the minimal step.
+    static func ensureContrast(_ color: UInt32, on background: UInt32, floor: Double) -> UInt32 {
+        guard contrastRatio(color, background) < floor else { return color }
+        let target = onColor(background)
+        var lo = 0.0, hi = 1.0
+        for _ in 0..<10 {
+            let mid = (lo + hi) / 2
+            if contrastRatio(blend(color, target, mid), background) >= floor {
+                hi = mid
+            } else {
+                lo = mid
+            }
+        }
+        let adjusted = blend(color, target, hi)
+        // Pathological floors near the achievable maximum: settle on the target.
+        return contrastRatio(adjusted, background) >= floor ? adjusted : target
+    }
+
     /// Per-channel linear blend of `a` toward `b` by `t` (0…1).
     static func blend(_ a: UInt32, _ b: UInt32, _ t: Double) -> UInt32 {
         let clamped = max(0, min(1, t))

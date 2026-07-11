@@ -32,6 +32,19 @@ nonisolated extension AppTheme {
     var accentSoft: UInt32 { RGBMath.blend(selection, accent, 0.15) }
     /// Deepened accent for pressed filled controls.
     var accentPress: UInt32 { RGBMath.blend(accent, 0x000000, 0.16) }
+    /// TEXT-rank accent (Controlled Contrast): the accent hue is tuned as a
+    /// FILL — several presets sit at 3.0-4.4:1 as text on soft/control fills,
+    /// below the 4.5:1 normal-text floor. This variant is the same hue nudged
+    /// in luminance until it clears 4.5:1 on BOTH tinted-control surfaces
+    /// (controlBackground and accentSoft). Use it for links, tinted-button
+    /// labels, and any accent-colored text or interactive glyph; keep raw
+    /// `accent` for fills only. Passing presets come through byte-identical.
+    /// Both guards blend the same direction (toward the mode's on-color), so
+    /// the sequential application preserves the first constraint.
+    var accentText: UInt32 {
+        let onControl = RGBMath.ensureContrast(accent, on: controlBackground, floor: 4.5)
+        return RGBMath.ensureContrast(onControl, on: accentSoft, floor: 4.5)
+    }
 
     // MARK: Separators
     /// Opaque hairline variant (for surfaces where a translucent separator is invisible).

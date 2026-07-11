@@ -76,7 +76,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Secrets/codes (SF) | `Font.vaultCode(_:weight:)` — SF, no monospaced typeface | `DesignSystem/Typography.swift` |
 | Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
 | Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
-| Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
+| Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
 | Card / divider / form bg | `ThemedCard`, `.themedCard()`, `ThemedDivider`, `.appBackground()`, `.themedFormBackground()` | `DesignSystem/Components/ThemedComponents.swift` |
 | Buttons | `.buttonStyle(.themedProminent/.themedTinted/.themedDestructive)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
 | Compact inline buttons (row-adjacent, not full-width) | `.buttonStyle(.themedCompact/.themedCompactProminent)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
@@ -84,7 +84,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Icons | `PolarisIcon(Icons.<name>, size: Metric.icon*)` | `DesignSystem/PolarisIcon.swift` |
 
 `ThemeRole` values: `primary, secondary, tertiary, disabled, iconPrimary, iconSecondary, iconDisabled,
-accent, accentSoft, onAccent, destructive, onDestructive, success, warning`. Derived tokens are computed
+accent, accentText, accentSoft, onAccent, destructive, onDestructive, success, warning`. Derived tokens are computed
 on `AppTheme` so **every** builtin and custom theme gets them without touching constructors.
 
 ### Concentricity (nested corner radii)
@@ -162,6 +162,7 @@ Required semantic tokens:
 | `accent` | Brand/action tint |
 | `onAccent` | Text/icon on accent |
 | `accentSoft` | Low-emphasis selected background |
+| `accentText` | TEXT-rank accent (Controlled Contrast): same hue, guarded to 4.5:1 on controlBackground and accentSoft. Use for links, tinted-button labels, interactive glyphs. Raw `accent` is FILL rank only (guarded 3:1 vs canvas in `recolored()`) |
 | `separator` | Hairlines and dividers |
 | `shadowAmbient` | Soft outer shadow |
 

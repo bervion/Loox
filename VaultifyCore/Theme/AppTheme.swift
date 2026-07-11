@@ -42,8 +42,16 @@ nonisolated struct AppTheme: Sendable, Equatable {
 
     /// Return a copy recolored by `accent`, deriving the accent-tied tokens
     /// (switch/check/selection/on-accent foreground).
-    func recolored(accent: UInt32) -> AppTheme {
+    func recolored(accent rawAccent: UInt32) -> AppTheme {
         var theme = self
+        // Controlled Contrast fill guard: the accent must read as a SHAPE
+        // (≥3:1, WCAG non-text) on both canvas surfaces. Curated presets pass
+        // untouched (non-destructive); an extreme input — black accent on a
+        // black theme from a future custom/import path — is pulled just far
+        // enough to stay visible instead of sinking into the background.
+        // Both guards shift the same direction (toward the mode's on-color).
+        var accent = RGBMath.ensureContrast(rawAccent, on: groupedBackground, floor: 3.0)
+        accent = RGBMath.ensureContrast(accent, on: elevatedBackground, floor: 3.0)
         theme.accent = accent
         theme.switchOn = accent
         theme.checkmark = accent
