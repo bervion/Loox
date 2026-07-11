@@ -66,11 +66,12 @@ struct HomeScreen: View {
         return sorted.filter(\.pinned) + sorted.filter { !$0.pinned }
     }
 
-    /// Whole-vault security issues (weak + reused + missing 2FA) for the Watchtower badge —
-    /// matches the Watchtower screen's synchronous count (HIBP/pwned excluded; that needs the
-    /// network). Not folder-scoped: Watchtower audits the entire vault.
+    /// Security issues (weak + reused + missing 2FA) for the Watchtower badge —
+    /// matches the Watchtower screen's synchronous count (HIBP/pwned excluded; that
+    /// needs the network). Scoped to the ACTIVE persona, exactly like the
+    /// Watchtower screen, so the badge and the screen never disagree.
     private func recomputeWatchtowerCount() {
-        let health = PasswordAudit.analyze(env.repository.items)
+        let health = PasswordAudit.analyze(env.repository.activePersonaItems)
         watchtowerIssueCount = health.weak.count + health.reused.count + health.missing2FA.count
     }
 

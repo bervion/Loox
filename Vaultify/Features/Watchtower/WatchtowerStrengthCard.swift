@@ -8,6 +8,9 @@ import SwiftUI
 struct WatchtowerStrengthBar: View {
     /// 0-100 target strength.
     let value: Int
+    /// Data-context identity (see `WatchtowerIntroGate`): the grow-in plays once
+    /// per key, not on every tab revisit. Empty = ungated (always grow on appear).
+    var introKey: String = ""
 
     @State private var shown: CGFloat = 0   // animates 0 → value on entry
     @Environment(AppEnvironment.self) private var env
@@ -32,8 +35,20 @@ struct WatchtowerStrengthBar: View {
             }
         }
         .frame(height: 14)
-        .onAppear { grow() }
-        .onChange(of: value) { _, _ in grow() }
+        .onAppear {
+            if introKey.isEmpty || WatchtowerIntroGate.bar != introKey {
+                WatchtowerIntroGate.bar = introKey
+                grow()
+            } else {
+                shown = CGFloat(value)   // same data context — no replay
+            }
+        }
+        .onChange(of: introKey) { _, new in
+            WatchtowerIntroGate.bar = new
+            grow()
+        }
+        // Silent data drift: track the new value without the entry animation.
+        .onChange(of: value) { _, new in shown = CGFloat(new) }
     }
 
     /// Grow the success fill from 0 → value (frame width animates reliably).
@@ -50,37 +65,28 @@ struct WatchtowerStrengthBar: View {
 
 // MARK: - WatchtowerStrengthCard
 
-/// Tappable card showing "Overall password strength" + a horizontal strength bar.
-/// Mirrors `StrengthCard` in Watchtower.jsx.
+/// Card content for "Overall password strength" + a horizontal strength bar.
+/// A plain LABEL by design: the host wraps it in a `NavigationLink` (a Button in
+/// here would swallow the link's tap — the card used to do exactly that, with an
+/// empty action, so tapping it did nothing).
 struct WatchtowerStrengthCard: View {
     let overallStrength: Int
-    let onTap: () -> Void
-
-    @Environment(AppEnvironment.self) private var env
+    var introKey: String = ""
 
     var body: some View {
-        let theme = env.theme.active
-        Button(action: onTap) {
-            VStack(alignment: .leading, spacing: Space.s3) {
-                HStack(spacing: Space.s2) {
-                    Text("Overall password strength")
-                        .vaultType(.headline)
-                        .themedForeground(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
-                        .themedForeground(.iconDisabled)
-                }
-                WatchtowerStrengthBar(value: overallStrength)
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(spacing: Space.s2) {
+                Text("Overall password strength")
+                    .vaultType(.headline)
+                    .themedForeground(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
+                    .themedForeground(.iconDisabled)
             }
-            .padding(Space.s4)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            WatchtowerStrengthBar(value: overallStrength, introKey: introKey)
         }
-        // ButtonStyle press state (scroll-friendly — a minimumDistance:0 DragGesture
-        // would block scrolling when a press lands on the card).
-        .buttonStyle(PressableSurfaceStyle(theme: theme,
-                                           base: Color(rgb: theme.elevatedBackground),
-                                           cornerRadius: Radius.lg, bordered: true))
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityLabel(Text("Overall password strength: \(overallStrength)%"))
-        .accessibilityAddTraits(.isButton)
     }
 }

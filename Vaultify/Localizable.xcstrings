@@ -138,6 +138,17 @@
         }
       }
     },
+    "%lld of %lld passwords are strong" : {
+      "comment" : "Password-strength drill-down summary line under the strength bar.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld trong %lld mật khẩu đạt mức mạnh"
+          }
+        }
+      }
+    },
     "%lld days" : {
       "comment" : "Rotation status short label: change due in N days.",
       "localizations" : {

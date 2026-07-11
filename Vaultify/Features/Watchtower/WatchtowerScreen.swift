@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Typed navigation values for the "To fix" drill-down categories.
+/// Typed navigation values for the Watchtower drill-downs.
 /// Declared at file scope (not private) so NavigationLink can infer the type.
 enum WatchtowerCategory: Hashable {
     case compromised, reused, weak, missing2FA
+    /// The "Overall password strength" card → per-item strength breakdown.
+    case strength
 }
 
 /// Watchtower — vault health monitor.
@@ -25,6 +27,15 @@ struct WatchtowerScreen: View {
     @State private var checking = false
     @State private var editorTarget: EditorTarget?
     @State private var scrolledUnder = false
+    /// Bumped by pull-to-refresh so the gauge/bar intro replays (see
+    /// `WatchtowerIntroGate` — tab switches alone never replay it).
+    @State private var refreshCount = 0
+
+    /// Data-context identity for the intro animations: persona switch or an
+    /// explicit refresh changes it; a mere tab revisit does not.
+    private var introKey: String {
+        "\(env.repository.activePersona?.id ?? "-")|\(refreshCount)"
+    }
 
     private var allClear: Bool {
         health.analyzedCount > 0 && totalIssueCount == 0
@@ -66,7 +77,10 @@ struct WatchtowerScreen: View {
                 }
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
-                .refreshable { await fullAudit() }
+                .refreshable {
+                    refreshCount += 1   // an explicit reload IS an intro moment
+                    await fullAudit()
+                }
 
                 // Floating header overlays the scroll content — glass blurs beneath.
                 VaultScreenHeader("Watchtower") {
@@ -108,8 +122,13 @@ struct WatchtowerScreen: View {
             }
             .overlay { if checking { checkingOverlay } }
             .task { await fullAudit() }
+            // Watchtower audits the ACTIVE persona's vault — switching persona
+            // re-audits (and the introKey change replays the gauge intro).
+            .onChange(of: env.repository.activePersona?.id) {
+                Task { await fullAudit() }
+            }
             .onChange(of: env.repository.items.count) {
-                health = PasswordAudit.analyze(env.repository.items)
+                health = PasswordAudit.analyze(env.repository.activePersonaItems)
             }
         }
     }
@@ -129,6 +148,8 @@ struct WatchtowerScreen: View {
             WatchtowerCategoryScreen(title: "Weak passwords", issues: health.weak)
         case .missing2FA:
             WatchtowerCategoryScreen(title: "Set up two-factor authentication", issues: health.missing2FA)
+        case .strength:
+            WatchtowerStrengthScreen()
         }
     }
 
@@ -138,7 +159,7 @@ struct WatchtowerScreen: View {
         VStack(spacing: 0) {
             HStack {
                 Spacer()
-                WatchtowerScoreRing(score: health.score)
+                WatchtowerScoreRing(score: health.score, introKey: introKey)
                 Spacer()
             }
             .padding(.vertical, Space.s2)
@@ -161,10 +182,12 @@ struct WatchtowerScreen: View {
         // Shown immediately alongside the ring; the strength bar runs its own
         // grow-in animation (see WatchtowerStrengthBar) so it animates in sync.
         VStack(spacing: Space.s5) {
-            WatchtowerStrengthCard(overallStrength: health.overallStrength) {
-                // Tapping strength card navigates to weak-password drill-down
-                // when there are weak items; otherwise it's informational.
+            NavigationLink(value: WatchtowerCategory.strength) {
+                WatchtowerStrengthCard(overallStrength: health.overallStrength, introKey: introKey)
             }
+            .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
+                                               base: Color(rgb: env.theme.active.elevatedBackground),
+                                               cornerRadius: Radius.lg, bordered: true))
             .padding(.horizontal, Space.gutter)
 
             if emptyVault {
@@ -211,9 +234,9 @@ struct WatchtowerScreen: View {
                     title: entry.title,
                     subtitle: entry.subtitle,
                     count: entry.count
-                ) {}
+                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableSurfaceStyle(theme: env.theme.active))
 
             // Divider after every entry except the last
             if entry.id != entries.last?.id {
@@ -335,7 +358,7 @@ struct WatchtowerScreen: View {
     // MARK: - Audit logic
 
     private func fullAudit() async {
-        health = PasswordAudit.analyze(env.repository.items)
+        health = PasswordAudit.analyze(env.repository.activePersonaItems)
         if env.settings.hibpEnabled { await runHIBP() }
     }
 
@@ -345,7 +368,7 @@ struct WatchtowerScreen: View {
         defer { checking = false }
         var cache: [String: Int] = [:]
         var results: [VaultIssue] = []
-        for item in env.repository.items {
+        for item in env.repository.activePersonaItems {
             guard let password = item.passwordField?.value, !password.isEmpty else { continue }
             let count: Int
             if let cached = cache[password] {

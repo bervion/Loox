@@ -58,9 +58,22 @@ nonisolated func scoreBand(for score: Int) -> ScoreBand {
 /// canvas so `.contentTransition(.numericText)` can roll its digits. After the
 /// intro everything freezes to a static render (no battery drain). Reduce
 /// Motion shows the settled state immediately.
+/// Session gate for the Watchtower intro animations: the intro is a data-arrival
+/// moment, not a tab decoration — it replays only when the persona changes or the
+/// user pulls to refresh (the screen encodes both in `introKey`), never on every
+/// tab switch.
+@MainActor enum WatchtowerIntroGate {
+    static var ring: String?
+    static var bar: String?
+}
+
 struct WatchtowerScoreRing: View {
 
     let score: Int
+    /// Identity of the current data context ("persona|refreshCount"). The intro
+    /// plays once per key; revisiting the tab with the same key shows the settled
+    /// dial. Empty = ungated (always play on appear).
+    var introKey: String = ""
 
     // MARK: Geometry (proportional — scaled by GeometryReader)
     private enum Geo {
@@ -147,13 +160,39 @@ struct WatchtowerScoreRing: View {
             }
         }
         .frame(width: Geo.baseWidth, height: Geo.baseHeight)
-        .onAppear { trigger() }
-        .onChange(of: score) { _, _ in trigger() }
+        .onAppear {
+            if introKey.isEmpty || WatchtowerIntroGate.ring != introKey {
+                WatchtowerIntroGate.ring = introKey
+                trigger()
+            } else {
+                settleInstantly()   // same data context — no replay on tab switch
+            }
+        }
+        .onChange(of: introKey) { _, new in
+            WatchtowerIntroGate.ring = new
+            trigger()
+        }
+        // Data drift (an item edited elsewhere while this tab stays mounted):
+        // update the readout silently — a score change is not an intro moment.
+        // Mid-intro the running clock already lands on the live target.
+        .onChange(of: score) { _, _ in
+            if !animating { settleInstantly() }
+        }
         .onDisappear { introTask?.cancel() }
         .accessibilityLabel(Text("Security score: \(displayTarget), ") + Text(band.label))
     }
 
     // MARK: - Intro trigger
+
+    /// Jump straight to the settled state (no intro) — used when the tab
+    /// reappears within the same data context or the score drifts silently.
+    private func settleInstantly() {
+        introTask?.cancel()
+        animating = false
+        rolling = false
+        displayedScore = displayTarget
+        settled = true
+    }
 
     private func trigger() {
         introTask?.cancel()
