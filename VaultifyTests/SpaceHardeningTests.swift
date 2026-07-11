@@ -83,19 +83,23 @@ final class SpaceHardeningTests: XCTestCase {
     func testLastSelectedSpaceSetGetRemove() {
         let settings = SettingsStore()
         let persona = "test-\(UUID().uuidString)"
-        defer { settings.setLastSelectedSpace(nil, persona: persona) }   // cleanup UserDefaults
+        defer { settings.clearLastSelectedSpace(persona: persona) }      // cleanup UserDefaults
 
-        XCTAssertNil(settings.lastSelectedSpace(persona: persona))       // default = All Spaces
+        XCTAssertNil(settings.lastSelectedSpace(persona: persona))       // never chose yet
         settings.setLastSelectedSpace("folder-42", persona: persona)
         XCTAssertEqual(settings.lastSelectedSpace(persona: persona), "folder-42")
-        settings.setLastSelectedSpace(nil, persona: persona)             // nil → forget
-        XCTAssertNil(settings.lastSelectedSpace(persona: persona))
+        // nil = the user EXPLICITLY chose "All Spaces" — stored as "" so it survives
+        // relaunches and Home's single-Space auto-select can't override it. It must NOT
+        // erase the key (erasing made "chose All" identical to "never chose", which
+        // re-auto-selected the single Space on every return to Home).
+        settings.setLastSelectedSpace(nil, persona: persona)
+        XCTAssertEqual(settings.lastSelectedSpace(persona: persona), "")
     }
 
     func testLastSelectedSpaceIsPerIdentity() {
         let settings = SettingsStore()
         let a = "a-\(UUID().uuidString)", b = "b-\(UUID().uuidString)"
-        defer { settings.setLastSelectedSpace(nil, persona: a); settings.setLastSelectedSpace(nil, persona: b) }
+        defer { settings.clearLastSelectedSpace(persona: a); settings.clearLastSelectedSpace(persona: b) }
         settings.setLastSelectedSpace("space-a", persona: a)
         settings.setLastSelectedSpace("space-b", persona: b)
         XCTAssertEqual(settings.lastSelectedSpace(persona: a), "space-a")

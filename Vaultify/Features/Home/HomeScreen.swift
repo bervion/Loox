@@ -80,7 +80,12 @@ struct HomeScreen: View {
     private func autoSelectSingleSpace() {
         // With shared items in play there are effectively TWO sources —
         // stay on "All Spaces" so the shares are never filtered out.
-        guard selectedFolderId == nil, env.repository.activePersonaSpaces.count == 1,
+        // A persisted choice (a Space id OR the explicit "All Spaces" sentinel)
+        // always wins: auto-select only fills a NEVER-chosen filter, otherwise
+        // every return to Home would override the user's "All Spaces".
+        guard selectedFolderId == nil,
+              env.settings.lastSelectedSpace(persona: activePersonaKey) == nil,
+              env.repository.activePersonaSpaces.count == 1,
               env.sharedItems.items.isEmpty else { return }
         selectedFolderId = env.repository.primarySpaceId
     }
@@ -103,8 +108,8 @@ struct HomeScreen: View {
     }
 
     /// Apply the Space remembered for the active persona, validated against live
-    /// folders (a stale id → All Spaces). Reused on active-persona change so the
-    /// Home filter follows the persona.
+    /// folders (a stale id → All Spaces; "" → the explicit "All Spaces" choice).
+    /// Reused on active-persona change so the Home filter follows the persona.
     private func applyRememberedSpace() {
         let saved = env.settings.lastSelectedSpace(persona: activePersonaKey)
         selectedFolderId = saved.flatMap { id in
@@ -442,7 +447,7 @@ struct HomeScreen: View {
                 QuickActionCardLabel(
                     icon: Icons.pageAdd,
                     label: LocalizedStringResource("Add Item").inAppLocalized,
-                    fill: Color(rgb: env.theme.active.accent)
+                    tint: Color(rgb: env.theme.active.accent)
                 )
             }
             // Plain tile menu — macOS would otherwise draw a bordered pull-down button

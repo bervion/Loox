@@ -80,7 +80,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// Device-local display preference — deliberately NOT synced (a selected-Space
     /// choice reveals nothing sensitive and needn't cross devices). Keyed by
     /// identity id; today everything uses `PersonaID.placeholder`. Value is a
-    /// folderId; absence of a key means "All Spaces".
+    /// folderId, or "" for an explicit "All Spaces" choice; absence of a key
+    /// means the user never chose (Home's single-Space auto-select may fill it).
     private(set) var lastSelectedSpaceByPersona: [String: String] {
         didSet { defaults.set(lastSelectedSpaceByPersona, forKey: Key.lastSelectedSpaces) }
     }
@@ -91,18 +92,23 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// name. nil / stale falls back to the default persona.
     var activePersonaID: String? { didSet { defaults.set(activePersonaID, forKey: Key.activePersona) } }
 
-    /// The remembered Home Space for an identity, or nil for "All Spaces".
+    /// The remembered Home Space for an identity: a folderId, "" for an explicit
+    /// "All Spaces" choice, or nil when the user never chose one.
     func lastSelectedSpace(persona: String) -> String? {
         lastSelectedSpaceByPersona[persona]
     }
 
-    /// Remember (or, with nil, forget → "All Spaces") the Home Space for an identity.
+    /// Remember the Home Space for an identity. nil records the EXPLICIT
+    /// "All Spaces" choice (stored as "") — it must survive tab switches and
+    /// relaunches rather than being erased and re-auto-selected away.
     func setLastSelectedSpace(_ folderId: String?, persona: String) {
-        if let folderId {
-            lastSelectedSpaceByPersona[persona] = folderId
-        } else {
-            lastSelectedSpaceByPersona.removeValue(forKey: persona)
-        }
+        lastSelectedSpaceByPersona[persona] = folderId ?? ""
+    }
+
+    /// Forget an identity's remembered Space entirely (back to "never chose") —
+    /// for cleanup when a persona is removed, and for tests.
+    func clearLastSelectedSpace(persona: String) {
+        lastSelectedSpaceByPersona.removeValue(forKey: persona)
     }
     var preferredLanguage: String {
         didSet {
