@@ -102,17 +102,22 @@ struct ForwardingInboxScreen: View {
     }
 
     private func inboxRow(_ inbox: ForwardingInbox) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: EmailMask.masked(inbox.email))
-                    .vaultType(.body).themedForeground(.primary)
-                Text(verbatim: subtitle(inbox))
-                    .vaultType(.caption).themedForeground(.secondary)
-            }
-            Spacer()
-            verificationChip(inbox)
-            if inbox.isDefault {
-                Text("Default").vaultType(.caption).themedForeground(.accent)
+        // Tap opens the detail screen — activate/default/delete were reachable
+        // only through a long-press context menu, which nothing advertised.
+        // The context menu and swipe stay as shortcuts.
+        NavigationLink { ForwardingInboxDetailScreen(inboxID: inbox.id) } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: EmailMask.masked(inbox.email))
+                        .vaultType(.body).themedForeground(.primary)
+                    Text(verbatim: subtitle(inbox))
+                        .vaultType(.caption).themedForeground(.secondary)
+                }
+                Spacer()
+                verificationChip(inbox)
+                if inbox.isDefault {
+                    Text("Default").vaultType(.caption).themedForeground(.accent)
+                }
             }
         }
         .contentShape(Rectangle())
