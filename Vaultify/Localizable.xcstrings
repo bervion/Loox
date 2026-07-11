@@ -1080,7 +1080,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tất cả space"
+            "value" : "Tất cả nhóm"
           }
         }
       }
@@ -2257,6 +2257,17 @@
         }
       }
     },
+    "Choose a Space" : {
+      "comment" : "Folder picker sheet title. Distinct key from \"Space\", which the password generator uses for the whitespace separator character.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn nhóm"
+          }
+        }
+      }
+    },
     "Choose identity" : {
       "localizations" : {
         "vi" : {
@@ -2973,7 +2984,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tạo Không gian"
+            "value" : "Tạo nhóm"
           }
         }
       }
@@ -3047,7 +3058,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tạo space mới"
+            "value" : "Tạo nhóm mới"
           }
         }
       }
@@ -6039,7 +6050,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quản lý spaces & thành viên"
+            "value" : "Quản lý nhóm & thành viên"
           }
         }
       }
@@ -6835,7 +6846,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chưa có Space"
+            "value" : "Chưa có nhóm"
           }
         }
       }
@@ -9101,7 +9112,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tìm trong tất cả space"
+            "value" : "Tìm trong tất cả nhóm"
           }
         }
       }
@@ -11324,7 +11335,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Danh tính này chưa có Không gian nào. Tạo một cái để bắt đầu thêm mục."
+            "value" : "Danh tính này chưa có nhóm nào. Tạo một nhóm để bắt đầu thêm mục."
           }
         }
       }
@@ -11656,7 +11667,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Space này"
+            "value" : "Nhóm này"
           }
         }
       }

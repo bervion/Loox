@@ -10,7 +10,10 @@ struct FolderPickerSheet: View {
 
     var body: some View {
         VaultSheetScaffold(
-            title: "Space",
+            // Own key, NOT "Space": that key doubles as the password generator's
+            // separator-character label, whose VI is "Khoảng trắng" (whitespace) —
+            // this sheet's title rendered as that in Vietnamese.
+            title: "Choose a Space",
             leading: { EmptyView() },
             trailing: { SheetDismissButton("Done") }
         ) {

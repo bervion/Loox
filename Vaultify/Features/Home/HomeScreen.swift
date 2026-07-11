@@ -125,14 +125,17 @@ struct HomeScreen: View {
             ZStack(alignment: .top) {
                 Group {
                     // A vault that's empty but RECEIVING shares still has a feed.
+                    // Empty states keep the PROFILE ROW: with no Space or vault the
+                    // way out is often switching persona — hiding the switcher
+                    // stranded the user on the empty identity.
                     if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
-                        emptyVaultState
+                        emptyStateScaffold { emptyVaultState }
                     } else if env.repository.activePersonaItems.isEmpty && env.sharedItems.items.isEmpty {
                         // The vault overall has data, but the ACTIVE persona has nothing to
                         // show (no owned Space yet, or an owned Space with zero items) — the
                         // global gate above would otherwise fall through to `scrollContent`
                         // and render the "All Spaces (0)" scaffolding with an empty card.
-                        personaEmptyState
+                        emptyStateScaffold { personaEmptyState }
                     } else {
                         scrollContent
                     }
@@ -631,6 +634,27 @@ struct HomeScreen: View {
     }
 
     // MARK: Empty vault state
+
+    /// Shared chrome for both empty states: the header spacer + the persona
+    /// profile row above the empty content, inside a scroll view — the same
+    /// top structure as `scrollContent`, so switching identity stays possible
+    /// (and the header blur keeps working) even when there is nothing to list.
+    private func emptyStateScaffold<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
+                VStack(alignment: .leading, spacing: Space.s6) {
+                    profileRow
+                    content()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, Space.s8)
+                }
+                .padding(.horizontal, Space.gutter)
+                .padding(.bottom, TabBarMetric.contentBottomInset)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
 
     private var emptyVaultState: some View {
         VStack(spacing: Space.s6) {
