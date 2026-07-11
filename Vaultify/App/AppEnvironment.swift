@@ -175,6 +175,9 @@ import SwiftUI
         // place they must go too.
         SharedCredentialsCache.clear()
         SharedItemsProjection.clearPersisted()
+        // Known-leak lookup cache carries HMAC-keyed signals about the erased
+        // vault's passwords — file + Keychain secret go too.
+        AuditLocalCache.clearPersisted()
         VaultKeyEscrowService.clearPushedFingerprint()
         // Approval Mode device-local state dies with the vault (full CloudKit
         // approval-artifact teardown is the revocation phase's job).

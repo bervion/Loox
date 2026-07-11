@@ -25,6 +25,8 @@ import CloudKit
     private let personaRecordType = "VaultPersona"
     private let aliasRecordType = "VaultEmailAlias"
     private let inboxRecordType = "VaultForwardingInbox"
+    private let auditReportRecordType = "AuditReport"
+    private let findingStateRecordType = "AuditFindingState"
     private var database: CKDatabase { container.privateCloudDatabase }
 
     init(store: VaultStore, settings: SettingsStore) {
@@ -97,6 +99,8 @@ import CloudKit
         try await pushPersonas()
         try await pushAliases()
         try await pushInboxes()
+        try await pushAuditReports()
+        try await pushFindingStates()
     }
 
     private func pushItems() async throws {
@@ -156,6 +160,8 @@ import CloudKit
             case self.personaRecordType: self.applyPersona(record)
             case self.aliasRecordType: self.applyAlias(record)
             case self.inboxRecordType: self.applyInbox(record)
+            case self.auditReportRecordType: self.applyAuditReport(record)
+            case self.findingStateRecordType: self.applyFindingState(record)
             // Key-escrow records share the zone but aren't vault data.
             default: break
             }
@@ -353,6 +359,92 @@ import CloudKit
         store.upsertInboxFromRemote(
             id: record.recordID.recordName, sealed: sealed,
             sortIndex: (record["sortIndex"] as? Int) ?? 0,
+            deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            changeTag: record.recordChangeTag)
+    }
+
+    // MARK: Audit reports + finding states (sealed audit metadata; folder-pattern LWW)
+
+    private func pushAuditReports() async throws {
+        let dirty = store.allAuditReportRecords().filter(\.dirty)
+        guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
+        let records = dirty.map(ckAuditReportRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult,
+               let local = store.auditReportRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markAuditReportSynced(local, changeTag: saved.recordChangeTag,
+                                            snapshotUpdatedAt: snapshot)
+            }
+        }
+    }
+
+    private func ckAuditReportRecord(from record: AuditReportRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: auditReportRecordType, recordID: id)
+        ck["sealed"] = record.sealed as CKRecordValue
+        ck["completedAt"] = record.completedAt as CKRecordValue
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        if let personaID = record.personaID { ck["personaID"] = personaID as CKRecordValue }
+        if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
+        return ck
+    }
+
+    private func applyAuditReport(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let completedAt = record["completedAt"] as? Date,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        store.upsertAuditReportFromRemote(
+            id: record.recordID.recordName,
+            personaID: record["personaID"] as? String,
+            sealed: sealed, completedAt: completedAt,
+            deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            changeTag: record.recordChangeTag)
+    }
+
+    private func pushFindingStates() async throws {
+        let dirty = store.allFindingStateRecords().filter(\.dirty)
+        guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
+        let records = dirty.map(ckFindingStateRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult,
+               let local = store.findingStateRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markFindingStateSynced(local, changeTag: saved.recordChangeTag,
+                                             snapshotUpdatedAt: snapshot)
+            }
+        }
+    }
+
+    private func ckFindingStateRecord(from record: FindingStateRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: findingStateRecordType, recordID: id)
+        ck["sealed"] = record.sealed as CKRecordValue
+        ck["status"] = record.status as CKRecordValue
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        if let personaID = record.personaID { ck["personaID"] = personaID as CKRecordValue }
+        if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
+        return ck
+    }
+
+    private func applyFindingState(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let status = record["status"] as? String,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        store.upsertFindingStateFromRemote(
+            id: record.recordID.recordName,
+            personaID: record["personaID"] as? String,
+            sealed: sealed, status: status,
             deletedAt: record["deletedAt"] as? Date,
             createdAt: createdAt, updatedAt: updatedAt,
             changeTag: record.recordChangeTag)
