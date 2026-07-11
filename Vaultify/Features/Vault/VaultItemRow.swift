@@ -50,20 +50,25 @@ struct VaultItemRow: View {
                         .themedForeground(.secondary)
                         .lineLimit(1)
                 }
+                // Status metadata reads as its OWN line under the identity lines.
+                // The previous trailing placement with layoutPriority squeezed the
+                // TITLE down to a few characters whenever the Space name or the
+                // "SHARING" badge ran long — the row's payload lost to its metadata.
+                if folder != nil || item.sharedOrigin != nil || hasPendingShare {
+                    HStack(spacing: Space.s2) {
+                        if let folder { spaceChip(folder) }
+                        // Recipient-side projection — read-only, lives in no
+                        // Space, so the chip slot is free for the "Shared" marker.
+                        if item.sharedOrigin != nil {
+                            sharedChip
+                        } else if hasPendingShare {
+                            sharingBadge
+                        }
+                    }
+                    .padding(.top, 2)
+                }
             }
-            Spacer(minLength: 8)
-            // Prioritize the Space chip over the title: a long title truncates so the chip
-            // ("which vault") stays fully visible instead of being squeezed to nothing.
-            if let folder {
-                spaceChip(folder).layoutPriority(1)
-            }
-            // Recipient-side projection — read-only, lives in no Space, so the
-            // chip slot is free for the "Shared" marker.
-            if item.sharedOrigin != nil {
-                sharedChip.layoutPriority(1)
-            } else if hasPendingShare {
-                sharingBadge.layoutPriority(1)
-            }
+            Spacer(minLength: 0)
         }
         // Pinned → a pin glyph overlaid at the row's outermost top-right corner.
         .overlay(alignment: .topTrailing) {

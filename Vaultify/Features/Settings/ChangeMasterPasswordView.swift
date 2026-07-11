@@ -38,12 +38,13 @@ struct ChangeMasterPasswordView: View {
                 if !confirm.isEmpty && newPassword != confirm {
                     Text("Passwords don’t match")
                         .vaultType(.footnote)
-                        .foregroundStyle(VaultColors.strengthWeak)
+                        .foregroundStyle(env.theme.active.color(.destructive))
                 }
             }
             .listRowBackground(VaultColors.surface)
             if let error {
-                Text(error).foregroundStyle(VaultColors.strengthWeak)
+                Text(error).vaultType(.footnote)
+                    .foregroundStyle(env.theme.active.color(.destructive))
             }
         }
         .themedFormBackground()

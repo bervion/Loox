@@ -17,7 +17,7 @@ struct SettingsScreen: View {
     /// One Online Features row: preference toggle + operator/runtime status.
     /// The toggle mutates ONLY the user preference (INV-CAP-09).
     private func onlineFeatureRow(_ id: CapabilityID, title: LocalizedStringKey,
-                                  icon: String, tint: Color) -> some View {
+                                  badge: SettingsIconBadge) -> some View {
         Toggle(isOn: Binding(
             get: { env.capabilities.userPreference(id) },
             set: { env.capabilities.setUserPreference(id, enabled: $0) })) {
@@ -28,7 +28,7 @@ struct SettingsScreen: View {
                         env.capabilities.availability(id, operation: .create)))
                         .vaultType(.caption).themedForeground(.secondary)
                 }
-            } icon: { SettingsIconBadge(icon: icon, tint: tint) }
+            } icon: { badge }
         }
     }
 
@@ -170,8 +170,11 @@ struct SettingsScreen: View {
                 // and operator availability are independent axes — an outage
                 // shows in the status text but NEVER flips the toggle.
                 Section("Online Features") {
-                    onlineFeatureRow(.privateEmail, title: "Private Email", icon: Icons.mail, tint: SettingsBadgeTint.teal)
-                    onlineFeatureRow(.shareLink, title: "Share Links", icon: Icons.share, tint: SettingsBadgeTint.green)
+                    // SF envelope: the Polaris mail glyph distorts at badge scale.
+                    onlineFeatureRow(.privateEmail, title: "Private Email",
+                                     badge: SettingsIconBadge(systemName: "envelope.fill", tint: SettingsBadgeTint.teal))
+                    onlineFeatureRow(.shareLink, title: "Share Links",
+                                     badge: SettingsIconBadge(icon: Icons.share, tint: SettingsBadgeTint.green))
                 }
                 .listRowBackground(VaultColors.surface)
 

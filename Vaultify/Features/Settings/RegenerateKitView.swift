@@ -15,18 +15,15 @@ struct RegenerateKitView: View {
 
     var body: some View {
         Form {
+            // Same banner chrome as the other security subscreens — a raw Label
+            // with an accent icon read as a stray row, not the framing note.
             Section {
-                Label {
-                    Text(env.session.hasRecoveryKit
-                         ? "An Emergency Kit is set up for this vault."
-                         : "No Emergency Kit yet. Generate one to enable recovery.")
-                } icon: {
-                    PolarisIcon(Icons.shield).foregroundStyle(Color.accentColor)
-                }
+                VaultInfoBanner(.info, icon: Icons.shield, text: kitStatusText)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
             } footer: {
                 Text("The recovery key can restore your vault if you forget your master password.")
             }
-            .listRowBackground(VaultColors.surface)
 
             if !newKey.isEmpty {
                 Section {
@@ -43,7 +40,8 @@ struct RegenerateKitView: View {
                         Label { Text("Save Emergency Kit (PDF)") } icon: { PolarisIcon(Icons.shield) }
                     }
                     if let exportError {
-                        Text(exportError).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                        Text(exportError).vaultType(.footnote)
+                            .foregroundStyle(env.theme.active.color(.destructive))
                     }
                 } header: {
                     Text("Your new recovery key")
@@ -61,7 +59,8 @@ struct RegenerateKitView: View {
                 }
                 .disabled(busy)
                 if let generateError {
-                    Text(generateError).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
+                    Text(generateError).vaultType(.footnote)
+                        .foregroundStyle(env.theme.active.color(.destructive))
                 }
             }
             .listRowBackground(VaultColors.surface)
@@ -85,6 +84,12 @@ struct RegenerateKitView: View {
                 if case .success = result { Haptics.success() }
             }
         }
+    }
+
+    private var kitStatusText: LocalizedStringKey {
+        env.session.hasRecoveryKit
+            ? "An Emergency Kit is set up for this vault."
+            : "No Emergency Kit yet. Generate one to enable recovery."
     }
 
     /// Build the kit PDF from the just-shown key and present the save sheet. Owner name /

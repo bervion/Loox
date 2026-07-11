@@ -19,15 +19,14 @@ struct Level2SettingsView: View {
 
     var body: some View {
         Form {
+            // Same banner chrome as Change Master Password — a raw Label with an
+            // accent icon read as a stray row, not the screen's framing note.
             Section {
-                Label {
-                    Text("A second password for your most sensitive fields. Items can use this or their own code. If you forget it, those fields cannot be recovered.")
-                        .vaultType(.footnote).themedForeground(.secondary)
-                } icon: {
-                    PolarisIcon(Icons.lockFill).foregroundStyle(Color.accentColor)
-                }
+                VaultInfoBanner(.info, icon: Icons.lockFill,
+                                text: "A second password for your most sensitive fields. Items can use this or their own code. If you forget it, those fields cannot be recovered.")
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
             }
-            .listRowBackground(VaultColors.surface)
 
             if hasLevel2 {
                 Section("Current password") {
@@ -43,7 +42,10 @@ struct Level2SettingsView: View {
             }
             .listRowBackground(VaultColors.surface)
 
-            if let error { Text(error).foregroundStyle(VaultColors.strengthWeak) }
+            if let error {
+                Text(error).vaultType(.footnote)
+                    .foregroundStyle(env.theme.active.color(.destructive))
+            }
         }
         .themedFormBackground()
         .navigationTitle("Extra Protection")

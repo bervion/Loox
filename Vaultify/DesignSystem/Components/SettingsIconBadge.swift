@@ -24,8 +24,10 @@ struct SettingsIconBadge: View {
 
     @ViewBuilder private var glyph: some View {
         if let systemName {
+            // 13pt: SF glyphs carry larger optical bounds than the 16pt Polaris
+            // strokes — at 14 the SF badge visibly outweighed its neighbours.
             Image(systemName: systemName)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
         } else {
             PolarisIcon(icon ?? Icons.info, size: 16)
         }

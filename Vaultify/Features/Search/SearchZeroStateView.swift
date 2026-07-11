@@ -56,17 +56,27 @@ struct SearchZeroStateView: View {
             Text("Recently Used")
                 .vaultType(.sectionLabel)
                 .themedForeground(.secondary)
+            // Card chrome matching the rest of the app's grouped cards: the raw
+            // rows previously sat flush against the surface with no insets — bare
+            // white slivers instead of a wrapped card.
             VStack(spacing: 0) {
                 ForEach(Array(recents.enumerated()), id: \.element.id) { index, item in
                     NavigationLink(value: item.id) {
                         VaultItemRow(item: item, showSpace: scope == .allSpaces)
+                            .padding(.horizontal, Space.s4)
+                            .padding(.vertical, Space.s3)
+                            .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    if index < recents.count - 1 { Divider().padding(.leading, Space.gutter) }
+                    if index < recents.count - 1 {
+                        ThemedDivider().padding(.leading, Space.s4)
+                    }
                 }
             }
-            .background(VaultColors.surface)
-            .vaultCornerRadius(Radius.md)
+            .background(Color(rgb: env.theme.active.elevatedBackground))
+            .vaultCornerRadius(Radius.lg)
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5))
         }
     }
 }
