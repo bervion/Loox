@@ -357,8 +357,12 @@ struct ItemDetailScreen: View {
             }
 
             HStack(spacing: Space.s3) {
-                // Favicon wins when the item has a website; otherwise the custom icon / avatar.
-                if let url = item.urlField?.value, !url.isEmpty {
+                // Brand items always get the app-icon avatar (matching Home — without this
+                // a "Loox Account" with no website fell to the letter thumbnail); then the
+                // favicon when the item has a website; otherwise the custom icon / avatar.
+                if LooxAppIcon.isBrandTitle(item.title) {
+                    LooxAppIcon(size: 56)
+                } else if let url = item.urlField?.value, !url.isEmpty {
                     FaviconView(urlString: url, category: item.category, size: 56, title: item.title)
                 } else {
                     ItemThumbnail(title: item.title, category: item.category,

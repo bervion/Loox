@@ -14,9 +14,7 @@ struct FaviconView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var image: PlatformImage?
 
-    private var isBrandLoox: Bool {
-        title?.range(of: "loox", options: .caseInsensitive) != nil
-    }
+    private var isBrandLoox: Bool { LooxAppIcon.isBrandTitle(title) }
 
     var body: some View {
         Group {
@@ -59,21 +57,35 @@ struct FaviconView: View {
 }
 
 /// The Loox app-icon look, reused as an item avatar for brand items ("Loox Account").
-/// Reproduces the app icon (`vaultify.icon`): the blue→cyan gradient behind the white
-/// Loox wordmark. Colours match `Path.svg`'s gradient stops.
+/// Light mode uses a near-black tile (the blue→cyan gradient sank into the white card);
+/// dark mode keeps the gradient from the app icon (`vaultify.icon`, `Path.svg` stops) —
+/// a black tile would melt into the dark card there.
 struct LooxAppIcon: View {
     var size: CGFloat = Metric.controlMedium
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Whether an item title carries the Loox brand (e.g. "Loox Account") — such items
+    /// show the app-icon avatar everywhere an item avatar renders (Home, detail, TOTP…).
+    nonisolated static func isBrandTitle(_ title: String?) -> Bool {
+        title?.range(of: "loox", options: .caseInsensitive) != nil
+    }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
         BrandLogoMark(size: size * 0.20, shadowRadius: 0, shadowY: 0)
-            // Force the light (white) wordmark variant so it reads on the gradient.
+            // Force the light (white) wordmark variant so it reads on the dark tile/gradient.
             .environment(\.colorScheme, .dark)
             .frame(width: size, height: size)
-            .background(
-                LinearGradient(colors: [Color(rgb: 0x1544FD), Color(rgb: 0x20BDFD)],
-                               startPoint: .topLeading, endPoint: .bottomTrailing),
-                in: shape)
+            .background(tileBackground, in: shape)
             .overlay(shape.strokeBorder(Color.platformSeparator.opacity(0.5), lineWidth: 0.5))
+    }
+
+    private var tileBackground: AnyShapeStyle {
+        if colorScheme == .dark {
+            AnyShapeStyle(LinearGradient(colors: [Color(rgb: 0x1544FD), Color(rgb: 0x20BDFD)],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+        } else {
+            AnyShapeStyle(Color(rgb: 0x0B0C0E))
+        }
     }
 }
