@@ -9,7 +9,7 @@ Guidance for Claude Code when working in this repository.
 ## Project
 
 Vaultify — private, offline, zero-backend password & passkey manager. SwiftUI, iPhone-only,
-iOS 17.6+. Two targets: the app (`com.bervion.vaultify`) and an AutoFill Credential Provider
+iOS 17.3+. Two targets: the app (`com.bervion.vaultify`) and an AutoFill Credential Provider
 extension (`com.bervion.vaultify.autofill`). Team `WDNL2F75V7`. Shared code in `VaultifyCore/`
 compiles into **both** targets. See `README.md` and `docs/codebase-summary.md`.
 
@@ -63,7 +63,7 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
   (`nonisolated enum/struct/final class` compiles).
 - **Member import visibility** is on (`SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY`):
   import modules explicitly (e.g. `import Combine` for `autoconnect()`).
-- **iOS API ceiling**: deployment target is 17.6, and the CI runner uses a **stable** Xcode
+- **iOS API ceiling**: deployment target is 17.3, and the CI runner uses a **stable** Xcode
   — do not use APIs newer than that SDK without availability guards, or the runner build
   fails. Known trap: `TextField`/`SecureField` with a `LocalizedStringResource` title is
   iOS 26+ → use `LocalizedStringKey`.
@@ -109,7 +109,7 @@ camera/QR/favicon/literal light-dark preview swatches are exempt). Theme + accen
 **Tab bar — native `TabView`, icon-only visual.** `MainTabView` keeps the system tab bar visible for
 native switching performance, safe-area handling, and iOS 26 Liquid Glass. iOS 18+ uses the `Tab` builder so
 the Search tab carries `role: .search` (native search — on iOS 26 the search field lives in the tab bar /
-above the keyboard, driven by `SearchScreen`'s `.searchable`); iOS 17.6 falls back to classic `.tabItem`
+above the keyboard, driven by `SearchScreen`'s `.searchable`); iOS 17.3 falls back to classic `.tabItem`
 tabs with Search as an ordinary tab. Each tab supplies only a Polaris icon asset visually; localized tab
 names live in accessibility labels via `VaultTab`. The Home header magnifier and the search tab both land on
 `SearchScreen`, which auto-activates `.searchable(isPresented:)` on appear. Do not restore

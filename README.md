@@ -15,7 +15,7 @@ no server, no tracking.
 - 👥 **Approval Mode sharing** — share access, not secrets; per-field capability delegation via iCloud, with owner approval via Face ID for TOTP access
 - 🌏 **EN / VI** with an in-app language toggle
 - ☁️ **Optional** iCloud (CloudKit) sync — off by default, compile-gated
-- 📱 iPhone-only, iOS 17.6+
+- 📱 iPhone-only, iOS 17.3+
 
 ## Tech stack
 
