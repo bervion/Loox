@@ -96,29 +96,31 @@ struct AuditFixQueueScreen: View {
 
     // MARK: - Done state
 
+    /// Completion state: top-anchored and leading like the app's other
+    /// completion screens — one primary action, no centered float.
     private var completed: some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.checkCircle, size: 44)
-                .themedForeground(.success)
-            Text("You have walked the whole queue.")
-                .vaultType(.headline)
-                .themedForeground(.primary)
+        VStack(alignment: .leading, spacing: Space.s4) {
+            HStack(spacing: Space.s3) {
+                PolarisIcon(Icons.checkCircle, size: Metric.iconUtility)
+                    .themedForeground(.success)
+                Text("You have walked the whole queue.")
+                    .vaultType(.headline)
+                    .themedForeground(.primary)
+            }
             Text("Run the audit again to verify your fixes and update the score.")
                 .vaultType(.callout)
                 .themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Space.s7)
+                .fixedSize(horizontal: false, vertical: true)
             Button {
                 dismiss()
             } label: {
-                Text("Done")
-                    .vaultType(.headline)
-                    .frame(minWidth: 160, minHeight: Metric.controlLarge)
+                Text("Done").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
-            .padding(.top, Space.s3)
+            .padding(.top, Space.s2)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(Space.gutter)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
@@ -205,43 +207,38 @@ private struct FindingDetailView: View {
         }
     }
 
+    /// Action hierarchy (DNA #7 — no button walls): remediation shortcuts are
+    /// occasional extras in a compact utility row, "Next issue" is the ONE
+    /// filled primary, dismiss is a quiet text action below it.
     @ViewBuilder
     private var actions: some View {
         VStack(spacing: Space.s3) {
-            if let url = actionURL {
-                Button {
-                    openURL(url)
-                } label: {
-                    Text(finding.ruleID.hasPrefix("auth")
-                         ? "Open security settings" : "Open website")
-                        .vaultType(.body)
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+            HStack(spacing: Space.s3) {
+                if let url = actionURL {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Text(finding.ruleID.hasPrefix("auth")
+                             ? "Open security settings" : "Open website")
+                    }
+                    .buttonStyle(.themedCompact)
                 }
-                .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
-                                                   base: Color(rgb: env.theme.active.elevatedBackground),
-                                                   cornerRadius: Radius.md, bordered: true))
-            }
-
-            if let first = items.first {
-                Button {
-                    editorTarget = .edit(first)
-                } label: {
-                    Text("Edit item")
-                        .vaultType(.body)
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                if let first = items.first {
+                    Button {
+                        editorTarget = .edit(first)
+                    } label: {
+                        Text("Edit item")
+                    }
+                    .buttonStyle(.themedCompact)
                 }
-                .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
-                                                   base: Color(rgb: env.theme.active.elevatedBackground),
-                                                   cornerRadius: Radius.md, bordered: true))
+                Spacer(minLength: 0)
             }
 
             Button {
                 next()
                 Haptics.tap()
             } label: {
-                Text("Next issue")
-                    .vaultType(.headline)
-                    .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                Text("Next issue").frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)
 
@@ -249,8 +246,9 @@ private struct FindingDetailView: View {
                 showDismissOptions = true
             } label: {
                 Text("Dismiss this finding")
-                    .vaultType(.footnote)
+                    .vaultType(.subhead)
                     .frame(maxWidth: .infinity, minHeight: Metric.hitMin)
+                    .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .themedForeground(.secondary)

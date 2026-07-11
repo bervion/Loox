@@ -247,14 +247,11 @@ struct WatchtowerScreen: View {
     @ViewBuilder
     private var contentSection: some View {
         VStack(spacing: Space.s5) {
+            // One filled primary; the resume path is the quiet tinted secondary
+            // (the style owns typography and height — plain Text labels only).
             if !emptyVault {
                 NavigationLink(value: WatchtowerCategory.audit) {
-                    HStack(spacing: Space.s3) {
-                        PolarisIcon(Icons.shield, size: Metric.iconInline)
-                        Text("Run Vault Audit")
-                            .vaultType(.headline)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                    Text("Run Vault Audit").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 .padding(.horizontal, Space.gutter)
@@ -263,12 +260,9 @@ struct WatchtowerScreen: View {
             if let sections, sections.actNowCount > 0 {
                 NavigationLink(value: WatchtowerCategory.fixQueue) {
                     Text(verbatim: appString("Continue fixing \(sections.actNowCount) issues"))
-                        .vaultType(.body)
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
-                                                   base: Color(rgb: env.theme.active.elevatedBackground),
-                                                   cornerRadius: Radius.md, bordered: true))
+                .buttonStyle(.themedTinted)
                 .padding(.horizontal, Space.gutter)
             }
 

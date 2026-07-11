@@ -58,17 +58,22 @@ struct AuditHistoryScreen: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// Same leading card shape as the Security overview's empty state —
+    /// empty is an intentional state, not a centered float.
     private var emptyState: some View {
-        VStack(spacing: Space.s3) {
-            PolarisIcon(Icons.shield, size: 40)
-                .themedForeground(.secondary)
-            Text("Run your first audit to start tracking progress.")
-                .vaultType(.callout)
-                .themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Space.s7)
+        VStack {
+            HStack(spacing: Space.s3) {
+                PolarisIcon(Icons.shield, size: Metric.iconInline)
+                    .themedForeground(.secondary)
+                Text("Run your first audit to start tracking progress.")
+                    .vaultType(.callout)
+                    .themedForeground(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .themedCard()
+            .padding(Space.gutter)
+            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

@@ -50,13 +50,13 @@ struct VaultAuditFlowScreen: View {
                                     text: "Known-leak checks use privacy-preserving queries. Your full password is never sent.")
                 }
 
+                // The style owns sizing and typography — a sized label on top of
+                // it doubles the button height (the "oversized CTA" defect).
                 Button {
                     controller.start(env: env)
                     Haptics.tap()
                 } label: {
-                    Text("Start Audit")
-                        .vaultType(.headline)
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                    Text("Start Audit").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
             }
@@ -105,11 +105,8 @@ struct VaultAuditFlowScreen: View {
                 dismiss()
             } label: {
                 Text("Cancel")
-                    .vaultType(.body)
-                    .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
             }
-            .buttonStyle(.plain)
-            .themedForeground(.secondary)
+            .buttonStyle(.themedTinted)
             .padding(.bottom, Space.s6)
         }
     }
@@ -125,9 +122,11 @@ struct VaultAuditFlowScreen: View {
             }
         } else {
             // Unreachable in practice; a safe fallback beats a blank screen.
-            Text("Audit complete")
-                .vaultType(.headline)
-                .onTapGesture { dismiss() }
+            VStack(spacing: Space.s4) {
+                Text("Audit complete").vaultType(.headline)
+                Button { dismiss() } label: { Text("Done") }
+                    .buttonStyle(.themedTinted)
+            }
         }
     }
 }
@@ -157,17 +156,22 @@ private struct AuditResultView: View {
     }
 
     var body: some View {
+        // Left-aligned, top-anchored (DNA: typography is architecture — bold and
+        // leading at key moments, not a centered float). One filled primary; the
+        // report link is a quiet inline disclosure, never a third button.
         ScrollView {
-            VStack(spacing: Space.s5) {
-                VStack(spacing: Space.s2) {
-                    Text(verbatim: "\(report.score)")
-                        .vaultType(.largeTitle)
-                        .monospacedDigit()
-                        .themedForeground(.primary)
-                        .contentTransition(.numericText())
-                    Text(verbatim: appString("out of 1000"))
-                        .vaultType(.footnote)
-                        .themedForeground(.tertiary)
+            VStack(alignment: .leading, spacing: Space.s5) {
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                        Text(verbatim: "\(report.score)")
+                            .vaultType(.largeTitle)
+                            .monospacedDigit()
+                            .themedForeground(.primary)
+                            .contentTransition(.numericText())
+                        Text(verbatim: appString("out of 1000"))
+                            .vaultType(.footnote)
+                            .themedForeground(.tertiary)
+                    }
                     Text(scoreBand(for: report.score).label)
                         .vaultType(.callout)
                         .themedForeground(scoreBand(for: report.score).role)
@@ -178,7 +182,7 @@ private struct AuditResultView: View {
                             .monospacedDigit()
                     }
                 }
-                .padding(.top, Space.s6)
+                .padding(.top, Space.s3)
 
                 VStack(alignment: .leading, spacing: Space.s2) {
                     summaryRow(count: sections.actNowCount, label: "important issues")
@@ -203,32 +207,35 @@ private struct AuditResultView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .themedCard()
 
+                // Rank: with open issues the one next action is fixing them;
+                // Done demotes to the quiet secondary. With none, Done IS the action.
                 if sections.actNowCount > 0 {
                     NavigationLink(value: WatchtowerCategory.fixQueue) {
-                        Text("Fix important issues")
-                            .vaultType(.headline)
-                            .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
+                        Text("Fix important issues").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.themedProminent)
+
+                    Button { done() } label: {
+                        Text("Done").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.themedTinted)
+                } else {
+                    Button { done() } label: {
+                        Text("Done").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.themedProminent)
                 }
 
                 NavigationLink(value: WatchtowerCategory.fullReport) {
-                    Text("View full report")
-                        .vaultType(.body)
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlMedium)
+                    HStack(spacing: Space.s1) {
+                        Text("View full report").vaultType(.subhead)
+                        PolarisIcon(Icons.chevronRight, size: 12)
+                    }
+                    .themedForeground(.accent)
+                    .frame(minHeight: Metric.hitMin)
+                    .contentShape(.rect)
                 }
-                .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
-                                                   base: Color(rgb: env.theme.active.elevatedBackground),
-                                                   cornerRadius: Radius.md, bordered: true))
-
-                Button {
-                    done()
-                } label: {
-                    Text("Done")
-                        .vaultType(.headline)
-                        .frame(maxWidth: .infinity, minHeight: Metric.controlLarge)
-                }
-                .buttonStyle(.themedProminent)
+                .buttonStyle(.plain)
             }
             .padding(Space.gutter)
         }

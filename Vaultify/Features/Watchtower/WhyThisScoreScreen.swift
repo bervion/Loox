@@ -8,7 +8,8 @@ struct WhyThisScoreScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
-                VStack(spacing: Space.s1) {
+                // Leading, top-anchored typographic object — not a centered float.
+                HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                     Text(verbatim: "\(payload.score)")
                         .vaultType(.largeTitle)
                         .monospacedDigit()
@@ -17,8 +18,7 @@ struct WhyThisScoreScreen: View {
                         .vaultType(.footnote)
                         .themedForeground(.tertiary)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, Space.s4)
+                .padding(.top, Space.s3)
 
                 VStack(spacing: 0) {
                     ForEach(payload.pillars, id: \.pillar) { pillar in
