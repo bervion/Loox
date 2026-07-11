@@ -116,7 +116,7 @@ struct ForwardingInboxScreen: View {
                 Spacer()
                 verificationChip(inbox)
                 if inbox.isDefault {
-                    Text("Default").vaultType(.caption).themedForeground(.accent)
+                    Text("Default").vaultType(.caption).themedForeground(.accentText)
                 }
             }
         }

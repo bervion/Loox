@@ -477,7 +477,7 @@ struct ShareAccessSheet: View {
         Button(action: action) {
             HStack(spacing: Space.s3) {
                 PolarisIcon(icon, size: Metric.iconUtility)
-                    .themedForeground(.accent)
+                    .themedForeground(.accentText)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title.inAppLocalized)
                         .vaultType(.headline).themedForeground()

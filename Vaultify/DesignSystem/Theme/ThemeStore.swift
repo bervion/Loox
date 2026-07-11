@@ -72,7 +72,9 @@ import AppKit
     /// neutral white in dark mode — the accent blue is low-contrast on dark glass / grey
     /// surfaces, whereas white reads cleanly. Filled accents and toggles keep the true accent
     /// explicitly (toggles via `.tint(VaultColors.accent)`).
-    var uiTint: Color { Color(rgb: active.isDark ? active.primaryText : active.accent) }
+    // TEXT rank: uiTint colors text buttons (Edit, nav actions) on card
+    // surfaces, so light mode uses the contrast-guarded accentText.
+    var uiTint: Color { Color(rgb: active.isDark ? active.primaryText : active.accentText) }
 
     /// Cross-platform interface style for the whole app — incl. presented sheets, which a
     /// SwiftUI `.preferredColorScheme` on the root does NOT reliably reach (so a sheet

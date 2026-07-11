@@ -79,7 +79,7 @@ struct ProfileSectionCard: View {
     private var emptyState: some View {
         HStack(spacing: Space.s3) {
             PolarisIcon(icon, size: Metric.iconTile)
-                .foregroundStyle(Color(rgb: env.theme.active.accent))
+                .foregroundStyle(Color(rgb: env.theme.active.accentText))
                 .frame(width: Metric.controlLarge, height: Metric.controlLarge)
                 .background(Color(rgb: env.theme.active.accentSoft),
                             in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))

@@ -62,7 +62,7 @@ struct ProfileScreen: View {
             VStack(alignment: .leading, spacing: Space.s3) {
                 HStack(spacing: Space.s3) {
                     PolarisIcon(PersonaKindStyle.icon(persona.kind), size: Metric.iconUtility)
-                        .themedForeground(.accent)
+                        .themedForeground(.accentText)
                         .frame(width: Metric.controlMedium, height: Metric.controlMedium)
                         .background(Color(rgb: env.theme.active.accentSoft),
                                     in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
@@ -83,7 +83,7 @@ struct ProfileScreen: View {
                                 }
                             }
                         } label: {
-                            Text("Switch").vaultType(.subhead).themedForeground(.accent)
+                            Text("Switch").vaultType(.subhead).themedForeground(.accentText)
                         }
                     }
                 }

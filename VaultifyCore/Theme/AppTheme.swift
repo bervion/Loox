@@ -42,10 +42,24 @@ nonisolated struct AppTheme: Sendable, Equatable {
 
     /// Return a copy recolored by `accent`, deriving the accent-tied tokens
     /// (switch/check/selection/on-accent foreground).
-    func recolored(accent: UInt32) -> AppTheme {
+    func recolored(accent rawAccent: UInt32) -> AppTheme {
         var theme = self
+        // Controlled Contrast fill guard: the accent must read as a SHAPE
+        // (≥3:1, WCAG non-text) on both canvas surfaces. Curated presets pass
+        // untouched (non-destructive); an extreme input — black accent on a
+        // black theme from a future custom/import path — is pulled just far
+        // enough to stay visible instead of sinking into the background.
+        // Both guards shift the same direction (toward the mode's on-color).
+        var accent = RGBMath.ensureContrast(rawAccent, on: groupedBackground, floor: 3.0)
+        accent = RGBMath.ensureContrast(accent, on: elevatedBackground, floor: 3.0)
         theme.accent = accent
-        theme.switchOn = accent
+        // The themed toggle draws a WHITE knob on the ON track (native UISwitch
+        // anatomy) — a white/near-white accent (mono on dark) makes knob and
+        // track one shape. Guard the track against the knob at 2.0:1, the ratio
+        // the native iOS green track keeps against its own knob (~2.05:1), so
+        // every preset feels stock and extreme accents settle into a deliberate
+        // gray instead of vanishing.
+        theme.switchOn = RGBMath.ensureContrast(accent, on: 0xFFFFFF, floor: 2.0)
         theme.checkmark = accent
         // White-preferred on-accent (iOS convention for coloured controls) so text/icons on
         // filled accent buttons read white on saturated accents (e.g. dark-mode blue), only

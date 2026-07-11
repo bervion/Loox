@@ -123,7 +123,7 @@ struct NotificationsScreen: View {
     private func inviteRow(_ invite: InviteEnvelope) -> some View {
         HStack(spacing: Space.s3) {
             pendingDot
-            PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accent)
+            PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accentText)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Share invitation").vaultType(.body).themedForeground()
                 Text(Date(timeIntervalSince1970: Double(invite.createdAtUnixMs) / 1000)
@@ -150,7 +150,7 @@ struct NotificationsScreen: View {
                 // Green dot only when the owner can act (profile arrived); the
                 // waiting states are informational, not a call to action.
                 if share.status == .readyForCeremony { pendingDot }
-                PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accent)
+                PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accentText)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: share.recipientLabel).vaultType(.body).themedForeground()
                     Text(outgoingStatusText(share.status))

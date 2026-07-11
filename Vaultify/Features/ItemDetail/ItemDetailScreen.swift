@@ -324,7 +324,7 @@ struct ItemDetailScreen: View {
                     // Shared projections live in no Space and take no pins —
                     // a static origin pill replaces the Located-In button.
                     HStack(spacing: Space.s2) {
-                        PolarisIcon(Icons.share, size: 13).themedForeground(.accent)
+                        PolarisIcon(Icons.share, size: 13).themedForeground(.accentText)
                         Text("Shared with Me").vaultType(.subhead).themedForeground(.secondary)
                     }
                     .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
@@ -384,7 +384,7 @@ struct ItemDetailScreen: View {
         HStack(spacing: Space.s4) {
             Button { env.repository.togglePin(item) } label: {
                 PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
-                    .foregroundStyle(item.pinned ? env.theme.active.color(.accent) : env.theme.active.color(.secondary))
+                    .foregroundStyle(item.pinned ? env.theme.active.color(.accentText) : env.theme.active.color(.secondary))
             }
             .buttonStyle(.plain)
             Button { try? env.repository.toggleFavorite(item) } label: {
@@ -464,7 +464,7 @@ struct ItemDetailScreen: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Verification code")
                             .vaultType(.caption).fontWeight(.medium)
-                            .foregroundStyle(env.theme.active.color(.accent))
+                            .foregroundStyle(env.theme.active.color(.accentText))
                         RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -533,7 +533,7 @@ struct ItemDetailScreen: View {
                         Button { showShareAccess = true } label: {
                             HStack(spacing: Space.s3) {
                                 PolarisIcon(Icons.addCircle, size: Metric.iconInline)
-                                    .themedForeground(.accent)
+                                    .themedForeground(.accentText)
                                 Text("Share this item")
                                     .vaultType(.body)
                                     .foregroundStyle(env.theme.uiTint)

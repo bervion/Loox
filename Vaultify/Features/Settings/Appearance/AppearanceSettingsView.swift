@@ -96,12 +96,59 @@ struct AppearanceSettingsView: View {
                 }
             }
             .padding(.vertical, Space.s2)
+
+            // Context preview: the accent is a SYSTEM (fill, tinted, text rank),
+            // not a swatch — show all three ranks in both modes so the user can
+            // confirm their pick works everywhere without switching appearance.
+            HStack(spacing: Space.s3) {
+                accentRankPreview(isDark: false, label: "Light")
+                accentRankPreview(isDark: true, label: "Dark")
+            }
+            .padding(.vertical, Space.s2)
         } header: {
             Text("Accent Color")
         } footer: {
-            Text("Accent applies instantly across the app. No restart needed.")
+            Text("Loox may adjust the selected color slightly to keep text and controls readable.")
         }
         .listRowBackground(VaultColors.surface)
+    }
+
+    /// Mini three-rank preview on the given mode's canvas: a filled action,
+    /// a tinted action, and an accent link — resolved through the SAME theme
+    /// pipeline as the real UI (recolor + contrast guard), so what the user
+    /// sees here is exactly what ships. Decorative: hidden from VoiceOver.
+    private func accentRankPreview(isDark: Bool, label: LocalizedStringKey) -> some View {
+        let activeBase = settings.accentOverride(for: current)?.base ?? .blue
+        let base = isDark ? BuiltinThemes.night : BuiltinThemes.day
+        let palette = base.recolored(accent: activeBase.rgb(isDark: isDark))
+        return VStack(spacing: Space.s2) {
+            VStack(alignment: .leading, spacing: Space.s2) {
+                Text("Copy")
+                    .vaultType(.caption).fontWeight(.semibold)
+                    .foregroundStyle(Color(rgb: palette.accentForeground))
+                    .padding(.horizontal, Space.s3).padding(.vertical, 3)
+                    .background(Color(rgb: palette.accent), in: Capsule())
+                Text("Aa")
+                    .vaultType(.caption).fontWeight(.semibold)
+                    .foregroundStyle(Color(rgb: palette.accentText))
+                    .padding(.horizontal, Space.s3).padding(.vertical, 3)
+                    .background(Color(rgb: palette.accentSoft), in: Capsule())
+                Text("View details")
+                    .vaultType(.caption)
+                    .foregroundStyle(Color(rgb: palette.accentText))
+            }
+            .padding(Space.s3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(rgb: palette.elevatedBackground),
+                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .strokeBorder(Color(rgb: palette.separator), lineWidth: 1))
+
+            Text(label)
+                .vaultType(.caption)
+                .themedForeground(.secondary)
+        }
+        .accessibilityHidden(true)
     }
 
     private func accentSwatch(_ preset: AccentPreset) -> some View {

@@ -92,7 +92,7 @@ feature screens (screens only compose, never invent visual language).
   → Apple Dynamic Type (keeps accessibility). Never `.font(.system(size: N))`. Secrets/codes: `Font.vaultCode` (SF — no monospaced typeface; add `.monospacedDigit()` only where digit width must stay stable).
 
 **Color — semantic only, live, WCAG.** Resolve via `.themedForeground(role)` / `theme.color(role)`
-(`ThemeRole`: primary/secondary/tertiary/disabled · iconPrimary/Secondary/Disabled · accent/accentSoft/onAccent ·
+(`ThemeRole`: primary/secondary/tertiary/disabled · iconPrimary/Secondary/Disabled · accent(fill)/accentText/accentSoft/onAccent ·
 destructive/onDestructive/success/warning) or `Color(rgb: theme.<token>)`. Stored palette =
 `VaultifyCore/Theme/AppTheme.swift`; **derived** tokens (surfaceFloatingSolid, surfacePressed,
 accentSoft/Press, icon*, *Soft, separatorOpaque, onDestructive…) = `AppTheme+Tokens.swift` (computed,

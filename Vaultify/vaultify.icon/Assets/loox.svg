@@ -2,9 +2,9 @@
 <svg width="355px" height="167px" viewBox="0 0 355 167" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <title>Path</title>
     <defs>
-        <linearGradient x1="0%" y1="50%" x2="100%" y2="50%" id="linearGradient-1">
-            <stop stop-color="#1544FD" offset="0%"></stop>
-            <stop stop-color="#20BDFD" offset="100%"></stop>
+        <linearGradient x1="2.40364583%" y1="50%" x2="98.5338542%" y2="50%" id="linearGradient-1">
+            <stop stop-color="#1F9DF1" offset="0%"></stop>
+            <stop stop-color="#0067AA" offset="100%"></stop>
         </linearGradient>
     </defs>
     <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">

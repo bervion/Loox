@@ -6,43 +6,10 @@
     {
       "layers" : [
         {
-          "fill-specializations" : [
-            {
-              "appearance" : "tinted",
-              "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
-            }
-          ],
-          "image-name" : "Path.svg",
-          "name" : "Path",
+          "image-name" : "loox.svg",
+          "name" : "loox",
           "position" : {
-            "scale" : 1.11,
-            "translation-in-points" : [
-              -18,
-              0
-            ]
-          }
-        },
-        {
-          "fill-specializations" : [
-            {
-              "appearance" : "dark",
-              "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
-            },
-            {
-              "appearance" : "tinted",
-              "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
-            }
-          ],
-          "image-name" : "LX.svg",
-          "name" : "LX",
-          "position" : {
-            "scale" : 1.1099999999999999,
+            "scale" : 2.2800000000000007,
             "translation-in-points" : [
               0,
               0

@@ -19,7 +19,7 @@ struct RevealableSecureField: View {
                 // Icon sits in a soft accent tile (mirrors the onboarding card iconography);
                 // the tile also gives the prominent field its taller resting height.
                 PolarisIcon(icon, size: Metric.iconInline)
-                    .foregroundStyle(Color(rgb: theme.accent))
+                    .foregroundStyle(Color(rgb: theme.accentText))
                     .frame(width: Metric.controlSmall, height: Metric.controlSmall)
                     .background(Color(rgb: theme.accentSoft),
                                 in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))

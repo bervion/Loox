@@ -45,7 +45,10 @@ final class ThemeEngineTests: XCTestCase {
     func testRecolorSetsAccentAndContrastForeground() {
         let onWhiteAccent = BuiltinThemes.night.recolored(accent: 0xFFFFFF)
         XCTAssertEqual(onWhiteAccent.accent, 0xFFFFFF)
-        XCTAssertEqual(onWhiteAccent.switchOn, 0xFFFFFF)
+        // The switch track guards against its own WHITE knob (Controlled
+        // Contrast) — a white accent must NOT stay a white track.
+        XCTAssertNotEqual(onWhiteAccent.switchOn, 0xFFFFFF)
+        XCTAssertGreaterThanOrEqual(RGBMath.contrastRatio(onWhiteAccent.switchOn, 0xFFFFFF), 2.0)
         XCTAssertEqual(onWhiteAccent.accentForeground, 0x000000)
 
         let onDarkAccent = BuiltinThemes.day.recolored(accent: 0x101010)

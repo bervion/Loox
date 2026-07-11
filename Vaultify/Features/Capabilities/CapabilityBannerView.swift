@@ -28,7 +28,7 @@ struct CapabilityBannerView: View {
                 }
                 if content.showsRetry, let onRetry {
                     Button { onRetry() } label: {
-                        Text("Try Again").vaultType(.footnote).themedForeground(.accent)
+                        Text("Try Again").vaultType(.footnote).themedForeground(.accentText)
                     }
                     .buttonStyle(.plain)
                 }

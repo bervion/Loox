@@ -56,7 +56,7 @@ struct FieldCapabilityRow: View {
                             Text(totpModeTitle).vaultType(.callout)
                             PolarisIcon(Icons.chevronDown, size: 14)
                         }
-                        .themedForeground(.accent)
+                        .themedForeground(.accentText)
                     }
                 } else {
                     Toggle("", isOn: enabledBinding)

@@ -231,7 +231,7 @@ private struct AuditResultView: View {
                         Text("View full report").vaultType(.subhead)
                         PolarisIcon(Icons.chevronRight, size: 12)
                     }
-                    .themedForeground(.accent)
+                    .themedForeground(.accentText)
                     .frame(minHeight: Metric.hitMin)
                     .contentShape(.rect)
                 }
