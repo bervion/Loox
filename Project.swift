@@ -43,7 +43,7 @@ let project = Project(
             destinations: [.iPhone, .iPad, .mac],
             product: .app,
             bundleId: "com.bervion.vaultify",
-            deploymentTargets: .multiplatform(iOS: "17.6", macOS: "15.0"),
+            deploymentTargets: .multiplatform(iOS: "17.3", macOS: "15.0"),
             infoPlist: .extendingDefault(with: [
                 // Brand: full name "Loox Password" (App Store listing), short display
                 // name "Loox" under the icon. Bundle ids/groups keep the vaultify names.
@@ -164,7 +164,7 @@ let project = Project(
             destinations: [.iPhone],
             product: .appExtension,
             bundleId: "com.bervion.vaultify.autofill",
-            deploymentTargets: .iOS("17.6"),
+            deploymentTargets: .iOS("17.3"),
             infoPlist: .extendingDefault(with: [
                 "CFBundleDisplayName": "Loox",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
@@ -219,7 +219,7 @@ let project = Project(
             destinations: [.iPhone],
             product: .unitTests,
             bundleId: "com.bervion.vaultify.tests",
-            deploymentTargets: .iOS("17.6"),
+            deploymentTargets: .iOS("17.3"),
             infoPlist: .default,
             sources: ["VaultifyTests/**"],
             // Frozen parity fixtures (e.g. Loox Link canonical-hash vectors) —

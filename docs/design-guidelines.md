@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-17  
 Audience: AI agents, designers, iOS engineers  
-Platform: Native iOS SwiftUI, deployment target iOS 17.6+
+Platform: Native iOS SwiftUI, deployment target iOS 17.3+
 
 ## Purpose
 
@@ -15,7 +15,7 @@ The product must not feel like generated UI assembled screen by screen. Every su
 ## Non-Negotiable Rules
 
 - Read `README.md`, `CLAUDE.md`, `docs/codebase-summary.md`, and this file before UI work.
-- Use native SwiftUI patterns compatible with iOS 17.6 unless newer APIs are guarded with `#available`.
+- Use native SwiftUI patterns compatible with iOS 17.3 unless newer APIs are guarded with `#available`.
 - Do not use SF Symbols directly in app UI. Use Polaris PDF/SVG icon assets through the existing icon system.
 - All visible user-facing text must be localized in English and Vietnamese.
 - Do not hardcode raw colors in feature screens.
@@ -615,7 +615,7 @@ Task:
 Implement Vaultify native icon-only tab bar per docs/design-guidelines.md.
 
 Constraints:
-- Native SwiftUI, iOS 17.6+ target.
+- Native SwiftUI, iOS 17.3+ target.
 - Newer Apple APIs must be guarded with #available.
 - No visible tab labels.
 - Keep accessibility labels and selected state.

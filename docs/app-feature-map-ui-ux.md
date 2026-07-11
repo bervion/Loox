@@ -6,7 +6,7 @@
 
 ## 0. Tổng quan sản phẩm
 
-- **Loox Password** — trình quản lý mật khẩu & passkey **offline, zero-backend**, mã hoá đầu-cuối trên thiết bị. iPhone-only, iOS 17.6+, có thêm AutoFill Credential Provider extension (điền mật khẩu/passkey/2FA vào app khác & Safari).
+- **Loox Password** — trình quản lý mật khẩu & passkey **offline, zero-backend**, mã hoá đầu-cuối trên thiết bị. iPhone-only, iOS 17.3+, có thêm AutoFill Credential Provider extension (điền mật khẩu/passkey/2FA vào app khác & Safari).
 - **Ngôn ngữ:** EN + VI (toggle trong app). Mọi text đều phải có 2 bản dịch.
 - **Nguyên tắc UI:** Apple-native SwiftUI, bộ icon **Polaris SVG** (không dùng SF Symbols, trừ ngoại lệ `faceid`), design token (Space/Radius/Metric/Elevation/Motion), semantic color theo theme (Day/Night + 7 accent preset), hỗ trợ Dynamic Type, Reduce Motion, Reduce Transparency, hit target 44pt.
 - **Pattern lặp lại toàn app:**
@@ -95,7 +95,7 @@ App khởi động (RootView — 3 route)
 
 - 4 tab cố định **Home · Items · Watchtower · Search**, thanh tab **chỉ icon** (không label; VoiceOver có label bản địa hoá).
 - Icon outline ⇄ filled khi active (search không có bản filled).
-- iOS 18+: tab Search mang `role: .search` (iOS 26: ô search nằm ngay tab bar/trên bàn phím). iOS 17.6: tab thường.
+- iOS 18+: tab Search mang `role: .search` (iOS 26: ô search nằm ngay tab bar/trên bàn phím). iOS 17.3: tab thường.
 - Tab nhớ trạng thái điều hướng riêng; app khôi phục tab + độ sâu nav + draft editor dở dang sau khi unlock (UI-state restoration).
 
 ---
