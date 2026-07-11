@@ -251,7 +251,11 @@ struct WatchtowerScreen: View {
             // (the style owns typography and height — plain Text labels only).
             if !emptyVault {
                 NavigationLink(value: WatchtowerCategory.audit) {
-                    Text("Run Vault Audit").frame(maxWidth: .infinity)
+                    HStack(spacing: Space.s2) {
+                        PolarisIcon(Icons.shieldPerson, size: Metric.iconInline)
+                        Text("Run Vault Audit")
+                    }
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
                 .padding(.horizontal, Space.gutter)

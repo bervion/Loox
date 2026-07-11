@@ -63,6 +63,8 @@ enum Icons {
     static let creditCard = "ic_credit_card"
     static let shield = "ic_shield_check_mark"
     static let shieldAlert = "ic_shield_none"
+    /// Shield with a person silhouette — the Vault Audit action glyph.
+    static let shieldPerson = "ic_shield_person"
     static let alert = "ic_alert_triangle"
     static let refresh = "ic_refresh"
     static let replay = "ic_replay"
@@ -94,7 +96,9 @@ enum Icons {
     static let scanCode = "ic_shopcodes"
     static let sync = "ic_refresh"
     static let person = "ic_person"
-    static let mail = "ic_mail"
+    // "ic_email" is the canonical email glyph app-wide; the older "ic_mail"
+    // asset stays bundled only for the folder icon picker's curated catalog.
+    static let mail = "ic_email"
     static let camera = "ic_camera"
     static let image = "ic_image"
     /// Document with a plus badge — used on the Add quick-action tile and header cluster.

@@ -65,27 +65,14 @@ struct ProfileSectionCard: View {
     }
 
     /// Each non-empty field as a tap-to-copy row (protected values stay masked; the tap copies
-    /// the real value and flashes the copy toast).
+    /// the real value and flashes the same accent feedback as the item-detail rows).
     @ViewBuilder private func fieldRows(_ item: VaultItem) -> some View {
         let fields = item.fields.filter { !$0.isEmpty }
         ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
             if index > 0 { Divider().background(Color(rgb: env.theme.active.separatorOpaque)) }
-            Button {
-                env.clipboard.copy(field.value, label: appLabel(field.label))
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: appLabel(field.label)).vaultType(.caption).themedForeground(.secondary)
-                        Text(verbatim: field.protected ? "••••••••" : field.value)
-                            .vaultType(.body).themedForeground().lineLimit(1)
-                    }
-                    Spacer()
-                    PolarisIcon(Icons.copy, size: 18).themedForeground(.secondary)
-                }
-                .padding(Space.gutter)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
+            ProfileCopyFieldRow(label: appLabel(field.label),
+                                value: field.value,
+                                protected: field.protected)
         }
     }
 
@@ -135,5 +122,56 @@ struct ProfileSectionCard: View {
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
+    }
+}
+
+/// Tap-to-copy row with the SAME feedback vocabulary as the item-detail rows:
+/// accent flash, value line swaps to "Copied", the copy glyph morphs to a
+/// check, then everything settles back after 1.2 s. The clipboard service owns
+/// the haptic — the row never fires its own.
+private struct ProfileCopyFieldRow: View {
+    @Environment(AppEnvironment.self) private var env
+    let label: String
+    let value: String
+    let protected: Bool
+
+    @State private var copied = false
+    @State private var resetTask: Task<Void, Never>?
+
+    var body: some View {
+        let theme = env.theme.active
+        Button {
+            env.clipboard.copy(value, label: label)
+            copied = true
+            resetTask?.cancel()
+            resetTask = Task {
+                try? await Task.sleep(for: .seconds(1.2))
+                withAnimation(.easeOut(duration: 0.3)) { copied = false }
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: label)
+                        .vaultType(.caption)
+                        .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85)
+                                                : theme.color(.secondary))
+                    Text(verbatim: copied ? appString("Copied")
+                                          : (protected ? "••••••••" : value))
+                        .vaultType(.body)
+                        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
+                        .lineLimit(1)
+                }
+                Spacer()
+                CopyMorphIcon(copied: copied, size: 18)
+                    .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
+            }
+            .padding(Space.gutter)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .background(copied ? theme.color(.accent) : Color.clear)
+        .animation(.easeOut(duration: 0.18), value: copied)
+        .accessibilityLabel(Text(verbatim: label))
+        .accessibilityHint(Text("Double tap to copy"))
     }
 }

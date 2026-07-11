@@ -170,7 +170,7 @@ extension QuickActionCard {
 
     static func generate(action: @escaping () -> Void) -> QuickActionCard {
         QuickActionCard(
-            icon: Icons.refresh,
+            icon: Icons.key,
             label: LocalizedStringResource("Generate Password").inAppLocalized,
             tint: tealTint, action: action)
     }

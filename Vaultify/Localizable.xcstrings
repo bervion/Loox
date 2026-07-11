@@ -183,6 +183,7 @@
       }
     },
     "%lld items" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -3880,6 +3881,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xong"
+          }
+        }
+      }
+    },
+    "Double tap to copy" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chạm hai lần để sao chép"
           }
         }
       }
