@@ -58,9 +58,9 @@ struct AliasDomainPickerSection: View {
                     // next alias ("remember my choice", not a one-off).
                     PrivateEmailDomainDefault.domainID = selected
                 }
-            } header: {
-                Text("Email Domain")
             } footer: {
+                // No section header: the picker row already says "Email Domain" —
+                // header + row label doubled the same words two lines apart.
                 if let footer { Text(footer) }
             }
         }

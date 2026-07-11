@@ -45,9 +45,21 @@ struct PersonaAliasesScreen: View {
                 warningBanner
             }
             .listRowBackground(Color.clear)
+            // Full row width: with the default list insets the banner's own
+            // rounded background rendered narrower than every card below it.
+            .listRowInsets(EdgeInsets())
+
+            // PROTAGONIST FIRST (DNA #1): the user comes here for their
+            // addresses and whether each one is forwarding — the plumbing
+            // (destination inbox, default domain) is configuration and reads
+            // below the address lists, not above them.
+            if let persona {
+                personaAliasSection(persona)
+                perSiteSection(persona)
+            }
 
             // Where mail lands — masked overview; full addresses live inside.
-            Section {
+            Section("Delivery") {
                 NavigationLink { ForwardingInboxScreen() } label: {
                     if let persona, let dest = env.repository.newAliasDestination(for: persona) {
                         LabeledContent { Text(verbatim: EmailMask.masked(dest)) }
@@ -68,11 +80,6 @@ struct PersonaAliasesScreen: View {
             AliasDomainPickerSection(domainID: $defaultDomainID,
                                      footer: "New private addresses use this domain.")
                 .listRowBackground(VaultColors.surface)
-
-            if let persona {
-                personaAliasSection(persona)
-                perSiteSection(persona)
-            }
         }
         .navigationTitle(Text("Private Email"))
         // Non-blocking, contextual — never at app startup (INV-CAP-02).
@@ -116,7 +123,7 @@ struct PersonaAliasesScreen: View {
                 .vaultType(.footnote)
                 .themedForeground(.secondary)
         }
-        .padding(Space.s3)
+        .padding(Space.s4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(rgb: env.theme.active.accentSoft), in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
@@ -162,19 +169,21 @@ struct PersonaAliasesScreen: View {
         return NavigationLink {
             AliasDetailScreen(aliasID: alias.id)
         } label: {
+            // The ADDRESS is the row's payload — it renders whole (an inline
+            // trailing status squeezed long addresses into a 2-line wrap mid-
+            // word); the forwarding status reads as its own line underneath.
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: address).vaultType(.body).themedForeground(.primary)
                     if let subtitle, !subtitle.isEmpty {
                         Text(verbatim: subtitle).vaultType(.caption).themedForeground(.secondary)
                     }
+                    Text(verbatim: statusLabel(alias.status)).vaultType(.caption)
+                        .themedForeground(alias.status == .active ? .accent : .secondary)
                 }
                 Spacer()
                 if busyAliasID == alias.id {
                     ProgressView()
-                } else {
-                    Text(verbatim: statusLabel(alias.status)).vaultType(.caption)
-                        .themedForeground(alias.status == .active ? .accent : .secondary)
                 }
             }
         }
