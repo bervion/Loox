@@ -1,1 +1,1 @@
-Bản cập nhật cải thiện các màn hình chi tiết bảo mật và tinh chỉnh chỉ báo trạng thái, lịch sử tìm kiếm, hộp thư chuyển tiếp để trải nghiệm rõ ràng và nhất quán hơn.
+Phien ban 1.27.0 gioi thieu Kiem Tra Vault, tab Bao Mat moi giup ban phat hien mat khau yeu, trung lap hoac tung bi ro ri, toan bo xu ly ngay tren thiet bi. Mau nhan dien duoc lam moi cung nhieu cai thien nho khac trong ung dung.

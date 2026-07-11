@@ -1,1 +1,1 @@
-This update improves security detail screens and refines status indicators, search history, and forwarding inbox views for a clearer, more consistent experience.
+Version 1.27.0 introduces Vault Audit, a new Security tab that checks your passwords for weak, reused, or known compromised entries, all processed on your device. Refreshed accent colors and small visual fixes throughout the app.

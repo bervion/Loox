@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.27.0] - 2026-07-12
+
+### Added
+- text-rank accent across components and picker rank preview
+- Controlled Contrast — accent text rank and WCAG fill guard
+- Vault Audit flow with Security tab
+- incremental known-leak checker
+- sealed audit persistence with CloudKit sync
+- explainable 1000-point scoring engine
+- integrity and hygiene rules
+- pattern-aware password strength engine
+- rule engine core with stable finding fingerprints
+- strength drill-down, working category taps, persona scope, gated intro
+- private-email bubble on focused credential fields
+
+### Fixed
+- switch track guards against its own knob
+- copy feedback on profile rows, canonical email and audit glyphs
+- single-line finding rows in the issue groups
+- align audit screens with the design DNA standard
+- profile row survives empty states, VI Space term unified as nhom
+- quick-action tiles blank after persona switch on iOS 26
+
+### Changed
+- update logo
+- update reviewer agent memory
+- Vietnamese strings and docs for Vault Audit
+- vault audit upgrade plan and review report
+
+
 ## [1.26.1] - 2026-07-11
 
 ### Fixed
