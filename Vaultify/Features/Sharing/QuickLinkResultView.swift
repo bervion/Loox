@@ -128,9 +128,9 @@ struct QuickLinkResultView: View {
     /// full ≥44pt hit target even though it reads visually light.
     private func utilityAction(icon: String, title: LocalizedStringResource) -> some View {
         VStack(spacing: Space.s1) {
-            PolarisIcon(icon, size: Metric.iconInline).themedForeground(.accent)
+            PolarisIcon(icon, size: Metric.iconInline).themedForeground(.accentText)
             Text(title)
-                .vaultType(.footnote).themedForeground(.accent)
+                .vaultType(.footnote).themedForeground(.accentText)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }

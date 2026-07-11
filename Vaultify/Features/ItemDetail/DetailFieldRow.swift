@@ -67,7 +67,7 @@ struct DetailFieldRow: View {
                 HStack(spacing: 6) {
                     fieldLabelText(field.label)
                         .vaultType(.caption).fontWeight(.medium)
-                        .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
+                        .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accentText))
                     if match != nil {
                         PrivateEmailBadge(onAccentBackground: copied)
                     }
@@ -243,7 +243,7 @@ struct DetailFieldRow: View {
             result.append(scheme)
         }
         var rest = AttributedString(String(value.dropFirst(schemeLength)))
-        rest.foregroundColor = theme.color(.accent)
+        rest.foregroundColor = theme.color(.accentText)
         result.append(rest)
         return result
     }

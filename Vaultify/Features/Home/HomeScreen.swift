@@ -425,7 +425,7 @@ struct HomeScreen: View {
             }
         } else {
             PolarisIcon(Icons.person, size: Metric.iconInline)
-                .themedForeground(.accent)
+                .themedForeground(.accentText)
                 .frame(width: avatarSize, height: avatarSize)
                 .background(Color(rgb: env.theme.active.accentSoft), in: shape)
         }

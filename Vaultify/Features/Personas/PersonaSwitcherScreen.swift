@@ -67,7 +67,7 @@ struct PersonaSwitcherScreen: View {
                 }
                 Spacer()
                 if persona.id == env.repository.activePersona?.id {
-                    PolarisIcon(Icons.checkCircle).themedForeground(.accent)
+                    PolarisIcon(Icons.checkCircle).themedForeground(.accentText)
                 }
             }
         } icon: {

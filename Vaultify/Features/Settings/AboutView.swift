@@ -195,7 +195,7 @@ struct AboutView: View {
             Text(verbatim: EmergencyKitInfo.defaultSupportContact)
                 .vaultType(.subhead)
                 .fontWeight(.semibold)
-                .themedForeground(.accent)
+                .themedForeground(.accentText)
                 .textSelection(.enabled)
             Text("Version \(version) (\(build))")
                 .vaultType(.caption)

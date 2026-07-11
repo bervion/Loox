@@ -25,9 +25,9 @@
 
 | Phase | Nội dung | Status |
 |-------|----------|--------|
-| 1 | Core token correction: `RGBMath.ensureContrast`, guard accentFill trong `recolored()`, token `accentText` (+ ThemeRole case), rewire ThemedTinted/ThemedCompact(.tinted)/link accent, matrix regression tests | 🔨 đang làm |
-| 2 | Component audit toàn codebase: grep mọi fg=accent / accent trên controlBackground/accentSoft/selection, phân loại theo rank rồi rewire (không replace mù) | ☐ |
-| 3 | Theme picker preview 3-rank + light/dark preview + copy điều chỉnh (§5, §8 proposal) | ☐ |
+| 1 | Core token correction: `RGBMath.ensureContrast`, guard accentFill trong `recolored()`, token `accentText` (+ ThemeRole case), rewire ThemedTinted/ThemedCompact(.tinted)/link accent, matrix regression tests | ✅ 897cbfc |
+| 2 | Component audit toàn codebase: 26 site text/interactive-glyph rank → accentText (Home avatar tile, ItemDetail label/pin/share/verification, Sharing rows, About, Capability, Personas, Editor bubble, RevealableSecureField, DetailFieldRow link) + `uiTint` light-mode → accentText. GIỮ raw accent: hero icons ≥32pt (graphical 3:1), rings (TotpRing/TOTPField), copied-flash + chip backgrounds, AttentionCell capsule bg, theme-preview swatches, AboutView largeTitle display text | ✅ |
+| 3 | Theme picker preview 3-rank (filled Copy + tinted Aa + View details link) render qua đúng pipeline recolored+guard, light/dark song song, footer copy calm EN+VI | ✅ |
 | 4 | Advanced theme support khi bật lại custom/import: guard mặc định, preview original-vs-adjusted (dev mode) | ☐ (gated: WallpaperFeature) |
 
 ## Phase 1 — chi tiết

@@ -133,7 +133,7 @@ struct QuickLinkView: View {
                                     .vaultType(.body).themedForeground()
                                 if record.oneTime {
                                     Text("One-time")
-                                        .vaultType(.caption).themedForeground(.accent)
+                                        .vaultType(.caption).themedForeground(.accentText)
                                         .padding(.horizontal, Space.s2)
                                         .padding(.vertical, 2)
                                         .background(VaultColors.fill)

@@ -306,7 +306,7 @@ struct ItemEditorScreen: View {
                                 if creatingAlias {
                                     ProgressView().controlSize(.small)
                                 } else {
-                                    PolarisIcon(Icons.mail, size: Metric.iconInline).themedForeground(.accent)
+                                    PolarisIcon(Icons.mail, size: Metric.iconInline).themedForeground(.accentText)
                                 }
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Create private email").vaultType(.body).themedForeground(.accent)

@@ -33,7 +33,7 @@ struct PasskeyCapabilityRow: View {
                     Text(modeTitle).vaultType(.callout)
                     PolarisIcon(Icons.chevronDown, size: 14)
                 }
-                .themedForeground(.accent)
+                .themedForeground(.accentText)
             }
         }
         .frame(minHeight: Metric.hitMin)

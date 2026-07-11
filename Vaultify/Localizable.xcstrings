@@ -6148,6 +6148,16 @@
         }
       }
     },
+    "Loox may adjust the selected color slightly to keep text and controls readable." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox có thể điều chỉnh nhẹ màu bạn chọn để chữ và nút luôn dễ đọc."
+          }
+        }
+      }
+    },
     "Loox waits for the next %lld-second window so %@ gets a full-life code. The old one is never sent." : {
       "comment" : "Approval issuing state: explains waiting for a fresh TOTP window (named requester). %lld = period seconds.",
       "localizations" : {
@@ -13335,6 +13345,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xem tất cả"
+          }
+        }
+      }
+    },
+    "View details" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem chi tiết"
           }
         }
       }
