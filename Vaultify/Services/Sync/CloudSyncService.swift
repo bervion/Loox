@@ -46,7 +46,15 @@ import CloudKit
         #endif
     }
 
+    /// True while this process hosts XCTest. The test host builds with
+    /// `CODE_SIGNING_ALLOWED=NO`, and `CKContainer.init` TRAPS (SIGTRAP) without the
+    /// iCloud entitlement — any repository write in a test debounces a background sync
+    /// and intermittently crashes the whole run. Sync must never start under tests.
+    nonisolated static let isHostingUnitTests =
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
     func sync(reload: @escaping () -> Void) async {
+        guard !Self.isHostingUnitTests else { return }
         guard settings.iCloudSyncEnabled else { return }
         guard Self.isConfigured else {
             status = .error(appString("iCloud sync needs the iCloud capability enabled in Xcode."))

@@ -61,16 +61,18 @@ struct EditorFieldRow: View {
         case .date:
             DateFieldEditor(value: $field.value)
         // Card-specific editors, scoped to genuine `.card` items via label+kind match
-        // (template labels are stable English source strings — see `ItemCategory`).
+        // (template labels are stable English source strings — see `ItemCategory` — but
+        // the label row is user-editable and DISPLAYS a translation, so a label that got
+        // rewritten as its VI translation must still match; see `CardTemplateLabel`).
         // Checked before the generic `protected` case below so Card Number/Security Code
         // (both `.monospace`, `protected: true`) get the card-aware treatment instead.
-        case .monospace where category == .card && field.label == "Card Number":
+        case .monospace where category == .card && CardTemplateLabel.matches(field.label, english: "Card Number"):
             CardNumberFieldEditor(value: $field.value)
-        case .text where category == .card && field.label == "Expiry":
+        case .text where category == .card && CardTemplateLabel.matches(field.label, english: "Expiry"):
             ExpiryFieldEditor(value: $field.value)
-        case .monospace where category == .card && field.label == "Security Code":
+        case .monospace where category == .card && CardTemplateLabel.matches(field.label, english: "Security Code"):
             CardCodeFieldEditor(value: $field.value, maxLength: cvvLength, placeholder: valuePlaceholder)
-        case .number where category == .card && field.label == "PIN":
+        case .number where category == .card && CardTemplateLabel.matches(field.label, english: "PIN"):
             CardCodeFieldEditor(value: $field.value, maxLength: 6, placeholder: valuePlaceholder)
         // Any `protected` single-line value (password/TOTP, plus template fields sealed at rest
         // like Card Number, Security Code, ID Number) shares the same controlled-reveal
@@ -277,5 +279,26 @@ private struct GenerateChipSurface: ViewModifier {
             .background(.regularMaterial, in: shape)
             .overlay(shape.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
         #endif
+    }
+}
+
+/// Matches a stored card-template field label against its stable English source AND that
+/// source's catalog translation in every language the app ships. The editor's label row is
+/// a user-editable `TextField` whose getter shows the TRANSLATION — one keystroke in it (or
+/// any writeback) persists the translated string, and an exact-English match would then
+/// silently drop the whole card treatment (grouping, MM/YY, digit caps).
+nonisolated enum CardTemplateLabel {
+    /// Languages the string catalog ships. A new app language must be added here so a
+    /// label saved as that language's translation keeps matching.
+    private static let locales = [Locale(identifier: "en"), Locale(identifier: "vi")]
+
+    static func matches(_ stored: String, english: String) -> Bool {
+        let trimmed = stored.trimmingCharacters(in: .whitespaces)
+        if trimmed == english { return true }
+        return locales.contains { locale in
+            var resource = LocalizedStringResource(String.LocalizationValue(stringLiteral: english))
+            resource.locale = locale
+            return String(localized: resource) == trimmed
+        }
     }
 }

@@ -1775,6 +1775,17 @@
         }
       }
     },
+    "Calculating": {
+      "comment": "Watchtower gauge caption while the score counts up; replaced by the band label when it settles.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang tính điểm"
+          }
+        }
+      }
+    },
     "Can’t delete this identity": {
       "comment": "Title of the delete-blocked alert.",
       "localizations": {

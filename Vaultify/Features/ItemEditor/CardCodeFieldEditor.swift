@@ -12,9 +12,14 @@ struct CardCodeFieldEditor: View {
 
     private var showsPlaintext: Bool { focused || value.isEmpty }
 
+    /// Local mirror of the field text — the digit-strip/cap happens in `onChange`
+    /// (assign-back re-enters once, then stops), matching `CardNumberFieldEditor`'s
+    /// pattern: normalize-via-Binding-setter drops mid-keystroke pushes on iOS 17+.
+    @State private var text = ""
+
     var body: some View {
         ZStack(alignment: .leading) {
-            TextField(placeholder, text: digitsBinding)
+            TextField(placeholder, text: $text)
                 .focused($focused)
                 .font(value.isEmpty ? VaultType.body.font : .vaultCode())
                 .platformKeyboardType(.numberPad)
@@ -32,14 +37,15 @@ struct CardCodeFieldEditor: View {
                     .accessibilityHidden(true)
             }
         }
-    }
-
-    private var digitsBinding: Binding<String> {
-        Binding(
-            get: { value },
-            set: { newValue in
-                value = String(PaymentCard.digitsOnly(newValue).prefix(maxLength))
-            }
-        )
+        .onAppear { text = value }
+        .onChange(of: text) { _, new in
+            guard new != value else { return }   // synced from storage — nothing to do
+            let normalized = String(PaymentCard.digitsOnly(new).prefix(maxLength))
+            if normalized != new { text = normalized }
+            value = normalized
+        }
+        .onChange(of: value) { _, new in
+            if text != new { text = new }
+        }
     }
 }

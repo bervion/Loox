@@ -107,12 +107,14 @@ A screen passes only if it renders correctly in ALL of:
   roles only (`themedForeground`, `theme.color(role)`), never raw `.white/.black/.gray`.
 
   **Documented exemptions** (do not re-flag in reviews): camera/QR/favicon surfaces and literal
-  light-dark preview swatches; white text/icons on the fixed decorative quick-action tints;
-  native UISwitch/system-control chrome (the OS draws it); ambient shadows built from black
+  light-dark preview swatches; the fixed decorative quick-action glyph tints (soft-chip
+  style since 260711 — labels use text roles); native UISwitch/system-control chrome (the
+  OS draws it); ambient shadows built from black
   opacity (that is how `Elevation` works by design); proportional avatar/tile corner radii that
   scale with the tile size (a size-relative pattern, not a magic number); SF Symbols inside the
   PAYMENT CARD context only (user-granted 260711 — `creditcard` etc. read better there; brand
-  identification stays a text badge, never a third-party logo asset).
+  identification uses the SELF-DRAWN generic mark tiles in `Assets.xcassets/CardBrands`
+  (user-approved 260711), never an actual third-party logo asset).
 - **Accessibility**: Reduce Motion (instant swaps), Reduce Transparency (solid fallbacks),
   VoiceOver (meaningful labels; decorative views hidden).
 - **Locales**: EN and VI both rendered and eyeballed.

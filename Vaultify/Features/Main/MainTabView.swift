@@ -15,9 +15,39 @@ struct MainTabView: View {
     @Environment(UIStateStore.self) private var uiState
 
     var body: some View {
-        tabContent
+        shell
             .tint(env.theme.uiTint)
             .vaultShellBehaviors()
+    }
+
+    /// iOS 26+ keeps the native Liquid Glass bar. Pre-26 the native bar renders
+    /// transparent at the scroll edge (bare icons on the canvas), so those
+    /// shells hide it per tab (`tabRoot`) and mount the floating chip bar as a
+    /// bottom safe-area inset — scroll views then clear it automatically.
+    @ViewBuilder private var shell: some View {
+        @Bindable var uiState = uiState
+        if #available(iOS 26.0, *) {
+            tabContent
+        } else {
+            tabContent
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    LegacyChipTabBar(selection: $uiState.selectedTab)
+                }
+        }
+    }
+
+    /// Wraps one tab's root content; pre-26 it hides the native tab bar (the
+    /// chip bar replaces it).
+    @ViewBuilder private func tabRoot<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            content()
+        } else {
+            content().toolbar(.hidden, for: .tabBar)
+        }
+        #else
+        content()
+        #endif
     }
 
     /// Tab list. iOS 18+ uses the `Tab` builder so the Search tab can carry
@@ -28,10 +58,10 @@ struct MainTabView: View {
         @Bindable var uiState = uiState
         if #available(iOS 18.0, *) {
             TabView(selection: $uiState.selectedTab) {
-                Tab(value: VaultTab.home) { HomeScreen() } label: { tabIcon(.home) }
-                Tab(value: VaultTab.items) { ItemsScreen() } label: { tabIcon(.items) }
-                Tab(value: VaultTab.watchtower) { WatchtowerScreen() } label: { tabIcon(.watchtower) }
-                Tab(value: VaultTab.search, role: .search) { SearchScreen() } label: { tabIcon(.search) }
+                Tab(value: VaultTab.home) { tabRoot { HomeScreen() } } label: { tabIcon(.home) }
+                Tab(value: VaultTab.items) { tabRoot { ItemsScreen() } } label: { tabIcon(.items) }
+                Tab(value: VaultTab.watchtower) { tabRoot { WatchtowerScreen() } } label: { tabIcon(.watchtower) }
+                Tab(value: VaultTab.search, role: .search) { tabRoot { SearchScreen() } } label: { tabIcon(.search) }
             }
         } else {
             TabView(selection: $uiState.selectedTab) {
@@ -45,7 +75,7 @@ struct MainTabView: View {
 
     /// One classic tab (iOS 17.6 fallback): native navigation with an icon-only item.
     private func legacyTab<Content: View>(_ tab: VaultTab, @ViewBuilder content: () -> Content) -> some View {
-        content()
+        tabRoot(content)
             .tag(tab)
             .tabItem { tabIcon(tab) }
     }

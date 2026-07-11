@@ -94,10 +94,10 @@ struct AboutView: View {
             promiseCard(number: 1, tint: env.theme.active.color(.accent),
                         title: "Your device is the vault",
                         body: "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
-            promiseCard(number: 2, tint: QuickActionCard.tealFill,
+            promiseCard(number: 2, tint: QuickActionCard.tealTint,
                         title: "Trust is verified, never assumed",
                         body: "Share a password, pair a device, open on a computer. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")
-            promiseCard(number: 3, tint: QuickActionCard.purpleFill,
+            promiseCard(number: 3, tint: QuickActionCard.purpleTint,
                         title: "You can always walk away",
                         body: "Export everything, anytime, in formats other apps read. Your Emergency Kit recovers your vault without us. A lock that only locks in is a cage. Loox is a door, and you hold the key.")
         }
