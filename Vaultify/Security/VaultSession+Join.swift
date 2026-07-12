@@ -13,7 +13,9 @@ extension VaultSession {
     /// re-wraps the same key locally — the one Emergency Kit keeps working here too.
     func joinVault(vaultKey: [UInt8], masterPassword: String, recoveryKey: String? = nil) async throws {
         let salt = KeyHierarchy.newSalt()
-        let params = KdfParams.standard
+        // Extension-safe profile: the AutoFill extension must be able to run this
+        // derivation under its memory budget (see `KdfParams.constrained`).
+        let params = KdfParams.constrained
         let wrapped = try await Self.wrap(vaultKey: vaultKey,
                                           password: masterPassword,
                                           salt: salt, params: params)
@@ -29,6 +31,9 @@ extension VaultSession {
                 vaultKey: vaultKey,
                 password: RecoveryKey.normalize(recoveryKey),
                 salt: recoverySalt, params: params)
+            // Record the wrap profile so the recovery path stays openable even if
+            // the password-path `kdf` is re-tuned later.
+            bundle.recoveryKdf = params
         }
         try bundle.save()
         adoptUnlocked(key: vaultKey)

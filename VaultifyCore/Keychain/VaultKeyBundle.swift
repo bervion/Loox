@@ -17,6 +17,15 @@ nonisolated struct VaultKeyBundle: Codable, Sendable {
     /// Recovery (Emergency Kit) path — independent salt + wrapped key.
     var recoverySalt: Data?
     var wrappedByRecovery: Data?
+    /// Argon2id params the recovery envelope was wrapped with when the Emergency
+    /// Kit was generated. The paper recovery key is never in hand again, so the
+    /// recovery wrap cannot be re-created — its params must be RECORDED rather
+    /// than assumed: `kdf` above tracks the password path and can move to a
+    /// lighter profile over time, which would silently break recovery if reused
+    /// here. `nil` on bundles from before this field existed — those always
+    /// shared the password-path params, so readers fall back with
+    /// `recoveryKdf ?? kdf`. Optional → old JSON keeps decoding.
+    var recoveryKdf: KdfParams?
 
     /// Level-2 (extra protection) path: random Level-2 Secret Key wrapped by an
     /// Argon2id key derived from the app-wide Level-2 password. Optional →

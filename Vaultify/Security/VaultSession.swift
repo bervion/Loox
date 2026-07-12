@@ -5,6 +5,10 @@ import os
 /// Filter Console by subsystem `com.bervion.vaultify`, category `biometric`. Non-sensitive only.
 private let biometricLog = Logger(subsystem: "com.bervion.vaultify", category: "biometric")
 
+/// Diagnostic logger for the KDF-profile re-wrap of the key bundle. Boolean
+/// outcomes only — never salts, params-with-context, or wrap material.
+private let kdfLog = Logger(subsystem: "com.bervion.vaultify", category: "kdf")
+
 enum AuthError: Error, LocalizedError {
     case noVault, wrongPassword, locked, biometricFailed, recoveryFailed
 
@@ -58,7 +62,9 @@ enum AuthError: Error, LocalizedError {
     /// Provision a brand-new vault from a master password.
     func createVault(masterPassword: String) async throws {
         let salt = KeyHierarchy.newSalt()
-        let params = KdfParams.standard
+        // Extension-safe profile: the AutoFill extension must be able to run this
+        // derivation under its memory budget (see `KdfParams.constrained`).
+        let params = KdfParams.constrained
         var vaultKeyBytes = KeyHierarchy.newVaultKey()
         defer { secureZero(&vaultKeyBytes) }
 
@@ -91,6 +97,11 @@ enum AuthError: Error, LocalizedError {
             throw AuthError.wrongPassword
         }
         defer { secureZero(&keyBytes) }
+        // The password was just proven correct and the plaintext key is in hand —
+        // the one safe moment to re-wrap an older bundle under the extension-safe
+        // KDF profile with the full app memory budget. Best-effort: unlock
+        // proceeds regardless of the outcome.
+        await migrateKdfProfileIfNeeded(bundle: bundle, key: keyBytes, password: password)
         adoptUnlocked(key: keyBytes)
     }
 
@@ -186,6 +197,51 @@ enum AuthError: Error, LocalizedError {
             // Leave the flag unset; retry on the next successful unlock.
             biometricLog.error("migrate FAILED: \(String(describing: error), privacy: .public) — retry next unlock")
         }
+    }
+
+    // MARK: KDF-profile migration
+
+    /// Re-wrap the password envelope of a pre-`constrained` bundle so the AutoFill
+    /// extension's master-password unlock fits its memory budget. Best-effort like
+    /// the biometric-key migration: any failure keeps the old bundle fully intact
+    /// (the save is atomic) and is retried on the next successful password unlock.
+    private func migrateKdfProfileIfNeeded(bundle: VaultKeyBundle, key: [UInt8],
+                                           password: String) async {
+        do {
+            guard let updated = try await Self.kdfMigratedBundle(from: bundle,
+                                                                 vaultKey: key,
+                                                                 password: password)
+            else { return }
+            try updated.save()
+            kdfLog.log("kdf profile migrate OK")
+        } catch {
+            // Boolean outcome only — no params, salts, or error payloads.
+            kdfLog.error("kdf profile migrate failed — retry next password unlock")
+        }
+    }
+
+    /// Pure re-wrap step: the bundle with `wrappedByPassword` re-wrapped under
+    /// `KdfParams.constrained` (fresh salt), or nil when already on that profile.
+    /// The recovery envelope is deliberately untouched — the paper recovery key
+    /// is not in hand — so the profile it was wrapped with is recorded in
+    /// `recoveryKdf` BEFORE `kdf` diverges from it; otherwise the Emergency Kit
+    /// would stop unwrapping. Internal (not private) so tests can exercise it.
+    nonisolated static func kdfMigratedBundle(from bundle: VaultKeyBundle,
+                                              vaultKey: [UInt8],
+                                              password: String) async throws -> VaultKeyBundle? {
+        guard bundle.kdf != .constrained else { return nil }
+        var updated = bundle
+        if updated.wrappedByRecovery != nil, updated.recoveryKdf == nil {
+            updated.recoveryKdf = updated.kdf
+        }
+        let salt = KeyHierarchy.newSalt()
+        updated.wrappedByPassword = try await Self.wrap(vaultKey: vaultKey,
+                                                        password: password,
+                                                        salt: salt,
+                                                        params: .constrained)
+        updated.kdfSalt = Data(salt)
+        updated.kdf = .constrained
+        return updated
     }
 
     /// Lock if the configured inactivity window has elapsed (foreground idle timer).

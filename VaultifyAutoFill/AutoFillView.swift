@@ -5,9 +5,12 @@ import SwiftUI
 struct AutoFillView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
+    /// The presentation's single vault store, opened by the hosting controller
+    /// (a load failure cancels the request before any UI shows).
+    let store: VaultStore
     /// Set when another flow already unlocked (passkey → password fallback):
     /// skips the second Face ID prompt for the same key.
-    var presetKey: [UInt8]? = nil
+    var presetKey: SecureBytes? = nil
     let onSelect: (_ user: String, _ password: String) -> Void
     let onCancel: () -> Void
 
@@ -15,6 +18,7 @@ struct AutoFillView: View {
         UnlockGate(title: "Loox", presetKey: presetKey, onCancel: onCancel) { vaultKey in
             CredentialListView(serviceIdentifiers: serviceIdentifiers,
                                preferredRecordID: preferredRecordID,
+                               store: store,
                                vaultKey: vaultKey,
                                onSelect: onSelect,
                                onCancel: onCancel)
@@ -97,7 +101,8 @@ private enum CredentialRow: Identifiable {
 private struct CredentialListView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
-    let vaultKey: [UInt8]
+    let store: VaultStore
+    let vaultKey: SecureBytes
     let onSelect: (_ user: String, _ password: String) -> Void
     let onCancel: () -> Void
 
@@ -126,9 +131,9 @@ private struct CredentialListView: View {
         }
         .task {
             guard !loaded else { return }
-            items = VaultReader.logins(vaultKey: vaultKey)
+            items = VaultReader.logins(store: store, vaultKey: vaultKey)
+            defaultUsername = VaultReader.autofillPrefillUsername(store: store, vaultKey: vaultKey)
             sharedEntries = SharedCredentialsCache.load(vaultKey: vaultKey)
-            defaultUsername = VaultReader.autofillPrefillUsername(vaultKey: vaultKey)
             loaded = true
             if let preferredRecordID {
                 if let hit = sharedEntries.first(where: { $0.itemID == preferredRecordID }) {
@@ -148,6 +153,7 @@ private struct CredentialListView: View {
                 NavigationLink {
                     CreateLoginView(host: serviceIdentifiers.first ?? "",
                                     defaultUsername: defaultUsername,
+                                    store: store,
                                     vaultKey: vaultKey,
                                     onSaved: onSelect)
                 } label: {

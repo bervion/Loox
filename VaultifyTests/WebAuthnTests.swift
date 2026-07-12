@@ -38,6 +38,44 @@ final class WebAuthnTests: XCTestCase {
         XCTAssertTrue(publicKey.isValidSignature(signature, for: assertion.authenticatorData + clientHash))
     }
 
+    func testConditionalRegistrationOmitsUserPresenceAndVerification() throws {
+        let registration = WebAuthn.register(relyingParty: "example.com",
+                                             flags: WebAuthn.conditionalCredentialFlags)
+        let authData = try AttestationReader.authData(from: registration.attestationObject)
+
+        // AT|BS|BE only — a conditional creation ran no user-verification ceremony.
+        XCTAssertEqual(authData[authData.index(authData.startIndex, offsetBy: 32)], 0x58)
+        XCTAssertEqual(registration.flags, WebAuthn.conditionalCredentialFlags)
+    }
+
+    func testInteractiveRegistrationDefaultKeepsFullFlags() throws {
+        let registration = WebAuthn.register(relyingParty: "example.com")
+        let authData = try AttestationReader.authData(from: registration.attestationObject)
+
+        // AT|BS|BE|UV|UP — the default (interactive) ceremony is user-verified.
+        XCTAssertEqual(authData[authData.index(authData.startIndex, offsetBy: 32)], 0x5D)
+    }
+
+    func testAssertionFlagsAlwaysAssertVerificationAndCopyBackupBits() {
+        // Assertions are user-verified by construction; stored registration
+        // flags only contribute the backup bits.
+        XCTAssertEqual(WebAuthn.assertionFlags(stored: nil), 0x05)                                // UP|UV
+        XCTAssertEqual(WebAuthn.assertionFlags(stored: WebAuthn.legacyAssertionFlags), 0x05)      // UP|UV
+        XCTAssertEqual(WebAuthn.assertionFlags(stored: WebAuthn.conditionalCredentialFlags), 0x1D) // UP|UV|BE|BS
+        XCTAssertEqual(WebAuthn.assertionFlags(stored: WebAuthn.newCredentialFlags), 0x1D)         // UP|UV|BE|BS
+    }
+
+    func testAssertionOfConditionallyRegisteredCredentialAssertsVerification() throws {
+        let registration = WebAuthn.register(relyingParty: "example.com",
+                                             flags: WebAuthn.conditionalCredentialFlags)
+        let assertion = try WebAuthn.assertion(relyingParty: "example.com",
+                                               clientDataHash: Data(repeating: 2, count: 32),
+                                               privateKeyRaw: registration.privateKeyRaw,
+                                               flags: WebAuthn.assertionFlags(stored: registration.flags))
+
+        XCTAssertEqual(assertion.authenticatorData[32], 0x1D)
+    }
+
     func testLegacyAssertionKeepsOldFlags() throws {
         let registration = WebAuthn.register(relyingParty: "example.com")
         let assertion = try WebAuthn.assertion(relyingParty: "example.com",

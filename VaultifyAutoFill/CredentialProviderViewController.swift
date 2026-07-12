@@ -28,8 +28,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     /// User picks from our list / a saved credential is requested.
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
         autofillLog.log("prepareCredentialList(passwords) services=\(serviceIdentifiers.count, privacy: .public)")
+        guard let store = makeStore() else { cancel(code: .failed); return }
         host(AutoFillView(serviceIdentifiers: serviceIdentifiers.map(\.identifier),
                           preferredRecordID: nil,
+                          store: store,
                           onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
                           onCancel: { [weak self] in self?.cancel() }))
     }
@@ -38,8 +40,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     @available(iOS 18, *)
     override func prepareOneTimeCodeCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
         autofillLog.log("prepareOneTimeCodeCredentialList services=\(serviceIdentifiers.count, privacy: .public)")
+        guard let store = makeStore() else { cancel(code: .failed); return }
         host(OneTimeCodeView(serviceIdentifiers: serviceIdentifiers.map(\.identifier),
                              preferredRecordID: nil,
+                             store: store,
                              onSelect: { [weak self] code in self?.completeOneTimeCode(code) },
                              onCancel: { [weak self] in self?.cancel() }))
     }
@@ -64,14 +68,16 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
         autofillLog.log("prepareInterfaceToProvideCredential")
         if #available(iOS 18, *), let otp = credentialRequest as? ASOneTimeCodeCredentialRequest {
             let recordID = (otp.credentialIdentity as? ASOneTimeCodeCredentialIdentity)?.recordIdentifier
+            guard let store = makeStore() else { cancel(code: .failed); return }
             host(OneTimeCodeView(serviceIdentifiers: [], preferredRecordID: recordID,
+                                 store: store,
                                  onSelect: { [weak self] code in self?.completeOneTimeCode(code) },
                                  onCancel: { [weak self] in self?.cancel() }))
             return
         }
         if let passkey = credentialRequest as? ASPasskeyCredentialRequest,
            let identity = passkey.credentialIdentity as? ASPasskeyCredentialIdentity {
-            guard let store = makePasskeyStore() else { cancel(code: .failed); return }
+            guard let store = makeStore() else { cancel(code: .failed); return }
             var largeBlob: PasskeyLargeBlobDirective = .none
             if #available(iOS 18, *) { largeBlob = PasskeyLargeBlob.directive(passkey.extensionInput) }
             showPasskey(.assert(relyingParty: identity.relyingPartyIdentifier,
@@ -81,7 +87,9 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                         store: store)
         } else {
             let recordID = (credentialRequest.credentialIdentity as? ASPasswordCredentialIdentity)?.recordIdentifier
+            guard let store = makeStore() else { cancel(code: .failed); return }
             host(AutoFillView(serviceIdentifiers: [], preferredRecordID: recordID,
+                              store: store,
                               onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
                               onCancel: { [weak self] in self?.cancel() }))
         }
@@ -103,10 +111,12 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             return
         }
         let credential = savePasswordRequest.credential
+        guard let store = makeStore() else { cancel(code: .failed); return }
         host(SavePasswordView(
             host: savePasswordRequest.serviceIdentifier.identifier,
             username: credential.user,
             password: credential.password,
+            store: store,
             onSaved: { [weak self] in self?.extensionContext.completeSavePasswordRequest(completionHandler: nil) },
             onCancel: { [weak self] in self?.cancel() }))
     }
@@ -148,7 +158,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             cancel(code: .failed)
             return
         }
-        guard let store = makePasskeyStore() else { cancel(code: .failed); return }
+        guard let store = makeStore() else { cancel(code: .failed); return }
         if #available(iOS 18, *), hasExcludedCredential(request, store: store) {
             cancel(code: .matchedExcludedCredential)
             return
@@ -166,7 +176,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     /// key, no second Face ID) instead of erroring out and dismissing.
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier],
                                         requestParameters: ASPasskeyCredentialRequestParameters) {
-        guard let store = makePasskeyStore() else { cancel(code: .failed); return }
+        guard let store = makeStore() else { cancel(code: .failed); return }
         var largeBlob: PasskeyLargeBlobDirective = .none
         if #available(iOS 18, *) { largeBlob = PasskeyLargeBlob.directive(assertion: requestParameters.extensionInput) }
         showPasskey(.assert(relyingParty: requestParameters.relyingPartyIdentifier,
@@ -176,9 +186,11 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                     store: store,
                     onNoPasskey: { [weak self] vaultKey in
                         autofillLog.log("passkey assert: no matches — falling back to password list")
+                        // Re-hosting within the same presentation — reuse its store.
                         self?.host(AutoFillView(
                             serviceIdentifiers: serviceIdentifiers.map(\.identifier),
                             preferredRecordID: nil,
+                            store: store,
                             presetKey: vaultKey,
                             onSelect: { [weak self] user, password in self?.complete(user: user, password: password) },
                             onCancel: { [weak self] in self?.cancel() }))
@@ -186,7 +198,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     }
 
     private func showPasskey(_ purpose: PasskeyPurpose, store: VaultStore,
-                             onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil) {
+                             onNoPasskey: ((_ vaultKey: SecureBytes) -> Void)? = nil) {
         let title: LocalizedStringKey
         if case .register = purpose {
             title = "Create a passkey"
@@ -207,10 +219,14 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             onNoPasskey: onNoPasskey))
     }
 
-    func makePasskeyStore() -> VaultStore? {
+    /// The single `VaultStore` (one `ModelContainer`) for a presentation — created at host
+    /// time and threaded through every reader/writer call. Container construction is the
+    /// dominant cold-start cost after key derivation, and multiple containers on the same
+    /// SQLite file invite SwiftData contention. Nil on failure → caller cancels gracefully.
+    func makeStore() -> VaultStore? {
         do { return try VaultStore(recoverable: false) }
         catch {
-            autofillLog.error("passkey-store-open-failed")
+            autofillLog.error("store-open-failed")
             return nil
         }
     }

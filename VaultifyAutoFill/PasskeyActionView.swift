@@ -26,7 +26,7 @@ struct PasskeyActionView: View {
     let onCancel: (_ code: ASExtensionError.Code) -> Void
     /// See `PasskeyCeremonyView.onNoPasskey` — password-picker fallback for
     /// QuickType-list assertions with zero matching passkeys.
-    var onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil
+    var onNoPasskey: ((_ vaultKey: SecureBytes) -> Void)? = nil
 
     var body: some View {
         UnlockGate(title: title, onCancel: { onCancel(.userCanceled) }) { vaultKey in
@@ -44,7 +44,7 @@ struct PasskeyActionView: View {
 }
 
 private struct PasskeyMigrationGate<Content: View>: View {
-    let vaultKey: [UInt8]
+    let vaultKey: SecureBytes
     let store: VaultStore
     @ViewBuilder var content: () -> Content
     @State private var ready = false

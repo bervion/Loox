@@ -189,7 +189,7 @@ import UIKit
             let result = try WebAuthn.assertion(
                 relyingParty: secret.relyingParty, clientDataHash: binding,
                 privateKeyRaw: secret.privateKeyRaw,
-                flags: secret.flags ?? WebAuthn.legacyAssertionFlags)
+                flags: WebAuthn.assertionFlags(stored: secret.flags))
             let payload = PasskeyApprovalPayload(
                 authenticatorData: result.authenticatorData,
                 signature: result.signature,

@@ -8,7 +8,9 @@ import AuthenticationServices
 /// signup leaves the item in the vault (the user prunes it later) — an accepted trade-off.
 struct CreateLoginView: View {
     let host: String
-    let vaultKey: [UInt8]
+    /// The presentation's single vault store (owned by the hosting controller).
+    let store: VaultStore
+    let vaultKey: SecureBytes
     /// Called after a successful save to fill the form (maps to the credential completion).
     let onSaved: (_ user: String, _ password: String) -> Void
 
@@ -19,9 +21,10 @@ struct CreateLoginView: View {
     @State private var spaces: [VaultSpaceReader.Space] = []
     @State private var errorMessage: String?
 
-    init(host: String, defaultUsername: String, vaultKey: [UInt8],
+    init(host: String, defaultUsername: String, store: VaultStore, vaultKey: SecureBytes,
          onSaved: @escaping (_ user: String, _ password: String) -> Void) {
         self.host = host
+        self.store = store
         self.vaultKey = vaultKey
         self.onSaved = onSaved
         _site = State(initialValue: host)
@@ -37,7 +40,9 @@ struct CreateLoginView: View {
                 header: { Text("Username") }
             Section {
                 HStack {
+                    // Redacts the generated secret in app-switcher snapshots.
                     Text(password).font(.body.monospaced()).lineLimit(1).minimumScaleFactor(0.7)
+                        .privacySensitive()
                     Spacer()
                     Button("Regenerate") { password = PasswordGenerator.generate(PasswordOptions()) }
                         .buttonStyle(.borderless)
@@ -62,8 +67,8 @@ struct CreateLoginView: View {
         .navigationTitle("New login")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            spaces = VaultSpaceReader.activePersonaSpaces(vaultKey: vaultKey)
-            folderId = VaultSpaceReader.defaultSpaceId(vaultKey: vaultKey)
+            spaces = VaultSpaceReader.activePersonaSpaces(store: store, vaultKey: vaultKey)
+            folderId = VaultSpaceReader.defaultSpaceId(store: store, vaultKey: vaultKey)
         }
     }
 
@@ -79,7 +84,7 @@ struct CreateLoginView: View {
 
     private func save() {
         do {
-            let id = try VaultWriter.createLogin(site: site, username: username,
+            let id = try VaultWriter.createLogin(store: store, site: site, username: username,
                                                  password: password, folderId: folderId,
                                                  vaultKey: vaultKey)
             indexCredential(recordID: id)

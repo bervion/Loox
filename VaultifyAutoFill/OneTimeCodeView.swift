@@ -5,6 +5,9 @@ import SwiftUI
 struct OneTimeCodeView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
+    /// The presentation's single vault store, opened by the hosting controller
+    /// (a load failure cancels the request before any UI shows).
+    let store: VaultStore
     let onSelect: (_ code: String) -> Void
     let onCancel: () -> Void
 
@@ -12,6 +15,7 @@ struct OneTimeCodeView: View {
         UnlockGate(title: "One-time code", onCancel: onCancel) { vaultKey in
             OneTimeCodeListView(serviceIdentifiers: serviceIdentifiers,
                                 preferredRecordID: preferredRecordID,
+                                store: store,
                                 vaultKey: vaultKey,
                                 onSelect: onSelect)
         }
@@ -23,7 +27,8 @@ struct OneTimeCodeView: View {
 private struct OneTimeCodeListView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
-    let vaultKey: [UInt8]
+    let store: VaultStore
+    let vaultKey: SecureBytes
     let onSelect: (_ code: String) -> Void
 
     @State private var items: [VaultItem] = []
@@ -36,7 +41,7 @@ private struct OneTimeCodeListView: View {
         }
         .task {
             guard !loaded else { return }
-            items = VaultReader.totpItems(vaultKey: vaultKey)
+            items = VaultReader.totpItems(store: store, vaultKey: vaultKey)
             loaded = true
             if let preferredRecordID, let hit = items.first(where: { $0.id == preferredRecordID }) {
                 provide(hit); return

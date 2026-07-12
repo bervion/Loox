@@ -7,13 +7,16 @@ struct SavePasswordView: View {
     let host: String
     let username: String
     let password: String
+    /// The presentation's single vault store, opened by the hosting controller
+    /// (a load failure cancels the request before any UI shows).
+    let store: VaultStore
     let onSaved: () -> Void
     let onCancel: () -> Void
 
     var body: some View {
         UnlockGate(title: "Save login", onCancel: onCancel) { vaultKey in
             SaveConfirmView(host: host, username: username, password: password,
-                            vaultKey: vaultKey, onSaved: onSaved)
+                            store: store, vaultKey: vaultKey, onSaved: onSaved)
         }
     }
 }
@@ -23,7 +26,8 @@ private struct SaveConfirmView: View {
     let host: String
     let username: String
     let password: String
-    let vaultKey: [UInt8]
+    let store: VaultStore
+    let vaultKey: SecureBytes
     let onSaved: () -> Void
 
     @State private var saving = false
@@ -52,8 +56,8 @@ private struct SaveConfirmView: View {
             }
         }
         .task {
-            spaces = VaultSpaceReader.activePersonaSpaces(vaultKey: vaultKey)
-            folderId = VaultSpaceReader.defaultSpaceId(vaultKey: vaultKey)
+            spaces = VaultSpaceReader.activePersonaSpaces(store: store, vaultKey: vaultKey)
+            folderId = VaultSpaceReader.defaultSpaceId(store: store, vaultKey: vaultKey)
         }
     }
 
@@ -70,7 +74,7 @@ private struct SaveConfirmView: View {
     private func save() {
         saving = true; errorMessage = nil
         do {
-            let id = try VaultWriter.createLogin(site: host, username: username,
+            let id = try VaultWriter.createLogin(store: store, site: host, username: username,
                                                  password: password, folderId: folderId,
                                                  vaultKey: vaultKey)
             indexCredential(recordID: id)

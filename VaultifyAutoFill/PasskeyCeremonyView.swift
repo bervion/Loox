@@ -3,7 +3,7 @@ import SwiftUI
 
 struct PasskeyCeremonyView: View {
     let purpose: PasskeyPurpose
-    let vaultKey: [UInt8]
+    let vaultKey: SecureBytes
     let store: VaultStore
     let onAssertion: (_ credential: ASPasskeyAssertionCredential) -> Void
     let onRegistration: (_ credential: ASPasskeyRegistrationCredential) -> Void
@@ -12,7 +12,7 @@ struct PasskeyCeremonyView: View {
     /// the user only holds a password (e.g. a credential SHARED to them) — the
     /// right answer is the password picker, not an error that dismisses the
     /// sheet. The unlocked key rides along so the picker skips a second Face ID.
-    var onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil
+    var onNoPasskey: ((_ vaultKey: SecureBytes) -> Void)? = nil
 
     @State private var matches: [PasskeyInfo] = []
     @State private var working = false
@@ -166,10 +166,13 @@ struct PasskeyCeremonyView: View {
                 break
             }
             do {
+                // Per-ceremony flags: this assertion runs behind the unlock gate
+                // plus the live grant check, so UP/UV are true regardless of the
+                // stored registration flags (which only contribute BE/BS).
                 let result = try WebAuthn.assertion(
                     relyingParty: relyingParty, clientDataHash: clientDataHash,
                     privateKeyRaw: keyRaw,
-                    flags: slot.flags ?? WebAuthn.legacyAssertionFlags)
+                    flags: WebAuthn.assertionFlags(stored: slot.flags))
                 onAssertion(ASPasskeyAssertionCredential(
                     userHandle: slot.userHandle, relyingParty: relyingParty,
                     signature: result.signature, clientDataHash: clientDataHash,
@@ -254,10 +257,13 @@ struct PasskeyCeremonyView: View {
                 onCancel(.credentialIdentityNotFound)
                 return
             }
+            // Per-ceremony flags: assertions always run behind the unlock gate, so
+            // UP/UV are true even for a conditionally created credential whose
+            // registration recorded UP=0/UV=0; stored flags only contribute BE/BS.
             let result = try WebAuthn.assertion(relyingParty: relyingParty,
                                                 clientDataHash: clientDataHash,
                                                 privateKeyRaw: secret.privateKeyRaw,
-                                                flags: secret.flags ?? WebAuthn.legacyAssertionFlags)
+                                                flags: WebAuthn.assertionFlags(stored: secret.flags))
             vault.touchLastUsed(credentialID: secret.credentialID)
             onAssertion(assertionCredential(secret: secret, result: result,
                                             relyingParty: relyingParty,

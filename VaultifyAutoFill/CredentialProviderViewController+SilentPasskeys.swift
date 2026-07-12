@@ -22,12 +22,19 @@ extension CredentialProviderViewController {
             skipSilentRegistration("algorithm")
             return
         }
+        // The RP demands user verification; a silent creation cannot honestly
+        // satisfy that (no ceremony runs), so hand back to the interactive flow
+        // instead of registering a credential whose UV claim would be false.
+        guard request.userVerificationPreference != .required else {
+            skipSilentRegistration("uv-required")
+            return
+        }
         guard let publicKey = PasskeyEnvelope.publicKey() else {
             skipSilentRegistration("no-envelope-key")
             return
         }
         guard let identity = request.credentialIdentity as? ASPasskeyCredentialIdentity,
-              let store = makePasskeyStore() else {
+              let store = makeStore() else {
             skipSilentRegistration("request")
             return
         }
@@ -40,7 +47,10 @@ extension CredentialProviderViewController {
         var savedSecret: PasskeySecret?
 
         do {
-            let registration = WebAuthn.register(relyingParty: identity.relyingPartyIdentifier)
+            // No user was present or verified for this conditional creation — the
+            // authenticator data must say so (UP=0, UV=0; BE/BS stay set).
+            let registration = WebAuthn.register(relyingParty: identity.relyingPartyIdentifier,
+                                                 flags: WebAuthn.conditionalCredentialFlags)
             let secret = PasskeySecret(relyingParty: identity.relyingPartyIdentifier,
                                        userName: identity.userName,
                                        userHandle: identity.userHandle,

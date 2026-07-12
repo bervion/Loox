@@ -97,7 +97,9 @@ nonisolated enum SharedCredentialsCache {
 
     /// Best-effort load -- any corruption, wrong key, or missing file yields an empty
     /// list rather than throwing (AutoFill must degrade to "no shared items", never crash).
-    static func load(vaultKey: [UInt8]) -> [SharedCredentialEntry] {
+    /// Takes the key in locked storage: the extension is the only reader, and it keeps
+    /// the Vault Key out of plain heap arrays end to end.
+    static func load(vaultKey: SecureBytes) -> [SharedCredentialEntry] {
         guard let envelope = try? Data(contentsOf: SharedConfig.sharedCredentialsCacheURL),
               envelope.first == version,
               let plaintext = try? AESGCM.open(envelope.dropFirst(), key: vaultKey),

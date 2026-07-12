@@ -63,7 +63,12 @@ import Foundation
         guard let bundle = VaultKeyBundle.load(),
               let wrapped = bundle.wrappedByRecovery,
               let salt = bundle.recoverySalt,
-              let kdfData = try? JSONEncoder().encode(bundle.kdf) else { return }
+              // The envelope must travel with the params it was WRAPPED with —
+              // `recoveryKdf` when recorded; `kdf` only for pre-field bundles,
+              // where the two paths always shared a profile. Pushing the current
+              // password-path `kdf` after it diverges would make the Emergency
+              // Kit fail to open the synced envelope on a new device.
+              let kdfData = try? JSONEncoder().encode(bundle.recoveryKdf ?? bundle.kdf) else { return }
         let fingerprint = Data(SHA256.hash(data: wrapped)).base64EncodedString()
         let defaults = UserDefaults.standard
         guard defaults.string(forKey: Self.pushedFingerprintKey) != fingerprint else { return }

@@ -15,6 +15,9 @@ extension VaultSession {
         var updated = bundle
         updated.recoverySalt = Data(salt)
         updated.wrappedByRecovery = wrapped
+        // Record the wrap profile: the password-path `kdf` can be re-tuned later,
+        // but this envelope can only ever be opened with the params used right now.
+        updated.recoveryKdf = bundle.kdf
         try updated.save()
         return display
     }
@@ -28,9 +31,13 @@ extension VaultSession {
               let recoverySalt = bundle.recoverySalt else { throw AuthError.recoveryFailed }
         var keyBytes: [UInt8]
         do {
+            // The recovery envelope keeps the params from kit-generation time;
+            // bundles predating `recoveryKdf` always shared the password-path
+            // profile, so falling back to `kdf` is exact for them.
             keyBytes = try await Self.unwrap(wrapped: wrapped,
                                              password: RecoveryKey.normalize(recoveryKey),
-                                             salt: Array(recoverySalt), params: bundle.kdf)
+                                             salt: Array(recoverySalt),
+                                             params: bundle.recoveryKdf ?? bundle.kdf)
         } catch {
             throw AuthError.recoveryFailed
         }
@@ -56,9 +63,17 @@ extension VaultSession {
 
     private func rewrapWithPassword(_ password: String, vaultKey: [UInt8], base: VaultKeyBundle) async throws {
         let salt = KeyHierarchy.newSalt()
-        let params = KdfParams.standard
+        // Extension-safe profile: the AutoFill extension must be able to run this
+        // derivation under its memory budget (see `KdfParams.constrained`).
+        let params = KdfParams.constrained
         let wrapped = try await Self.wrap(vaultKey: vaultKey, password: password, salt: salt, params: params)
         var updated = base
+        if updated.wrappedByRecovery != nil, updated.recoveryKdf == nil {
+            // The recovery envelope was wrapped under the pre-change profile;
+            // record it BEFORE the password profile moves away from it, or the
+            // paper recovery key stops unwrapping.
+            updated.recoveryKdf = updated.kdf
+        }
         updated.kdfSalt = Data(salt)
         updated.kdf = params
         updated.wrappedByPassword = wrapped
