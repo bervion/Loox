@@ -20,11 +20,23 @@ import Foundation
     private let shareService: ApprovalShareService
     private let settings: SettingsStore
     private let singleFlight = SingleFlight()
+    private var observers: [NSObjectProtocol] = []
+    /// One best-effort pass per process lifetime that installs the silent
+    /// acceptance subscription onto in-flight shares created before that
+    /// subscription existed. Failures simply retry on the next launch.
+    private var subscriptionsBackfilled = false
 
     init(store: SharingStore, shareService: ApprovalShareService, settings: SettingsStore) {
         self.store = store
         self.shareService = shareService
         self.settings = settings
+        // The recipient's device published its profile (silent push): resolve
+        // the new status now instead of waiting for the next foreground pass.
+        observers.append(NotificationCenter.default.addObserver(
+            forName: .shareAcceptanceHint, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refresh() }
+        })
     }
 
     /// Fire-and-forget: re-resolve status for all in-flight shares. Cheap — only
@@ -41,6 +53,13 @@ import Foundation
     private func refreshAll() async {
         let pending = store.shares.filter { !$0.fingerprintConfirmed }
         ShareDiagnostics.log("OWNER", "refresh: \(pending.count) unconfirmed share(s)")
+        if !subscriptionsBackfilled {
+            subscriptionsBackfilled = true
+            for record in pending {
+                try? await shareService.saveAcceptanceSubscription(
+                    zoneID: CKRecordZone.ID(zoneName: record.zoneName))
+            }
+        }
         for record in pending {
             let zoneID = CKRecordZone.ID(zoneName: record.zoneName)
             let next = await resolveStatus(zoneID: zoneID)

@@ -93,6 +93,7 @@ import Foundation
         let saved = try await database.modifyRecords(saving: [share], deleting: [])
         for (_, result) in saved.saveResults { _ = try result.get() }
         try await saveOwnerAlertSubscription(zoneID: zoneID)
+        try await saveAcceptanceSubscription(zoneID: zoneID)
         Self.registerZone(zoneName)
         let url = (try? await fetchShare(zoneID: zoneID))?.url ?? share.url
         return ShareSetup(zoneID: zoneID, shareURL: url)
@@ -120,6 +121,30 @@ import Foundation
         info.alertLocalizationKey = "approval.push.body"
         info.soundName = "default"
         subscription.notificationInfo = info
+        _ = try await database.modifySubscriptions(saving: [subscription], deleting: [])
+    }
+
+    /// SILENT push when the participant CREATES their identity profile — the
+    /// event that turns "waiting" into "ready for the fingerprint ceremony"
+    /// on the owner side. Must stay content-available only: an alert-style
+    /// subscription on profile writes produced phantom notifications (the
+    /// acceptance resume re-publishes the profile idempotently), which is why
+    /// the user-visible subscription above is scoped to ApprovalRequest. A
+    /// redundant silent hint just triggers a cheap, single-flighted refresh.
+    /// Internal (not private) so a launch-time pass can backfill it onto
+    /// shares created before this subscription existed.
+    func saveAcceptanceSubscription(zoneID: CKRecordZone.ID) async throws {
+        let subscription = CKQuerySubscription(
+            recordType: ApprovalConfig.participantProfileRecordType,
+            predicate: NSPredicate(value: true),
+            subscriptionID: ApprovalConfig.acceptSubscriptionID(zoneName: zoneID.zoneName),
+            options: [.firesOnRecordCreation])
+        subscription.zoneID = zoneID
+        let info = CKSubscription.NotificationInfo()
+        info.shouldSendContentAvailable = true // silent — no banner, no sound
+        subscription.notificationInfo = info
+        // Saving under the same id is an upsert, so the idempotent
+        // createShare resume/nudge path never trips over an existing one.
         _ = try await database.modifySubscriptions(saving: [subscription], deleting: [])
     }
 
@@ -392,7 +417,9 @@ import Foundation
                 saving: [], deleting: [CKRecord.ID(recordName: inviteRecordName)])
         }
         _ = try? await database.modifySubscriptions(
-            saving: [], deleting: [ApprovalConfig.requestSubscriptionID(zoneName: zoneName)])
+            saving: [],
+            deleting: [ApprovalConfig.requestSubscriptionID(zoneName: zoneName),
+                       ApprovalConfig.acceptSubscriptionID(zoneName: zoneName)])
         Self.unregisterZone(zoneName)
     }
 

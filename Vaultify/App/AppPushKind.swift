@@ -11,6 +11,7 @@ nonisolated enum AppPushKind {
     case approvalRequest
     case approvalResponse
     case inviteRendezvous
+    case shareAcceptance
 
     static func classify(_ notification: CKNotification) -> AppPushKind {
         guard let subscriptionID = notification.subscriptionID else {
@@ -19,6 +20,9 @@ nonisolated enum AppPushKind {
         }
         if subscriptionID.hasPrefix(ApprovalConfig.requestSubscriptionPrefix) {
             return .approvalRequest
+        }
+        if subscriptionID.hasPrefix(ApprovalConfig.acceptSubscriptionPrefix) {
+            return .shareAcceptance
         }
         if subscriptionID == ApprovalConfig.sharedDatabaseSubscriptionID {
             return .approvalResponse
@@ -49,6 +53,11 @@ extension Notification.Name {
     /// A public-db invite drop addressed to this account's inbox (U5).
     /// Push = hint only; observers reconcile against the public-db inbox.
     static let inviteRendezvousReceived = Notification.Name("inviteRendezvousReceived")
+    /// A recipient's device published its identity profile into one of this
+    /// owner's approval zones (silent push). Hint-only, no payload — observers
+    /// re-resolve share status against CloudKit, same contract as the hints
+    /// above.
+    static let shareAcceptanceHint = Notification.Name("shareAcceptanceHint")
 }
 
 /// Cold-launch mailbox for an invite universal link: the scene delegate

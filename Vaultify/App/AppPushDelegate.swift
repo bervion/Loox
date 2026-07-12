@@ -58,6 +58,8 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
             NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
         case .inviteRendezvous:
             NotificationCenter.default.post(name: .inviteRendezvousReceived, object: nil)
+        case .shareAcceptance:
+            NotificationCenter.default.post(name: .shareAcceptanceHint, object: nil)
         }
     }
 
@@ -167,6 +169,8 @@ final class AppPushDelegate: NSObject, NSApplicationDelegate {
             NotificationCenter.default.post(name: .approvalResponseReceived, object: nil)
         case .inviteRendezvous:
             NotificationCenter.default.post(name: .inviteRendezvousReceived, object: nil)
+        case .shareAcceptance:
+            NotificationCenter.default.post(name: .shareAcceptanceHint, object: nil)
         }
     }
 
