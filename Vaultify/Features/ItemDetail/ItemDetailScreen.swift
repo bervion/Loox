@@ -33,6 +33,19 @@ struct ItemDetailScreen: View {
     /// drives the T3 bottom "Copy Password" cluster's fade-in.
     @State private var passwordFieldOffscreen = false
 
+    /// Message-style alert bindings, lifted out of `body` so the long modifier
+    /// chain stays within the Swift type-checker's budget (a stable-Xcode build
+    /// times out type-checking the inline two-closure `Binding`s otherwise).
+    private var quickViewBlockedAlert: Binding<Bool> {
+        Binding(get: { quickViewBlockedReason != nil },
+                set: { if !$0 { quickViewBlockedReason = nil } })
+    }
+
+    private var leaveErrorAlert: Binding<Bool> {
+        Binding(get: { leaveError != nil },
+                set: { if !$0 { leaveError = nil } })
+    }
+
     /// Named coordinate space for the scroll view, so the password row's frame
     /// (reported via `PasswordFieldFramePreferenceKey`) can be read relative to
     /// the viewport rather than the whole screen — no iOS-18-only scroll API.
@@ -237,8 +250,7 @@ struct ItemDetailScreen: View {
                     defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
             }
         }
-        .alert("Can't open on a computer", isPresented: Binding(
-            get: { quickViewBlockedReason != nil }, set: { if !$0 { quickViewBlockedReason = nil } })) {
+        .alert("Can't open on a computer", isPresented: quickViewBlockedAlert) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: quickViewBlockedReason ?? "")
@@ -271,8 +283,7 @@ struct ItemDetailScreen: View {
         } message: {
             Text("This is your only identity. Add another before removing this one.")
         }
-        .alert("Couldn't leave the share", isPresented: Binding(
-            get: { leaveError != nil }, set: { if !$0 { leaveError = nil } })) {
+        .alert("Couldn't leave the share", isPresented: leaveErrorAlert) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: leaveError ?? "")
