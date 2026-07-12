@@ -14,7 +14,14 @@ nonisolated enum AppPushKind {
     case shareAcceptance
 
     static func classify(_ notification: CKNotification) -> AppPushKind {
-        guard let subscriptionID = notification.subscriptionID else {
+        classify(subscriptionID: notification.subscriptionID)
+    }
+
+    /// Pure routing rule over the subscription id — split out so the routing
+    /// table is unit-testable without synthesizing a `CKNotification` (which
+    /// requires a real push userInfo dictionary).
+    static func classify(subscriptionID: String?) -> AppPushKind {
+        guard let subscriptionID else {
             // No subscription id → legacy/unknown; preserve pre-routing behavior.
             return .vaultRemoteChange
         }
