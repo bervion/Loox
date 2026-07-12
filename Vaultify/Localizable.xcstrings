@@ -7326,12 +7326,12 @@
         }
       }
     },
-    "No need to wait here. They'll get a notification, and we'll ping you the moment they accept. You can track it anytime from Home." : {
+    "No need to wait here. We'll notify you as soon as they accept, and you can track progress anytime from Home." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bạn không cần đợi ở đây. Họ sẽ nhận được thông báo, và chúng tôi sẽ báo cho bạn ngay khi họ chấp nhận. Bạn có thể theo dõi bất cứ lúc nào từ Home."
+            "value" : "Bạn không cần đợi ở đây. Chúng tôi sẽ thông báo cho bạn ngay khi họ chấp nhận, và bạn có thể theo dõi tiến trình bất cứ lúc nào từ Home."
           }
         }
       }

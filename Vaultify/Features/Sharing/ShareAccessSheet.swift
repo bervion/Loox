@@ -350,7 +350,10 @@ struct ShareAccessSheet: View {
         guard let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw else { return }
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         var delay: Duration = .seconds(3)
-        for attempt in 0..<80 { // ≈ 10 minutes at the capped interval
+        // Short budget on purpose: the silent acceptance push (plus the hint
+        // hook on the waiting view) is the primary detector now — this poll is
+        // only the fallback for a throttled or undelivered push.
+        for attempt in 0..<24 { // ≈ 2.5 minutes at the capped interval
             guard !Task.isCancelled else { return }
             if let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) {
                 env.sharingStore.updateStatus(zoneName: zoneName, to: .readyForCeremony)
@@ -359,15 +362,17 @@ struct ShareAccessSheet: View {
                 step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
                 return
             }
+            // Every tick: re-check CKShare acceptance (a cheap single-record
+            // fetch) so the copy flips to "accepted, finishing on their
+            // device" within seconds of the accept, not on a slow cadence.
+            if await env.approvalShare.participantAccepted(zoneID: zoneID) {
+                env.sharingStore.updateStatus(zoneName: zoneName, to: .accepted)
+            }
             // The recipient may have armed their inbox since the last try —
-            // re-attempt the auto-drop on a slower cadence (~every 30-60s). Same
-            // cadence re-checks CKShare acceptance so the copy can switch to
-            // "accepted, finishing on their device" even before the profile lands.
+            // re-attempt the auto-drop on a slower cadence (~every 30-60s):
+            // unlike the read above, this WRITES to the public DB.
             if attempt % 6 == 5 {
                 await retryAutoInviteIfNeeded()
-                if await env.approvalShare.participantAccepted(zoneID: zoneID) {
-                    env.sharingStore.updateStatus(zoneName: zoneName, to: .accepted)
-                }
             }
             try? await Task.sleep(for: delay)
             delay = min(delay * 2, .seconds(10))
@@ -697,6 +702,13 @@ struct ShareAccessSheet: View {
                 }
             }
             .padding(Space.gutter)
+        }
+        // The silent acceptance push landed while this sheet is open — check
+        // immediately instead of waiting out the poll's backoff. Safe to fire
+        // repeatedly: checkProfileNow is a one-shot fetch and drops itself if
+        // the step already moved past waiting.
+        .onReceive(NotificationCenter.default.publisher(for: .shareAcceptanceHint)) { _ in
+            Task { await checkProfileNow() }
         }
     }
 
