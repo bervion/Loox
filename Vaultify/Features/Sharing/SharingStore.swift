@@ -87,6 +87,13 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
         shares.filter { $0.itemId == itemId }
     }
 
+    /// Shares waiting on the OWNER's hands (the fingerprint ceremony) — the
+    /// one lifecycle state that is actionable rather than merely pending.
+    /// Feeds the Home bell badge alongside invites and approval requests.
+    var awaitingCeremonyCount: Int {
+        shares.filter { $0.status == .readyForCeremony }.count
+    }
+
     func upsert(_ record: ItemShareRecord) {
         shares.removeAll { $0.zoneName == record.zoneName }
         shares.append(record)

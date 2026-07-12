@@ -19,12 +19,27 @@ import Foundation
     private let store: SharingStore
     private let shareService: ApprovalShareService
     private let settings: SettingsStore
+    private let notifier: ShareStatusNotifier
     private let singleFlight = SingleFlight()
+    private var observers: [NSObjectProtocol] = []
+    /// One best-effort pass per process lifetime that installs the silent
+    /// acceptance subscription onto in-flight shares created before that
+    /// subscription existed. Failures simply retry on the next launch.
+    private var subscriptionsBackfilled = false
 
-    init(store: SharingStore, shareService: ApprovalShareService, settings: SettingsStore) {
+    init(store: SharingStore, shareService: ApprovalShareService,
+         settings: SettingsStore, notifier: ShareStatusNotifier) {
         self.store = store
         self.shareService = shareService
         self.settings = settings
+        self.notifier = notifier
+        // The recipient's device published its profile (silent push): resolve
+        // the new status now instead of waiting for the next foreground pass.
+        observers.append(NotificationCenter.default.addObserver(
+            forName: .shareAcceptanceHint, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refresh() }
+        })
     }
 
     /// Fire-and-forget: re-resolve status for all in-flight shares. Cheap — only
@@ -34,18 +49,45 @@ import Foundation
         guard settings.approvalModeEnabled else { return }
         Task { [weak self] in
             guard let self else { return }
-            await self.singleFlight.run { await self.refreshAll() }
+            await self.refreshAndWait()
         }
+    }
+
+    /// Awaitable variant for the background silent-push path: the push
+    /// delegate must not return its fetch completion handler while the
+    /// CloudKit refresh is still running — iOS may suspend the process
+    /// mid-fetch, the "accepted" banner silently never posts, and nothing
+    /// retries until the next foreground. Returns only after a full refresh
+    /// pass has completed (SingleFlight makes joining an in-flight run wait
+    /// for it plus its follow-up).
+    func refreshAndWait() async {
+        guard settings.approvalModeEnabled else { return }
+        await singleFlight.run { await self.refreshAll() }
     }
 
     private func refreshAll() async {
         let pending = store.shares.filter { !$0.fingerprintConfirmed }
         ShareDiagnostics.log("OWNER", "refresh: \(pending.count) unconfirmed share(s)")
+        if !subscriptionsBackfilled {
+            subscriptionsBackfilled = true
+            for record in pending {
+                try? await shareService.saveAcceptanceSubscription(
+                    zoneID: CKRecordZone.ID(zoneName: record.zoneName))
+            }
+        }
         for record in pending {
             let zoneID = CKRecordZone.ID(zoneName: record.zoneName)
+            let previous = record.status
             let next = await resolveStatus(zoneID: zoneID)
             ShareDiagnostics.log("OWNER", "share \(record.zoneName) → \(next)")
             store.updateStatus(zoneName: record.zoneName, to: next)
+            // Surface the one transition that needs the owner's hands (the
+            // fingerprint ceremony) when it lands while the app is not
+            // frontmost — typically via the background silent push.
+            if ShareStatusNotifier.shouldNotify(previous: previous, next: next,
+                                                appActive: notifier.isAppActive) {
+                notifier.notifyReadyForCeremony(record: record)
+            }
         }
     }
 

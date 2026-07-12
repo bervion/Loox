@@ -11,14 +11,25 @@ nonisolated enum AppPushKind {
     case approvalRequest
     case approvalResponse
     case inviteRendezvous
+    case shareAcceptance
 
     static func classify(_ notification: CKNotification) -> AppPushKind {
-        guard let subscriptionID = notification.subscriptionID else {
+        classify(subscriptionID: notification.subscriptionID)
+    }
+
+    /// Pure routing rule over the subscription id — split out so the routing
+    /// table is unit-testable without synthesizing a `CKNotification` (which
+    /// requires a real push userInfo dictionary).
+    static func classify(subscriptionID: String?) -> AppPushKind {
+        guard let subscriptionID else {
             // No subscription id → legacy/unknown; preserve pre-routing behavior.
             return .vaultRemoteChange
         }
         if subscriptionID.hasPrefix(ApprovalConfig.requestSubscriptionPrefix) {
             return .approvalRequest
+        }
+        if subscriptionID.hasPrefix(ApprovalConfig.acceptSubscriptionPrefix) {
+            return .shareAcceptance
         }
         if subscriptionID == ApprovalConfig.sharedDatabaseSubscriptionID {
             return .approvalResponse
@@ -49,6 +60,15 @@ extension Notification.Name {
     /// A public-db invite drop addressed to this account's inbox (U5).
     /// Push = hint only; observers reconcile against the public-db inbox.
     static let inviteRendezvousReceived = Notification.Name("inviteRendezvousReceived")
+    /// A recipient's device published its identity profile into one of this
+    /// owner's approval zones (silent push). Hint-only, no payload — observers
+    /// re-resolve share status against CloudKit, same contract as the hints
+    /// above.
+    static let shareAcceptanceHint = Notification.Name("shareAcceptanceHint")
+    /// The owner tapped the local "they accepted" banner — the unlocked shell
+    /// presents the resume stepper for the share buffered in
+    /// `PendingShareResumeTap`.
+    static let shareResumeTapRequested = Notification.Name("shareResumeTapRequested")
 }
 
 /// Cold-launch mailbox for an invite universal link: the scene delegate
@@ -57,4 +77,13 @@ extension Notification.Name {
 /// path) and buffers here; the app root drains the buffer once it appears.
 @MainActor enum PendingInviteLink {
     static var url: URL?
+}
+
+/// Cold-launch mailbox for a tapped share-acceptance banner: the tap handler
+/// runs before the unlocked shell (or any SwiftUI observer) exists, and the
+/// shell only appears after unlock — buffering here both survives the launch
+/// gap and naturally defers presentation until the vault is open. The tap
+/// handler posts (warm path) AND buffers; the shell drains on appear.
+@MainActor enum PendingShareResumeTap {
+    static var zoneName: String?
 }

@@ -31,7 +31,7 @@ struct ShareInviteSentSheet: View {
                         .vaultType(.callout).themedForeground(.secondary)
                         .multilineTextAlignment(.center)
                 } else {
-                    Text("No need to wait here. They'll get a notification, and we'll ping you the moment they accept. You can track it anytime from Home.")
+                    Text("No need to wait here. We'll notify you as soon as they accept, and you can track progress anytime from Home.")
                         .vaultType(.callout).themedForeground(.secondary)
                         .multilineTextAlignment(.center)
                 }

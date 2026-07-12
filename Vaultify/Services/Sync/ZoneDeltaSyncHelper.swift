@@ -110,17 +110,31 @@ import Foundation
 
 /// While a run is in progress, further requests coalesce into ONE follow-up
 /// run (the pattern previously inlined in `SyncCoordinator`).
+///
+/// Coalesced callers SUSPEND until the in-flight run plus that follow-up
+/// completes, so `await run { … }` always means "a full pass finished after
+/// this call". The background push path relies on that: the push delegate
+/// holds the system fetch completion handler for the real duration of the
+/// triggered CloudKit work, no matter which trigger won the race to start it.
 @MainActor final class SingleFlight {
     private var inFlight = false
     private var followUpRequested = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
 
     func run(_ operation: () async -> Void) async {
-        guard !inFlight else { followUpRequested = true; return }
+        if inFlight {
+            followUpRequested = true
+            await withCheckedContinuation { waiters.append($0) }
+            return
+        }
         inFlight = true
-        defer { inFlight = false }
         repeat {
             followUpRequested = false
             await operation()
         } while followUpRequested
+        inFlight = false
+        while !waiters.isEmpty {
+            waiters.removeFirst().resume()
+        }
     }
 }

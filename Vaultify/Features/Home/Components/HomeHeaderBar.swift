@@ -15,6 +15,11 @@ struct HomeHeaderBar: View {
     private var notificationCount: Int {
         env.inviteInboxCoordinator.pendingInvites.count
             + env.approvalCoordinator.pendingOwnerRequests.count
+            // Outgoing shares the recipient finished accepting — the ceremony
+            // now waits on the owner, so the state is actionable, not pending.
+            // No overlap with the request count: requests only exist on active
+            // (grant-published) shares, which readyForCeremony excludes.
+            + env.sharingStore.awaitingCeremonyCount
     }
 
     var body: some View {

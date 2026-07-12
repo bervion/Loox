@@ -66,6 +66,16 @@ import UIKit
     /// B's devices must appear in it — signing keys are unioned and the
     /// per-device HPKE directory is upserted onto the FETCHED record, so a
     /// republish from device 2 no longer erases device 1.
+    ///
+    /// CONFLICT-safe: the profile is the only multi-writer singleton in the
+    /// model — two of B's devices resuming the same invite can save
+    /// concurrently. Saving with `.allKeys` ignores the server change tag,
+    /// so the loser's HPKE directory entry and signing key would silently
+    /// vanish and a single-device grant sealed to that device dead-ends in
+    /// a placeholder. Instead: save with `.ifServerRecordUnchanged`; on a
+    /// change-tag conflict, re-merge our device material onto the LIVE
+    /// server record CloudKit hands back and retry (bounded — the caller's
+    /// resume backoff covers a persistent storm). Both devices survive.
     func publishProfile(identity: ParticipantIdentity, zoneID: CKRecordZone.ID,
                         nowUnixMs: Int64) async throws {
         let signingIdentity = try DeviceSigningIdentity.loadOrCreate()
@@ -78,16 +88,68 @@ import UIKit
 
         let recordID = CKRecord.ID(recordName: ApprovalConfig.participantProfileRecordName,
                                    zoneID: zoneID)
+        // Stable per account — fetch once, not per retry attempt.
+        let inviteRecipientID = (try? await container.userRecordID())?.recordName
+        let inviteInboxID = InviteInboxService.storedOrNewInboxID()
+
+        var base = try? await sharedDatabase.record(for: recordID)
+        let maxAttempts = 3
+        for attempt in 0..<maxAttempts {
+            let record = mergedProfileRecord(
+                base: base, recordID: recordID,
+                participantPubKey: identity.publicKeyRaw,
+                ownSigningKey: signingIdentity.publicKeyRaw,
+                ownEntry: ownEntry, nowUnixMs: nowUnixMs,
+                inviteInboxID: inviteInboxID,
+                inviteRecipientID: inviteRecipientID)
+            do {
+                // Batch API: the per-record conflict surfaces from the
+                // save result, not the top-level call — `result.get()`
+                // rethrows it into the catch below.
+                let saved = try await sharedDatabase.modifyRecords(
+                    saving: [record], deleting: [],
+                    savePolicy: .ifServerRecordUnchanged)
+                for (_, result) in saved.saveResults { _ = try result.get() }
+                return
+            } catch let error as CKError
+                where error.code == .serverRecordChanged && attempt < maxAttempts - 1 {
+                ShareDiagnostics.log("PUBLISH", "profile conflict zone=\(zoneID.zoneName) "
+                    + "— re-merging onto server record (attempt \(attempt + 2)/\(maxAttempts))")
+                if let server = error.serverRecord {
+                    base = server
+                } else {
+                    // Some error shapes omit the server record — refetch.
+                    base = try? await sharedDatabase.record(for: recordID)
+                }
+            }
+        }
+    }
+
+    /// Apply this device's identity material onto a base profile record
+    /// (the initially fetched record, a conflict-loser's server record, or
+    /// a fresh record when none exists yet). Signing keys are unioned and
+    /// the HPKE directory upserted by deviceKeyID so no sibling device's
+    /// entry is ever dropped.
+    private func mergedProfileRecord(base: CKRecord?, recordID: CKRecord.ID,
+                                     participantPubKey: Data, ownSigningKey: Data,
+                                     ownEntry: DeviceHPKEDirectoryEntry, nowUnixMs: Int64,
+                                     inviteInboxID: String,
+                                     inviteRecipientID: String?) -> CKRecord {
         let record: CKRecord
-        var signingKeys = [signingIdentity.publicKeyRaw]
+        var signingKeys = [ownSigningKey]
         var directory = [ownEntry]
-        if let existing = try? await sharedDatabase.record(for: recordID),
-           let profile = ApprovalRecordMapping.participantProfile(from: existing) {
-            signingKeys = ParticipantProfileMerge.signingKeys(
-                existing: profile.deviceSigningKeys, adding: signingIdentity.publicKeyRaw)
-            directory = ParticipantProfileMerge.directory(
-                existing: profile.deviceHPKEDirectory, upserting: ownEntry)
-            record = existing
+        if let base {
+            if let profile = ApprovalRecordMapping.participantProfile(from: base) {
+                signingKeys = ParticipantProfileMerge.signingKeys(
+                    existing: profile.deviceSigningKeys, adding: ownSigningKey)
+                directory = ParticipantProfileMerge.directory(
+                    existing: profile.deviceHPKEDirectory, upserting: ownEntry)
+            }
+            // Keep the server record (and its change tag) even when its
+            // fields fail to decode — overwriting a corrupt profile with
+            // our own material is the recovery, and a fresh CKRecord would
+            // conflict forever against the existing change tag.
+            record = base
         } else {
             record = CKRecord(recordType: ApprovalConfig.participantProfileRecordType,
                               recordID: recordID)
@@ -97,15 +159,13 @@ import UIKit
         // learn either from an email lookup, but B can always say its own.
         ApprovalRecordMapping.applyParticipantProfile(
             to: record,
-            participantPubKey: identity.publicKeyRaw,
+            participantPubKey: participantPubKey,
             deviceSigningKeys: signingKeys,
             deviceHPKEDirectory: directory,
             createdAtUnixMs: nowUnixMs,
-            inviteInboxID: InviteInboxService.storedOrNewInboxID(),
-            inviteRecipientID: (try? await container.userRecordID())?.recordName)
-        let saved = try await sharedDatabase.modifyRecords(saving: [record], deleting: [],
-                                                           savePolicy: .allKeys)
-        for (_, result) in saved.saveResults { _ = try result.get() }
+            inviteInboxID: inviteInboxID,
+            inviteRecipientID: inviteRecipientID)
+        return record
     }
 
     /// Display label for the device directory (owner-facing in the P03b
@@ -158,6 +218,43 @@ import UIKit
 
     static func clearPin(zoneID: CKRecordZone.ID) {
         KeychainStore.delete(account: pinAccount(zoneID: zoneID))
+        // The human decision qualifies the pin — it lives and dies with it.
+        KeychainStore.delete(account: verificationAccount(zoneID: zoneID))
+    }
+
+    // MARK: Owner-key verification marker (human decision beside the pin)
+
+    /// Storage account for the recipient's safety-code decision, parallel to
+    /// `pinAccount` — same owner+zone scoping, same Keychain protection
+    /// class and lifecycle, never synced.
+    private static func verificationAccount(zoneID: CKRecordZone.ID) -> String {
+        "approval_owner_key_verification_\(zoneID.ownerName)_\(zoneID.zoneName)"
+    }
+
+    /// nil means no decision was ever recorded — callers must treat that as
+    /// `pending` for any zone that has a pin (fail closed).
+    static func ownerKeyVerification(zoneID: CKRecordZone.ID) -> OwnerKeyVerification? {
+        guard let data = try? KeychainStore.get(account: verificationAccount(zoneID: zoneID)),
+              let raw = String(data: data, encoding: .utf8) else { return nil }
+        return OwnerKeyVerification(rawValue: raw)
+    }
+
+    /// Best-effort persist: a failed write leaves the marker absent, which
+    /// reads as `pending` — the safe direction.
+    static func setOwnerKeyVerification(_ state: OwnerKeyVerification, zoneID: CKRecordZone.ID) {
+        try? setOwnerKeyVerificationOrThrow(state, zoneID: zoneID)
+    }
+
+    /// Throwing variant for the fresh-pin path: the `pending` marker must
+    /// land BEFORE the pin, and a failed marker write must abort the pin,
+    /// so a post-gate pin can never exist without an explicit decision
+    /// state. The legacy backfill reads a marker-less pin as pre-gate and
+    /// grandfathers it to `confirmed` — which must never happen for a
+    /// share nobody actually decided on.
+    static func setOwnerKeyVerificationOrThrow(_ state: OwnerKeyVerification,
+                                               zoneID: CKRecordZone.ID) throws {
+        try KeychainStore.set(Data(state.rawValue.utf8),
+                              account: verificationAccount(zoneID: zoneID))
     }
 
     /// Leave a received share: deleting the zone from the SHARED database

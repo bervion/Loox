@@ -16,6 +16,17 @@
         }
       }
     },
+    "%@ accepted. Tap to finish setting up the share." : {
+      "comment" : "Local notification body when a recipient finished accepting a share; %@ is the recipient email (device-local).",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ đã chấp nhận. Nhấn để hoàn tất thiết lập chia sẻ."
+          }
+        }
+      }
+    },
     "%@ accepted. Waiting for their device to finish setting up, usually right after they unlock Loox." : {
       "comment" : "Resume share sheet: recipient accepted, waiting for profile.",
       "localizations" : {
@@ -288,6 +299,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cần xem lại %lld vấn đề"
+          }
+        }
+      }
+    },
+    "Ask the owner to open this item's sharing details and read their safety code. If both codes match, this share really came from them." : {
+      "comment" : "Explainer on the recipient's safety-code verification sheet.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhờ chủ sở hữu mở phần chia sẻ của mục này và đọc mã an toàn của họ. Nếu hai mã trùng khớp, chia sẻ này thực sự đến từ họ."
+          }
+        }
+      }
+    },
+    "Check the safety code with the owner before you use this shared item." : {
+      "comment" : "Card on the shared item detail while the trust decision is pending.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đối chiếu mã an toàn với chủ sở hữu trước khi bạn dùng mục được chia sẻ này."
+          }
+        }
+      }
+    },
+    "If you skip this check, you cannot be sure who this share came from." : {
+      "comment" : "Consequence note under the skip button on the safety-code verification sheet.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nếu bỏ qua bước kiểm tra này, bạn không thể chắc chia sẻ này đến từ ai."
+          }
+        }
+      }
+    },
+    "The safety code isn't available right now. Try again later, or use the share without verifying." : {
+      "comment" : "Shown on the verification sheet when the safety code could not be derived.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện chưa lấy được mã an toàn. Hãy thử lại sau, hoặc dùng chia sẻ mà không xác minh."
+          }
+        }
+      }
+    },
+    "Use without verifying" : {
+      "comment" : "Secondary button on the safety-code verification sheet: proceed without comparing codes.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng mà không xác minh"
+          }
+        }
+      }
+    },
+    "Verify this share" : {
+      "comment" : "Button and title for the recipient's one-time safety-code check of a shared item.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác minh chia sẻ này"
           }
         }
       }
@@ -7315,12 +7392,12 @@
         }
       }
     },
-    "No need to wait here. They'll get a notification, and we'll ping you the moment they accept. You can track it anytime from Home." : {
+    "No need to wait here. We'll notify you as soon as they accept, and you can track progress anytime from Home." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bạn không cần đợi ở đây. Họ sẽ nhận được thông báo, và chúng tôi sẽ báo cho bạn ngay khi họ chấp nhận. Bạn có thể theo dõi bất cứ lúc nào từ Home."
+            "value" : "Bạn không cần đợi ở đây. Chúng tôi sẽ thông báo cho bạn ngay khi họ chấp nhận, và bạn có thể theo dõi tiến trình bất cứ lúc nào từ Home."
           }
         }
       }
@@ -11632,7 +11709,6 @@
       }
     },
     "The codes match" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12001,6 +12077,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Họ đã chấp nhận lời mời."
+          }
+        }
+      }
+    },
+    "They accepted your invite" : {
+      "comment" : "Local notification title when a recipient finished accepting a share.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Họ đã chấp nhận lời mời của bạn"
           }
         }
       }

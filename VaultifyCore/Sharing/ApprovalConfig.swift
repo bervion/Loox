@@ -51,6 +51,16 @@ nonisolated enum ApprovalConfig {
         requestSubscriptionPrefix + zoneName
     }
 
+    /// Owner-side SILENT subscription on the participant-profile record in an
+    /// approval zone: fires when the recipient's device publishes its identity
+    /// (the moment the share becomes actionable for the owner). Per-zone id so
+    /// routing can prefix-match and revoke can delete it by name.
+    static let acceptSubscriptionPrefix = "approval-accept-"
+
+    static func acceptSubscriptionID(zoneName: String) -> String {
+        acceptSubscriptionPrefix + zoneName
+    }
+
     // MARK: Public-DB invite rendezvous (U5 — opaque inbox, push = hint)
 
     /// Public-db record carrying an invite drop. Shares the type used by

@@ -97,4 +97,39 @@ final class ShareLifecycleStatusTests: XCTestCase {
         store.updateStatus(zoneName: "apz-done", to: .inviteSent)
         XCTAssertEqual(store.shares.first?.status, .active)
     }
+
+    // MARK: Bell badge (shares waiting on the OWNER's hands)
+
+    func testAwaitingCeremonyCountCountsOnlyReadyShares() {
+        let store = SharingStore()
+        store.wipe()
+        defer { store.wipe() }
+        store.upsert(record(statusRaw: nil, confirmed: false, zone: "apz-sent"))
+        store.upsert(record(statusRaw: "accepted", confirmed: false, zone: "apz-accepted"))
+        store.upsert(record(statusRaw: "readyForCeremony", confirmed: false, zone: "apz-ready"))
+        store.upsert(record(statusRaw: nil, confirmed: true, zone: "apz-active"))
+
+        // Only the share the owner can actually act on counts — waiting on
+        // the recipient (sent/accepted) and already-done (active) do not.
+        XCTAssertEqual(store.awaitingCeremonyCount, 1)
+    }
+
+    func testAwaitingCeremonyCountIgnoresConfirmedRecordWithStaleRawStatus() {
+        let store = SharingStore()
+        store.wipe()
+        defer { store.wipe() }
+        // Confirmed wins over a stale raw "readyForCeremony" left behind by
+        // an interrupted refresh — the badge must not resurrect it.
+        store.upsert(record(statusRaw: "readyForCeremony", confirmed: true, zone: "apz-stale"))
+        XCTAssertEqual(store.awaitingCeremonyCount, 0)
+    }
+
+    func testAwaitingCeremonyCountIsZeroForLegacyRecords() {
+        let store = SharingStore()
+        store.wipe()
+        defer { store.wipe() }
+        // Pre-`statusRaw` records derive inviteSent — never badge-worthy.
+        store.upsert(record(statusRaw: nil, confirmed: false, zone: "apz-legacy"))
+        XCTAssertEqual(store.awaitingCeremonyCount, 0)
+    }
 }

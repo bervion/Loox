@@ -22,6 +22,10 @@ struct VaultShellBehaviors: ViewModifier {
     /// should run at a time (the CloudKit work is idempotent, but a second
     /// concurrent loop is wasted).
     @State private var resumingShareAcceptance = false
+    /// The outgoing share whose "they accepted" banner the owner tapped —
+    /// presents the resume stepper (fingerprint ceremony) once the unlocked
+    /// shell is up and no other ceremony sheet is showing.
+    @State private var resumeShareFromTap: ItemShareRecord?
     private let inactivityTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
     func body(content: Content) -> some View {
@@ -79,6 +83,9 @@ struct VaultShellBehaviors: ViewModifier {
                     // so a share accepted after the waiting sheet closed still
                     // advances its status (the sheet's own poll is long gone).
                     env.ownerShareRefresher.refresh()
+                    // A buffered banner tap that couldn't present earlier (an
+                    // approval ceremony was up) gets another chance now.
+                    drainShareResumeTap()
                     // Recipient side: finish any pending acceptance now that we're
                     // foregrounded — the accepted zone may have propagated into
                     // the shared DB since the last attempt (a single early pass
@@ -89,11 +96,21 @@ struct VaultShellBehaviors: ViewModifier {
             .onAppear {
                 env.approvalCoordinator.refreshOwnerRequests()
                 env.ownerShareRefresher.refresh()
+                // Drain a tapped share-acceptance banner BEFORE the ambient
+                // approval auto-present: the tap is an explicit user gesture,
+                // so its sheet outranks a queued request (which re-presents on
+                // the next inbox change either way).
+                drainShareResumeTap()
                 // A request fetched while the vault was still locked (cold-launch
                 // notification tap fills the inbox before this shell exists) is
                 // already `first` when we appear — onChange below never fires for
                 // it, so the sheet must be presented explicitly here.
                 presentNextApprovalIfIdle()
+            }
+            // Warm path: the owner tapped the "they accepted" banner while the
+            // unlocked shell is already on screen.
+            .onReceive(NotificationCenter.default.publisher(for: .shareResumeTapRequested)) { _ in
+                drainShareResumeTap()
             }
             // Surface the next verified request once no sheet is up. Only THIS
             // request is cleared on finish — a queued second request presents
@@ -126,12 +143,29 @@ struct VaultShellBehaviors: ViewModifier {
                         env.approvalCoordinator.clearPending(requestId: pending.request.requestId)
                     })
             }
+            // Resume stepper for a tapped "they accepted" banner (owner side).
+            .sheet(item: $resumeShareFromTap) { ShareResumeStepperSheet(share: $0) }
     }
 
     private func presentNextApprovalIfIdle() {
-        guard presentedApproval == nil,
+        // The banner-tap resume sheet counts as busy too: an explicit tap
+        // outranks the ambient auto-present, and a queued request re-presents
+        // on the next inbox change rather than being dropped.
+        guard presentedApproval == nil, resumeShareFromTap == nil,
               !env.approvalCoordinator.autoPresentSuppressed else { return }
         presentedApproval = env.approvalCoordinator.pendingOwnerRequests.first
+    }
+
+    /// Present the resume stepper for the share buffered by a banner tap.
+    /// Never fights a sheet already up — a mid-flight approval ceremony must
+    /// not be swapped out — so the mailbox keeps the tap until a drain finds
+    /// the way clear (next foreground pass retries). A share that was revoked
+    /// or finished in the meantime drains to nothing.
+    private func drainShareResumeTap() {
+        guard let zoneName = PendingShareResumeTap.zoneName else { return }
+        guard presentedApproval == nil, resumeShareFromTap == nil else { return }
+        PendingShareResumeTap.zoneName = nil
+        resumeShareFromTap = env.sharingStore.shares.first { $0.zoneName == zoneName }
     }
 
     /// Complete an accepted-but-unpublished share: transactional participant
