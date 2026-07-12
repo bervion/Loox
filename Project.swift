@@ -224,7 +224,7 @@ let project = Project(
         // cannot read and which even trips embedded-binary validation.)
         .target(
             name: "VaultifySafari",
-            destinations: [.iPhone],
+            destinations: [.iPhone, .iPad],
             product: .appExtension,
             bundleId: "com.bervion.vaultify.safari",
             deploymentTargets: .iOS("17.3"),
@@ -245,6 +245,9 @@ let project = Project(
                 "VaultifySafari/Resources/content.js",
                 "VaultifySafari/Resources/field-classifier.js",
                 "VaultifySafari/Resources/fill-engine.js",
+                "VaultifySafari/Resources/signup-detector.js",
+                "VaultifySafari/Resources/save-overlay.js",
+                "VaultifySafari/Resources/inline-menu.js",
                 "VaultifySafari/Resources/popup.html",
                 "VaultifySafari/Resources/popup.js",
                 "VaultifySafari/Resources/popup.css",
@@ -260,7 +263,7 @@ let project = Project(
                 "SWIFT_OBJC_BRIDGING_HEADER": "VaultifySafari/VaultifySafari-Bridging-Header.h",
                 "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
                 "SWIFT_EMIT_LOC_STRINGS": "YES",
-                "TARGETED_DEVICE_FAMILY": "1",
+                "TARGETED_DEVICE_FAMILY": "1,2",
                 "SKIP_INSTALL": "YES",
                 "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks",
             ])
