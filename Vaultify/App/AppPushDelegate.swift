@@ -1,6 +1,9 @@
 import CloudKit
 import SwiftUI
 import UserNotifications
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Receives CloudKit pushes and routes them by `AppPushKind` (ADR-5):
 /// - `vaultRemoteChange` — silent zone push from `SyncPushService`'s
@@ -42,10 +45,34 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
             completionHandler(.noData)
             return
         }
+        let kind = AppPushKind.classify(ckNotification)
         Self.route(ckNotification)
-        // The pull runs async via the coordinator; report newData so iOS keeps
-        // scheduling background deliveries for this app.
-        completionHandler(.newData)
+        switch kind {
+        case .shareAcceptance, .vaultRemoteChange:
+            // Silent content-available pushes trigger real CloudKit work
+            // (share-status refresh / delta pull). Calling the completion
+            // handler tells iOS it may suspend the process — returning it
+            // before the work finishes races that suspension: the refresh
+            // dies mid-flight, the "accepted" banner never posts, and
+            // nothing retries until the next foreground. Hold the handler
+            // until the work completes, bounded so a hung fetch can't burn
+            // the whole background window. Report newData either way so iOS
+            // keeps scheduling background deliveries for this app.
+            let completion = PushFetchCompletion(application: application,
+                                                 handler: completionHandler)
+            Task {
+                await SilentPushWork.awaitWork(for: kind)
+                completion.finish()
+            }
+            Task {
+                try? await Task.sleep(for: .seconds(20))
+                completion.finish()
+            }
+        case .approvalRequest, .approvalResponse, .inviteRendezvous:
+            // Alert pushes carry no fetch payload, and the response hint is
+            // consumed by a foreground requester UI — nothing to keep alive.
+            completionHandler(.newData)
+        }
     }
 
     static func route(_ notification: CKNotification) {
@@ -99,6 +126,38 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
             completionHandler([.banner, .sound, .list])
         } else {
             completionHandler([])
+        }
+    }
+}
+
+/// One-shot wrapper around a background-fetch completion handler: whichever
+/// finishes first (triggered work done, bounded timeout, or the system
+/// reclaiming the background window) reports exactly once, and the paired
+/// background-task assertion is always released alongside it. The assertion
+/// documents the in-flight CloudKit work to the system and supplies the
+/// expiration callback used to report just before a forced suspension.
+@MainActor final class PushFetchCompletion {
+    private var handler: ((UIBackgroundFetchResult) -> Void)?
+    private var taskID: UIBackgroundTaskIdentifier = .invalid
+    private let application: UIApplication
+
+    init(application: UIApplication,
+         handler: @escaping (UIBackgroundFetchResult) -> Void) {
+        self.application = application
+        self.handler = handler
+        taskID = application.beginBackgroundTask(withName: "vaultify-silent-push-refresh") { [weak self] in
+            // Expiration handlers are invoked on the main thread.
+            MainActor.assumeIsolated { self?.finish() }
+        }
+    }
+
+    func finish() {
+        guard let handler else { return }
+        self.handler = nil
+        handler(.newData)
+        if taskID != .invalid {
+            application.endBackgroundTask(taskID)
+            taskID = .invalid
         }
     }
 }

@@ -145,6 +145,11 @@ import SwiftUI
         capabilityManifest.applyCached()
         domainRegistry.applyCached()
         quickViewSignerKeyset.applyCached()
+        // The push delegate exists before this environment does — hand it
+        // weak references so a silent push can hold its fetch completion
+        // handler until the triggered CloudKit work actually finishes.
+        SilentPushWork.shareRefresher = ownerShareRefresher
+        SilentPushWork.syncCoordinator = syncCoordinator
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through

@@ -57,6 +57,17 @@ import Foundation
         Task { await runSync() }
     }
 
+    /// Awaitable pull for the background silent-push path: the push delegate
+    /// holds the system fetch completion handler until this returns so iOS
+    /// keeps the process alive for the CloudKit round-trip instead of
+    /// suspending it mid-pull (see `OwnerShareRefresher.refreshAndWait`).
+    /// No-op when vault sync is off. Joins any in-flight run via the
+    /// single-flight, returning only after a full pass completes.
+    func pullAndWait() async {
+        guard CloudSyncService.isConfigured, settings.iCloudSyncEnabled else { return }
+        await runSync()
+    }
+
     /// Debounced sync after a local mutation.
     private func scheduleDebouncedSync() {
         guard CloudSyncService.isConfigured, settings.iCloudSyncEnabled else { return }

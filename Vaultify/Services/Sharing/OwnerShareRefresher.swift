@@ -49,8 +49,20 @@ import Foundation
         guard settings.approvalModeEnabled else { return }
         Task { [weak self] in
             guard let self else { return }
-            await self.singleFlight.run { await self.refreshAll() }
+            await self.refreshAndWait()
         }
+    }
+
+    /// Awaitable variant for the background silent-push path: the push
+    /// delegate must not return its fetch completion handler while the
+    /// CloudKit refresh is still running — iOS may suspend the process
+    /// mid-fetch, the "accepted" banner silently never posts, and nothing
+    /// retries until the next foreground. Returns only after a full refresh
+    /// pass has completed (SingleFlight makes joining an in-flight run wait
+    /// for it plus its follow-up).
+    func refreshAndWait() async {
+        guard settings.approvalModeEnabled else { return }
+        await singleFlight.run { await self.refreshAll() }
     }
 
     private func refreshAll() async {
