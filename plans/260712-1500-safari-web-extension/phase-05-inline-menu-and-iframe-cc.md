@@ -9,7 +9,7 @@
 ## Overview
 
 - Priority: P2 (v1-included per user decision, sequenced last among features — highest breakage risk, report §4 takeaway)
-- Status: pending
+- Status: code complete — device gate G5 pending (user)
 - Field-anchored inline menu for **identity and card fields ONLY** (never credential fields — suppression rule is absolute on iOS), opt-in per-frame CC fill for cross-origin payment iframes (Stripe-class) with per-frame origin checks, and iPad destination enablement.
 
 ## Key Insights
@@ -53,13 +53,20 @@ inline-menu.js   # anchor lifecycle, shadow-DOM menu, focus/blur orchestration
 
 ## Todo List
 
-- [ ] Per-tab metadata cache (memory, navigation-invalidated)
-- [ ] Inline menu with tier 1-2 eligibility + a11y + EN+VI
-- [ ] Credential-field suppression asserted by fixture
-- [ ] all_frames + dual-side frame-origin checks + allowlist
-- [ ] iPad enablement + layout pass
-- [ ] G5 site matrix recorded
-- [ ] make check/test green
+- [x] Per-tab metadata cache (memory, navigation-invalidated) — background dual cache (`inlineItemsCache` + `ccFrameRegistry`), cleared on `tabs.onUpdated` loading/url + `tabs.onRemoved`
+- [x] Inline menu with tier 1-2 eligibility + a11y + EN+VI — `inline-menu.js` (closed shadow root, createElement/textContent only, reposition-on-scroll, Escape/outside-tap/off-viewport dismissal, panel-scoped arrow keys, prefers-reduced-motion)
+- [x] Credential-field suppression asserted by fixture — node harness `inline-menu-node-tests.mjs` (login form → no menu; signup same-form → menu; adjacent login form stays suppressed; password/username/one-time-code belts) + device fixture `login-form-inline-suppression-fixture.html`
+- [x] all_frames + dual-side frame-origin checks + allowlist — `ccFrameHello` registry (trusted-sender-derived), explicit-frameId addressing, in-frame `ccFrameOriginAllowed` + `frameOrigin` self-check, card category only; identity/generated-password fill pinned to frameId 0
+- [x] iPad enablement + layout pass — `Project.swift` appex destinations `[.iPhone, .iPad]`, `TARGETED_DEVICE_FAMILY 1,2`; popup capped at 420px for popover
+- [ ] G5 site matrix recorded (device QA, user-owed)
+- [x] make check/test green — BUILD SUCCEEDED, 700/700 unit tests, 4 node harnesses pass
+
+### Implementation notes (deltas within phase intent)
+
+- Inline metadata comes from a NEW native command `listItemsSession` (session-only, identities+cards, no logins, NEVER prompts): a page focusing a field must not be able to summon Face ID; Face ID stays at fill only, exactly per step 1's intent. Locked vault = no menu.
+- Fixed a phase-04 packaging gap while touching `Project.swift`: `signup-detector.js` + `save-overlay.js` were referenced by `manifest.json` but missing from the appex resources.
+- Per-site kill switch ("Hide on this site" long-press) from the risk table deferred — not in the todo list; note for P6 if G5 surfaces layout-breaking sites.
+- "Open Loox" row uses the registered `vaultify://` scheme.
 
 ## Success Criteria
 
