@@ -122,6 +122,11 @@ button:disabled {
   opacity: 0.5;
 }
 
+#signup-assist {
+  display: flex;
+  flex-direction: column;
+}
+
 .item-section h2 {
   margin: 4px 0 6px;
   font-size: 12px;

@@ -10,7 +10,7 @@
   "content_scripts": [
     {
       "matches": ["https://*/*"],
-      "js": ["field-classifier.js", "fill-engine.js", "content.js"],
+      "js": ["field-classifier.js", "fill-engine.js", "signup-detector.js", "content.js", "save-overlay.js"],
       "run_at": "document_idle"
     }
   ],

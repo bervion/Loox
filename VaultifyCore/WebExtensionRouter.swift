@@ -4,19 +4,23 @@ import Foundation
 /// layer and the native handler.
 ///
 /// Request:  `{ v: 1, cmd: string, origin?: "https://host", itemId?: string,
-///              fieldKind?: string, category?: string, payload?: string }`
+///              fieldKind?: string, category?: string, payload?: string,
+///              username?: string, password?: string, title?: string,
+///              length?: int }`
 /// Response: `{ v: 1, ok: bool, error?: code, data?: {...} }`
 ///
 /// SECURITY INVARIANT: the Vault Key and bulk vault contents never cross the
 /// native→JS bridge. `listItems` returns match metadata only; `copyValue`
 /// releases a single non-secret field value on an explicit user action and is
 /// enforced natively (`WebExtensionReader.copyableKinds`) — never by the popup
-/// hiding a button. `getFillPayload` is the ONLY command returning values for
-/// page injection: single item, identity/card categories only, issued by the
-/// background page solely inside its popup-initiated fill flow. The origin
-/// used for matching is supplied by the trusted `browser.tabs` API in the
-/// background page, and is re-validated here as https-with-host before any
-/// vault access.
+/// hiding a button. `getFillPayload` is the ONLY command returning vault
+/// values for page injection: single item, identity/card categories only,
+/// issued by the background page solely inside its popup-initiated fill flow.
+/// `generatePassword` returns a freshly generated value (never vault data).
+/// `saveLogin` moves a password in the OPPOSITE direction (JS→native) and only
+/// on the user's explicit Save tap in the in-page overlay. The origin used for
+/// matching is supplied by the trusted `browser.tabs` API in the background
+/// page, and is re-validated here as https-with-host before any vault access.
 nonisolated struct WebExtensionRequest: Sendable {
     static let supportedVersion = 1
 
@@ -27,6 +31,10 @@ nonisolated struct WebExtensionRequest: Sendable {
     var fieldKind: String?
     var category: String?
     var payload: String?
+    var username: String?
+    var password: String?
+    var title: String?
+    var length: Int?
 
     /// Parses the raw `SFExtensionMessageKey` payload. Nil when the message is
     /// not a dictionary carrying a string `cmd` (structurally malformed).
@@ -39,7 +47,11 @@ nonisolated struct WebExtensionRequest: Sendable {
                                    itemId: dictionary["itemId"] as? String,
                                    fieldKind: dictionary["fieldKind"] as? String,
                                    category: dictionary["category"] as? String,
-                                   payload: dictionary["payload"] as? String)
+                                   payload: dictionary["payload"] as? String,
+                                   username: dictionary["username"] as? String,
+                                   password: dictionary["password"] as? String,
+                                   title: dictionary["title"] as? String,
+                                   length: dictionary["length"] as? Int)
     }
 }
 
@@ -53,6 +65,17 @@ nonisolated struct WebExtensionRouterContext {
     var retrieveKey: @Sendable () async throws -> [UInt8]
     /// Opens the vault store. `@MainActor` because `VaultStore` requires it.
     var makeStore: @Sendable @MainActor () throws -> VaultStore
+    /// True when the OS-native save-password sheet owns the save UX for our
+    /// credential provider (iOS 26.2+). The extension then suppresses its own
+    /// in-page save overlay so one signup never produces two save prompts.
+    var nativeSaveActive: @Sendable () -> Bool = {
+        WebExtensionSaveGate.nativeSavePathActive()
+    }
+    /// Non-secret shared defaults carrying the never-save host list and the
+    /// generate rate-limit window. Injected so tests use a scratch suite.
+    var configDefaults: @Sendable () -> UserDefaults = {
+        SharedConfig.sharedDefaults
+    }
 }
 
 /// Pure request→response routing for the Safari web extension, kept free of
@@ -76,14 +99,24 @@ nonisolated enum WebExtensionRouter {
         case "status":
             // Conservatively "locked": the popup auto-attempts the unlock+list
             // flow instead of querying lock state, so this diagnostic reply
-            // never needs to reflect the native session.
-            return success(["locked": true])
+            // never needs to reflect the native session. Capabilities let the
+            // JS layer learn (only natively knowable) platform facts.
+            let capabilities = ["nativeSave": context.nativeSaveActive()]
+            return success(["locked": true, "capabilities": capabilities])
         case "listItems":
             return await listItems(request, context: context)
         case "copyValue":
             return await copyValue(request, context: context)
         case "getFillPayload":
             return await getFillPayload(request, context: context)
+        case "generatePassword":
+            return generatePassword(request, context: context)
+        case "saveGate":
+            return saveGate(request, context: context)
+        case "neverSave":
+            return neverSave(request, context: context)
+        case "saveLogin":
+            return await saveLogin(request, context: context)
         default:
             return failure("unknownCommand")
         }
@@ -177,6 +210,124 @@ nonisolated enum WebExtensionRouter {
             case .itemNotFound: return failure("itemNotFound")
             case .forbidden: return failure("forbidden")
             }
+        } catch {
+            return failure("storeUnavailable")
+        }
+    }
+
+    // MARK: - Signup assist (generate + save)
+
+    private enum SaveLoginError: Error { case duplicate }
+
+    /// Password length bounds accepted from the JS layer.
+    private static let generateLengthRange = 8...64
+    /// Longest password accepted for a save (matches the app's editor limits
+    /// generously; anything longer is a malformed or hostile request).
+    private static let maxSavedSecretLength = 512
+    private static let maxSavedTitleLength = 120
+
+    /// A freshly generated password for the popup's signup-assist action.
+    /// Never vault data, so no unlock is required — but rate-limited as
+    /// defense in depth against a compromised renderer scripting the
+    /// extension messaging surface.
+    private static func generatePassword(_ request: WebExtensionRequest,
+                                         context: WebExtensionRouterContext) -> [String: Any] {
+        var options = PasswordOptions()
+        if let length = request.length {
+            guard generateLengthRange.contains(length) else {
+                return failure("malformedMessage")
+            }
+            options.length = length
+        }
+        guard WebExtensionSaveGate.allowGenerate(defaults: context.configDefaults()) else {
+            return failure("rateLimited")
+        }
+        return success(["password": PasswordGenerator.generate(options)])
+    }
+
+    /// Whether the content script may offer its in-page save overlay for this
+    /// origin: well-formed https, no OS-native save sheet on this device, and
+    /// the host not on the user's never-save list. Metadata only — no unlock.
+    private static func saveGate(_ request: WebExtensionRequest,
+                                 context: WebExtensionRouterContext) -> [String: Any] {
+        guard let host = httpsHost(fromOrigin: request.origin) else {
+            return failure("invalidOrigin")
+        }
+        let neverSaved = WebExtensionSaveGate.isNeverSaved(host: host,
+                                                           defaults: context.configDefaults())
+        let offer = !context.nativeSaveActive() && !neverSaved
+        return success(["offer": offer])
+    }
+
+    /// "Never for this site": stores the bare host (never a secret) in shared
+    /// defaults so the opt-out survives extension reinstalls.
+    private static func neverSave(_ request: WebExtensionRequest,
+                                  context: WebExtensionRouterContext) -> [String: Any] {
+        guard let host = httpsHost(fromOrigin: request.origin) else {
+            return failure("invalidOrigin")
+        }
+        WebExtensionSaveGate.addNeverSave(host: host, defaults: context.configDefaults())
+        return success(["stored": true])
+    }
+
+    /// Writes a brand-new login captured at signup-submit intent. The password
+    /// crosses JS→native ONLY here, and only because the user tapped Save in
+    /// the overlay; Face ID (or the short-lived native session) gates the
+    /// write like every other vault operation. All shape checks, the
+    /// save-gate belt, and a per-host rate limit run BEFORE any unlock so a
+    /// forged or out-of-band request never triggers Face ID, cannot spam
+    /// vault writes inside a warm session, and cannot use the duplicate
+    /// error as a high-rate username-existence probe. A same-host
+    /// same-username login already in the vault yields `duplicate` instead
+    /// of a second copy.
+    private static func saveLogin(_ request: WebExtensionRequest,
+                                  context: WebExtensionRouterContext) async -> [String: Any] {
+        guard let origin = request.origin,
+              let host = httpsHost(fromOrigin: origin) else {
+            return failure("invalidOrigin")
+        }
+        guard let password = request.password, !password.isEmpty,
+              password.count <= maxSavedSecretLength,
+              let username = request.username,
+              username.count <= maxSavedSecretLength else {
+            return failure("malformedMessage")
+        }
+        let rawTitle = request.title ?? ""
+        guard rawTitle.count <= maxSavedTitleLength else {
+            return failure("malformedMessage")
+        }
+        // Belt: the overlay is suppressed when the native save sheet owns the
+        // flow or the user opted this host out — a saveLogin arriving anyway
+        // is out of band and refused before any unlock.
+        let neverSaved = WebExtensionSaveGate.isNeverSaved(host: host,
+                                                           defaults: context.configDefaults())
+        guard !context.nativeSaveActive(), !neverSaved else {
+            return failure("forbidden")
+        }
+        guard WebExtensionSaveGate.allowSave(host: host,
+                                             defaults: context.configDefaults()) else {
+            return failure("rateLimited")
+        }
+        let key: SecureBytes
+        do { key = try await unlockedKey(context) } catch { return unlockFailure(error) }
+        do {
+            let itemId = try await MainActor.run { () -> String in
+                let store = try context.makeStore()
+                let lists = WebExtensionReader.itemsMatching(host: host, store: store, key: key)
+                // Trim before comparing: `createLogin` stores the trimmed
+                // username, so an untrimmed compare would let " alice" slip
+                // past the gate and land as a true duplicate of "alice".
+                let wanted = username.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .lowercased()
+                let exists = lists.logins.contains { $0.username.lowercased() == wanted }
+                if exists { throw SaveLoginError.duplicate }
+                return try VaultWriter.createLogin(store: store, site: origin,
+                                                   username: username, password: password,
+                                                   title: rawTitle, vaultKey: key)
+            }
+            return success(["itemId": itemId])
+        } catch is SaveLoginError {
+            return failure("duplicate")
         } catch {
             return failure("storeUnavailable")
         }

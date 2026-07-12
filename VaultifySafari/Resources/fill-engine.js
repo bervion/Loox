@@ -197,5 +197,35 @@
     return report;
   }
 
-  globalThis.LooxFillEngine = { fillAll };
+  // Generated-password path (signup assist): the ONLY writes this engine
+  // ever makes into password inputs, and only with a freshly generated value
+  // handed down the popup-authorized background flow — vault passwords remain
+  // structurally unreachable here. Same visibility/editability gauntlet as
+  // fillAll, and the target must still BE a password input at fill moment
+  // (a type flipped since detection voids the write). Reports carry no values.
+  function fillPasswordAll(entries, value) {
+    const report = [];
+    const httpsOK = pageIsHTTPS();
+    for (const entry of entries) {
+      const el = entry.element;
+      const result = { id: entry.id, key: "newPassword", status: "skipped" };
+      report.push(result);
+      if (!httpsOK) { result.reason = "insecurePage"; continue; }
+      if (!el || !el.isConnected) { result.reason = "gone"; continue; }
+      const isPasswordInput = el.tagName === "INPUT"
+        && (el.type || "").toLowerCase() === "password";
+      if (!isPasswordInput) { result.reason = "typeNotAllowed"; continue; }
+      if (!isVisible(el)) { result.reason = "notVisible"; continue; }
+      if (!isEditable(el)) { result.reason = "notEditable"; continue; }
+      setNativeValue(el, value);
+      result.status = "filled";
+    }
+    return report;
+  }
+
+  // `isVisible` is exported so the signup detector counts only fields a user
+  // can actually see — hidden honeypot password inputs (a common anti-bot
+  // pattern on login forms) must not inflate a login page into a "signup".
+  // One gauntlet, shared: detection and fill agree on what "visible" means.
+  globalThis.LooxFillEngine = { fillAll, fillPasswordAll, isVisible };
 })();

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!-- Dev fixture: a typical signup form (email + password + confirm) with an
+     EN submit label. Expected detection: pageType=signup, both password
+     fields are generated-password targets, and submitting with values
+     present raises the save overlay (when the native-save gate allows). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Signup fixture</title>
+</head>
+<body>
+  <h1>Create your account</h1>
+  <form id="signup" action="#" method="post">
+    <label>Email
+      <input type="email" name="email" autocomplete="email">
+    </label>
+    <label>Password
+      <input type="password" name="new_password" autocomplete="new-password">
+    </label>
+    <label>Confirm password
+      <input type="password" name="confirm_password" autocomplete="new-password">
+    </label>
+    <button type="submit">Sign up</button>
+  </form>
+
+  <!-- VI variant on the same page, different form: detector must still pick a
+       signup form (either qualifies; both are tier-1/tier-4 signups). -->
+  <form id="dang-ky" action="#" method="post">
+    <label>Tên đăng nhập
+      <input type="text" name="ten_dang_nhap">
+    </label>
+    <label>Mật khẩu
+      <input type="password" name="mat_khau">
+    </label>
+    <label>Nhập lại mật khẩu
+      <input type="password" name="nhap_lai_mat_khau">
+    </label>
+    <button type="submit">Đăng ký</button>
+  </form>
+</body>
+</html>
