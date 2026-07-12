@@ -166,10 +166,13 @@ struct PasskeyCeremonyView: View {
                 break
             }
             do {
+                // Per-ceremony flags: this assertion runs behind the unlock gate
+                // plus the live grant check, so UP/UV are true regardless of the
+                // stored registration flags (which only contribute BE/BS).
                 let result = try WebAuthn.assertion(
                     relyingParty: relyingParty, clientDataHash: clientDataHash,
                     privateKeyRaw: keyRaw,
-                    flags: slot.flags ?? WebAuthn.legacyAssertionFlags)
+                    flags: WebAuthn.assertionFlags(stored: slot.flags))
                 onAssertion(ASPasskeyAssertionCredential(
                     userHandle: slot.userHandle, relyingParty: relyingParty,
                     signature: result.signature, clientDataHash: clientDataHash,
@@ -254,10 +257,13 @@ struct PasskeyCeremonyView: View {
                 onCancel(.credentialIdentityNotFound)
                 return
             }
+            // Per-ceremony flags: assertions always run behind the unlock gate, so
+            // UP/UV are true even for a conditionally created credential whose
+            // registration recorded UP=0/UV=0; stored flags only contribute BE/BS.
             let result = try WebAuthn.assertion(relyingParty: relyingParty,
                                                 clientDataHash: clientDataHash,
                                                 privateKeyRaw: secret.privateKeyRaw,
-                                                flags: secret.flags ?? WebAuthn.legacyAssertionFlags)
+                                                flags: WebAuthn.assertionFlags(stored: secret.flags))
             vault.touchLastUsed(credentialID: secret.credentialID)
             onAssertion(assertionCredential(secret: secret, result: result,
                                             relyingParty: relyingParty,

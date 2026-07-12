@@ -22,6 +22,21 @@ nonisolated enum WebAuthn {
     static let flagAttestedData: UInt8 = 0x40
     static let legacyAssertionFlags = flagUserPresent | flagUserVerified
     static let newCredentialFlags = flagUserPresent | flagUserVerified | flagBackupEligible | flagBackupState
+    /// Flags for a credential created by a conditional (automatic) registration:
+    /// no user-verification ceremony ran, so the authenticator must not claim
+    /// UP/UV. The credential is still backup-eligible and backed up (envelope
+    /// sync), so BE/BS stay set.
+    static let conditionalCredentialFlags = flagBackupEligible | flagBackupState
+
+    /// Flags for an assertion produced by this provider. Every assertion route
+    /// runs behind the interactive unlock gate (Face ID or master password), so
+    /// UP and UV are genuinely true per ceremony — even for a credential whose
+    /// registration recorded UP=0/UV=0 (conditional creation). BE/BS carry over
+    /// from the stored registration flags: they describe the credential's backup
+    /// state, not the ceremony.
+    static func assertionFlags(stored: UInt8?) -> UInt8 {
+        flagUserPresent | flagUserVerified | ((stored ?? 0) & (flagBackupEligible | flagBackupState))
+    }
 
     struct Registration {
         let credentialID: Data
@@ -31,17 +46,20 @@ nonisolated enum WebAuthn {
     }
 
     /// Create a new passkey: P-256 key pair + credential id + attestation object.
-    static func register(relyingParty: String) -> Registration {
+    /// `flags` defaults to an interactive ceremony (UP|UV|BE|BS); conditional
+    /// creations pass `conditionalCredentialFlags` because no user was present
+    /// or verified when the credential was minted.
+    static func register(relyingParty: String, flags: UInt8 = newCredentialFlags) -> Registration {
         let privateKey = P256.Signing.PrivateKey()
         let credentialID = Data(CryptoRandom.bytes(16))
         let attested = attestedCredentialData(credentialID: credentialID, publicKey: privateKey.publicKey)
         let authData = authenticatorData(relyingParty: relyingParty,
-                                         flags: newCredentialFlags | flagAttestedData,
+                                         flags: flags | flagAttestedData,
                                          attestedCredentialData: attested)
         return Registration(credentialID: credentialID,
                             attestationObject: attestationObject(authData: authData),
                             privateKeyRaw: privateKey.rawRepresentation,
-                            flags: newCredentialFlags)
+                            flags: flags)
     }
 
     /// Produce an assertion (authenticatorData + DER ECDSA signature) for a login.
