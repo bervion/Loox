@@ -12,7 +12,7 @@ private let bioLog = Logger(subsystem: "com.bervion.vaultify.autofill", category
 struct UnlockGate<Content: View>: View {
     let title: LocalizedStringKey
     let onCancel: () -> Void
-    @ViewBuilder let content: (_ vaultKey: [UInt8]) -> Content
+    @ViewBuilder let content: (_ vaultKey: SecureBytes) -> Content
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var masterPassword = ""
@@ -25,10 +25,12 @@ struct UnlockGate<Content: View>: View {
     /// save sheet appears mid-transition) and fail transiently. We retry once when the
     /// scene becomes active instead of stranding the user on the password form.
     @State private var didAutoRetry = false
-    @State private var vaultKey: [UInt8]?
+    /// Locked, zero-on-release key storage — passed down the view tree by
+    /// reference, so the whole presentation shares one mlocked allocation.
+    @State private var vaultKey: SecureBytes?
 
     init(title: LocalizedStringKey, onCancel: @escaping () -> Void,
-         @ViewBuilder content: @escaping (_ vaultKey: [UInt8]) -> Content) {
+         @ViewBuilder content: @escaping (_ vaultKey: SecureBytes) -> Content) {
         self.title = title
         self.onCancel = onCancel
         self.content = content
@@ -37,8 +39,8 @@ struct UnlockGate<Content: View>: View {
     /// Pre-unlocked variant: one flow already authenticated (e.g. a passkey
     /// assertion falling back to the password picker) — rendering the content
     /// directly instead of prompting Face ID a second time for the same key.
-    init(title: LocalizedStringKey, presetKey: [UInt8]?, onCancel: @escaping () -> Void,
-         @ViewBuilder content: @escaping (_ vaultKey: [UInt8]) -> Content) {
+    init(title: LocalizedStringKey, presetKey: SecureBytes?, onCancel: @escaping () -> Void,
+         @ViewBuilder content: @escaping (_ vaultKey: SecureBytes) -> Content) {
         self.title = title
         self.onCancel = onCancel
         self.content = content
@@ -140,9 +142,12 @@ struct UnlockGate<Content: View>: View {
         // auto-prompt reliable enough that the manual fallback button is rarely needed.
         try? await Task.sleep(for: .milliseconds(250))
         do {
-            let key = try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
+            // Move the key into locked storage immediately and scrub the transient
+            // array so raw key bytes can't linger in swap or a heap dump.
+            var raw = try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
+            defer { secureZero(&raw) }
             bioLog.log("biometric retrieve OK — unlocking via Face ID")
-            vaultKey = key
+            vaultKey = SecureBytes(raw)
         } catch {
             bioLog.error("biometric retrieve FAILED: \(String(describing: error), privacy: .public) — fallback to master password")
             biometricInProgress = false

@@ -8,7 +8,7 @@ import AuthenticationServices
 /// signup leaves the item in the vault (the user prunes it later) — an accepted trade-off.
 struct CreateLoginView: View {
     let host: String
-    let vaultKey: [UInt8]
+    let vaultKey: SecureBytes
     /// Called after a successful save to fill the form (maps to the credential completion).
     let onSaved: (_ user: String, _ password: String) -> Void
 
@@ -19,7 +19,7 @@ struct CreateLoginView: View {
     @State private var spaces: [VaultSpaceReader.Space] = []
     @State private var errorMessage: String?
 
-    init(host: String, defaultUsername: String, vaultKey: [UInt8],
+    init(host: String, defaultUsername: String, vaultKey: SecureBytes,
          onSaved: @escaping (_ user: String, _ password: String) -> Void) {
         self.host = host
         self.vaultKey = vaultKey
@@ -37,7 +37,9 @@ struct CreateLoginView: View {
                 header: { Text("Username") }
             Section {
                 HStack {
+                    // Redacts the generated secret in app-switcher snapshots.
                     Text(password).font(.body.monospaced()).lineLimit(1).minimumScaleFactor(0.7)
+                        .privacySensitive()
                     Spacer()
                     Button("Regenerate") { password = PasswordGenerator.generate(PasswordOptions()) }
                         .buttonStyle(.borderless)

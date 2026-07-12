@@ -26,29 +26,29 @@ final class SharedCredentialsCacheTests: XCTestCase {
     func testRoundTripSealAndLoad() throws {
         let entries = [makeEntry()]
         try SharedCredentialsCache.save(entries: entries, vaultKey: key)
-        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: key), entries)
+        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: SecureBytes(key)), entries)
     }
 
     func testLoadWithWrongKeyFailsClosedToEmpty() throws {
         try SharedCredentialsCache.save(entries: [makeEntry()], vaultKey: key)
         let wrongKey = [UInt8](repeating: 0x00, count: 32)
-        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: wrongKey), [])
+        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: SecureBytes(wrongKey)), [])
     }
 
     func testLoadWithNoFileYieldsEmpty() {
-        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: key), [])
+        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: SecureBytes(key)), [])
     }
 
     func testEmptySaveOverwritesPreviousEntries() throws {
         try SharedCredentialsCache.save(entries: [makeEntry()], vaultKey: key)
         try SharedCredentialsCache.save(entries: [], vaultKey: key)
-        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: key), [])
+        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: SecureBytes(key)), [])
     }
 
     func testClearRemovesFile() throws {
         try SharedCredentialsCache.save(entries: [makeEntry()], vaultKey: key)
         SharedCredentialsCache.clear()
-        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: key), [])
+        XCTAssertEqual(SharedCredentialsCache.load(vaultKey: SecureBytes(key)), [])
     }
 
     func testHostMatchingIsSubdomainTolerantAndEmptyRequestMatchesAny() {

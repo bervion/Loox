@@ -23,7 +23,7 @@ private struct SaveConfirmView: View {
     let host: String
     let username: String
     let password: String
-    let vaultKey: [UInt8]
+    let vaultKey: SecureBytes
     let onSaved: () -> Void
 
     @State private var saving = false

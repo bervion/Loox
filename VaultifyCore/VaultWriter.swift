@@ -20,7 +20,7 @@ enum VaultWriter {
     /// stored directly on the item — mirrors `VaultRepository`'s only linkage path). Nil = Unfiled.
     @discardableResult
     static func createLogin(site: String, username: String, password: String,
-                            folderId: String? = nil, vaultKey: [UInt8]) throws -> String {
+                            folderId: String? = nil, vaultKey: SecureBytes) throws -> String {
         guard !password.isEmpty else { throw Failure.emptyPassword }
         let now = Date()
         let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)

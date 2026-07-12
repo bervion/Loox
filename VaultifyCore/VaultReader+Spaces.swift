@@ -19,7 +19,7 @@ enum VaultSpaceReader {
     /// Decrypt a folder record's sealed name + persona link. `nil` on any
     /// decrypt/decode failure (corrupt or foreign-keyed blob) — the folder is
     /// simply omitted from the picker rather than crashing the save flow.
-    private static func decrypt(_ record: FolderRecord, key: [UInt8]) -> (name: String, personaId: String?)? {
+    private static func decrypt(_ record: FolderRecord, key: SecureBytes) -> (name: String, personaId: String?)? {
         guard let plaintext = try? AESGCM.open(record.sealed, key: key),
               let secret = try? JSONDecoder().decode(FolderSecret.self, from: plaintext)
         else { return nil }
@@ -33,7 +33,7 @@ enum VaultSpaceReader {
     /// Returns `[]` when no persona context has been mirrored yet (pre-persona
     /// vaults, or the app hasn't opened since this mirroring shipped) — the
     /// extension's save flow then falls back to Unfiled only, never guesses.
-    @MainActor static func activePersonaSpaces(vaultKey: [UInt8]) -> [Space] {
+    @MainActor static func activePersonaSpaces(vaultKey: SecureBytes) -> [Space] {
         let defaults = SharedConfig.sharedDefaults
         guard let activeId = defaults.string(forKey: SharedConfig.activePersonaIdKey) else { return [] }
         let isDefault = defaults.bool(forKey: SharedConfig.activePersonaIsDefaultKey)
@@ -59,7 +59,7 @@ enum VaultSpaceReader {
     ///    and is still owned by this persona (a deleted/reassigned/foreign id falls through).
     /// 2. The persona's mirrored primary Space, same validation.
     /// 3. `nil` (Unfiled) — never guesses a foreign persona's Space.
-    @MainActor static func defaultSpaceId(vaultKey: [UInt8]) -> String? {
+    @MainActor static func defaultSpaceId(vaultKey: SecureBytes) -> String? {
         let owned = Set(activePersonaSpaces(vaultKey: vaultKey).map(\.id))
         guard !owned.isEmpty else { return nil }
         let defaults = SharedConfig.sharedDefaults

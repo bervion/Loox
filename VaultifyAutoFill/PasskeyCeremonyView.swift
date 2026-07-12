@@ -3,7 +3,7 @@ import SwiftUI
 
 struct PasskeyCeremonyView: View {
     let purpose: PasskeyPurpose
-    let vaultKey: [UInt8]
+    let vaultKey: SecureBytes
     let store: VaultStore
     let onAssertion: (_ credential: ASPasskeyAssertionCredential) -> Void
     let onRegistration: (_ credential: ASPasskeyRegistrationCredential) -> Void
@@ -12,7 +12,7 @@ struct PasskeyCeremonyView: View {
     /// the user only holds a password (e.g. a credential SHARED to them) — the
     /// right answer is the password picker, not an error that dismisses the
     /// sheet. The unlocked key rides along so the picker skips a second Face ID.
-    var onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil
+    var onNoPasskey: ((_ vaultKey: SecureBytes) -> Void)? = nil
 
     @State private var matches: [PasskeyInfo] = []
     @State private var working = false

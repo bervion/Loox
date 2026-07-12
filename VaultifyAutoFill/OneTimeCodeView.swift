@@ -27,7 +27,7 @@ struct OneTimeCodeView: View {
 private struct OneTimeCodeListView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
-    let vaultKey: [UInt8]
+    let vaultKey: SecureBytes
     let onSelect: (_ code: String) -> Void
 
     @State private var items: [VaultItem] = []

@@ -11,7 +11,7 @@ struct AutoFillView: View {
     let preferredRecordID: String?
     /// Set when another flow already unlocked (passkey → password fallback):
     /// skips the second Face ID prompt for the same key.
-    var presetKey: [UInt8]? = nil
+    var presetKey: SecureBytes? = nil
     let onSelect: (_ user: String, _ password: String) -> Void
     let onCancel: () -> Void
 
@@ -101,7 +101,7 @@ private enum CredentialRow: Identifiable {
 private struct CredentialListView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
-    let vaultKey: [UInt8]
+    let vaultKey: SecureBytes
     let onSelect: (_ user: String, _ password: String) -> Void
     let onCancel: () -> Void
 

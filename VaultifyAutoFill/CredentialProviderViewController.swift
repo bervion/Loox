@@ -186,7 +186,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     }
 
     private func showPasskey(_ purpose: PasskeyPurpose, store: VaultStore,
-                             onNoPasskey: ((_ vaultKey: [UInt8]) -> Void)? = nil) {
+                             onNoPasskey: ((_ vaultKey: SecureBytes) -> Void)? = nil) {
         let title: LocalizedStringKey
         if case .register = purpose {
             title = "Create a passkey"
