@@ -38,7 +38,9 @@ enum VaultSpaceReader {
         guard let activeId = defaults.string(forKey: SharedConfig.activePersonaIdKey) else { return [] }
         let isDefault = defaults.bool(forKey: SharedConfig.activePersonaIsDefaultKey)
 
-        let store = VaultStore()
+        // A store-load failure degrades to "no Spaces" (the picker's documented
+        // fallback is Unfiled) — the main list path surfaces store errors instead.
+        guard let store = try? VaultStore(recoverable: false) else { return [] }
         let records = store.allFolderRecords()
             .filter { $0.deletedAt == nil }
             .sorted { ($0.sortIndex, $0.createdAt) < ($1.sortIndex, $1.createdAt) }

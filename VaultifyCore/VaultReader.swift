@@ -25,8 +25,11 @@ enum VaultReader {
     }
 
     /// All non-trashed login items (those exposing a password), decrypted.
-    @MainActor static func logins(vaultKey: [UInt8]) -> [VaultItem] {
-        let store = VaultStore()
+    /// Throws on a store-load failure (corruption, migration mismatch, protected data
+    /// unavailable) so the extension can fail visibly instead of crashing or showing
+    /// an empty list that reads as "no logins".
+    @MainActor static func logins(vaultKey: [UInt8]) throws -> [VaultItem] {
+        let store = try VaultStore(recoverable: false)
         return store.allRecords()
             .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
             .compactMap { decrypt($0, key: vaultKey) }
@@ -43,8 +46,8 @@ enum VaultReader {
     }
 
     /// Resolve a single item by id from the shared store and extract its username.
-    @MainActor static func username(forItemID id: String, key: [UInt8]) -> String? {
-        let store = VaultStore()
+    @MainActor static func username(forItemID id: String, key: [UInt8]) throws -> String? {
+        let store = try VaultStore(recoverable: false)
         guard let record = store.allRecords().first(where: {
             $0.id == id && $0.trashedAt == nil && $0.deletedAt == nil
         }), let item = decrypt(record, key: key) else { return nil }
@@ -55,8 +58,8 @@ enum VaultReader {
     /// Identities have no password, so they never appear in `logins`; this reads them directly,
     /// filtering on the plaintext `ItemRecord.isDefaultIdentity` column (the sealed payload doesn't
     /// carry that flag). Returns the identity's email, else its name; nil if there's no default.
-    @MainActor static func defaultIdentityUsername(vaultKey: [UInt8]) -> String? {
-        let store = VaultStore()
+    @MainActor static func defaultIdentityUsername(vaultKey: [UInt8]) throws -> String? {
+        let store = try VaultStore(recoverable: false)
         guard let record = store.allRecords().first(where: {
             $0.trashedAt == nil && $0.deletedAt == nil && $0.isDefaultIdentity
         }), let item = decrypt(record, key: vaultKey) else { return nil }
@@ -67,20 +70,20 @@ enum VaultReader {
     /// persona's own profile (mirrored opaque item id) when it resolves; under a
     /// strictAnonymous persona there is NO fallback to the global default identity
     /// (INV-R03), so it returns "" rather than leaking a personal email.
-    @MainActor static func autofillPrefillUsername(vaultKey: [UInt8]) -> String {
+    @MainActor static func autofillPrefillUsername(vaultKey: [UInt8]) throws -> String {
         let policy = PersonaIsolationPolicy(rawValue:
             SharedConfig.sharedDefaults.string(forKey: SharedConfig.activePersonaPolicyKey) ?? "") ?? .standard
         if let itemID = SharedConfig.sharedDefaults.string(forKey: SharedConfig.activePersonaProfileItemKey),
-           let resolved = username(forItemID: itemID, key: vaultKey) {
+           let resolved = try username(forItemID: itemID, key: vaultKey) {
             return resolved
         }
         if policy == .strictAnonymous { return "" }
-        return defaultIdentityUsername(vaultKey: vaultKey) ?? ""
+        return try defaultIdentityUsername(vaultKey: vaultKey) ?? ""
     }
 
     /// Non-trashed items that carry a TOTP secret, for 2FA / one-time-code AutoFill.
-    @MainActor static func totpItems(vaultKey: [UInt8]) -> [VaultItem] {
-        let store = VaultStore()
+    @MainActor static func totpItems(vaultKey: [UInt8]) throws -> [VaultItem] {
+        let store = try VaultStore(recoverable: false)
         return store.allRecords()
             .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
             .compactMap { decrypt($0, key: vaultKey) }

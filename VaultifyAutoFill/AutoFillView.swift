@@ -1,4 +1,8 @@
 import SwiftUI
+import os
+
+/// Non-sensitive store-lifecycle markers (never item contents or key material).
+private let storeLog = Logger(subsystem: "com.bervion.vaultify.autofill", category: "store")
 
 /// Unlock then pick a login to fill (or create a new one). Items whose website matches the
 /// requesting app/site are shown first. Unlock is handled by the shared `UnlockGate`.
@@ -112,10 +116,24 @@ private struct CredentialListView: View {
     /// Non-nil while the pre-fill live grant check runs (INV-11).
     @State private var verifyingRowID: String?
     @State private var fillBlockedMessage: String?
+    /// Set when the vault store fails to open — replaces the list with a visible
+    /// error so a broken store never masquerades as "no logins". Cancel (hosted by
+    /// `UnlockGate`) remains the exit.
+    @State private var storeErrorMessage: String?
 
     var body: some View {
         Group {
-            if loaded { list } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+            if let storeErrorMessage {
+                Text(storeErrorMessage)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if loaded {
+                list
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .overlay { if verifyingRowID != nil { ProgressView().controlSize(.large) } }
         .disabled(verifyingRowID != nil)
@@ -126,9 +144,16 @@ private struct CredentialListView: View {
         }
         .task {
             guard !loaded else { return }
-            items = VaultReader.logins(vaultKey: vaultKey)
+            do {
+                items = try VaultReader.logins(vaultKey: vaultKey)
+                defaultUsername = try VaultReader.autofillPrefillUsername(vaultKey: vaultKey)
+            } catch {
+                // Log-only detail; the UI message stays generic (no error internals).
+                storeLog.error("credential-list store open failed")
+                storeErrorMessage = appString("Couldn’t open your vault.")
+                return
+            }
             sharedEntries = SharedCredentialsCache.load(vaultKey: vaultKey)
-            defaultUsername = VaultReader.autofillPrefillUsername(vaultKey: vaultKey)
             loaded = true
             if let preferredRecordID {
                 if let hit = sharedEntries.first(where: { $0.itemID == preferredRecordID }) {

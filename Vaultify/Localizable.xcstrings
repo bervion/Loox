@@ -3036,6 +3036,16 @@
         }
       }
     },
+    "Couldn’t open your vault." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể mở kho của bạn."
+          }
+        }
+      }
+    },
     "Couldn't reach the owner right now." : {
       "localizations" : {
         "vi" : {

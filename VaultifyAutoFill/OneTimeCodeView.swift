@@ -1,4 +1,8 @@
 import SwiftUI
+import os
+
+/// Non-sensitive store-lifecycle markers (never codes, secrets, or key material).
+private let storeLog = Logger(subsystem: "com.bervion.vaultify.autofill", category: "store")
 
 /// 2FA AutoFill: unlock (via `UnlockGate`), then supply the current TOTP code for a login matching
 /// the site. A single matching code is filled automatically; multiple show a picker.
@@ -29,14 +33,35 @@ private struct OneTimeCodeListView: View {
     @State private var items: [VaultItem] = []
     @State private var loaded = false
     @State private var errorMessage: String?
+    /// Set when the vault store fails to open — replaces the list with a visible
+    /// error so a broken store never masquerades as "no 2FA codes". Cancel
+    /// (hosted by `UnlockGate`) remains the exit.
+    @State private var storeErrorMessage: String?
 
     var body: some View {
         Group {
-            if loaded { list } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+            if let storeErrorMessage {
+                Text(storeErrorMessage)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if loaded {
+                list
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .task {
             guard !loaded else { return }
-            items = VaultReader.totpItems(vaultKey: vaultKey)
+            do {
+                items = try VaultReader.totpItems(vaultKey: vaultKey)
+            } catch {
+                // Log-only detail; the UI message stays generic (no error internals).
+                storeLog.error("one-time-code store open failed")
+                storeErrorMessage = appString("Couldn’t open your vault.")
+                return
+            }
             loaded = true
             if let preferredRecordID, let hit = items.first(where: { $0.id == preferredRecordID }) {
                 provide(hit); return
