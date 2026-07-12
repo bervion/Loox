@@ -16,6 +16,17 @@
         }
       }
     },
+    "%@ accepted. Tap to finish setting up the share." : {
+      "comment" : "Local notification body when a recipient finished accepting a share; %@ is the recipient email (device-local).",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ đã chấp nhận. Nhấn để hoàn tất thiết lập chia sẻ."
+          }
+        }
+      }
+    },
     "%@ accepted. Waiting for their device to finish setting up, usually right after they unlock Loox." : {
       "comment" : "Resume share sheet: recipient accepted, waiting for profile.",
       "localizations" : {
@@ -12001,6 +12012,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Họ đã chấp nhận lời mời."
+          }
+        }
+      }
+    },
+    "They accepted your invite" : {
+      "comment" : "Local notification title when a recipient finished accepting a share.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Họ đã chấp nhận lời mời của bạn"
           }
         }
       }

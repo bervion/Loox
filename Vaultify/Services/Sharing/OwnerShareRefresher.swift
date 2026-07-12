@@ -19,6 +19,7 @@ import Foundation
     private let store: SharingStore
     private let shareService: ApprovalShareService
     private let settings: SettingsStore
+    private let notifier: ShareStatusNotifier
     private let singleFlight = SingleFlight()
     private var observers: [NSObjectProtocol] = []
     /// One best-effort pass per process lifetime that installs the silent
@@ -26,10 +27,12 @@ import Foundation
     /// subscription existed. Failures simply retry on the next launch.
     private var subscriptionsBackfilled = false
 
-    init(store: SharingStore, shareService: ApprovalShareService, settings: SettingsStore) {
+    init(store: SharingStore, shareService: ApprovalShareService,
+         settings: SettingsStore, notifier: ShareStatusNotifier) {
         self.store = store
         self.shareService = shareService
         self.settings = settings
+        self.notifier = notifier
         // The recipient's device published its profile (silent push): resolve
         // the new status now instead of waiting for the next foreground pass.
         observers.append(NotificationCenter.default.addObserver(
@@ -62,9 +65,17 @@ import Foundation
         }
         for record in pending {
             let zoneID = CKRecordZone.ID(zoneName: record.zoneName)
+            let previous = record.status
             let next = await resolveStatus(zoneID: zoneID)
             ShareDiagnostics.log("OWNER", "share \(record.zoneName) → \(next)")
             store.updateStatus(zoneName: record.zoneName, to: next)
+            // Surface the one transition that needs the owner's hands (the
+            // fingerprint ceremony) when it lands while the app is not
+            // frontmost — typically via the background silent push.
+            if ShareStatusNotifier.shouldNotify(previous: previous, next: next,
+                                                appActive: notifier.isAppActive) {
+                notifier.notifyReadyForCeremony(record: record)
+            }
         }
     }
 

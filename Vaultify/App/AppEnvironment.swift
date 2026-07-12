@@ -117,7 +117,8 @@ import SwiftUI
         self.approvalCoordinator = ApprovalCoordinator(settings: settings,
                                                        shareService: approvalShare)
         self.ownerShareRefresher = OwnerShareRefresher(
-            store: sharingStore, shareService: approvalShare, settings: settings)
+            store: sharingStore, shareService: approvalShare, settings: settings,
+            notifier: ShareStatusNotifier())
         self.approvalCeremony = ApprovalCeremonyService(session: session,
                                                         repository: repository,
                                                         shareService: approvalShare,

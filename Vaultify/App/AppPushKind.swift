@@ -58,6 +58,10 @@ extension Notification.Name {
     /// re-resolve share status against CloudKit, same contract as the hints
     /// above.
     static let shareAcceptanceHint = Notification.Name("shareAcceptanceHint")
+    /// The owner tapped the local "they accepted" banner — the unlocked shell
+    /// presents the resume stepper for the share buffered in
+    /// `PendingShareResumeTap`.
+    static let shareResumeTapRequested = Notification.Name("shareResumeTapRequested")
 }
 
 /// Cold-launch mailbox for an invite universal link: the scene delegate
@@ -66,4 +70,13 @@ extension Notification.Name {
 /// path) and buffers here; the app root drains the buffer once it appears.
 @MainActor enum PendingInviteLink {
     static var url: URL?
+}
+
+/// Cold-launch mailbox for a tapped share-acceptance banner: the tap handler
+/// runs before the unlocked shell (or any SwiftUI observer) exists, and the
+/// shell only appears after unlock — buffering here both survives the launch
+/// gap and naturally defers presentation until the vault is open. The tap
+/// handler posts (warm path) AND buffers; the shell drains on appear.
+@MainActor enum PendingShareResumeTap {
+    static var zoneName: String?
 }

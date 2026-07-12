@@ -71,7 +71,14 @@ final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotification
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
-        if let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo) {
+        // Local share-status banner first: its userInfo carries no CloudKit
+        // payload (the CK parse would fall through anyway — explicit ordering
+        // documents the intent). Buffer BEFORE posting: a cold-launch tap runs
+        // before any SwiftUI observer exists.
+        if let zoneName = userInfo[ShareStatusNotifier.zoneNameUserInfoKey] as? String {
+            PendingShareResumeTap.zoneName = zoneName
+            NotificationCenter.default.post(name: .shareResumeTapRequested, object: nil)
+        } else if let ckNotification = CKNotification(fromRemoteNotificationDictionary: userInfo) {
             Self.route(ckNotification)
         }
         completionHandler()
