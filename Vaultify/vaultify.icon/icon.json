@@ -9,16 +9,20 @@
           "glass-specializations" : [
             {
               "appearance" : "dark",
-              "value" : true
+              "value" : false
+            },
+            {
+              "appearance" : "tinted",
+              "value" : false
             }
           ],
           "hidden" : false,
           "image-name" : "9.svg",
           "name" : "9",
           "position" : {
-            "scale" : 3,
+            "scale" : 3.84,
             "translation-in-points" : [
-              17.954687499999977,
+              0,
               0
             ]
           }
@@ -63,6 +67,16 @@
           }
         },
         {
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : false
+            },
+            {
+              "appearance" : "tinted",
+              "value" : false
+            }
+          ],
           "hidden" : false,
           "image-name" : "2.svg",
           "name" : "2",
@@ -75,6 +89,16 @@
           }
         },
         {
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : false
+            },
+            {
+              "appearance" : "tinted",
+              "value" : false
+            }
+          ],
           "hidden" : false,
           "image-name" : "1.svg",
           "name" : "1",
@@ -87,6 +111,16 @@
           }
         },
         {
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : false
+            },
+            {
+              "appearance" : "tinted",
+              "value" : false
+            }
+          ],
           "hidden" : false,
           "image-name" : "4.svg",
           "name" : "4",
@@ -99,6 +133,16 @@
           }
         },
         {
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : false
+            },
+            {
+              "appearance" : "tinted",
+              "value" : false
+            }
+          ],
           "hidden" : false,
           "image-name" : "3.svg",
           "name" : "3",
@@ -111,6 +155,16 @@
           }
         },
         {
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : false
+            },
+            {
+              "appearance" : "tinted",
+              "value" : false
+            }
+          ],
           "hidden" : false,
           "image-name" : "5.svg",
           "name" : "5",
@@ -123,6 +177,16 @@
           }
         },
         {
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : false
+            },
+            {
+              "appearance" : "tinted",
+              "value" : false
+            }
+          ],
           "hidden" : false,
           "image-name" : "6.svg",
           "name" : "6",
