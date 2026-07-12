@@ -13,36 +13,84 @@
   },
   "popup_status_locked": {
     "message": "Vault is locked",
-    "description": "Placeholder status shown while the vault is locked."
+    "description": "Status shown while the vault is locked."
   },
   "popup_status_unlocked": {
     "message": "Vault is unlocked",
     "description": "Status shown when the vault is unlocked."
   },
   "popup_locked_hint": {
-    "message": "Open the Loox app to unlock your vault.",
+    "message": "Unlock to see your items for this site.",
     "description": "Hint under the locked status."
   },
-  "popup_ping_button": {
-    "message": "Test connection",
-    "description": "Button that pings the native handler."
+  "popup_unlock_button": {
+    "message": "Unlock with Face ID",
+    "description": "Button that starts the Face ID unlock."
   },
-  "popup_ping_waiting": {
-    "message": "Checking connection",
-    "description": "Shown while waiting for the native reply."
+  "popup_unlocking": {
+    "message": "Waiting for Face ID",
+    "description": "Shown while the native Face ID prompt is up."
   },
-  "popup_ping_success": {
-    "message": "Connected. Native replied: $REPLY$",
-    "description": "Shown when the native echo round-trip succeeds.",
-    "placeholders": {
-      "reply": {
-        "content": "$1",
-        "example": "hello"
-      }
-    }
+  "popup_section_logins": {
+    "message": "Logins",
+    "description": "Section heading for logins matching the active site."
   },
-  "popup_ping_error": {
+  "popup_section_identities": {
+    "message": "Identities",
+    "description": "Section heading for identity items."
+  },
+  "popup_section_cards": {
+    "message": "Cards",
+    "description": "Section heading for payment card items."
+  },
+  "popup_no_matches": {
+    "message": "No items for this site yet.",
+    "description": "Shown when the unlocked vault has nothing to list."
+  },
+  "popup_unsupported_page": {
+    "message": "This page is not supported. Open a secure https site.",
+    "description": "Shown when the active tab is not an https page."
+  },
+  "popup_retry_button": {
+    "message": "Try again",
+    "description": "Button that retries after an error."
+  },
+  "popup_error_generic": {
+    "message": "Something went wrong. Try again.",
+    "description": "Generic error message."
+  },
+  "popup_error_unreachable": {
     "message": "Could not reach the app. Try again.",
     "description": "Shown when the native round-trip fails."
+  },
+  "popup_copy_button": {
+    "message": "Copy",
+    "description": "Copy button label on item rows."
+  },
+  "popup_copy_username_label": {
+    "message": "Copy username",
+    "description": "Accessibility label for the login row copy button."
+  },
+  "popup_copy_email_label": {
+    "message": "Copy email",
+    "description": "Accessibility label for the identity row copy button."
+  },
+  "popup_copied": {
+    "message": "Copied",
+    "description": "Feedback after a value was copied to the clipboard."
+  },
+  "popup_copy_failed": {
+    "message": "Could not copy",
+    "description": "Feedback when a copy action fails."
+  },
+  "popup_card_ending": {
+    "message": "Ends in $LAST4$",
+    "description": "Masked card subtitle showing only the last four digits.",
+    "placeholders": {
+      "last4": {
+        "content": "$1",
+        "example": "4242"
+      }
+    }
   }
 }

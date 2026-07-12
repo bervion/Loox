@@ -9,17 +9,43 @@
   <main class="popup">
     <header class="popup-header">
       <img src="images/icon-48.png" alt="" class="popup-logo" width="24" height="24">
-      <h1 data-i18n="popup_title"></h1>
+      <div class="popup-heading">
+        <h1 data-i18n="popup_title"></h1>
+        <p class="site" id="site-host" hidden></p>
+      </div>
     </header>
 
-    <section class="status" id="status-card">
-      <span class="status-dot" id="status-dot"></span>
-      <span id="status-label"></span>
+    <section id="state-locked" class="state" hidden>
+      <div class="status">
+        <span class="status-dot locked"></span>
+        <span data-i18n="popup_status_locked"></span>
+      </div>
+      <p class="hint" data-i18n="popup_locked_hint"></p>
+      <button id="unlock-button" data-i18n="popup_unlock_button" type="button"></button>
     </section>
-    <p class="hint" data-i18n="popup_locked_hint"></p>
 
-    <button id="ping-button" data-i18n="popup_ping_button" type="button"></button>
-    <p class="result" id="ping-result" aria-live="polite"></p>
+    <section id="state-unlocking" class="state" hidden>
+      <p class="hint centered" data-i18n="popup_unlocking"></p>
+    </section>
+
+    <section id="state-list" class="state" hidden>
+      <div id="sections"></div>
+    </section>
+
+    <section id="state-empty" class="state" hidden>
+      <p class="hint centered" data-i18n="popup_no_matches"></p>
+    </section>
+
+    <section id="state-unsupported" class="state" hidden>
+      <p class="hint centered" data-i18n="popup_unsupported_page"></p>
+    </section>
+
+    <section id="state-error" class="state" hidden>
+      <p class="hint centered" id="error-message"></p>
+      <button id="retry-button" data-i18n="popup_retry_button" type="button"></button>
+    </section>
+
+    <p class="feedback" id="feedback" aria-live="polite"></p>
   </main>
   <script src="popup.js"></script>
 </body>

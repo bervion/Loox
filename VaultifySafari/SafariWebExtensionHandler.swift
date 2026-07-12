@@ -3,10 +3,12 @@
 //  Native side of the Safari web extension. Safari spawns this handler
 //  per message (short-lived, headless process), delivers the JS payload via
 //  `SFExtensionMessageKey`, and expects a single response item back — so all
-//  handling is stateless request/response.
+//  handling is stateless request/response. Vault commands retrieve the
+//  biometric-wrapped Vault Key per operation and drop it before responding.
 //
-//  SECURITY INVARIANT: this handler never returns vault contents or key
-//  material to the JS layer. Responses carry only non-sensitive status data.
+//  SECURITY INVARIANT: this handler never returns bulk vault contents or key
+//  material to the JS layer — only origin-scoped match metadata and, on an
+//  explicit copy action, a single whitelisted non-secret field value.
 //
 
 import Foundation
@@ -20,12 +22,15 @@ nonisolated final class SafariWebExtensionHandler: NSObject, NSExtensionRequestH
     func beginRequest(with context: NSExtensionContext) {
         let message = (context.inputItems.first as? NSExtensionItem)?
             .userInfo?[SFExtensionMessageKey]
+        Self.log.debug("routing cmd=\(SafariMessageRouter.command(of: message) ?? "<none>", privacy: .public)")
 
-        let response = SafariMessageRouter.route(message)
-        Self.log.debug("handled cmd=\(SafariMessageRouter.command(of: message) ?? "<none>", privacy: .public)")
-
-        let item = NSExtensionItem()
-        item.userInfo = [SFExtensionMessageKey: response]
-        context.completeRequest(returningItems: [item], completionHandler: nil)
+        // Vault commands are async (Face ID + store read); the extension
+        // context stays open until completeRequest fires from the task.
+        Task { @MainActor in
+            let response = await SafariMessageRouter.respond(to: message)
+            let item = NSExtensionItem()
+            item.userInfo = [SFExtensionMessageKey: response]
+            context.completeRequest(returningItems: [item], completionHandler: nil)
+        }
     }
 }

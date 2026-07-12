@@ -1,48 +1,42 @@
 //
 //  SafariMessageRouter.swift
-//  Pure request→response routing for the Safari web extension handler.
-//  Kept free of SafariServices so the routing logic is unit-testable.
+//  Appex-side binding of the shared `WebExtensionRouter`: supplies the LIVE
+//  dependencies — per-operation Face ID key release and the shared App Group
+//  store. All routing/validation logic lives in VaultifyCore
+//  (`WebExtensionRouter` + `WebExtensionReader`) so `VaultifyTests` exercises
+//  it with an injected key and an in-memory store.
 //
-//  SECURITY INVARIANT: routes must never place vault contents or key
-//  material into a response. Every payload crossing native→JS is
-//  non-sensitive status data only.
+//  SECURITY INVARIANT: responses never carry vault contents or key material
+//  beyond what `WebExtensionReader` explicitly releases — match metadata for
+//  the active origin, and a single whitelisted non-secret field value on an
+//  explicit copy action.
 //
 
 import Foundation
 
 nonisolated enum SafariMessageRouter {
 
-    /// Longest echo payload we reflect back, to keep responses bounded.
-    private static let maxEchoLength = 512
-
-    /// Routes a raw `SFExtensionMessageKey` payload to a JSON-safe response
-    /// dictionary. Unknown or malformed messages get a structured error so
-    /// the JS layer can always distinguish "native unreachable" from
-    /// "native rejected the message".
-    static func route(_ message: Any?) -> [String: Any] {
-        guard let cmd = command(of: message) else {
-            return failure("malformedMessage")
-        }
-
-        switch cmd {
-        case "echo", "ping":
-            let payload = (message as? [String: Any])?["payload"] as? String ?? ""
-            return [
-                "ok": true,
-                "cmd": cmd,
-                "echo": String(payload.prefix(maxEchoLength)),
-            ]
-        default:
-            return failure("unknownCommand")
-        }
+    /// Routes a raw `SFExtensionMessageKey` payload to a JSON-safe response.
+    static func respond(to message: Any?) async -> [String: Any] {
+        await WebExtensionRouter.route(message, context: liveContext)
     }
 
-    /// Extracts the `cmd` string from a raw message, if well-formed.
+    /// Extracts the `cmd` string from a raw message, for non-sensitive logging.
     static func command(of message: Any?) -> String? {
         (message as? [String: Any])?["cmd"] as? String
     }
 
-    private static func failure(_ code: String) -> [String: Any] {
-        ["ok": false, "error": code]
+    /// Face-ID-gated key release + a fresh on-disk shared store per message —
+    /// the handler process is short-lived and never caches either. Same unlock
+    /// path as the AutoFill extension (biometric-wrapped Vault Key from the
+    /// shared keychain group; no Argon2 in this extension).
+    private static var liveContext: WebExtensionRouterContext {
+        WebExtensionRouterContext(
+            retrieveKey: {
+                try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
+            },
+            makeStore: {
+                try VaultStore(recoverable: false)
+            })
     }
 }
