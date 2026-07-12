@@ -10,7 +10,7 @@
 ## Overview
 
 - Priority: P2
-- Status: pending
+- Status: code complete — device gate G4 pending (user)
 - Detect signup/change-password pages; offer generated-password fill from popup (reuse `PasswordGenerator`); on submit of a NEW login, show an in-page save overlay that writes via `VaultWriter.createLogin` — but ONLY on devices without the native iOS 26.2 save path, to avoid the 1P double-prompt bug (gate G4).
 
 ## Key Insights
@@ -57,14 +57,29 @@ save-overlay.js      # shadow-DOM prompt; submit-intent capture; talks to backgr
 
 ## Todo List
 
-- [ ] generatePassword + saveLogin + neverSave native cmds with tests
-- [ ] Capabilities (nativeSave) in status
-- [ ] signup-detector + fixtures
-- [ ] Popup generated-password fill
-- [ ] save-overlay shadow DOM + submit capture + TTL
-- [ ] Suppression logic wired
-- [ ] G4 dual-device QA recorded, policy confirmed
-- [ ] EN+VI strings; `make test` green
+- [x] generatePassword + saveLogin + neverSave native cmds with tests (`WebExtensionRouter.swift` + `WebExtensionSaveGate.swift`; 16 tests in `WebExtensionSaveLoginTests.swift`)
+- [x] Capabilities (nativeSave) in status (native OS-version check, injectable for tests)
+- [x] signup-detector + fixtures (`signup-detector.js` pure detect + DOM scan; node harness `signup-detector-node-tests.mjs`; `signup-form.html` + `change-password-form.html` fixtures)
+- [x] Popup generated-password fill (`generatePasswordFill` background flow mirrors fillItem authorization; fill-engine `fillPasswordAll` password path)
+- [x] save-overlay shadow DOM + submit capture + TTL (closed shadow root, trusted-event submit/click capture, 60s TTL, scroll-away + pagehide dismissal)
+- [x] Suppression logic wired (native `saveGate` per submit intent — no background cache, so "Never for this site" holds immediately; saveLogin belt-refuses when gated)
+- [ ] G4 dual-device QA recorded, policy confirmed (USER-OWED: see Success Criteria)
+- [x] EN+VI strings (`_locales/en|vi` + no new native strings); `make test` green (694/694)
+
+### Implementation notes (deviations from the sketch)
+
+- Background does NOT cache capabilities per session: the save gate is decided
+  natively per submit intent (rare event, one round trip) so a never-save tap
+  or policy change can never act on a stale cache. `status.capabilities`
+  still carries `nativeSave` as specified.
+- `fill-engine.js` gained `fillPasswordAll` (not in the original file list):
+  the generated-password write reuses the existing visibility/editability
+  gauntlet instead of duplicating it; vault passwords remain unreachable —
+  the only value this path ever writes is a natively generated one.
+- `VaultWriter.createLogin` gained an optional `title:` parameter (defaulted,
+  source-compatible with the AutoFill callers) for the overlay's editable title.
+- `neverSave` hosts + the generate rate-limit stamps live in App Group shared
+  defaults (`SharedConfig.webExtensionNeverSaveHostsKey` / `...GenerateStampsKey`).
 
 ## Success Criteria
 
