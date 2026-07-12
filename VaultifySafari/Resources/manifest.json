@@ -8,7 +8,11 @@
   "host_permissions": ["https://*/*"],
   "background": { "scripts": ["background.js"], "persistent": false },
   "content_scripts": [
-    { "matches": ["https://*/*"], "js": ["content.js"], "run_at": "document_idle" }
+    {
+      "matches": ["https://*/*"],
+      "js": ["field-classifier.js", "fill-engine.js", "content.js"],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_popup": "popup.html",

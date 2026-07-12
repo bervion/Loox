@@ -243,6 +243,8 @@ let project = Project(
                 "VaultifySafari/Resources/manifest.json",
                 "VaultifySafari/Resources/background.js",
                 "VaultifySafari/Resources/content.js",
+                "VaultifySafari/Resources/field-classifier.js",
+                "VaultifySafari/Resources/fill-engine.js",
                 "VaultifySafari/Resources/popup.html",
                 "VaultifySafari/Resources/popup.js",
                 "VaultifySafari/Resources/popup.css",

@@ -10,7 +10,7 @@
 ## Overview
 
 - Priority: P1 (this is the reason the extension exists — Credential Provider cannot fill identity/CC, report §1)
-- Status: pending
+- Status: implemented (device QA matrix pending — code complete, `make check` + `make test` green, classifier node tests green)
 - Content-script field classifier + fill engine; popup-driven fill: user opens popup on a page → taps an Identity or Card → values fill into classified visible fields. Passwords are NOT filled by this phase (QuickType owns login fields).
 
 ## Key Insights
@@ -64,14 +64,23 @@ fill-engine.js        # value writing (native setter + events), visibility/focus
 
 ## Todo List
 
-- [ ] fillPayload native path + rejection tests
-- [ ] Classifier tiers with EN+VI evidence tables
-- [ ] Fill engine with 5 safety checks + fill report
-- [ ] Tab-id pinning + payload lifetime in background
-- [ ] Popup fill UX + toast, EN+VI
-- [ ] DevFixtures pages authored (incl. hidden-field trap)
-- [ ] QA matrix executed on device, results recorded
-- [ ] `make test` green
+- [x] fillPayload native path + rejection tests (`WebExtensionFillPayload.swift`, 19 tests in `WebExtensionFillPayloadTests.swift`)
+- [x] Classifier tiers with EN+VI evidence tables (`field-classifier.js` + node tests in `DevFixtures/field-classifier-node-tests.mjs`)
+- [x] Fill engine with 5 safety checks + fill report (`fill-engine.js`)
+- [x] Tab-id pinning + payload lifetime in background (`background.js` `handleFillItem`)
+- [x] Popup fill UX + toast, EN+VI (`popup.js/css`, `_locales/en|vi`)
+- [x] DevFixtures pages authored (incl. hidden-field trap) — 5 fixtures under `VaultifySafari/DevFixtures/`
+- [ ] QA matrix executed on device, results recorded (USER-OWED: real-site fill accuracy, hidden-trap zero-fill, CC iframe deny, React reversion fixture)
+- [x] `make test` green (676 tests, 0 failures)
+
+## Implementation Notes (deviations from spec, all deliberate)
+
+- `getFillPayload` is NOT relayed from any runtime message: `background.js` constructs it only inside the popup-gated `fillItem` flow — stronger than gating the raw command.
+- Content script re-classifies at fill moment (stateless) instead of caching classifyPage results — a mutated/SPA-navigated page can never receive values into stale elements; WeakMap field ids still used within a page load.
+- CC tier-3 maxlength corroboration: 13-19 for `cc-number` (per spec), 3-4 for `cc-csc` (a CVC input never carries a PAN-length maxlength; spec's 13-19 wording was PAN-oriented).
+- Identity DOB not in the fill payload (step-1 canonical key list omits it; date-format adaptation deferred).
+- Name split is Western order (given = leading tokens, family = last) per WHATWG autocomplete semantics; VI-order sites typically use a single full-name field which gets the unsplit value.
+- Identity fills respect the `protected` flag; card fills release template-protected number/CSC at fill moment (the phase's PCI row) — `guard2`/SecretGuard always block both.
 
 ## Success Criteria
 

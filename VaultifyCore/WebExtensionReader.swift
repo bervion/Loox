@@ -134,7 +134,9 @@ nonisolated enum WebExtensionReader {
     /// first; otherwise the first monospace field long enough to be a PAN —
     /// the length floor keeps a 4-digit security code (Amex CID) from ever
     /// being mistaken for the number and leaking its digits as "last-4".
-    private static func cardNumberValue(of item: VaultItem) -> String {
+    /// Internal (not private) because the fill-payload path reuses the same
+    /// PAN resolution when releasing the number for an authorized card fill.
+    static func cardNumberValue(of item: VaultItem) -> String {
         let candidates = item.fields.filter { $0.kind == .monospace && $0.guard2 != true }
         if let labelled = candidates.first(where: { $0.label == "Card Number" }) {
             return labelled.value

@@ -92,5 +92,39 @@
         "example": "4242"
       }
     }
+  },
+  "popup_fill_button": {
+    "message": "Fill",
+    "description": "Fill button label on identity and card rows."
+  },
+  "popup_fill_identity_label": {
+    "message": "Fill identity fields on this page",
+    "description": "Accessibility label for the identity row fill button."
+  },
+  "popup_fill_card_label": {
+    "message": "Fill card fields on this page",
+    "description": "Accessibility label for the card row fill button."
+  },
+  "popup_filling": {
+    "message": "Filling",
+    "description": "Feedback while a fill is in progress."
+  },
+  "popup_fill_done": {
+    "message": "Filled $COUNT$ fields",
+    "description": "Feedback after a fill, with the number of fields filled.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4"
+      }
+    }
+  },
+  "popup_fill_none": {
+    "message": "No matching fields on this page",
+    "description": "Feedback when the page has no fields the item can fill."
+  },
+  "popup_fill_failed": {
+    "message": "Could not fill",
+    "description": "Feedback when a fill action fails."
   }
 }

@@ -1,8 +1,11 @@
 // Popup: auto-attempts the unlock+list flow on open (native side serves it
 // from a short-lived unlocked session when one exists, otherwise Face ID
 // fires) → metadata-only item lists for the active tab's https origin, plus
-// copy actions for non-secret values. A cancelled unlock falls back to the
-// manual Unlock button — never auto-retried within the same popup instance.
+// copy actions for non-secret values and Fill actions for identities/cards.
+// Fill values never pass through this popup — a Fill tap only names the item
+// and category; the background page runs the authorized flow and returns
+// aggregate counts. A cancelled unlock falls back to the manual Unlock
+// button — never auto-retried within the same popup instance.
 // All rendering uses createElement/textContent — vault titles and usernames
 // are user data and must never hit innerHTML. Nothing is persisted to
 // browser.storage.
@@ -57,9 +60,9 @@ function handleListFailure(reply) {
   showError(reply);
 }
 
-// --- Rendering (metadata only; copy buttons for non-secret values) ---
+// --- Rendering (metadata only; copy + fill buttons per row) ---
 
-function makeRow(title, subtitle, copyConfig) {
+function makeRow(title, subtitle, buttons) {
   const row = document.createElement("div");
   row.className = "item-row";
 
@@ -77,16 +80,68 @@ function makeRow(title, subtitle, copyConfig) {
   }
   row.appendChild(text);
 
-  if (copyConfig) {
+  (buttons || []).forEach((config) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "copy-button";
-    button.textContent = t("popup_copy_button");
-    button.setAttribute("aria-label", copyConfig.label);
-    button.addEventListener("click", copyConfig.action);
+    button.className = config.className;
+    button.textContent = config.text;
+    button.setAttribute("aria-label", config.label);
+    if (config.disabled) {
+      button.disabled = true;
+    } else {
+      button.addEventListener("click", config.action);
+    }
     row.appendChild(button);
-  }
+  });
   return row;
+}
+
+function copyButton(label, action) {
+  return { className: "copy-button", text: t("popup_copy_button"), label, action };
+}
+
+// Fill is offered only when the classifier found at least one matching field
+// on the page — a disabled button communicates "nothing to fill here". The
+// tap kicks off the background's authorized fill flow; only aggregate counts
+// ever come back to this popup.
+function fillButton(labelKey, itemId, category, enabled) {
+  return {
+    className: "fill-button",
+    text: t("popup_fill_button"),
+    label: t(labelKey),
+    disabled: !enabled,
+    action: () => fillItem(itemId, category),
+  };
+}
+
+async function fillItem(itemId, category) {
+  showFeedback(t("popup_filling"));
+  const reply = await browser.runtime
+    .sendMessage({ cmd: "fillItem", itemId, category })
+    .catch(() => null);
+  if (reply && reply.ok === true && reply.data) {
+    const filled = Number(reply.data.filled) || 0;
+    showFeedback(filled > 0 ? t("popup_fill_done", [String(filled)]) : t("popup_fill_none"));
+  } else if (reply && reply.error === "unlockCancelled") {
+    showFeedback("");
+  } else {
+    showFeedback(t("popup_fill_failed"));
+  }
+}
+
+// Counts of fillable fields per category on the active page; zeros when the
+// page has none (or the content script is not reachable).
+async function fetchFillSummary() {
+  const reply = await browser.runtime
+    .sendMessage({ cmd: "classifyPage" })
+    .catch(() => null);
+  if (reply && reply.ok === true && reply.data) {
+    return {
+      identity: Number(reply.data.identity) || 0,
+      card: Number(reply.data.card) || 0,
+    };
+  }
+  return { identity: 0, card: 0 };
 }
 
 function makeSection(titleKey, rows) {
@@ -115,7 +170,7 @@ async function copyItemField(itemId, fieldKind) {
   }
 }
 
-function render(data) {
+function render(data, fillSummary) {
   const logins = Array.isArray(data.logins) ? data.logins : [];
   const identities = Array.isArray(data.identities) ? data.identities : [];
   const cards = Array.isArray(data.cards) ? data.cards : [];
@@ -132,9 +187,9 @@ function render(data) {
       String(login.title || ""),
       String(login.username || ""),
       login.username
-        ? { label: t("popup_copy_username_label"),
-            action: () => copyToClipboard(String(login.username)) }
-        : null,
+        ? [copyButton(t("popup_copy_username_label"),
+                      () => copyToClipboard(String(login.username)))]
+        : [],
     ));
     container.appendChild(makeSection("popup_section_logins", rows));
   }
@@ -143,8 +198,12 @@ function render(data) {
     const rows = identities.map((identity) => makeRow(
       String(identity.title || ""),
       "",
-      { label: t("popup_copy_email_label"),
-        action: () => copyItemField(String(identity.id), "email") },
+      [
+        fillButton("popup_fill_identity_label", String(identity.id), "identity",
+                   fillSummary.identity > 0),
+        copyButton(t("popup_copy_email_label"),
+                   () => copyItemField(String(identity.id), "email")),
+      ],
     ));
     container.appendChild(makeSection("popup_section_identities", rows));
   }
@@ -155,7 +214,10 @@ function render(data) {
       const last4 = String(card.last4 || "");
       const masked = last4 ? t("popup_card_ending", [last4]) : "";
       const subtitle = [brand, masked].filter(Boolean).join(" ");
-      return makeRow(String(card.title || ""), subtitle, null);
+      return makeRow(String(card.title || ""), subtitle, [
+        fillButton("popup_fill_card_label", String(card.id), "card",
+                   fillSummary.card > 0),
+      ]);
     });
     container.appendChild(makeSection("popup_section_cards", rows));
   }
@@ -169,7 +231,8 @@ async function unlockAndList() {
   show("unlocking");
   const reply = await browser.runtime.sendMessage({ cmd: "listItems" }).catch(() => null);
   if (reply && reply.ok === true) {
-    render(reply.data || {});
+    const fillSummary = await fetchFillSummary();
+    render(reply.data || {}, fillSummary);
   } else {
     handleListFailure(reply);
   }

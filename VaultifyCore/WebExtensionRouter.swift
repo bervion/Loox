@@ -4,16 +4,19 @@ import Foundation
 /// layer and the native handler.
 ///
 /// Request:  `{ v: 1, cmd: string, origin?: "https://host", itemId?: string,
-///              fieldKind?: string, payload?: string }`
+///              fieldKind?: string, category?: string, payload?: string }`
 /// Response: `{ v: 1, ok: bool, error?: code, data?: {...} }`
 ///
 /// SECURITY INVARIANT: the Vault Key and bulk vault contents never cross the
 /// native→JS bridge. `listItems` returns match metadata only; `copyValue`
 /// releases a single non-secret field value on an explicit user action and is
 /// enforced natively (`WebExtensionReader.copyableKinds`) — never by the popup
-/// hiding a button. The origin used for matching is supplied by the trusted
-/// `browser.tabs` API in the background page, and is re-validated here as
-/// https-with-host before any vault access.
+/// hiding a button. `getFillPayload` is the ONLY command returning values for
+/// page injection: single item, identity/card categories only, issued by the
+/// background page solely inside its popup-initiated fill flow. The origin
+/// used for matching is supplied by the trusted `browser.tabs` API in the
+/// background page, and is re-validated here as https-with-host before any
+/// vault access.
 nonisolated struct WebExtensionRequest: Sendable {
     static let supportedVersion = 1
 
@@ -22,6 +25,7 @@ nonisolated struct WebExtensionRequest: Sendable {
     var origin: String?
     var itemId: String?
     var fieldKind: String?
+    var category: String?
     var payload: String?
 
     /// Parses the raw `SFExtensionMessageKey` payload. Nil when the message is
@@ -34,6 +38,7 @@ nonisolated struct WebExtensionRequest: Sendable {
                                    origin: dictionary["origin"] as? String,
                                    itemId: dictionary["itemId"] as? String,
                                    fieldKind: dictionary["fieldKind"] as? String,
+                                   category: dictionary["category"] as? String,
                                    payload: dictionary["payload"] as? String)
     }
 }
@@ -77,6 +82,8 @@ nonisolated enum WebExtensionRouter {
             return await listItems(request, context: context)
         case "copyValue":
             return await copyValue(request, context: context)
+        case "getFillPayload":
+            return await getFillPayload(request, context: context)
         default:
             return failure("unknownCommand")
         }
@@ -122,6 +129,49 @@ nonisolated enum WebExtensionRouter {
                                                             store: store, key: key)
             }
             return success(["value": value])
+        } catch let error as WebExtensionReader.ReadError {
+            switch error {
+            case .itemNotFound: return failure("itemNotFound")
+            case .forbidden: return failure("forbidden")
+            }
+        } catch {
+            return failure("storeUnavailable")
+        }
+    }
+
+    /// The single value-returning command for page injection. Requirements
+    /// checked BEFORE any unlock so a bad request never triggers Face ID:
+    /// well-formed https origin (the background page pins the payload to the
+    /// tab it derived this origin from), non-empty item id, and one of the two
+    /// fillable categories. Passwords are structurally unreachable here —
+    /// `fillPayload` serves identity/card items only and drops secret kinds.
+    private static func getFillPayload(_ request: WebExtensionRequest,
+                                       context: WebExtensionRouterContext) async -> [String: Any] {
+        guard httpsHost(fromOrigin: request.origin) != nil else {
+            return failure("invalidOrigin")
+        }
+        guard let itemId = request.itemId, !itemId.isEmpty,
+              let rawCategory = request.category,
+              let category = ItemCategory(rawValue: rawCategory) else {
+            return failure("malformedMessage")
+        }
+        guard WebExtensionReader.fillableCategories.contains(category) else {
+            return failure("forbidden")
+        }
+        let key: SecureBytes
+        do { key = try await unlockedKey(context) } catch { return unlockFailure(error) }
+        do {
+            let values = try await MainActor.run { () -> [String: String] in
+                let store = try context.makeStore()
+                return try WebExtensionReader.fillPayload(itemId: itemId, category: category,
+                                                          store: store, key: key)
+            }
+            // Freshness hint: the background page must discard an undelivered
+            // payload after this moment (it also enforces its own 10s cap).
+            let expiresAt = Int((Date.now.timeIntervalSince1970 + 10) * 1000)
+            return success(["values": values,
+                            "category": category.rawValue,
+                            "expiresAt": expiresAt])
         } catch let error as WebExtensionReader.ReadError {
             switch error {
             case .itemNotFound: return failure("itemNotFound")

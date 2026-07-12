@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!-- Dev-only QA fixture (never shipped): straightforward form with proper
+     autocomplete attributes. Expected: every field classified tier 1 and
+     filled; identity fill = 5 fields, card fill = 4 fields. -->
+<html>
+<head><meta charset="utf-8"><title>Plain form fixture</title></head>
+<body>
+  <h1>Checkout</h1>
+  <form id="identity">
+    <label>Full name <input name="name" autocomplete="name"></label>
+    <label>Given name <input name="fname" autocomplete="given-name"></label>
+    <label>Family name <input name="lname" autocomplete="family-name"></label>
+    <label>Email <input type="email" name="email" autocomplete="email"></label>
+    <label>Phone <input type="tel" name="phone" autocomplete="tel"></label>
+    <label>Address <textarea name="addr" autocomplete="street-address"></textarea></label>
+  </form>
+  <form id="payment">
+    <label>Name on card <input name="ccname" autocomplete="cc-name"></label>
+    <label>Card number <input name="ccnumber" autocomplete="cc-number" maxlength="19"></label>
+    <label>Expiry <input name="ccexp" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY"></label>
+    <label>CVC <input name="cvc" autocomplete="cc-csc" maxlength="4"></label>
+  </form>
+</body>
+</html>

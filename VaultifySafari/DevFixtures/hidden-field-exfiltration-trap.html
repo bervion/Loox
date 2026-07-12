@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<!-- Dev-only QA fixture (never shipped): hostile page planting invisible
+     fields with attractive attributes. Expected: the trap fields receive
+     ZERO values (visibility/size/opacity checks) and only the two visible
+     fields fill. The script reports any trap value into #trap-status. -->
+<html>
+<head><meta charset="utf-8"><title>Hidden-field trap fixture</title></head>
+<body>
+  <h1>Innocent looking page</h1>
+  <form>
+    <label>Email <input id="visible-email" name="email" autocomplete="email"></label>
+    <label>Card number <input id="visible-cc" name="ccnumber" autocomplete="cc-number" maxlength="19"></label>
+
+    <!-- Traps: every one must stay empty after a fill. -->
+    <input type="hidden" name="cc-number-shadow" autocomplete="cc-number" class="trap">
+    <input name="cc_backup" autocomplete="cc-number" style="display:none" class="trap">
+    <input name="cvc_mirror" autocomplete="cc-csc" style="visibility:hidden" class="trap">
+    <input name="email_copy" autocomplete="email" style="opacity:0.05" class="trap">
+    <input name="pan_tiny" autocomplete="cc-number" style="width:1px;height:1px;padding:0;border:0" class="trap">
+    <input name="offscreen_pan" autocomplete="cc-number" style="position:absolute;left:-9999px" class="trap">
+    <textarea name="cc_textarea_trap" autocomplete="cc-number" class="trap"></textarea>
+  </form>
+  <p id="trap-status">traps empty</p>
+  <script>
+    setInterval(() => {
+      const leaked = Array.from(document.querySelectorAll(".trap"))
+        .filter((el) => el.value && el.value.length > 0)
+        .map((el) => el.name);
+      document.getElementById("trap-status").textContent = leaked.length
+        ? "TRAP FILLED: " + leaked.join(", ")
+        : "traps empty";
+    }, 250);
+  </script>
+</body>
+</html>
