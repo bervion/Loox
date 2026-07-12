@@ -205,12 +205,19 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
                 // Auto-TOFU pin on first sight (single-confirm pairing model);
                 // a later key CHANGE is rejected by the pin store, not re-pinned.
                 if ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) == nil {
-                    try ApprovalRecipientService.pinOwnerKey(grant.ownerSigningPubKey, zoneID: zoneID)
                     // A fresh pin freezes the key but trusts no one yet:
                     // the human decision (compare the safety code, or
                     // explicitly skip) is recorded separately and gates
-                    // all use of the content.
-                    ApprovalRecipientService.setOwnerKeyVerification(.pending, zoneID: zoneID)
+                    // all use of the content. The `pending` marker lands
+                    // BEFORE the pin, and a failed marker write aborts the
+                    // pin, so a pin can never exist without a decision
+                    // state — the legacy backfill would otherwise mistake
+                    // it for a pre-gate share and grandfather it to
+                    // `confirmed`. A marker without a pin is harmless: the
+                    // pin retries next refresh and `pending` fails closed.
+                    try ApprovalRecipientService.setOwnerKeyVerificationOrThrow(
+                        .pending, zoneID: zoneID)
+                    try ApprovalRecipientService.pinOwnerKey(grant.ownerSigningPubKey, zoneID: zoneID)
                 }
                 // v2 single-device grants exclude this device entirely: keep
                 // a Tier-0 placeholder (generic state, no metadata, no
@@ -440,14 +447,22 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
     /// One-shot: shares pinned before the verification gate existed have
     /// been in active use under the silent trust model — mark them
     /// `confirmed` instead of retro-prompting (the safety-code row remains
-    /// as a manual re-check surface). Idempotent: a reinstall that keeps
-    /// Keychain pins but resets this UserDefaults flag re-marks the same
-    /// zones with the same outcome. Device-local bookkeeping, non-secret.
+    /// as a manual re-check surface). Device-local bookkeeping, non-secret.
     private static let verificationBackfillDoneKey = "shared_owner_key_verification_backfilled"
 
     private static func backfillVerificationMarkers(zones: [CKRecordZone.ID]) {
+        // The done-flag lives in the KEYCHAIN so it shares the pins'
+        // lifecycle: an app reinstall keeps Keychain pins but resets
+        // UserDefaults, and a re-run against surviving pins would
+        // grandfather any zone whose marker never landed to `confirmed`
+        // without a human decision. Installs that completed the backfill
+        // under the original UserDefaults flag migrate without re-running.
+        if (try? KeychainStore.get(account: verificationBackfillDoneKey)) != nil { return }
         let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: verificationBackfillDoneKey) else { return }
+        if defaults.bool(forKey: verificationBackfillDoneKey) {
+            try? KeychainStore.set(Data([1]), account: verificationBackfillDoneKey)
+            return
+        }
         for zoneID in zones {
             let existing = ApprovalRecipientService.ownerKeyVerification(zoneID: zoneID)
             let hasPin = ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) != nil
@@ -456,7 +471,7 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
                 ApprovalRecipientService.setOwnerKeyVerification(state, zoneID: zoneID)
             }
         }
-        defaults.set(true, forKey: verificationBackfillDoneKey)
+        try? KeychainStore.set(Data([1]), account: verificationBackfillDoneKey)
     }
 
     /// Stable opaque per-install id for request metadata (not a secret) —

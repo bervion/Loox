@@ -242,8 +242,19 @@ import UIKit
     /// Best-effort persist: a failed write leaves the marker absent, which
     /// reads as `pending` — the safe direction.
     static func setOwnerKeyVerification(_ state: OwnerKeyVerification, zoneID: CKRecordZone.ID) {
-        try? KeychainStore.set(Data(state.rawValue.utf8),
-                               account: verificationAccount(zoneID: zoneID))
+        try? setOwnerKeyVerificationOrThrow(state, zoneID: zoneID)
+    }
+
+    /// Throwing variant for the fresh-pin path: the `pending` marker must
+    /// land BEFORE the pin, and a failed marker write must abort the pin,
+    /// so a post-gate pin can never exist without an explicit decision
+    /// state. The legacy backfill reads a marker-less pin as pre-gate and
+    /// grandfathers it to `confirmed` — which must never happen for a
+    /// share nobody actually decided on.
+    static func setOwnerKeyVerificationOrThrow(_ state: OwnerKeyVerification,
+                                               zoneID: CKRecordZone.ID) throws {
+        try KeychainStore.set(Data(state.rawValue.utf8),
+                              account: verificationAccount(zoneID: zoneID))
     }
 
     /// Leave a received share: deleting the zone from the SHARED database
