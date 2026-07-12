@@ -14,6 +14,10 @@ const t = (key, substitutions) => browser.i18n.getMessage(key, substitutions);
 
 const STATE_IDS = ["locked", "unlocking", "list", "empty", "unsupported", "error"];
 let feedbackTimer = null;
+// The https origin this popup showed the user on the site chip. Every Fill
+// tap sends it along so the background page can refuse to deliver values to
+// a tab that navigated cross-origin after the user last saw the chip.
+let displayedOrigin = null;
 
 function localizeStaticText() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -117,7 +121,7 @@ function fillButton(labelKey, itemId, category, enabled) {
 async function fillItem(itemId, category) {
   showFeedback(t("popup_filling"));
   const reply = await browser.runtime
-    .sendMessage({ cmd: "fillItem", itemId, category })
+    .sendMessage({ cmd: "fillItem", itemId, category, expectedOrigin: displayedOrigin })
     .catch(() => null);
   if (reply && reply.ok === true && reply.data) {
     const filled = Number(reply.data.filled) || 0;
@@ -255,6 +259,7 @@ async function initialize() {
     show("unsupported");
     return;
   }
+  displayedOrigin = origin;
   const hostEl = document.getElementById("site-host");
   hostEl.textContent = new URL(origin).host;
   hostEl.hidden = false;

@@ -17,7 +17,14 @@
 // never a long-lived global) and is dropped after dispatch or 10 seconds.
 
 const NATIVE_COMMANDS = new Set(["echo", "ping", "status", "listItems", "copyValue"]);
-const POPUP_ONLY_COMMANDS = new Set(["listItems", "copyValue", "fillItem", "classifyPage"]);
+// Every command this hub understands is popup-only: content scripts run in
+// every https page and have no legitimate reason to pull vault lists, field
+// values, the ACTIVE tab's origin (cross-tab browsing disclosure), or even to
+// bounce diagnostics off the native handler.
+const POPUP_ONLY_COMMANDS = new Set([
+  "listItems", "copyValue", "fillItem", "classifyPage",
+  "activeTabOrigin", "echo", "ping", "status",
+]);
 const PROTOCOL_VERSION = 1;
 const FILL_DELIVERY_TIMEOUT_MS = 10000;
 
@@ -87,6 +94,18 @@ async function handleFillItem(message) {
 
   const tab = await activeHTTPSTab();
   if (!tab) return { v: PROTOCOL_VERSION, ok: false, error: "unsupportedPage" };
+
+  // Consent binding: the user approved the origin the POPUP DISPLAYED on its
+  // site chip. If the page navigated cross-origin while the popup was open,
+  // the freshly derived origin no longer matches what the user saw — abort
+  // before any native request. Comparing a popup-supplied value against the
+  // trusted tabs-API origin can only narrow the fill, never widen it.
+  const expectedOrigin = typeof message.expectedOrigin === "string"
+    ? message.expectedOrigin
+    : "";
+  if (!expectedOrigin || expectedOrigin !== tab.origin) {
+    return { v: PROTOCOL_VERSION, ok: false, error: "tabChanged" };
+  }
 
   const reply = await sendNative({
     v: PROTOCOL_VERSION,

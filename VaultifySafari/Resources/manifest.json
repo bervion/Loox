@@ -4,7 +4,7 @@
   "name": "__MSG_extension_name__",
   "description": "__MSG_extension_description__",
   "version": "1.0",
-  "permissions": ["nativeMessaging", "activeTab", "storage", "scripting", "tabs"],
+  "permissions": ["nativeMessaging", "activeTab", "tabs"],
   "host_permissions": ["https://*/*"],
   "background": { "scripts": ["background.js"], "persistent": false },
   "content_scripts": [
