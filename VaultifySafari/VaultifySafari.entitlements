@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Vault file access (ciphertext lives in the shared container). -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.bervion.vaultify</string>
+	</array>
+	<!-- Shared keychain group for the biometric-protected key bundle.
+	     Intentionally NO CloudKit here: the Safari extension reads the local
+	     vault only, which also keeps its signing profile simpler. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.bervion.vaultify.shared</string>
+	</array>
+</dict>
+</plist>

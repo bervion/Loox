@@ -129,6 +129,9 @@ let project = Project(
                 // too, and macOS cannot link an iOS-only appExtension. The macOS AutoFill
                 // extension is a separate target added in a later phase.
                 .target(name: "VaultifyAutoFill", condition: .when([.ios])),
+                // Safari web extension (identity/card fill) — iOS-only appex,
+                // same reasoning as the AutoFill embed above.
+                .target(name: "VaultifySafari", condition: .when([.ios])),
             ],
             settings: .settings(base: [
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "vaultify",
@@ -205,6 +208,54 @@ let project = Project(
                 "CODE_SIGN_STYLE": "Automatic",
                 "HEADER_SEARCH_PATHS": "$(SRCROOT)/VaultifyCore/CArgon2",
                 "SWIFT_OBJC_BRIDGING_HEADER": "VaultifyAutoFill/VaultifyAutoFill-Bridging-Header.h",
+                "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+                "SWIFT_EMIT_LOC_STRINGS": "YES",
+                "TARGETED_DEVICE_FAMILY": "1",
+                "SKIP_INSTALL": "YES",
+                "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks",
+            ])
+        ),
+        // Safari web extension: MV3 web bundle + native message handler. Safari
+        // requires manifest.json (and the script/page files) at the .appex bundle
+        // ROOT with _locales/ and images/ keeping their directory layout — so the
+        // root files ship as plain resources and only the subdirectories ship as
+        // folder references. (A single folder reference on Resources/ would nest
+        // everything under a literal Resources/ dir inside the appex, which Safari
+        // cannot read and which even trips embedded-binary validation.)
+        .target(
+            name: "VaultifySafari",
+            destinations: [.iPhone],
+            product: .appExtension,
+            bundleId: "com.bervion.vaultify.safari",
+            deploymentTargets: .iOS("17.3"),
+            infoPlist: .extendingDefault(with: [
+                "CFBundleDisplayName": "Loox",
+                "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+                "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+                "NSFaceIDUsageDescription": "Loox uses Face ID to unlock your vault.",
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.Safari.web-extension",
+                    "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).SafariWebExtensionHandler",
+                ],
+            ]),
+            sources: ["VaultifySafari/**/*.swift", "VaultifyCore/**"],
+            resources: [
+                "VaultifySafari/Resources/manifest.json",
+                "VaultifySafari/Resources/background.js",
+                "VaultifySafari/Resources/content.js",
+                "VaultifySafari/Resources/popup.html",
+                "VaultifySafari/Resources/popup.js",
+                "VaultifySafari/Resources/popup.css",
+                .folderReference(path: "VaultifySafari/Resources/_locales"),
+                .folderReference(path: "VaultifySafari/Resources/images"),
+                "Vaultify/Localizable.xcstrings",
+                "VaultifyCore/SharedAssets.xcassets",
+            ],
+            entitlements: "VaultifySafari/VaultifySafari.entitlements",
+            settings: .settings(base: [
+                "CODE_SIGN_STYLE": "Automatic",
+                "HEADER_SEARCH_PATHS": "$(SRCROOT)/VaultifyCore/CArgon2",
+                "SWIFT_OBJC_BRIDGING_HEADER": "VaultifySafari/VaultifySafari-Bridging-Header.h",
                 "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
                 "SWIFT_EMIT_LOC_STRINGS": "YES",
                 "TARGETED_DEVICE_FAMILY": "1",

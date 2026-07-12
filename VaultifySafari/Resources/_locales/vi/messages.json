@@ -1,0 +1,48 @@
+{
+  "extension_name": {
+    "message": "Loox",
+    "description": "Extension display name shown in Safari settings and the toolbar."
+  },
+  "extension_description": {
+    "message": "Điền danh tính và thẻ từ kho Loox của bạn.",
+    "description": "Extension description shown in Safari extension settings."
+  },
+  "popup_title": {
+    "message": "Loox",
+    "description": "Popup heading."
+  },
+  "popup_status_locked": {
+    "message": "Kho đang khóa",
+    "description": "Placeholder status shown while the vault is locked."
+  },
+  "popup_status_unlocked": {
+    "message": "Kho đã mở khóa",
+    "description": "Status shown when the vault is unlocked."
+  },
+  "popup_locked_hint": {
+    "message": "Mở ứng dụng Loox để mở khóa kho của bạn.",
+    "description": "Hint under the locked status."
+  },
+  "popup_ping_button": {
+    "message": "Kiểm tra kết nối",
+    "description": "Button that pings the native handler."
+  },
+  "popup_ping_waiting": {
+    "message": "Đang kiểm tra kết nối",
+    "description": "Shown while waiting for the native reply."
+  },
+  "popup_ping_success": {
+    "message": "Đã kết nối. Ứng dụng trả lời: $REPLY$",
+    "description": "Shown when the native echo round-trip succeeds.",
+    "placeholders": {
+      "reply": {
+        "content": "$1",
+        "example": "hello"
+      }
+    }
+  },
+  "popup_ping_error": {
+    "message": "Không kết nối được với ứng dụng. Hãy thử lại.",
+    "description": "Shown when the native round-trip fails."
+  }
+}

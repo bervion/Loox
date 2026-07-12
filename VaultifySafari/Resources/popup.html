@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="popup">
+    <header class="popup-header">
+      <img src="images/icon-48.png" alt="" class="popup-logo" width="24" height="24">
+      <h1 data-i18n="popup_title"></h1>
+    </header>
+
+    <section class="status" id="status-card">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-label"></span>
+    </section>
+    <p class="hint" data-i18n="popup_locked_hint"></p>
+
+    <button id="ping-button" data-i18n="popup_ping_button" type="button"></button>
+    <p class="result" id="ping-result" aria-live="polite"></p>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
