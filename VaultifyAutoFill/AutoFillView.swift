@@ -1,14 +1,13 @@
 import SwiftUI
-import os
-
-/// Non-sensitive store-lifecycle markers (never item contents or key material).
-private let storeLog = Logger(subsystem: "com.bervion.vaultify.autofill", category: "store")
 
 /// Unlock then pick a login to fill (or create a new one). Items whose website matches the
 /// requesting app/site are shown first. Unlock is handled by the shared `UnlockGate`.
 struct AutoFillView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
+    /// The presentation's single vault store, opened by the hosting controller
+    /// (a load failure cancels the request before any UI shows).
+    let store: VaultStore
     /// Set when another flow already unlocked (passkey → password fallback):
     /// skips the second Face ID prompt for the same key.
     var presetKey: SecureBytes? = nil
@@ -19,6 +18,7 @@ struct AutoFillView: View {
         UnlockGate(title: "Loox", presetKey: presetKey, onCancel: onCancel) { vaultKey in
             CredentialListView(serviceIdentifiers: serviceIdentifiers,
                                preferredRecordID: preferredRecordID,
+                               store: store,
                                vaultKey: vaultKey,
                                onSelect: onSelect,
                                onCancel: onCancel)
@@ -101,6 +101,7 @@ private enum CredentialRow: Identifiable {
 private struct CredentialListView: View {
     let serviceIdentifiers: [String]
     let preferredRecordID: String?
+    let store: VaultStore
     let vaultKey: SecureBytes
     let onSelect: (_ user: String, _ password: String) -> Void
     let onCancel: () -> Void
@@ -116,24 +117,10 @@ private struct CredentialListView: View {
     /// Non-nil while the pre-fill live grant check runs (INV-11).
     @State private var verifyingRowID: String?
     @State private var fillBlockedMessage: String?
-    /// Set when the vault store fails to open — replaces the list with a visible
-    /// error so a broken store never masquerades as "no logins". Cancel (hosted by
-    /// `UnlockGate`) remains the exit.
-    @State private var storeErrorMessage: String?
 
     var body: some View {
         Group {
-            if let storeErrorMessage {
-                Text(storeErrorMessage)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if loaded {
-                list
-            } else {
-                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            if loaded { list } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
         }
         .overlay { if verifyingRowID != nil { ProgressView().controlSize(.large) } }
         .disabled(verifyingRowID != nil)
@@ -144,15 +131,8 @@ private struct CredentialListView: View {
         }
         .task {
             guard !loaded else { return }
-            do {
-                items = try VaultReader.logins(vaultKey: vaultKey)
-                defaultUsername = try VaultReader.autofillPrefillUsername(vaultKey: vaultKey)
-            } catch {
-                // Log-only detail; the UI message stays generic (no error internals).
-                storeLog.error("credential-list store open failed")
-                storeErrorMessage = appString("Couldn’t open your vault.")
-                return
-            }
+            items = VaultReader.logins(store: store, vaultKey: vaultKey)
+            defaultUsername = VaultReader.autofillPrefillUsername(store: store, vaultKey: vaultKey)
             sharedEntries = SharedCredentialsCache.load(vaultKey: vaultKey)
             loaded = true
             if let preferredRecordID {
@@ -173,6 +153,7 @@ private struct CredentialListView: View {
                 NavigationLink {
                     CreateLoginView(host: serviceIdentifiers.first ?? "",
                                     defaultUsername: defaultUsername,
+                                    store: store,
                                     vaultKey: vaultKey,
                                     onSaved: onSelect)
                 } label: {

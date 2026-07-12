@@ -33,14 +33,11 @@ enum VaultSpaceReader {
     /// Returns `[]` when no persona context has been mirrored yet (pre-persona
     /// vaults, or the app hasn't opened since this mirroring shipped) — the
     /// extension's save flow then falls back to Unfiled only, never guesses.
-    @MainActor static func activePersonaSpaces(vaultKey: SecureBytes) -> [Space] {
+    @MainActor static func activePersonaSpaces(store: VaultStore, vaultKey: SecureBytes) -> [Space] {
         let defaults = SharedConfig.sharedDefaults
         guard let activeId = defaults.string(forKey: SharedConfig.activePersonaIdKey) else { return [] }
         let isDefault = defaults.bool(forKey: SharedConfig.activePersonaIsDefaultKey)
 
-        // A store-load failure degrades to "no Spaces" (the picker's documented
-        // fallback is Unfiled) — the main list path surfaces store errors instead.
-        guard let store = try? VaultStore(recoverable: false) else { return [] }
         let records = store.allFolderRecords()
             .filter { $0.deletedAt == nil }
             .sorted { ($0.sortIndex, $0.createdAt) < ($1.sortIndex, $1.createdAt) }
@@ -59,8 +56,8 @@ enum VaultSpaceReader {
     ///    and is still owned by this persona (a deleted/reassigned/foreign id falls through).
     /// 2. The persona's mirrored primary Space, same validation.
     /// 3. `nil` (Unfiled) — never guesses a foreign persona's Space.
-    @MainActor static func defaultSpaceId(vaultKey: SecureBytes) -> String? {
-        let owned = Set(activePersonaSpaces(vaultKey: vaultKey).map(\.id))
+    @MainActor static func defaultSpaceId(store: VaultStore, vaultKey: SecureBytes) -> String? {
+        let owned = Set(activePersonaSpaces(store: store, vaultKey: vaultKey).map(\.id))
         guard !owned.isEmpty else { return nil }
         let defaults = SharedConfig.sharedDefaults
         if let last = defaults.string(forKey: SharedConfig.activePersonaLastSpaceKey), owned.contains(last) {

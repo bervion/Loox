@@ -29,12 +29,10 @@ enum VaultReader {
     }
 
     /// All non-trashed login items (those exposing a password), decrypted.
-    /// Throws on a store-load failure (corruption, migration mismatch, protected data
-    /// unavailable) so the extension can fail visibly instead of crashing or showing
-    /// an empty list that reads as "no logins".
-    @MainActor static func logins(vaultKey: SecureBytes) throws -> [VaultItem] {
-        let store = try VaultStore(recoverable: false)
-        return store.allRecords()
+    /// The store is owned by the caller (one container per extension presentation);
+    /// its load failure is handled at host time, so readers stay non-throwing.
+    @MainActor static func logins(store: VaultStore, vaultKey: SecureBytes) -> [VaultItem] {
+        store.allRecords()
             .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
             .compactMap { decrypt($0, key: vaultKey) }
             .filter { $0.passwordField != nil }
@@ -50,8 +48,7 @@ enum VaultReader {
     }
 
     /// Resolve a single item by id from the shared store and extract its username.
-    @MainActor static func username(forItemID id: String, key: SecureBytes) throws -> String? {
-        let store = try VaultStore(recoverable: false)
+    @MainActor static func username(forItemID id: String, store: VaultStore, key: SecureBytes) -> String? {
         guard let record = store.allRecords().first(where: {
             $0.id == id && $0.trashedAt == nil && $0.deletedAt == nil
         }), let item = decrypt(record, key: key) else { return nil }
@@ -62,8 +59,7 @@ enum VaultReader {
     /// Identities have no password, so they never appear in `logins`; this reads them directly,
     /// filtering on the plaintext `ItemRecord.isDefaultIdentity` column (the sealed payload doesn't
     /// carry that flag). Returns the identity's email, else its name; nil if there's no default.
-    @MainActor static func defaultIdentityUsername(vaultKey: SecureBytes) throws -> String? {
-        let store = try VaultStore(recoverable: false)
+    @MainActor static func defaultIdentityUsername(store: VaultStore, vaultKey: SecureBytes) -> String? {
         guard let record = store.allRecords().first(where: {
             $0.trashedAt == nil && $0.deletedAt == nil && $0.isDefaultIdentity
         }), let item = decrypt(record, key: vaultKey) else { return nil }
@@ -74,21 +70,20 @@ enum VaultReader {
     /// persona's own profile (mirrored opaque item id) when it resolves; under a
     /// strictAnonymous persona there is NO fallback to the global default identity
     /// (INV-R03), so it returns "" rather than leaking a personal email.
-    @MainActor static func autofillPrefillUsername(vaultKey: SecureBytes) throws -> String {
+    @MainActor static func autofillPrefillUsername(store: VaultStore, vaultKey: SecureBytes) -> String {
         let policy = PersonaIsolationPolicy(rawValue:
             SharedConfig.sharedDefaults.string(forKey: SharedConfig.activePersonaPolicyKey) ?? "") ?? .standard
         if let itemID = SharedConfig.sharedDefaults.string(forKey: SharedConfig.activePersonaProfileItemKey),
-           let resolved = try username(forItemID: itemID, key: vaultKey) {
+           let resolved = username(forItemID: itemID, store: store, key: vaultKey) {
             return resolved
         }
         if policy == .strictAnonymous { return "" }
-        return try defaultIdentityUsername(vaultKey: vaultKey) ?? ""
+        return defaultIdentityUsername(store: store, vaultKey: vaultKey) ?? ""
     }
 
     /// Non-trashed items that carry a TOTP secret, for 2FA / one-time-code AutoFill.
-    @MainActor static func totpItems(vaultKey: SecureBytes) throws -> [VaultItem] {
-        let store = try VaultStore(recoverable: false)
-        return store.allRecords()
+    @MainActor static func totpItems(store: VaultStore, vaultKey: SecureBytes) -> [VaultItem] {
+        store.allRecords()
             .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
             .compactMap { decrypt($0, key: vaultKey) }
             .filter { $0.totpField != nil }

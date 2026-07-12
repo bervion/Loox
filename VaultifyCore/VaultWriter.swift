@@ -2,8 +2,9 @@ import Foundation
 import SwiftData
 
 /// Minimal write path for the AutoFill extension: seal a brand-new login and insert it into the
-/// shared SwiftData store. Symmetric to `VaultReader`. Recoverable (throws, never `fatalError`s) so
-/// a store failure aborts the save gracefully instead of crashing the credential UI mid-registration.
+/// shared SwiftData store. Symmetric to `VaultReader`. The store is owned by the caller (one
+/// container per extension presentation); seal/save failures throw so the save aborts gracefully
+/// instead of crashing the credential UI mid-registration.
 ///
 /// Independent of the app's `VaultRepository` (which is app-target only and pulls in
 /// `VaultSession` / notifications / the credential-identity index). The extension stays lean:
@@ -19,7 +20,7 @@ enum VaultWriter {
     /// `folderId` links the item to a Space (persona ownership is derived from the Space, never
     /// stored directly on the item — mirrors `VaultRepository`'s only linkage path). Nil = Unfiled.
     @discardableResult
-    static func createLogin(site: String, username: String, password: String,
+    static func createLogin(store: VaultStore, site: String, username: String, password: String,
                             folderId: String? = nil, vaultKey: SecureBytes) throws -> String {
         guard !password.isEmpty else { throw Failure.emptyPassword }
         let now = Date()
@@ -40,7 +41,6 @@ enum VaultWriter {
         let secret = ItemSecret(title: title, category: .login, folderId: folderId, fields: fields)
         let sealed = try AESGCM.seal(JSONEncoder().encode(secret), key: vaultKey)
 
-        let store = try VaultStore(recoverable: false)
         let record = ItemRecord(id: id, sealed: sealed, createdAt: now, updatedAt: now)
         record.passwordChangedAt = now   // rotation baseline (matches VaultRepository.add)
         store.context.insert(record)

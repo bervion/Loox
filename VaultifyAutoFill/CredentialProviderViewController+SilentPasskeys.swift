@@ -27,7 +27,7 @@ extension CredentialProviderViewController {
             return
         }
         guard let identity = request.credentialIdentity as? ASPasskeyCredentialIdentity,
-              let store = makePasskeyStore() else {
+              let store = makeStore() else {
             skipSilentRegistration("request")
             return
         }
