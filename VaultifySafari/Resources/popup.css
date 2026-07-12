@@ -37,6 +37,10 @@ body {
 
 .popup {
   min-width: 300px;
+  /* iPad renders the popup as a popover; cap the width so rows keep a
+     readable measure instead of stretching across a wide sheet. */
+  max-width: 420px;
+  margin: 0 auto;
   padding: 16px;
   display: flex;
   flex-direction: column;

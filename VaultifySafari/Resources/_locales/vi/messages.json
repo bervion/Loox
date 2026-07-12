@@ -166,5 +166,23 @@
   "save_overlay_failed": {
     "message": "Không lưu được",
     "description": "Shown when saving the new login fails."
+  },
+  "inline_menu_label": {
+    "message": "Gợi ý từ Loox",
+    "description": "Accessibility label of the inline suggestion menu anchored to a focused identity or card field."
+  },
+  "inline_fill_item_label": {
+    "message": "Điền $TITLE$ vào trang này",
+    "description": "Accessibility label of an inline menu row; fills the named item into the page.",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Thẻ cá nhân"
+      }
+    }
+  },
+  "inline_open_app": {
+    "message": "Mở Loox",
+    "description": "Inline menu footer row that opens the Loox app for item management."
   }
 }

@@ -7,8 +7,9 @@
 //      off the document's left/top edge — hidden and off-screen fields are
 //      the classic credential-exfiltration trap and never receive a value.
 //   3. Element editable: connected, not disabled or readonly.
-//   4. Top frame only (enforced by content.js before this engine runs; the
-//      manifest keeps all_frames off).
+//   4. Frame gate (enforced by content.js before this engine runs): the top
+//      frame, or a cross-origin payment-processor iframe whose OWN origin
+//      passes `ccFrameOriginAllowed` — every other frame never fills.
 //   5. Card number / security code additionally require strong evidence:
 //      an <input> classified from autocomplete or type (tiers 1-2), or a
 //      keyword match corroborated by a plausible maxlength (13-19 for a PAN,
@@ -22,6 +23,36 @@
   "use strict";
 
   const CC_SECRET_KEYS = new Set(["ccNumber", "ccCsc"]);
+
+  // Cross-origin iframe fill is denied by default. The ONLY exception is a
+  // known payment-processor widget frame, and even then only for CARD
+  // values: these processors intentionally host the card inputs in their own
+  // origin so the merchant page never sees the PAN. Exact-host allowlist,
+  // default https port only — no subdomain wildcards, no port variants.
+  // KEEP IN SYNC with the copy in background.js (the trusted side checks the
+  // frame's browser-reported origin against the same list before addressing
+  // it; this copy is the in-frame self-check).
+  const CC_FRAME_HOSTS = new Set([
+    "js.stripe.com",
+    "checkout.stripe.com",
+    "pay.google.com",
+  ]);
+
+  // True when `origin` (an https origin string) belongs to an allowlisted
+  // payment-processor frame. Anything unparsable, non-https, on a non-default
+  // port, or off-list is refused.
+  function ccFrameOriginAllowed(origin) {
+    if (typeof origin !== "string" || !origin) return false;
+    let url;
+    try {
+      url = new URL(origin);
+    } catch {
+      return false;
+    }
+    return url.protocol === "https:"
+      && url.port === ""
+      && CC_FRAME_HOSTS.has(url.hostname.toLowerCase());
+  }
 
   function pageIsHTTPS() {
     return location.protocol === "https:";
@@ -227,5 +258,6 @@
   // can actually see — hidden honeypot password inputs (a common anti-bot
   // pattern on login forms) must not inflate a login page into a "signup".
   // One gauntlet, shared: detection and fill agree on what "visible" means.
-  globalThis.LooxFillEngine = { fillAll, fillPasswordAll, isVisible };
+  // `ccFrameOriginAllowed` is the in-frame half of the dual-side iframe gate.
+  globalThis.LooxFillEngine = { fillAll, fillPasswordAll, isVisible, ccFrameOriginAllowed };
 })();
