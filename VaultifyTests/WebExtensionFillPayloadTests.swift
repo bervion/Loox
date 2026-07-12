@@ -130,6 +130,23 @@ final class WebExtensionFillPayloadTests: XCTestCase {
         XCTAssertNil(values["ccNumber"], "Level-2 sealed values never leave the vault")
     }
 
+    func testCardSecretGuardSealedNumberNotReleasedEvenWithoutGuard2() throws {
+        // A SecretGuard payload is a tagged base64 blob; its stray digits must
+        // never be released as a card number. The check must run on the RAW
+        // stored value: after digit-stripping the tag is gone by construction,
+        // so a digits-only check can never fire. guard2 deliberately unset to
+        // exercise the SecretGuard layer alone (e.g. a migrated/synced record).
+        let item = VaultItem(category: .card, title: "Sealed", fields: [
+            DynamicField(label: "Card Number", kind: .monospace,
+                         value: "v2g:99887766554433221100AAAA", protected: true),
+        ])
+        try WebExtensionTestSeed.insert(item, into: store, key: key)
+        let values = try WebExtensionReader.fillPayload(itemId: item.id, category: .card,
+                                                        store: store, key: key)
+        XCTAssertNil(values["ccNumber"],
+                     "SecretGuard-sealed values never leave the vault, guard2 or not")
+    }
+
     // MARK: - Scope + category gating
 
     func testPayloadContainsOnlyRequestedItem() throws {

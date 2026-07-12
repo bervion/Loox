@@ -98,10 +98,13 @@ extension WebExtensionReader {
         if let holder = cardValue(item, kind: .text, label: "Cardholder") {
             values["ccName"] = holder
         }
-        // PAN released digits-only: the fill engine regroups per target and a
-        // spaced value must never trip a site's server-side digit validation.
-        let digits = PaymentCard.digitsOnly(cardNumberValue(of: item))
-        if digits.count >= 8, !SecretGuard.isProtected(digits) {
+        // PAN released digits-only: a spaced value must never trip a site's
+        // server-side digit validation. The SecretGuard check runs on the RAW
+        // stored value — a sealed payload is a tagged base64 blob, and its
+        // stray digits must never be released as a card number.
+        let rawNumber = cardNumberValue(of: item)
+        let digits = PaymentCard.digitsOnly(rawNumber)
+        if digits.count >= 8, !SecretGuard.isProtected(rawNumber) {
             values["ccNumber"] = digits
         }
         if let expiry = cardValue(item, kind: .text, label: "Expiry"),

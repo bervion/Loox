@@ -124,6 +124,11 @@ nonisolated enum WebExtensionReader {
     /// summary degrades to title-only.
     private static func cardSummary(for item: VaultItem) -> CardSummary {
         let number = cardNumberValue(of: item)
+        // SecretGuard check on the RAW value: a sealed payload is a tagged
+        // base64 blob whose stray digits must not surface as brand or last-4.
+        guard !SecretGuard.isProtected(number) else {
+            return CardSummary(id: item.id, title: item.title, brand: "", last4: "")
+        }
         let digits = PaymentCard.digitsOnly(number)
         let brand = PaymentCard.brand(for: digits)?.displayName ?? ""
         let last4 = digits.count >= 4 ? String(digits.suffix(4)) : ""
