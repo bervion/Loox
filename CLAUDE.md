@@ -173,3 +173,5 @@ Documents, read back with `simctl get_app_container <id> data`.
 - ❌ Don't use SF Symbols or Material icons — Polaris SVG only.
 - ❌ Don't ship user-facing text without a Vietnamese translation in `Localizable.xcstrings`.
 - ❌ Don't put the word "build" in bash paths/log names (hook block).
+
+use fable subagents when you need more intelligence
