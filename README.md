@@ -10,6 +10,7 @@ no server, no tracking.
 - 🧬 **Argon2id** key derivation (vendored reference C) + AES-GCM vault encryption
 - 👤 **Face ID** unlock (app + AutoFill extension)
 - 🔑 **iOS AutoFill** for passwords **and passkeys** (Credential Provider extension) — Face ID unlock + create new login
+- 🧭 **Safari extension** — fill identities and cards on any https page, generated-password signup assist, in-page save prompt (per-site controls included)
 - 🗂 **Spaces & tags** — group logins by company/project (color + icon), with a Home dashboard (Quick Access, recents, tags)
 - 🎨 **Themes & wallpapers** — Day / Night / Tinted themes, accent colors, gradient · pattern · animated-mesh backgrounds, auto-night, and custom themes you can export / import (`.vaultheme`)
 - 👥 **Approval Mode sharing** — share access, not secrets; per-field capability delegation via iCloud, with owner approval via Face ID for TOTP access
@@ -59,12 +60,15 @@ Vaultify/                  # App target
 ├── Services/              #   app services (e.g. Sync/CloudSyncService — iCloud opt-in)
 ├── Security/              #   biometrics / unlock
 ├── Data/, Resources/      #   stores, Localizable.xcstrings, Assets.xcassets
-VaultifyCore/              # Shared code — compiled into BOTH app and extension
+VaultifyCore/              # Shared code — compiled into the app and every extension
 ├── CArgon2/               #   vendored Argon2id reference C + bridging
 ├── Crypto/, Keychain/     #   KDF, vault encryption, keychain
 ├── Models/, Store/        #   domain models, vault store/reader
 ├── Passkey/               #   passkey (WebAuthn) types
 VaultifyAutoFill/          # AutoFill Credential Provider extension (passwords + passkeys)
+VaultifySafari/            # Safari web extension (identity/card fill, signup assist)
+├── Resources/             #   MV3 web bundle: manifest, background/content JS, popup, _locales
+├── DevFixtures/           #   local fixture pages + node harnesses for the pure JS layers
 fastlane/                  # Fastfile, Appfile, Matchfile
 scripts/                   # release.sh, release-beta.sh, generate-release-notes.sh
 .github/workflows/         # ci.yml (compile check), release-ios.yml (TestFlight)
@@ -76,8 +80,8 @@ docs/                      # codebase-summary.md, deployment-guide.md
 1. **Generate / open**: `tuist generate` (or `make gen` then open `Vaultify.xcworkspace`)
 2. **Code & run** in Xcode as usual (scheme **Vaultify**)
 3. **Add / remove / rename** a `.swift` or `.c` file → create it under `Vaultify/`,
-   `VaultifyCore/`, or `VaultifyAutoFill/`, then run `tuist generate` again (Tuist globs
-   sources at generation time)
+   `VaultifyCore/`, `VaultifyAutoFill/`, or `VaultifySafari/`, then run `tuist generate`
+   again (Tuist globs sources at generation time)
 4. **Change project config** (settings, capabilities, dependencies) → edit `Project.swift`,
    then `tuist generate`. Use `tuist edit` for manifest autocomplete.
 5. **Compile check** (app + extension): `make check`
@@ -99,7 +103,7 @@ make notes       # preview AI release notes (no commit)
 `make release` bumps `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `Project.swift`,
 generates EN/VI release notes (Claude CLI), updates `CHANGELOG.md`, commits, tags `vX.Y.Z`,
 and pushes. The tag triggers GitHub Actions on a self-hosted runner → fastlane `match`
-signs the app + extension → uploads to TestFlight.
+signs the app + both extensions → uploads to TestFlight.
 
 **First-time setup** (App IDs, certificates repo, App Store Connect API key, GitHub
 secrets, self-hosted runner) is documented in **[docs/deployment-guide.md](docs/deployment-guide.md)**.

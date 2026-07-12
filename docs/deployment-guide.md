@@ -7,7 +7,7 @@ make release  →  bump version + AI notes + tag vX.Y.Z  →  push
                                                             │
                           GitHub Actions (self-hosted) ◄────┘  (tag v*)
                                   │
-                 match (App Store certs/profiles, app + AutoFill ext)
+                 match (App Store certs/profiles, app + AutoFill ext + Safari ext)
                                   │
                  build_app → upload_to_testflight (ASC API key)
 ```
@@ -16,6 +16,7 @@ make release  →  bump version + AI notes + tag vX.Y.Z  →  push
 |---|---|
 | App bundle id | `com.bervion.vaultify` |
 | AutoFill ext bundle id | `com.bervion.vaultify.autofill` |
+| Safari ext bundle id | `com.bervion.vaultify.safari` |
 | App Group | `group.com.bervion.vaultify` |
 | Team ID | `WDNL2F75V7` |
 | Certs repo (match) | `github.com/bervion/vaultify-ios-certificates` (private) |
@@ -45,12 +46,23 @@ generate a project file their own Xcode can open (no "future project format" err
 Do these once. Steps 1–5 are prerequisites; the pipeline cannot upload until they exist.
 
 ### 1. Apple Developer Portal — App IDs & capabilities
-Both bundle ids must exist as **explicit App IDs** with the capabilities the app uses:
+All three bundle ids must exist as **explicit App IDs** with the capabilities each target uses:
 
 - `com.bervion.vaultify` → enable **App Groups** (`group.com.bervion.vaultify`) + **Keychain Sharing** (`com.bervion.vaultify.shared`) + **AutoFill Credential Provider**.
 - `com.bervion.vaultify.autofill` → enable **App Groups** (same group) + **Keychain Sharing** (`com.bervion.vaultify.shared`) + **AutoFill Credential Provider**.
+- `com.bervion.vaultify.safari` → enable **App Groups** (same group) + **Keychain Sharing** (`com.bervion.vaultify.shared`) only. **No AutoFill capability, no iCloud/CloudKit** — the Safari extension reads the local vault only, and its entitlements deliberately carry nothing else.
 
-> The **Keychain Sharing** capability (group `com.bervion.vaultify.shared`) is **required** for the extension to access the biometric-gated Vault Key stored by the app. Ensure both App IDs have this capability enabled before provisioning profiles are generated. match generates profiles from each App ID's enabled capabilities. If you add a capability later, re-run `make certificates` after `bundle exec fastlane match nuke distribution` (or `match appstore --force`) so profiles regenerate.
+> The **Keychain Sharing** capability (group `com.bervion.vaultify.shared`) is **required** for both extensions to access the biometric-gated Vault Key stored by the app. Ensure every App ID has this capability enabled before provisioning profiles are generated. match generates profiles from each App ID's enabled capabilities. If you add a capability later, re-run `make certificates` after `bundle exec fastlane match nuke distribution` (or `match appstore --force`) so profiles regenerate.
+
+#### Adding the Safari web extension appex (one-time, before the first release that includes it)
+The Safari extension ships **embedded in the app** — no separate App Store record, no separate upload. Release readiness needs exactly:
+
+1. **Portal**: register the explicit App ID `com.bervion.vaultify.safari` with **App Groups** (`group.com.bervion.vaultify`) + **Keychain Sharing** (`com.bervion.vaultify.shared`) as above.
+2. **match**: regenerate profiles so the third App Store profile exists —
+   `bundle exec fastlane match appstore --force` (or `make match-setup` from the seeding Mac). The `Matchfile`/`Fastfile` already list all three identifiers; the release lane maps `match AppStore com.bervion.vaultify.safari` onto the `VaultifySafari` target.
+3. **Dry run**: push a `make beta` tag and confirm the runner signs and uploads an artifact containing all three targets (check the IPA's `PlugIns/` for `VaultifyAutoFill.appex` + `VaultifySafari.appex`).
+
+Version numbers need no extra step: the appex inherits `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` from the `Project.swift` project base, which `release.sh` bumps.
 
 ### 2. App Store Connect — create the app record
 App Store Connect → Apps → **＋** → New App. Platform iOS, bundle id `com.bervion.vaultify`. The app must exist before TestFlight accepts a build.
@@ -129,8 +141,8 @@ or commit changes before tagging.
   (builds the embedded AutoFill extension too), no signing. Fast feedback.
 - `.github/workflows/release-ios.yml` — on tag `v*`: `bundle install` → `fastlane build_and_upload`.
 - `fastlane/Fastfile` `build_and_upload`: `setup_ci` (temp keychain) → `match` (readonly,
-  both app + ext) → force Manual signing per target → `build_app` (app-store export with
-  both profiles) → `upload_to_testflight`.
+  app + AutoFill ext + Safari ext) → force Manual signing per target → `build_app`
+  (app-store export with all three profiles) → `upload_to_testflight`.
 
 The build number is whatever is committed in the pbxproj at the tagged commit, so it is
 unique and increasing for every upload (each `make release`/`make beta`/`make hotfix` bumps it).
@@ -139,8 +151,8 @@ unique and increasing for every upload (each `make release`/`make beta`/`make ho
 
 ## Troubleshooting
 
-- **`No profiles for 'com.bervion.vaultify.autofill'`** → the extension App ID is missing
-  or its capabilities differ (esp. Keychain Sharing). Fix the App ID (step 1), ensure both **Keychain Sharing** and **App Groups** are enabled, then `bundle exec fastlane match appstore --force`.
+- **`No profiles for 'com.bervion.vaultify.autofill'` (or `….safari`)** → that extension's
+  App ID is missing or its capabilities differ (esp. Keychain Sharing). Fix the App ID (step 1), ensure both **Keychain Sharing** and **App Groups** are enabled, then `bundle exec fastlane match appstore --force`.
 - **`Authentication credentials … invalid` (match clone)** → `MATCH_GIT_AUTH` wrong; regenerate
   the base64 of `user:PAT` and confirm the PAT can read the certs repo.
 - **`Invalid App Store Connect API key`** → `APP_STORE_CONNECT_API_KEY` must be the full `.p8`

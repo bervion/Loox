@@ -9,9 +9,11 @@ Guidance for Claude Code when working in this repository.
 ## Project
 
 Vaultify — private, offline, zero-backend password & passkey manager. SwiftUI, iPhone-only,
-iOS 17.3+. Two targets: the app (`com.bervion.vaultify`) and an AutoFill Credential Provider
-extension (`com.bervion.vaultify.autofill`). Team `WDNL2F75V7`. Shared code in `VaultifyCore/`
-compiles into **both** targets. See `README.md` and `docs/codebase-summary.md`.
+iOS 17.3+. Three targets: the app (`com.bervion.vaultify`), an AutoFill Credential Provider
+extension (`com.bervion.vaultify.autofill`), and a Safari web extension
+(`com.bervion.vaultify.safari` — MV3 web bundle in `VaultifySafari/Resources/`). Team
+`WDNL2F75V7`. Shared code in `VaultifyCore/` compiles into **all** targets. See `README.md`
+and `docs/codebase-summary.md`.
 
 ## Build & run (READ FIRST)
 
@@ -171,7 +173,12 @@ Documents, read back with `simctl get_app_container <id> data`.
 - ❌ Don't gate Approval-Mode sharing code on `iCloudSyncEnabled` — it has its own
   `approvalModeEnabled` flag (control plane ≠ vault-item sync, plan ADR-2).
 - ❌ Don't use SF Symbols or Material icons — Polaris SVG only.
-- ❌ Don't ship user-facing text without a Vietnamese translation in `Localizable.xcstrings`.
+- ❌ Don't ship user-facing text without a Vietnamese translation in `Localizable.xcstrings`
+  (native) or in **both** `VaultifySafari/Resources/_locales/en` + `_locales/vi` (Safari
+  extension web layer).
+- ❌ Don't add a native→JS command to the Safari extension that returns vault field values —
+  `getFillPayload` must stay the ONLY one (test-enforced), and content-script-reachable
+  commands must never be able to summon Face ID.
 - ❌ Don't put the word "build" in bash paths/log names (hook block).
 
 use fable subagents when you need more intelligence
