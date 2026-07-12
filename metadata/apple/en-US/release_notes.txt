@@ -1,1 +1,1 @@
-This release brings the Safari extension to iPad, with autofill for cards and personal details, and a signup assistant that suggests strong passwords. Face ID unlock now works inside the extension, and shared vaults get faster, safer confirmations. We also fixed several reliability issues across autofill and sharing.
+A refreshed welcome screen greets new users with a cleaner first look, alongside an updated app logo.

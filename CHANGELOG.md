@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.29.0] - 2026-07-13
+
+### Added
+- redesign first-run welcome landing
+
+### Changed
+- update logo
+
+
 ## [1.28.0] - 2026-07-13
 
 ### Added

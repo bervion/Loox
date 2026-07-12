@@ -1,1 +1,1 @@
-Bản cập nhật này đưa tiện ích Safari lên iPad, hỗ trợ tự động điền thẻ và thông tin cá nhân, cùng trợ lý đăng ký gợi ý mật khẩu mạnh. Face ID mở khóa giờ hoạt động ngay trong tiện ích, chia sẻ kho mật khẩu xác nhận nhanh và an toàn hơn. Chúng tôi cũng sửa nhiều lỗi ổn định khi tự động điền và chia sẻ.
+Màn hình chào mừng cho người dùng mới được làm mới với giao diện gọn gàng hơn, cùng biểu tượng ứng dụng cập nhật.
