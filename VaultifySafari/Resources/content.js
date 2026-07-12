@@ -1,19 +1,32 @@
-// Content-script endpoint for classify/fill. Runs ONLY in the top frame
-// (cross-origin iframe fill is denied in v1: a hostile embedded frame must
-// never receive vault values, and the manifest keeps all_frames off as a
-// second lock). Messages arrive exclusively from this extension's background
-// page via tabs.sendMessage — a web page cannot address runtime.onMessage.
+// Content-script endpoint for classify/fill. Two frame roles:
+//   - TOP frame: full classify/fill surface (identity + card + generated
+//     password), exactly as before.
+//   - Allowlisted payment-processor SUBFRAME (Stripe-class widgets, see
+//     `ccFrameOriginAllowed` in fill-engine.js): a card-only surface. The
+//     frame announces itself to the background page (`ccFrameHello`, which
+//     re-derives and re-checks the frame origin from the trusted sender) and
+//     then answers only `classifyFrame` (card-field count) and card-category
+//     `fillFields` whose `frameOrigin` matches its own https origin.
+//   - Every OTHER cross-origin subframe: no listener at all — a hostile
+//     embedded frame must never receive vault values.
+// Messages arrive exclusively from this extension's background page via
+// tabs.sendMessage — a web page cannot address runtime.onMessage.
 //
-// SECURITY: this script never requests vault data. It answers `classifyPage`
-// with attribute-derived counts only (no field values, no user-typed
+// SECURITY: this script never requests vault data. It answers classification
+// commands with attribute-derived counts only (no field values, no user-typed
 // content), and executes `fillFields` with values the background page
-// obtained through the popup-authorized native flow. Classification is
-// re-run at fill moment so a mutated or navigated-within page never receives
-// values into stale or re-purposed elements. Nothing is logged.
+// obtained through the authorized native flow. Classification is re-run at
+// fill moment so a mutated or navigated-within page never receives values
+// into stale or re-purposed elements. Nothing is logged.
 (function () {
   "use strict";
 
-  if (window.top !== window) return;
+  const isTopFrame = window.top === window;
+  // Subframes: only allowlisted payment-processor origins keep a listener.
+  if (!isTopFrame
+      && !globalThis.LooxFillEngine.ccFrameOriginAllowed(location.origin)) {
+    return;
+  }
 
   // Stable per-load field ids: opaque integers via WeakMap, so no CSS
   // selector or DOM detail is ever serialized off the page.
@@ -145,17 +158,83 @@
     return { ok: true, data: { filled, skipped: report.length - filled } };
   }
 
-  browser.runtime.onMessage.addListener((message) => {
-    if (!message || typeof message.cmd !== "string") return undefined;
-    if (message.cmd === "classifyPage") {
-      return Promise.resolve(handleClassify());
+  // --- Allowlisted payment-processor subframe (card-only surface) ------------
+
+  // In-frame self-check, run AT MESSAGE MOMENT (a frame that navigated after
+  // registering must refuse): https, own origin still allowlisted, and the
+  // background-supplied expected frame origin equal to this frame's own.
+  function frameSelfCheckFails(message) {
+    if (location.protocol !== "https:") return "insecurePage";
+    if (!globalThis.LooxFillEngine.ccFrameOriginAllowed(location.origin)) {
+      return "frameNotAllowed";
     }
-    if (message.cmd === "fillFields") {
-      return Promise.resolve(handleFill(message));
+    if (typeof message.frameOrigin !== "string"
+        || message.frameOrigin !== location.origin) {
+      return "frameOriginMismatch";
     }
-    if (message.cmd === "fillGeneratedPassword") {
-      return Promise.resolve(handleFillGeneratedPassword(message));
+    return null;
+  }
+
+  // Card-field count inside this frame so the popup's card Fill button can
+  // light up on iframe-based checkouts. Counts only — no field details.
+  function handleClassifyFrame(message) {
+    const failure = frameSelfCheckFails(message);
+    if (failure) return { ok: false, error: failure };
+    const card = classifyCurrentPage()
+      .filter((entry) => entry.category === "card").length;
+    return { ok: true, data: { card } };
+  }
+
+  // Card values ONLY ever land in this frame: identity fill stays a
+  // top-frame-only capability regardless of what the message claims.
+  function handleFrameFill(message) {
+    const failure = frameSelfCheckFails(message);
+    if (failure) return { ok: false, error: failure };
+    if (message.category !== "card") return { ok: false, error: "forbidden" };
+    const values = message.values;
+    if (!values || typeof values !== "object") {
+      return { ok: false, error: "malformedMessage" };
     }
-    return undefined;
-  });
+    const targets = classifyCurrentPage().filter(
+      (entry) => entry.category === "card" && entry.element,
+    );
+    const report = globalThis.LooxFillEngine.fillAll(targets, values);
+    const filled = report.filter((r) => r.status === "filled").length;
+    return { ok: true, data: { filled, skipped: report.length - filled } };
+  }
+
+  if (isTopFrame) {
+    // Page-scan surface for the inline menu (same content-script world; the
+    // page itself can never reach this global).
+    globalThis.LooxPageScan = { classify: classifyCurrentPage };
+
+    browser.runtime.onMessage.addListener((message) => {
+      if (!message || typeof message.cmd !== "string") return undefined;
+      if (message.cmd === "classifyPage") {
+        return Promise.resolve(handleClassify());
+      }
+      if (message.cmd === "fillFields") {
+        return Promise.resolve(handleFill(message));
+      }
+      if (message.cmd === "fillGeneratedPassword") {
+        return Promise.resolve(handleFillGeneratedPassword(message));
+      }
+      return undefined;
+    });
+  } else {
+    browser.runtime.onMessage.addListener((message) => {
+      if (!message || typeof message.cmd !== "string") return undefined;
+      if (message.cmd === "classifyFrame") {
+        return Promise.resolve(handleClassifyFrame(message));
+      }
+      if (message.cmd === "fillFields") {
+        return Promise.resolve(handleFrameFill(message));
+      }
+      return undefined;
+    });
+    // Announce this frame so the background page can address it by frameId.
+    // Carries NOTHING: the background re-derives tab, frame id, and frame
+    // origin from the trusted sender alone.
+    browser.runtime.sendMessage({ cmd: "ccFrameHello" }).catch(() => {});
+  }
 })();

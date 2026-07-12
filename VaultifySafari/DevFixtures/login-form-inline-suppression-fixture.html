@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- Device-QA fixture: a standard LOGIN form. EXPECTATION: focusing any
+     field here shows NO Loox inline menu (the native Credential Provider /
+     QuickType owns login fields), while the identity form further down DOES
+     show the menu on focus. Serve over https (e.g. a tunnel) — the extension
+     ignores http pages entirely. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login suppression fixture</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; margin: 24px; }
+    label { display: block; margin: 12px 0 4px; }
+    input { width: 100%; max-width: 360px; padding: 10px; font-size: 16px; }
+    section { margin-bottom: 48px; }
+  </style>
+</head>
+<body>
+  <section>
+    <h1>Sign in (expect NO inline menu on any field)</h1>
+    <form action="#" method="post">
+      <label for="login-email">Email</label>
+      <input id="login-email" name="email" type="email" autocomplete="email">
+      <label for="login-password">Password</label>
+      <input id="login-password" name="password" type="password" autocomplete="current-password">
+      <button type="submit">Sign in</button>
+    </form>
+  </section>
+
+  <section>
+    <h1>Shipping details (expect the inline menu on focus)</h1>
+    <form action="#" method="post">
+      <label for="ship-name">Full name</label>
+      <input id="ship-name" name="name" type="text" autocomplete="name">
+      <label for="ship-email">Email</label>
+      <input id="ship-email" name="contact-email" type="email" autocomplete="email">
+      <label for="ship-phone">Phone</label>
+      <input id="ship-phone" name="phone" type="tel" autocomplete="tel">
+    </form>
+  </section>
+</body>
+</html>

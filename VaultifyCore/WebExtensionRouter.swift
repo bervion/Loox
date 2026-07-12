@@ -10,7 +10,10 @@ import Foundation
 /// Response: `{ v: 1, ok: bool, error?: code, data?: {...} }`
 ///
 /// SECURITY INVARIANT: the Vault Key and bulk vault contents never cross the
-/// native→JS bridge. `listItems` returns match metadata only; `copyValue`
+/// native→JS bridge. `listItems` returns match metadata only;
+/// `listItemsSession` is its session-only inline-menu variant (identities and
+/// cards only, no logins, and NEVER a biometric prompt — no session means
+/// `locked`); `copyValue`
 /// releases a single non-secret field value on an explicit user action and is
 /// enforced natively (`WebExtensionReader.copyableKinds`) — never by the popup
 /// hiding a button. `getFillPayload` is the ONLY command returning vault
@@ -65,6 +68,12 @@ nonisolated struct WebExtensionRouterContext {
     var retrieveKey: @Sendable () async throws -> [UInt8]
     /// Opens the vault store. `@MainActor` because `VaultStore` requires it.
     var makeStore: @Sendable @MainActor () throws -> VaultStore
+    /// Session-only key release: the short-lived native session when one
+    /// exists, NEVER a prompt (nil = locked). Inline surfaces use this so an
+    /// arbitrary page focusing a field can never summon Face ID.
+    var retrieveSessionKey: @Sendable () -> [UInt8]? = {
+        ExtensionSessionStore.retrieve()
+    }
     /// True when the OS-native save-password sheet owns the save UX for our
     /// credential provider (iOS 26.2+). The extension then suppresses its own
     /// in-page save overlay so one signup never produces two save prompts.
@@ -105,6 +114,8 @@ nonisolated enum WebExtensionRouter {
             return success(["locked": true, "capabilities": capabilities])
         case "listItems":
             return await listItems(request, context: context)
+        case "listItemsSession":
+            return await listItemsSession(request, context: context)
         case "copyValue":
             return await copyValue(request, context: context)
         case "getFillPayload":
@@ -137,6 +148,32 @@ nonisolated enum WebExtensionRouter {
                 return WebExtensionReader.itemsMatching(host: host, store: store, key: key)
             }
             return success(listsData(lists))
+        } catch {
+            return failure("storeUnavailable")
+        }
+    }
+
+    /// Inline-menu metadata list: identities and cards ONLY (never logins —
+    /// the inline menu must never become credential UI) and served EXCLUSIVELY
+    /// from the short-lived native session. No session means `locked`, never a
+    /// Face ID prompt: this command is reachable from a content script on any
+    /// https page, and focusing a field must not be able to summon biometrics.
+    private static func listItemsSession(_ request: WebExtensionRequest,
+                                         context: WebExtensionRouterContext) async -> [String: Any] {
+        guard let host = httpsHost(fromOrigin: request.origin) else {
+            return failure("invalidOrigin")
+        }
+        guard var raw = context.retrieveSessionKey() else {
+            return failure("locked")
+        }
+        let key = SecureBytes(raw)
+        secureZero(&raw)
+        do {
+            let lists = try await MainActor.run { () -> WebExtensionReader.ItemLists in
+                let store = try context.makeStore()
+                return WebExtensionReader.itemsMatching(host: host, store: store, key: key)
+            }
+            return success(inlineListsData(lists))
         } catch {
             return failure("storeUnavailable")
         }
@@ -372,6 +409,18 @@ nonisolated enum WebExtensionRouter {
             ["id": card.id, "title": card.title, "brand": card.brand, "last4": card.last4]
         }
         return ["logins": logins, "identities": identities, "cards": cards]
+    }
+
+    /// Inline-menu subset of `listsData`: metadata for identities and cards
+    /// only. Logins never appear on the inline surface.
+    private static func inlineListsData(_ lists: WebExtensionReader.ItemLists) -> [String: Any] {
+        let identities: [[String: Any]] = lists.identities.map { identity in
+            ["id": identity.id, "title": identity.title]
+        }
+        let cards: [[String: Any]] = lists.cards.map { card in
+            ["id": card.id, "title": card.title, "brand": card.brand, "last4": card.last4]
+        }
+        return ["identities": identities, "cards": cards]
     }
 
     private static func success(_ data: [String: Any]) -> [String: Any] {

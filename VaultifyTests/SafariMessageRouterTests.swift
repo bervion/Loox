@@ -23,7 +23,8 @@ final class SafariMessageRouterTests: XCTestCase {
         unlocks = UnlockCounter()
     }
 
-    private func context(retrieveError: Error? = nil) -> WebExtensionRouterContext {
+    private func context(retrieveError: Error? = nil,
+                         sessionKey: [UInt8]? = nil) -> WebExtensionRouterContext {
         let counter = unlocks!
         let bytes = keyBytes
         let sharedStore = store!
@@ -33,7 +34,8 @@ final class SafariMessageRouterTests: XCTestCase {
                 if let retrieveError { throw retrieveError }
                 return bytes
             },
-            makeStore: { sharedStore })
+            makeStore: { sharedStore },
+            retrieveSessionKey: { sessionKey })
     }
 
     private func json(of response: [String: Any]) throws -> String {
@@ -134,6 +136,59 @@ final class SafariMessageRouterTests: XCTestCase {
             ["v": 1, "cmd": "listItems", "origin": "https://example.com"],
             context: context(retrieveError: BiometricKeyStore.Failure.unavailable))
         XCTAssertEqual(response["error"] as? String, "unlockFailed")
+    }
+
+    // MARK: - listItemsSession (inline-menu list: session-only, never prompts)
+
+    func testListItemsSessionLockedWithoutSessionAndNeverPrompts() async {
+        let response = await WebExtensionRouter.route(
+            ["v": 1, "cmd": "listItemsSession", "origin": "https://example.com"],
+            context: context(sessionKey: nil))
+        XCTAssertEqual(response["error"] as? String, "locked")
+        XCTAssertEqual(unlocks.count, 0,
+                       "a locked vault must never trigger Face ID from the inline path")
+    }
+
+    func testListItemsSessionRejectsNonHTTPSOrigin() async {
+        for origin in ["http://example.com", "javascript:alert(1)", ""] {
+            let response = await WebExtensionRouter.route(
+                ["v": 1, "cmd": "listItemsSession", "origin": origin],
+                context: context(sessionKey: keyBytes))
+            XCTAssertEqual(response["error"] as? String, "invalidOrigin", "origin: \(origin)")
+        }
+    }
+
+    func testListItemsSessionReturnsIdentitiesAndCardsOnly() async throws {
+        try WebExtensionTestSeed.insert(
+            WebExtensionTestSeed.login(title: "Example", username: "alice",
+                                       password: "sup3r-secret", website: "https://example.com"),
+            into: store, key: key)
+        try WebExtensionTestSeed.insert(
+            WebExtensionTestSeed.identity(title: "Me", email: "me@example.com"),
+            into: store, key: key)
+        try WebExtensionTestSeed.insert(
+            WebExtensionTestSeed.card(title: "Main Card", number: "4111111111111111"),
+            into: store, key: key)
+
+        let response = await WebExtensionRouter.route(
+            ["v": 1, "cmd": "listItemsSession", "origin": "https://example.com"],
+            context: context(sessionKey: keyBytes))
+
+        XCTAssertEqual(response["ok"] as? Bool, true)
+        XCTAssertEqual(unlocks.count, 0, "the session key alone must serve the list")
+        let data = try XCTUnwrap(response["data"] as? [String: Any])
+        XCTAssertNil(data["logins"], "logins must never surface on the inline path")
+        let identities = try XCTUnwrap(data["identities"] as? [[String: Any]])
+        XCTAssertEqual(identities.first?["title"] as? String, "Me")
+        let cards = try XCTUnwrap(data["cards"] as? [[String: Any]])
+        XCTAssertEqual(cards.first?["last4"] as? String, "1111")
+
+        let serialized = try json(of: response)
+        XCTAssertFalse(serialized.contains("sup3r-secret"), "password leaked over the bridge")
+        XCTAssertFalse(serialized.contains("alice"), "login metadata leaked to the inline path")
+        XCTAssertFalse(serialized.contains("4111111111111111"), "full card number leaked")
+        XCTAssertFalse(serialized.contains("me@example.com"),
+                       "identity field values must not appear in list metadata")
     }
 
     // MARK: - copyValue

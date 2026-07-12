@@ -220,4 +220,32 @@ function fillOne(el, key = "email", tier = 1, values = { email: "user@example.co
   assert.equal(isVisible(makeElement({ type: "password" })), true);
 }
 
+// --- ccFrameOriginAllowed: the in-frame half of the iframe CC gate ------------
+
+{
+  const { ccFrameOriginAllowed } = globalThis.LooxFillEngine;
+  assert.equal(typeof ccFrameOriginAllowed, "function",
+               "ccFrameOriginAllowed must stay exported");
+
+  // Allowlisted payment-processor origins pass.
+  assert.equal(ccFrameOriginAllowed("https://js.stripe.com"), true);
+  assert.equal(ccFrameOriginAllowed("https://checkout.stripe.com"), true);
+  assert.equal(ccFrameOriginAllowed("https://pay.google.com"), true);
+  // Host comparison is case-insensitive (URL lowercases the hostname).
+  assert.equal(ccFrameOriginAllowed("https://JS.STRIPE.COM"), true);
+
+  // Everything else is refused: off-list hosts, scheme downgrades,
+  // non-default ports, lookalike subdomains, subdomain wildcards, garbage.
+  assert.equal(ccFrameOriginAllowed("https://evil.com"), false);
+  assert.equal(ccFrameOriginAllowed("http://js.stripe.com"), false);
+  assert.equal(ccFrameOriginAllowed("https://js.stripe.com:8443"), false);
+  assert.equal(ccFrameOriginAllowed("https://js.stripe.com.evil.com"), false);
+  assert.equal(ccFrameOriginAllowed("https://sub.js.stripe.com"), false);
+  assert.equal(ccFrameOriginAllowed("https://stripe.com"), false);
+  assert.equal(ccFrameOriginAllowed("not a url"), false);
+  assert.equal(ccFrameOriginAllowed(""), false);
+  assert.equal(ccFrameOriginAllowed(null), false);
+  assert.equal(ccFrameOriginAllowed(undefined), false);
+}
+
 console.log("fill-engine node tests: all assertions passed");

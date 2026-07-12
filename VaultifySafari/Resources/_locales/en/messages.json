@@ -166,5 +166,23 @@
   "save_overlay_failed": {
     "message": "Could not save",
     "description": "Shown when saving the new login fails."
+  },
+  "inline_menu_label": {
+    "message": "Loox suggestions",
+    "description": "Accessibility label of the inline suggestion menu anchored to a focused identity or card field."
+  },
+  "inline_fill_item_label": {
+    "message": "Fill $TITLE$ on this page",
+    "description": "Accessibility label of an inline menu row; fills the named item into the page.",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Personal card"
+      }
+    }
+  },
+  "inline_open_app": {
+    "message": "Open Loox",
+    "description": "Inline menu footer row that opens the Loox app for item management."
   }
 }

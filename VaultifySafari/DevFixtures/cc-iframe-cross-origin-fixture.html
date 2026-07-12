@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!-- Device-QA fixture: cross-origin iframe card fill.
+     The extension fills card fields inside a cross-origin iframe ONLY when
+     the frame's own origin is on the payment-processor allowlist
+     (js.stripe.com / checkout.stripe.com / pay.google.com) AND the frame
+     self-verifies the expected origin the background pinned into the
+     message. Every other cross-origin frame stays value-free.
+
+     How to exercise on device:
+       1. ALLOWED PATH — open a real Stripe test checkout
+          (https://checkout.stripe.com test session or any merchant using
+          Stripe Elements): popup card Fill must land the PAN/exp/CVC in the
+          Stripe frames.
+       2. DENIED PATH — serve this page over https and point the iframe below
+          at a second https origin YOU control hosting a copy of the embedded
+          card form: card Fill must fill the top-frame fields ONLY; the
+          off-allowlist frame must stay empty.
+
+     The inline fallback frame below is same-origin about:-less srcdoc, so it
+     inherits this page's origin — it exists only so the layout is visible
+     without extra hosting; swap `src` in for the real denial test. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cross-origin card iframe fixture</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; margin: 24px; }
+    label { display: block; margin: 12px 0 4px; }
+    input { width: 100%; max-width: 360px; padding: 10px; font-size: 16px; }
+    iframe { width: 100%; max-width: 400px; height: 220px; border: 1px dashed #999; }
+  </style>
+</head>
+<body>
+  <h1>Top frame card fields (expect fill)</h1>
+  <form action="#" method="post">
+    <label for="cc-name">Name on card</label>
+    <input id="cc-name" name="cc-name" type="text" autocomplete="cc-name">
+    <label for="cc-number">Card number</label>
+    <input id="cc-number" name="cc-number" type="text" inputmode="numeric"
+           autocomplete="cc-number" maxlength="19">
+  </form>
+
+  <h1>Embedded frame (expect NO fill unless allowlisted)</h1>
+  <!-- For the denial test, replace srcdoc with
+       src="https://YOUR-SECOND-ORIGIN/embedded-card-form.html" -->
+  <iframe title="Embedded card form"
+          srcdoc="&lt;label&gt;Card number&lt;/label&gt;&lt;input type=&quot;text&quot; autocomplete=&quot;cc-number&quot; maxlength=&quot;19&quot;&gt;&lt;label&gt;CVC&lt;/label&gt;&lt;input type=&quot;text&quot; autocomplete=&quot;cc-csc&quot; maxlength=&quot;4&quot;&gt;"></iframe>
+</body>
+</html>
