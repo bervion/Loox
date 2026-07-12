@@ -10,9 +10,10 @@
 // innerHTML anywhere near user data — and the captured password never enters
 // the DOM (only the editable title/username appear, as input .value
 // properties, never attributes). The background page suppresses the whole
-// flow when the OS-native save sheet owns saving (iOS 26.2+) or the user
-// opted this host out; both facts are decided natively, and this script
-// never learns more than a single boolean. Nothing is logged.
+// flow when the OS-native save sheet owns saving (iOS 26.2+), the user
+// opted this host out, or the user hid the extension on this site; all
+// facts are decided natively, and this script never learns more than a
+// single boolean. Nothing is logged.
 (function () {
   "use strict";
 
@@ -23,45 +24,67 @@
   const SCROLL_DISMISS_PX = 240;
   const MAX_SECRET_LENGTH = 512;
   const MAX_TITLE_LENGTH = 120;
+  // Reverse-clickjack mitigation: a hostile page can layer an invisible
+  // `pointer-events: none` decoy over this overlay to bait an immediate tap
+  // exactly where Save renders. Keeping Save disabled for a short arm
+  // window after the overlay appears makes any baited first tap land on a
+  // disabled button; a deliberate user read-then-tap is unaffected.
+  const SAVE_ARM_DELAY_MS = 600;
 
+  // Palette mirrored from the design-system tokens (`Design System/tokens/
+  // colors.css` + `elevation.css`). This shadow-DOM layer cannot import the
+  // token files, so the VALUES are copied verbatim and must be updated when
+  // the tokens change. Light values come from `:root`, dark values from
+  // `[data-theme="dark"]`, mapped onto `prefers-color-scheme`:
+  //   surface   #ffffff / #2c2c2e            (--surface-elevated)
+  //   text      #1c1c1e / #ffffff            (--text-primary)
+  //   subtext   #4b4b50 / #c7c7cc            (--text-secondary)
+  //   accent    #2563eb / #4c8dff            (--accent, default preset)
+  //   on-accent #ffffff                      (--on-accent)
+  //   pressed   rgba(60,60,67,.10) / rgba(235,235,245,.16) (--surface-pressed)
+  //   line      rgba(60,60,67,.18) / rgba(235,235,245,.18) (--separator)
+  //   shadow    0 -8px 40px + rgba(0,0,0,.10) / rgba(0,0,0,.55)
+  //             (--elevation-sheet with --shadow-ambient)
   const OVERLAY_CSS = [
     ".card { position: fixed; left: 12px; right: 12px; bottom: 12px;",
     "  z-index: 2147483647; box-sizing: border-box;",
     "  background: #ffffff; color: #1c1c1e; border-radius: 16px;",
-    "  padding: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);",
+    "  padding: 16px; box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.10);",
     "  font-family: -apple-system, system-ui, sans-serif; font-size: 15px; }",
     ".title { margin: 0; font-size: 16px; font-weight: 600; }",
-    ".site { margin: 4px 0 12px; font-size: 13px; color: #6e6e73;",
+    ".site { margin: 4px 0 12px; font-size: 13px; color: #4b4b50;",
     "  word-break: break-all; }",
     ".field { display: block; margin-bottom: 10px; }",
-    ".field span { display: block; font-size: 12px; color: #6e6e73;",
+    ".field span { display: block; font-size: 12px; color: #4b4b50;",
     "  margin-bottom: 4px; }",
     ".field input { box-sizing: border-box; width: 100%; min-height: 40px;",
-    "  border: 1px solid rgba(60, 60, 67, 0.24); border-radius: 10px;",
+    "  border: 1px solid rgba(60, 60, 67, 0.18); border-radius: 10px;",
     "  padding: 8px 10px; font-size: 15px; background: inherit; color: inherit; }",
     ".row { display: flex; gap: 8px; margin-top: 4px; }",
     "button { appearance: none; border: none; border-radius: 12px;",
     "  min-height: 44px; padding: 10px 14px; font-size: 15px; font-weight: 600;",
     "  cursor: pointer; }",
     "button:disabled { opacity: 0.5; }",
-    ".primary { flex: 1; background: #1544fd; color: #ffffff; }",
-    ".secondary { flex: 1; background: rgba(60, 60, 67, 0.1); color: inherit; }",
+    ".primary { flex: 1; background: #2563eb; color: #ffffff; }",
+    ".secondary { flex: 1; background: rgba(60, 60, 67, 0.10); color: inherit; }",
     ".tertiary { width: 100%; margin-top: 8px; background: transparent;",
-    "  color: #6e6e73; font-weight: 500; }",
+    "  color: #4b4b50; font-weight: 500; }",
     ".status { margin: 8px 0 0; min-height: 18px; font-size: 13px;",
-    "  color: #6e6e73; text-align: center; }",
+    "  color: #4b4b50; text-align: center; }",
     "@media (prefers-color-scheme: dark) {",
-    "  .card { background: #2c2c2e; color: #f2f2f7; }",
-    "  .site, .field span, .status, .tertiary { color: #98989f; }",
-    "  .field input { border-color: rgba(84, 84, 88, 0.5); }",
-    "  .secondary { background: rgba(120, 120, 128, 0.24); }",
-    "  .primary { background: #4d7dff; }",
+    "  .card { background: #2c2c2e; color: #ffffff;",
+    "    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.55); }",
+    "  .site, .field span, .status, .tertiary { color: #c7c7cc; }",
+    "  .field input { border-color: rgba(235, 235, 245, 0.18); }",
+    "  .secondary { background: rgba(235, 235, 245, 0.16); }",
+    "  .primary { background: #4c8dff; }",
     "}",
   ].join("\n");
 
   let captured = null;     // { username, password } — closure memory only
   let overlayHost = null;
   let ttlTimer = null;
+  let saveArmTimer = null;
   let gateInFlight = false;
   let anchorScrollY = 0;
 
@@ -78,6 +101,10 @@
     if (overlayHost) {
       overlayHost.remove();
       overlayHost = null;
+    }
+    if (saveArmTimer) {
+      clearTimeout(saveArmTimer);
+      saveArmTimer = null;
     }
     window.removeEventListener("scroll", onScroll, true);
   }
@@ -227,7 +254,17 @@
       saveTapped(titleField.input, userField.input, status, [save, notNow, never]);
     });
     const notNow = makeButton(t("save_overlay_not_now"), "secondary", dismiss);
-    const never = makeButton(t("save_overlay_never"), "tertiary", neverTapped);
+    const never = makeButton(t("save_overlay_never"), "tertiary", () => {
+      neverTapped(status, [save, notNow, never]);
+    });
+
+    // Anti-clickjack arm window (see SAVE_ARM_DELAY_MS). Only Save is
+    // armed late — dismissing is always allowed instantly.
+    save.disabled = true;
+    saveArmTimer = setTimeout(() => {
+      saveArmTimer = null;
+      if (overlayHost) save.disabled = false;
+    }, SAVE_ARM_DELAY_MS);
 
     const row = document.createElement("div");
     row.className = "row";
@@ -252,6 +289,10 @@
     if (!captured) {
       dismiss();
       return;
+    }
+    if (saveArmTimer) {
+      clearTimeout(saveArmTimer);
+      saveArmTimer = null;
     }
     buttons.forEach((button) => { button.disabled = true; });
     statusEl.textContent = "";
@@ -278,9 +319,23 @@
     }
   }
 
-  function neverTapped() {
-    // Host-only opt-out, stored natively; fire and forget.
-    browser.runtime.sendMessage({ cmd: "neverSave" }).catch(() => null);
-    dismiss();
+  // "Never for this site" must actually stick: a silently dropped native
+  // write would bring the prompt back on the next submit. Failure keeps the
+  // overlay up with a status line so the user can retry or dismiss.
+  async function neverTapped(statusEl, buttons) {
+    if (saveArmTimer) {
+      clearTimeout(saveArmTimer);
+      saveArmTimer = null;
+    }
+    buttons.forEach((button) => { button.disabled = true; });
+    statusEl.textContent = "";
+    const reply = await browser.runtime.sendMessage({ cmd: "neverSave" }).catch(() => null);
+    if (reply && reply.ok === true) {
+      dismiss();
+      return;
+    }
+    if (!overlayHost) return; // TTL or navigation raced the round trip
+    buttons.forEach((button) => { button.disabled = false; });
+    statusEl.textContent = t("save_overlay_failed");
   }
 })();

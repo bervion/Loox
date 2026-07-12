@@ -34,10 +34,22 @@
   const MENU_WIDTH = 300;
   const DISMISS_AFTER_FILL_MS = 1200;
 
+  // Palette mirrored from the design-system tokens (`Design System/tokens/
+  // colors.css` + `elevation.css`). This shadow-DOM layer cannot import the
+  // token files, so the VALUES are copied verbatim and must be updated when
+  // the tokens change. Light values come from `:root`, dark values from
+  // `[data-theme="dark"]`, mapped onto `prefers-color-scheme`:
+  //   surface  #ffffff / #2c2c2e            (--surface-elevated)
+  //   text     #1c1c1e / #ffffff            (--text-primary)
+  //   subtext  #4b4b50 / #c7c7cc            (--text-secondary)
+  //   accent   #2563eb / #4c8dff            (--accent, default preset)
+  //   line     rgba(60,60,67,.18) / rgba(235,235,245,.18)  (--separator)
+  //   shadow   0 10px 30px + rgba(0,0,0,.10) / rgba(0,0,0,.55)
+  //            (--elevation-3 with --shadow-ambient)
   const MENU_CSS = [
     ".panel { position: fixed; z-index: 2147483647; box-sizing: border-box;",
     "  background: #ffffff; color: #1c1c1e; border-radius: 14px;",
-    "  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);",
+    "  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10);",
     "  font-family: -apple-system, system-ui, sans-serif; font-size: 15px;",
     "  padding: 6px; max-height: 300px; overflow-y: auto;",
     "  animation: rise 0.18s ease-out; }",
@@ -49,21 +61,23 @@
     "  border-radius: 10px; padding: 10px 12px; min-height: 44px;",
     "  font-size: 15px; color: inherit; box-sizing: border-box; }",
     "button:disabled { opacity: 0.5; }",
-    "button:focus-visible { outline: 2px solid #1544fd; outline-offset: -2px; }",
+    "button:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }",
     ".row-title { display: block; font-weight: 500; overflow: hidden;",
     "  text-overflow: ellipsis; white-space: nowrap; }",
-    ".row-subtitle { display: block; font-size: 13px; color: #6e6e73;",
+    ".row-subtitle { display: block; font-size: 13px; color: #4b4b50;",
     "  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
-    ".footer { border-top: 1px solid rgba(60, 60, 67, 0.12); margin-top: 4px;",
+    ".footer { border-top: 1px solid rgba(60, 60, 67, 0.18); margin-top: 4px;",
     "  padding-top: 4px; }",
-    ".footer button { color: #1544fd; font-weight: 600; }",
+    ".footer button { color: #2563eb; font-weight: 600; }",
+    ".footer button.quiet { color: #4b4b50; font-weight: 500; }",
     ".status { margin: 2px 12px 6px; min-height: 16px; font-size: 13px;",
-    "  color: #6e6e73; }",
+    "  color: #4b4b50; }",
     "@media (prefers-color-scheme: dark) {",
-    "  .panel { background: #2c2c2e; color: #f2f2f7; }",
-    "  .row-subtitle, .status { color: #98989f; }",
-    "  .footer { border-top-color: rgba(84, 84, 88, 0.5); }",
-    "  .footer button, button:focus-visible { color: #4d7dff; outline-color: #4d7dff; }",
+    "  .panel { background: #2c2c2e; color: #ffffff;",
+    "    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }",
+    "  .row-subtitle, .status, .footer button.quiet { color: #c7c7cc; }",
+    "  .footer { border-top-color: rgba(235, 235, 245, 0.18); }",
+    "  .footer button, button:focus-visible { color: #4c8dff; outline-color: #4c8dff; }",
     "}",
   ].join("\n");
 
@@ -128,14 +142,23 @@
 
   let cachedItems = null;
   let lockedUntil = 0;
+  // Per-site kill switch verdict for this page load. Set from the native
+  // reply (the popup toggle) or the menu's own "Hide on this site" tap;
+  // once true, no inline UI renders again until the next navigation.
+  let hiddenForPage = false;
 
   async function fetchItems() {
+    if (hiddenForPage) return null;
     if (cachedItems) return cachedItems;
     if (Date.now() < lockedUntil) return null;
     const reply = await browser.runtime
       .sendMessage({ cmd: "inlineItems" })
       .catch(() => null);
     if (!reply || reply.ok !== true || !reply.data) return null;
+    if (reply.data.hidden === true) {
+      hiddenForPage = true;
+      return null;
+    }
     if (reply.data.locked === true) {
       lockedUntil = Date.now() + LOCKED_RETRY_MS;
       return null;
@@ -322,6 +345,18 @@
       // Registered app scheme; a user tap is the required gesture.
       location.href = "vaultify://";
     }));
+    // Per-site kill switch (hide-only from here; re-enabling lives in the
+    // popup). Takes effect immediately for this page load even if the
+    // native round trip fails — hiding must fail safe toward showing
+    // nothing.
+    const hideRow = makeRow(t("inline_hide_site"), "", t("inline_hide_site"), () => {
+      hiddenForPage = true;
+      cachedItems = null;
+      dismiss();
+      browser.runtime.sendMessage({ cmd: "hideSite" }).catch(() => {});
+    });
+    hideRow.className = "quiet";
+    footer.appendChild(hideRow);
     menuPanel.appendChild(footer);
 
     menuShadow.appendChild(menuPanel);
@@ -341,6 +376,7 @@
     // learn, with zero interaction, that this is an unlocked vault with cards
     // and identities. Genuine focus (tap, tab, VoiceOver) is always trusted.
     if (!event.isTrusted) return;
+    if (hiddenForPage) return;
     const target = event.target;
     // Focus moving INTO the menu (retargeted to the host) keeps it open.
     if (menuHost && target === menuHost) return;

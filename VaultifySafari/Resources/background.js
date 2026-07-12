@@ -28,6 +28,7 @@ const NATIVE_COMMANDS = new Set(["echo", "ping", "status", "listItems", "copyVal
 const POPUP_ONLY_COMMANDS = new Set([
   "listItems", "copyValue", "fillItem", "classifyPage",
   "activeTabOrigin", "echo", "ping", "status", "generatePasswordFill",
+  "siteSettings", "setSiteHidden",
 ]);
 // Signup-assist commands from the save overlay, which lives in the page's
 // content-script world (top frame only). They move NOTHING from the vault
@@ -41,7 +42,12 @@ const CONTENT_SAVE_COMMANDS = new Set(["saveGate", "saveLogin", "neverSave"]);
 // session-only native list (a page can never summon Face ID by focusing a
 // field); `inlineFillItem` is the menu tap and runs the same authorized
 // getFillPayload flow as the popup — Face ID or session gates the values.
-const CONTENT_INLINE_COMMANDS = new Set(["inlineItems", "inlineFillItem", "ccFrameHello"]);
+// `hideSite` is the menu footer's per-site kill switch: HIDE-only for the
+// sender's own host (a page abusing it can only remove OUR UI from itself,
+// a strictly exposure-narrowing action; re-enabling is popup-only).
+const CONTENT_INLINE_COMMANDS = new Set([
+  "inlineItems", "inlineFillItem", "ccFrameHello", "hideSite",
+]);
 const PROTOCOL_VERSION = 1;
 const FILL_DELIVERY_TIMEOUT_MS = 10000;
 
@@ -304,7 +310,11 @@ async function handleInlineItems(sender) {
     return {
       v: PROTOCOL_VERSION,
       ok: true,
-      data: { identities: cached.identities, cards: cached.cards },
+      data: {
+        hidden: cached.hidden === true,
+        identities: cached.identities,
+        cards: cached.cards,
+      },
     };
   }
   const reply = await sendNative({ v: PROTOCOL_VERSION, cmd: "listItemsSession", origin });
@@ -314,6 +324,16 @@ async function handleInlineItems(sender) {
         v: PROTOCOL_VERSION,
         ok: true,
         data: { locked: true, identities: [], cards: [] },
+      };
+    }
+    if (reply && reply.error === "hiddenSite") {
+      // Per-site kill switch, decided natively. Cache the verdict so a
+      // hidden host never re-hits native on every focus.
+      inlineItemsCache.set(tabId, { origin, hidden: true, identities: [], cards: [] });
+      return {
+        v: PROTOCOL_VERSION,
+        ok: true,
+        data: { hidden: true, identities: [], cards: [] },
       };
     }
     return {
@@ -515,6 +535,42 @@ async function handleNeverSave(sender) {
   return sendNative({ v: PROTOCOL_VERSION, cmd: "neverSave", origin });
 }
 
+// Per-site kill switch, popup read side: is the extension's in-page UI
+// hidden on the active tab's host? Bare hostnames only, never vault data.
+async function handleSiteSettings() {
+  const tab = await activeHTTPSTab();
+  if (!tab) return { v: PROTOCOL_VERSION, ok: false, error: "unsupportedPage" };
+  return sendNative({ v: PROTOCOL_VERSION, cmd: "siteSettings", origin: tab.origin });
+}
+
+// Per-site kill switch, popup write side (hide AND show live here — the
+// popup is the only surface that can re-enable a hidden site). Consent
+// binding mirrors handleFillItem: the toggle applies to the origin the
+// popup displayed, never to a tab that navigated cross-origin since.
+async function handleSetSiteHidden(message) {
+  const tab = await activeHTTPSTab();
+  if (!tab) return { v: PROTOCOL_VERSION, ok: false, error: "unsupportedPage" };
+  const expectedOrigin = typeof message.expectedOrigin === "string"
+    ? message.expectedOrigin
+    : "";
+  if (!expectedOrigin || expectedOrigin !== tab.origin) {
+    return { v: PROTOCOL_VERSION, ok: false, error: "tabChanged" };
+  }
+  const hidden = message.hidden === true;
+  // Drop stale inline metadata everywhere so the new verdict is re-fetched.
+  inlineItemsCache.clear();
+  return sendNative({ v: PROTOCOL_VERSION, cmd: "setSiteHidden", origin: tab.origin, hidden });
+}
+
+// Inline-menu footer "Hide on this site": HIDE-only, origin pinned to the
+// trusted sender tab. Content scripts can never un-hide a site.
+async function handleHideSite(sender) {
+  const origin = contentSenderOrigin(sender);
+  if (!origin) return { v: PROTOCOL_VERSION, ok: false, error: "forbidden" };
+  inlineItemsCache.delete(sender.tab.id);
+  return sendNative({ v: PROTOCOL_VERSION, cmd: "setSiteHidden", origin, hidden: true });
+}
+
 browser.runtime.onMessage.addListener((message, sender) => {
   if (!message || typeof message.cmd !== "string") {
     return reject("malformedMessage");
@@ -543,7 +599,16 @@ browser.runtime.onMessage.addListener((message, sender) => {
   if (CONTENT_INLINE_COMMANDS.has(message.cmd)) {
     if (message.cmd === "ccFrameHello") return Promise.resolve(handleCCFrameHello(sender));
     if (message.cmd === "inlineItems") return handleInlineItems(sender);
+    if (message.cmd === "hideSite") return handleHideSite(sender);
     return handleInlineFillItem(message, sender);
+  }
+
+  if (message.cmd === "siteSettings") {
+    return handleSiteSettings();
+  }
+
+  if (message.cmd === "setSiteHidden") {
+    return handleSetSiteHidden(message);
   }
 
   if (message.cmd === "fillItem") {
