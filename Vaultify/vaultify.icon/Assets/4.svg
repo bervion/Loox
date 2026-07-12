@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="236px" height="236px" viewBox="0 0 236 236" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Oval</title>
+    <defs>
+        <linearGradient x1="0%" y1="50%" x2="100%" y2="50%" id="linearGradient-1">
+            <stop stop-color="#7DD3FC" offset="0%"></stop>
+            <stop stop-color="#00B2FF" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" fill-opacity="0.85">
+        <g id="loox-symbol" transform="translate(-60, -138)" fill="url(#linearGradient-1)">
+            <g id="Group" transform="translate(60, 70.45)">
+                <circle id="Oval" cx="118" cy="185.55" r="118"></circle>
+            </g>
+        </g>
+    </g>
+</svg>
