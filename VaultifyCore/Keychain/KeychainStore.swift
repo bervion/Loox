@@ -38,6 +38,26 @@ nonisolated enum KeychainStore {
         }
     }
 
+    /// Update-only write: replaces an existing item's data and returns `false`
+    /// when the item does not exist — it NEVER adds one. For values with
+    /// revocation semantics (e.g. the extension unlock session), the
+    /// add-or-update `set` would silently re-create an item that a concurrent
+    /// delete just revoked; this call makes that race lose safely.
+    static func update(_ data: Data, account: String, accessGroup: String? = nil) throws -> Bool {
+        var match: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+        if let accessGroup { match[kSecAttrAccessGroup as String] = accessGroup }
+        let attributes = [kSecValueData as String: data]
+        let status = SecItemUpdate(match as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound { return false }
+        guard status == errSecSuccess else { throw Failure.unexpectedStatus(status) }
+        return true
+    }
+
     static func get(account: String, accessGroup: String? = nil) throws -> Data? {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

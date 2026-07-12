@@ -10,7 +10,9 @@ import Security
 /// while it exists (device unlocked, window not elapsed) our own team-signed
 /// binaries can read the key without user presence. Bounds on that trade-off:
 ///   - lifetime = the app's auto-lock window, hard-capped at `maxTTL`, sliding
-///     on each use (refreshed like the app's `lastActivity` model);
+///     on each use (refreshed like the app's `lastActivity` model), and
+///     re-clamped on every read to the CURRENT mirrored policy so tightening
+///     auto-lock shrinks an already-minted session at once;
 ///   - unreadable while the device is locked (accessibility class);
 ///   - expired or malformed payloads self-delete on read;
 ///   - cleared when the app locks, on vault erase / biometric invalidation
@@ -23,8 +25,6 @@ nonisolated enum ExtensionSessionStore {
     /// Hard ceiling on any session lifetime, regardless of the app's auto-lock
     /// window (a 1-hour auto-lock must not leave a 1-hour no-biometric key).
     static let maxTTL: TimeInterval = 15 * 60
-    /// Session window used before the app has mirrored its auto-lock setting.
-    static let defaultTTL: TimeInterval = 300
 
     // MARK: - Storage seam
 
@@ -33,6 +33,11 @@ nonisolated enum ExtensionSessionStore {
     struct Backend: Sendable {
         var read: @Sendable () -> Data?
         var write: @Sendable (Data) -> Bool
+        /// Update-only write: must NEVER create the item when it is absent.
+        /// An absent item means the session was revoked (app lock, biometric
+        /// change, vault erase) between a read and this write — re-adding it
+        /// would silently undo that revocation. Returns `false` when absent.
+        var update: @Sendable (Data) -> Bool
         var delete: @Sendable () -> Void
     }
 
@@ -44,6 +49,10 @@ nonisolated enum ExtensionSessionStore {
         write: { data in
             (try? KeychainStore.set(data, account: account,
                                     accessGroup: SharedConfig.keychainAccessGroup)) != nil
+        },
+        update: { data in
+            (try? KeychainStore.update(data, account: account,
+                                       accessGroup: SharedConfig.keychainAccessGroup)) ?? false
         },
         delete: {
             KeychainStore.delete(account: account,
@@ -67,24 +76,34 @@ nonisolated enum ExtensionSessionStore {
         blob.resetBytes(in: 0..<blob.count)
     }
 
-    /// The session key, or nil when absent/expired (expired and malformed items
-    /// self-delete). A hit slides the window by rewriting `lastActivity = now`.
-    static func retrieve(now: Date = .now, backend: Backend = keychainBackend) -> [UInt8]? {
+    /// The session key, or nil when absent, expired, or revoked (expired and
+    /// malformed items self-delete).
+    ///
+    /// The effective window is the SMALLEST of the stored ttl, the live
+    /// mirrored auto-lock `policy`, and `maxTTL` — so tightening auto-lock in
+    /// the app shrinks an already-minted session on the very next read instead
+    /// of waiting for the next lock. A hit slides the window by rewriting
+    /// `lastActivity = now`; the slide is UPDATE-ONLY, so a session revoked
+    /// concurrently (app lock between our read and the rewrite) stays revoked
+    /// instead of being re-created, and the revoked read reports nil.
+    static func retrieve(now: Date = .now,
+                         policy: TimeInterval = configuredTTL(),
+                         backend: Backend = keychainBackend) -> [UInt8]? {
         guard var data = backend.read() else { return nil }
         defer { data.resetBytes(in: 0..<data.count) }
         guard let payload = decode(data) else {
             backend.delete()
             return nil
         }
-        let window = min(payload.ttl, maxTTL)
-        guard now.timeIntervalSince(payload.lastActivity) < window else {
+        let window = min(payload.ttl, policy, maxTTL)
+        guard window > 0, now.timeIntervalSince(payload.lastActivity) < window else {
             backend.delete()
             return nil
         }
         var refreshed = encode(ttl: window, lastActivity: now, key: payload.key)
-        _ = backend.write(refreshed)
+        let slid = backend.update(refreshed)
         refreshed.resetBytes(in: 0..<refreshed.count)
-        return payload.key
+        return slid ? payload.key : nil
     }
 
     /// Drop the session immediately (app lock, vault erase, biometric changes).
@@ -94,12 +113,13 @@ nonisolated enum ExtensionSessionStore {
 
     /// The session window mirrored from the app's auto-lock setting
     /// (`SharedConfig.autoLockSecondsKey`): 0 = immediate = no session ever,
-    /// missing = `defaultTTL`, anything else clamped to `maxTTL`.
+    /// anything else clamped to `maxTTL`. A MISSING mirror also yields 0
+    /// (fail closed): the app rewrites the mirror on every launch, so absence
+    /// means no auto-lock policy was ever consented to on this device and no
+    /// session may be minted or honored.
     static func configuredTTL(defaults: UserDefaults = SharedConfig.sharedDefaults) -> TimeInterval {
-        guard let raw = defaults.object(forKey: SharedConfig.autoLockSecondsKey) as? Int else {
-            return defaultTTL
-        }
-        guard raw > 0 else { return 0 }
+        guard let raw = defaults.object(forKey: SharedConfig.autoLockSecondsKey) as? Int,
+              raw > 0 else { return 0 }
         return min(TimeInterval(raw), maxTTL)
     }
 

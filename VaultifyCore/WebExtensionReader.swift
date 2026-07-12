@@ -44,8 +44,8 @@ nonisolated enum WebExtensionReader {
     static let copyableKinds: Set<FieldKind> = [.username, .email, .text]
 
     /// Items relevant to the popup for one https host: logins scoped to the
-    /// host via the AutoFill matcher; identities and cards are global lists
-    /// (they carry no website field, so host scoping does not apply).
+    /// host via the strict matcher below; identities and cards are global
+    /// lists (they carry no website field, so host scoping does not apply).
     @MainActor
     static func itemsMatching(host: String, store: VaultStore, key: SecureBytes) -> ItemLists {
         var lists = ItemLists(logins: [], identities: [], cards: [])
@@ -60,7 +60,7 @@ nonisolated enum WebExtensionReader {
                 // Same definition of "login" as the AutoFill reader: anything
                 // exposing a password field, regardless of exact category.
                 guard item.passwordField != nil,
-                      item.matchesAutoFill(serviceIdentifiers: [host]) else { continue }
+                      hostMatches(host, item: item) else { continue }
                 let username = VaultReader.username(from: item) ?? ""
                 lists.logins.append(LoginSummary(id: item.id, title: item.title,
                                                  username: username))
@@ -87,6 +87,21 @@ nonisolated enum WebExtensionReader {
             throw ReadError.forbidden
         }
         return field.value
+    }
+
+    /// Strict host relevance for the popup list: exact host or a dot-boundary
+    /// subdomain relationship (either direction). Deliberately NOT the OS
+    /// AutoFill matcher, whose trailing substring clause would let a lookalike
+    /// host such as `evilgoogle.com` surface the `google.com` login — a popup
+    /// listing on such a page both leaks the username into extension JS and
+    /// lends the phishing page legitimacy. Mirrors the conservative shape of
+    /// `matchesRelyingParty`.
+    static func hostMatches(_ host: String, item: VaultItem) -> Bool {
+        let page = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !page.isEmpty else { return false }
+        return item.autofillHosts.contains { stored in
+            page == stored || page.hasSuffix(".\(stored)") || stored.hasSuffix(".\(page)")
+        }
     }
 
     // MARK: - Internals

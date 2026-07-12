@@ -6,9 +6,26 @@
 // SECURITY: native requests are rebuilt from scratch so only whitelisted keys
 // cross the bridge, and the matching origin ALWAYS comes from the trusted
 // browser.tabs API — a sender-supplied origin/URL is never forwarded.
+// Vault-reading commands are additionally honored ONLY from the extension's
+// own popup UI: content.js runs inside every https page, and a compromised
+// page/renderer context must never be able to pull item lists or field
+// values through this hub without the user facing the popup.
 
 const NATIVE_COMMANDS = new Set(["echo", "ping", "status", "listItems", "copyValue"]);
+const VAULT_COMMANDS = new Set(["listItems", "copyValue"]);
 const PROTOCOL_VERSION = 1;
+
+// True only for messages from our own extension pages (the popup). Content
+// scripts always carry the web page tab they run in; when the browser also
+// supplies a sender URL, require it to be an extension-internal page rather
+// than any web origin.
+function isPopupSender(sender) {
+  if (!sender || sender.tab) return false;
+  if (typeof sender.url === "string" && sender.url.length > 0) {
+    return sender.url.startsWith(browser.runtime.getURL(""));
+  }
+  return true;
+}
 
 // Origin of the active tab when it is a well-formed https page; null otherwise
 // (http, reader mode, about:/extension pages, no tab).
@@ -36,9 +53,13 @@ function reject(code) {
   return Promise.resolve({ v: PROTOCOL_VERSION, ok: false, error: code });
 }
 
-browser.runtime.onMessage.addListener((message) => {
+browser.runtime.onMessage.addListener((message, sender) => {
   if (!message || typeof message.cmd !== "string") {
     return reject("malformedMessage");
+  }
+
+  if (VAULT_COMMANDS.has(message.cmd) && !isPopupSender(sender)) {
+    return reject("forbidden");
   }
 
   // Local (non-native) query so the popup can render the site chip and the
