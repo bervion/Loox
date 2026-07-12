@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!-- Dev-only QA fixture (never shipped): Vietnamese-labeled form with NO
+     autocomplete attributes — exercises the tier-3 VI keyword tables.
+     Expected: ho ten → fullName, email → email, dien thoai → phone,
+     dia chi → address, so the → ccNumber (needs maxlength corroboration),
+     het han → ccExp, ma bao mat → ccCsc. "Tên đăng nhập" must stay
+     unclassified (username exclusion). -->
+<html lang="vi">
+<head><meta charset="utf-8"><title>Biểu mẫu tiếng Việt</title></head>
+<body>
+  <h1>Thanh toán</h1>
+  <form>
+    <label>Họ và tên <input name="hoten" placeholder="Họ và tên"></label>
+    <label>Tên đăng nhập <input name="ten-dang-nhap"></label>
+    <label>Thư điện tử <input name="thu_dien_tu"></label>
+    <label>Số điện thoại <input name="so-dien-thoai"></label>
+    <label>Địa chỉ <input name="diachi" placeholder="Địa chỉ giao hàng"></label>
+    <label>Chủ thẻ <input name="chuthe"></label>
+    <label>Số thẻ <input name="sothe" maxlength="19"></label>
+    <label>Ngày hết hạn <input name="hethan" maxlength="5" placeholder="MM/YY"></label>
+    <label>Mã bảo mật <input name="mabaomat" maxlength="4"></label>
+  </form>
+</body>
+</html>

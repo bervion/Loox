@@ -130,6 +130,21 @@ final class WebExtensionReaderTests: XCTestCase {
         XCTAssertEqual(lists.cards.first?.brand, "")
     }
 
+    func testSecretGuardSealedNumberYieldsNoLast4() throws {
+        // A SecretGuard payload is tagged base64; digit-stripping it would
+        // surface ciphertext digits as brand/last-4. The raw value must be
+        // rejected before any digit extraction (guard2 deliberately unset).
+        let item = VaultItem(category: .card, title: "Sealed", fields: [
+            DynamicField(label: "Card Number", kind: .monospace,
+                         value: "v2g:99887766554433221100AAAA", protected: true),
+        ])
+        try WebExtensionTestSeed.insert(item, into: store, key: key)
+
+        let lists = WebExtensionReader.itemsMatching(host: "example.com", store: store, key: key)
+        XCTAssertEqual(lists.cards.first?.last4, "")
+        XCTAssertEqual(lists.cards.first?.brand, "")
+    }
+
     // MARK: - Identities are metadata only
 
     func testIdentityListedGloballyWithTitleOnly() throws {

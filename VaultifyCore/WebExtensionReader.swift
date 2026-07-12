@@ -124,6 +124,11 @@ nonisolated enum WebExtensionReader {
     /// summary degrades to title-only.
     private static func cardSummary(for item: VaultItem) -> CardSummary {
         let number = cardNumberValue(of: item)
+        // SecretGuard check on the RAW value: a sealed payload is a tagged
+        // base64 blob whose stray digits must not surface as brand or last-4.
+        guard !SecretGuard.isProtected(number) else {
+            return CardSummary(id: item.id, title: item.title, brand: "", last4: "")
+        }
         let digits = PaymentCard.digitsOnly(number)
         let brand = PaymentCard.brand(for: digits)?.displayName ?? ""
         let last4 = digits.count >= 4 ? String(digits.suffix(4)) : ""
@@ -134,7 +139,9 @@ nonisolated enum WebExtensionReader {
     /// first; otherwise the first monospace field long enough to be a PAN —
     /// the length floor keeps a 4-digit security code (Amex CID) from ever
     /// being mistaken for the number and leaking its digits as "last-4".
-    private static func cardNumberValue(of item: VaultItem) -> String {
+    /// Internal (not private) because the fill-payload path reuses the same
+    /// PAN resolution when releasing the number for an authorized card fill.
+    static func cardNumberValue(of item: VaultItem) -> String {
         let candidates = item.fields.filter { $0.kind == .monospace && $0.guard2 != true }
         if let labelled = candidates.first(where: { $0.label == "Card Number" }) {
             return labelled.value

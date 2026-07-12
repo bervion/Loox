@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!-- Dev-only QA fixture (never shipped): split month/year expiry as selects
+     plus a compact MMYY input, and a card form whose generic "name" field
+     should be upgraded to cardholder by form context. Expected: month select
+     picks 09, year select picks 2027, compact input gets 0927, name field
+     receives the cardholder value. -->
+<html>
+<head><meta charset="utf-8"><title>Split expiry fixture</title></head>
+<body>
+  <h1>Payment</h1>
+  <form>
+    <label>Name <input name="name" placeholder="Full name"></label>
+    <label>Card number <input name="cardnum" autocomplete="cc-number" maxlength="19"></label>
+    <label>Month
+      <select name="exp_month" autocomplete="cc-exp-month">
+        <option value="">MM</option>
+        <option value="1">01</option><option value="2">02</option>
+        <option value="3">03</option><option value="4">04</option>
+        <option value="5">05</option><option value="6">06</option>
+        <option value="7">07</option><option value="8">08</option>
+        <option value="9">09</option><option value="10">10</option>
+        <option value="11">11</option><option value="12">12</option>
+      </select>
+    </label>
+    <label>Year
+      <select name="exp_year" autocomplete="cc-exp-year">
+        <option value="">YYYY</option>
+        <option value="2026">2026</option><option value="2027">2027</option>
+        <option value="2028">2028</option><option value="2029">2029</option>
+      </select>
+    </label>
+    <label>Expiry (compact) <input name="expdate" maxlength="4" placeholder="MMYY"></label>
+    <label>CVC <input name="cvc2" maxlength="3"></label>
+  </form>
+</body>
+</html>

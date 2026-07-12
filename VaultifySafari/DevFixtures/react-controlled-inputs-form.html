@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- Dev-only QA fixture (never shipped): framework-controlled inputs that
+     revert plain .value writes. Expected: values persist after fill (the
+     engine uses the native prototype setter + input/change events); the
+     status line flips to "controlled state updated" for each field. -->
+<html>
+<head><meta charset="utf-8"><title>React-style controlled form fixture</title></head>
+<body>
+  <h1>Controlled inputs</h1>
+  <form>
+    <label>Email <input id="email" name="email" autocomplete="email"></label>
+    <label>Card number <input id="cc" name="cardNumber" autocomplete="cc-number" maxlength="19"></label>
+  </form>
+  <p id="status">no input events yet</p>
+  <script>
+    // Mimics a controlled component: any value not committed through an
+    // input event is reverted on the next frame.
+    const committed = { email: "", cc: "" };
+    for (const id of ["email", "cc"]) {
+      const el = document.getElementById(id);
+      el.addEventListener("input", () => {
+        committed[id] = el.value;
+        document.getElementById("status").textContent = "controlled state updated: " + id;
+      });
+      setInterval(() => {
+        if (el.value !== committed[id]) el.value = committed[id];
+      }, 100);
+    }
+  </script>
+</body>
+</html>
