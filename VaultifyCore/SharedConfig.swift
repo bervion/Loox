@@ -69,6 +69,9 @@ nonisolated enum SharedConfig {
     /// Sliding-window timestamps for the Safari extension's password-generation
     /// rate limit (non-secret; generated passwords themselves are never stored).
     static let webExtensionGenerateStampsKey = "web_extension_generate_stamps"
+    /// Per-host sliding-window timestamps for the Safari extension's saveLogin
+    /// rate limit (hosts + timestamps only — never usernames or passwords).
+    static let webExtensionSaveStampsKey = "web_extension_save_stamps"
 
     /// Routing-only breadcrumb (standard defaults): a CKShare was accepted while
     /// the vault might have been locked/onboarding; the unlocked shell resumes

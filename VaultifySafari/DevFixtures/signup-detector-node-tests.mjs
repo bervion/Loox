@@ -156,6 +156,51 @@ assert.deepEqual(single("Sign in").newPasswordIds, []);
   assert.equal(reset.pageType, "changePassword");
 }
 
+// --- Honeypot fields (hidden anti-bot inputs) ----------------------------------
+
+// A hidden extra password input on an otherwise-plain login form must not
+// inflate the count into a tier-4 two-password "signup".
+{
+  const result = detect(
+    [
+      pw({ id: 0, name: "password" }),
+      pw({ id: 1, name: "password_confirmation", visible: false }),
+    ],
+    {
+      forms: [{ index: 0, submitText: "Sign in", hasUserField: true }],
+      pageSubmitText: "",
+    },
+  );
+  assert.equal(result.pageType, "login",
+    "hidden honeypot must not turn a login into a signup");
+  assert.deepEqual(result.newPasswordIds, []);
+}
+
+// Even a hidden new-password TOKEN is ignored — the user cannot see the field.
+{
+  const result = detect(
+    [pw({ id: 0 }), pw({ id: 1, autocomplete: "new-password", visible: false })],
+    {
+      forms: [{ index: 0, submitText: "Log in", hasUserField: true }],
+      pageSubmitText: "",
+    },
+  );
+  assert.equal(result.pageType, "login");
+}
+
+// All password fields hidden: nothing the user can see, nothing to act on.
+assert.equal(run([pw({ id: 0, visible: false })]).pageType, "none");
+
+// Explicit visible:true and the absent-flag default behave identically.
+{
+  const result = run([
+    pw({ id: 0, visible: true }),
+    pw({ id: 1, label: "Confirm password" }),
+  ]);
+  assert.equal(result.pageType, "signup");
+  assert.deepEqual(result.newPasswordIds.sort(), [0, 1]);
+}
+
 // --- Cross-form arbitration ---------------------------------------------------
 
 // A page carrying BOTH a login form and a signup form picks the signup form.

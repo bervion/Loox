@@ -10,10 +10,16 @@
 //   3  single password field + signup/change submit label (EN + VI)
 //   4  two or more password fields in one form (new password being set)
 //
+// Only VISIBLE password fields count: hidden honeypot inputs (anti-bot traps
+// commonly planted next to a real login password) must not inflate a plain
+// login page into a multi-password "signup". scan() reuses the fill engine's
+// visibility gauntlet so detection and fill agree on what the user can see.
+//
 // SECURITY: descriptors are attribute-only — scan() never reads a field
 // value. Values are read elsewhere and only at explicit submit intent
 // (save-overlay.js) or written by the authorized generated-password fill.
-// Requires field-classifier.js (normalize) to be loaded first.
+// Requires field-classifier.js (normalize) and fill-engine.js (isVisible)
+// to be loaded first.
 (function () {
   "use strict";
 
@@ -46,7 +52,10 @@
   // --- Pure detection --------------------------------------------------------
 
   // fields: [{ id, autocomplete, name, elementId, placeholder, label,
-  //            ariaLabel, form }] — password inputs only, attributes only.
+  //            ariaLabel, form, visible }] — password inputs only,
+  //            attributes only. `visible: false` marks a field the user
+  //            cannot see (honeypot); it never counts toward classification.
+  //            Absent means visible (pure callers need not compute it).
   // context: { forms: [{ index, submitText, hasUserField }],
   //            pageSubmitText, pageHasUserField }
   // → { pageType: "none"|"login"|"signup"|"changePassword", tier, form,
@@ -59,6 +68,9 @@
 
     const groups = new Map();
     for (const field of fields || []) {
+      // Hidden honeypot fields (even token-bearing ones) are invisible to
+      // the user and must be invisible to classification too.
+      if (field.visible === false) continue;
       const key = field.form === null || field.form === undefined ? "page" : field.form;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(field);
@@ -170,6 +182,19 @@
     return wrapping ? (wrapping.textContent || "") : "";
   }
 
+  // The fill engine's full visibility gauntlet (display/visibility, own and
+  // ancestor opacity, minimum size, off-screen park). Manifest load order
+  // guarantees fill-engine.js runs first; if it ever did not, fall open to
+  // "visible" — classification is a UX gate, the fill path re-checks
+  // visibility itself before any value is written.
+  function isVisibleField(element) {
+    const engine = globalThis.LooxFillEngine;
+    if (engine && typeof engine.isVisible === "function") {
+      return engine.isVisible(element);
+    }
+    return true;
+  }
+
   function descriptorFor(element, index, forms) {
     return {
       id: index,
@@ -180,6 +205,7 @@
       label: labelTextFor(element).slice(0, 200),
       ariaLabel: element.getAttribute("aria-label") || "",
       form: element.form ? forms.indexOf(element.form) : null,
+      visible: isVisibleField(element),
     };
   }
 

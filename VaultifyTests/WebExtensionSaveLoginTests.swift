@@ -141,11 +141,60 @@ final class WebExtensionSaveLoginTests: XCTestCase {
                        "no extension save while the OS-native sheet is active")
     }
 
+    func testSaveLoginTrimsUsernameBeforeDuplicateCompare() async throws {
+        try WebExtensionTestSeed.insert(
+            WebExtensionTestSeed.login(title: "Example", username: "alice",
+                                       password: "old-pw", website: "https://example.com"),
+            into: store, key: key)
+        let response = await WebExtensionRouter.route(
+            saveRequest(username: "  alice "), context: context())
+        XCTAssertEqual(response["error"] as? String, "duplicate",
+                       "surrounding whitespace must not defeat the duplicate check")
+    }
+
     func testSaveLoginRefusedForNeverSavedHost() async {
         WebExtensionSaveGate.addNeverSave(host: "example.com", defaults: defaults)
         let response = await WebExtensionRouter.route(
             saveRequest(), context: failingContext())
         XCTAssertEqual(response["error"] as? String, "forbidden")
+    }
+
+    // MARK: - saveLogin rate limit
+
+    func testSaveLoginRateLimitedPerHostBeforeUnlock() async {
+        for index in 0..<WebExtensionSaveGate.saveLimit {
+            let response = await WebExtensionRouter.route(
+                saveRequest(username: "user\(index)"), context: context())
+            XCTAssertEqual(response["ok"] as? Bool, true, "save \(index) within limit")
+        }
+        // Refused BEFORE any unlock — spamming can neither prompt-bomb Face
+        // ID nor probe usernames via the duplicate error past the window.
+        let limited = await WebExtensionRouter.route(
+            saveRequest(username: "user0"), context: failingContext())
+        XCTAssertEqual(limited["error"] as? String, "rateLimited")
+
+        // A different host keeps its own independent window.
+        let otherHost = await WebExtensionRouter.route(
+            saveRequest(origin: "https://other.example", username: "alice"),
+            context: context())
+        XCTAssertEqual(otherHost["ok"] as? Bool, true)
+    }
+
+    func testSaveRateLimitWindowSlidesAndIsolatesHosts() {
+        let now = Date()
+        for _ in 0..<WebExtensionSaveGate.saveLimit {
+            XCTAssertTrue(WebExtensionSaveGate.allowSave(host: "example.com", now: now,
+                                                         defaults: defaults))
+        }
+        XCTAssertFalse(WebExtensionSaveGate.allowSave(host: "example.com", now: now,
+                                                      defaults: defaults))
+        XCTAssertTrue(WebExtensionSaveGate.allowSave(host: "other.example", now: now,
+                                                     defaults: defaults),
+                      "hosts are limited independently")
+        let later = now.addingTimeInterval(WebExtensionSaveGate.saveWindow + 1)
+        XCTAssertTrue(WebExtensionSaveGate.allowSave(host: "example.com", now: later,
+                                                     defaults: defaults),
+                      "window expiry re-admits saves")
     }
 
     // MARK: - saveGate + neverSave

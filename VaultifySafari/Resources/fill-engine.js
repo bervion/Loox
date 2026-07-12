@@ -223,5 +223,9 @@
     return report;
   }
 
-  globalThis.LooxFillEngine = { fillAll, fillPasswordAll };
+  // `isVisible` is exported so the signup detector counts only fields a user
+  // can actually see — hidden honeypot password inputs (a common anti-bot
+  // pattern on login forms) must not inflate a login page into a "signup".
+  // One gauntlet, shared: detection and fill agree on what "visible" means.
+  globalThis.LooxFillEngine = { fillAll, fillPasswordAll, isVisible };
 })();

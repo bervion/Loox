@@ -273,10 +273,13 @@ nonisolated enum WebExtensionRouter {
     /// Writes a brand-new login captured at signup-submit intent. The password
     /// crosses JS→native ONLY here, and only because the user tapped Save in
     /// the overlay; Face ID (or the short-lived native session) gates the
-    /// write like every other vault operation. All shape checks and the
-    /// save-gate belt run BEFORE any unlock so a forged or out-of-band request
-    /// never triggers Face ID. A same-host same-username login already in the
-    /// vault yields `duplicate` instead of a second copy.
+    /// write like every other vault operation. All shape checks, the
+    /// save-gate belt, and a per-host rate limit run BEFORE any unlock so a
+    /// forged or out-of-band request never triggers Face ID, cannot spam
+    /// vault writes inside a warm session, and cannot use the duplicate
+    /// error as a high-rate username-existence probe. A same-host
+    /// same-username login already in the vault yields `duplicate` instead
+    /// of a second copy.
     private static func saveLogin(_ request: WebExtensionRequest,
                                   context: WebExtensionRouterContext) async -> [String: Any] {
         guard let origin = request.origin,
@@ -301,13 +304,21 @@ nonisolated enum WebExtensionRouter {
         guard !context.nativeSaveActive(), !neverSaved else {
             return failure("forbidden")
         }
+        guard WebExtensionSaveGate.allowSave(host: host,
+                                             defaults: context.configDefaults()) else {
+            return failure("rateLimited")
+        }
         let key: SecureBytes
         do { key = try await unlockedKey(context) } catch { return unlockFailure(error) }
         do {
             let itemId = try await MainActor.run { () -> String in
                 let store = try context.makeStore()
                 let lists = WebExtensionReader.itemsMatching(host: host, store: store, key: key)
-                let wanted = username.lowercased()
+                // Trim before comparing: `createLogin` stores the trimmed
+                // username, so an untrimmed compare would let " alice" slip
+                // past the gate and land as a true duplicate of "alice".
+                let wanted = username.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .lowercased()
                 let exists = lists.logins.contains { $0.username.lowercased() == wanted }
                 if exists { throw SaveLoginError.duplicate }
                 return try VaultWriter.createLogin(store: store, site: origin,

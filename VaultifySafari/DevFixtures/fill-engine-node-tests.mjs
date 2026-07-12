@@ -205,4 +205,19 @@ function fillOne(el, key = "email", tier = 1, values = { email: "user@example.co
   assert.equal(result.reason, "notVisible");
 }
 
+// Exported isVisible (shared with the signup detector's honeypot filter):
+// the same gauntlet answers directly, so a hidden password honeypot reads
+// as not visible while a normal field reads as visible.
+{
+  const { isVisible } = globalThis.LooxFillEngine;
+  assert.equal(typeof isVisible, "function", "isVisible must stay exported");
+  const honeypot = makeElement({
+    type: "password",
+    computedStyle: { display: "none" },
+    offsetParent: null,
+  });
+  assert.equal(isVisible(honeypot), false, "display:none honeypot is not visible");
+  assert.equal(isVisible(makeElement({ type: "password" })), true);
+}
+
 console.log("fill-engine node tests: all assertions passed");

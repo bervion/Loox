@@ -1,4 +1,6 @@
-// In-page save-new-login prompt (signup assist). Top frame only.
+// In-page save-new-login prompt (signup assist). Top frame only, and SIGNUP
+// pages only: change-password pages never get a "save as new login" offer
+// (it would duplicate the user's existing item with a stale sibling).
 //
 // SECURITY: credential values are captured ONLY at explicit submit intent
 // (a trusted form submit or submit-button click) — never on keystroke, never
@@ -95,7 +97,12 @@
     if (location.protocol !== "https:") return;
     if (overlayHost) return; // already prompting for this submission
     const scan = globalThis.LooxSignupDetector.scan(document);
-    if (scan.pageType !== "signup" && scan.pageType !== "changePassword") return;
+    // Save is offered for NEW accounts only. On a change-password page a
+    // "save as new login" would leave the user's EXISTING item holding the
+    // stale password while a second (usually username-less) item holds the
+    // new one — two AutoFill candidates, one of them wrong. Change pages
+    // keep the generated-password FILL flow (popup) but never this overlay.
+    if (scan.pageType !== "signup") return;
     // An intent aimed at a specific form must be the detected signup form.
     if (formCandidate && scan.form && formCandidate !== scan.form) return;
     const passwordEl = scan.newPasswordElements.find(
