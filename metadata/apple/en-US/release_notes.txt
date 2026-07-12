@@ -1,1 +1,1 @@
-Updated the app icon. Enjoy a refreshed look every time you unlock your vault.
+This release brings the Safari extension to iPad, with autofill for cards and personal details, and a signup assistant that suggests strong passwords. Face ID unlock now works inside the extension, and shared vaults get faster, safer confirmations. We also fixed several reliability issues across autofill and sharing.

@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.28.0] - 2026-07-13
+
+### Added
+- per-site kill switch, token-mirrored palette, and save-overlay hardening
+- run the Safari extension on iPad and package all content scripts
+- inline identity and card menu with allowlisted payment-frame fill
+- signup assist with generated password and save-login overlay
+- identity and card fill engine with popup-authorized payload flow
+- unlocked session with auto-prompt popup unlock
+- Face ID unlock bridge and origin-scoped popup item list
+- add Safari web extension appex with MV3 skeleton and native echo bridge
+- extension-safe KDF profile for the key bundle with opportunistic re-wrap
+- hold the Vault Key in locked SecureBytes end to end
+- recipient safety-code verification gate before first use
+- honest invite copy, badge for ready shares, faster accept detection
+- local banner when a share is ready for the ceremony
+- silent push when recipient publishes acceptance profile
+
+### Fixed
+- only summon the inline menu on a trusted user focus
+- harden signup-assist save flow against renderer abuse
+- check SecretGuard on the raw card number before digit stripping
+- bind fill delivery to the popup-displayed origin and harden the message hub
+- reject off-screen and ancestor-opacity fields at fill moment
+- harden extension unlock session and popup item matching
+- lift alert bindings out of body to satisfy the type-checker
+- sign approval assertions with honest presence flags
+- finish store-helper rename in passkey list entry point
+- honest UP/UV flags for conditional registrations
+- recoverable store on read paths instead of fatalError
+- keep push-triggered share status checks read-only
+- marker-before-pin ordering and keychain-backed backfill flag
+- keep app alive until silent-push CloudKit work finishes
+- conflict-safe participant profile publish across devices
+
+### Improved
+- one VaultStore per extension presentation
+- gate owner request scans behind a push-driven dirty flag
+
+### Changed
+- update docs
+- safari web extension summary, release runbook, and device QA checklist
+- sign the Safari appex in the match pipeline
+- protocol fuzz suite for the native message router
+- mark safari inline-menu phase code complete, device gate G5 pending
+- record signup-assist hardening and explicit G4 device-QA gates
+- mark safari signup-assist phase code complete, device gate pending
+- update docs
+- record safari web extension phase 1 status and packaging findings
+- pin acceptance-status, scan-gate, merge, and verify-gate decisions
+
+
 ## [1.27.1] - 2026-07-12
 
 ### Changed

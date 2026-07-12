@@ -1,1 +1,1 @@
-Cập nhật biểu tượng ứng dụng. Diện mạo mới mỗi lần bạn mở khóa vault.
+Bản cập nhật này đưa tiện ích Safari lên iPad, hỗ trợ tự động điền thẻ và thông tin cá nhân, cùng trợ lý đăng ký gợi ý mật khẩu mạnh. Face ID mở khóa giờ hoạt động ngay trong tiện ích, chia sẻ kho mật khẩu xác nhận nhanh và an toàn hơn. Chúng tôi cũng sửa nhiều lỗi ổn định khi tự động điền và chia sẻ.
