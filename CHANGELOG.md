@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.27.1] - 2026-07-12
+
+### Changed
+- update icon
+
+
 ## [1.27.0] - 2026-07-12
 
 ### Added

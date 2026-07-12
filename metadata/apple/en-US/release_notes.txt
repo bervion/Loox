@@ -1,1 +1,1 @@
-Version 1.27.0 introduces Vault Audit, a new Security tab that checks your passwords for weak, reused, or known compromised entries, all processed on your device. Refreshed accent colors and small visual fixes throughout the app.
+Updated the app icon. Enjoy a refreshed look every time you unlock your vault.

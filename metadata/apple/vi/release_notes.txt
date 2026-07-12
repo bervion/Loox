@@ -1,1 +1,1 @@
-Phien ban 1.27.0 gioi thieu Kiem Tra Vault, tab Bao Mat moi giup ban phat hien mat khau yeu, trung lap hoac tung bi ro ri, toan bo xu ly ngay tren thiet bi. Mau nhan dien duoc lam moi cung nhieu cai thien nho khac trong ung dung.
+Cập nhật biểu tượng ứng dụng. Diện mạo mới mỗi lần bạn mở khóa vault.
