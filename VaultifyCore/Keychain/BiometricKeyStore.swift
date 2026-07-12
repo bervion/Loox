@@ -84,6 +84,10 @@ nonisolated enum BiometricKeyStore {
     /// regardless of whether the one-time shared-group migration has run yet.
     @discardableResult
     static func delete() -> OSStatus {
+        // Losing (or re-provisioning) the biometric key must also end any web
+        // extension session minted from it — the session item has no biometric
+        // ACL, so it would otherwise outlive a biometric invalidation.
+        ExtensionSessionStore.clear()
         KeychainStore.delete(account: account, accessGroup: SharedConfig.legacyKeychainGroup)
         return KeychainStore.delete(account: account, accessGroup: accessGroup)
     }

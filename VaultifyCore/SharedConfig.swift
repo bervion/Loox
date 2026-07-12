@@ -29,6 +29,11 @@ nonisolated enum SharedConfig {
     /// Key under which the app mirrors its in-app language code ("system"|"en"|"vi")
     /// into the shared defaults, so the extension can localize against the same choice.
     static let languageKey = "preferred_language"
+    /// The app's auto-lock window in seconds, mirrored here so the Safari web
+    /// extension can size its unlocked session to the same policy (the app's own
+    /// copy lives in `UserDefaults.standard`, unreadable from the extension).
+    /// 0 = immediate = the extension never keeps a session. Non-sensitive int.
+    static let autoLockSecondsKey = "auto_lock_seconds_mirror"
     /// Active persona's isolation policy (raw value), mirrored so the AutoFill
     /// extension can honor isolation. Opaque enum only — no identity-bearing data.
     static let activePersonaPolicyKey = "active_persona_policy"

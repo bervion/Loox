@@ -26,14 +26,25 @@ nonisolated enum SafariMessageRouter {
         (message as? [String: Any])?["cmd"] as? String
     }
 
-    /// Face-ID-gated key release + a fresh on-disk shared store per message —
-    /// the handler process is short-lived and never caches either. Same unlock
-    /// path as the AutoFill extension (biometric-wrapped Vault Key from the
-    /// shared keychain group; no Argon2 in this extension).
+    /// Key release + a fresh on-disk shared store per message — the handler
+    /// process is short-lived and holds nothing in memory between messages.
+    /// Unlock order: the short-lived native session (`ExtensionSessionStore`,
+    /// no prompt, sliding window seeded by a prior unlock here or in the app)
+    /// first, then the same Face-ID-gated path as the AutoFill extension
+    /// (biometric-wrapped Vault Key from the shared keychain group; no Argon2
+    /// in this extension). A fresh Face ID success re-seeds the session unless
+    /// the mirrored auto-lock policy is "immediate".
     private static var liveContext: WebExtensionRouterContext {
         WebExtensionRouterContext(
             retrieveKey: {
-                try await BiometricKeyStore.retrieve(reason: appString("Unlock your vault"))
+                if let sessionKey = ExtensionSessionStore.retrieve() {
+                    return sessionKey
+                }
+                let key = try await BiometricKeyStore.retrieve(
+                    reason: appString("Unlock your vault"))
+                ExtensionSessionStore.save(vaultKey: key,
+                                           ttl: ExtensionSessionStore.configuredTTL())
+                return key
             },
             makeStore: {
                 try VaultStore(recoverable: false)

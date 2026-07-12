@@ -1,8 +1,11 @@
-// Popup: locked → Face ID unlock (per operation, native side) → metadata-only
-// item lists for the active tab's https origin, plus copy actions for
-// non-secret values. All rendering uses createElement/textContent — vault
-// titles and usernames are user data and must never hit innerHTML. Nothing is
-// persisted to browser.storage.
+// Popup: auto-attempts the unlock+list flow on open (native side serves it
+// from a short-lived unlocked session when one exists, otherwise Face ID
+// fires) → metadata-only item lists for the active tab's https origin, plus
+// copy actions for non-secret values. A cancelled unlock falls back to the
+// manual Unlock button — never auto-retried within the same popup instance.
+// All rendering uses createElement/textContent — vault titles and usernames
+// are user data and must never hit innerHTML. Nothing is persisted to
+// browser.storage.
 
 const t = (key, substitutions) => browser.i18n.getMessage(key, substitutions);
 
@@ -96,9 +99,9 @@ function makeSection(titleKey, rows) {
   return section;
 }
 
-// Copying an identity email goes back through the native handler (another
-// Face ID prompt: the handler never caches the key). The value is whitelisted
-// natively — only non-secret kinds are ever released.
+// Copying an identity email goes back through the native handler (served from
+// the native session when valid, otherwise another Face ID prompt). The value
+// is whitelisted natively — only non-secret kinds are ever released.
 async function copyItemField(itemId, fieldKind) {
   const reply = await browser.runtime
     .sendMessage({ cmd: "copyValue", itemId, fieldKind })
@@ -192,7 +195,10 @@ async function initialize() {
   const hostEl = document.getElementById("site-host");
   hostEl.textContent = new URL(origin).host;
   hostEl.hidden = false;
-  show("locked");
+  // Auto-attempt: within the native session this renders the list with zero
+  // prompts; otherwise Face ID fires once. Cancel lands on the manual Unlock
+  // button via handleListFailure — no retry loop in this popup instance.
+  await unlockAndList();
 }
 
 initialize();

@@ -38,10 +38,11 @@ nonisolated struct WebExtensionRequest: Sendable {
     }
 }
 
-/// Dependencies injected by the appex (live Face ID + shared on-disk store) or
-/// by unit tests (fixed key + in-memory store). The handler process is
-/// per-message and short-lived, so every vault command re-retrieves the key —
-/// nothing is cached between operations.
+/// Dependencies injected by the appex (session-or-Face-ID key release + shared
+/// on-disk store) or by unit tests (fixed key + in-memory store). The handler
+/// process is per-message and short-lived, so every vault command re-retrieves
+/// the key — nothing is cached in memory between operations (the appex context
+/// may satisfy the retrieval from a short-lived native keychain session).
 nonisolated struct WebExtensionRouterContext {
     /// Releases the Vault Key bytes (a Face ID prompt in the live context).
     var retrieveKey: @Sendable () async throws -> [UInt8]
@@ -68,8 +69,9 @@ nonisolated enum WebExtensionRouter {
             // Connectivity diagnostic retained from the extension skeleton.
             return success(["echo": String((request.payload ?? "").prefix(maxEchoLength))])
         case "status":
-            // Always locked: the handler never holds the key between messages,
-            // so unlock state only exists for the duration of one operation.
+            // Conservatively "locked": the popup auto-attempts the unlock+list
+            // flow instead of querying lock state, so this diagnostic reply
+            // never needs to reflect the native session.
             return success(["locked": true])
         case "listItems":
             return await listItems(request, context: context)
