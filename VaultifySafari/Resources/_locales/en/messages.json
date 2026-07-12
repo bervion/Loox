@@ -1,0 +1,48 @@
+{
+  "extension_name": {
+    "message": "Loox",
+    "description": "Extension display name shown in Safari settings and the toolbar."
+  },
+  "extension_description": {
+    "message": "Fill identities and cards from your Loox vault.",
+    "description": "Extension description shown in Safari extension settings."
+  },
+  "popup_title": {
+    "message": "Loox",
+    "description": "Popup heading."
+  },
+  "popup_status_locked": {
+    "message": "Vault is locked",
+    "description": "Placeholder status shown while the vault is locked."
+  },
+  "popup_status_unlocked": {
+    "message": "Vault is unlocked",
+    "description": "Status shown when the vault is unlocked."
+  },
+  "popup_locked_hint": {
+    "message": "Open the Loox app to unlock your vault.",
+    "description": "Hint under the locked status."
+  },
+  "popup_ping_button": {
+    "message": "Test connection",
+    "description": "Button that pings the native handler."
+  },
+  "popup_ping_waiting": {
+    "message": "Checking connection",
+    "description": "Shown while waiting for the native reply."
+  },
+  "popup_ping_success": {
+    "message": "Connected. Native replied: $REPLY$",
+    "description": "Shown when the native echo round-trip succeeds.",
+    "placeholders": {
+      "reply": {
+        "content": "$1",
+        "example": "hello"
+      }
+    }
+  },
+  "popup_ping_error": {
+    "message": "Could not reach the app. Try again.",
+    "description": "Shown when the native round-trip fails."
+  }
+}
