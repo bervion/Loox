@@ -335,6 +335,12 @@
   }
 
   async function onFocusIn(event) {
+    // Only a real user focus may summon the menu. A synthetic `.focus()` from
+    // page script must do nothing: otherwise a hostile page programmatically
+    // focuses a card/identity field and reads the menu host's presence/size to
+    // learn, with zero interaction, that this is an unlocked vault with cards
+    // and identities. Genuine focus (tap, tab, VoiceOver) is always trusted.
+    if (!event.isTrusted) return;
     const target = event.target;
     // Focus moving INTO the menu (retargeted to the host) keeps it open.
     if (menuHost && target === menuHost) return;
