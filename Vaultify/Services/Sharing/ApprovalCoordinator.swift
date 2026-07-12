@@ -1,6 +1,40 @@
 import CloudKit
 import Foundation
 
+/// Gates the owner-side request zone scan behind a dirty flag so foreground
+/// and screen-appear triggers stop paging every record of every owned zone
+/// when there is nothing new. A CKQuery for just the request records would
+/// need queryable indexes deployed on the production CloudKit schema (a
+/// missing index fails at runtime in prod only); the dirty flag needs zero
+/// schema work and cuts steady-state scans to zero.
+///
+/// Contract:
+/// - Starts dirty: pushes are best-effort, so the first pass per process
+///   lifetime always scans (a request written while the app was dead would
+///   otherwise be missed until the next push).
+/// - A request push marks the gate dirty.
+/// - A non-empty inbox always scans: the pass is what expires TTL'd entries
+///   and drops records from revoked zones.
+/// - Consume-then-restore: the flag is cleared BEFORE the scan starts so a
+///   push landing mid-pass re-dirties it and survives the pass; a failed
+///   (offline/transient) pass restores it so the next trigger retries.
+nonisolated struct RequestScanGate {
+    private(set) var isDirty = true
+
+    /// A request push arrived; the next trigger must scan.
+    mutating func markDirty() { isDirty = true }
+
+    /// Whether a refresh trigger should run the zone scan at all.
+    func shouldScan(inboxEmpty: Bool) -> Bool { isDirty || !inboxEmpty }
+
+    /// Consume the flag as the scan starts (see contract above).
+    mutating func beginScan() { isDirty = false }
+
+    /// The scan hit an offline/transient error: restore the flag so the
+    /// next trigger retries instead of silently going stale.
+    mutating func scanFailed() { isDirty = true }
+}
+
 /// Reacts to the approval push pipeline (ADR-5) and refreshes control-plane
 /// state — single-flighted, and gated by `approvalModeEnabled`, NEVER by
 /// `iCloudSyncEnabled` (ADR-2: enabling approval sharing must not imply
@@ -39,6 +73,9 @@ import Foundation
     private let shareService: ApprovalShareService
     private let singleFlight = SingleFlight()
     private var observers: [NSObjectProtocol] = []
+    /// All reads/writes happen on the main actor (this class is @MainActor),
+    /// so the gate needs no locking.
+    private var scanGate = RequestScanGate()
 
     init(settings: SettingsStore, shareService: ApprovalShareService) {
         self.settings = settings
@@ -47,7 +84,10 @@ import Foundation
         observers.append(center.addObserver(
             forName: .approvalRequestReceived, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshOwnerRequests() }
+            MainActor.assumeIsolated {
+                self?.scanGate.markDirty()
+                self?.refreshOwnerRequests()
+            }
         })
         observers.append(center.addObserver(
             forName: .approvalResponseReceived, object: nil, queue: .main
@@ -68,9 +108,18 @@ import Foundation
     /// request (pushes are best-effort; the inbox is the source of truth).
     func refreshOwnerRequests() {
         guard settings.approvalModeEnabled else { return }
+        guard scanGate.shouldScan(inboxEmpty: pendingOwnerRequests.isEmpty) else {
+            ShareDiagnostics.log("OWNER", "request scan skipped (no push since last pass, inbox empty)")
+            return
+        }
         Task { [weak self] in
             guard let self else { return }
             await self.singleFlight.run {
+                // Consume-then-restore: clear the flag up front so a push
+                // arriving mid-pass re-dirties it and the next trigger
+                // rescans (clearing after the loop would swallow it).
+                self.scanGate.beginScan()
+                var sawError = false
                 let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
                 var collected: [PendingOwnerRequest] = []
                 for zoneName in ApprovalShareService.ownedZoneNames {
@@ -99,12 +148,17 @@ import Foundation
                         }
                     } catch let error as CKError
                         where error.code == .zoneNotFound || error.code == .userDeletedZone {
-                        // Zone gone = share revoked/left; drop the registry entry.
+                        // Zone gone = share revoked/left; drop the registry
+                        // entry. A successful determination, not a failure —
+                        // it must not restore the dirty flag.
                         ApprovalShareService.unregisterZone(zoneName)
                     } catch {
-                        // Offline/transient — keep whatever we already show.
+                        // Offline/transient — keep whatever we already show
+                        // and retry the scan on the next trigger.
+                        sawError = true
                     }
                 }
+                if sawError { self.scanGate.scanFailed() }
                 self.pendingOwnerRequests = collected
                     .sorted { $0.request.createdAtUnixMs > $1.request.createdAtUnixMs }
             }
