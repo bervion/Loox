@@ -92,7 +92,38 @@
       return { ok: false, error: "insecurePage" };
     }
     const summary = globalThis.LooxFieldClassifier.summarize(classifyCurrentPage());
+    // Signup-assist hint for the popup: page type only, never field details.
+    summary.pageType = globalThis.LooxSignupDetector.scan(document).pageType;
     return { ok: true, data: summary };
+  }
+
+  // Generated-password delivery (popup-authorized, background-constructed).
+  // The value is a freshly generated password — never vault data — but it
+  // runs the same gauntlet as any fill: https, origin pin, and signup
+  // detection re-run AT FILL MOMENT so a page that mutated since the popup
+  // classified it never receives the value into repurposed fields. The
+  // fill-engine password path additionally re-checks visibility, editability,
+  // and that each target is still a password input.
+  function handleFillGeneratedPassword(message) {
+    if (location.protocol !== "https:") return { ok: false, error: "insecurePage" };
+    if (typeof message.origin !== "string" || message.origin !== location.origin) {
+      return { ok: false, error: "originMismatch" };
+    }
+    const password = message.password;
+    if (typeof password !== "string" || !password || password.length > 512) {
+      return { ok: false, error: "malformedMessage" };
+    }
+    const scan = globalThis.LooxSignupDetector.scan(document);
+    if (scan.pageType !== "signup" && scan.pageType !== "changePassword") {
+      return { ok: true, data: { filled: 0, skipped: 0 } };
+    }
+    const entries = scan.newPasswordElements.map((element, index) => ({
+      id: index + 1,
+      element,
+    }));
+    const report = globalThis.LooxFillEngine.fillPasswordAll(entries, password);
+    const filled = report.filter((r) => r.status === "filled").length;
+    return { ok: true, data: { filled, skipped: report.length - filled } };
   }
 
   function handleFill(message) {
@@ -121,6 +152,9 @@
     }
     if (message.cmd === "fillFields") {
       return Promise.resolve(handleFill(message));
+    }
+    if (message.cmd === "fillGeneratedPassword") {
+      return Promise.resolve(handleFillGeneratedPassword(message));
     }
     return undefined;
   });

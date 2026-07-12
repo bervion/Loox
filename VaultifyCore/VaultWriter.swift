@@ -19,13 +19,17 @@ enum VaultWriter {
     /// reader's `passwordField != nil` filter and resolves via `usernameField`/`urlField`.
     /// `folderId` links the item to a Space (persona ownership is derived from the Space, never
     /// stored directly on the item — mirrors `VaultRepository`'s only linkage path). Nil = Unfiled.
+    /// `title` overrides the derived display title (the Safari extension's save overlay lets the
+    /// user edit it before saving); nil or blank keeps the site/username derivation.
     @discardableResult
     static func createLogin(store: VaultStore, site: String, username: String, password: String,
-                            folderId: String? = nil, vaultKey: SecureBytes) throws -> String {
+                            title: String? = nil, folderId: String? = nil,
+                            vaultKey: SecureBytes) throws -> String {
         guard !password.isEmpty else { throw Failure.emptyPassword }
         let now = Date()
         let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         var fields: [DynamicField] = [
             DynamicField(label: "Username", kind: .username, value: trimmedUser),
@@ -36,9 +40,11 @@ enum VaultWriter {
         }
 
         let id = UUID().uuidString
-        let title = trimmedSite.isEmpty ? (trimmedUser.isEmpty ? "Login" : trimmedUser)
-                                        : siteTitle(trimmedSite)
-        let secret = ItemSecret(title: title, category: .login, folderId: folderId, fields: fields)
+        let derivedTitle = trimmedSite.isEmpty ? (trimmedUser.isEmpty ? "Login" : trimmedUser)
+                                               : siteTitle(trimmedSite)
+        let displayTitle = trimmedTitle.isEmpty ? derivedTitle : trimmedTitle
+        let secret = ItemSecret(title: displayTitle, category: .login,
+                                folderId: folderId, fields: fields)
         let sealed = try AESGCM.seal(JSONEncoder().encode(secret), key: vaultKey)
 
         let record = ItemRecord(id: id, sealed: sealed, createdAt: now, updatedAt: now)

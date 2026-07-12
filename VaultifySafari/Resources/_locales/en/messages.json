@@ -126,5 +126,45 @@
   "popup_fill_failed": {
     "message": "Could not fill",
     "description": "Feedback when a fill action fails."
+  },
+  "popup_generate_button": {
+    "message": "Use generated password",
+    "description": "Button that fills a freshly generated strong password into the signup form's new-password fields."
+  },
+  "save_overlay_title": {
+    "message": "Save login to Loox?",
+    "description": "Heading of the in-page save prompt shown after a signup is submitted."
+  },
+  "save_overlay_title_label": {
+    "message": "Title",
+    "description": "Label of the editable item-title input in the save prompt."
+  },
+  "save_overlay_username_label": {
+    "message": "Username",
+    "description": "Label of the editable username input in the save prompt."
+  },
+  "save_overlay_save": {
+    "message": "Save",
+    "description": "Primary button of the save prompt: writes the new login to the vault."
+  },
+  "save_overlay_not_now": {
+    "message": "Not now",
+    "description": "Button that dismisses the save prompt without saving."
+  },
+  "save_overlay_never": {
+    "message": "Never for this site",
+    "description": "Button that dismisses the save prompt and stops offering it on this site."
+  },
+  "save_overlay_saved": {
+    "message": "Saved to Loox",
+    "description": "Confirmation after the new login was written to the vault."
+  },
+  "save_overlay_duplicate": {
+    "message": "Already saved for this site",
+    "description": "Shown when a login with the same site and username already exists."
+  },
+  "save_overlay_failed": {
+    "message": "Could not save",
+    "description": "Shown when saving the new login fails."
   }
 }

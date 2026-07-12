@@ -61,6 +61,15 @@ nonisolated enum SharedConfig {
     /// extension cannot read). Absence means "All Spaces" was selected.
     static let activePersonaLastSpaceKey = "active_persona_last_selected_space"
 
+    /// Hosts the user opted out of the Safari web extension's save-login
+    /// overlay for ("Never for this site"). Hosts only — no secrets. Lives in
+    /// the App Group so the choice survives extension reinstalls and stays
+    /// readable for a future in-app management screen.
+    static let webExtensionNeverSaveHostsKey = "web_extension_never_save_hosts"
+    /// Sliding-window timestamps for the Safari extension's password-generation
+    /// rate limit (non-secret; generated passwords themselves are never stored).
+    static let webExtensionGenerateStampsKey = "web_extension_generate_stamps"
+
     /// Routing-only breadcrumb (standard defaults): a CKShare was accepted while
     /// the vault might have been locked/onboarding; the unlocked shell resumes
     /// the acceptance (participant escrow + profile publish) then clears it.

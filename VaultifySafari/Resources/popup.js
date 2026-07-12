@@ -133,8 +133,9 @@ async function fillItem(itemId, category) {
   }
 }
 
-// Counts of fillable fields per category on the active page; zeros when the
-// page has none (or the content script is not reachable).
+// Counts of fillable fields per category on the active page plus the signup
+// page type; zeros/none when the page has none (or the content script is not
+// reachable).
 async function fetchFillSummary() {
   const reply = await browser.runtime
     .sendMessage({ cmd: "classifyPage" })
@@ -143,9 +144,34 @@ async function fetchFillSummary() {
     return {
       identity: Number(reply.data.identity) || 0,
       card: Number(reply.data.card) || 0,
+      pageType: typeof reply.data.pageType === "string" ? reply.data.pageType : "none",
     };
   }
-  return { identity: 0, card: 0 };
+  return { identity: 0, card: 0, pageType: "none" };
+}
+
+// Signup assist: the "Use generated password" button shows only when the
+// content script classified the page as a signup/change-password form.
+function setSignupAssist(pageType) {
+  const visible = pageType === "signup" || pageType === "changePassword";
+  document.getElementById("signup-assist").hidden = !visible;
+}
+
+// Fill a freshly generated strong password into the page's new-password
+// fields. The password is generated natively and never touches this popup —
+// the background page routes it straight to the content script and only
+// aggregate counts come back.
+async function fillGeneratedPassword() {
+  showFeedback(t("popup_filling"));
+  const reply = await browser.runtime
+    .sendMessage({ cmd: "generatePasswordFill", expectedOrigin: displayedOrigin })
+    .catch(() => null);
+  if (reply && reply.ok === true && reply.data) {
+    const filled = Number(reply.data.filled) || 0;
+    showFeedback(filled > 0 ? t("popup_fill_done", [String(filled)]) : t("popup_fill_none"));
+  } else {
+    showFeedback(t("popup_fill_failed"));
+  }
 }
 
 function makeSection(titleKey, rows) {
@@ -233,9 +259,11 @@ function render(data, fillSummary) {
 
 async function unlockAndList() {
   show("unlocking");
+  setSignupAssist("none");
   const reply = await browser.runtime.sendMessage({ cmd: "listItems" }).catch(() => null);
   if (reply && reply.ok === true) {
     const fillSummary = await fetchFillSummary();
+    setSignupAssist(fillSummary.pageType);
     render(reply.data || {}, fillSummary);
   } else {
     handleListFailure(reply);
@@ -246,6 +274,7 @@ async function initialize() {
   localizeStaticText();
   document.getElementById("unlock-button").addEventListener("click", unlockAndList);
   document.getElementById("retry-button").addEventListener("click", unlockAndList);
+  document.getElementById("generate-button").addEventListener("click", fillGeneratedPassword);
 
   const originReply = await browser.runtime
     .sendMessage({ cmd: "activeTabOrigin" })
