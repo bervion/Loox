@@ -52,7 +52,7 @@ save-overlay.js      # shadow-DOM prompt; submit-intent capture; talks to backgr
 4. Popup generated-password flow: fills `new-password` fields via existing fill-engine path (tier-1 targets only).
 5. `save-overlay.js`: closed shadow root, submit-intent capture, 60s value TTL, Save/Not now/Never actions.
 6. Suppression wiring: overlay renders only when `capabilities.nativeSave == false` AND host not never-saved AND pageType ∈ {signup, changePassword} AND values present.
-7. Device QA **G4**: (a) iOS 26.2+ device: fill generated password → submit → verify NO extension overlay AND observe whether native save sheet appears; (b) iOS 17.x-26.1 device/sim: overlay appears, Save creates item visible in app + AutoFill QuickType. Record both outcomes; adjust policy per Key Insights if native sheet doesn't fire.
+7. Device QA **G4** (see also "Device-QA gates" below): (a) iOS 26.2+ device: fill generated password → submit → verify NO extension overlay AND observe whether native save sheet appears; (b) iOS 17.x-26.1 device/sim: overlay appears, Save creates item visible in app + AutoFill QuickType; (c) iOS 26.2+ device with Vaultify NOT enabled as the credential provider — verify the user is not left with NEITHER prompt; (d) test BOTH a classic full-page-navigation signup AND a fetch/SPA signup. Record all outcomes; adjust policy per Key Insights if native sheet doesn't fire.
 8. Swift tests: saveLogin routing (duplicate, forbidden origin http, missing fields), generatePassword determinism of options handling. `make test`.
 
 ## Todo List
@@ -80,6 +80,45 @@ save-overlay.js      # shadow-DOM prompt; submit-intent capture; talks to backgr
   source-compatible with the AutoFill callers) for the overlay's editable title.
 - `neverSave` hosts + the generate rate-limit stamps live in App Group shared
   defaults (`SharedConfig.webExtensionNeverSaveHostsKey` / `...GenerateStampsKey`).
+
+### Security-review hardening (post-review, code complete)
+
+- **saveLogin rate limit (review M1):** per-host sliding window (5/min,
+  `WebExtensionSaveGate.allowSave`, stamps in `...SaveStampsKey`), checked
+  BEFORE any unlock — a compromised renderer can no longer spam vault writes
+  inside a warm session, prompt-bomb Face ID, or use the `duplicate` error as
+  a high-rate username-existence probe. Session/Face-ID gating unchanged.
+- **Change-password suppression (review M2):** the save overlay now offers on
+  `pageType === "signup"` ONLY. Change-password pages never get a
+  save-as-new-login prompt in v1 (it would create a stale second item);
+  generated-password FILL still covers them via the popup flow.
+- **Honeypot visibility filter (review M3):** `signup-detector.js` descriptors
+  carry a `visible` flag computed with the fill engine's exported `isVisible`
+  gauntlet; `detect()` ignores non-visible password fields, so a hidden
+  honeypot password on a login form no longer misclassifies it as signup.
+  Node-harness cases added (hidden honeypot, hidden token, all-hidden).
+- **Lows applied:** L2 (username trimmed before the duplicate compare),
+  L3 (non-atomic limiter RMW documented as accepted defense-in-depth).
+  L4/L5/L6 deferred (P6 design pass / product decisions), L1 folded into G4.
+
+### Device-QA gates (review H1 + H2 — NOT code bugs; resolve at G4)
+
+- **H1 — "neither prompt" edge on iOS 26.2+:** the native-save gate is an
+  OS-version proxy. If the user has not enabled Vaultify as the AutoFill
+  credential provider, or the native sheet does not fire for JS-filled
+  generated passwords, a 26.2+ user gets NO save prompt at all. G4 must test
+  step 7(c); if observed, the gate must switch to provider-enablement
+  (`ASCredentialIdentityStore.shared.state.isEnabled`) AND version — and the
+  flip must change BOTH the JS overlay and the native `saveLogin` belt (they
+  share one predicate). Phase must not ship before this is recorded.
+- **H2 — full-page-navigation signups:** the submit listener never
+  preventDefaults, so on a classic form-POST signup, `pagehide` wipes the
+  captured values (conservative and safe) — usually before the overlay
+  renders. v1 effectively covers fetch/SPA signups; G4 step 7(d) must test
+  both classes so an SPA-only test doesn't mask this. A later phase may park
+  the capture in background memory keyed by (tabId, origin) with a short TTL
+  and re-offer after a SAME-ORIGIN navigation (needs explicit design — iOS
+  Safari's non-persistent background page also dies).
 
 ## Success Criteria
 
