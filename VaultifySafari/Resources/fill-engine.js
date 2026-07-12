@@ -2,9 +2,10 @@
 // full safety gauntlet AT FILL MOMENT (the page owns the DOM and may have
 // mutated since classification):
 //   1. https page (belt; the background page verified the origin too).
-//   2. Element visible: rendered, opacity above 0.1, at least 10x10 px, not
-//      display:none / visibility:hidden — hidden fields are the classic
-//      credential-exfiltration trap and never receive a value.
+//   2. Element visible: rendered, opacity above 0.1 (own AND ancestors), at
+//      least 10x10 px, not display:none / visibility:hidden, and not parked
+//      off the document's left/top edge — hidden and off-screen fields are
+//      the classic credential-exfiltration trap and never receive a value.
 //   3. Element editable: connected, not disabled or readonly.
 //   4. Top frame only (enforced by content.js before this engine runs; the
 //      manifest keeps all_frames off).
@@ -26,13 +27,47 @@
     return location.protocol === "https:";
   }
 
+  // Off-screen exfiltration guard: a box that ends entirely before the
+  // document's left or top edge (position:absolute; left:-9999px and friends)
+  // can never be shown to the user. The check runs in DOCUMENT space — a
+  // legitimate below-the-fold or not-yet-scrolled field keeps positive
+  // document coordinates, so real checkouts are never rejected. Fixed
+  // elements pin to the viewport, so their viewport box is the truth.
+  function isParkedOffscreen(rect, style) {
+    if (style.position === "fixed") {
+      return rect.right <= 0 || rect.bottom <= 0;
+    }
+    return rect.right + window.scrollX <= 0 || rect.bottom + window.scrollY <= 0;
+  }
+
+  // CSS opacity does not inherit into a child's computed value, so an
+  // opacity:0 wrapper hides the field while the field's own opacity reads 1.
+  // Two layers: a bounded ancestor walk with a near-zero threshold (0.1,
+  // matching the own-element check), plus checkVisibility where available
+  // (Safari 17.4+) for exact-zero opacity anywhere in an arbitrarily deep
+  // chain and for content-visibility subtrees.
+  const ANCESTOR_OPACITY_DEPTH = 8;
+  function hiddenByAncestorOpacity(el) {
+    let node = el.parentElement;
+    for (let depth = 0; node && depth < ANCESTOR_OPACITY_DEPTH; depth += 1) {
+      if (parseFloat(getComputedStyle(node).opacity) <= 0.1) return true;
+      node = node.parentElement;
+    }
+    if (typeof el.checkVisibility === "function") {
+      return !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+    }
+    return false;
+  }
+
   function isVisible(el) {
     if (!el.isConnected) return false;
     const style = getComputedStyle(el);
     if (style.display === "none" || style.visibility === "hidden") return false;
     if (parseFloat(style.opacity) <= 0.1) return false;
+    if (hiddenByAncestorOpacity(el)) return false;
     const rect = el.getBoundingClientRect();
     if (rect.width < 10 || rect.height < 10) return false;
+    if (isParkedOffscreen(rect, style)) return false;
     // offsetParent is null for display:none subtrees; position:fixed elements
     // legitimately have no offsetParent, so allow those through on rect size.
     return el.offsetParent !== null || style.position === "fixed";

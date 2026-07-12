@@ -18,6 +18,14 @@
     <input name="email_copy" autocomplete="email" style="opacity:0.05" class="trap">
     <input name="pan_tiny" autocomplete="cc-number" style="width:1px;height:1px;padding:0;border:0" class="trap">
     <input name="offscreen_pan" autocomplete="cc-number" style="position:absolute;left:-9999px" class="trap">
+    <input name="offscreen_top_pan" autocomplete="cc-number" style="position:absolute;top:-9999px" class="trap">
+    <input name="fixed_offscreen_pan" autocomplete="cc-number" style="position:fixed;top:-9999px" class="trap">
+    <div style="opacity:0">
+      <input name="ghost_email" autocomplete="email" class="trap">
+    </div>
+    <div style="opacity:0.01">
+      <div><div><input name="deep_ghost_pan" autocomplete="cc-number" maxlength="19" class="trap"></div></div>
+    </div>
     <textarea name="cc_textarea_trap" autocomplete="cc-number" class="trap"></textarea>
   </form>
   <p id="trap-status">traps empty</p>
