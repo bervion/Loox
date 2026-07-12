@@ -382,13 +382,17 @@ struct ShareAccessSheet: View {
         pollExhausted = true
     }
 
-    /// One immediate profile check (the "Check Now" button) — also re-tries
-    /// the auto-drop so "Check Now" doubles as "re-send the auto-invite".
+    /// One immediate profile check (the "Check Now" button and the
+    /// acceptance-push hint). While waiting it also re-tries the auto-drop so
+    /// "Check Now" doubles as "re-send the auto-invite" — but that retry
+    /// WRITES to the public DB, so it stays behind the step guard: the hint
+    /// can fire this on every push while the sheet is open, and once the
+    /// ceremony has left `.waiting` a check must stay read-only.
     private func checkProfileNow() async {
-        await retryAutoInviteIfNeeded()
         guard case .waiting(let zoneID, _, _) = step,
               let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw
         else { return }
+        await retryAutoInviteIfNeeded()
         guard let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) else {
             // No profile yet, but they may already have accepted — reflect that.
             if await env.approvalShare.participantAccepted(zoneID: zoneID) {
