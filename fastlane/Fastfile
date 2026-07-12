@@ -5,9 +5,11 @@ PROJECT_ROOT = File.expand_path("..", __dir__)
 
 APP_ID = "com.bervion.vaultify"
 EXT_ID = "com.bervion.vaultify.autofill"
+SAFARI_ID = "com.bervion.vaultify.safari"
 SCHEME = "Vaultify"
 APP_TARGET = "Vaultify"
 EXT_TARGET = "VaultifyAutoFill"
+SAFARI_TARGET = "VaultifySafari"
 TEAM_ID = "WDNL2F75V7"
 
 # App Store Connect API key from env (no Apple ID / 2FA needed on CI).
@@ -56,7 +58,7 @@ platform :ios do
   desc "Sync App Store signing assets via match (readonly)"
   lane :certificates do
     match(type: "appstore", readonly: true, api_key: asc_api_key,
-          app_identifier: [APP_ID, EXT_ID])
+          app_identifier: [APP_ID, EXT_ID, SAFARI_ID])
   end
 
   desc "Build, sign (match), and upload to TestFlight"
@@ -68,10 +70,11 @@ platform :ios do
     api_key = asc_api_key
 
     match(type: "appstore", readonly: true, api_key: api_key,
-          app_identifier: [APP_ID, EXT_ID])
+          app_identifier: [APP_ID, EXT_ID, SAFARI_ID])
 
     force_manual_signing(APP_TARGET, APP_ID)
     force_manual_signing(EXT_TARGET, EXT_ID)
+    force_manual_signing(SAFARI_TARGET, SAFARI_ID)
 
     build_app(
       workspace: "Vaultify.xcworkspace",
@@ -82,6 +85,7 @@ platform :ios do
         provisioningProfiles: {
           APP_ID => "match AppStore #{APP_ID}",
           EXT_ID => "match AppStore #{EXT_ID}",
+          SAFARI_ID => "match AppStore #{SAFARI_ID}",
         },
       },
       output_directory: File.join(PROJECT_ROOT, "build", "ipa"),
