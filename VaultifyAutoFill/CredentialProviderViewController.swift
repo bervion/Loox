@@ -176,7 +176,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
     /// key, no second Face ID) instead of erroring out and dismissing.
     override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier],
                                         requestParameters: ASPasskeyCredentialRequestParameters) {
-        guard let store = makePasskeyStore() else { cancel(code: .failed); return }
+        guard let store = makeStore() else { cancel(code: .failed); return }
         var largeBlob: PasskeyLargeBlobDirective = .none
         if #available(iOS 18, *) { largeBlob = PasskeyLargeBlob.directive(assertion: requestParameters.extensionInput) }
         showPasskey(.assert(relyingParty: requestParameters.relyingPartyIdentifier,
