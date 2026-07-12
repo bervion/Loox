@@ -29,7 +29,7 @@ Vault Key & bulk vault NEVER cross native→JS. Only per-item field values, only
 | # | Phase | File | Status | Effort | Blockers |
 |---|-------|------|--------|--------|----------|
 | 1 | Tuist target + skeleton + device gates G1/G2 | [phase-01](phase-01-tuist-target-and-extension-skeleton.md) | code complete — device gates G1/G2 pending (user) | 6h | — |
-| 2 | Unlock bridge + popup read path | [phase-02](phase-02-unlock-bridge-and-popup-read-path.md) | pending | 6h | P1 (G1+G2 PASS) |
+| 2 | Unlock bridge + popup read path | [phase-02](phase-02-unlock-bridge-and-popup-read-path.md) | code complete — device gates G1/G3 pending (user) | 6h | P1 (G1+G2 PASS) |
 | 3 | Fill engine: classifier + identity + card fill | [phase-03](phase-03-fill-engine-identity-and-credit-card.md) | pending | 10h | P2 |
 | 4 | Signup assist + generated password + save prompt | [phase-04](phase-04-signup-assist-and-save-prompt.md) | pending | 8h | P3 |
 | 5 | Inline menu + iframe CC + iPad | [phase-05](phase-05-inline-menu-and-iframe-cc.md) | pending | 10h | P4 |

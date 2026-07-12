@@ -9,7 +9,7 @@
 ## Overview
 
 - Priority: P1
-- Status: pending
+- Status: code complete — `make check` + `make test` green (638/638); device gates pending (user): G1 (Face ID from headless handler, popup-initiated) and G3 (per-site grant + origin QA)
 - Popup "Unlock with Face ID" → native message → `BiometricKeyStore.retrieve` → popup lists items matching the active tab's origin (logins metadata, identities, cards masked to last-4) + copy-username / copy-non-secret actions. Defines the full messaging protocol used by P3-P5.
 
 ## Key Insights
@@ -65,13 +65,13 @@ cmds (this phase):
 
 ## Todo List
 
-- [ ] Protocol structs + router context injection
-- [ ] `WebExtensionReader` with masked metadata
-- [ ] Handler vault cmds with per-op Face ID + key zeroing
-- [ ] popup states + lists + copy (non-secret only)
-- [ ] `_locales` EN+VI updated
-- [ ] Unit tests green via `make test`
-- [ ] G3 device QA recorded
+- [x] Protocol structs + router context injection (`VaultifyCore/WebExtensionRouter.swift` — routing core lives in VaultifyCore because `VaultifyTests` only compiles app-target sources; `VaultifySafari/SafariMessageRouter.swift` is the thin live binding)
+- [x] `WebExtensionReader` with masked metadata (`VaultifyCore/WebExtensionReader.swift`)
+- [x] Handler vault cmds with per-op Face ID + key zeroing (`SecureBytes` + `secureZero`)
+- [x] popup states + lists + copy (non-secret only; states: locked / unlocking / list / empty / unsupported / error)
+- [x] `_locales` EN+VI updated (unlock, sections, copy, errors; ping strings retired)
+- [x] Unit tests green via `make test` (638 tests, 0 failures; suites `SafariMessageRouterTests` + `WebExtensionReaderTests`)
+- [ ] G3 device QA recorded (user-owed; also re-verifies G1: Face ID presenting from the headless handler, popup-initiated)
 
 ## Success Criteria
 

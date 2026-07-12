@@ -152,6 +152,9 @@ enum AuthError: Error, LocalizedError {
         backgroundedAt = nil
         deliberatelyLocked = deliberate
         state = .locked
+        // Locking the app revokes the Safari extension's unlocked session too —
+        // the two share one lock lifecycle.
+        ExtensionSessionStore.clear()
     }
 
     /// Drop the key and return to onboarding (used by full vault reset).
@@ -159,6 +162,7 @@ enum AuthError: Error, LocalizedError {
         vaultKey = nil
         level2Key = nil
         state = .onboarding
+        ExtensionSessionStore.clear()
     }
 
     /// Adopt the Level-2 Secret Key after a Level-2 unlock. Internal so
@@ -175,6 +179,11 @@ enum AuthError: Error, LocalizedError {
         lastActivity = .now
         deliberatelyLocked = false
         migrateBiometricKeyToSharedGroupIfNeeded(key: key)
+        // An unlocked app also unlocks the Safari extension (same window, same
+        // 15-minute cap; "immediate" writes nothing). Seeded AFTER the biometric
+        // migration: `BiometricKeyStore.store` clears the session item as part
+        // of its leading delete, which would drop a just-written seed.
+        ExtensionSessionStore.save(vaultKey: key, ttl: settings.autoLock.seconds)
     }
 
     /// One-time: move the biometric Vault Key from the legacy per-app keychain group into the

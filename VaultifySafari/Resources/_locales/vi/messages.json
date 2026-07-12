@@ -13,36 +13,84 @@
   },
   "popup_status_locked": {
     "message": "Kho đang khóa",
-    "description": "Placeholder status shown while the vault is locked."
+    "description": "Status shown while the vault is locked."
   },
   "popup_status_unlocked": {
     "message": "Kho đã mở khóa",
     "description": "Status shown when the vault is unlocked."
   },
   "popup_locked_hint": {
-    "message": "Mở ứng dụng Loox để mở khóa kho của bạn.",
+    "message": "Mở khóa để xem các mục cho trang này.",
     "description": "Hint under the locked status."
   },
-  "popup_ping_button": {
-    "message": "Kiểm tra kết nối",
-    "description": "Button that pings the native handler."
+  "popup_unlock_button": {
+    "message": "Mở khóa bằng Face ID",
+    "description": "Button that starts the Face ID unlock."
   },
-  "popup_ping_waiting": {
-    "message": "Đang kiểm tra kết nối",
-    "description": "Shown while waiting for the native reply."
+  "popup_unlocking": {
+    "message": "Đang chờ Face ID",
+    "description": "Shown while the native Face ID prompt is up."
   },
-  "popup_ping_success": {
-    "message": "Đã kết nối. Ứng dụng trả lời: $REPLY$",
-    "description": "Shown when the native echo round-trip succeeds.",
-    "placeholders": {
-      "reply": {
-        "content": "$1",
-        "example": "hello"
-      }
-    }
+  "popup_section_logins": {
+    "message": "Đăng nhập",
+    "description": "Section heading for logins matching the active site."
   },
-  "popup_ping_error": {
+  "popup_section_identities": {
+    "message": "Danh tính",
+    "description": "Section heading for identity items."
+  },
+  "popup_section_cards": {
+    "message": "Thẻ",
+    "description": "Section heading for payment card items."
+  },
+  "popup_no_matches": {
+    "message": "Chưa có mục nào cho trang này.",
+    "description": "Shown when the unlocked vault has nothing to list."
+  },
+  "popup_unsupported_page": {
+    "message": "Trang này không được hỗ trợ. Hãy mở một trang https an toàn.",
+    "description": "Shown when the active tab is not an https page."
+  },
+  "popup_retry_button": {
+    "message": "Thử lại",
+    "description": "Button that retries after an error."
+  },
+  "popup_error_generic": {
+    "message": "Đã có lỗi xảy ra. Hãy thử lại.",
+    "description": "Generic error message."
+  },
+  "popup_error_unreachable": {
     "message": "Không kết nối được với ứng dụng. Hãy thử lại.",
     "description": "Shown when the native round-trip fails."
+  },
+  "popup_copy_button": {
+    "message": "Sao chép",
+    "description": "Copy button label on item rows."
+  },
+  "popup_copy_username_label": {
+    "message": "Sao chép tên đăng nhập",
+    "description": "Accessibility label for the login row copy button."
+  },
+  "popup_copy_email_label": {
+    "message": "Sao chép email",
+    "description": "Accessibility label for the identity row copy button."
+  },
+  "popup_copied": {
+    "message": "Đã sao chép",
+    "description": "Feedback after a value was copied to the clipboard."
+  },
+  "popup_copy_failed": {
+    "message": "Không sao chép được",
+    "description": "Feedback when a copy action fails."
+  },
+  "popup_card_ending": {
+    "message": "Đuôi $LAST4$",
+    "description": "Masked card subtitle showing only the last four digits.",
+    "placeholders": {
+      "last4": {
+        "content": "$1",
+        "example": "4242"
+      }
+    }
   }
 }

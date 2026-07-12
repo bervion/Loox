@@ -1,5 +1,6 @@
-/* Popup skeleton styling. Light and dark aware via system colors; the real
-   token-driven theme bridge lands with the vault-status popup. */
+/* Popup styling. Custom properties approximate the app's design-system tokens
+   (accent, surfaces, radii on a 4pt-ish grid); light and dark via
+   prefers-color-scheme. Hit targets stay at 44px minimum. */
 
 :root {
   color-scheme: light dark;
@@ -8,7 +9,9 @@
   --text: #1c1c1e;
   --text-secondary: #6e6e73;
   --accent: #1544fd;
+  --on-accent: #ffffff;
   --locked: #b45309;
+  --separator: rgba(60, 60, 67, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,7 +21,9 @@
     --text: #f2f2f7;
     --text-secondary: #98989f;
     --accent: #4d7dff;
+    --on-accent: #ffffff;
     --locked: #f59e0b;
+    --separator: rgba(84, 84, 88, 0.4);
   }
 }
 
@@ -31,7 +36,7 @@ body {
 }
 
 .popup {
-  min-width: 280px;
+  min-width: 300px;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -44,14 +49,27 @@ body {
   gap: 8px;
 }
 
-.popup-header h1 {
+.popup-heading h1 {
   margin: 0;
   font-size: 17px;
   font-weight: 600;
 }
 
+.popup-heading .site {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
 .popup-logo {
   border-radius: 6px;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .status {
@@ -82,6 +100,11 @@ body {
   color: var(--text-secondary);
 }
 
+.hint.centered {
+  text-align: center;
+  padding: 12px 0;
+}
+
 button {
   appearance: none;
   border: none;
@@ -89,7 +112,7 @@ button {
   padding: 12px 14px;
   min-height: 44px;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -99,10 +122,69 @@ button:disabled {
   opacity: 0.5;
 }
 
-.result {
+.item-section h2 {
+  margin: 4px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.item-section {
+  margin-bottom: 8px;
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  min-height: 44px;
+}
+
+.item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+}
+
+.feedback {
   margin: 0;
   min-height: 18px;
   font-size: 13px;
+  text-align: center;
   color: var(--text-secondary);
-  word-break: break-word;
 }

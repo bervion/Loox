@@ -51,7 +51,12 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// window applies to BOTH backgrounding and foreground idle (the old separate
     /// "lock on background" toggle instant-locked regardless of this, which made a
     /// quick copy-into-another-app round trip re-prompt every time).
-    var autoLock: AutoLockTimeout { didSet { defaults.set(autoLock.rawValue, forKey: Key.autoLock) } }
+    var autoLock: AutoLockTimeout {
+        didSet {
+            defaults.set(autoLock.rawValue, forKey: Key.autoLock)
+            mirrorAutoLock()
+        }
+    }
     /// Lock the vault on a deliberate device shake (privacy panic gesture). Opt-in.
     var shakeToLock: Bool { didSet { defaults.set(shakeToLock, forKey: Key.shakeToLock) } }
     var biometricUnlockEnabled: Bool { didSet { defaults.set(biometricUnlockEnabled, forKey: Key.biometric) } }
@@ -139,6 +144,18 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
         SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
         appResourceLocale = appLocale(forCode: preferredLanguage)
+        mirrorAutoLock()
+    }
+
+    /// Mirror the auto-lock window into the App Group so the Safari web extension
+    /// can size its unlocked session to the same policy (`UserDefaults.standard`
+    /// stays the app's source of truth). Tightening to "immediate" also revokes
+    /// any live extension session — the stricter policy applies at once.
+    private func mirrorAutoLock() {
+        SharedConfig.sharedDefaults.set(autoLock.rawValue, forKey: SharedConfig.autoLockSecondsKey)
+        if autoLock == .immediate {
+            ExtensionSessionStore.clear()
+        }
     }
 
     /// Cheap, dependency-free read of the rotation-reminders preference for call sites
