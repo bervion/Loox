@@ -1,29 +1,31 @@
-/* Popup styling. Custom properties approximate the app's design-system tokens
-   (accent, surfaces, radii on a 4pt-ish grid); light and dark via
+/* Popup styling. Custom-property VALUES are mirrored from the design-system
+   tokens (`Design System/tokens/colors.css`) — this web layer cannot import
+   the token files, so update here when the tokens change. Light values come
+   from `:root`, dark values from `[data-theme="dark"]`, mapped onto
    prefers-color-scheme. Hit targets stay at 44px minimum. */
 
 :root {
   color-scheme: light dark;
-  --bg: #f7f7f9;
-  --card: #ffffff;
-  --text: #1c1c1e;
-  --text-secondary: #6e6e73;
-  --accent: #1544fd;
-  --on-accent: #ffffff;
-  --locked: #b45309;
-  --separator: rgba(60, 60, 67, 0.12);
+  --bg: #f2f2f7;                       /* --background-grouped */
+  --card: #ffffff;                     /* --surface-elevated */
+  --text: #1c1c1e;                     /* --text-primary */
+  --text-secondary: #4b4b50;           /* --text-secondary */
+  --accent: #2563eb;                   /* --accent (default preset) */
+  --on-accent: #ffffff;                /* --on-accent */
+  --locked: #b06f00;                   /* --warning */
+  --separator: rgba(60, 60, 67, 0.18); /* --separator */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1c1c1e;
-    --card: #2c2c2e;
-    --text: #f2f2f7;
-    --text-secondary: #98989f;
-    --accent: #4d7dff;
-    --on-accent: #ffffff;
-    --locked: #f59e0b;
-    --separator: rgba(84, 84, 88, 0.4);
+    --bg: #000000;                          /* --background-grouped */
+    --card: #2c2c2e;                        /* --surface-elevated */
+    --text: #ffffff;                        /* --text-primary */
+    --text-secondary: #c7c7cc;              /* --text-secondary */
+    --accent: #4c8dff;                      /* --accent (default preset) */
+    --on-accent: #ffffff;                   /* --on-accent */
+    --locked: #ffd60a;                      /* --warning */
+    --separator: rgba(235, 235, 245, 0.18); /* --separator */
   }
 }
 
@@ -207,4 +209,21 @@ button:disabled {
   font-size: 13px;
   text-align: center;
   color: var(--text-secondary);
+}
+
+/* Per-site kill switch footer. Quiet secondary treatment: hiding a site is
+   a settings action, never the popup's primary path. */
+#site-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--separator);
+  padding-top: 12px;
+}
+
+.site-toggle {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--separator);
+  font-weight: 600;
 }

@@ -6,7 +6,7 @@ import Foundation
 /// Request:  `{ v: 1, cmd: string, origin?: "https://host", itemId?: string,
 ///              fieldKind?: string, category?: string, payload?: string,
 ///              username?: string, password?: string, title?: string,
-///              length?: int }`
+///              length?: int, hidden?: bool }`
 /// Response: `{ v: 1, ok: bool, error?: code, data?: {...} }`
 ///
 /// SECURITY INVARIANT: the Vault Key and bulk vault contents never cross the
@@ -24,6 +24,8 @@ import Foundation
 /// on the user's explicit Save tap in the in-page overlay. The origin used for
 /// matching is supplied by the trusted `browser.tabs` API in the background
 /// page, and is re-validated here as https-with-host before any vault access.
+/// `siteSettings`/`setSiteHidden` manage the per-host "Hide on this site"
+/// kill switch (bare hostnames, metadata only, never an unlock).
 nonisolated struct WebExtensionRequest: Sendable {
     static let supportedVersion = 1
 
@@ -38,6 +40,7 @@ nonisolated struct WebExtensionRequest: Sendable {
     var password: String?
     var title: String?
     var length: Int?
+    var hidden: Bool?
 
     /// Parses the raw `SFExtensionMessageKey` payload. Nil when the message is
     /// not a dictionary carrying a string `cmd` (structurally malformed).
@@ -54,7 +57,8 @@ nonisolated struct WebExtensionRequest: Sendable {
                                    username: dictionary["username"] as? String,
                                    password: dictionary["password"] as? String,
                                    title: dictionary["title"] as? String,
-                                   length: dictionary["length"] as? Int)
+                                   length: dictionary["length"] as? Int,
+                                   hidden: dictionary["hidden"] as? Bool)
     }
 }
 
@@ -128,6 +132,10 @@ nonisolated enum WebExtensionRouter {
             return neverSave(request, context: context)
         case "saveLogin":
             return await saveLogin(request, context: context)
+        case "siteSettings":
+            return siteSettings(request, context: context)
+        case "setSiteHidden":
+            return setSiteHidden(request, context: context)
         default:
             return failure("unknownCommand")
         }
@@ -162,6 +170,12 @@ nonisolated enum WebExtensionRouter {
                                          context: WebExtensionRouterContext) async -> [String: Any] {
         guard let host = httpsHost(fromOrigin: request.origin) else {
             return failure("invalidOrigin")
+        }
+        // Per-site kill switch: a hidden host gets no inline surface at all,
+        // decided before any session or key access (fail safe — the caller
+        // sees nothing, and this metadata check can never touch the vault).
+        if WebExtensionSaveGate.isHidden(host: host, defaults: context.configDefaults()) {
+            return failure("hiddenSite")
         }
         guard var raw = context.retrieveSessionKey() else {
             return failure("locked")
@@ -290,9 +304,10 @@ nonisolated enum WebExtensionRouter {
         guard let host = httpsHost(fromOrigin: request.origin) else {
             return failure("invalidOrigin")
         }
-        let neverSaved = WebExtensionSaveGate.isNeverSaved(host: host,
-                                                           defaults: context.configDefaults())
-        let offer = !context.nativeSaveActive() && !neverSaved
+        let defaults = context.configDefaults()
+        let neverSaved = WebExtensionSaveGate.isNeverSaved(host: host, defaults: defaults)
+        let hiddenHost = WebExtensionSaveGate.isHidden(host: host, defaults: defaults)
+        let offer = !context.nativeSaveActive() && !neverSaved && !hiddenHost
         return success(["offer": offer])
     }
 
@@ -334,11 +349,13 @@ nonisolated enum WebExtensionRouter {
             return failure("malformedMessage")
         }
         // Belt: the overlay is suppressed when the native save sheet owns the
-        // flow or the user opted this host out — a saveLogin arriving anyway
-        // is out of band and refused before any unlock.
-        let neverSaved = WebExtensionSaveGate.isNeverSaved(host: host,
-                                                           defaults: context.configDefaults())
-        guard !context.nativeSaveActive(), !neverSaved else {
+        // flow, the user opted this host out, or the whole site is hidden —
+        // a saveLogin arriving anyway is out of band and refused before any
+        // unlock.
+        let saveDefaults = context.configDefaults()
+        let neverSaved = WebExtensionSaveGate.isNeverSaved(host: host, defaults: saveDefaults)
+        let hiddenHost = WebExtensionSaveGate.isHidden(host: host, defaults: saveDefaults)
+        guard !context.nativeSaveActive(), !neverSaved, !hiddenHost else {
             return failure("forbidden")
         }
         guard WebExtensionSaveGate.allowSave(host: host,
@@ -368,6 +385,36 @@ nonisolated enum WebExtensionRouter {
         } catch {
             return failure("storeUnavailable")
         }
+    }
+
+    // MARK: - Per-site visibility (kill switch)
+
+    /// Whether the extension's in-page surfaces (inline menu + save overlay)
+    /// are hidden on this host. Metadata only — no unlock, no vault access.
+    private static func siteSettings(_ request: WebExtensionRequest,
+                                     context: WebExtensionRouterContext) -> [String: Any] {
+        guard let host = httpsHost(fromOrigin: request.origin) else {
+            return failure("invalidOrigin")
+        }
+        let hidden = WebExtensionSaveGate.isHidden(host: host,
+                                                   defaults: context.configDefaults())
+        return success(["hidden": hidden])
+    }
+
+    /// Stores the per-host visibility choice (bare hostnames only — never a
+    /// secret). Hiding a site only removes page-injected UI; it can never
+    /// widen access, so no unlock is required.
+    private static func setSiteHidden(_ request: WebExtensionRequest,
+                                      context: WebExtensionRouterContext) -> [String: Any] {
+        guard let host = httpsHost(fromOrigin: request.origin) else {
+            return failure("invalidOrigin")
+        }
+        guard let hidden = request.hidden else {
+            return failure("malformedMessage")
+        }
+        WebExtensionSaveGate.setHidden(host: host, hidden: hidden,
+                                       defaults: context.configDefaults())
+        return success(["hidden": hidden])
     }
 
     // MARK: - Helpers

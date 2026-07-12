@@ -18,6 +18,10 @@ let feedbackTimer = null;
 // tap sends it along so the background page can refuse to deliver values to
 // a tab that navigated cross-origin after the user last saw the chip.
 let displayedOrigin = null;
+// Per-site kill switch state for the displayed origin. Hidden sites keep
+// popup-driven fill (this popup is an explicit user surface) but get no
+// in-page UI: no inline menu, no save overlay.
+let siteHidden = false;
 
 function localizeStaticText() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -174,6 +178,46 @@ async function fillGeneratedPassword() {
   }
 }
 
+// --- Per-site kill switch ("Hide on this site") ---
+
+function renderSiteToggle() {
+  document.getElementById("site-settings").hidden = false;
+  document.getElementById("site-hidden-hint").hidden = !siteHidden;
+  document.getElementById("site-toggle-button").textContent = siteHidden
+    ? t("popup_show_site_button")
+    : t("popup_hide_site_button");
+}
+
+// Reads the stored per-host flag for the displayed origin. The footer stays
+// hidden until the state is known — no toggle renders on an unknown state.
+async function initializeSiteToggle() {
+  const reply = await browser.runtime
+    .sendMessage({ cmd: "siteSettings" })
+    .catch(() => null);
+  if (!reply || reply.ok !== true || !reply.data) return;
+  siteHidden = reply.data.hidden === true;
+  renderSiteToggle();
+}
+
+async function toggleSiteHidden() {
+  const button = document.getElementById("site-toggle-button");
+  button.disabled = true;
+  const reply = await browser.runtime
+    .sendMessage({
+      cmd: "setSiteHidden",
+      hidden: !siteHidden,
+      expectedOrigin: displayedOrigin,
+    })
+    .catch(() => null);
+  button.disabled = false;
+  if (reply && reply.ok === true && reply.data) {
+    siteHidden = reply.data.hidden === true;
+    renderSiteToggle();
+  } else {
+    showFeedback(t("popup_error_generic"));
+  }
+}
+
 function makeSection(titleKey, rows) {
   const section = document.createElement("section");
   section.className = "item-section";
@@ -275,6 +319,7 @@ async function initialize() {
   document.getElementById("unlock-button").addEventListener("click", unlockAndList);
   document.getElementById("retry-button").addEventListener("click", unlockAndList);
   document.getElementById("generate-button").addEventListener("click", fillGeneratedPassword);
+  document.getElementById("site-toggle-button").addEventListener("click", toggleSiteHidden);
 
   const originReply = await browser.runtime
     .sendMessage({ cmd: "activeTabOrigin" })
@@ -292,6 +337,9 @@ async function initialize() {
   const hostEl = document.getElementById("site-host");
   hostEl.textContent = new URL(origin).host;
   hostEl.hidden = false;
+  // The per-site toggle loads alongside the list (independent flows; the
+  // toggle is metadata-only and never blocks on the unlock).
+  initializeSiteToggle();
   // Auto-attempt: within the native session this renders the list with zero
   // prompts; otherwise Face ID fires once. Cancel lands on the manual Unlock
   // button via handleListFailure — no retry loop in this popup instance.

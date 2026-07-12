@@ -66,6 +66,10 @@ nonisolated enum SharedConfig {
     /// the App Group so the choice survives extension reinstalls and stays
     /// readable for a future in-app management screen.
     static let webExtensionNeverSaveHostsKey = "web_extension_never_save_hosts"
+    /// Hosts where the user turned the Safari extension's in-page UI off
+    /// entirely ("Hide on this site"): no inline menu, no save overlay.
+    /// Popup-driven fill stays available. Bare hostnames only — no secrets.
+    static let webExtensionHiddenHostsKey = "web_extension_hidden_hosts"
     /// Sliding-window timestamps for the Safari extension's password-generation
     /// rate limit (non-secret; generated passwords themselves are never stored).
     static let webExtensionGenerateStampsKey = "web_extension_generate_stamps"

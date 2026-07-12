@@ -184,5 +184,21 @@
   "inline_open_app": {
     "message": "Mở Loox",
     "description": "Inline menu footer row that opens the Loox app for item management."
+  },
+  "inline_hide_site": {
+    "message": "Ẩn trên trang này",
+    "description": "Inline menu footer row that turns off the extension's in-page suggestions and save prompts for the current site."
+  },
+  "popup_hide_site_button": {
+    "message": "Ẩn trên trang này",
+    "description": "Popup footer button that turns off the extension's in-page suggestions and save prompts for the current site."
+  },
+  "popup_show_site_button": {
+    "message": "Hiện trên trang này",
+    "description": "Popup footer button that turns the extension's in-page suggestions and save prompts back on for the current site."
+  },
+  "popup_site_hidden_hint": {
+    "message": "Gợi ý trong trang và lời nhắc lưu đã tắt cho trang này.",
+    "description": "Popup footer hint shown while the current site is hidden; filling from the popup keeps working."
   }
 }

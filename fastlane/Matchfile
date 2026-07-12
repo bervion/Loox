@@ -6,7 +6,12 @@ storage_mode("git")
 
 type("appstore")
 
-# Both the app and the AutoFill extension need their own App Store profile.
-app_identifier(["com.bervion.vaultify", "com.bervion.vaultify.autofill"])
+# The app and each embedded extension (AutoFill + Safari web extension) need
+# their own App Store profile.
+app_identifier([
+  "com.bervion.vaultify",
+  "com.bervion.vaultify.autofill",
+  "com.bervion.vaultify.safari",
+])
 
 team_id("WDNL2F75V7")

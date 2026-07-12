@@ -48,6 +48,34 @@ nonisolated enum WebExtensionSaveGate {
         host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
+    // MARK: - Hidden hosts (per-site kill switch)
+
+    /// Hosts where the user turned the extension's in-page surfaces off
+    /// entirely ("Hide on this site"): no inline menu and no save overlay on
+    /// that host. Popup-driven fill stays available — hiding only removes
+    /// page-injected UI, so the switch can only ever narrow exposure, never
+    /// widen it. The list holds bare hostnames only, never a secret.
+    static func isHidden(host: String, defaults: UserDefaults) -> Bool {
+        hiddenHosts(defaults: defaults).contains(normalizeHost(host))
+    }
+
+    static func setHidden(host: String, hidden: Bool, defaults: UserDefaults) {
+        let normalized = normalizeHost(host)
+        guard !normalized.isEmpty else { return }
+        var hosts = hiddenHosts(defaults: defaults)
+        if hidden {
+            guard !hosts.contains(normalized) else { return }
+            hosts.append(normalized)
+        } else {
+            hosts.removeAll { $0 == normalized }
+        }
+        defaults.set(hosts.sorted(), forKey: SharedConfig.webExtensionHiddenHostsKey)
+    }
+
+    static func hiddenHosts(defaults: UserDefaults) -> [String] {
+        defaults.stringArray(forKey: SharedConfig.webExtensionHiddenHostsKey) ?? []
+    }
+
     // MARK: - generatePassword rate limit
 
     /// At most `generateLimit` generated passwords per `generateWindow`.
