@@ -21,6 +21,9 @@ struct ItemDetailScreen: View {
     @State private var resumeShare: ItemShareRecord?
     /// Safety code for a shared item (optional out-of-band comparison).
     @State private var safetyCode: String?
+    /// One-time trust interstitial for a shared item whose safety-code
+    /// decision is still pending.
+    @State private var showVerifySheet = false
     /// "Open on Computer" (Loox Quick View) chooser sheet.
     @State private var showQuickViewChooser = false
     /// Non-nil when the entry is tapped but blocked (e.g. guard2-only item) —
@@ -89,6 +92,13 @@ struct ItemDetailScreen: View {
                     organization(item)
                     if item.sharedOrigin == nil {
                         fieldsCard(item)
+                    } else if needsVerification(item) {
+                        // The one-time trust decision comes before any use:
+                        // value rows (and request controls inside them) are
+                        // not even built until the user confirms the safety
+                        // code or explicitly skips — dismissing the sheet
+                        // decides nothing and this card re-prompts.
+                        verifyPromptCard
                     } else {
                         // Shared VALUES render only after live authorization
                         // (INV-01) — header/title above are Tier-1 metadata.
@@ -99,7 +109,9 @@ struct ItemDetailScreen: View {
                         sharingSection(item)
                     } else {
                         SharedItemPasskeysSection(itemID: item.id)
-                        safetyCodeCard
+                        // Manual re-check surface for decided shares; while
+                        // pending, the interstitial is the code's one home.
+                        if !needsVerification(item) { safetyCodeCard }
                     }
                     // Progressive disclosure: a live owned item shows no destructive
                     // card here at all (Move to Trash lives in the "…" menu). Trashed
@@ -230,6 +242,13 @@ struct ItemDetailScreen: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: quickViewBlockedReason ?? "")
+        }
+        .sheet(isPresented: $showVerifySheet) {
+            SafetyCodeVerifySheet(itemID: itemID) { decision in
+                env.sharedItems.recordVerification(decision, forItem: itemID,
+                                                   vaultKey: env.session.vaultKey?.bytes)
+                showVerifySheet = false
+            }
         }
         .sheet(item: $selectedShare) { ShareRecipientDetailSheet(share: $0) }
         .sheet(item: $resumeShare) { ShareResumeStepperSheet(share: $0) }
@@ -465,7 +484,9 @@ struct ItemDetailScreen: View {
                         Text("Verification code")
                             .vaultType(.caption).fontWeight(.medium)
                             .foregroundStyle(env.theme.active.color(.accentText))
-                        RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId)
+                        RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId,
+                                        verificationPending: needsVerification(item),
+                                        onVerificationRequired: { showVerifySheet = true })
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Space.gutter)
@@ -481,6 +502,36 @@ struct ItemDetailScreen: View {
         // Elevation over hairline stroke — a true semantic card, but the shadow
         // alone separates it from the grouped background (card ≠ page in both
         // light and dark, see VaultColors.surface vs .groupedBackground).
+        .elevation(.level1)
+    }
+
+    /// True while the recipient has not yet confirmed or explicitly skipped
+    /// the safety-code compare for this share. Tier-0 items (device not
+    /// authorized) keep their own gate message instead — there is no
+    /// content a decision could unlock. Reads the Keychain-backed marker
+    /// live; deciding in the sheet triggers a re-render via sheet state.
+    private func needsVerification(_ item: VaultItem) -> Bool {
+        guard let origin = item.sharedOrigin, origin.deviceAuthorized else { return false }
+        return env.sharedItems.verification(forItem: item.id) == .pending
+    }
+
+    /// Interstitial entry card shown in place of the value rows while the
+    /// trust decision is pending.
+    private var verifyPromptCard: some View {
+        VStack(spacing: Space.s3) {
+            PolarisIcon(Icons.shield, size: Metric.iconTile).themedForeground(.accent)
+            Text("Check the safety code with the owner before you use this shared item.")
+                .vaultType(.callout).themedForeground(.secondary)
+                .multilineTextAlignment(.center)
+            Button { showVerifySheet = true } label: {
+                Text("Verify this share").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.themedProminent)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(Space.s6)
+        .background(VaultColors.surface)
+        .vaultCornerRadius(Radius.lg)
         .elevation(.level1)
     }
 

@@ -171,6 +171,16 @@ struct RequestCodeView: View {
     let model: RequestCodeModel
     /// Stable opaque id for this device (request metadata, not secret).
     let deviceId: String
+    /// True while the share's safety-code decision is still pending. A
+    /// request leaks intent to the zone owner, so composing one is blocked
+    /// until the user confirms or explicitly skips verification — the
+    /// detail screen already withholds this view while pending, but the
+    /// send path enforces it independently so a layout change can never
+    /// reopen the hole.
+    var verificationPending: Bool = false
+    /// Invoked instead of sending when `verificationPending` — presents
+    /// the shared safety-code interstitial.
+    var onVerificationRequired: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
@@ -216,9 +226,18 @@ struct RequestCodeView: View {
         return "idle"
     }
 
+    /// Single choke point for every "ask the owner" affordance.
+    private func startRequest() {
+        if verificationPending {
+            onVerificationRequired()
+        } else {
+            Task { await model.sendRequest(deviceId: deviceId) }
+        }
+    }
+
     private func requestButton(title: LocalizedStringKey) -> some View {
         Button {
-            Task { await model.sendRequest(deviceId: deviceId) }
+            startRequest()
         } label: {
             Label { Text(title) } icon: { PolarisIcon(Icons.shield, size: Metric.iconInline) }
                 .frame(maxWidth: .infinity)
@@ -241,7 +260,7 @@ struct RequestCodeView: View {
                 Text("This is taking longer than usual.")
                     .vaultType(.footnote).themedForeground(.secondary)
                 Button("Request Again") {
-                    Task { await model.sendRequest(deviceId: deviceId) }
+                    startRequest()
                 }
             }
         }

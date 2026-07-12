@@ -66,6 +66,36 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         return model
     }
 
+    /// The recipient's trust decision for the zone behind a projected item.
+    /// A missing marker reads as `pending` (fail closed): content published
+    /// under a pin nobody has confirmed or explicitly skipped must not be
+    /// usable. Single source of truth for every gate surface (item detail,
+    /// request entry, AutoFill cache build).
+    func verification(forItem id: String) -> OwnerKeyVerification {
+        guard let origin = item(id: id)?.sharedOrigin else { return .pending }
+        return ApprovalRecipientService.ownerKeyVerification(zoneID: Self.zoneID(for: origin))
+            ?? .pending
+    }
+
+    /// Persist the user's one-time safety-code decision and immediately
+    /// re-feed the AutoFill cache so a confirmed or skipped share becomes
+    /// usable in the extension without waiting for the next projection
+    /// refresh. Terminal states stick — an earlier decision is never
+    /// overwritten, and `pending` cannot be recorded through this API.
+    func recordVerification(_ decision: OwnerKeyVerification, forItem id: String,
+                            vaultKey: [UInt8]?) {
+        guard decision.isDecided, let origin = item(id: id)?.sharedOrigin else { return }
+        let zoneID = Self.zoneID(for: origin)
+        guard ApprovalRecipientService.ownerKeyVerification(zoneID: zoneID)?.isDecided != true else {
+            return
+        }
+        ApprovalRecipientService.setOwnerKeyVerification(decision, zoneID: zoneID)
+        guard let vaultKey else { return }
+        let cacheEntries = buildCacheEntries()
+        try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
+        CredentialIdentityService.refreshShared(cacheEntries)
+    }
+
     /// Safety code for the optional out-of-band comparison row.
     func safetyCode(forItem id: String, vaultKey: [UInt8]) async -> String? {
         guard let grant = grants[id],
@@ -83,11 +113,7 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         items.removeAll { $0.id == itemId }
         requestModels = requestModels.filter { !$0.key.hasPrefix(origin.grantId + "|") }
         grants.removeValue(forKey: itemId)
-        let cacheEntries = items.compactMap { item -> SharedCredentialEntry? in
-            guard let grant = grants[item.id] else { return nil }
-            return Self.cacheEntry(item: item, grant: grant,
-                                   passkeys: cachePasskeys[item.id])
-        }
+        let cacheEntries = buildCacheEntries()
         try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
         CredentialIdentityService.refreshShared(cacheEntries)
         persistSnapshot(vaultKey: vaultKey)
@@ -166,6 +192,10 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         guard let zones = try? await recipient.acceptedApprovalZones() else {
             return // Offline — keep whatever we already show.
         }
+        // Legacy markers must exist BEFORE any new pin below can land —
+        // ordering inside this one function guarantees a pre-gate share is
+        // never mistaken for a fresh `pending` one.
+        Self.backfillVerificationMarkers(zones: zones)
         var built: [VaultItem] = []
         var builtGrants: [String: AccessGrant] = [:]
         var liveGrantIDs: Set<String> = []
@@ -176,6 +206,11 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
                 // a later key CHANGE is rejected by the pin store, not re-pinned.
                 if ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) == nil {
                     try ApprovalRecipientService.pinOwnerKey(grant.ownerSigningPubKey, zoneID: zoneID)
+                    // A fresh pin freezes the key but trusts no one yet:
+                    // the human decision (compare the safety code, or
+                    // explicitly skip) is recorded separately and gates
+                    // all use of the content.
+                    ApprovalRecipientService.setOwnerKeyVerification(.pending, zoneID: zoneID)
                 }
                 // v2 single-device grants exclude this device entirely: keep
                 // a Tier-0 placeholder (generic state, no metadata, no
@@ -243,14 +278,25 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         // An empty `items` (last share left/revoked) overwrites with an empty
         // cache, which is exactly the "disappear" behavior Leave/revoke need.
         cachePasskeys = cachePasskeys.filter { key, _ in items.contains { $0.id == key } }
-        let cacheEntries = items.compactMap { item -> SharedCredentialEntry? in
-            guard let grant = grants[item.id] else { return nil }
-            return Self.cacheEntry(item: item, grant: grant,
-                                   passkeys: cachePasskeys[item.id])
-        }
+        let cacheEntries = buildCacheEntries()
         try? SharedCredentialsCache.save(entries: cacheEntries, vaultKey: vaultKey)
         CredentialIdentityService.refreshShared(cacheEntries)
         persistSnapshot(vaultKey: vaultKey)
+    }
+
+    /// Flattened AutoFill cache entries for the CURRENT projection state.
+    /// Zones whose safety-code decision is still pending are withheld:
+    /// shared content must not be usable through AutoFill (QuickType or the
+    /// extension) before the one-time trust decision — otherwise a
+    /// credential could be used without the interstitial ever appearing.
+    /// The item stays visible in-app with its verify affordance.
+    private func buildCacheEntries() -> [SharedCredentialEntry] {
+        items.compactMap { item -> SharedCredentialEntry? in
+            guard let grant = grants[item.id],
+                  verification(forItem: item.id).allowsUse else { return nil }
+            return Self.cacheEntry(item: item, grant: grant,
+                                   passkeys: cachePasskeys[item.id])
+        }
     }
 
     /// Shared passkey slots for one item: Tier-1 metadata joined with the
@@ -387,6 +433,30 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
 
     private static func zoneID(for origin: SharedOrigin) -> CKRecordZone.ID {
         CKRecordZone.ID(zoneName: origin.zoneName, ownerName: origin.ownerName)
+    }
+
+    // MARK: Verification-marker migration
+
+    /// One-shot: shares pinned before the verification gate existed have
+    /// been in active use under the silent trust model — mark them
+    /// `confirmed` instead of retro-prompting (the safety-code row remains
+    /// as a manual re-check surface). Idempotent: a reinstall that keeps
+    /// Keychain pins but resets this UserDefaults flag re-marks the same
+    /// zones with the same outcome. Device-local bookkeeping, non-secret.
+    private static let verificationBackfillDoneKey = "shared_owner_key_verification_backfilled"
+
+    private static func backfillVerificationMarkers(zones: [CKRecordZone.ID]) {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: verificationBackfillDoneKey) else { return }
+        for zoneID in zones {
+            let existing = ApprovalRecipientService.ownerKeyVerification(zoneID: zoneID)
+            let hasPin = ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) != nil
+            if let state = OwnerKeyVerification.backfillState(hasPin: hasPin, existing: existing),
+               state != existing {
+                ApprovalRecipientService.setOwnerKeyVerification(state, zoneID: zoneID)
+            }
+        }
+        defaults.set(true, forKey: verificationBackfillDoneKey)
     }
 
     /// Stable opaque per-install id for request metadata (not a secret) —

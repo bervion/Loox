@@ -303,6 +303,72 @@
         }
       }
     },
+    "Ask the owner to open this item's sharing details and read their safety code. If both codes match, this share really came from them." : {
+      "comment" : "Explainer on the recipient's safety-code verification sheet.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhờ chủ sở hữu mở phần chia sẻ của mục này và đọc mã an toàn của họ. Nếu hai mã trùng khớp, chia sẻ này thực sự đến từ họ."
+          }
+        }
+      }
+    },
+    "Check the safety code with the owner before you use this shared item." : {
+      "comment" : "Card on the shared item detail while the trust decision is pending.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đối chiếu mã an toàn với chủ sở hữu trước khi bạn dùng mục được chia sẻ này."
+          }
+        }
+      }
+    },
+    "If you skip this check, you cannot be sure who this share came from." : {
+      "comment" : "Consequence note under the skip button on the safety-code verification sheet.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nếu bỏ qua bước kiểm tra này, bạn không thể chắc chia sẻ này đến từ ai."
+          }
+        }
+      }
+    },
+    "The safety code isn't available right now. Try again later, or use the share without verifying." : {
+      "comment" : "Shown on the verification sheet when the safety code could not be derived.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện chưa lấy được mã an toàn. Hãy thử lại sau, hoặc dùng chia sẻ mà không xác minh."
+          }
+        }
+      }
+    },
+    "Use without verifying" : {
+      "comment" : "Secondary button on the safety-code verification sheet: proceed without comparing codes.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng mà không xác minh"
+          }
+        }
+      }
+    },
+    "Verify this share" : {
+      "comment" : "Button and title for the recipient's one-time safety-code check of a shared item.",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác minh chia sẻ này"
+          }
+        }
+      }
+    },
     "＋ Create new login" : {
       "localizations" : {
         "vi" : {
@@ -11643,7 +11709,6 @@
       }
     },
     "The codes match" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

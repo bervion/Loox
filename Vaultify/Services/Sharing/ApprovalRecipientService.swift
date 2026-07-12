@@ -218,6 +218,32 @@ import UIKit
 
     static func clearPin(zoneID: CKRecordZone.ID) {
         KeychainStore.delete(account: pinAccount(zoneID: zoneID))
+        // The human decision qualifies the pin — it lives and dies with it.
+        KeychainStore.delete(account: verificationAccount(zoneID: zoneID))
+    }
+
+    // MARK: Owner-key verification marker (human decision beside the pin)
+
+    /// Storage account for the recipient's safety-code decision, parallel to
+    /// `pinAccount` — same owner+zone scoping, same Keychain protection
+    /// class and lifecycle, never synced.
+    private static func verificationAccount(zoneID: CKRecordZone.ID) -> String {
+        "approval_owner_key_verification_\(zoneID.ownerName)_\(zoneID.zoneName)"
+    }
+
+    /// nil means no decision was ever recorded — callers must treat that as
+    /// `pending` for any zone that has a pin (fail closed).
+    static func ownerKeyVerification(zoneID: CKRecordZone.ID) -> OwnerKeyVerification? {
+        guard let data = try? KeychainStore.get(account: verificationAccount(zoneID: zoneID)),
+              let raw = String(data: data, encoding: .utf8) else { return nil }
+        return OwnerKeyVerification(rawValue: raw)
+    }
+
+    /// Best-effort persist: a failed write leaves the marker absent, which
+    /// reads as `pending` — the safe direction.
+    static func setOwnerKeyVerification(_ state: OwnerKeyVerification, zoneID: CKRecordZone.ID) {
+        try? KeychainStore.set(Data(state.rawValue.utf8),
+                               account: verificationAccount(zoneID: zoneID))
     }
 
     /// Leave a received share: deleting the zone from the SHARED database
