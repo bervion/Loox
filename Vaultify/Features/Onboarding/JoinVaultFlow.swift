@@ -31,6 +31,9 @@ struct JoinVaultFlow: View {
         // Glass pill on iOS 26), not a hand-rolled icon.
         NavigationStack {
             content
+                // Same grouped-gray canvas as the rest of onboarding, so the
+                // white key field / QR tile / kit cards stay visible.
+                .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     if step != .biometric {

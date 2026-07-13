@@ -72,7 +72,10 @@ struct OnboardingFlow: View {
                 recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""
             }
         }
-        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
+        // Grouped-gray canvas so the white cards/fields of the form steps read
+        // (Apple grouped style). Welcome and Done paint their own white page
+        // over this, so only the form steps show the gray.
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
     }
 
     private func createVault(_ password: String) async -> String? {
