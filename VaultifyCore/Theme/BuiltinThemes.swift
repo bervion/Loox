@@ -32,7 +32,7 @@ nonisolated enum BuiltinThemes {
     // Retuned to Design System tokens (`Design System/tokens/colors.css`, light).
     static let day = AppTheme(
         reference: .builtin(.day), isDark: false,
-        background: 0xFFFFFF, secondaryBackground: 0xF2F2F7, groupedBackground: 0xF2F2F7,
+        background: 0xFFFFFF, secondaryBackground: 0xF2F2F6, groupedBackground: 0xF2F2F6,
         elevatedBackground: 0xFFFFFF, barBackground: 0xFFFFFF,
         primaryText: 0x1C1C1E, secondaryText: 0x4B4B50, tertiaryText: 0x8A8A8E, placeholderText: 0xB6B6BB,
         accent: 0x009DFF, accentForeground: 0xFFFFFF,

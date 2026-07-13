@@ -38,7 +38,11 @@ private struct ElevationModifier: ViewModifier {
     let level: Elevation
     @Environment(\.colorScheme) private var scheme
     func body(content: Content) -> some View {
-        let opacity = level == .level0 ? 0 : (scheme == .dark ? 0.55 : 0.10)
+        // Flat rebrand: resting cards (level1/2) cast NO shadow — Apple grouped
+        // style, plain white cards on the gray canvas. Only floating chrome
+        // (level3 / sheet) still lifts.
+        let flat = level == .level0 || level == .level1 || level == .level2
+        let opacity = flat ? 0 : (scheme == .dark ? 0.55 : 0.10)
         return content.shadow(color: .black.opacity(opacity), radius: level.radius, y: level.y)
     }
 }
