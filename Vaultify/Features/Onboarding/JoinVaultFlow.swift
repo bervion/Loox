@@ -353,34 +353,13 @@ private struct JoinByRecoveryView: View {
                     subtitle: "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key. Your vault will download from iCloud.",
                     style: .compact)
 
-                HStack(spacing: Space.s2) {
-                    PolarisIcon(Icons.key, size: Metric.iconInline)
-                        .foregroundStyle(Color(rgb: env.theme.active.accent))
-                        .frame(width: Metric.controlSmall, height: Metric.controlSmall)
-                        .background(Color(rgb: env.theme.active.accentSoft),
-                                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                    TextField("Recovery key", text: $recoveryKey, axis: .vertical)
-                        .font(recoveryKey.isEmpty ? VaultType.body.font : .vaultCode())
-                        .platformAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(spacing: Space.s4) {
+                    recoveryField
                     #if os(iOS)
-                    Button { showScanner = true } label: {
-                        PolarisIcon(Icons.scanCode, size: Metric.iconInline)
-                            .foregroundStyle(Color(rgb: env.theme.active.accent))
-                            .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .trailing)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(busy)
-                    .accessibilityLabel(Text("Scan Setup Code"))
+                    orSeparator
+                    pdfDropBox
                     #endif
                 }
-                .padding(.horizontal, Space.s3)
-                .padding(.vertical, Space.s3)
-                .background(Color(rgb: env.theme.active.elevatedBackground),
-                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                .elevation(.level2)
                 .padding(.horizontal, Space.s6)
                 .padding(.top, Space.s6)
 
@@ -394,31 +373,15 @@ private struct JoinByRecoveryView: View {
                 }
 
                 Spacer(minLength: Space.s6)
-                VStack(spacing: Space.s3) {
-                    Button(action: submit) {
-                        Group {
-                            if busy { ProgressView() } else { Text("Continue") }
-                        }
-                        .frame(maxWidth: .infinity)
+                Button(action: submit) {
+                    Group {
+                        if busy { ProgressView() } else { Text("Continue") }
                     }
-                    .buttonStyle(.themedProminent)
-                    .controlSize(.large)
-                    .disabled(recoveryKey.isEmpty || busy)
-
-                    #if os(iOS)
-                    Button { showPDFImporter = true } label: {
-                        Label {
-                            Text("Import from PDF")
-                        } icon: {
-                            Image(systemName: "arrow.down.doc")
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.themedTinted)
-                    .controlSize(.large)
-                    .disabled(busy)
-                    #endif
+                    .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.themedProminent)
+                .controlSize(.large)
+                .disabled(recoveryKey.isEmpty || busy)
                 .padding(.horizontal, Space.s6)
                 .padding(.bottom, Space.s6)
             }
@@ -430,14 +393,100 @@ private struct JoinByRecoveryView: View {
                 showScanner = false
             } onCancel: { showScanner = false }
         }
-        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf]) { result in
+        #endif
+    }
+
+    private var recoveryField: some View {
+        HStack(spacing: Space.s2) {
+            PolarisIcon(Icons.key, size: Metric.iconInline)
+                .foregroundStyle(Color(rgb: env.theme.active.accent))
+                .frame(width: Metric.controlSmall, height: Metric.controlSmall)
+                .background(Color(rgb: env.theme.active.accentSoft),
+                            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+            TextField("Recovery key", text: $recoveryKey, axis: .vertical)
+                .font(recoveryKey.isEmpty ? VaultType.body.font : .vaultCode())
+                .platformAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            #if os(iOS)
+            Button { showScanner = true } label: {
+                PolarisIcon(Icons.scanCode, size: Metric.iconInline)
+                    .foregroundStyle(Color(rgb: env.theme.active.accent))
+                    .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .trailing)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(busy)
+            .accessibilityLabel(Text("Scan Setup Code"))
+            #endif
+        }
+        .padding(.horizontal, Space.s3)
+        .padding(.vertical, Space.s3)
+        .background(Color(rgb: env.theme.active.elevatedBackground),
+                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        .elevation(.level2)
+    }
+
+    #if os(iOS)
+    /// "or" rule between the typed key and the PDF drop zone.
+    private var orSeparator: some View {
+        HStack(spacing: Space.s3) {
+            dash
+            Text("or").vaultType(.footnote).themedForeground(.tertiary)
+            dash
+        }
+    }
+
+    private var dash: some View {
+        DashLine()
+            .stroke(Color(rgb: env.theme.active.separator),
+                    style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+            .frame(height: 1)
+            .frame(maxWidth: .infinity)
+    }
+
+    /// Dashed "drop zone" that opens the file picker on tap (drag-and-drop look;
+    /// tap to choose the saved Emergency Kit PDF). The `.fileImporter` lives HERE,
+    /// not next to the scanner `.sheet` above — two presentation modifiers on the
+    /// same view make SwiftUI drop one, which is why the picker never opened.
+    private var pdfDropBox: some View {
+        Button { showPDFImporter = true } label: {
+            VStack(spacing: Space.s2) {
+                if busy {
+                    ProgressView()
+                } else {
+                    Image(systemName: "arrow.down.doc")
+                        .font(.system(size: 26))
+                        .foregroundStyle(Color(rgb: env.theme.active.accent))
+                    Text("Import from PDF")
+                        .vaultType(.callout).fontWeight(.semibold).themedForeground(.primary)
+                    Text("Tap to choose your saved Emergency Kit PDF")
+                        .vaultType(.footnote).themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Space.s6)
+            .background(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color(rgb: env.theme.active.accentSoft).opacity(0.3)))
+            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .strokeBorder(Color(rgb: env.theme.active.accent).opacity(0.5),
+                              style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(busy)
+        // Accept any file (not only `.pdf`) so nothing greys out in providers that
+        // report an Emergency Kit PDF under a generic type; we validate it really is
+        // a readable PDF with a Setup Code in `importPDF` and error out otherwise.
+        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf, .data]) { result in
             switch result {
             case .success(let url): importPDF(url)
             case .failure: break // user cancelled the picker
             }
         }
-        #endif
     }
+    #endif
 
     #if os(iOS)
     /// Decode the Setup Code QR out of the chosen Emergency Kit PDF and fill the field
@@ -482,6 +531,16 @@ private struct JoinByRecoveryView: View {
                 errorMessage = appString("That recovery key didn’t work.")
             }
         }
+    }
+}
+
+/// A single horizontal hairline, centred vertically — stroked dashed for the "or" rule.
+private struct DashLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        return path
     }
 }
 
