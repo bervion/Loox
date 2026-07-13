@@ -190,11 +190,11 @@ struct RestoreMethodSheet: View {
                     .padding(.top, Space.s4)
 
                     VStack(spacing: Space.s3) {
-                        restoreOptionBox(icon: Icons.scanCode,
+                        restoreOptionBox(icon: "PairDeviceDuotone",
                                          title: "Pair with an old device",
                                          detail: "Scan a QR code between two iPhones to move the whole vault.",
                                          action: onQR)
-                        restoreOptionBox(icon: Icons.key,
+                        restoreOptionBox(icon: "RecoveryKitDuotone",
                                          title: "Use Recovery Key",
                                          detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
                                          action: onRecovery)
@@ -224,9 +224,12 @@ struct RestoreMethodSheet: View {
                                   detail: LocalizedStringResource,
                                   action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(alignment: .center, spacing: Space.s4) {
-                PolarisIcon(icon, size: 30)
-                    .foregroundStyle(Color(rgb: env.theme.active.accent))
+            // Icon top-aligned with the title line (not row-centred).
+            HStack(alignment: .top, spacing: Space.s4) {
+                Image(icon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 30, height: 30)
                 VStack(alignment: .leading, spacing: Space.s1) {
                     Text(title.inAppLocalized)
                         .vaultType(.headline).themedForeground(.primary)
@@ -238,7 +241,9 @@ struct RestoreMethodSheet: View {
                 Spacer(minLength: 0)
                 PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
                     .themedForeground(.iconSecondary)
+                    .frame(maxHeight: .infinity)
             }
+            .fixedSize(horizontal: false, vertical: true)
             .padding(Space.s5)
             .background(Color(rgb: env.theme.active.secondaryBackground),
                         in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
