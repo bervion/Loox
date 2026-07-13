@@ -66,13 +66,9 @@ struct WelcomeLandingView: View {
 
     private func landingContent(width: CGFloat) -> some View {
         VStack(spacing: 0) {
-            // Fixed brand wordmark — identical in every language, so rendered
-            // verbatim (not a localized string).
-            Text(verbatim: "Loox Password")
-                .vaultType(.screenTitle)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .themedForeground(.primary)
+            // Brand wordmark image (follows light/dark via the asset's
+            // luminosity variants) — replaces the old text title.
+            BrandLogoMark(size: 30, shadowRadius: 0, shadowY: 0)
                 .padding(.top, Space.s5)
 
             startButton
