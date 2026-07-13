@@ -238,7 +238,7 @@ struct PasswordGeneratorView: View {
 
     private func copy() {
         guard !copied, !output.isEmpty else { return }
-        env.clipboard.copy(output, label: "Password")
+        env.clipboard.copy(output, label: appString("password"))
         copied = true
         Task {
             try? await Task.sleep(for: .seconds(1.2))

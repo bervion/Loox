@@ -11,7 +11,7 @@ nonisolated enum AccentPreset: String, Sendable, CaseIterable, Identifiable {
     /// Hue used on light themes.
     var lightRGB: UInt32 {
         switch self {
-        case .blue: return 0x2563EB
+        case .blue: return 0x009DFF
         case .indigo: return 0x5145CD
         case .teal: return 0x0E8A7D
         case .purple: return 0x7C3AED
@@ -24,7 +24,7 @@ nonisolated enum AccentPreset: String, Sendable, CaseIterable, Identifiable {
     /// Hue used on dark themes.
     var darkRGB: UInt32 {
         switch self {
-        case .blue: return 0x4C8DFF
+        case .blue: return 0x009DFF
         case .indigo: return 0x8B80FF
         case .teal: return 0x2FD0BF
         case .purple: return 0xB388FF

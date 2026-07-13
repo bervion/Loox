@@ -60,6 +60,7 @@ final class LooxPlayerLayerView: UIView {
     /// Video layer, above the poster.
     private let playerLayer = AVPlayerLayer()
     private var looper: AVPlayerLooper?
+    private var readyObservation: NSKeyValueObservation?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -76,6 +77,14 @@ final class LooxPlayerLayerView: UIView {
         playerLayer.videoGravity = .resizeAspectFill
         playerLayer.backgroundColor = nil
         layer.addSublayer(playerLayer)
+
+        // The poster is ONLY the pre-first-frame stand-in. Left visible under an
+        // alpha video it ghosts: the static face shows through beside the moving
+        // head. Hide it the moment the layer has real frames.
+        readyObservation = playerLayer.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] layer, _ in
+            let ready = layer.isReadyForDisplay
+            Task { @MainActor [weak self] in self?.posterView.isHidden = ready }
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

@@ -407,27 +407,19 @@ struct HomeScreen: View {
         .accessibilityLabel(Text(verbatim: "\(env.repository.activePersona?.displayName ?? appString("Profile")), \(personaSubtitle)"))
     }
 
-    /// 44pt avatar — stored image, letter-avatar, or a person glyph when no identity.
-    /// Radius concentric to the card (outer lg, inset s4) so nested corners stay parallel.
+    /// 44pt circular avatar — the stored photo in a plain circle, otherwise the
+    /// Loox dots mark (spark ringed by two static dot rings, theme-tinted).
+    /// The ACTIVE persona's own card — never another persona's (an anonymous
+    /// persona must not wear the personal photo).
     @ViewBuilder private var profileAvatar: some View {
         let avatarSize: CGFloat = 44
-        let cornerRadius = Radius.concentric(outer: Radius.lg, inset: Space.s4)
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        // The ACTIVE persona's own card — never another persona's (an anonymous
-        // persona must not wear the personal photo).
-        if let identity = env.repository.activeProfileItem {
-            if let image = env.repository.avatarImage(for: identity.id) {
-                Image(platformImage: image).resizable().scaledToFill()
-                    .frame(width: avatarSize, height: avatarSize).clipShape(shape)
-            } else {
-                ItemThumbnail(title: identity.title, category: .identity, iconAsset: nil, size: avatarSize)
-                    .clipShape(shape)
-            }
-        } else {
-            PolarisIcon(Icons.person, size: Metric.iconInline)
-                .themedForeground(.accentText)
+        if let identity = env.repository.activeProfileItem,
+           let image = env.repository.avatarImage(for: identity.id) {
+            Image(platformImage: image).resizable().scaledToFill()
                 .frame(width: avatarSize, height: avatarSize)
-                .background(Color(rgb: env.theme.active.accentSoft), in: shape)
+                .clipShape(Circle())
+        } else {
+            LooxDotsAvatar(size: avatarSize)
         }
     }
 

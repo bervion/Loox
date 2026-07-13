@@ -16,7 +16,10 @@ struct MainTabView: View {
 
     var body: some View {
         shell
-            .tint(env.theme.uiTint)
+            // Apple-style neutral chrome: the selected tab icon AND default
+            // controls (nav back, toolbar buttons) render black (white in
+            // dark). Links/accent glyphs use the accentText token explicitly.
+            .tint(Color.primary)
             .vaultShellBehaviors()
     }
 

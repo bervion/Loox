@@ -100,7 +100,10 @@ struct UnlockGate<Content: View>: View {
                 Button(action: unlockWithMaster) {
                     Text("Unlock").fontWeight(.semibold).frame(maxWidth: .infinity)
                 }
+                // Neutral black/white primary, matching the app's Apple-style CTA
+                // (the extension can't reach the app-target themed styles).
                 .buttonStyle(.borderedProminent).controlSize(.large)
+                .tint(Color.primary)
                 .disabled(masterPassword.isEmpty || unlocking)
 
                 // Manual escape hatch back to Face ID after a failed/cancelled auto-prompt —

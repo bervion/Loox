@@ -66,17 +66,13 @@ struct WelcomeLandingView: View {
 
     private func landingContent(width: CGFloat) -> some View {
         VStack(spacing: 0) {
-            // Fixed brand wordmark — identical in every language, so rendered
-            // verbatim (not a localized string).
-            Text(verbatim: "Loox Password")
-                .vaultType(.screenTitle)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .themedForeground(.primary)
+            // Brand wordmark image (follows light/dark via the asset's
+            // luminosity variants) — replaces the old text title.
+            BrandLogoMark(size: 30, shadowRadius: 0, shadowY: 0)
                 .padding(.top, Space.s5)
 
             startButton
-                .padding(.top, Space.s5)
+                .padding(.top, Space.s7)
 
             Text(appString("The safest home for your passwords, passkeys, cards and notes."))
                 .vaultType(.callout)
@@ -89,7 +85,7 @@ struct WelcomeLandingView: View {
                 .padding(.top, Space.s3)
 
             CapabilityCarousel(containerWidth: width)
-                .padding(.top, Space.s6)
+                .padding(.top, Space.s8)
         }
     }
 
@@ -97,9 +93,9 @@ struct WelcomeLandingView: View {
 
     private var startButton: some View {
         Button(action: press) {
-            Text(appString("Get Started"))
-                .vaultType(.headline)
-                .fontWeight(.semibold)
+            Text(appString("Get started"))
+                .vaultType(.body)
+                .fontWeight(.medium)
                 // Deliberate adaptive black/white pill (the demo look the user
                 // asked for): label sits on the primary fill, so it uses the
                 // background color rather than a themed text token.
@@ -110,7 +106,7 @@ struct WelcomeLandingView: View {
         }
         .buttonStyle(.plain)
         .disabled(launch.phase != .idle)
-        .accessibilityLabel(Text(appString("Get Started")))
+        .accessibilityLabel(Text(appString("Get started")))
     }
 
     // MARK: Restore link (directly under the value proposition)
@@ -120,8 +116,7 @@ struct WelcomeLandingView: View {
             Button(action: onRestore) {
                 Text(appString("Restore data?"))
                     .vaultType(.subhead)
-                    .fontWeight(.semibold)
-                    .themedForeground(.accent)
+                    .themedForeground(.accentText)
             }
             .buttonStyle(.plain)
         }
@@ -225,7 +220,7 @@ private struct CapabilitySlide: View {
         .frame(maxHeight: .infinity)
         .background(VaultColors.surface)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .elevation(.level2)
+        .elevation(.cardOnWhite)
     }
 
     /// Art inside the card: a 16:9 illustration filling the top edge-to-edge

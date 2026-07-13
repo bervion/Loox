@@ -101,7 +101,7 @@ struct TotpCardView: View {
         guard let code, !copied else { return }
         // ClipboardService fires Haptics.success on copy — do not add a second
         // haptic here (would double-buzz on every 2FA code copy).
-        env.clipboard.copy(code, label: "2FA code")
+        env.clipboard.copy(code, label: appString("2FA code"))
         copied = true
         // Flash duration matches DS: 1100 ms.
         Task {

@@ -3,29 +3,33 @@ import SwiftUI
 // Theme-driven button styles. Use `.buttonStyle(.themedProminent)` etc. so buttons
 // across the app track the active theme's accent / surfaces automatically.
 
-/// Filled accent button (primary call-to-action).
+/// Filled neutral primary call-to-action — Apple-style adaptive black (light) /
+/// white (dark) fill, deliberately independent of the theme accent.
 struct ThemedProminentButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { StyledButton(configuration: configuration) }
 
     private struct StyledButton: View {
         let configuration: ButtonStyleConfiguration
-        @Environment(AppEnvironment.self) private var env
         @Environment(\.isEnabled) private var isEnabled
         var body: some View {
-            let theme = env.theme.active
-            // Disabled state uses an OPAQUE muted fill (blend toward background), never
-            // `.opacity` — a translucent CTA lets content scrolling behind a pinned button
-            // show through. Only the momentary pressed state dims.
-            let bg = isEnabled ? theme.accent : RGBMath.blend(theme.accent, theme.background, 0.55)
-            let fg = isEnabled ? theme.accentForeground : RGBMath.blend(theme.accentForeground, bg, 0.4)
+            // Disabled uses an OPAQUE gray fill, never `.opacity` — a translucent
+            // CTA lets content scrolling behind a pinned button show through. Only
+            // the momentary pressed state dims.
+            let bg: Color = isEnabled ? Color.primary : Color(.systemGray4)
+            let fg: Color = isEnabled ? Color(.systemBackground) : Color(.systemGray)
+            // Welcome-style pill: capsule ends, width hugging the content, centred
+            // in the slot. `fixedSize` collapses call-site `maxWidth: .infinity`
+            // labels back to their ideal width.
             configuration.label
-                .vaultType(.headline)
-                .foregroundStyle(Color(rgb: fg))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s4)
-                .background(Color(rgb: bg))
-                .vaultCornerRadius(Radius.sm)
+                .vaultType(.body)
+                .fontWeight(.medium)
+                .foregroundStyle(fg)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s3)
+                .background(bg, in: Capsule())
                 .opacity(configuration.isPressed ? 0.85 : 1)
+                .frame(maxWidth: .infinity)
         }
     }
 }
@@ -46,14 +50,17 @@ struct ThemedTintedButtonStyle: ButtonStyle {
             // TEXT rank: `accentText` clears 4.5:1 on the soft fill, where the
             // raw fill-tuned accent sits as low as 3.05:1 on some presets.
             let fg = isEnabled ? theme.accentText : theme.textDisabled
+            // Same pill geometry as the prominent style (see above).
             configuration.label
-                .vaultType(.headline)
+                .vaultType(.body)
+                .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s4)
-                .background(Color(rgb: theme.accentSoft))
-                .vaultCornerRadius(Radius.sm)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s3)
+                .background(Color(rgb: theme.accentSoft), in: Capsule())
                 .opacity(configuration.isPressed ? 0.85 : 1)
+                .frame(maxWidth: .infinity)
         }
     }
 }
@@ -71,14 +78,17 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
             // Opaque muted fill when disabled (blend toward background), never `.opacity`.
             let bg = isEnabled ? theme.destructive : RGBMath.blend(theme.destructive, theme.background, 0.55)
             let fg = isEnabled ? RGBMath.onColor(theme.destructive) : RGBMath.blend(RGBMath.onColor(theme.destructive), bg, 0.4)
+            // Same pill geometry as the prominent style (see above).
             configuration.label
-                .vaultType(.headline)
+                .vaultType(.body)
+                .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s4)
-                .background(Color(rgb: bg))
-                .vaultCornerRadius(Radius.sm)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s3)
+                .background(Color(rgb: bg), in: Capsule())
                 .opacity(configuration.isPressed ? 0.85 : 1)
+                .frame(maxWidth: .infinity)
         }
     }
 }
@@ -110,10 +120,10 @@ struct ThemedCompactButtonStyle: ButtonStyle {
             let (bg, fg) = fillAndForeground()
             configuration.label
                 .vaultType(.subhead).fontWeight(.medium)
-                .foregroundStyle(Color(rgb: fg))
+                .foregroundStyle(fg)
                 .padding(.horizontal, Space.s4)
                 .padding(.vertical, Space.s2)
-                .background(Color(rgb: bg))
+                .background(bg)
                 .vaultCornerRadius(Radius.sm)
                 // The pill above stays visually compact; this floor only grows the
                 // invisible hit region so short labels still clear the 44pt minimum.
@@ -125,16 +135,18 @@ struct ThemedCompactButtonStyle: ButtonStyle {
         // Plain (non-`@ViewBuilder`) function — a `switch` inline inside `body` gets
         // misparsed as a view-building switch by the ViewBuilder inference, so the
         // fill/foreground branch lives here instead.
-        private func fillAndForeground() -> (bg: UInt32, fg: UInt32) {
+        private func fillAndForeground() -> (bg: Color, fg: Color) {
             let theme = env.theme.active
             switch emphasis {
             case .prominent:
-                let bg = isEnabled ? theme.accent : RGBMath.blend(theme.accent, theme.background, 0.55)
-                let fg = isEnabled ? theme.accentForeground : RGBMath.blend(theme.accentForeground, bg, 0.4)
+                // Neutral primary (Apple-style), matching ThemedProminentButtonStyle.
+                let bg: Color = isEnabled ? Color.primary : Color(.systemGray4)
+                let fg: Color = isEnabled ? Color(.systemBackground) : Color(.systemGray)
                 return (bg, fg)
             case .tinted:
                 // TEXT rank on a control fill — see ThemedTintedButtonStyle.
-                return (theme.controlBackground, isEnabled ? theme.accentText : theme.textDisabled)
+                return (Color(rgb: theme.controlBackground),
+                        Color(rgb: isEnabled ? theme.accentText : theme.textDisabled))
             }
         }
     }
@@ -142,15 +154,14 @@ struct ThemedCompactButtonStyle: ButtonStyle {
 
 /// Shows a spinner over a button label while loading **without** changing the
 /// label's size — the label stays laid out (just hidden) so the button keeps its
-/// height and the tap doesn't make the control flick/resize. Spinner tint tracks
-/// the prominent button's accent-foreground so it stays legible on the fill.
+/// height and the tap doesn't make the control flick/resize. Spinner tint matches
+/// the prominent button's foreground (systemBackground on the neutral fill).
 private struct ProminentButtonLoading: ViewModifier {
     let isLoading: Bool
-    @Environment(AppEnvironment.self) private var env
     func body(content: Content) -> some View {
         content
             .opacity(isLoading ? 0 : 1)
-            .overlay { if isLoading { ProgressView().tint(Color(rgb: env.theme.active.accentForeground)) } }
+            .overlay { if isLoading { ProgressView().tint(Color(.systemBackground)) } }
     }
 }
 
@@ -176,4 +187,12 @@ extension ButtonStyle where Self == ThemedCompactButtonStyle {
     static var themedCompact: ThemedCompactButtonStyle { .init() }
     /// Primary inline action (filled `accent`) for a compact row pair.
     static var themedCompactProminent: ThemedCompactButtonStyle { .init(emphasis: .prominent) }
+}
+
+/// Press-dim only — no automatic disabled dimming, keeping custom capsule CTAs
+/// opaque over scrolling content (the onboarding blue/gray Continue buttons).
+struct SolidCapsuleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
+    }
 }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="357px" height="337px" viewBox="0 0 357 337" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Loox — Symbol</title>
+    <defs>
+        <linearGradient x1="25%" y1="93.3008475%" x2="75%" y2="6.69915254%" id="linearGradient-1">
+            <stop stop-color="#E6F3FF" offset="0%"></stop>
+            <stop stop-color="#00B2FF" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="0%" y1="50%" x2="100%" y2="50%" id="linearGradient-2">
+            <stop stop-color="#7DD3FC" offset="0%"></stop>
+            <stop stop-color="#00B2FF" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="75%" y1="93.3008475%" x2="25%" y2="6.69915254%" id="linearGradient-3">
+            <stop stop-color="#7DD3FC" offset="0%"></stop>
+            <stop stop-color="#2979FF" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="25%" y1="6.69915254%" x2="75%" y2="93.3008475%" id="linearGradient-4">
+            <stop stop-color="#00B2FF" offset="0%"></stop>
+            <stop stop-color="#2979FF" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="75%" y1="6.69915254%" x2="25%" y2="93.3008475%" id="linearGradient-5">
+            <stop stop-color="#2979FF" offset="0%"></stop>
+            <stop stop-color="#0D47FF" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="100%" y1="50%" x2="0%" y2="50%" id="linearGradient-6">
+            <stop stop-color="#00B2FF" offset="0%"></stop>
+            <stop stop-color="#0D47FF" offset="100%"></stop>
+        </linearGradient>
+        <radialGradient cx="50%" cy="50%" fx="50%" fy="50%" r="50%" id="radialGradient-7">
+            <stop stop-color="#FFFFFF" stop-opacity="0.45" offset="0%"></stop>
+            <stop stop-color="#FFFFFF" stop-opacity="0" offset="100%"></stop>
+        </radialGradient>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="loox-symbol" transform="translate(-60, -70)">
+            <g id="Loox-—-Symbol" transform="translate(60, 70.45)">
+                <g id="Group">
+                    <circle id="Oval" fill="url(#linearGradient-1)" cx="139.5" cy="235.6" r="100.5"></circle>
+                    <circle id="Oval" fill-opacity="0.85" fill="url(#linearGradient-2)" cx="100.5" cy="168.05" r="100.5"></circle>
+                    <circle id="Oval" fill-opacity="0.85" fill="url(#linearGradient-3)" cx="217.5" cy="235.6" r="100.5"></circle>
+                    <circle id="Oval" fill-opacity="0.85" fill="url(#linearGradient-4)" cx="139.5" cy="100.5" r="100.5"></circle>
+                    <circle id="Oval" fill-opacity="0.85" fill="url(#linearGradient-5)" cx="217.5" cy="100.5" r="100.5"></circle>
+                    <circle id="Oval" fill-opacity="0.85" fill="url(#linearGradient-6)" cx="256.5" cy="168.05" r="100.5"></circle>
+                </g>
+                <circle id="Oval" fill="url(#radialGradient-7)" cx="195.5" cy="186.05" r="118.5"></circle>
+                <path d="M178.5,60.55 C178.5,132.216667 214.333333,168.05 286,168.05 C214.333333,168.05 178.5,203.883333 178.5,275.55 C178.5,203.883333 142.666667,168.05 71,168.05 C142.666667,168.05 178.5,132.216667 178.5,60.55 Z" id="Path" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>

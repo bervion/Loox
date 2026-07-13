@@ -40,7 +40,7 @@ struct SharedAccessGateView<Content: View>: View {
                     VaultInfoBanner(.warning, icon: Icons.globe,
                                     title: "You're offline",
                                     text: "You need an internet connection to view this shared item. Its secrets stay sealed until access is verified.",
-                                    actionLabel: "Try Again") {
+                                    actionLabel: "Try again") {
                         Task { await authorizer.refresh(itemID: itemID, env: env) }
                     }
                     Text("Re-checks automatically when the connection returns.")
@@ -64,7 +64,7 @@ struct SharedAccessGateView<Content: View>: View {
                     Button {
                         Task { await authorizer.refresh(itemID: itemID, env: env) }
                     } label: {
-                        Text("Try Again").frame(maxWidth: .infinity)
+                        Text("Try again").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.themedProminent)
                 }

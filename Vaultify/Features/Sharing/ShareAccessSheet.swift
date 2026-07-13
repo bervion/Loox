@@ -122,7 +122,7 @@ struct ShareAccessSheet: View {
         }
         .confirmationDialog("Revoke access?", isPresented: revokeDialogBinding,
                             titleVisibility: .visible) {
-            Button("Revoke Access", role: .destructive) {
+            Button("Revoke access", role: .destructive) {
                 if let target = revokeTarget {
                     Task { await revoke(target) }
                 }
@@ -136,7 +136,7 @@ struct ShareAccessSheet: View {
         // delivered secret is not revocable by us.
         .confirmationDialog("Hand over this secret?", isPresented: handOverDialogBinding,
                             titleVisibility: .visible) {
-            Button("Hand Over: Can't Be Taken Back", role: .destructive) {
+            Button("Hand over: can't be taken back", role: .destructive) {
                 if let pending = pendingHandOver {
                     capabilities[pending.id] = pending.capability
                 }
@@ -183,7 +183,7 @@ struct ShareAccessSheet: View {
             Menu {
                 Button {
                     Task { await checkProfileNow() }
-                } label: { Text("Check Now") }
+                } label: { Text("Check now") }
             } label: {
                 PolarisIcon("ic_menu_horizontal", size: Metric.iconInline)
             }
@@ -230,7 +230,7 @@ struct ShareAccessSheet: View {
                 Button {
                     step = .config
                 } label: {
-                    Text("Try Again")
+                    Text("Try again")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
@@ -382,9 +382,9 @@ struct ShareAccessSheet: View {
         pollExhausted = true
     }
 
-    /// One immediate profile check (the "Check Now" button and the
+    /// One immediate profile check (the "Check now" button and the
     /// acceptance-push hint). While waiting it also re-tries the auto-drop so
-    /// "Check Now" doubles as "re-send the auto-invite" — but that retry
+    /// "Check now" doubles as "re-send the auto-invite" — but that retry
     /// WRITES to the public DB, so it stays behind the step guard: the hint
     /// can fire this on every push while the sheet is open, and once the
     /// ceremony has left `.waiting` a check must stay read-only.
@@ -577,7 +577,7 @@ struct ShareAccessSheet: View {
                 Button {
                     Task { await createShare() }
                 } label: {
-                    Text("Create Share")
+                    Text("Create share")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
@@ -652,7 +652,7 @@ struct ShareAccessSheet: View {
                 // invite (nudge); "Done" is the quiet fallback since the
                 // pending state already persists and resurfaces elsewhere.
                 // Once accepted there is nothing left to nudge — Done becomes
-                // the primary. "Check Now" is a low-frequency escape hatch,
+                // the primary. "Check now" is a low-frequency escape hatch,
                 // demoted to the toolbar overflow (see `toolbarTrailing`).
                 VStack(spacing: Space.s3) {
                     if accepted {
@@ -680,14 +680,14 @@ struct ShareAccessSheet: View {
                             }
                         } else {
                             ShareLink(item: shareURL) {
-                                Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
+                                Label { Text("Share invite link") } icon: { PolarisIcon(Icons.share) }
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.themedProminent)
                         }
                         #else
                         ShareLink(item: shareURL) {
-                            Label { Text("Share Invite Link") } icon: { PolarisIcon(Icons.share) }
+                            Label { Text("Share invite link") } icon: { PolarisIcon(Icons.share) }
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.themedProminent)
@@ -768,7 +768,7 @@ struct ShareAccessSheet: View {
                 step = .checking
                 Task { await enter() }
             } label: {
-                Text("Check Again")
+                Text("Check again")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.themedProminent)

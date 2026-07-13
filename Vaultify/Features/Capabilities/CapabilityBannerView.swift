@@ -9,7 +9,7 @@ struct CapabilityBannerView: View {
     /// Manifest-provided copy key — overrides the default body when it maps
     /// to a whitelisted localized string (a raw key is never rendered).
     var messageKey: String?
-    /// Retry hook for the outage state ("Try Again" → re-probe).
+    /// Retry hook for the outage state ("Try again" → re-probe).
     var onRetry: (() -> Void)?
 
     var body: some View {
@@ -28,7 +28,7 @@ struct CapabilityBannerView: View {
                 }
                 if content.showsRetry, let onRetry {
                     Button { onRetry() } label: {
-                        Text("Try Again").vaultType(.footnote).themedForeground(.accentText)
+                        Text("Try again").vaultType(.footnote).themedForeground(.accentText)
                     }
                     .buttonStyle(.plain)
                 }

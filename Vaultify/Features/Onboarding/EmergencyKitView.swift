@@ -3,8 +3,9 @@ import UniformTypeIdentifiers
 
 /// Shows the generated recovery key once and requires the user to SAVE the Emergency Kit
 /// PDF before continuing — it is the only way to recover a forgotten master password / set
-/// up a new device. Layout mirrors the other onboarding steps: top-aligned, left-aligned,
-/// Loox brand mark, the key as the focal card, soft tinted actions.
+/// up a new device. The key rides in a branded Emergency Kit card (tap to copy, Share chip
+/// in the header); the blue Save action exports the PDF, and the black Continue button stays
+/// hidden behind an amber "must save" warning until the save succeeds.
 struct EmergencyKitView: View {
     let recoveryKey: String
     /// Printed on the kit ("Created for …" + iCloud reminder). Threaded from the name step.
@@ -14,10 +15,13 @@ struct EmergencyKitView: View {
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var savedPDF = false
     @State private var showExporter = false
     @State private var pdfFile: EmergencyKitPDFFile?
     @State private var exportError: String?
+    /// Copy affordance feedback: flips the glyph to a green check for a beat.
+    @State private var copiedKey = false
 
     private var info: EmergencyKitInfo {
         EmergencyKitInfo(recoveryKey: recoveryKey, ownerName: ownerName,
@@ -28,35 +32,26 @@ struct EmergencyKitView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    BrandLogoMark.compact
+                    // Loox dots mark (the Home empty-avatar look), centred,
+                    // revealing its rings on appear.
+                    LooxDotsAvatar(size: 100, revealsOnAppear: true)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, Space.s6)
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
-                    Text("This recovery key can restore your vault if you forget your master password or set up a new device. Save the PDF to continue.")
+                    Text("This recovery key can restore your vault if you forget your master password or set up a new device.")
                         .vaultType(.subhead).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.top, Space.s2)
 
-                VStack(spacing: Space.s3) {
-                    keyCard
-                    HStack(spacing: Space.s3) {
-                        Button {
-                            env.clipboard.copy(recoveryKey, label: "Recovery key", sensitive: true)
-                        } label: {
-                            tintedActionLabel("Copy", icon: Icons.copy)
-                        }
-                        .buttonStyle(.themedTinted)
+                emergencyKitCard
 
-                        if !recoveryKey.isEmpty {
-                            ShareLink(item: recoveryKey) {
-                                tintedActionLabel("Share", icon: Icons.share)
-                            }
-                            .buttonStyle(.themedTinted)
-                        }
-                    }
+                // Stakes, until the kit is saved — once saved the pinned
+                // Continue is the only affordance left.
+                if !savedPDF {
+                    mustSaveWarning
                 }
-
-                savePDFCard
 
                 if let exportError {
                     Text(exportError)
@@ -67,15 +62,22 @@ struct EmergencyKitView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
         }
+        // Onboarding concept: plain white page (the kit card carries its own surface).
+        .background(Color(rgb: theme.background).ignoresSafeArea())
+        // One pinned CTA slot like every other onboarding step: Save until the
+        // PDF is actually saved, then Continue (a checkbox can't prove the key
+        // was kept; a successful file save can).
         .safeAreaInset(edge: .bottom) {
-            Button(action: onContinue) {
-                Text("Continue").frame(maxWidth: .infinity)
+            Group {
+                if savedPDF {
+                    BrandCapsuleCTA(action: onContinue)
+                        .transition(.opacity)
+                } else {
+                    saveButton
+                        .padding(.horizontal, Space.s6)
+                        .padding(.bottom, Space.gutter)
+                }
             }
-            .buttonStyle(.themedProminent)
-            .controlSize(.large)
-            .disabled(!savedPDF || recoveryKey.isEmpty)
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.gutter)
         }
         .fileExporter(isPresented: $showExporter,
                       document: pdfFile,
@@ -83,7 +85,7 @@ struct EmergencyKitView: View {
                       defaultFilename: info.suggestedFilename) { result in
             switch result {
             case .success:
-                savedPDF = true
+                withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { savedPDF = true }
                 exportError = nil
                 Haptics.success()
             case .failure(let error):
@@ -104,63 +106,141 @@ struct EmergencyKitView: View {
         showExporter = true
     }
 
-    private func tintedActionLabel(_ title: LocalizedStringKey, icon: String) -> some View {
-        Label { Text(title) } icon: { PolarisIcon(icon, size: Metric.iconInline) }
-            .frame(maxWidth: .infinity)
-    }
-
-    private var keyCard: some View {
-        Group {
-            if recoveryKey.isEmpty {
-                ProgressView().frame(maxWidth: .infinity, minHeight: 88)
-            } else {
-                Text(displayKey)
-                    .font(.vaultCode(.title3, weight: .semibold))
-                    .tracking(0.5)
-                    .lineSpacing(Space.s2)
-                    .multilineTextAlignment(.center)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Space.s6)
-                    .padding(.horizontal, Space.s3)
-            }
+    private func copyKey() {
+        guard !recoveryKey.isEmpty else { return }
+        env.clipboard.copy(recoveryKey, label: appString("recovery key"), sensitive: true)
+        withAnimation(.easeInOut(duration: 0.15)) { copiedKey = true }
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeInOut(duration: 0.2)) { copiedKey = false }
         }
-        .background(Color(rgb: theme.elevatedBackground),
-                    in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .elevation(.level2)
     }
 
-    /// Required action: build + save the kit PDF. Once saved, the card confirms and the
-    /// bottom Continue button unlocks. A checkbox alone can't prove the key was preserved;
-    /// a successful file save can.
-    private var savePDFCard: some View {
-        Button(action: presentExporter) {
-            HStack(alignment: .center, spacing: Space.s3) {
-                PolarisIcon(savedPDF ? Icons.checkCircle : Icons.shield, size: Metric.iconUtility)
-                    .foregroundStyle(savedPDF ? VaultColors.strengthStrong : Color(rgb: theme.accent))
-                    .frame(width: Metric.controlLarge, height: Metric.controlLarge)
-                    .background(Color(rgb: theme.accentSoft),
-                                in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                VStack(alignment: .leading, spacing: Space.s1) {
-                    Text(savedPDF ? "Emergency Kit saved" : "Save Emergency Kit (PDF)")
-                        .vaultType(.headline)
-                    Text(savedPDF
-                         ? "Keep it somewhere safe and offline."
-                         : "Save the printable PDF with your recovery key and Setup Code.")
-                        .vaultType(.footnote).themedForeground(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.leading)
+    // MARK: Emergency Kit card (concept design)
+
+    /// Branded kit card: blue header with a Share chip, owner + created-date columns,
+    /// and the recovery key in a dashed focal box that copies on tap. No infinity mark.
+    private var emergencyKitCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Emergency Kit")
+                    .vaultType(.footnote).fontWeight(.semibold)
+                    .textCase(.uppercase)
+                    .tracking(1.5)
+                    .foregroundStyle(.white)
+                Spacer()
+                if !recoveryKey.isEmpty {
+                    ShareLink(item: recoveryKey) {
+                        HStack(spacing: Space.s1) {
+                            PolarisIcon(Icons.share, size: 13)
+                            Text("Share").vaultType(.caption).fontWeight(.semibold)
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, Space.s3)
+                        .padding(.vertical, 5)
+                        .background(.white.opacity(0.22), in: Capsule())
+                    }
                 }
-                Spacer(minLength: Space.s2)
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(LinearGradient(colors: [.looxRoyal, .looxBlue],
+                                       startPoint: .leading, endPoint: .trailing))
+
+            VStack(alignment: .leading, spacing: Space.s4) {
+                recoveryKeyBox
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(rgb: theme.elevatedBackground),
-                        in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .elevation(.level2)
+            .background(Color(rgb: theme.elevatedBackground))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        // The page is white, so the kit card needs the white-canvas shadow.
+        .elevation(.cardOnWhite)
+    }
+
+    /// Dashed focal box; the whole box copies the key on tap (the clipboard
+    /// service raises the "copied" toast), with a copy glyph in the top corner.
+    private var recoveryKeyBox: some View {
+        VStack(spacing: Space.s2) {
+            // Label row: the copy glyph rides the SAME line as the label, so the
+            // two sit vertically centred together; it flips to a green check
+            // for a beat after copying.
+            ZStack {
+                Text("Recovery Key")
+                    .vaultType(.caption).fontWeight(.semibold)
+                    .textCase(.uppercase).tracking(1)
+                    .themedForeground(.tertiary)
+                if !recoveryKey.isEmpty {
+                    HStack {
+                        Spacer()
+                        PolarisIcon(copiedKey ? Icons.checkCircle : Icons.copy, size: Metric.iconInline)
+                            .foregroundStyle(copiedKey ? Color(rgb: theme.success)
+                                                       : theme.color(.iconSecondary))
+                    }
+                }
+            }
+            keyText
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Space.s5)
+        .padding(.horizontal, Space.s3)
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+            .strokeBorder(Color(rgb: theme.destructive).opacity(0.55),
+                          style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+        .contentShape(Rectangle())
+        .onTapGesture { copyKey() }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(Text("Copies the recovery key"))
+    }
+
+    @ViewBuilder private var keyText: some View {
+        if recoveryKey.isEmpty {
+            ProgressView().frame(minHeight: 44)
+        } else {
+            Text(displayKey)
+                .font(.vaultCode(.title3, weight: .semibold))
+                .tracking(0.5)
+                .lineSpacing(Space.s2)
+                .multilineTextAlignment(.center)
+                .themedForeground(.primary)
+        }
+    }
+
+    // MARK: Save action (brand blue) — reveals Continue on success
+
+    private var saveButton: some View {
+        Button(action: presentExporter) {
+            Text("Save Kit PDF")
+                .vaultType(.body).fontWeight(.medium)
+            // Full-width red capsule: the one required action on this screen
+            // earns the whole row, and red signals how critical it is. (Once
+            // saved, the pinned slot flips to Continue.)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Space.s3)
+            .background(Color(rgb: theme.destructive), in: Capsule())
+            .opacity(recoveryKey.isEmpty ? 0.6 : 1)
         }
         .buttonStyle(.plain)
         .disabled(recoveryKey.isEmpty)
+    }
+
+    /// Quiet duotone note (matches the info notes elsewhere) shown until the
+    /// kit is saved — the stakes read without shouting.
+    private var mustSaveWarning: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Image("HandHoldingMedicalDuotone")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 26, height: 26)
+            Text("Save the kit to continue. It is the only way to recover your vault.")
+                .vaultType(.footnote).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, Space.s2)
     }
 
     /// Split the hyphenated key into two balanced lines so it reads as a block instead of

@@ -12,6 +12,9 @@ struct OnboardingFlow: View {
     /// and remind which iCloud account holds the synced vault.
     @State private var userName = ""
     @State private var userEmail = ""
+    /// Restore chooser (bottom sheet) presentation + the method it resolves to.
+    @State private var showRestoreSheet = false
+    @State private var restoreMethod: JoinVaultFlow.Method = .qr
 
     /// Id of the default "My Vault" Space seeded in `createVault`, threaded into the
     /// item seeds so they get a home (otherwise they'd land in Unfiled).
@@ -24,11 +27,22 @@ struct OnboardingFlow: View {
             switch step {
             case .welcome:
                 WelcomeLandingView(onContinue: { step = .create },
-                                   onRestore: CloudSyncService.isConfigured ? { step = .join } : nil)
+                                   onRestore: CloudSyncService.isConfigured ? { showRestoreSheet = true } : nil)
             case .join:
-                JoinVaultFlow(onCancel: { step = .welcome })
+                JoinVaultFlow(method: restoreMethod, onCancel: { step = .welcome })
             case .create:
-                CreateMasterPasswordView(onSubmit: createVault)
+                // Native nav chrome for the standard iOS back (to welcome).
+                NavigationStack {
+                    CreateMasterPasswordView(onSubmit: createVault)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button { step = .welcome } label: { Image(systemName: "chevron.backward") }
+                                    .accessibilityLabel(Text("Back"))
+                            }
+                        }
+                }
+                .tint(Color.primary)
             case .name:
                 NameStepView { name, email in
                     userName = name
@@ -39,12 +53,15 @@ struct OnboardingFlow: View {
                     step = .emergencyKit
                 }
             case .emergencyKit:
+                // No back: the identity seeds ran when the name step completed.
                 EmergencyKitView(recoveryKey: recoveryKey,
                                  ownerName: userName,
                                  iCloudAccount: userEmail) { step = .theme }
             case .theme:
-                ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
-                    step = BiometricAuth.isAvailable ? .biometric : .done
+                navStep(back: { step = .emergencyKit }) {
+                    ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
+                        step = BiometricAuth.isAvailable ? .biometric : .done
+                    }
                 }
             case .biometric:
                 EnableBiometricView(onEnable: enableBiometric) { step = .done }
@@ -53,6 +70,14 @@ struct OnboardingFlow: View {
             }
         }
         .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
+        // Restore chooser: a bottom sheet over the welcome screen. Picking a method
+        // dismisses it and advances to the join flow at that method.
+        .sheet(isPresented: $showRestoreSheet) {
+            RestoreMethodSheet(
+                onQR: { restoreMethod = .qr; showRestoreSheet = false; step = .join },
+                onRecovery: { restoreMethod = .recovery; showRestoreSheet = false; step = .join },
+                onStartFresh: { showRestoreSheet = false; step = .create })
+        }
         // Onboarding has no MainTabView, so it hosts its own copy-toast overlay
         // (Emergency Kit's Copy button would otherwise give only a haptic).
         .overlay(alignment: .bottom) { CopyToastOverlay() }
@@ -62,7 +87,27 @@ struct OnboardingFlow: View {
                 recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""
             }
         }
-        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
+        // Grouped-gray canvas so the white cards/fields of the form steps read
+        // (Apple grouped style). Welcome and Done paint their own white page
+        // over this, so only the form steps show the gray.
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
+    }
+
+    /// Wraps a step in native nav chrome with a standard iOS back control.
+    /// (The name step has no back: the vault already exists at that point.)
+    private func navStep<Content: View>(back: @escaping () -> Void,
+                                        @ViewBuilder _ content: () -> Content) -> some View {
+        NavigationStack {
+            content()
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: back) { Image(systemName: "chevron.backward") }
+                            .accessibilityLabel(Text("Back"))
+                    }
+                }
+        }
+        .tint(Color.primary)
     }
 
     private func createVault(_ password: String) async -> String? {
@@ -132,6 +177,10 @@ struct OnboardingFlow: View {
 private struct OnboardingDoneStep: View {
     let onFinish: () -> Void
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @StateObject private var launch = LooxLaunchController()
+    /// Text and CTA step aside for the launch burst; the animation stays.
+    @State private var contentHidden = false
 
     /// Recap what onboarding actually set up — mention biometrics only when the
     /// user turned them on, so the "Not now" path stays truthful.
@@ -142,20 +191,46 @@ private struct OnboardingDoneStep: View {
     }
 
     var body: some View {
-        OnboardingScrollingStep {
-            VStack(spacing: 0) {
-                Spacer(minLength: Space.s8)
-                PolarisIcon(Icons.checkCircle, size: 72).foregroundStyle(VaultColors.strengthStrong)
-                OnboardingStepHeader(
-                    "You’re all set",
-                    subtitle: recap)
-                Spacer(minLength: Space.s6)
-                Button(action: onFinish) {
-                    Text("Open Loox").frame(maxWidth: .infinity)
+        ZStack {
+            // The color the launch bloom floods, so the hand-off is seamless.
+            Color(.systemBackground).ignoresSafeArea()
+            OnboardingScrollingStep {
+                VStack(spacing: 0) {
+                    Spacer(minLength: Space.s8)
+                    // Same brand animation as the welcome landing; its circle-burst
+                    // launch plays when the user opens the app.
+                    LooxCloudAnimationView(controller: launch)
+                        .frame(width: 220, height: 220 * 0.82)
+                    OnboardingStepHeader(
+                        "You’re all set",
+                        subtitle: recap)
+                    .opacity(contentHidden ? 0 : 1)
+                    Spacer(minLength: Space.s6)
                 }
-                .buttonStyle(.themedProminent).controlSize(.large)
-                .padding(.horizontal, Space.s6).padding(.bottom, Space.s6)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            Button(action: press) {
+                Text("Open Loox").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.themedProminent).controlSize(.large)
+            .disabled(launch.phase != .idle)
+            .opacity(contentHidden ? 0 : 1)
+            .padding(.horizontal, Space.s6).padding(.bottom, Space.gutter)
+        }
+    }
+
+    /// Welcome-style launch choreography: the burst blooms over the screen and
+    /// the app crossfades in behind the flood.
+    private func press() {
+        guard launch.phase == .idle else { return }
+        if reduceMotion {
+            withAnimation(.easeInOut(duration: 0.25)) { contentHidden = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onFinish() }
+            return
+        }
+        launch.press()
+        withAnimation(.easeOut(duration: 0.25).delay(0.35)) { contentHidden = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { onFinish() }
     }
 }

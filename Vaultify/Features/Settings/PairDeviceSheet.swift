@@ -68,7 +68,7 @@ struct PairDeviceSheet: View {
                 Text(message)
                     .vaultType(.subhead).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
-                Button { phase = .scanning } label: { Text("Try Again") }
+                Button { phase = .scanning } label: { Text("Try again") }
                     .buttonStyle(.themedProminent)
             }
             .padding(Space.s6)

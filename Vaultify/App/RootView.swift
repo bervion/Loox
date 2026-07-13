@@ -8,6 +8,9 @@ struct RootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var obscured = false
+    /// Success flourish: the memoji wink shown over the freshly-unlocked app
+    /// (set by the lock screen on a successful unlock, cleared when it ends).
+    @State private var celebrateUnlock = false
 
     private enum Route: Equatable { case onboarding, locked, unlocked }
 
@@ -27,14 +30,24 @@ struct RootView: View {
                 // comparable exposure to the previous crossfade; "Immediately"
                 // auto-lock still swaps with no animation via withTransaction below).
                 // zIndex keeps the lock ABOVE the app during both overlaps.
-                LockScreen().transition(.controlledReveal).zIndex(1)
+                LockScreen(onUnlockSuccess: { if !reduceMotion { celebrateUnlock = true } })
+                    .transition(.controlledReveal).zIndex(1)
             case .unlocked: AdaptiveRootView().transition(.identity)
             }
 
             if obscured && env.settings.hideInAppSwitcher && route == .unlocked {
                 PrivacyShield().transition(.opacity)
             }
+
+            // Plays over the freshly-unlocked app, then hands off. Sits above
+            // everything so it also masks the lock→vault reveal underneath.
+            if celebrateUnlock {
+                LooxWinkView { celebrateUnlock = false }
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
         }
+        .animation(.easeInOut(duration: 0.25), value: celebrateUnlock)
         // Purely presentational: the session flip already happened — this never gates
         // or delays auth. Reduce Motion collapses the route change to an instant swap.
         .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: route)
@@ -130,12 +143,14 @@ extension AnyTransition {
 }
 
 /// Opaque overlay shown when the app is inactive/backgrounded to hide secrets.
-/// Logo only — no wordmark — matching the splash logo size.
+/// Uses the lightweight breathing symbol (no memoji players) — this mounts on
+/// every inactivity transition, so it must stay cheap and appear instantly.
 private struct PrivacyShield: View {
     var body: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
-            BrandLogoMark.hero
+            LooxLogoBreatheView(ready: true)
+                .frame(width: 160, height: 160)
         }
     }
 }

@@ -10,6 +10,9 @@ import SwiftUI
 ///   login arrow; the keyboard's Go key also submits) and a "Forgot password?" link pinned
 ///   to the bottom of the screen.
 struct LockScreen: View {
+    /// Fired on a successful unlock (biometric or password) so the parent can
+    /// play the memoji success wink before the vault appears.
+    var onUnlockSuccess: () -> Void = {}
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -74,7 +77,11 @@ struct LockScreen: View {
 
                 VStack(spacing: Space.s7) {
                     VStack(spacing: Space.s4) {
-                        BrandLogoMark.hero
+                        // Idle brand symbol — the six circles breathe in a "not
+                        // ready yet" (dimmed) state while waiting to authenticate;
+                        // on success RootView plays the memoji wink before the app.
+                        LooxLogoBreatheView(ready: false)
+                            .frame(width: 132, height: 132)
                             .overlay(alignment: .bottomTrailing) {
                                 if mode == .biometric && !requireSlide {
                                     BiometricBadge(authenticating: bioAuthenticating) {
@@ -88,28 +95,12 @@ struct LockScreen: View {
                         VStack(spacing: Space.s2) {
                             Text("Unlock your vault")
                                 .vaultType(.screenTitle)
-                            // While the vault key is being derived/fetched the ∞ draws
-                            // itself — the gate working open (Controlled Reveal). The
-                            // instruction line yields for that moment only.
-                            if bioAuthenticating || busy {
-                                LooxGateMark(animating: true)
-                                    .frame(height: 18)
-                                    .transition(.opacity)
-                                    // Fresh element: the mark itself is accessibility-
-                                    // hidden (decorative), but this moment needs a
-                                    // VoiceOver announcement.
-                                    .accessibilityElement(children: .ignore)
-                                    .accessibilityLabel(Text("Unlocking"))
-                            } else {
-                                Text(subtitleText)
-                                    .vaultType(.subhead)
-                                    .themedForeground(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+                            Text(subtitleText)
+                                .vaultType(.subhead)
+                                .themedForeground(.secondary)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .animation(.vault(Motion.standard, reduceMotion: reduceMotion),
-                                   value: bioAuthenticating || busy)
                     }
 
                     if requireSlide {
@@ -210,6 +201,7 @@ struct LockScreen: View {
         defer { bioAuthenticating = false }
         do {
             try await env.session.unlockWithBiometrics()
+            onUnlockSuccess()
             // Success → session state flips to unlocked → this view is replaced.
         } catch {
             bioFailCount += 1
@@ -227,6 +219,7 @@ struct LockScreen: View {
         busy = true; error = nil
         do {
             try await env.session.unlock(password: password)
+            onUnlockSuccess()
             password = ""
         } catch {
             self.error = error.localizedDescription

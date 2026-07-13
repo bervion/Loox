@@ -43,14 +43,15 @@ struct LegacyChipTabBar: View {
         } label: {
             ZStack {
                 if selected {
-                    // Active chip: soft neutral circle + accent filled icon.
+                    // Active chip: soft neutral circle + neutral filled icon
+                    // (Apple-style black highlight, white in dark mode).
                     Circle()
                         .fill(Color(rgb: theme.primaryText).opacity(0.06))
                         .frame(width: TabBarMetric.indicatorSize,
                                height: TabBarMetric.indicatorSize)
                 }
                 PolarisIcon(selected ? tab.iconSelected : tab.icon, size: Metric.iconTab)
-                    .foregroundStyle(selected ? theme.color(.accent) : theme.color(.iconSecondary))
+                    .foregroundStyle(selected ? theme.color(.primary) : theme.color(.iconSecondary))
             }
             // Fixed indicator-width slot; full bar height keeps the hit area ≥44pt.
             .frame(width: TabBarMetric.indicatorSize)

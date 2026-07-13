@@ -48,7 +48,7 @@ struct ShareRecipientDetailSheet: View {
         .task { await loadGrant() }
         .confirmationDialog("Revoke access?", isPresented: $confirmRevoke,
                             titleVisibility: .visible) {
-            Button("Revoke Access", role: .destructive) { Task { await revoke() } }
+            Button("Revoke access", role: .destructive) { Task { await revoke() } }
         } message: {
             Text("They can't request codes anymore. Values that were already shared stay on their device.")
         }
@@ -61,7 +61,7 @@ struct ShareRecipientDetailSheet: View {
         .confirmationDialog("Hand over this passkey?", isPresented: Binding(
             get: { pendingHandOver != nil }, set: { if !$0 { pendingHandOver = nil } }),
             titleVisibility: .visible) {
-            Button("Hand Over: Can't Be Taken Back", role: .destructive) {
+            Button("Hand over: can't be taken back", role: .destructive) {
                 if let pending = pendingHandOver { capabilities?[pending.id] = pending.capability }
                 pendingHandOver = nil
             }
@@ -109,7 +109,7 @@ struct ShareRecipientDetailSheet: View {
                 Task { await sendUpdateNow() }
             } label: {
                 if busy { ProgressView().frame(maxWidth: .infinity) }
-                else { Text("Send Update Now").frame(maxWidth: .infinity) }
+                else { Text("Send update now").frame(maxWidth: .infinity) }
             }
             .disabled(busy)
         } footer: {
@@ -135,7 +135,7 @@ struct ShareRecipientDetailSheet: View {
                     Task { await applyCapabilities() }
                 } label: {
                     if busy { ProgressView().frame(maxWidth: .infinity) }
-                    else { Text("Apply Changes").frame(maxWidth: .infinity) }
+                    else { Text("Apply changes").frame(maxWidth: .infinity) }
                 }
                 .disabled(busy)
             } header: {
@@ -152,7 +152,7 @@ struct ShareRecipientDetailSheet: View {
             Button(role: .destructive) {
                 confirmRevoke = true
             } label: {
-                Text("Revoke Access").frame(maxWidth: .infinity)
+                Text("Revoke access").frame(maxWidth: .infinity)
             }
             .disabled(busy)
         }

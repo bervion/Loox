@@ -45,7 +45,7 @@ struct AliasDetailScreen: View {
         List {
             Section("Address") {
                 Button {
-                    env.clipboard.copy(address, label: appString("Private Email"), sensitive: false)
+                    env.clipboard.copy(address, label: appString("private email"), sensitive: false)
                 } label: {
                     HStack {
                         Text(verbatim: address).themedForeground(.primary)
