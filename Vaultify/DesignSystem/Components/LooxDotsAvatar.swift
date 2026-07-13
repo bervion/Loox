@@ -36,11 +36,12 @@ struct LooxDotsAvatar: View {
     private let revealStagger: Double = 0.15
     private var revealDur: Double { revealTravel + revealStagger }
 
-    /// Brand dot blue (#61C0FF) — fixed, softer than the accent by design.
-    private let dotColor = Color(rgb: 0x61C0FF)
+    /// Brand duotone pair for logo/icon marks (NOT the link blue): light dots,
+    /// dark centre glyph.
+    private let dotColor = Color(rgb: 0x94D5FF)
+    private let glyphColor = Color(rgb: 0x009BFF)
 
     var body: some View {
-        let accent = Color(rgb: env.theme.active.accent)
         ZStack {
             // Card-white CORE disc (inside the rings, hugging the glyph) so the
             // centre lifts off grouped-gray canvases while the dots radiate
@@ -49,7 +50,7 @@ struct LooxDotsAvatar: View {
                 .fill(Color(rgb: env.theme.active.elevatedBackground))
                 .frame(width: size * 0.55, height: size * 0.55)
             dotsLayer(accent: dotColor)
-            centerGlyph(accent: accent)
+            centerGlyph(accent: glyphColor)
         }
         .frame(width: size, height: size)
         .task(id: animatesCamera || revealsOnAppear) {
@@ -108,7 +109,7 @@ struct LooxDotsAvatar: View {
                     // Deterministic sparkle: each dot gets its own size/opacity.
                     let h1 = hash(k, i, 1), h2 = hash(k, i, 2)
                     let dotR = ring.dotR * (0.85 + 0.3 * h1) * (0.6 + 0.4 * p)
-                    // #61C0FF is already soft — sparkle in the upper opacity band.
+                    // #94D5FF is already soft — sparkle in the upper opacity band.
                     let alpha = (0.55 + 0.45 * h2) * p
                     gc.fill(Path(ellipseIn: CGRect(x: x - dotR, y: y - dotR,
                                                    width: 2 * dotR, height: 2 * dotR)),
