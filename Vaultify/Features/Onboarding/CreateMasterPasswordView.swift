@@ -132,7 +132,7 @@ struct CreateMasterPasswordView: View {
     /// Duotone info glyph + the no-reset note (replaces the amber warning card).
     private var infoNote: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Image("DoorOpenDuotone")
+            Image("HandshakeDuotone")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 26, height: 26)
