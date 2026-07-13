@@ -152,58 +152,55 @@ struct RestoreMethodSheet: View {
     let onRecovery: () -> Void
     @Environment(\.dismiss) private var dismiss
 
+    @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        VStack(spacing: Space.s5) {
-            HStack {
+        // Reuse the app's base sheet scaffold so the close control sits in the header
+        // (properly placed under the grab handle) instead of a hand-rolled top row.
+        VaultSheetScaffold(
+            title: "Restore data",
+            leading: {
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .semibold))
-                        .themedForeground(.iconSecondary)
-                        .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .leading)
-                        .contentShape(Rectangle())
+                    Image(systemName: "xmark").font(.system(size: 15, weight: .semibold))
                 }
-                .buttonStyle(.plain)
                 .accessibilityLabel(Text("Close"))
-                Spacer()
+            },
+            trailing: { EmptyView() }
+        ) {
+            ScrollView {
+                VStack(spacing: Space.s5) {
+                    Text("Move your vault from another device, or reopen it with your Emergency Kit.")
+                        .vaultType(.subhead).themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+
+                    VStack(spacing: Space.s3) {
+                        JoinOptionCard(icon: Icons.scanCode,
+                                       title: "Pair with an old device",
+                                       detail: "Scan a QR code between two iPhones to move the whole vault.",
+                                       action: onQR)
+                        JoinOptionCard(icon: Icons.key,
+                                       title: "Use Recovery Key",
+                                       detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
+                                       action: onRecovery)
+                    }
+
+                    Text("All decryption happens on this device. Loox never sees your data.")
+                        .vaultType(.footnote).themedForeground(.tertiary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, Space.s6)
+                .padding(.top, Space.s4)
+                .padding(.bottom, Space.s6)
             }
-
-            VStack(spacing: Space.s2) {
-                Text("Restore data")
-                    .vaultType(.section)
-                Text("Move your vault from another device, or reopen it with your Emergency Kit.")
-                    .vaultType(.subhead).themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            VStack(spacing: Space.s3) {
-                JoinOptionCard(icon: Icons.scanCode,
-                               title: "Pair with an old device",
-                               detail: "Scan a QR code between two iPhones to move the whole vault.",
-                               action: onQR)
-                JoinOptionCard(icon: Icons.key,
-                               title: "Use Recovery Key",
-                               detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
-                               action: onRecovery)
-            }
-
-            Text("All decryption happens on this device. Loox never sees your data.")
-                .vaultType(.footnote).themedForeground(.tertiary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, Space.s6)
-        .padding(.top, Space.s7)   // clear the drag indicator so the X isn't clipped
-        .padding(.bottom, Space.s6)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        // Solid grouped-gray sheet (not the default glass) so the white option
-        // cards read as a grouped set, matching the design.
+        // Solid grouped-gray sheet (not the default glass) so the white cards group.
         .presentationBackground(Color(rgb: env.theme.active.groupedBackground))
     }
 }
