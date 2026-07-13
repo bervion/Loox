@@ -5967,6 +5967,7 @@
       }
     },
     "Keep it somewhere safe and offline." : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -7741,56 +7742,6 @@
         }
       }
     },
-    "Owner" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chủ sở hữu"
-          }
-        }
-      }
-    },
-    "Recovery Key" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Khóa khôi phục"
-          }
-        }
-      }
-    },
-    "Save Kit PDF" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lưu PDF Bộ khôi phục"
-          }
-        }
-      }
-    },
-    "Save the kit to continue. It is the only way to recover your vault." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lưu Bộ khôi phục để tiếp tục. Đây là cách duy nhất để khôi phục kho của bạn."
-          }
-        }
-      }
-    },
-    "Saved to your files. You can continue now." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã lưu vào Tệp của bạn. Bạn có thể tiếp tục."
-          }
-        }
-      }
-    },
     "Nudge via Messages" : {
       "localizations" : {
         "vi" : {
@@ -8211,6 +8162,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quá hạn"
+          }
+        }
+      }
+    },
+    "Owner" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chủ sở hữu"
+          }
+        }
+      }
+    },
+    "This recovery key can restore your vault if you forget your master password or set up a new device." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa khôi phục này có thể phục hồi kho của bạn nếu bạn quên mật khẩu chính hoặc thiết lập thiết bị mới."
           }
         }
       }
@@ -9319,6 +9290,16 @@
         }
       }
     },
+    "Recovery Key" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa khôi phục"
+          }
+        }
+      }
+    },
     "RECOVERY KEY" : {
       "localizations" : {
         "vi" : {
@@ -9918,6 +9899,16 @@
         }
       }
     },
+    "Save Kit PDF" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu PDF Bộ khôi phục"
+          }
+        }
+      }
+    },
     "Save login" : {
       "localizations" : {
         "vi" : {
@@ -9928,7 +9919,18 @@
         }
       }
     },
+    "Save the kit to continue. It is the only way to recover your vault." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu Bộ khôi phục để tiếp tục. Đây là cách duy nhất để khôi phục kho của bạn."
+          }
+        }
+      }
+    },
     "Save the printable PDF with your recovery key and Setup Code." : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -9954,6 +9956,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lưu Bộ khôi phục"
+          }
+        }
+      }
+    },
+    "Saved to your files. You can continue now." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã lưu vào Tệp của bạn. Bạn có thể tiếp tục."
           }
         }
       }

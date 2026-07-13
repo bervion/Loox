@@ -3,8 +3,9 @@ import UniformTypeIdentifiers
 
 /// Shows the generated recovery key once and requires the user to SAVE the Emergency Kit
 /// PDF before continuing — it is the only way to recover a forgotten master password / set
-/// up a new device. The key rides in a branded Emergency Kit card; the blue Save action
-/// exports the PDF, and the black Continue button stays hidden until the save succeeds.
+/// up a new device. The key rides in a branded Emergency Kit card (tap to copy, Share chip
+/// in the header); the blue Save action exports the PDF, and the black Continue button stays
+/// hidden behind an amber "must save" warning until the save succeeds.
 struct EmergencyKitView: View {
     let recoveryKey: String
     /// Printed on the kit ("Created for …" + iCloud reminder). Threaded from the name step.
@@ -32,7 +33,7 @@ struct EmergencyKitView: View {
                     BrandLockup(height: 38)
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
-                    Text("This recovery key can restore your vault if you forget your master password or set up a new device. Save the PDF to continue.")
+                    Text("This recovery key can restore your vault if you forget your master password or set up a new device.")
                         .vaultType(.subhead).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -40,34 +41,11 @@ struct EmergencyKitView: View {
 
                 emergencyKitCard
 
-                HStack(spacing: Space.s3) {
-                    Button {
-                        env.clipboard.copy(recoveryKey, label: "Recovery key", sensitive: true)
-                    } label: {
-                        tintedActionLabel("Copy", icon: Icons.copy)
-                    }
-                    .buttonStyle(.themedTinted)
-
-                    if !recoveryKey.isEmpty {
-                        ShareLink(item: recoveryKey) {
-                            tintedActionLabel("Share", icon: Icons.share)
-                        }
-                        .buttonStyle(.themedTinted)
-                    }
-                }
-
                 // Required action + gated continue. Continue only appears once the
-                // PDF is actually saved (a checkbox can't prove the key was kept).
+                // PDF is actually saved (a checkbox can't prove the key was kept);
+                // until then an amber warning states the stakes.
                 VStack(spacing: Space.s3) {
                     saveButton
-
-                    Text(savedPDF
-                         ? "Saved to your files. You can continue now."
-                         : "Save the kit to continue. It is the only way to recover your vault.")
-                        .vaultType(.footnote).themedForeground(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .fixedSize(horizontal: false, vertical: true)
 
                     if savedPDF {
                         Button(action: onContinue) {
@@ -76,6 +54,8 @@ struct EmergencyKitView: View {
                         .buttonStyle(.themedProminent)
                         .controlSize(.large)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    } else {
+                        mustSaveWarning
                     }
                 }
 
@@ -115,15 +95,15 @@ struct EmergencyKitView: View {
         showExporter = true
     }
 
-    private func tintedActionLabel(_ title: LocalizedStringKey, icon: String) -> some View {
-        Label { Text(title) } icon: { PolarisIcon(icon, size: Metric.iconInline) }
-            .frame(maxWidth: .infinity)
+    private func copyKey() {
+        guard !recoveryKey.isEmpty else { return }
+        env.clipboard.copy(recoveryKey, label: "Recovery key", sensitive: true)
     }
 
     // MARK: Emergency Kit card (concept design)
 
-    /// Branded kit card: blue header, owner + created-date columns, and the recovery
-    /// key in a dashed focal box. No brand infinity mark (rebrand).
+    /// Branded kit card: blue header with a Share chip, owner + created-date columns,
+    /// and the recovery key in a dashed focal box that copies on tap. No infinity mark.
     private var emergencyKitCard: some View {
         VStack(spacing: 0) {
             HStack {
@@ -133,6 +113,18 @@ struct EmergencyKitView: View {
                     .tracking(1.5)
                     .foregroundStyle(.white)
                 Spacer()
+                if !recoveryKey.isEmpty {
+                    ShareLink(item: recoveryKey) {
+                        HStack(spacing: Space.s1) {
+                            PolarisIcon(Icons.share, size: 13)
+                            Text("Share").vaultType(.caption).fontWeight(.semibold)
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, Space.s3)
+                        .padding(.vertical, 5)
+                        .background(.white.opacity(0.22), in: Capsule())
+                    }
+                }
             }
             .padding(.horizontal, Space.s4)
             .padding(.vertical, Space.s3)
@@ -148,19 +140,7 @@ struct EmergencyKitView: View {
                     cardField(label: "Created", value: createdDateString, alignment: .trailing)
                 }
 
-                VStack(spacing: Space.s2) {
-                    Text("Recovery Key")
-                        .vaultType(.caption).fontWeight(.semibold)
-                        .textCase(.uppercase).tracking(1)
-                        .themedForeground(.tertiary)
-                    keyText
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s5)
-                .padding(.horizontal, Space.s3)
-                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .strokeBorder(Color.looxBlue.opacity(0.4),
-                                  style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                recoveryKeyBox
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -168,6 +148,36 @@ struct EmergencyKitView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         .elevation(.level2)
+    }
+
+    /// Dashed focal box; the whole box copies the key on tap (the clipboard
+    /// service raises the "copied" toast), with a copy glyph in the top corner.
+    private var recoveryKeyBox: some View {
+        VStack(spacing: Space.s2) {
+            Text("Recovery Key")
+                .vaultType(.caption).fontWeight(.semibold)
+                .textCase(.uppercase).tracking(1)
+                .themedForeground(.tertiary)
+            keyText
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Space.s5)
+        .padding(.horizontal, Space.s3)
+        .overlay(alignment: .topTrailing) {
+            if !recoveryKey.isEmpty {
+                PolarisIcon(Icons.copy, size: Metric.iconInline)
+                    .themedForeground(.iconSecondary)
+                    .padding(Space.s3)
+            }
+        }
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+            .strokeBorder(Color.looxBlue.opacity(0.4),
+                          style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+        .contentShape(Rectangle())
+        .onTapGesture { copyKey() }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(Text("Copies the recovery key"))
     }
 
     @ViewBuilder private var keyText: some View {
@@ -180,7 +190,6 @@ struct EmergencyKitView: View {
                 .lineSpacing(Space.s2)
                 .multilineTextAlignment(.center)
                 .themedForeground(.primary)
-                .textSelection(.enabled)
         }
     }
 
@@ -236,6 +245,23 @@ struct EmergencyKitView: View {
         } else {
             LinearGradient(colors: [.looxRoyal, .looxBlue], startPoint: .leading, endPoint: .trailing)
         }
+    }
+
+    /// Amber "you must save this" card (with an alert glyph) shown under the Save
+    /// button until the kit is saved — the stakes read immediately, in place.
+    private var mustSaveWarning: some View {
+        HStack(alignment: .center, spacing: Space.s3) {
+            PolarisIcon(Icons.alert, size: Metric.iconUtility)
+                .foregroundStyle(Color(rgb: theme.warning))
+            Text("Save the kit to continue. It is the only way to recover your vault.")
+                .vaultType(.footnote).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(rgb: theme.warningSoft),
+                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
     /// Split the hyphenated key into two balanced lines so it reads as a block instead of
