@@ -39,6 +39,9 @@ struct LooxDotsAvatar: View {
     var body: some View {
         let accent = Color(rgb: env.theme.active.accent)
         ZStack {
+            // Card-white disc under the whole mark so it lifts off grouped-gray
+            // canvases (the Profile screen) instead of sinking into them.
+            Circle().fill(Color(rgb: env.theme.active.elevatedBackground))
             dotsLayer(accent: dotColor)
             centerGlyph(accent: accent)
         }
