@@ -230,12 +230,15 @@ struct EmergencyKitView: View {
             }
             // Saved reads as a calm soft-green confirmation so the black Continue
             // button becomes the clear next step; unsaved is the loud red CTA.
+            // Same welcome-style pill geometry as the themed button styles.
             .foregroundStyle(savedPDF ? Color(rgb: theme.success) : .white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Space.s4)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, Space.s6)
+            .padding(.vertical, Space.s3)
             .background(saveButtonFill)
-            .vaultCornerRadius(Radius.sm)
+            .clipShape(Capsule())
             .opacity(recoveryKey.isEmpty ? 0.6 : 1)
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
         .disabled(recoveryKey.isEmpty)

@@ -17,15 +17,19 @@ struct ThemedProminentButtonStyle: ButtonStyle {
             // the momentary pressed state dims.
             let bg: Color = isEnabled ? Color.primary : Color(.systemGray4)
             let fg: Color = isEnabled ? Color(.systemBackground) : Color(.systemGray)
+            // Welcome-style pill: capsule ends, width hugging the content, centred
+            // in the slot. `fixedSize` collapses call-site `maxWidth: .infinity`
+            // labels back to their ideal width.
             configuration.label
                 .vaultType(.body)
                 .fontWeight(.medium)
                 .foregroundStyle(fg)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s4)
-                .background(bg)
-                .vaultCornerRadius(Radius.sm)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s3)
+                .background(bg, in: Capsule())
                 .opacity(configuration.isPressed ? 0.85 : 1)
+                .frame(maxWidth: .infinity)
         }
     }
 }
@@ -46,15 +50,17 @@ struct ThemedTintedButtonStyle: ButtonStyle {
             // TEXT rank: `accentText` clears 4.5:1 on the soft fill, where the
             // raw fill-tuned accent sits as low as 3.05:1 on some presets.
             let fg = isEnabled ? theme.accentText : theme.textDisabled
+            // Same pill geometry as the prominent style (see above).
             configuration.label
                 .vaultType(.body)
                 .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s4)
-                .background(Color(rgb: theme.accentSoft))
-                .vaultCornerRadius(Radius.sm)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s3)
+                .background(Color(rgb: theme.accentSoft), in: Capsule())
                 .opacity(configuration.isPressed ? 0.85 : 1)
+                .frame(maxWidth: .infinity)
         }
     }
 }
@@ -72,15 +78,17 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
             // Opaque muted fill when disabled (blend toward background), never `.opacity`.
             let bg = isEnabled ? theme.destructive : RGBMath.blend(theme.destructive, theme.background, 0.55)
             let fg = isEnabled ? RGBMath.onColor(theme.destructive) : RGBMath.blend(RGBMath.onColor(theme.destructive), bg, 0.4)
+            // Same pill geometry as the prominent style (see above).
             configuration.label
                 .vaultType(.body)
                 .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s4)
-                .background(Color(rgb: bg))
-                .vaultCornerRadius(Radius.sm)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s3)
+                .background(Color(rgb: bg), in: Capsule())
                 .opacity(configuration.isPressed ? 0.85 : 1)
+                .frame(maxWidth: .infinity)
         }
     }
 }
