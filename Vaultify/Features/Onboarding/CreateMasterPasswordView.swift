@@ -148,14 +148,18 @@ struct CreateMasterPasswordView: View {
         } label: {
             Text("Continue")
                 .vaultType(.body).fontWeight(.medium)
-                .foregroundStyle(canSubmit ? .white : Color(rgb: theme.tertiaryText))
+                // Spec disabled colors — OPAQUE, so content scrolling behind the
+                // keyboard-lifted button never shows through.
+                .foregroundStyle(canSubmit ? .white : Color(rgb: 0xBABABD))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
-                .background(canSubmit ? Color(rgb: 0x0065F4) : Color(rgb: theme.secondaryBackground),
+                .background(canSubmit ? Color(rgb: 0x0065F4) : Color(rgb: 0xEFEFF0),
                             in: Capsule())
                 .prominentButtonLoading(busy)
         }
-        .buttonStyle(.plain)
+        // Custom style: unlike .plain, it never dims the disabled label (which
+        // made the capsule translucent).
+        .buttonStyle(SolidCapsuleButtonStyle())
         .disabled(!canSubmit)
         .animation(.easeInOut(duration: 0.2), value: canSubmit)
         .padding(.horizontal, Space.s6)
@@ -174,5 +178,12 @@ struct CreateMasterPasswordView: View {
         error = await onSubmit(password)
         busy = false
         if error != nil { Haptics.error() }
+    }
+}
+
+/// Press-dim only — no automatic disabled dimming, keeping the capsule opaque.
+private struct SolidCapsuleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
     }
 }
