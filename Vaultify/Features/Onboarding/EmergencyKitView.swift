@@ -215,13 +215,8 @@ struct EmergencyKitView: View {
 
     private var saveButton: some View {
         Button(action: presentExporter) {
-            HStack(spacing: Space.s2) {
-                // SF download glyph here (user-approved exception to Polaris-only).
-                Image(systemName: "square.and.arrow.down")
-                    .font(.system(size: Metric.iconInline, weight: .semibold))
-                Text("Save Kit PDF")
-                    .vaultType(.body).fontWeight(.medium)
-            }
+            Text("Save Kit PDF")
+                .vaultType(.body).fontWeight(.medium)
             // Full-width red capsule: the one required action on this screen
             // earns the whole row, and red signals how critical it is. (Once
             // saved, the pinned slot flips to Continue.)
