@@ -38,11 +38,7 @@ struct LooxSwirlAnimationView: View {
     private let ringStagger: Double = 0.20
     private let travel: Double = 1.0
     private var revealDur: Double { 3 * ringStagger + travel }   // 1.6s
-    /// Dispersal (measured off the Apple reference): a ~0.75s ease-out particle
-    /// scatter, then the dots linger in place and fade for ~1.1s.
-    private let scatterFlight: Double = 0.75
-    private let scatterLinger: Double = 1.1
-    private var dismissDur: Double { scatterFlight + scatterLinger }
+    private let dismissDur: Double = 1.0
     /// Slow constant rotation layered over the loop cycle so the pattern never
     /// visibly stalls (rad/s ≈ 15°/s).
     private let loopDrift: Double = 15 * .pi / 180
@@ -52,10 +48,9 @@ struct LooxSwirlAnimationView: View {
     @State private var ticking = true
     @State private var runID = 0
 
-    /// Drawing area beyond the nominal frame so scattering dots spill past the
-    /// square instead of being cut off (the measured dispersal reaches ~2.1x the
-    /// outer ring radius).
-    private let overscan: CGFloat = 2.2
+    /// Drawing area beyond the nominal frame so the spreading rings spill past
+    /// the square instead of being cut off at its edge.
+    private let overscan: CGFloat = 1.8
 
     var body: some View {
         GeometryReader { geo in
@@ -174,52 +169,31 @@ struct LooxSwirlAnimationView: View {
         let hold = 0.35, rest = 0.25
         let cycle = revealDur + hold + dismissDur + rest
         let tc = t.truncatingRemainder(dividingBy: cycle)
+        let drift = loopDrift * tc                  // never stops turning
         if tc < revealDur + hold {
-            drawEmanate(gc, c, d, min(tc, revealDur), drift: loopDrift * tc)
+            drawEmanate(gc, c, d, min(tc, revealDur), drift: drift)
         } else if tc < revealDur + hold + dismissDur {
-            // Scatter: dots fly on their own — the group rotation freezes at the
-            // orientation it had when the dispersal began.
-            drawFadeOut(gc, c, d, tc - revealDur - hold,
-                        drift: loopDrift * (revealDur + hold))
+            drawFadeOut(gc, c, d, tc - revealDur - hold, drift: drift)
         }
         // else: rest — empty beat before the next breath (the drift reset at the
         // cycle wrap is invisible: nothing is on screen).
     }
 
-    /// The measured Apple dispersal: each dot flies off on its OWN outward-biased
-    /// random direction with an ease-out (dots grow ~25% and dim to half), then
-    /// LINGERS in place, fading out completely. Deterministic per-dot randomness
-    /// (hash of ring/index), so every frame agrees without stored state. Used for
-    /// the dismiss one-shot and the fade act of each loop cycle.
+    /// The dispersal: rings scale outward and keep turning at the same time,
+    /// decelerating (ease-out) — dots grow with their radius (the size formula)
+    /// and fade as they spread, everything blended in one smooth motion. Used
+    /// for the dismiss one-shot and the fade act of each loop cycle.
     private func drawFadeOut(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double,
                              drift: Double = 0) {
-        let p1 = easeOutCubic(clamp01(t / scatterFlight))                 // flight
-        let tail = 1 - clamp01((t - scatterFlight) / scatterLinger)      // linger fade
-        let alpha = (1 - 0.5 * p1) * tail
+        let p = easeOutCubic(clamp01(t / dismissDur))
+        let alpha = pow(1 - p, 1.3)                 // fainter as it spreads
         guard alpha > 0.01 else { return }
         for k in 0..<4 {
             let rf = ringInner + CGFloat(k) * ringStep
-            let dotR = dotK * rf * d * (1 + 0.25 * p1)
-            for i in 0..<perRing {
-                let a = 2 * .pi * Double(i) / Double(perRing) + Double(k % 2) * halfStep + drift
-                let sx = c.x + rf * d * cos(a)
-                let sy = c.y + rf * d * sin(a)
-                // Outward-biased random direction + distance per dot.
-                let dir = a + (hash(k, i, 1) - 0.5) * 1.7
-                let dist = (0.45 + 0.85 * hash(k, i, 2)) * ringOuter * d * p1
-                let x = sx + dist * cos(dir)
-                let y = sy + dist * sin(dir)
-                gc.fill(Path(ellipseIn: CGRect(x: x - dotR, y: y - dotR,
-                                               width: 2 * dotR, height: 2 * dotR)),
-                        with: .color(.white.opacity(alpha)))
-            }
+            let radius = rf * d * (1 + CGFloat(p) * 0.6)   // scale out, decelerating
+            ring(gc, c, radius: radius, dotR: dotK * radius, alpha: alpha,
+                 angleOffset: Double(k % 2) * halfStep + 0.55 * swirl * p + drift)
         }
-    }
-
-    /// Deterministic per-dot pseudo-random in [0, 1) (classic fract-sin hash).
-    private func hash(_ k: Int, _ i: Int, _ salt: Int) -> Double {
-        let x = sin(Double(k) * 12.9898 + Double(i) * 78.233 + Double(salt) * 37.719) * 43758.5453
-        return x - floor(x)
     }
 
     /// The static four-ring set (Reduce Motion fallback).
