@@ -293,7 +293,7 @@ private struct JoinByQRView: View {
                         errorMessage = nil
                         startWaiting()
                     } label: {
-                        Text("Start Over").frame(maxWidth: .infinity)
+                        Text("Start over").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.themedProminent)
                     .controlSize(.large)

@@ -74,7 +74,7 @@ struct QuickLinkView: View {
                 Button {
                     step = .config
                 } label: {
-                    Text("Try Again")
+                    Text("Try again")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)

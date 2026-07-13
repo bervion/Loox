@@ -226,7 +226,7 @@ struct EmergencyKitView: View {
                         .font(.system(size: Metric.iconInline, weight: .semibold))
                 }
                 Text(savedPDF ? "Emergency Kit saved" : "Save Kit PDF")
-                    .vaultType(.headline)
+                    .vaultType(.body).fontWeight(.medium)
             }
             // Saved reads as a calm soft-green confirmation so the black Continue
             // button becomes the clear next step; unsaved is the loud red CTA.

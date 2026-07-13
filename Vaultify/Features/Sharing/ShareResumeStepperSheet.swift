@@ -161,7 +161,7 @@ struct ShareResumeStepperSheet: View {
     // MARK: Actions
 
     /// One filled primary per state (the ranked next step) plus at most one
-    /// quiet secondary ("Check Now" — a manual refresh, not the expected
+    /// quiet secondary ("Check now" — a manual refresh, not the expected
     /// action). Cancelling the invite is destructive and demoted to the
     /// toolbar overflow (`toolbarTrailing`) instead of standing beside it.
     @ViewBuilder private var actionButtons: some View {
@@ -218,7 +218,7 @@ struct ShareResumeStepperSheet: View {
         Button {
             Task { await checkNow() }
         } label: {
-            Text("Check Now").frame(maxWidth: .infinity)
+            Text("Check now").frame(maxWidth: .infinity)
         }
         .buttonStyle(.themedTinted)
         .disabled(busy)

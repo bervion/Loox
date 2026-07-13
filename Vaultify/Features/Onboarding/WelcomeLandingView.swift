@@ -72,7 +72,7 @@ struct WelcomeLandingView: View {
                 .padding(.top, Space.s5)
 
             startButton
-                .padding(.top, Space.s5)
+                .padding(.top, Space.s7)
 
             Text(appString("The safest home for your passwords, passkeys, cards and notes."))
                 .vaultType(.callout)
@@ -93,9 +93,9 @@ struct WelcomeLandingView: View {
 
     private var startButton: some View {
         Button(action: press) {
-            Text(appString("Get Started"))
-                .vaultType(.headline)
-                .fontWeight(.semibold)
+            Text(appString("Get started"))
+                .vaultType(.body)
+                .fontWeight(.medium)
                 // Deliberate adaptive black/white pill (the demo look the user
                 // asked for): label sits on the primary fill, so it uses the
                 // background color rather than a themed text token.
@@ -106,7 +106,7 @@ struct WelcomeLandingView: View {
         }
         .buttonStyle(.plain)
         .disabled(launch.phase != .idle)
-        .accessibilityLabel(Text(appString("Get Started")))
+        .accessibilityLabel(Text(appString("Get started")))
     }
 
     // MARK: Restore link (directly under the value proposition)

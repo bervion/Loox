@@ -36,7 +36,7 @@ struct InviteInboxBehaviors: ViewModifier {
                 if !suppressed { presentNextIfIdle() }
             }
             .alert("Share invitation", isPresented: invitePresented, presenting: presentedInvite) { invite in
-                Button("Not Now", role: .cancel) { finish(invite, accept: false) }
+                Button("Not now", role: .cancel) { finish(invite, accept: false) }
                 Button("Accept") { finish(invite, accept: true) }
             } message: { _ in
                 Text("Someone shared an item with you in Loox Password. Accept to add it to your list.")

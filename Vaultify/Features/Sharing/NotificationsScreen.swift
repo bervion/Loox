@@ -131,7 +131,7 @@ struct NotificationsScreen: View {
                     .vaultType(.footnote).themedForeground(.secondary)
             }
             Spacer(minLength: Space.s2)
-            Button("Not Now") { env.inviteInboxCoordinator.dismiss(invite) }
+            Button("Not now") { env.inviteInboxCoordinator.dismiss(invite) }
                 .buttonStyle(.themedCompact)
             Button("Accept") {
                 Task {

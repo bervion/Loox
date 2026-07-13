@@ -18,7 +18,8 @@ struct ThemedProminentButtonStyle: ButtonStyle {
             let bg: Color = isEnabled ? Color.primary : Color(.systemGray4)
             let fg: Color = isEnabled ? Color(.systemBackground) : Color(.systemGray)
             configuration.label
-                .vaultType(.headline)
+                .vaultType(.body)
+                .fontWeight(.medium)
                 .foregroundStyle(fg)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
@@ -46,7 +47,8 @@ struct ThemedTintedButtonStyle: ButtonStyle {
             // raw fill-tuned accent sits as low as 3.05:1 on some presets.
             let fg = isEnabled ? theme.accentText : theme.textDisabled
             configuration.label
-                .vaultType(.headline)
+                .vaultType(.body)
+                .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
@@ -71,7 +73,8 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
             let bg = isEnabled ? theme.destructive : RGBMath.blend(theme.destructive, theme.background, 0.55)
             let fg = isEnabled ? RGBMath.onColor(theme.destructive) : RGBMath.blend(RGBMath.onColor(theme.destructive), bg, 0.4)
             configuration.label
-                .vaultType(.headline)
+                .vaultType(.body)
+                .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
