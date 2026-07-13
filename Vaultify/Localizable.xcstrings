@@ -14662,6 +14662,16 @@
           }
         }
       }
+    },
+    "Want to start fresh?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn muốn bắt đầu mới?"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

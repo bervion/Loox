@@ -147,91 +147,80 @@ struct RestoreMethodSheet: View {
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        // Reuse the app's base sheet scaffold so the close control sits in the header
-        // (properly placed under the grab handle) instead of a hand-rolled top row.
-        VaultSheetScaffold(
-            title: "Restore data",
-            leading: {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 15, weight: .semibold))
-                }
-                .accessibilityLabel(Text("Close"))
-            },
-            trailing: { EmptyView() }
-        ) {
+        // Apple-Account-style sheet: white page, a floating black X, the brand
+        // swirl centred, left-aligned title + description, a link that bails
+        // out to a fresh start, and gray option boxes with bare tinted icons.
+        ZStack(alignment: .topLeading) {
             ScrollView {
-                VStack(spacing: Space.s5) {
+                VStack(alignment: .leading, spacing: 0) {
+                    LooxSwirlAnimationView()
+                        .frame(width: 130, height: 130)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, Space.s8)
+
+                    Text("Restore data")
+                        .vaultType(.largeTitle)
+                        .padding(.top, Space.s6)
                     Text("Move your vault from another device, or reopen it with your Emergency Kit.")
-                        .vaultType(.subhead).themedForeground(.secondary)
-                        .multilineTextAlignment(.center)
+                        .vaultType(.body).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity)
+                        .padding(.top, Space.s2)
 
-                    // One grouped card (flat, no shadow) with a hairline divider — the
-                    // two options read as a set, each with its own soft badge colour.
-                    VStack(spacing: 0) {
-                        JoinOptionRow(icon: Icons.scanCode,
-                                      badgeFill: env.theme.active.accentSoft,
-                                      iconTint: env.theme.active.accent,
-                                      title: "Pair with an old device",
-                                      detail: "Scan a QR code between two iPhones to move the whole vault.",
-                                      action: onQR)
-                        Divider()
-                            .overlay(Color(rgb: env.theme.active.separator))
-                            .padding(.leading, Space.s4 + Metric.controlLarge + Space.s4)
-                        JoinOptionRow(icon: Icons.key,
-                                      badgeFill: env.theme.active.warningSoft,
-                                      iconTint: env.theme.active.warning,
-                                      title: "Use Recovery Key",
-                                      detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
-                                      action: onRecovery)
+                    Button { dismiss() } label: {
+                        Text("Want to start fresh?")
+                            .vaultType(.body)
+                            .themedForeground(.accentText)
                     }
-                    .background(VaultColors.surface,
-                                in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                    .buttonStyle(.plain)
+                    .padding(.top, Space.s4)
 
-                    Text("All decryption happens on this device. Loox never sees your data.")
-                        .vaultType(.footnote).themedForeground(.tertiary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity)
+                    VStack(spacing: Space.s3) {
+                        restoreOptionBox(icon: Icons.scanCode,
+                                         title: "Pair with an old device",
+                                         detail: "Scan a QR code between two iPhones to move the whole vault.",
+                                         action: onQR)
+                        restoreOptionBox(icon: Icons.key,
+                                         title: "Use Recovery Key",
+                                         detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
+                                         action: onRecovery)
+                    }
+                    .padding(.top, Space.s6)
                 }
                 .padding(.horizontal, Space.s6)
-                .padding(.top, Space.s4)
-                .padding(.bottom, Space.s6)
+                .padding(.bottom, Space.s7)
             }
+
+            // Floating close: black X in a quiet gray circle (Apple's sheet idiom).
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
+                    .frame(width: 36, height: 36)
+                    .background(Color(rgb: env.theme.active.controlBackground), in: Circle())
+                    .contentShape(Rectangle().inset(by: -4))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Close"))
+            .padding(.leading, Space.s4)
+            .padding(.top, Space.s4)
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        // No custom presentationBackground: the scaffold's form background
-        // already paints the grouped canvas, and overriding the system sheet
-        // material broke the native edge treatment (content peeking at the
-        // sides on iOS 26).
     }
-}
 
-/// One row inside the grouped restore-method card. Carries its own soft badge
-/// fill + icon tint so the two options are visually distinct; no background or
-/// shadow of its own (the parent card provides the flat surface + divider).
-private struct JoinOptionRow: View {
-    let icon: String
-    let badgeFill: UInt32
-    let iconTint: UInt32
-    let title: LocalizedStringResource
-    let detail: LocalizedStringResource
-    let action: () -> Void
-
-    var body: some View {
+    /// One gray option box: bare tinted icon, bold title + gray detail, chevron.
+    private func restoreOptionBox(icon: String, title: LocalizedStringResource,
+                                  detail: LocalizedStringResource,
+                                  action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(alignment: .center, spacing: Space.s4) {
-                PolarisIcon(icon, size: Metric.iconUtility)
-                    .foregroundStyle(Color(rgb: iconTint))
-                    .frame(width: Metric.controlLarge, height: Metric.controlLarge)
-                    .background(Color(rgb: badgeFill),
-                                in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                PolarisIcon(icon, size: 30)
+                    .foregroundStyle(Color(rgb: env.theme.active.accent))
                 VStack(alignment: .leading, spacing: Space.s1) {
-                    Text(title.inAppLocalized).vaultType(.callout).fontWeight(.semibold)
-                        .themedForeground(.primary)
-                    Text(detail.inAppLocalized).vaultType(.subhead).themedForeground(.secondary)
+                    Text(title.inAppLocalized)
+                        .vaultType(.headline).themedForeground(.primary)
+                    Text(detail.inAppLocalized)
+                        .vaultType(.subhead).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
                 }
@@ -239,12 +228,15 @@ private struct JoinOptionRow: View {
                 PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
                     .themedForeground(.iconSecondary)
             }
-            .padding(Space.s4)
+            .padding(Space.s5)
+            .background(Color(rgb: env.theme.active.secondaryBackground),
+                        in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 }
+
 
 // MARK: - QR pairing (new-device side)
 
