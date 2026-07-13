@@ -390,6 +390,10 @@ private struct JoinByRecoveryView: View {
                 .padding(.bottom, Space.s6)
             }
         }
+        // Dismiss the keyboard on scroll or a tap outside the field (buttons/field
+        // keep their own handling — children win over this gesture).
+        .scrollDismissesKeyboard(.immediately)
+        .onTapGesture { dismissKeyboard() }
         #if os(iOS)
         .sheet(isPresented: $showScanner) {
             RecoveryScannerSheet { scanned in
@@ -507,6 +511,10 @@ private struct JoinByRecoveryView: View {
         }
     }
     #endif
+
+    private func dismissKeyboard() {
+        PlatformAppearance.dismissKeyboard()
+    }
 
     private func submit() {
         busy = true
