@@ -36,7 +36,7 @@ nonisolated enum BuiltinThemes {
         reference: .builtin(.day), isDark: false,
         background: 0xFFFFFF, secondaryBackground: 0xF2F2F6, groupedBackground: 0xF2F2F6,
         elevatedBackground: 0xFFFFFF, barBackground: 0xFFFFFF,
-        primaryText: 0x1C1C1E, secondaryText: 0x4B4B50, tertiaryText: 0x8A8A8E, placeholderText: 0xB6B6BB,
+        primaryText: 0x1C1C1E, secondaryText: 0x949497, tertiaryText: 0xA8A8AC, placeholderText: 0xB6B6BB,
         accent: 0x009DFF, accentForeground: 0xFFFFFF,
         separator: 0xD8D8DE, border: 0xC7C7CC, controlBackground: 0xE9E9EF,
         switchOn: 0x2563EB, checkmark: 0x2563EB, selection: 0xE6EDFD,
