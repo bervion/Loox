@@ -39,11 +39,18 @@ struct LooxSwirlAnimationView: View {
     private let travel: Double = 1.0
     private var revealDur: Double { 3 * ringStagger + travel }   // 1.6s
     private let dismissDur: Double = 0.7
+    /// Slow constant rotation layered over the loop cycle so the pattern never
+    /// visibly stalls (rad/s ≈ 15°/s).
+    private let loopDrift: Double = 15 * .pi / 180
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var start = Date.now
     @State private var ticking = true
     @State private var runID = 0
+
+    /// Drawing area beyond the nominal frame so drifting/fading dots spill past
+    /// the square instead of being cut off at its edge.
+    private let overscan: CGFloat = 1.6
 
     var body: some View {
         GeometryReader { geo in
@@ -51,8 +58,10 @@ struct LooxSwirlAnimationView: View {
                 Image("SwirlGradient")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geo.size.width, height: geo.size.height)
+                    .frame(width: geo.size.width * overscan, height: geo.size.height * overscan)
                     .mask { maskContent }
+                    .frame(width: geo.size.width * overscan, height: geo.size.height * overscan)
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 Image("BrandSymbol")
                     .resizable()
                     .scaledToFit()
@@ -107,7 +116,9 @@ struct LooxSwirlAnimationView: View {
     // MARK: Drawing
 
     private func draw(_ gc: GraphicsContext, _ size: CGSize, _ t: Double) {
-        let d = min(size.width, size.height)
+        // The canvas is overscan-sized; ring geometry stays relative to the
+        // NOMINAL frame so only the spill-over gains room, not the layout.
+        let d = min(size.width, size.height) / overscan
         let c = CGPoint(x: size.width / 2, y: size.height / 2)
 
         // Reduce Motion: a calm, fully settled ring set (nothing for dismiss).
@@ -129,7 +140,8 @@ struct LooxSwirlAnimationView: View {
     /// journey (later rings still turning while earlier ones have settled — the
     /// staggered, non-uniform look of the reference). Dot size follows its
     /// current radius; alpha follows ring progress.
-    private func drawEmanate(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
+    private func drawEmanate(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double,
+                             drift: Double = 0) {
         for k in 0..<4 {                            // k = 0 OUTER … 3 inner
             let p = easeOutCubic(clamp01((t - Double(k) * ringStagger) / travel))
             guard p > 0.001 else { continue }
@@ -139,7 +151,7 @@ struct LooxSwirlAnimationView: View {
             // Interleave parity by the ring's FINAL slot (settled pattern matches
             // the static layout); the ring turns INTO its final angle as p → 1.
             ring(gc, c, radius: radius, dotR: dotR, alpha: p,
-                 angleOffset: Double((3 - k) % 2) * halfStep - swirl * (1 - p))
+                 angleOffset: Double((3 - k) % 2) * halfStep - swirl * (1 - p) + drift)
         }
     }
 
@@ -148,25 +160,30 @@ struct LooxSwirlAnimationView: View {
         drawEmanate(gc, c, d, min(t, revealDur))
     }
 
-    /// Loading loop: the FULL cycle repeats — the emanation plays out exactly like
-    /// the reveal, holds a beat, everything fades to 0 completely (drifting a
-    /// little further out), rests a beat empty, then starts over from the top.
-    /// Not a continuous stream: one breath per cycle.
+    /// Loading loop: one full breath per cycle — the emanation plays out, then
+    /// everything drifts outward and fades to 0 completely, rests a beat empty,
+    /// and starts over. The pattern NEVER stops turning: a slow constant drift
+    /// rides on top of the journey swirl (fast at spawn, easing as it grows),
+    /// so the settled beat keeps rotating instead of stalling.
     private func drawLoop(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
         let hold = 0.35, rest = 0.25
         let cycle = revealDur + hold + dismissDur + rest
         let tc = t.truncatingRemainder(dividingBy: cycle)
+        let drift = loopDrift * tc                  // continuous slow rotation
         if tc < revealDur + hold {
-            drawEmanate(gc, c, d, min(tc, revealDur))
+            drawEmanate(gc, c, d, min(tc, revealDur), drift: drift)
         } else if tc < revealDur + hold + dismissDur {
-            drawFadeOut(gc, c, d, tc - revealDur - hold)
+            drawFadeOut(gc, c, d, tc - revealDur - hold, drift: drift)
         }
-        // else: rest — empty beat before the next breath.
+        // else: rest — empty beat before the next breath (the drift reset at the
+        // cycle wrap is invisible: nothing is on screen).
     }
 
-    /// The settled rings expand outward and fade away to nothing (the dismiss
-    /// one-shot, and the fade act of each loop cycle).
-    private func drawFadeOut(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
+    /// The settled rings expand outward and fade away to nothing, still turning
+    /// as they spill past the frame (the dismiss one-shot, and the fade act of
+    /// each loop cycle).
+    private func drawFadeOut(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double,
+                             drift: Double = 0) {
         let p = easeOutCubic(clamp01(t / dismissDur))
         let alpha = 1 - p
         guard alpha > 0.01 else { return }
@@ -174,7 +191,7 @@ struct LooxSwirlAnimationView: View {
             let rf = ringInner + CGFloat(k) * ringStep
             let radius = rf * d * (1 + CGFloat(p) * 0.5)
             ring(gc, c, radius: radius, dotR: dotK * radius, alpha: alpha,
-                 angleOffset: Double(k % 2) * halfStep)
+                 angleOffset: Double(k % 2) * halfStep + 0.5 * swirl * p + drift)
         }
     }
 
