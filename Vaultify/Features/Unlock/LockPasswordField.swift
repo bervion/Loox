@@ -46,15 +46,14 @@ struct LockPasswordField: View {
     }
 
     private var loginButton: some View {
-        // Follow the app's control tint: accent fill in light, white in dark. The glyph is the
-        // contrasting colour (white on the accent fill; the dark background colour on white).
-        let theme = env.theme.active
-        let onTint = Color(rgb: theme.isDark ? theme.background : theme.accentForeground)
+        // Neutral primary fill (Apple-style): black in light, white in dark —
+        // matching the app's neutral CTAs; the glyph is the opposing background.
+        let onTint = Color(.systemBackground)
         let side: CGFloat = 36
         return Button(action: onSubmit) {
             ZStack {
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .fill(env.theme.uiTint)
+                    .fill(Color.primary)
                 if busy {
                     ProgressView()
                         .controlSize(.small)
