@@ -138,7 +138,10 @@ final class ThemeEngineTests: XCTestCase {
     // MARK: Resolution
 
     func testResolvePicksDayOrNight() {
-        let settings = ThemeSettings.default   // theme=day, nightTheme=night, autoNight=system
+        // System-following resolution — set explicitly (the fresh-install
+        // default is now light/auto-night OFF).
+        var settings = ThemeSettings.default   // theme=day, nightTheme=night
+        settings.autoNight = .system
         let dark = ThemePalette.resolve(settings, systemIsDark: true, brightness: 1)
         XCTAssertTrue(dark.isDark)
         XCTAssertEqual(dark.reference, .builtin(.night))
