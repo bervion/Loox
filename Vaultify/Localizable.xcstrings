@@ -3406,6 +3406,16 @@
         }
       }
     },
+    "Create your password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo mật khẩu của bạn"
+          }
+        }
+      }
+    },
     "Create your master password" : {
       "extractionState" : "stale",
       "localizations" : {
