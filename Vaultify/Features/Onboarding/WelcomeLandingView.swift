@@ -116,8 +116,7 @@ struct WelcomeLandingView: View {
             Button(action: onRestore) {
                 Text(appString("Restore data?"))
                     .vaultType(.subhead)
-                    .fontWeight(.semibold)
-                    .themedForeground(.accent)
+                    .themedForeground(.accentText)
             }
             .buttonStyle(.plain)
         }
@@ -177,7 +176,7 @@ private struct CapabilityCarousel: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Space.s4) {
+            HStack(spacing: Space.s6) {
                 ForEach(slides) { slide in
                     CapabilitySlide(image: slide.image, title: slide.title, detail: slide.detail, width: cardWidth)
                 }
