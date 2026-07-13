@@ -8234,6 +8234,7 @@
       }
     },
     "Owner" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {

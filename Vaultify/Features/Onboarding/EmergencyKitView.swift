@@ -20,6 +20,8 @@ struct EmergencyKitView: View {
     @State private var showExporter = false
     @State private var pdfFile: EmergencyKitPDFFile?
     @State private var exportError: String?
+    /// Copy affordance feedback: flips the glyph to a green check for a beat.
+    @State private var copiedKey = false
 
     private var info: EmergencyKitInfo {
         EmergencyKitInfo(recoveryKey: recoveryKey, ownerName: ownerName,
@@ -109,6 +111,11 @@ struct EmergencyKitView: View {
     private func copyKey() {
         guard !recoveryKey.isEmpty else { return }
         env.clipboard.copy(recoveryKey, label: "Recovery key", sensitive: true)
+        withAnimation(.easeInOut(duration: 0.15)) { copiedKey = true }
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeInOut(duration: 0.2)) { copiedKey = false }
+        }
     }
 
     // MARK: Emergency Kit card (concept design)
@@ -159,22 +166,28 @@ struct EmergencyKitView: View {
     /// service raises the "copied" toast), with a copy glyph in the top corner.
     private var recoveryKeyBox: some View {
         VStack(spacing: Space.s2) {
-            Text("Recovery Key")
-                .vaultType(.caption).fontWeight(.semibold)
-                .textCase(.uppercase).tracking(1)
-                .themedForeground(.tertiary)
+            // Label row: the copy glyph rides the SAME line as the label, so the
+            // two sit vertically centred together; it flips to a green check
+            // for a beat after copying.
+            ZStack {
+                Text("Recovery Key")
+                    .vaultType(.caption).fontWeight(.semibold)
+                    .textCase(.uppercase).tracking(1)
+                    .themedForeground(.tertiary)
+                if !recoveryKey.isEmpty {
+                    HStack {
+                        Spacer()
+                        PolarisIcon(copiedKey ? Icons.checkCircle : Icons.copy, size: Metric.iconInline)
+                            .foregroundStyle(copiedKey ? Color(rgb: theme.success)
+                                                       : theme.color(.iconSecondary))
+                    }
+                }
+            }
             keyText
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Space.s5)
         .padding(.horizontal, Space.s3)
-        .overlay(alignment: .topTrailing) {
-            if !recoveryKey.isEmpty {
-                PolarisIcon(Icons.copy, size: Metric.iconInline)
-                    .themedForeground(.iconSecondary)
-                    .padding(Space.s3)
-            }
-        }
         .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
             .strokeBorder(Color(rgb: theme.destructive).opacity(0.55),
                           style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
