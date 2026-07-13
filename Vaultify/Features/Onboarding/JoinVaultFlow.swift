@@ -156,11 +156,11 @@ struct RestoreMethodSheet: View {
                     LooxSwirlAnimationView()
                         .frame(width: 130, height: 130)
                         .frame(maxWidth: .infinity)
-                        .padding(.top, Space.s8)
+                        .padding(.top, Space.s9)
 
                     Text("Restore data")
-                        .vaultType(.largeTitle)
-                        .padding(.top, Space.s6)
+                        .vaultType(.screenTitle)
+                        .padding(.top, Space.s8)
                     Text("Move your vault from another device, or reopen it with your Emergency Kit.")
                         .vaultType(.body).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -190,14 +190,9 @@ struct RestoreMethodSheet: View {
                 .padding(.bottom, Space.s7)
             }
 
-            // Floating close: black X in a quiet gray circle (Apple's sheet idiom).
+            // Floating close: black X on Liquid Glass (material fallback pre-26).
             Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.primary)
-                    .frame(width: 36, height: 36)
-                    .background(Color(rgb: env.theme.active.controlBackground), in: Circle())
-                    .contentShape(Rectangle().inset(by: -4))
+                closeGlyph
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Close"))
@@ -206,6 +201,27 @@ struct RestoreMethodSheet: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+    }
+
+    /// Black X on a circular Liquid Glass puck (iOS 26); earlier systems get
+    /// the closest material. Guarded per the repo convention for glass APIs.
+    @ViewBuilder private var closeGlyph: some View {
+        let glyph = Image(systemName: "xmark")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.primary)
+            .frame(width: 36, height: 36)
+        Group {
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                glyph.glassEffect(.regular.interactive(), in: Circle())
+            } else {
+                glyph.background(.ultraThinMaterial, in: Circle())
+            }
+            #else
+            glyph.background(.ultraThinMaterial, in: Circle())
+            #endif
+        }
+        .contentShape(Rectangle().inset(by: -4))
     }
 
     /// One gray option box: bare tinted icon, bold title + gray detail, chevron.
