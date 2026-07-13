@@ -348,6 +348,10 @@ private struct JoinByRecoveryView: View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
                 Spacer(minLength: Space.s6)
+                Image("BrandSymbol")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 56)
                 OnboardingStepHeader(
                     "Use Recovery Key",
                     subtitle: "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key. Your vault will download from iCloud.",
@@ -439,8 +443,7 @@ private struct JoinByRecoveryView: View {
 
     private var dash: some View {
         DashLine()
-            .stroke(Color(rgb: env.theme.active.separator),
-                    style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+            .stroke(Color(rgb: env.theme.active.separator), lineWidth: 1)
             .frame(height: 1)
             .frame(maxWidth: .infinity)
     }
@@ -534,7 +537,7 @@ private struct JoinByRecoveryView: View {
     }
 }
 
-/// A single horizontal hairline, centred vertically — stroked dashed for the "or" rule.
+/// A single horizontal hairline, centred vertically — the solid "or" rule.
 private struct DashLine: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
