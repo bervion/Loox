@@ -202,8 +202,10 @@ struct RestoreMethodSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        // Solid grouped-gray sheet (not the default glass) so the white cards group.
-        .presentationBackground(Color(rgb: env.theme.active.groupedBackground))
+        // No custom presentationBackground: the scaffold's form background
+        // already paints the grouped canvas, and overriding the system sheet
+        // material broke the native edge treatment (content peeking at the
+        // sides on iOS 26).
     }
 }
 
