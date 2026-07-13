@@ -11,7 +11,7 @@ import SwiftUI
 /// Reduce Motion shows the settled ring immediately. Purely decorative.
 struct LooxSwirlAnimationView: View {
     /// Centre logo height as a fraction of the view's smaller dimension.
-    var logoFraction: CGFloat = 0.32
+    var logoFraction: CGFloat = 0.30
 
     private let duration: Double = 1.9
     private let entry: Double = 1.4      // per-ring spiral-in time
@@ -21,13 +21,21 @@ struct LooxSwirlAnimationView: View {
     @State private var start = Date.now
     @State private var animating = true
 
-    private struct Ring { let rf: CGFloat; let count: Int; let dotf: CGFloat; let dir: Double }
-    private let rings: [Ring] = [
-        Ring(rf: 0.215, count: 20, dotf: 0.0125, dir:  1),
-        Ring(rf: 0.285, count: 26, dotf: 0.0130, dir: -1),
-        Ring(rf: 0.355, count: 34, dotf: 0.0135, dir:  1),
-        Ring(rf: 0.425, count: 42, dotf: 0.0140, dir: -1),
-    ]
+    private struct Ring { let rf: CGFloat; let count: Int; let dotf: CGFloat; let offset: Double }
+    private let rings: [Ring] = LooxSwirlAnimationView.makeRings()
+
+    /// Concentric rings that grow denser + larger outward, each rotated a little so
+    /// the dots read as spiralling arms rather than a rigid radial grid.
+    private static func makeRings() -> [Ring] {
+        let n = 6
+        return (0..<n).map { k in
+            let f = Double(k) / Double(n - 1)               // 0…1 inner → outer
+            let rf = 0.20 + f * 0.27                         // 0.20 … 0.47
+            let count = max(12, Int((2 * .pi * rf / 0.052).rounded()))
+            let dotf = 0.006 + f * 0.012                     // small inner → large outer
+            return Ring(rf: CGFloat(rf), count: count, dotf: CGFloat(dotf), offset: Double(k) * 0.14)
+        }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -82,12 +90,12 @@ struct LooxSwirlAnimationView: View {
             let rp = easeOutCubic(clamp01((t - Double(idx) * delayStep) / entry))
             guard rp > 0.001 else { continue }
             let radius = ring.rf * d * rp                  // grow out from centre
-            let spin = ring.dir * (1.5 * .pi) * (1 - rp)   // unwind to the base angle
+            let spin = (1.4 * .pi) * (1 - rp)              // spiral-in, unwinds to the layout
             let dotR = ring.dotf * d * rp
             guard dotR > 0.2 else { continue }
             for i in 0..<ring.count {
                 let base = 2 * .pi * Double(i) / Double(ring.count)
-                let a = base + spin
+                let a = base + ring.offset + spin
                 let x = c.x + radius * cos(a)
                 let y = c.y + radius * sin(a)
                 gc.fill(Path(ellipseIn: CGRect(x: x - dotR, y: y - dotR,
