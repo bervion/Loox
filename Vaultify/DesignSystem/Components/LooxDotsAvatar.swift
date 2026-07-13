@@ -33,10 +33,13 @@ struct LooxDotsAvatar: View {
     private let revealStagger: Double = 0.15
     private var revealDur: Double { revealTravel + revealStagger }
 
+    /// Brand dot blue (#61C0FF) — fixed, softer than the accent by design.
+    private let dotColor = Color(rgb: 0x61C0FF)
+
     var body: some View {
         let accent = Color(rgb: env.theme.active.accent)
         ZStack {
-            dotsLayer(accent: accent)
+            dotsLayer(accent: dotColor)
             centerGlyph(accent: accent)
         }
         .frame(width: size, height: size)
@@ -95,7 +98,8 @@ struct LooxDotsAvatar: View {
                     // Deterministic sparkle: each dot gets its own size/opacity.
                     let h1 = hash(k, i, 1), h2 = hash(k, i, 2)
                     let dotR = ring.dotR * (0.85 + 0.3 * h1) * (0.6 + 0.4 * p)
-                    let alpha = (0.35 + 0.4 * h2) * p
+                    // #61C0FF is already soft — sparkle in the upper opacity band.
+                    let alpha = (0.55 + 0.45 * h2) * p
                     gc.fill(Path(ellipseIn: CGRect(x: x - dotR, y: y - dotR,
                                                    width: 2 * dotR, height: 2 * dotR)),
                             with: .color(accent.opacity(alpha)))
