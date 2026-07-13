@@ -174,16 +174,27 @@ struct RestoreMethodSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity)
 
-                    VStack(spacing: Space.s3) {
-                        JoinOptionCard(icon: Icons.scanCode,
-                                       title: "Pair with an old device",
-                                       detail: "Scan a QR code between two iPhones to move the whole vault.",
-                                       action: onQR)
-                        JoinOptionCard(icon: Icons.key,
-                                       title: "Use Recovery Key",
-                                       detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
-                                       action: onRecovery)
+                    // One grouped card (flat, no shadow) with a hairline divider — the
+                    // two options read as a set, each with its own soft badge colour.
+                    VStack(spacing: 0) {
+                        JoinOptionRow(icon: Icons.scanCode,
+                                      badgeFill: env.theme.active.accentSoft,
+                                      iconTint: env.theme.active.accent,
+                                      title: "Pair with an old device",
+                                      detail: "Scan a QR code between two iPhones to move the whole vault.",
+                                      action: onQR)
+                        Divider()
+                            .overlay(Color(rgb: env.theme.active.separator))
+                            .padding(.leading, Space.s4 + Metric.controlLarge + Space.s4)
+                        JoinOptionRow(icon: Icons.key,
+                                      badgeFill: env.theme.active.warningSoft,
+                                      iconTint: env.theme.active.warning,
+                                      title: "Use Recovery Key",
+                                      detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
+                                      action: onRecovery)
                     }
+                    .background(VaultColors.surface,
+                                in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
 
                     Text("All decryption happens on this device. Loox never sees your data.")
                         .vaultType(.footnote).themedForeground(.tertiary)
@@ -203,20 +214,24 @@ struct RestoreMethodSheet: View {
     }
 }
 
-private struct JoinOptionCard: View {
+/// One row inside the grouped restore-method card. Carries its own soft badge
+/// fill + icon tint so the two options are visually distinct; no background or
+/// shadow of its own (the parent card provides the flat surface + divider).
+private struct JoinOptionRow: View {
     let icon: String
+    let badgeFill: UInt32
+    let iconTint: UInt32
     let title: LocalizedStringResource
     let detail: LocalizedStringResource
     let action: () -> Void
-    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
         Button(action: action) {
             HStack(alignment: .center, spacing: Space.s4) {
                 PolarisIcon(icon, size: Metric.iconUtility)
-                    .foregroundStyle(VaultColors.accent)
+                    .foregroundStyle(Color(rgb: iconTint))
                     .frame(width: Metric.controlLarge, height: Metric.controlLarge)
-                    .background(Color(rgb: env.theme.active.accentSoft),
+                    .background(Color(rgb: badgeFill),
                                 in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                 VStack(alignment: .leading, spacing: Space.s1) {
                     Text(title.inAppLocalized).vaultType(.callout).fontWeight(.semibold)
@@ -230,9 +245,6 @@ private struct JoinOptionCard: View {
                     .themedForeground(.iconSecondary)
             }
             .padding(Space.s4)
-            .background(VaultColors.surface,
-                        in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .elevation(.level2)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
