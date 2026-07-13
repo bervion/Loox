@@ -12,6 +12,9 @@ struct OnboardingFlow: View {
     /// and remind which iCloud account holds the synced vault.
     @State private var userName = ""
     @State private var userEmail = ""
+    /// Restore chooser (bottom sheet) presentation + the method it resolves to.
+    @State private var showRestoreSheet = false
+    @State private var restoreMethod: JoinVaultFlow.Method = .qr
 
     /// Id of the default "My Vault" Space seeded in `createVault`, threaded into the
     /// item seeds so they get a home (otherwise they'd land in Unfiled).
@@ -24,9 +27,9 @@ struct OnboardingFlow: View {
             switch step {
             case .welcome:
                 WelcomeLandingView(onContinue: { step = .create },
-                                   onRestore: CloudSyncService.isConfigured ? { step = .join } : nil)
+                                   onRestore: CloudSyncService.isConfigured ? { showRestoreSheet = true } : nil)
             case .join:
-                JoinVaultFlow(onCancel: { step = .welcome })
+                JoinVaultFlow(method: restoreMethod, onCancel: { step = .welcome })
             case .create:
                 CreateMasterPasswordView(onSubmit: createVault)
             case .name:
@@ -53,6 +56,13 @@ struct OnboardingFlow: View {
             }
         }
         .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
+        // Restore chooser: a bottom sheet over the welcome screen. Picking a method
+        // dismisses it and advances to the join flow at that method.
+        .sheet(isPresented: $showRestoreSheet) {
+            RestoreMethodSheet(
+                onQR: { restoreMethod = .qr; showRestoreSheet = false; step = .join },
+                onRecovery: { restoreMethod = .recovery; showRestoreSheet = false; step = .join })
+        }
         // Onboarding has no MainTabView, so it hosts its own copy-toast overlay
         // (Emergency Kit's Copy button would otherwise give only a haptic).
         .overlay(alignment: .bottom) { CopyToastOverlay() }

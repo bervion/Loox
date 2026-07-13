@@ -1,19 +1,23 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// First-run "set up from another device" flow: obtain the EXISTING vault's key —
-/// by QR pairing (a trusted device scans this device's code and hands the key off
-/// end-to-end encrypted) or by entering the Emergency-Kit recovery key against the
-/// synced recovery envelope — then set a local master password and pull the vault.
-///
-/// No first-run seeding happens on this path (see `VaultSession.joinVault`).
+/// First-run "set up from another device" flow, entered from the restore bottom sheet
+/// with a chosen method: obtain the EXISTING vault's key — by QR pairing (a trusted
+/// device scans this device's code and hands the key off end-to-end encrypted) or by
+/// entering / importing the Emergency-Kit recovery key against the synced recovery
+/// envelope — then set a local master password and pull the vault. A header back button
+/// abandons the flow; no first-run seeding happens here (see `VaultSession.joinVault`).
 struct JoinVaultFlow: View {
+    enum Method { case qr, recovery }
+
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let method: Method
     let onCancel: () -> Void
 
-    private enum Step: Equatable { case choice, qrPairing, recoveryEntry, password, biometric }
+    private enum Step: Equatable { case entry, password, biometric }
 
-    @State private var step: Step = .choice
+    @State private var step: Step = .entry
     /// The received Vault Key, held only between hand-off and `joinVault`. Kept as
     /// `SecureBytes` (mlocked, zeroed on deinit) — a raw array in `@State` would defeat
     /// zeroization via copy-on-write and could linger after an abandoned flow.
@@ -24,41 +28,65 @@ struct JoinVaultFlow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            switch step {
-            case .choice:
-                JoinMethodChoiceView(
-                    onQR: { step = .qrPairing },
-                    onRecovery: { step = .recoveryEntry },
-                    onBack: onCancel)
-            case .qrPairing:
-                JoinByQRView(
-                    onKey: { key in
-                        adoptKey(key, recoveryKey: nil)
-                    },
-                    onBack: { step = .choice })
-            case .recoveryEntry:
-                JoinByRecoveryView(
-                    onKey: { key, recoveryKey in
-                        adoptKey(key, recoveryKey: recoveryKey)
-                    },
-                    onBack: { step = .choice })
-            case .password:
-                // Join-specific copy: the vault EXISTS and was just received — without
-                // this context the reused creation screen reads like "pairing failed,
-                // a brand-new vault is being made".
-                CreateMasterPasswordView(
-                    onSubmit: completeJoin,
-                    title: "Vault received. Protect this device",
-                    subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device. It can match your other device or be different, and it never syncs.")
-            case .biometric:
-                EnableBiometricView(onEnable: enableBiometricAndFinish) { finish() }
-            }
+            header
+            content
         }
         .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
         // Backing out of the password step abandons the hand-off — drop the key
         // (SecureBytes deinit zeroes it) instead of leaving it parked in state.
         .onChange(of: step) { _, newStep in
-            if newStep == .choice { clearReceivedKey() }
+            if newStep == .entry { clearReceivedKey() }
+        }
+    }
+
+    /// Standard presented-flow header: a single leading back control (chevron), no
+    /// title (each step carries its own brand header). Hidden on the terminal
+    /// biometric step, where going back after a successful join makes no sense.
+    @ViewBuilder private var header: some View {
+        if step != .biometric {
+            HStack {
+                Button(action: back) {
+                    PolarisIcon(Icons.chevronLeft, size: Metric.iconUtility)
+                        .themedForeground(.iconPrimary)
+                        .frame(width: Metric.hitMin, height: Metric.hitMin)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Back"))
+                Spacer()
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.top, Space.s2)
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch step {
+        case .entry:
+            switch method {
+            case .qr:
+                JoinByQRView(onKey: { adoptKey($0, recoveryKey: nil) })
+            case .recovery:
+                JoinByRecoveryView(onKey: { key, recoveryKey in adoptKey(key, recoveryKey: recoveryKey) })
+            }
+        case .password:
+            // Join-specific copy: the vault EXISTS and was just received — without
+            // this context the reused creation screen reads like "pairing failed,
+            // a brand-new vault is being made".
+            CreateMasterPasswordView(
+                onSubmit: completeJoin,
+                title: "Vault received. Protect this device",
+                subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device. It can match your other device or be different, and it never syncs.")
+        case .biometric:
+            EnableBiometricView(onEnable: enableBiometricAndFinish) { finish() }
+        }
+    }
+
+    private func back() {
+        switch step {
+        case .entry: onCancel()
+        case .password: step = .entry
+        case .biometric: break
         }
     }
 
@@ -114,45 +142,59 @@ struct JoinVaultFlow: View {
     }
 }
 
-// MARK: - Method choice
+// MARK: - Restore method chooser (bottom sheet)
 
-private struct JoinMethodChoiceView: View {
+/// Bottom-sheet chooser presented when the user taps "Restore" on the welcome screen:
+/// pick QR pairing or the Emergency-Kit recovery key. The parent flips onboarding to
+/// the chosen method; the close control just dismisses.
+struct RestoreMethodSheet: View {
     let onQR: () -> Void
     let onRecovery: () -> Void
-    let onBack: () -> Void
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        OnboardingScrollingStep {
-            VStack(spacing: 0) {
-                Spacer(minLength: Space.s8)
-                OnboardingStepHeader(
-                    "Set Up from Another Device",
-                    subtitle: "Restore your existing vault on this device.",
-                    style: .compact)
-
-                VStack(spacing: Space.s3) {
-                    JoinOptionCard(icon: Icons.scanCode,
-                                   title: "Pair with QR Code",
-                                   detail: "Show a QR code here and approve it on a device that already has your vault.",
-                                   action: onQR)
-                    JoinOptionCard(icon: Icons.key,
-                                   title: "Use Recovery Key",
-                                   detail: "Enter the recovery key from your Emergency Kit.",
-                                   action: onRecovery)
+        VStack(spacing: Space.s5) {
+            HStack {
+                Button { dismiss() } label: {
+                    PolarisIcon(Icons.closeCircle, size: 28)
+                        .themedForeground(.iconSecondary)
                 }
-                .padding(.horizontal, Space.s6)
-                .padding(.top, Space.s6)
-
-                Spacer(minLength: Space.s6)
-                Button(action: onBack) {
-                    Text("Back").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .padding(.horizontal, Space.s6)
-                .padding(.bottom, Space.s6)
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Close"))
+                Spacer()
             }
+
+            VStack(spacing: Space.s2) {
+                Text("Restore data")
+                    .vaultType(.section)
+                Text("Move your vault from another device, or reopen it with your Emergency Kit.")
+                    .vaultType(.subhead).themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(spacing: Space.s3) {
+                JoinOptionCard(icon: Icons.scanCode,
+                               title: "Pair with an old device",
+                               detail: "Scan a QR code between two iPhones to move the whole vault.",
+                               action: onQR)
+                JoinOptionCard(icon: Icons.key,
+                               title: "Use Recovery Key",
+                               detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
+                               action: onRecovery)
+            }
+
+            Text("All decryption happens on this device. Loox never sees your data.")
+                .vaultType(.footnote).themedForeground(.tertiary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
         }
+        .padding(Space.s6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -179,6 +221,8 @@ private struct JoinOptionCard: View {
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 0)
+                PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
+                    .themedForeground(.iconSecondary)
             }
             .padding(Space.s4)
             .background(VaultColors.surface,
@@ -194,7 +238,6 @@ private struct JoinOptionCard: View {
 
 private struct JoinByQRView: View {
     let onKey: ([UInt8]) -> Void
-    let onBack: () -> Void
     @Environment(AppEnvironment.self) private var env
 
     @State private var session = VaultKeyPairing.makeSession()
@@ -204,7 +247,7 @@ private struct JoinByQRView: View {
     var body: some View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
-                Spacer(minLength: Space.s8)
+                Spacer(minLength: Space.s6)
                 OnboardingStepHeader(
                     "Pair with QR Code",
                     subtitle: "On your other device, open Settings → iCloud Sync → Pair New Device, then scan this code.",
@@ -232,27 +275,20 @@ private struct JoinByQRView: View {
                 .padding(.top, Space.s5)
 
                 Spacer(minLength: Space.s6)
-                VStack(spacing: Space.s3) {
-                    if errorMessage != nil {
-                        Button {
-                            // A fresh session (new ephemeral key + pairing id) — the old QR is dead.
-                            session = VaultKeyPairing.makeSession()
-                            errorMessage = nil
-                            startWaiting()
-                        } label: {
-                            Text("Start Over").frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.themedProminent)
-                        .controlSize(.large)
+                if errorMessage != nil {
+                    Button {
+                        // A fresh session (new ephemeral key + pairing id) — the old QR is dead.
+                        session = VaultKeyPairing.makeSession()
+                        errorMessage = nil
+                        startWaiting()
+                    } label: {
+                        Text("Start Over").frame(maxWidth: .infinity)
                     }
-                    Button(action: onBack) {
-                        Text("Back").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.themedProminent)
                     .controlSize(.large)
+                    .padding(.horizontal, Space.s6)
+                    .padding(.bottom, Space.s6)
                 }
-                .padding(.horizontal, Space.s6)
-                .padding(.bottom, Space.s6)
             }
         }
         .onAppear(perform: startWaiting)
@@ -283,21 +319,21 @@ private struct JoinByQRView: View {
 
 private struct JoinByRecoveryView: View {
     let onKey: ([UInt8], _ recoveryKey: String) -> Void
-    let onBack: () -> Void
     @Environment(AppEnvironment.self) private var env
 
     @State private var recoveryKey = ""
     @State private var busy = false
     @State private var errorMessage: String?
     @State private var showScanner = false
+    @State private var showPDFImporter = false
 
     var body: some View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
-                Spacer(minLength: Space.s8)
+                Spacer(minLength: Space.s6)
                 OnboardingStepHeader(
                     "Use Recovery Key",
-                    subtitle: "Scan the Setup Code on your Emergency Kit, or type the recovery key. Your vault will download from iCloud.",
+                    subtitle: "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key. Your vault will download from iCloud.",
                     style: .compact)
 
                 HStack(spacing: Space.s2) {
@@ -311,9 +347,6 @@ private struct JoinByRecoveryView: View {
                         .platformAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    // Demotes what used to be a 3rd stacked full-width button (design-dna
-                    // rule 7) into a compact trailing field accessory — same pattern as
-                    // EditorFieldRow's scan-QR glyph (44pt hit target, trailing-aligned).
                     #if os(iOS)
                     Button { showScanner = true } label: {
                         PolarisIcon(Icons.scanCode, size: Metric.iconInline)
@@ -326,8 +359,6 @@ private struct JoinByRecoveryView: View {
                     .accessibilityLabel(Text("Scan Setup Code"))
                     #endif
                 }
-                // Matches `RevealableSecureField`'s prominent-field card (same radius +
-                // horizontal inset) so every onboarding field reads as one family.
                 .padding(.horizontal, Space.s3)
                 .padding(.vertical, Space.s3)
                 .background(Color(rgb: env.theme.active.elevatedBackground),
@@ -357,11 +388,19 @@ private struct JoinByRecoveryView: View {
                     .controlSize(.large)
                     .disabled(recoveryKey.isEmpty || busy)
 
-                    Button(action: onBack) {
-                        Text("Back").frame(maxWidth: .infinity)
+                    #if os(iOS)
+                    Button { showPDFImporter = true } label: {
+                        Label {
+                            Text("Import from PDF")
+                        } icon: {
+                            Image(systemName: "arrow.down.doc")
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.themedTinted)
                     .controlSize(.large)
+                    .disabled(busy)
+                    #endif
                 }
                 .padding(.horizontal, Space.s6)
                 .padding(.bottom, Space.s6)
@@ -374,8 +413,31 @@ private struct JoinByRecoveryView: View {
                 showScanner = false
             } onCancel: { showScanner = false }
         }
+        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf]) { result in
+            switch result {
+            case .success(let url): importPDF(url)
+            case .failure: break // user cancelled the picker
+            }
+        }
         #endif
     }
+
+    #if os(iOS)
+    /// Decode the Setup Code QR out of the chosen Emergency Kit PDF and fill the field
+    /// (the user confirms with Continue, same as the camera scan).
+    private func importPDF(_ url: URL) {
+        busy = true
+        errorMessage = nil
+        Task {
+            defer { busy = false }
+            if let key = await RecoveryKeyPDFImporter.extractRecoveryKey(from: url) {
+                recoveryKey = key
+            } else {
+                errorMessage = appString("Couldn’t read a recovery key from that PDF. Try scanning the Setup Code instead.")
+            }
+        }
+    }
+    #endif
 
     private func submit() {
         busy = true
@@ -430,15 +492,11 @@ private struct RecoveryScannerSheet: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
                 .background(.black.opacity(0.35), in: Capsule())
-                // The visible pill stays compact; the tappable region still meets the
-                // 44pt minimum via invisible frame growth (background sizes to the
-                // smaller content above, so the capsule itself doesn't grow).
                 .frame(minHeight: Metric.hitMin)
                 Spacer()
                 Text("Scan Setup Code")
                     .vaultType(.headline).foregroundStyle(.white)
                 Spacer()
-                // Balances the leading Cancel so the title stays centered.
                 Text("Cancel").padding(.horizontal, Space.s3).padding(.vertical, Space.s2).opacity(0)
             }
             .padding(Space.s4)
