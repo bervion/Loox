@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// Master-password creation step. Enforces a minimum length and confirmation,
-/// shows live strength, and warns that the password cannot be recovered.
+/// Master-password creation step, styled like the Apple Account sign-in: a white
+/// page, one gray capsule field that grows a confirm row (grouped, with a divider)
+/// once typing starts, a strength RING inside the first row, a duotone info note
+/// instead of a warning card, and a blue capsule Continue pinned at the bottom.
 struct CreateMasterPasswordView: View {
     /// Returns an error message, or `nil` on success (parent then advances).
     let onSubmit: (String) async -> String?
@@ -10,6 +12,7 @@ struct CreateMasterPasswordView: View {
     var title: LocalizedStringKey = "Create your password"
     var subtitle: LocalizedStringKey = "This is the only password you’ll need to remember. It unlocks everything."
     @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var password = ""
     @State private var confirm = ""
@@ -19,6 +22,7 @@ struct CreateMasterPasswordView: View {
     private var meetsLength: Bool { password.count >= 8 }
     private var matches: Bool { !confirm.isEmpty && password == confirm }
     private var canSubmit: Bool { meetsLength && matches && !busy }
+    private var showConfirm: Bool { !password.isEmpty }
 
     var body: some View {
         ScrollView {
@@ -34,60 +38,126 @@ struct CreateMasterPasswordView: View {
                 }
                 .padding(.top, Space.s2)
 
-                VStack(alignment: .leading, spacing: Space.s6) {
-                    // Password + its strength meter form one tight group; the confirm field
-                    // sits a full step below so the strength label doesn't crowd it.
-                    VStack(alignment: .leading, spacing: Space.s3) {
-                        RevealableSecureField(title: "Loox Password", text: $password, icon: Icons.lockFill, prominent: true)
-                        PasswordStrengthMeter(password: password, emptyLabel: "Choose a strong password")
-                    }
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        RevealableSecureField(title: "Confirm Loox Password", text: $confirm, icon: Icons.lockFill, prominent: true)
-                        if !confirm.isEmpty && !matches {
-                            Text("Passwords don’t match")
-                                .vaultType(.caption).foregroundStyle(VaultColors.strengthWeak)
-                        }
-                    }
+                passwordGroup
+
+                if !confirm.isEmpty && !matches {
+                    Text("Passwords don’t match")
+                        .vaultType(.caption).foregroundStyle(VaultColors.strengthWeak)
                 }
 
-                // Amber caution card — the vault is unrecoverable without the Emergency Kit,
-                // so this warning carries a warning tint (not a neutral surface).
-                // Custom HStack (not Label) so the icon stays vertically centred against
-                // the multi-line text instead of riding the first baseline.
-                HStack(alignment: .center, spacing: Space.s3) {
-                    PolarisIcon(Icons.alert, size: Metric.iconUtility)
-                        .foregroundStyle(Color(rgb: theme.warning))
-                    Text("If you forget this password, only your Emergency Kit can recover the vault. There is no reset.")
-                        .vaultType(.footnote).themedForeground(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(Space.s4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(rgb: theme.warningSoft), in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                infoNote
 
                 if let error {
                     Text(error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
         }
+        // Apple-Account look: a plain white page with GRAY capsule fields.
+        .background(Color(rgb: theme.background).ignoresSafeArea())
         // Dismiss the keyboard on scroll or when an empty area is tapped
         // (field/button taps keep their own handling — children win over this gesture).
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
-        .safeAreaInset(edge: .bottom) {
-            Button {
-                Task { await submit() }
-            } label: {
-                Text("Continue").frame(maxWidth: .infinity).prominentButtonLoading(busy)
+        .safeAreaInset(edge: .bottom) { continueButton }
+    }
+
+    // MARK: Password group (grows the confirm row once typing starts)
+
+    private var passwordGroup: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: Space.s3) {
+                SecureField("Loox Password", text: $password)
+                    .platformAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .platformTextContentType(.newPassword)
+                if showConfirm {
+                    strengthRing
+                        .transition(.scale.combined(with: .opacity))
+                }
             }
-            .buttonStyle(.themedProminent)
-            .controlSize(.large)
-            .disabled(!canSubmit)
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.gutter)
+            .padding(.horizontal, Space.s5)
+            .frame(height: 54)
+
+            if showConfirm {
+                Divider().padding(.leading, Space.s5)
+                SecureField("Confirm Loox Password", text: $confirm)
+                    .platformAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .platformTextContentType(.newPassword)
+                    .padding(.horizontal, Space.s5)
+                    .frame(height: 54)
+                    .transition(.opacity)
+            }
         }
+        .background(Color(rgb: theme.secondaryBackground),
+                    in: RoundedRectangle(cornerRadius: 27, style: .continuous))
+        .animation(.vault(.spring(response: 0.4, dampingFraction: 0.85), reduceMotion: reduceMotion),
+                   value: showConfirm)
+    }
+
+    /// Password strength as a small progress ring (replaces the bar meter):
+    /// fills and recolors with the pattern-aware grade as the user types.
+    private var strengthRing: some View {
+        let result = PasswordStrengthEngine.evaluate(password)
+        let (progress, strength): (Double, PasswordStrength) = {
+            switch result.grade {
+            case .veryWeak: return (0.2, .weak)
+            case .weak:     return (0.4, .weak)
+            case .fair:     return (0.6, .medium)
+            case .strong:   return (0.8, .strong)
+            case .excellent: return (1.0, .strong)
+            }
+        }()
+        return ZStack {
+            Circle().stroke(VaultColors.fill, lineWidth: 3)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(VaultColors.strength(strength),
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 22, height: 22)
+        .animation(.vault(.spring(response: 0.35, dampingFraction: 0.85), reduceMotion: reduceMotion),
+                   value: progress)
+        .accessibilityLabel(Text("Password strength"))
+    }
+
+    /// Duotone info glyph + the no-reset note (replaces the amber warning card).
+    private var infoNote: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Image("InfoDuotone")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 26, height: 26)
+            Text("If you forget this password, only your Emergency Kit can recover the vault. There is no reset.")
+                .vaultType(.footnote).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, Space.s2)
+    }
+
+    // MARK: Continue (blue capsule enabled, quiet gray disabled)
+
+    private var continueButton: some View {
+        Button {
+            Task { await submit() }
+        } label: {
+            Text("Continue")
+                .vaultType(.body).fontWeight(.medium)
+                .foregroundStyle(canSubmit ? .white : Color(rgb: theme.tertiaryText))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Space.s3)
+                .background(canSubmit ? Color(rgb: 0x0065F4) : Color(rgb: theme.secondaryBackground),
+                            in: Capsule())
+                .prominentButtonLoading(busy)
+        }
+        .buttonStyle(.plain)
+        .disabled(!canSubmit)
+        .animation(.easeInOut(duration: 0.2), value: canSubmit)
+        .padding(.horizontal, Space.s6)
+        .padding(.bottom, Space.gutter)
     }
 
     /// Resign the first responder so the keyboard hides (on scroll / tap-outside).
