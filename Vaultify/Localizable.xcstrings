@@ -14655,6 +14655,16 @@
           }
         }
       }
+    },
+    "On your other device": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trên thiết bị kia của bạn"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

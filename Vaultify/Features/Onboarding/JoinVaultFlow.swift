@@ -259,27 +259,27 @@ private struct JoinByQRView: View {
                 // and settles (no loop). Start Over (clearing the error) resumes it.
                 LooxSwirlAnimationView(mode: errorMessage == nil ? .loop : .reveal)
                     .frame(width: 140, height: 140)
-                OnboardingStepHeader(
-                    "Pair with QR Code",
-                    subtitle: "On your other device, open Settings → iCloud Sync → Pair New Device, then scan this code.",
-                    style: .compact)
+
+                // Extra clearance below the swirl: its dispersal spills past the
+                // frame, so the title must sit clear of the fading dots.
+                OnboardingStepHeader("Pair with QR Code", style: .compact)
+                    .padding(.top, Space.s7)
+
+                guideBreadcrumb
+                    .padding(.top, Space.s3)
+                    .padding(.horizontal, Space.s6)
 
                 QRCodeView(payload: session.qrPayload)
                     .frame(maxWidth: 260)
-                    .padding(.top, Space.s6)
+                    .padding(.top, Space.s5)
 
                 Group {
                     if let errorMessage {
-                        Text(errorMessage)
-                            .vaultType(.footnote)
-                            .foregroundStyle(VaultColors.strengthWeak)
-                            .multilineTextAlignment(.center)
+                        errorCard(errorMessage)
                     } else {
-                        HStack(spacing: Space.s2) {
-                            ProgressView()
-                            Text("Waiting for your other device…")
-                                .vaultType(.subhead).themedForeground(.secondary)
-                        }
+                        Text("Waiting for your other device…")
+                            .vaultType(.subhead).themedForeground(.secondary)
+                            .multilineTextAlignment(.center)
                     }
                 }
                 .padding(.horizontal, Space.s6)
@@ -304,6 +304,62 @@ private struct JoinByQRView: View {
         }
         .onAppear(perform: startWaiting)
         .onDisappear { waitTask?.cancel() }
+    }
+
+    /// Where-to-go guide as a focal breadcrumb (Settings › iCloud Sync › Pair New
+    /// Device) instead of a prose sentence — chips read at a glance. Falls back to
+    /// a stacked layout when a localized label makes the row too wide.
+    private var guideBreadcrumb: some View {
+        VStack(spacing: Space.s3) {
+            Text("On your other device")
+                .vaultType(.footnote).themedForeground(.secondary)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Space.s2) { breadcrumbChips }
+                VStack(spacing: Space.s2) { breadcrumbChips }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder private var breadcrumbChips: some View {
+        crumb("Settings")
+        crumbSeparator
+        crumb("iCloud Sync")
+        crumbSeparator
+        crumb("Pair New Device", emphasized: true)
+    }
+
+    private func crumb(_ title: LocalizedStringResource, emphasized: Bool = false) -> some View {
+        Text(title.inAppLocalized)
+            .vaultType(.footnote).fontWeight(.semibold)
+            .foregroundStyle(emphasized ? Color(rgb: env.theme.active.accentText) : Color(rgb: env.theme.active.secondaryText))
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s2)
+            .background(Color(rgb: emphasized ? env.theme.active.accentSoft : env.theme.active.controlBackground),
+                        in: Capsule())
+            .lineLimit(1)
+    }
+
+    private var crumbSeparator: some View {
+        PolarisIcon(Icons.chevronRight, size: 12)
+            .themedForeground(.iconSecondary)
+    }
+
+    /// Refined failure card: soft red surface, a circled X, and the message —
+    /// replaces the bare red error line.
+    private func errorCard(_ message: String) -> some View {
+        HStack(alignment: .center, spacing: Space.s3) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(Color(rgb: env.theme.active.destructive))
+            Text(verbatim: message)
+                .vaultType(.footnote).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(Space.s4)
+        .background(Color(rgb: env.theme.active.destructiveSoft),
+                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
     private func startWaiting() {
