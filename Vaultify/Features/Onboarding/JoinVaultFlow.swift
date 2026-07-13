@@ -169,11 +169,13 @@ struct RestoreMethodSheet: View {
                     LooxSwirlAnimationView()
                         .frame(width: 130, height: 130)
                         .frame(maxWidth: .infinity)
-                        .padding(.top, Space.s9)
+                        // The toolbar X already anchors the top — keep the swirl
+                        // close to it and give the air to the gap below instead.
+                        .padding(.top, Space.s4)
 
                     Text("Restore data")
                         .vaultType(.screenTitle)
-                        .padding(.top, Space.s8)
+                        .padding(.top, Space.s9)
                     Text("Move your vault from another device, or reopen it with your Emergency Kit.")
                         .vaultType(.body).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
