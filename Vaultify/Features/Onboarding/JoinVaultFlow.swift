@@ -151,8 +151,6 @@ struct RestoreMethodSheet: View {
     let onQR: () -> Void
     let onRecovery: () -> Void
     @Environment(\.dismiss) private var dismiss
-
-    @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
