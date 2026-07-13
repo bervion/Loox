@@ -32,7 +32,7 @@ struct LooxSwirlAnimationView: View {
 
     // Timings.
     private let revealDur: Double = 1.3
-    private let loopDur: Double = 2.4
+    private let loopDur: Double = 2.6
     private let dismissDur: Double = 0.7
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -131,17 +131,20 @@ struct LooxSwirlAnimationView: View {
         }
     }
 
-    /// Continuous loading pulse: four generations stream outward, fading to 0 at
-    /// the outer ring, then wrap (invisible at the wrap point).
+    /// Continuous loading swirl: generations stream out FROM THE LOGO, each dot
+    /// twisting as it travels (spiral arms), growing and fading to 0 at the outer
+    /// ring, then wrapping (invisible at the wrap point).
     private func drawLoop(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
-        for g in 0..<4 {
-            let u = ((t / loopDur) + Double(g) / 4).truncatingRemainder(dividingBy: 1)
-            let radius = (ringInner + CGFloat(u) * (ringOuter - ringInner)) * d
+        let gens = 5
+        let twist = 0.6 * Double.pi                // gentle spiral per dot lifetime
+        for g in 0..<gens {
+            let u = ((t / loopDur) + Double(g) / Double(gens)).truncatingRemainder(dividingBy: 1)
+            let radius = (logoEdge + CGFloat(u) * (ringOuter - logoEdge)) * d
             let fadeIn = min(u / 0.12, 1)          // avoid a pop at the wrap/spawn
-            let alpha = fadeIn * (1 - u)           // 1 at inner → 0 at outer ring
+            let alpha = fadeIn * (1 - u)           // 1 near the logo → 0 at the outer ring
             guard alpha > 0.01 else { continue }
             ring(gc, c, radius: radius, dotR: dotK * radius, alpha: alpha,
-                 angleOffset: Double(g % 2) * halfStep)
+                 angleOffset: Double(g % 2) * halfStep + twist * u)
         }
     }
 
