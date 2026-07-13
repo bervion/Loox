@@ -7877,7 +7877,18 @@
         }
       }
     },
+    "On your other device": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trên thiết bị kia của bạn"
+          }
+        }
+      }
+    },
     "On your other device, open Settings → iCloud Sync → Pair New Device, then scan this code.": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -8121,6 +8132,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tùy chọn"
+          }
+        }
+      }
+    },
+    "or": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hoặc"
           }
         }
       }
@@ -11744,6 +11765,16 @@
         }
       }
     },
+    "Tap to choose your saved Emergency Kit PDF": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chạm để chọn file Emergency Kit PDF đã lưu"
+          }
+        }
+      }
+    },
     "Temporarily unavailable": {
       "localizations": {
         "vi": {
@@ -14636,32 +14667,12 @@
         }
       }
     },
-    "or": {
+    "On your other device, open **Settings** → **iCloud Sync** → **Pair New Device**, then scan this code.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "hoặc"
-          }
-        }
-      }
-    },
-    "Tap to choose your saved Emergency Kit PDF": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chạm để chọn file Emergency Kit PDF đã lưu"
-          }
-        }
-      }
-    },
-    "On your other device": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trên thiết bị kia của bạn"
+            "value": "Trên thiết bị kia của bạn, mở **Cài đặt** → **Đồng bộ iCloud** → **Ghép nối thiết bị mới**, rồi quét mã này."
           }
         }
       }

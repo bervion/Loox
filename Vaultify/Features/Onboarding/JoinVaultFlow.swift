@@ -306,43 +306,26 @@ private struct JoinByQRView: View {
         .onDisappear { waitTask?.cancel() }
     }
 
-    /// Where-to-go guide as a focal breadcrumb (Settings › iCloud Sync › Pair New
-    /// Device) instead of a prose sentence — chips read at a glance. Falls back to
-    /// a stacked layout when a localized label makes the row too wide.
+    /// The full guide sentence with the settings path highlighted INLINE: the
+    /// bold segments (markdown) are re-tinted to the accent so "Settings →
+    /// iCloud Sync → Pair New Device" pops out of the flowing prose.
     private var guideBreadcrumb: some View {
-        VStack(spacing: Space.s3) {
-            Text("On your other device")
-                .vaultType(.footnote).themedForeground(.secondary)
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Space.s2) { breadcrumbChips }
-                VStack(spacing: Space.s2) { breadcrumbChips }
-            }
+        Text(guideText)
+            .vaultType(.subhead).themedForeground(.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var guideText: AttributedString {
+        var text = (try? AttributedString(
+            markdown: appString("On your other device, open **Settings** → **iCloud Sync** → **Pair New Device**, then scan this code.")))
+            ?? AttributedString(appString("On your other device, open Settings → iCloud Sync → Pair New Device, then scan this code."))
+        for run in text.runs
+        where run.inlinePresentationIntent?.contains(.stronglyEmphasized) == true {
+            text[run.range].foregroundColor = Color(rgb: env.theme.active.accentText)
+            text[run.range].font = VaultType.subhead.font.weight(.semibold)
         }
-        .frame(maxWidth: .infinity)
-    }
-
-    @ViewBuilder private var breadcrumbChips: some View {
-        crumb("Settings")
-        crumbSeparator
-        crumb("iCloud Sync")
-        crumbSeparator
-        crumb("Pair New Device", emphasized: true)
-    }
-
-    private func crumb(_ title: LocalizedStringResource, emphasized: Bool = false) -> some View {
-        Text(title.inAppLocalized)
-            .vaultType(.footnote).fontWeight(.semibold)
-            .foregroundStyle(emphasized ? Color(rgb: env.theme.active.accentText) : Color(rgb: env.theme.active.secondaryText))
-            .padding(.horizontal, Space.s3)
-            .padding(.vertical, Space.s2)
-            .background(Color(rgb: emphasized ? env.theme.active.accentSoft : env.theme.active.controlBackground),
-                        in: Capsule())
-            .lineLimit(1)
-    }
-
-    private var crumbSeparator: some View {
-        PolarisIcon(Icons.chevronRight, size: 12)
-            .themedForeground(.iconSecondary)
+        return text
     }
 
     /// Refined failure card: soft red surface, a circled X, and the message —
