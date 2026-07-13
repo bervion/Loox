@@ -5296,6 +5296,16 @@
         }
       }
     },
+    "Have them scan this with their Camera to accept." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhờ họ quét mã này bằng Camera để chấp nhận."
+          }
+        }
+      }
+    },
     "Health" : {
       "comment" : "The name of the health gauge.",
       "extractionState" : "stale",
@@ -7716,16 +7726,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thông báo cho Loox đang tắt trong Cài đặt iOS. Bật lại để nhận nhắc nhở đổi mật khẩu định kỳ."
-          }
-        }
-      }
-    },
-    "Have them scan this with their Camera to accept." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nhờ họ quét mã này bằng Camera để chấp nhận."
           }
         }
       }
@@ -13226,6 +13226,7 @@
       }
     },
     "Unlocking" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {

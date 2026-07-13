@@ -143,16 +143,14 @@ extension AnyTransition {
 }
 
 /// Opaque overlay shown when the app is inactive/backgrounded to hide secrets.
-/// Runs the looping brand animation (same as the welcome landing) over a
-/// blur, so the app-switcher preview shows the logo rather than any content.
+/// Uses the lightweight breathing symbol (no memoji players) — this mounts on
+/// every inactivity transition, so it must stay cheap and appear instantly.
 private struct PrivacyShield: View {
-    @StateObject private var anim = LooxLaunchController()
-
     var body: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
-            LooxCloudAnimationView(controller: anim)
-                .frame(width: 220, height: 220 * 0.82)
+            LooxLogoBreatheView(ready: true)
+                .frame(width: 160, height: 160)
         }
     }
 }
