@@ -11,7 +11,9 @@ import SwiftUI
 /// Reduce Motion shows the settled ring immediately. Purely decorative.
 struct LooxSwirlAnimationView: View {
     /// Centre logo height as a fraction of the view's smaller dimension.
-    var logoFraction: CGFloat = 0.30
+    var logoFraction: CGFloat = 0.28
+    /// Radial zigzag amplitude (fraction of dimension) that interleaves the dots.
+    private let zig: CGFloat = 0.016
 
     private let duration: Double = 1.9
     private let entry: Double = 1.4      // per-ring spiral-in time
@@ -21,19 +23,20 @@ struct LooxSwirlAnimationView: View {
     @State private var start = Date.now
     @State private var animating = true
 
-    private struct Ring { let rf: CGFloat; let count: Int; let dotf: CGFloat; let offset: Double }
+    private struct Ring { let rf: CGFloat; let count: Int; let dotBase: CGFloat; let offset: Double }
     private let rings: [Ring] = LooxSwirlAnimationView.makeRings()
 
-    /// Concentric rings that grow denser + larger outward, each rotated a little so
-    /// the dots read as spiralling arms rather than a rigid radial grid.
+    /// Four bands with a big centre gap; each rotated a little, and drawn with a
+    /// per-dot radial zigzag + size variation so the dots interleave (woven look)
+    /// instead of lining up into straight radial spokes.
     private static func makeRings() -> [Ring] {
-        let n = 6
+        let n = 4
         return (0..<n).map { k in
             let f = Double(k) / Double(n - 1)               // 0…1 inner → outer
-            let rf = 0.20 + f * 0.27                         // 0.20 … 0.47
-            let count = max(12, Int((2 * .pi * rf / 0.052).rounded()))
-            let dotf = 0.006 + f * 0.012                     // small inner → large outer
-            return Ring(rf: CGFloat(rf), count: count, dotf: CGFloat(dotf), offset: Double(k) * 0.14)
+            let rf = 0.25 + f * 0.225                        // 0.25 … 0.475 (roomy centre gap)
+            let count = max(12, Int((2 * .pi * rf / 0.076).rounded()))
+            let dotBase = 0.009 + f * 0.008                  // small inner → large outer
+            return Ring(rf: CGFloat(rf), count: count, dotBase: CGFloat(dotBase), offset: Double(k) * 0.13)
         }
     }
 
@@ -89,15 +92,19 @@ struct LooxSwirlAnimationView: View {
             // Per-ring spiral-in progress (staggered, ease-out).
             let rp = easeOutCubic(clamp01((t - Double(idx) * delayStep) / entry))
             guard rp > 0.001 else { continue }
-            let radius = ring.rf * d * rp                  // grow out from centre
             let spin = (1.4 * .pi) * (1 - rp)              // spiral-in, unwinds to the layout
-            let dotR = ring.dotf * d * rp
-            guard dotR > 0.2 else { continue }
             for i in 0..<ring.count {
-                let base = 2 * .pi * Double(i) / Double(ring.count)
-                let a = base + ring.offset + spin
+                let base = 2 * .pi * Double(i) / Double(ring.count) + ring.offset
+                let a = base + spin
+                // Alternate dots slightly in/out so bands interleave (woven look).
+                let zigOffset = (i % 2 == 0) ? -zig : zig
+                let radius = (ring.rf + zigOffset) * d * rp
                 let x = c.x + radius * cos(a)
                 let y = c.y + radius * sin(a)
+                // Deterministic per-dot size variation for an organic, non-uniform feel.
+                let variation = 0.78 + 0.32 * (0.5 + 0.5 * sin(Double(idx) * 12.9898 + Double(i) * 78.233))
+                let dotR = ring.dotBase * d * variation * rp
+                guard dotR > 0.2 else { continue }
                 gc.fill(Path(ellipseIn: CGRect(x: x - dotR, y: y - dotR,
                                                width: 2 * dotR, height: 2 * dotR)),
                         with: .color(.white.opacity(rp)))
