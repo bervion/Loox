@@ -24,9 +24,9 @@ struct CreateMasterPasswordView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    // Loox brand mark instead of a generic lock — same identity as the
-                    // welcome/lock screens. Wide wordmark, so `size` is its height.
-                    BrandLogoMark.compact
+                    // Loox brand lockup: the six-circle symbol next to the LOOX
+                    // wordmark, inline — the brand identity for this step.
+                    BrandLockup(height: 38)
                     Text(title)
                         .vaultType(.screenTitle)
                     Text(subtitle)
