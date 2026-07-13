@@ -265,6 +265,8 @@ private struct JoinByQRView: View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
                 Spacer(minLength: Space.s6)
+                LooxSwirlAnimationView()
+                    .frame(width: 140, height: 140)
                 OnboardingStepHeader(
                     "Pair with QR Code",
                     subtitle: "On your other device, open Settings → iCloud Sync → Pair New Device, then scan this code.",
@@ -348,10 +350,8 @@ private struct JoinByRecoveryView: View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
                 Spacer(minLength: Space.s6)
-                Image("BrandSymbol")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 56)
+                LooxSwirlAnimationView()
+                    .frame(width: 150, height: 150)
                 OnboardingStepHeader(
                     "Use Recovery Key",
                     subtitle: "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key. Your vault will download from iCloud.",
