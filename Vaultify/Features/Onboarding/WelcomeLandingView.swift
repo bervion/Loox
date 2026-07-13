@@ -85,7 +85,7 @@ struct WelcomeLandingView: View {
                 .padding(.top, Space.s3)
 
             CapabilityCarousel(containerWidth: width)
-                .padding(.top, Space.s6)
+                .padding(.top, Space.s8)
         }
     }
 
@@ -176,7 +176,7 @@ private struct CapabilityCarousel: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Space.s6) {
+            HStack(spacing: Space.s4) {
                 ForEach(slides) { slide in
                     CapabilitySlide(image: slide.image, title: slide.title, detail: slide.detail, width: cardWidth)
                 }
