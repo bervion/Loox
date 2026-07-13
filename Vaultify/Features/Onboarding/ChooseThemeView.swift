@@ -14,9 +14,9 @@ struct ChooseThemeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    // Brand mark ships light + dark variants, so it flips live as the
-                    // user previews System/Light/Dark. Wide wordmark → `size` is height.
-                    BrandLogoMark.compact
+                    // Brand lockup ships light + dark wordmark variants, so it flips
+                    // live as the user previews System/Light/Dark.
+                    BrandLockup(height: 38)
                     Text("Make it yours")
                         .vaultType(.screenTitle)
                     Text("Choose how Loox looks. You can change this anytime in Settings.")

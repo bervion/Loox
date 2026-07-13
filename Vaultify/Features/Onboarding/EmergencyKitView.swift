@@ -28,7 +28,7 @@ struct EmergencyKitView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    BrandLogoMark.compact
+                    BrandLockup(height: 38)
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
                     Text("This recovery key can restore your vault if you forget your master password or set up a new device. Save the PDF to continue.")
