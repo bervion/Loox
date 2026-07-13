@@ -53,11 +53,10 @@ struct OnboardingFlow: View {
                     step = .emergencyKit
                 }
             case .emergencyKit:
-                navStep(back: { step = .name }) {
-                    EmergencyKitView(recoveryKey: recoveryKey,
-                                     ownerName: userName,
-                                     iCloudAccount: userEmail) { step = .theme }
-                }
+                // No back: the identity seeds ran when the name step completed.
+                EmergencyKitView(recoveryKey: recoveryKey,
+                                 ownerName: userName,
+                                 iCloudAccount: userEmail) { step = .theme }
             case .theme:
                 navStep(back: { step = .emergencyKit }) {
                     ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {

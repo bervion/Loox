@@ -4176,6 +4176,7 @@
       }
     },
     "Email (optional)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {

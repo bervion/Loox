@@ -34,7 +34,7 @@ struct EmergencyKitView: View {
                     // revealing its rings on appear.
                     LooxDotsAvatar(size: 100, revealsOnAppear: true)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, Space.s6)
+                        .padding(.bottom, Space.s6)
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
                     Text("This recovery key can restore your vault if you forget your master password or set up a new device.")
@@ -144,13 +144,6 @@ struct EmergencyKitView: View {
                                        startPoint: .leading, endPoint: .trailing))
 
             VStack(alignment: .leading, spacing: Space.s4) {
-                HStack(alignment: .top) {
-                    cardField(label: "Owner", value: ownerName.isEmpty ? "—" : ownerName,
-                              alignment: .leading)
-                    Spacer()
-                    cardField(label: "Created", value: createdDateString, alignment: .trailing)
-                }
-
                 recoveryKeyBox
             }
             .padding(Space.s4)
@@ -158,7 +151,8 @@ struct EmergencyKitView: View {
             .background(Color(rgb: theme.elevatedBackground))
         }
         .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .elevation(.level2)
+        // The page is white, so the kit card needs the white-canvas shadow.
+        .elevation(.cardOnWhite)
     }
 
     /// Dashed focal box; the whole box copies the key on tap (the clipboard
@@ -204,25 +198,6 @@ struct EmergencyKitView: View {
         }
     }
 
-    private func cardField(label: LocalizedStringKey, value: String,
-                           alignment: HorizontalAlignment) -> some View {
-        VStack(alignment: alignment, spacing: Space.s1) {
-            Text(label)
-                .vaultType(.caption).fontWeight(.semibold)
-                .textCase(.uppercase).tracking(1)
-                .themedForeground(.tertiary)
-            Text(value)
-                .vaultType(.callout).fontWeight(.medium)
-                .themedForeground(.primary)
-        }
-    }
-
-    private var createdDateString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
-        return formatter.string(from: Date.now)
-    }
-
     // MARK: Save action (brand blue) — reveals Continue on success
 
     private var saveButton: some View {
@@ -264,21 +239,19 @@ struct EmergencyKitView: View {
                     in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
-    /// Amber "you must save this" card (with an alert glyph) shown under the Save
-    /// button until the kit is saved — the stakes read immediately, in place.
+    /// Quiet duotone note (matches the info notes elsewhere) shown until the
+    /// kit is saved — the stakes read without shouting.
     private var mustSaveWarning: some View {
-        HStack(alignment: .center, spacing: Space.s3) {
-            PolarisIcon(Icons.alert, size: Metric.iconUtility)
-                .foregroundStyle(Color(rgb: theme.warning))
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Image("KitMedicalDuotone")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 26, height: 26)
             Text("Save the kit to continue. It is the only way to recover your vault.")
                 .vaultType(.footnote).themedForeground(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(Space.s4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(rgb: theme.warningSoft),
-                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .padding(.top, Space.s2)
     }
 
     /// Split the hyphenated key into two balanced lines so it reads as a block instead of
