@@ -255,9 +255,9 @@ private struct JoinByQRView: View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
                 Spacer().frame(height: Space.s3)
-                // Loading pulse while waiting; on timeout the dots burst out and fade,
-                // then Start Over (clearing the error) resumes the loop.
-                LooxSwirlAnimationView(mode: errorMessage == nil ? .loop : .dismiss)
+                // Loading loop while waiting; on timeout the animation restarts once
+                // and settles (no loop). Start Over (clearing the error) resumes it.
+                LooxSwirlAnimationView(mode: errorMessage == nil ? .loop : .reveal)
                     .frame(width: 140, height: 140)
                 OnboardingStepHeader(
                     "Pair with QR Code",

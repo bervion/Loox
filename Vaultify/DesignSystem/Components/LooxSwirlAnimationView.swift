@@ -28,9 +28,9 @@ struct LooxSwirlAnimationView: View {
     private let ringStep: CGFloat = 0.047      // → ring 4 at 0.461
     private var ringOuter: CGFloat { ringInner + 3 * ringStep }
     private var halfStep: Double { .pi / Double(perRing) }
-    /// Emanation origin — measured off the reference video: dots spawn at ~54% of
-    /// the outer ring's radius (just outside the logo), tiny and faint.
-    private var spawnR: CGFloat { 0.54 * ringOuter }
+    /// Emanation origin: the logo's edge — dots are born under the mark and
+    /// travel out, never popping up in the white gap.
+    private var spawnR: CGFloat { logoFraction * 0.5 }
     /// Total pattern swirl during a journey (~57°, ease-out), also measured.
     private let swirl: Double = 57 * .pi / 180
 
@@ -160,22 +160,21 @@ struct LooxSwirlAnimationView: View {
         drawEmanate(gc, c, d, min(t, revealDur))
     }
 
-    /// Loading loop: one full breath per cycle — the emanation plays out, then
-    /// everything drifts outward and fades to 0 completely, rests a beat empty,
-    /// and starts over. The pattern NEVER stops turning: a slow constant drift
-    /// rides on top of the journey swirl (fast at spawn, easing as it grows),
-    /// so the settled beat keeps rotating instead of stalling.
+    /// Loading loop: one full breath per cycle — the emanation plays out and
+    /// flows STRAIGHT into the dispersal (no held beat), everything fades to 0,
+    /// rests a blink, and starts over. The pattern never stops turning: a slow
+    /// constant drift rides on top of the journey swirl.
     private func drawLoop(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
-        let hold = 0.35, rest = 0.25
-        let cycle = revealDur + hold + dismissDur + rest
+        let rest = 0.2
+        let cycle = revealDur + dismissDur + rest
         let tc = t.truncatingRemainder(dividingBy: cycle)
         let drift = loopDrift * tc                  // never stops turning
-        if tc < revealDur + hold {
-            drawEmanate(gc, c, d, min(tc, revealDur), drift: drift)
-        } else if tc < revealDur + hold + dismissDur {
-            drawFadeOut(gc, c, d, tc - revealDur - hold, drift: drift)
+        if tc < revealDur {
+            drawEmanate(gc, c, d, tc, drift: drift)
+        } else if tc < revealDur + dismissDur {
+            drawFadeOut(gc, c, d, tc - revealDur, drift: drift)
         }
-        // else: rest — empty beat before the next breath (the drift reset at the
+        // else: rest — a blink before the next breath (the drift reset at the
         // cycle wrap is invisible: nothing is on screen).
     }
 
