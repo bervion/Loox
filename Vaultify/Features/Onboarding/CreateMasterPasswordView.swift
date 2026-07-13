@@ -28,9 +28,11 @@ struct CreateMasterPasswordView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    // Loox brand lockup: the six-circle symbol next to the LOOX
-                    // wordmark, inline — the brand identity for this step.
-                    BrandLockup(height: 38)
+                    // Loox dots mark (the Home empty-avatar look), centred,
+                    // revealing its rings on appear.
+                    LooxDotsAvatar(size: 100, revealsOnAppear: true)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, Space.s2)
                     Text(title)
                         .vaultType(.screenTitle)
                     Text(subtitle)
@@ -127,7 +129,7 @@ struct CreateMasterPasswordView: View {
     /// Duotone info glyph + the no-reset note (replaces the amber warning card).
     private var infoNote: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Image("InfoDuotone")
+            Image("CircleDashedDuotone")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 26, height: 26)
@@ -148,7 +150,7 @@ struct CreateMasterPasswordView: View {
                 .vaultType(.body).fontWeight(.medium)
                 .foregroundStyle(canSubmit ? .white : Color(rgb: theme.tertiaryText))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s3)
+                .padding(.vertical, Space.s4)
                 .background(canSubmit ? Color(rgb: 0x0065F4) : Color(rgb: theme.secondaryBackground),
                             in: Capsule())
                 .prominentButtonLoading(busy)

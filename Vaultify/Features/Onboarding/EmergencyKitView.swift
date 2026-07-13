@@ -30,7 +30,11 @@ struct EmergencyKitView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    BrandLockup(height: 38)
+                    // Loox dots mark (the Home empty-avatar look), centred,
+                    // revealing its rings on appear.
+                    LooxDotsAvatar(size: 100, revealsOnAppear: true)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, Space.s2)
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
                     Text("This recovery key can restore your vault if you forget your master password or set up a new device.")

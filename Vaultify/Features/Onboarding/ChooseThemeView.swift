@@ -14,9 +14,11 @@ struct ChooseThemeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    // Brand lockup ships light + dark wordmark variants, so it flips
-                    // live as the user previews System/Light/Dark.
-                    BrandLockup(height: 38)
+                    // Loox dots mark (the Home empty-avatar look), centred,
+                    // revealing its rings on appear.
+                    LooxDotsAvatar(size: 100, revealsOnAppear: true)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, Space.s2)
                     Text("Make it yours")
                         .vaultType(.screenTitle)
                     Text("Choose how Loox looks. You can change this anytime in Settings.")

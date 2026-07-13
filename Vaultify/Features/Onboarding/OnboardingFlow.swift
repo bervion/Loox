@@ -31,7 +31,18 @@ struct OnboardingFlow: View {
             case .join:
                 JoinVaultFlow(method: restoreMethod, onCancel: { step = .welcome })
             case .create:
-                CreateMasterPasswordView(onSubmit: createVault)
+                // Native nav chrome for the standard iOS back (to welcome).
+                NavigationStack {
+                    CreateMasterPasswordView(onSubmit: createVault)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button { step = .welcome } label: { Image(systemName: "chevron.backward") }
+                                    .accessibilityLabel(Text("Back"))
+                            }
+                        }
+                }
+                .tint(Color.primary)
             case .name:
                 NameStepView { name, email in
                     userName = name

@@ -17,9 +17,11 @@ struct NameStepView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    // Loox brand lockup (symbol + wordmark), inline — the person
-                    // glyph now leads the field instead.
-                    BrandLockup(height: 38)
+                    // Loox dots mark (the Home empty-avatar look), centred,
+                    // revealing its rings on appear.
+                    LooxDotsAvatar(size: 100, revealsOnAppear: true)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, Space.s2)
                     Text("What should we call you?")
                         .vaultType(.screenTitle)
                     Text("We’ll set up your identity profile. You can edit it and add details anytime.")

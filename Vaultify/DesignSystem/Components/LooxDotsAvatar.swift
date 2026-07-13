@@ -11,6 +11,9 @@ import SwiftUI
 struct LooxDotsAvatar: View {
     var size: CGFloat
     var animatesCamera: Bool = false
+    /// Play the ring reveal on appear without the camera loop (brand mark on
+    /// onboarding step headers).
+    var revealsOnAppear: Bool = false
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -49,8 +52,8 @@ struct LooxDotsAvatar: View {
             centerGlyph(accent: accent)
         }
         .frame(width: size, height: size)
-        .task(id: animatesCamera) {
-            guard animatesCamera, !reduceMotion else { showCamera = false; return }
+        .task(id: animatesCamera || revealsOnAppear) {
+            guard (animatesCamera || revealsOnAppear), !reduceMotion else { showCamera = false; return }
             // One-shot ring reveal on appear, then the canvas freezes settled.
             revealStart = .now
             revealing = true
@@ -58,6 +61,7 @@ struct LooxDotsAvatar: View {
                 try? await Task.sleep(for: .seconds(revealDur + 0.05))
                 revealing = false
             }
+            guard animatesCamera else { return }
             // Bubbly swap loop: spark ↔ camera every beat, springy like a bubble.
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1.5))
