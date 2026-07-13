@@ -153,6 +153,9 @@ struct JoinVaultFlow: View {
 struct RestoreMethodSheet: View {
     let onQR: () -> Void
     let onRecovery: () -> Void
+    /// "Want to start fresh?" — leave restore and go straight into vault
+    /// creation (same destination as the welcome Get started).
+    let onStartFresh: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var env
 
@@ -176,7 +179,7 @@ struct RestoreMethodSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Space.s2)
 
-                    Button { dismiss() } label: {
+                    Button { onStartFresh() } label: {
                         Text("Want to start fresh?")
                             .vaultType(.body)
                             .themedForeground(.accentText)

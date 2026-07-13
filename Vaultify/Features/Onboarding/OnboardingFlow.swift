@@ -61,7 +61,8 @@ struct OnboardingFlow: View {
         .sheet(isPresented: $showRestoreSheet) {
             RestoreMethodSheet(
                 onQR: { restoreMethod = .qr; showRestoreSheet = false; step = .join },
-                onRecovery: { restoreMethod = .recovery; showRestoreSheet = false; step = .join })
+                onRecovery: { restoreMethod = .recovery; showRestoreSheet = false; step = .join },
+                onStartFresh: { showRestoreSheet = false; step = .create })
         }
         // Onboarding has no MainTabView, so it hosts its own copy-toast overlay
         // (Emergency Kit's Copy button would otherwise give only a haptic).
