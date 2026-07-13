@@ -3397,21 +3397,12 @@
       }
     },
     "Create your Loox Password" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tạo Loox Password của bạn"
-          }
-        }
-      }
-    },
-    "Create your password" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạo mật khẩu của bạn"
           }
         }
       }
@@ -3423,6 +3414,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tạo mật khẩu chính"
+          }
+        }
+      }
+    },
+    "Create your password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo mật khẩu của bạn"
           }
         }
       }
