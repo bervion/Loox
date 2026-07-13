@@ -7720,6 +7720,16 @@
         }
       }
     },
+    "Have them scan this with their Camera to accept." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhờ họ quét mã này bằng Camera để chấp nhận."
+          }
+        }
+      }
+    },
     "Nudge via Messages" : {
       "localizations" : {
         "vi" : {

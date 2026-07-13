@@ -639,6 +639,13 @@ struct ShareAccessSheet: View {
                         .multilineTextAlignment(.center)
                 }
 
+                // In-person delivery: hand the phone over and let the recipient
+                // scan — same email-keyed invite URL as the Messages nudge, just
+                // a faster channel when they're next to you.
+                if !accepted, let shareURL {
+                    invitationQRCard(url: shareURL)
+                }
+
                 // Action hierarchy: exactly one filled primary + at most one
                 // quiet secondary. Before acceptance the single most useful
                 // thing the owner can do is help the recipient find the
@@ -713,6 +720,20 @@ struct ShareAccessSheet: View {
         // the step already moved past waiting.
         .onReceive(NotificationCenter.default.publisher(for: .shareAcceptanceHint)) { _ in
             Task { await checkProfileNow() }
+        }
+    }
+
+    /// In-person delivery of the invite: the recipient scans this with their
+    /// Camera to open the universal invite link and accept — no Messages or
+    /// email round-trip. The share stays keyed to the recipient's iCloud
+    /// account; the QR only carries the same invite URL the nudge would send.
+    private func invitationQRCard(url: URL) -> some View {
+        VStack(spacing: Space.s3) {
+            QRCodeView(payload: url.absoluteString)
+                .frame(width: 200, height: 200)
+            Text("Have them scan this with their Camera to accept.")
+                .vaultType(.footnote).themedForeground(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
 
