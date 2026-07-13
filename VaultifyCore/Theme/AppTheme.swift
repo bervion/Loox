@@ -23,6 +23,9 @@ nonisolated struct AppTheme: Sendable, Equatable {
     // Accent
     var accent: UInt32
     var accentForeground: UInt32       // text / icon drawn on top of `accent`
+    /// Brand link hue paired with the accent (nil → derive from `accent`).
+    /// The brand blue fill (#009DFF) pairs with the brand link blue (#0065F4).
+    var linkAccent: UInt32? = nil
 
     // Lines & controls
     var separator: UInt32
@@ -53,6 +56,9 @@ nonisolated struct AppTheme: Sendable, Equatable {
         var accent = RGBMath.ensureContrast(rawAccent, on: groupedBackground, floor: 3.0)
         accent = RGBMath.ensureContrast(accent, on: elevatedBackground, floor: 3.0)
         theme.accent = accent
+        // Brand pairing: the brand blue ships its own link hue instead of a
+        // derived darkening; other presets keep the derived text rank.
+        theme.linkAccent = (rawAccent == 0x009DFF) ? 0x0065F4 : nil
         // The themed toggle draws a WHITE knob on the ON track (native UISwitch
         // anatomy) — a white/near-white accent (mono on dark) makes knob and
         // track one shape. Guard the track against the knob at 2.0:1, the ratio

@@ -42,10 +42,11 @@ nonisolated extension AppTheme {
     /// Both guards blend the same direction (toward the mode's on-color), so
     /// the sequential application preserves the first constraint.
     var accentText: UInt32 {
-        // Floor 3.0 (AA-large / UI-component), not 4.5: user-locked trade-off
-        // (260713) keeping links close to the brand #009DFF while still
-        // readable — full-AA body text never renders in the accent.
-        let onControl = RGBMath.ensureContrast(accent, on: controlBackground, floor: 3.0)
+        // Brand pairing first: the brand blue ships a dedicated link hue
+        // (#0065F4, ~5:1 on white). Derived presets keep the guarded accent.
+        // Floor 3.0 (AA-large / UI-component) per the user-locked 260713 call.
+        let base = linkAccent ?? accent
+        let onControl = RGBMath.ensureContrast(base, on: controlBackground, floor: 3.0)
         return RGBMath.ensureContrast(onControl, on: accentSoft, floor: 3.0)
     }
 

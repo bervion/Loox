@@ -15,6 +15,8 @@ nonisolated enum BuiltinThemes {
         // theme's filled controls (buttons / selected chips) keep legible text. Single
         // source of truth — the literal `accentForeground` below is just a placeholder.
         base.accentForeground = RGBMath.onAccent(base.accent)
+        // Brand pairing (see AppTheme.recolored): brand blue -> brand link blue.
+        base.linkAccent = (base.accent == 0x009DFF) ? 0x0065F4 : nil
         return base
     }
 
