@@ -24,15 +24,31 @@ struct LooxDotsAvatar: View {
     private let outerRF: CGFloat = 0.86   // of the half-size
     private let innerRF: CGFloat = 0.86 * 0.79
 
+    @State private var revealing = false
+    @State private var revealStart = Date.now
+    /// Reveal choreography (measured off the reference): dots emanate from near
+    /// the logo, growing and fading in while the pattern swirls ~57° ease-out;
+    /// the outer ring leads, the inner follows ~0.15s later.
+    private let revealTravel: Double = 0.55
+    private let revealStagger: Double = 0.15
+    private var revealDur: Double { revealTravel + revealStagger }
+
     var body: some View {
         let accent = Color(rgb: env.theme.active.accent)
         ZStack {
-            dotRings(accent: accent)
+            dotsLayer(accent: accent)
             centerGlyph(accent: accent)
         }
         .frame(width: size, height: size)
         .task(id: animatesCamera) {
             guard animatesCamera, !reduceMotion else { showCamera = false; return }
+            // One-shot ring reveal on appear, then the canvas freezes settled.
+            revealStart = .now
+            revealing = true
+            Task {
+                try? await Task.sleep(for: .seconds(revealDur + 0.05))
+                revealing = false
+            }
             // Bubbly swap loop: spark ↔ camera every beat, springy like a bubble.
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1.5))
@@ -44,25 +60,42 @@ struct LooxDotsAvatar: View {
         }
     }
 
-    private func dotRings(accent: Color) -> some View {
+    /// Ticks only during the reveal; otherwise a single settled frame.
+    @ViewBuilder private func dotsLayer(accent: Color) -> some View {
+        if revealing && !reduceMotion {
+            TimelineView(.animation) { context in
+                dotsCanvas(t: context.date.timeIntervalSince(revealStart), accent: accent)
+            }
+        } else {
+            dotsCanvas(t: revealDur, accent: accent)
+        }
+    }
+
+    private func dotsCanvas(t: Double, accent: Color) -> some View {
         Canvas { gc, canvasSize in
             let half = min(canvasSize.width, canvasSize.height) / 2
             let c = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
-            // (ring radius, base dot radius) per the measured proportions.
+            let spawn = 0.30 * half   // just outside the centre glyph
+            // (ring radius, base dot radius); OUTER first — it leads the reveal.
             let rings: [(radius: CGFloat, dotR: CGFloat)] = [
-                (innerRF * half, 0.055 * half),
                 (outerRF * half, 0.082 * half),
+                (innerRF * half, 0.055 * half),
             ]
             for (k, ring) in rings.enumerated() {
-                let offset = Double(k % 2) * (.pi / Double(perRing)) // interleave
+                let p = easeOutCubic(max(0, min(1, (t - Double(k) * revealStagger) / revealTravel)))
+                guard p > 0.001 else { continue }
+                let radius = spawn + (ring.radius - spawn) * p
+                let spin = -(57 * Double.pi / 180) * (1 - p)   // swirl into place
+                // Interleave parity by final slot (inner ring offset 0).
+                let offset = Double((k + 1) % 2) * (.pi / Double(perRing)) + spin
                 for i in 0..<perRing {
                     let a = 2 * .pi * Double(i) / Double(perRing) + offset
-                    let x = c.x + ring.radius * cos(a)
-                    let y = c.y + ring.radius * sin(a)
+                    let x = c.x + radius * cos(a)
+                    let y = c.y + radius * sin(a)
                     // Deterministic sparkle: each dot gets its own size/opacity.
                     let h1 = hash(k, i, 1), h2 = hash(k, i, 2)
-                    let dotR = ring.dotR * (0.85 + 0.3 * h1)
-                    let alpha = 0.35 + 0.4 * h2
+                    let dotR = ring.dotR * (0.85 + 0.3 * h1) * (0.6 + 0.4 * p)
+                    let alpha = (0.35 + 0.4 * h2) * p
                     gc.fill(Path(ellipseIn: CGRect(x: x - dotR, y: y - dotR,
                                                    width: 2 * dotR, height: 2 * dotR)),
                             with: .color(accent.opacity(alpha)))
@@ -71,6 +104,8 @@ struct LooxDotsAvatar: View {
         }
         .accessibilityHidden(true)
     }
+
+    private func easeOutCubic(_ x: Double) -> Double { 1 - pow(1 - x, 3) }
 
     /// Deterministic per-dot pseudo-random in [0, 1) (fract-sin hash).
     private func hash(_ k: Int, _ i: Int, _ salt: Int) -> Double {
