@@ -228,7 +228,9 @@ struct EmergencyKitView: View {
                 Text(savedPDF ? "Emergency Kit saved" : "Save Kit PDF")
                     .vaultType(.headline)
             }
-            .foregroundStyle(.white)
+            // Saved reads as a calm soft-green confirmation so the black Continue
+            // button becomes the clear next step; unsaved is the loud red CTA.
+            .foregroundStyle(savedPDF ? Color(rgb: theme.success) : .white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.s4)
             .background(saveButtonFill)
@@ -241,9 +243,9 @@ struct EmergencyKitView: View {
 
     @ViewBuilder private var saveButtonFill: some View {
         if savedPDF {
-            VaultColors.strengthStrong
+            Color(rgb: theme.successSoft)
         } else {
-            // Red to signal how critical saving this is; turns green once done.
+            // Red to signal how critical saving this is; turns soft green once done.
             Color(rgb: theme.destructive)
         }
     }
