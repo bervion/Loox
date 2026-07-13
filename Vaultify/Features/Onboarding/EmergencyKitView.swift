@@ -47,11 +47,9 @@ struct EmergencyKitView: View {
 
                 emergencyKitCard
 
-                // Stakes / confirmation, in the content: an amber warning until
-                // the kit is saved, then a green saved note.
-                if savedPDF {
-                    savedNote
-                } else {
+                // Stakes, until the kit is saved — once saved the pinned
+                // Continue is the only affordance left.
+                if !savedPDF {
                     mustSaveWarning
                 }
 
@@ -228,23 +226,6 @@ struct EmergencyKitView: View {
         }
         .buttonStyle(.plain)
         .disabled(recoveryKey.isEmpty)
-    }
-
-    /// Green confirmation shown once the kit is saved (the pinned CTA flips to
-    /// Continue at the same moment).
-    private var savedNote: some View {
-        HStack(alignment: .center, spacing: Space.s3) {
-            PolarisIcon(Icons.checkCircle, size: Metric.iconUtility)
-                .foregroundStyle(Color(rgb: theme.success))
-            Text("Saved to your files. You can continue now.")
-                .vaultType(.footnote).themedForeground(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(Space.s4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(rgb: theme.successSoft),
-                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
     /// Quiet duotone note (matches the info notes elsewhere) shown until the
