@@ -14,6 +14,9 @@ struct LooxDotsAvatar: View {
     /// Play the ring reveal on appear without the camera loop (brand mark on
     /// onboarding step headers).
     var revealsOnAppear: Bool = false
+    /// SF Symbol to bubble-swap with the spark instead of the Polaris camera
+    /// (e.g. "faceid" on the biometric step).
+    var loopSystemGlyph: String? = nil
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -133,9 +136,16 @@ struct LooxDotsAvatar: View {
     @ViewBuilder private func centerGlyph(accent: Color) -> some View {
         ZStack {
             if showCamera {
-                PolarisIcon(Icons.camera, size: size * 0.30)
-                    .foregroundStyle(accent)
-                    .transition(.scale.combined(with: .opacity))
+                Group {
+                    if let loopSystemGlyph {
+                        Image(systemName: loopSystemGlyph)
+                            .font(.system(size: size * 0.26, weight: .medium))
+                    } else {
+                        PolarisIcon(Icons.camera, size: size * 0.30)
+                    }
+                }
+                .foregroundStyle(accent)
+                .transition(.scale.combined(with: .opacity))
             } else {
                 Image("LooxSpark")
                     .resizable()
