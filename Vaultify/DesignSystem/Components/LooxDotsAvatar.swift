@@ -16,14 +16,17 @@ struct LooxDotsAvatar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showCamera = false
 
-    /// Two rings, radii as fractions of the HALF-size; dot radius ∝ ring radius
-    /// (the swirl's rule), counts tuned for a small mark.
-    private let rings: [(rf: CGFloat, count: Int)] = [(0.56, 8), (0.85, 14)]
+    /// Measured off the Apple Account mark: two CLOSE rings of 18 dots each
+    /// (inner at 79% of the outer radius, half-step interleaved), outer dots
+    /// ~1.5x larger, with per-dot size/opacity variation for the sparkle. No
+    /// background disc.
+    private let perRing = 18
+    private let outerRF: CGFloat = 0.86   // of the half-size
+    private let innerRF: CGFloat = 0.86 * 0.79
 
     var body: some View {
         let accent = Color(rgb: env.theme.active.accent)
         ZStack {
-            Circle().fill(Color(rgb: env.theme.active.accentSoft).opacity(0.45))
             dotRings(accent: accent)
             centerGlyph(accent: accent)
         }
@@ -45,21 +48,34 @@ struct LooxDotsAvatar: View {
         Canvas { gc, canvasSize in
             let half = min(canvasSize.width, canvasSize.height) / 2
             let c = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
+            // (ring radius, base dot radius) per the measured proportions.
+            let rings: [(radius: CGFloat, dotR: CGFloat)] = [
+                (innerRF * half, 0.055 * half),
+                (outerRF * half, 0.082 * half),
+            ]
             for (k, ring) in rings.enumerated() {
-                let radius = ring.rf * half
-                let dotR = 0.16 * radius / CGFloat(k + 1) + 0.02 * half // gentle growth outward
-                let offset = Double(k % 2) * (.pi / Double(ring.count))
-                for i in 0..<ring.count {
-                    let a = 2 * .pi * Double(i) / Double(ring.count) + offset
-                    let x = c.x + radius * cos(a)
-                    let y = c.y + radius * sin(a)
+                let offset = Double(k % 2) * (.pi / Double(perRing)) // interleave
+                for i in 0..<perRing {
+                    let a = 2 * .pi * Double(i) / Double(perRing) + offset
+                    let x = c.x + ring.radius * cos(a)
+                    let y = c.y + ring.radius * sin(a)
+                    // Deterministic sparkle: each dot gets its own size/opacity.
+                    let h1 = hash(k, i, 1), h2 = hash(k, i, 2)
+                    let dotR = ring.dotR * (0.85 + 0.3 * h1)
+                    let alpha = 0.35 + 0.4 * h2
                     gc.fill(Path(ellipseIn: CGRect(x: x - dotR, y: y - dotR,
                                                    width: 2 * dotR, height: 2 * dotR)),
-                            with: .color(accent.opacity(0.5)))
+                            with: .color(accent.opacity(alpha)))
                 }
             }
         }
         .accessibilityHidden(true)
+    }
+
+    /// Deterministic per-dot pseudo-random in [0, 1) (fract-sin hash).
+    private func hash(_ k: Int, _ i: Int, _ salt: Int) -> Double {
+        let x = sin(Double(k) * 12.9898 + Double(i) * 78.233 + Double(salt) * 37.719) * 43758.5453
+        return x - floor(x)
     }
 
     /// Spark (or, while inviting, the camera) — both tinted the theme accent,
