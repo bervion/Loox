@@ -88,11 +88,11 @@ struct LockScreen: View {
                         VStack(spacing: Space.s2) {
                             Text("Unlock your vault")
                                 .vaultType(.screenTitle)
-                            // While the vault key is being derived/fetched the ∞ draws
-                            // itself — the gate working open (Controlled Reveal). The
+                            // While the vault key is being derived/fetched the brand
+                            // sparkle draws itself in (Controlled Reveal). The
                             // instruction line yields for that moment only.
                             if bioAuthenticating || busy {
-                                LooxGateMark(animating: true)
+                                LooxSparkMark(animating: true)
                                     .frame(height: 18)
                                     .transition(.opacity)
                                     // Fresh element: the mark itself is accessibility-
