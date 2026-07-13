@@ -37,7 +37,11 @@ nonisolated struct ThemeSettings: Codable, Sendable, Equatable {
         accents: [String: AppAccentColor] = [:],
         wallpapers: [String: Wallpaper] = [:],
         customThemes: [CustomTheme] = [],
-        autoNight: AutoNightSetting = .system,
+        // Fresh installs open in LIGHT (day theme, no auto-night): first-run
+        // screens render predictably, and the onboarding theme step is where
+        // the user opts into System/Dark. Existing installs keep their stored
+        // settings — this default only applies before anything is persisted.
+        autoNight: AutoNightSetting = .off,
         fontScale: FontScale = .regular,
         reduceMotion: Bool = false
     ) {

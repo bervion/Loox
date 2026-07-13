@@ -41,57 +41,90 @@ struct ChooseThemeView: View {
         }
     }
 
-    /// All appearance options grouped in one card with hairline separators.
+    /// Appearance options as preview cards (same mini vault-style preview the
+    /// Settings Appearance screen uses) — the user sees what each mode looks
+    /// like before picking. System shows a split light/dark preview.
     private var themeCard: some View {
-        VStack(spacing: 0) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: Space.s3)], spacing: Space.s3) {
             ForEach(AppearanceMode.allCases) { mode in
-                ThemeOptionRow(mode: mode, isSelected: selection == mode) {
+                ThemePreviewCard(mode: mode, isSelected: selection == mode) {
                     Haptics.tap()
                     withAnimation(.vault(.smooth(duration: 0.2), reduceMotion: reduceMotion)) { selection = mode }
                 }
-                if mode != AppearanceMode.allCases.last {
-                    Divider().padding(.leading, 54)   // align past the swatch + gap
-                }
             }
         }
-        .background(Color(rgb: theme.elevatedBackground),
-                    in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .elevation(.level2)
     }
 }
 
-private struct ThemeOptionRow: View {
+/// One tappable appearance card with the mini vault-style preview (cards over a
+/// background). System renders a diagonal-split day/night preview.
+private struct ThemePreviewCard: View {
     let mode: AppearanceMode
     let isSelected: Bool
     let onTap: () -> Void
+    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: Space.s3) {
-                Circle()
-                    .fill(swatchStyle)
-                    .frame(width: 26, height: 26)
-                    .overlay(Circle().strokeBorder(.quaternary, lineWidth: 1))
-                Text(mode.title).vaultType(.headline).themedForeground()
-                Spacer(minLength: Space.s2)
-                if isSelected {
-                    PolarisIcon(Icons.checkCircle, size: 22).foregroundStyle(VaultColors.accent)
+            VStack(spacing: 7) {
+                ZStack(alignment: .topTrailing) {
+                    preview
+                    if isSelected {
+                        PolarisIcon(Icons.checkCircle, size: 18)
+                            .foregroundStyle(Color(rgb: primaryPalette.accent))
+                            .padding(5)
+                            .background(Color(rgb: primaryPalette.background), in: Circle())
+                            .padding(5)
+                    }
                 }
+                .frame(height: 84)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .strokeBorder(isSelected ? env.theme.uiTint : Color(rgb: primaryPalette.separator),
+                                  lineWidth: isSelected ? 2.5 : 1))
+                Text(mode.title).vaultType(.caption).themedForeground().lineLimit(1)
             }
-            .padding(.horizontal, Space.s4)
-            .padding(.vertical, Space.s3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
     }
 
-    // Literal light/dark preview swatches — raw white/black is intentional here.
-    private var swatchStyle: AnyShapeStyle {
+    private var primaryPalette: AppTheme {
+        mode == .dark ? BuiltinThemes.palette(.night) : BuiltinThemes.palette(.day)
+    }
+
+    @ViewBuilder private var preview: some View {
         switch mode {
-        case .system: AnyShapeStyle(LinearGradient(colors: [.white, .black], startPoint: .leading, endPoint: .trailing))
-        case .light: AnyShapeStyle(Color.white)
-        case .dark: AnyShapeStyle(Color.black)
+        case .light: miniVault(BuiltinThemes.palette(.day))
+        case .dark: miniVault(BuiltinThemes.palette(.night))
+        case .system:
+            // Split preview: day on the left half, night on the right half
+            // (the mask's clear half hides, its opaque half shows).
+            ZStack {
+                miniVault(BuiltinThemes.palette(.day))
+                miniVault(BuiltinThemes.palette(.night))
+                    .mask(HStack(spacing: 0) { Color.clear; Color.black })
+            }
+        }
+    }
+
+    /// The same mini preview the Settings theme picker draws.
+    private func miniVault(_ palette: AppTheme) -> some View {
+        ZStack {
+            Rectangle().fill(Color(rgb: palette.background))
+            VStack(spacing: 5) {
+                ForEach(0..<2, id: \.self) { _ in
+                    HStack(spacing: 5) {
+                        Circle().fill(Color(rgb: palette.accent)).frame(width: 9, height: 9)
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(Color(rgb: palette.secondaryText)).frame(height: 5)
+                    }
+                    .padding(Space.s1)
+                    .background(Color(rgb: palette.elevatedBackground),
+                                in: RoundedRectangle(cornerRadius: Radius.xs, style: .continuous))
+                }
+            }
+            .padding(Space.s2)
         }
     }
 }
