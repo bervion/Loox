@@ -83,7 +83,10 @@ final class ThemeEngineTests: XCTestCase {
                 let base = isDark ? BuiltinThemes.night : BuiltinThemes.day
                 let accent = preset.rgb(isDark: isDark)
                 let t = base.recolored(accent: accent)
-                let ratio = RGBMath.contrastRatio(t.accentForeground, accent)
+                // Measure against the GUARDED fill (t.accent): the contrast
+                // pipeline may pull a bright brand hue to the 3:1 floor, and
+                // the foreground is derived from that adjusted fill.
+                let ratio = RGBMath.contrastRatio(t.accentForeground, t.accent)
                 XCTAssertGreaterThanOrEqual(ratio, onAccentMinContrast, "\(preset) \(isDark ? "dark" : "light") on-accent contrast \(ratio) < AA-large")
             }
         }
@@ -91,8 +94,8 @@ final class ThemeEngineTests: XCTestCase {
 
     func testAccentPresetRGB() {
         // The seven Design-System presets resolve light/dark hues from accents.css.
-        XCTAssertEqual(AccentPreset.blue.rgb(isDark: false), 0x2563EB)
-        XCTAssertEqual(AccentPreset.blue.rgb(isDark: true), 0x4C8DFF)
+        XCTAssertEqual(AccentPreset.blue.rgb(isDark: false), 0x009DFF)
+        XCTAssertEqual(AccentPreset.blue.rgb(isDark: true), 0x009DFF)
         XCTAssertEqual(AccentPreset.mono.rgb(isDark: false), 0x1C1C1E)
         XCTAssertEqual(AccentPreset.mono.rgb(isDark: true), 0xFFFFFF)
         // Custom RGB was removed: resolution ignores any legacy customRGB value.

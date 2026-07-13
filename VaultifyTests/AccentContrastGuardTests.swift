@@ -83,8 +83,18 @@ final class AccentContrastGuardTests: XCTestCase {
         for (name, base) in themes {
             for preset in AccentPreset.allCases {
                 let raw = preset.rgb(isDark: base.isDark)
-                XCTAssertEqual(base.recolored(accent: raw).accent, raw,
-                               "\(name)/\(preset) must not be re-tinted")
+                let adjusted = base.recolored(accent: raw).accent
+                if preset == .blue && !base.isDark {
+                    // Deliberate exception: the brand blue (#009DFF) sits just
+                    // under the 3:1 fill floor on light canvases, so the guard
+                    // pulls it minimally to the floor — the disclosed behavior
+                    // ("Loox may adjust the selected color slightly…").
+                    XCTAssertGreaterThanOrEqual(
+                        RGBMath.contrastRatio(adjusted, base.groupedBackground), 3.0,
+                        "\(name)/blue guarded fill must clear the floor")
+                } else {
+                    XCTAssertEqual(adjusted, raw, "\(name)/\(preset) must not be re-tinted")
+                }
             }
         }
     }
