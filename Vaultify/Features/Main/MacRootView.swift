@@ -40,7 +40,7 @@ struct MacRootView: View {
         } detail: {
             rightSide
         }
-        .tint(env.theme.uiTint)
+        .tint(Color.primary)
         .vaultShellBehaviors()
         .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: currentSpaceId) }
         .sheet(isPresented: $showProfile) { ProfileScreen() }

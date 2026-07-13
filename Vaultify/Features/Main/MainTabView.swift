@@ -16,10 +16,9 @@ struct MainTabView: View {
 
     var body: some View {
         shell
-            // Apple-style neutral tab bar: the selected icon highlights in
-            // black (white in dark mode), not the accent. Each tab's CONTENT
-            // re-applies the themed tint in `tabRoot`, so in-app controls keep
-            // the accent while the bar itself stays neutral.
+            // Apple-style neutral chrome: the selected tab icon AND default
+            // controls (nav back, toolbar buttons) render black (white in
+            // dark). Links/accent glyphs use the accentText token explicitly.
             .tint(Color.primary)
             .vaultShellBehaviors()
     }
@@ -45,12 +44,12 @@ struct MainTabView: View {
     @ViewBuilder private func tabRoot<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         #if os(iOS)
         if #available(iOS 26.0, *) {
-            content().tint(env.theme.uiTint)
+            content()
         } else {
-            content().tint(env.theme.uiTint).toolbar(.hidden, for: .tabBar)
+            content().toolbar(.hidden, for: .tabBar)
         }
         #else
-        content().tint(env.theme.uiTint)
+        content()
         #endif
     }
 

@@ -31,9 +31,10 @@ struct JoinVaultFlow: View {
         // Glass pill on iOS 26), not a hand-rolled icon.
         NavigationStack {
             content
-                // Same grouped-gray canvas as the rest of onboarding, so the
-                // white key field / QR tile / kit cards stay visible.
-                .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
+                // Canvas convention: screens WITHOUT form fields / grouped cards
+                // are plain white (QR pairing, biometric); form screens use the
+                // grouped gray so white fields stay visible.
+                .background(canvasColor.ignoresSafeArea())
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     if step != .biometric {
@@ -43,7 +44,7 @@ struct JoinVaultFlow: View {
                         }
                     }
                 }
-                .tint(Color(rgb: env.theme.active.accent))
+                .tint(Color.primary)
         }
         .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
         // Backing out of the password step abandons the hand-off — drop the key
@@ -72,6 +73,15 @@ struct JoinVaultFlow: View {
                 subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device. It can match your other device or be different, and it never syncs.")
         case .biometric:
             EnableBiometricView(onEnable: enableBiometricAndFinish) { finish() }
+        }
+    }
+
+    private var canvasColor: Color {
+        switch step {
+        case .entry where method == .qr, .biometric:
+            return Color(rgb: env.theme.active.background)
+        default:
+            return Color(rgb: env.theme.active.groupedBackground)
         }
     }
 
@@ -147,10 +157,10 @@ struct RestoreMethodSheet: View {
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        // Apple-Account-style sheet: white page, a floating black X, the brand
-        // swirl centred, left-aligned title + description, a link that bails
-        // out to a fresh start, and gray option boxes with bare tinted icons.
-        ZStack(alignment: .topLeading) {
+        // Apple-Account-style sheet: white page, the system close control, the
+        // brand swirl centred, left-aligned title + description, a link that
+        // bails out to a fresh start, and gray option boxes with tinted icons.
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     LooxSwirlAnimationView()
@@ -189,39 +199,19 @@ struct RestoreMethodSheet: View {
                 .padding(.horizontal, Space.s6)
                 .padding(.bottom, Space.s7)
             }
-
-            // Floating close: black X on Liquid Glass (material fallback pre-26).
-            Button { dismiss() } label: {
-                closeGlyph
+            .toolbar {
+                // The system toolbar close (glass pill on iOS 26), tinted by the
+                // app's neutral default.
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel(Text("Close"))
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Close"))
-            .padding(.leading, Space.s4)
-            .padding(.top, Space.s4)
+            .navigationBarTitleDisplayMode(.inline)
         }
+        .tint(Color.primary)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-    }
-
-    /// Black X on a circular Liquid Glass puck (iOS 26); earlier systems get
-    /// the closest material. Guarded per the repo convention for glass APIs.
-    @ViewBuilder private var closeGlyph: some View {
-        let glyph = Image(systemName: "xmark")
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(Color.primary)
-            .frame(width: 36, height: 36)
-        Group {
-            #if compiler(>=6.2)
-            if #available(iOS 26.0, *) {
-                glyph.glassEffect(.regular.interactive(), in: Circle())
-            } else {
-                glyph.background(.ultraThinMaterial, in: Circle())
-            }
-            #else
-            glyph.background(.ultraThinMaterial, in: Circle())
-            #endif
-        }
-        .contentShape(Rectangle().inset(by: -4))
     }
 
     /// One gray option box: bare tinted icon, bold title + gray detail, chevron.

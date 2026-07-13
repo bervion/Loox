@@ -4,6 +4,7 @@ import SwiftUI
 struct EnableBiometricView: View {
     let onEnable: () -> Void
     let onSkip: () -> Void
+    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
         // Scroll-safe: a fixed Spacer-centered VStack clips at large Dynamic Type /
@@ -35,5 +36,8 @@ struct EnableBiometricView: View {
                 .padding(.bottom, Space.s6)
             }
         }
+        // No form fields or grouped cards on this step — plain white canvas
+        // per the design convention (gray is reserved for form screens).
+        .background(Color(rgb: env.theme.active.background).ignoresSafeArea())
     }
 }

@@ -67,7 +67,7 @@ struct MacSettingsView: View {
             }
         }
         .frame(minWidth: 760, idealWidth: 820, minHeight: 520, idealHeight: 600)
-        .tint(env.theme.uiTint)
+        .tint(Color.primary)
     }
 
     @ViewBuilder private func detail(for pane: Pane) -> some View {

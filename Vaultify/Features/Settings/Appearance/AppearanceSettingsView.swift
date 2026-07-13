@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// Appearance hub: theme · accent · auto-night · text size · motion. Edits `ThemeStore`
+/// Appearance hub: theme (Light/Dark) · auto-night · text size · motion.
+/// Accent selection is retired (260713): the app ships the brand colors only
+/// (the engine + presets remain for a future re-enable, like wallpapers). Edits `ThemeStore`
 /// live and persists to the App Group.
 ///
 /// Simplified to the Design-System surface: flat themed backgrounds (no wallpaper picker),
@@ -15,7 +17,6 @@ struct AppearanceSettingsView: View {
     var body: some View {
         Form {
             themeSection
-            accentSection
             optionsSection
         }
         .themedFormBackground()
@@ -82,94 +83,6 @@ struct AppearanceSettingsView: View {
                 name.vaultType(.caption).themedForeground().lineLimit(1)
             }
             .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: Accent
-
-    private var accentSection: some View {
-        Section {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 50), spacing: Space.s3)], spacing: Space.s3) {
-                ForEach(AccentPreset.allCases) { preset in
-                    accentSwatch(preset)
-                }
-            }
-            .padding(.vertical, Space.s2)
-
-            // Context preview: the accent is a SYSTEM (fill, tinted, text rank),
-            // not a swatch — show all three ranks in both modes so the user can
-            // confirm their pick works everywhere without switching appearance.
-            HStack(spacing: Space.s3) {
-                accentRankPreview(isDark: false, label: "Light")
-                accentRankPreview(isDark: true, label: "Dark")
-            }
-            .padding(.vertical, Space.s2)
-        } header: {
-            Text("Accent Color")
-        } footer: {
-            Text("Loox may adjust the selected color slightly to keep text and controls readable.")
-        }
-        .listRowBackground(VaultColors.surface)
-    }
-
-    /// Mini three-rank preview on the given mode's canvas: a filled action,
-    /// a tinted action, and an accent link — resolved through the SAME theme
-    /// pipeline as the real UI (recolor + contrast guard), so what the user
-    /// sees here is exactly what ships. Decorative: hidden from VoiceOver.
-    private func accentRankPreview(isDark: Bool, label: LocalizedStringKey) -> some View {
-        let activeBase = settings.accentOverride(for: current)?.base ?? .blue
-        let base = isDark ? BuiltinThemes.night : BuiltinThemes.day
-        let palette = base.recolored(accent: activeBase.rgb(isDark: isDark))
-        return VStack(spacing: Space.s2) {
-            VStack(alignment: .leading, spacing: Space.s2) {
-                Text("Copy")
-                    .vaultType(.caption).fontWeight(.semibold)
-                    .foregroundStyle(Color(rgb: palette.accentForeground))
-                    .padding(.horizontal, Space.s3).padding(.vertical, 3)
-                    .background(Color(rgb: palette.accent), in: Capsule())
-                Text("Aa")
-                    .vaultType(.caption).fontWeight(.semibold)
-                    .foregroundStyle(Color(rgb: palette.accentText))
-                    .padding(.horizontal, Space.s3).padding(.vertical, 3)
-                    .background(Color(rgb: palette.accentSoft), in: Capsule())
-                Text("View details")
-                    .vaultType(.caption)
-                    .foregroundStyle(Color(rgb: palette.accentText))
-            }
-            .padding(Space.s3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(rgb: palette.elevatedBackground),
-                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .strokeBorder(Color(rgb: palette.separator), lineWidth: 1))
-
-            Text(label)
-                .vaultType(.caption)
-                .themedForeground(.secondary)
-        }
-        .accessibilityHidden(true)
-    }
-
-    private func accentSwatch(_ preset: AccentPreset) -> some View {
-        // No override defaults to blue (the built-in's native accent), so the active
-        // preset always reads as selected even before the user taps one.
-        let activeBase = settings.accentOverride(for: current)?.base ?? .blue
-        let isSelected = activeBase == preset
-        let isDark = env.theme.active.isDark
-        let ringColor = env.theme.active.color(.iconPrimary)
-        return Button {
-            Haptics.tap()
-            env.theme.setAccent(AppAccentColor(base: preset), for: current)
-        } label: {
-            Circle()
-                .fill(Color(rgb: preset.rgb(isDark: isDark)))
-                .frame(width: Metric.controlSmall, height: Metric.controlSmall)
-                .overlay(Circle().strokeBorder(ringColor.opacity(isSelected ? 0.9 : 0), lineWidth: 2).padding(-3))
-                // Pad the 34pt visual swatch to a ≥44pt tap target (Metric.hitMin) —
-                // the circle itself stays the design-system control-small size.
-                .padding(Space.s2)
-                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

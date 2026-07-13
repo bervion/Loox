@@ -26,7 +26,7 @@ struct VaultSidebarView: View {
         } detail: {
             detail(for: uiState.sidebarSelection)
         }
-        .tint(env.theme.uiTint)
+        .tint(Color.primary)
         .vaultShellBehaviors()
         // A size-class flip re-mounts this view. The compact tab shell only mutates
         // `selectedTab` (it never touches `sidebarSelection`), so reconcile on appear or a

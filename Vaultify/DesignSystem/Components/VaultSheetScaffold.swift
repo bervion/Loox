@@ -41,7 +41,7 @@ struct VaultSheetScaffold<Leading: View, Trailing: View, Content: View>: View {
         }
         .background(Color(rgb: env.theme.active.groupedBackground))
         .themedColorScheme()
-        .tint(env.theme.uiTint)
+        .tint(Color.primary)
         .frame(minWidth: 460, idealWidth: 520, minHeight: 460, idealHeight: 620)
         #else
         NavigationStack {
@@ -50,7 +50,7 @@ struct VaultSheetScaffold<Leading: View, Trailing: View, Content: View>: View {
                 .themedColorScheme()
                 // The root `.tint` doesn't reliably reach presented sheets, so re-apply the
                 // control tint here (accent in light, white in dark) for sheet content too.
-                .tint(env.theme.uiTint)
+                .tint(Color.primary)
                 .navigationTitle(titleText)
                 .platformNavigationBarTitleDisplayMode(.inline)
                 .toolbar {
