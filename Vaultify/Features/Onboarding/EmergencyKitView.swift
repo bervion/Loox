@@ -256,7 +256,7 @@ struct EmergencyKitView: View {
     /// kit is saved — the stakes read without shouting.
     private var mustSaveWarning: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Image("KitMedicalDuotone")
+            Image("HandHoldingMedicalDuotone")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 26, height: 26)
