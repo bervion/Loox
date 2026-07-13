@@ -62,24 +62,22 @@ struct EmergencyKitView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
         }
+        // Onboarding concept: plain white page (the kit card carries its own surface).
+        .background(Color(rgb: theme.background).ignoresSafeArea())
         // One pinned CTA slot like every other onboarding step: Save until the
         // PDF is actually saved, then Continue (a checkbox can't prove the key
         // was kept; a successful file save can).
         .safeAreaInset(edge: .bottom) {
             Group {
                 if savedPDF {
-                    Button(action: onContinue) {
-                        Text("Continue").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.themedProminent)
-                    .controlSize(.large)
-                    .transition(.opacity)
+                    BrandCapsuleCTA(action: onContinue)
+                        .transition(.opacity)
                 } else {
                     saveButton
+                        .padding(.horizontal, Space.s6)
+                        .padding(.bottom, Space.gutter)
                 }
             }
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.gutter)
         }
         .fileExporter(isPresented: $showExporter,
                       document: pdfFile,

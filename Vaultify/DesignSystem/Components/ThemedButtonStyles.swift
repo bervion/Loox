@@ -188,3 +188,11 @@ extension ButtonStyle where Self == ThemedCompactButtonStyle {
     /// Primary inline action (filled `accent`) for a compact row pair.
     static var themedCompactProminent: ThemedCompactButtonStyle { .init(emphasis: .prominent) }
 }
+
+/// Press-dim only — no automatic disabled dimming, keeping custom capsule CTAs
+/// opaque over scrolling content (the onboarding blue/gray Continue buttons).
+struct SolidCapsuleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
+    }
+}

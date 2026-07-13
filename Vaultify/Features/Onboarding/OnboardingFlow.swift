@@ -53,12 +53,16 @@ struct OnboardingFlow: View {
                     step = .emergencyKit
                 }
             case .emergencyKit:
-                EmergencyKitView(recoveryKey: recoveryKey,
-                                 ownerName: userName,
-                                 iCloudAccount: userEmail) { step = .theme }
+                navStep(back: { step = .name }) {
+                    EmergencyKitView(recoveryKey: recoveryKey,
+                                     ownerName: userName,
+                                     iCloudAccount: userEmail) { step = .theme }
+                }
             case .theme:
-                ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
-                    step = BiometricAuth.isAvailable ? .biometric : .done
+                navStep(back: { step = .emergencyKit }) {
+                    ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
+                        step = BiometricAuth.isAvailable ? .biometric : .done
+                    }
                 }
             case .biometric:
                 EnableBiometricView(onEnable: enableBiometric) { step = .done }
@@ -88,6 +92,23 @@ struct OnboardingFlow: View {
         // (Apple grouped style). Welcome and Done paint their own white page
         // over this, so only the form steps show the gray.
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
+    }
+
+    /// Wraps a step in native nav chrome with a standard iOS back control.
+    /// (The name step has no back: the vault already exists at that point.)
+    private func navStep<Content: View>(back: @escaping () -> Void,
+                                        @ViewBuilder _ content: () -> Content) -> some View {
+        NavigationStack {
+            content()
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: back) { Image(systemName: "chevron.backward") }
+                            .accessibilityLabel(Text("Back"))
+                    }
+                }
+        }
+        .tint(Color.primary)
     }
 
     private func createVault(_ password: String) async -> String? {

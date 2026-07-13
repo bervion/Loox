@@ -62,7 +62,9 @@ struct CreateMasterPasswordView: View {
         // (field/button taps keep their own handling — children win over this gesture).
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
-        .safeAreaInset(edge: .bottom) { continueButton }
+        .safeAreaInset(edge: .bottom) {
+            BrandCapsuleCTA(enabled: canSubmit, busy: busy) { Task { await submit() } }
+        }
         // The CTA stays PINNED at the bottom — it must not ride up on the
         // keyboard (the fields all sit in the top half of the screen).
         .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -143,32 +145,6 @@ struct CreateMasterPasswordView: View {
         .padding(.top, Space.s2)
     }
 
-    // MARK: Continue (blue capsule enabled, quiet gray disabled)
-
-    private var continueButton: some View {
-        Button {
-            Task { await submit() }
-        } label: {
-            Text("Continue")
-                .vaultType(.body).fontWeight(.medium)
-                // Spec disabled colors — OPAQUE, so content scrolling behind the
-                // keyboard-lifted button never shows through.
-                .foregroundStyle(canSubmit ? .white : Color(rgb: 0xBABABD))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.s4)
-                .background(canSubmit ? Color(rgb: 0x0065F4) : Color(rgb: 0xEFEFF0),
-                            in: Capsule())
-                .prominentButtonLoading(busy)
-        }
-        // Custom style: unlike .plain, it never dims the disabled label (which
-        // made the capsule translucent).
-        .buttonStyle(SolidCapsuleButtonStyle())
-        .disabled(!canSubmit)
-        .animation(.easeInOut(duration: 0.2), value: canSubmit)
-        .padding(.horizontal, Space.s6)
-        .padding(.bottom, Space.gutter)
-    }
-
     /// Resign the first responder so the keyboard hides (on scroll / tap-outside).
     private func dismissKeyboard() {
         PlatformAppearance.dismissKeyboard()
@@ -181,12 +157,5 @@ struct CreateMasterPasswordView: View {
         error = await onSubmit(password)
         busy = false
         if error != nil { Haptics.error() }
-    }
-}
-
-/// Press-dim only — no automatic disabled dimming, keeping the capsule opaque.
-private struct SolidCapsuleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
     }
 }

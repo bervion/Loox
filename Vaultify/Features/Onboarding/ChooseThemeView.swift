@@ -32,14 +32,11 @@ struct ChooseThemeView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
         }
+        // Onboarding concept: plain white page (the preview cards carry their
+        // own surfaces and selection rings).
+        .background(Color(rgb: theme.background).ignoresSafeArea())
         .safeAreaInset(edge: .bottom) {
-            Button(action: onContinue) {
-                Text("Continue").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-            .controlSize(.large)
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.gutter)
+            BrandCapsuleCTA(action: onContinue)
         }
     }
 
