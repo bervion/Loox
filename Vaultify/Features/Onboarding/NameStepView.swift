@@ -21,7 +21,7 @@ struct NameStepView: View {
                     // revealing its rings on appear.
                     LooxDotsAvatar(size: 100, revealsOnAppear: true)
                         .frame(maxWidth: .infinity)
-                        .padding(.bottom, Space.s2)
+                        .padding(.vertical, Space.s6)
                     Text("What should we call you?")
                         .vaultType(.screenTitle)
                     Text("We’ll set up your identity profile. You can edit it and add details anytime.")
@@ -53,6 +53,8 @@ struct NameStepView: View {
             .padding(.horizontal, Space.s6)
             .padding(.bottom, Space.s6)
         }
+        // Pinned CTA — never rides up on the keyboard (fields sit high).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear { focus = .name }
     }
 

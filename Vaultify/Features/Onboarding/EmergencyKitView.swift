@@ -34,7 +34,7 @@ struct EmergencyKitView: View {
                     // revealing its rings on appear.
                     LooxDotsAvatar(size: 100, revealsOnAppear: true)
                         .frame(maxWidth: .infinity)
-                        .padding(.bottom, Space.s2)
+                        .padding(.vertical, Space.s6)
                     Text("Save your Emergency Kit")
                         .vaultType(.screenTitle)
                     Text("This recovery key can restore your vault if you forget your master password or set up a new device.")

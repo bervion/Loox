@@ -18,7 +18,7 @@ struct ChooseThemeView: View {
                     // revealing its rings on appear.
                     LooxDotsAvatar(size: 100, revealsOnAppear: true)
                         .frame(maxWidth: .infinity)
-                        .padding(.bottom, Space.s2)
+                        .padding(.vertical, Space.s6)
                     Text("Make it yours")
                         .vaultType(.screenTitle)
                     Text("Choose how Loox looks. You can change this anytime in Settings.")

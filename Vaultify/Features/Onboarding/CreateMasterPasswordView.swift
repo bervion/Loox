@@ -32,7 +32,7 @@ struct CreateMasterPasswordView: View {
                     // revealing its rings on appear.
                     LooxDotsAvatar(size: 100, revealsOnAppear: true)
                         .frame(maxWidth: .infinity)
-                        .padding(.bottom, Space.s2)
+                        .padding(.vertical, Space.s6)
                     Text(title)
                         .vaultType(.screenTitle)
                     Text(subtitle)
@@ -63,6 +63,9 @@ struct CreateMasterPasswordView: View {
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
         .safeAreaInset(edge: .bottom) { continueButton }
+        // The CTA stays PINNED at the bottom — it must not ride up on the
+        // keyboard (the fields all sit in the top half of the screen).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
     // MARK: Password group (grows the confirm row once typing starts)
