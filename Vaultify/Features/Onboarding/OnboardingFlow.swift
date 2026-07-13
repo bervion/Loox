@@ -142,6 +142,10 @@ struct OnboardingFlow: View {
 private struct OnboardingDoneStep: View {
     let onFinish: () -> Void
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @StateObject private var launch = LooxLaunchController()
+    /// Text and CTA step aside for the launch burst; the animation stays.
+    @State private var contentHidden = false
 
     /// Recap what onboarding actually set up — mention biometrics only when the
     /// user turned them on, so the "Not now" path stays truthful.
@@ -152,20 +156,46 @@ private struct OnboardingDoneStep: View {
     }
 
     var body: some View {
-        OnboardingScrollingStep {
-            VStack(spacing: 0) {
-                Spacer(minLength: Space.s8)
-                PolarisIcon(Icons.checkCircle, size: 72).foregroundStyle(VaultColors.strengthStrong)
-                OnboardingStepHeader(
-                    "You’re all set",
-                    subtitle: recap)
-                Spacer(minLength: Space.s6)
-                Button(action: onFinish) {
-                    Text("Open Loox").frame(maxWidth: .infinity)
+        ZStack {
+            // The color the launch bloom floods, so the hand-off is seamless.
+            Color(.systemBackground).ignoresSafeArea()
+            OnboardingScrollingStep {
+                VStack(spacing: 0) {
+                    Spacer(minLength: Space.s8)
+                    // Same brand animation as the welcome landing; its circle-burst
+                    // launch plays when the user opens the app.
+                    LooxCloudAnimationView(controller: launch)
+                        .frame(width: 220, height: 220 * 0.82)
+                    OnboardingStepHeader(
+                        "You’re all set",
+                        subtitle: recap)
+                    .opacity(contentHidden ? 0 : 1)
+                    Spacer(minLength: Space.s6)
                 }
-                .buttonStyle(.themedProminent).controlSize(.large)
-                .padding(.horizontal, Space.s6).padding(.bottom, Space.s6)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            Button(action: press) {
+                Text("Open Loox").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.themedProminent).controlSize(.large)
+            .disabled(launch.phase != .idle)
+            .opacity(contentHidden ? 0 : 1)
+            .padding(.horizontal, Space.s6).padding(.bottom, Space.gutter)
+        }
+    }
+
+    /// Welcome-style launch choreography: the burst blooms over the screen and
+    /// the app crossfades in behind the flood.
+    private func press() {
+        guard launch.phase == .idle else { return }
+        if reduceMotion {
+            withAnimation(.easeInOut(duration: 0.25)) { contentHidden = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onFinish() }
+            return
+        }
+        launch.press()
+        withAnimation(.easeOut(duration: 0.25).delay(0.35)) { contentHidden = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { onFinish() }
     }
 }

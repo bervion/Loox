@@ -41,22 +41,12 @@ struct EmergencyKitView: View {
 
                 emergencyKitCard
 
-                // Required action + gated continue. Continue only appears once the
-                // PDF is actually saved (a checkbox can't prove the key was kept);
-                // until then an amber warning states the stakes.
-                VStack(spacing: Space.s3) {
-                    saveButton
-
-                    if savedPDF {
-                        Button(action: onContinue) {
-                            Text("Continue").frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.themedProminent)
-                        .controlSize(.large)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    } else {
-                        mustSaveWarning
-                    }
+                // Stakes / confirmation, in the content: an amber warning until
+                // the kit is saved, then a green saved note.
+                if savedPDF {
+                    savedNote
+                } else {
+                    mustSaveWarning
                 }
 
                 if let exportError {
@@ -67,6 +57,25 @@ struct EmergencyKitView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
+        }
+        // One pinned CTA slot like every other onboarding step: Save until the
+        // PDF is actually saved, then Continue (a checkbox can't prove the key
+        // was kept; a successful file save can).
+        .safeAreaInset(edge: .bottom) {
+            Group {
+                if savedPDF {
+                    Button(action: onContinue) {
+                        Text("Continue").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.themedProminent)
+                    .controlSize(.large)
+                    .transition(.opacity)
+                } else {
+                    saveButton
+                }
+            }
+            .padding(.horizontal, Space.s6)
+            .padding(.bottom, Space.gutter)
         }
         .fileExporter(isPresented: $showExporter,
                       document: pdfFile,
@@ -217,40 +226,40 @@ struct EmergencyKitView: View {
     private var saveButton: some View {
         Button(action: presentExporter) {
             HStack(spacing: Space.s2) {
-                // SF download glyph here (user-approved exception to Polaris-only);
-                // the saved state keeps the Polaris check mark.
-                if savedPDF {
-                    PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
-                } else {
-                    Image(systemName: "square.and.arrow.down")
-                        .font(.system(size: Metric.iconInline, weight: .semibold))
-                }
-                Text(savedPDF ? "Emergency Kit saved" : "Save Kit PDF")
+                // SF download glyph here (user-approved exception to Polaris-only).
+                Image(systemName: "square.and.arrow.down")
+                    .font(.system(size: Metric.iconInline, weight: .semibold))
+                Text("Save Kit PDF")
                     .vaultType(.body).fontWeight(.medium)
             }
-            // Saved reads as a calm soft-green confirmation so the black Continue
-            // button becomes the clear next step; unsaved is the loud red CTA.
-            // Same welcome-style pill geometry as the themed button styles.
-            // Full-width capsule (edge to edge of the content column) — the one
-            // required action on this screen earns the whole row.
-            .foregroundStyle(savedPDF ? Color(rgb: theme.success) : .white)
+            // Full-width red capsule: the one required action on this screen
+            // earns the whole row, and red signals how critical it is. (Once
+            // saved, the pinned slot flips to Continue.)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.s3)
-            .background(saveButtonFill)
-            .clipShape(Capsule())
+            .background(Color(rgb: theme.destructive), in: Capsule())
             .opacity(recoveryKey.isEmpty ? 0.6 : 1)
         }
         .buttonStyle(.plain)
         .disabled(recoveryKey.isEmpty)
     }
 
-    @ViewBuilder private var saveButtonFill: some View {
-        if savedPDF {
-            Color(rgb: theme.successSoft)
-        } else {
-            // Red to signal how critical saving this is; turns soft green once done.
-            Color(rgb: theme.destructive)
+    /// Green confirmation shown once the kit is saved (the pinned CTA flips to
+    /// Continue at the same moment).
+    private var savedNote: some View {
+        HStack(alignment: .center, spacing: Space.s3) {
+            PolarisIcon(Icons.checkCircle, size: Metric.iconUtility)
+                .foregroundStyle(Color(rgb: theme.success))
+            Text("Saved to your files. You can continue now.")
+                .vaultType(.footnote).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(rgb: theme.successSoft),
+                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
     /// Amber "you must save this" card (with an alert glyph) shown under the Save
