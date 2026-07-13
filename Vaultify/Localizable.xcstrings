@@ -7741,6 +7741,56 @@
         }
       }
     },
+    "Owner" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chủ sở hữu"
+          }
+        }
+      }
+    },
+    "Recovery Key" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa khôi phục"
+          }
+        }
+      }
+    },
+    "Save Kit PDF" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu PDF Bộ khôi phục"
+          }
+        }
+      }
+    },
+    "Save the kit to continue. It is the only way to recover your vault." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu Bộ khôi phục để tiếp tục. Đây là cách duy nhất để khôi phục kho của bạn."
+          }
+        }
+      }
+    },
+    "Saved to your files. You can continue now." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã lưu vào Tệp của bạn. Bạn có thể tiếp tục."
+          }
+        }
+      }
+    },
     "Nudge via Messages" : {
       "localizations" : {
         "vi" : {
