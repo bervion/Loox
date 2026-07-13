@@ -27,36 +27,26 @@ struct JoinVaultFlow: View {
     @State private var usedRecoveryKey: String?
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        // Native nav bar so the back control is the standard iOS chevron (a Liquid
+        // Glass pill on iOS 26), not a hand-rolled icon.
+        NavigationStack {
             content
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    if step != .biometric {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(action: back) { Image(systemName: "chevron.backward") }
+                                .accessibilityLabel(Text("Back"))
+                        }
+                    }
+                }
+                .tint(Color(rgb: env.theme.active.accent))
         }
         .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
         // Backing out of the password step abandons the hand-off — drop the key
         // (SecureBytes deinit zeroes it) instead of leaving it parked in state.
         .onChange(of: step) { _, newStep in
             if newStep == .entry { clearReceivedKey() }
-        }
-    }
-
-    /// Standard presented-flow header: a single leading back control (chevron), no
-    /// title (each step carries its own brand header). Hidden on the terminal
-    /// biometric step, where going back after a successful join makes no sense.
-    @ViewBuilder private var header: some View {
-        if step != .biometric {
-            HStack {
-                Button(action: back) {
-                    PolarisIcon(Icons.chevronLeft, size: Metric.iconUtility)
-                        .themedForeground(.iconPrimary)
-                        .frame(width: Metric.hitMin, height: Metric.hitMin)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Back"))
-                Spacer()
-            }
-            .padding(.horizontal, Space.s4)
-            .padding(.top, Space.s2)
         }
     }
 
@@ -264,7 +254,7 @@ private struct JoinByQRView: View {
     var body: some View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
-                Spacer(minLength: Space.s6)
+                Spacer().frame(height: Space.s3)
                 LooxSwirlAnimationView()
                     .frame(width: 140, height: 140)
                 OnboardingStepHeader(
@@ -349,7 +339,7 @@ private struct JoinByRecoveryView: View {
     var body: some View {
         OnboardingScrollingStep {
             VStack(spacing: 0) {
-                Spacer(minLength: Space.s6)
+                Spacer().frame(height: Space.s3)
                 LooxSwirlAnimationView()
                     .frame(width: 150, height: 150)
                 OnboardingStepHeader(

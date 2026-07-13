@@ -17,9 +17,9 @@ struct LooxSwirlAnimationView: View {
     private let perRing = 24
     private let dotK: CGFloat = 0.047
 
-    private let duration: Double = 1.5
-    private let entry: Double = 0.9      // per-ring grow-out time
-    private let delayStep: Double = 0.05 // slight outward wave between rings
+    private let duration: Double = 1.3
+    private let entry: Double = 0.7      // per-ring fade/grow time
+    private let delayStep: Double = 0.08 // inner→outer emanation wave
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var start = Date.now
@@ -93,9 +93,11 @@ struct LooxSwirlAnimationView: View {
             // Per-ring spiral-in progress (staggered, ease-out).
             let rp = easeOutCubic(clamp01((t - Double(idx) * delayStep) / entry))
             guard rp > 0.001 else { continue }
-            let spin = (0.5 * .pi) * (1 - rp)            // gentle rotation as it radiates out
-            let radius = ring.rf * d * rp                // grows out from centre
-            let dotR = dotK * radius                     // dot size ∝ ring radius
+            let spin = (0.4 * .pi) * (1 - rp)            // gentle rotation as it settles
+            // Emanate from near the logo edge (82% → 100% of the ring radius) so the
+            // rings stay separated at the start instead of clumping at the centre.
+            let radius = ring.rf * d * (0.82 + 0.18 * rp)
+            let dotR = dotK * radius * (0.6 + 0.4 * rp)  // subtle pop-in
             guard dotR > 0.2 else { continue }
             for i in 0..<perRing {
                 let a = 2 * .pi * Double(i) / Double(perRing) + ring.offset + spin
