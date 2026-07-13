@@ -28,11 +28,17 @@ struct LooxSwirlAnimationView: View {
     private let ringStep: CGFloat = 0.047      // → ring 4 at 0.461
     private var ringOuter: CGFloat { ringInner + 3 * ringStep }
     private var halfStep: Double { .pi / Double(perRing) }
-    private let logoEdge: CGFloat = 0.15       // reveal emanation origin
+    /// Emanation origin — measured off the reference video: dots spawn at ~54% of
+    /// the outer ring's radius (just outside the logo), tiny and faint.
+    private var spawnR: CGFloat { 0.54 * ringOuter }
+    /// Total pattern swirl during a journey (~57°, ease-out), also measured.
+    private let swirl: Double = 57 * .pi / 180
 
-    // Timings.
-    private let revealDur: Double = 1.3
-    private let loopDur: Double = 2.6
+    // Timings (from the reference: ~0.2s ring stagger, ~1s travel per ring).
+    private let ringStagger: Double = 0.20
+    private let travel: Double = 1.0
+    private var revealDur: Double { 3 * ringStagger + travel }   // 1.6s
+    private let loopDur: Double = 1.4      // journey time ≈ the video's outward speed
     private let dismissDur: Double = 0.7
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -118,33 +124,39 @@ struct LooxSwirlAnimationView: View {
         }
     }
 
-    /// One-shot: each ring emanates from the logo edge out to its position and stays.
+    /// One-shot reveal, per the measured reference: the OUTER ring blooms first
+    /// from just outside the logo and expands out, trailing rings launch ~0.2s
+    /// apart and settle inward-last, while the whole pattern swirls ~57° with an
+    /// ease-out. Dot size follows its current radius; alpha follows ring progress.
     private func drawReveal(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
-        for k in 0..<4 {
-            let rp = easeOutCubic(clamp01((t - Double(k) * 0.10) / 0.6))
-            guard rp > 0.001 else { continue }
-            let rf = ringInner + CGFloat(k) * ringStep
-            let radius = (logoEdge + (rf - logoEdge) * rp) * d
-            let spin = (0.35 * .pi) * (1 - rp)
-            ring(gc, c, radius: radius, dotR: dotK * radius, alpha: rp,
-                 angleOffset: Double(k % 2) * halfStep + spin)
+        let rot = swirl * easeOutCubic(clamp01(t / revealDur))
+        for k in 0..<4 {                            // k = 0 OUTER … 3 inner
+            let p = easeOutCubic(clamp01((t - Double(k) * ringStagger) / travel))
+            guard p > 0.001 else { continue }
+            let rf = ringOuter - CGFloat(k) * ringStep
+            let radius = (spawnR + (rf - spawnR) * p) * d
+            let dotR = dotK * radius * (0.6 + 0.4 * p)
+            // Interleave parity by the ring's FINAL slot so the settled pattern
+            // matches the static layout (inner ring offset 0).
+            ring(gc, c, radius: radius, dotR: dotR, alpha: p,
+                 angleOffset: Double((3 - k) % 2) * halfStep + rot)
         }
     }
 
-    /// Continuous loading swirl: generations stream out FROM THE LOGO, each dot
-    /// twisting as it travels (spiral arms), growing and fading to 0 at the outer
-    /// ring, then wrapping (invisible at the wrap point).
+    /// Continuous loading pulse: the same journey as the reveal, repeating —
+    /// generations spawn just outside the logo, travel outward at the video's
+    /// speed while the pattern swirls, dot size following the radius formula,
+    /// and fade to alpha 0 exactly at the outer ring before wrapping.
     private func drawLoop(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
-        let gens = 5
-        let twist = 0.6 * Double.pi                // gentle spiral per dot lifetime
+        let gens = 4
         for g in 0..<gens {
             let u = ((t / loopDur) + Double(g) / Double(gens)).truncatingRemainder(dividingBy: 1)
-            let radius = (logoEdge + CGFloat(u) * (ringOuter - logoEdge)) * d
-            let fadeIn = min(u / 0.12, 1)          // avoid a pop at the wrap/spawn
-            let alpha = fadeIn * (1 - u)           // 1 near the logo → 0 at the outer ring
+            let radius = (spawnR + CGFloat(u) * (ringOuter - spawnR)) * d
+            let fadeIn = min(u / 0.15, 1)           // no pop at the spawn/wrap point
+            let alpha = fadeIn * (1 - u)            // → 0 at the outer ring
             guard alpha > 0.01 else { continue }
             ring(gc, c, radius: radius, dotR: dotK * radius, alpha: alpha,
-                 angleOffset: Double(g % 2) * halfStep + twist * u)
+                 angleOffset: Double(g % 2) * halfStep + swirl * u)
         }
     }
 
