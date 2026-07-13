@@ -152,12 +152,17 @@ struct RestoreMethodSheet: View {
     let onRecovery: () -> Void
     @Environment(\.dismiss) private var dismiss
 
+    @Environment(AppEnvironment.self) private var env
+
     var body: some View {
         VStack(spacing: Space.s5) {
             HStack {
                 Button { dismiss() } label: {
-                    PolarisIcon(Icons.closeCircle, size: 28)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .semibold))
                         .themedForeground(.iconSecondary)
+                        .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Close"))
@@ -191,10 +196,15 @@ struct RestoreMethodSheet: View {
 
             Spacer(minLength: 0)
         }
-        .padding(Space.s6)
+        .padding(.horizontal, Space.s6)
+        .padding(.top, Space.s7)   // clear the drag indicator so the X isn't clipped
+        .padding(.bottom, Space.s6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        // Solid grouped-gray sheet (not the default glass) so the white option
+        // cards read as a grouped set, matching the design.
+        .presentationBackground(Color(rgb: env.theme.active.groupedBackground))
     }
 }
 
