@@ -94,7 +94,7 @@ struct LargeTypeView: View {
     }
 
     private func copy() {
-        env.clipboard.copy(displayText, label: isLiveTOTP ? "2FA code" : "Password")
+        env.clipboard.copy(displayText, label: isLiveTOTP ? appString("2FA code") : appString("password"))
         copied = true
         Task {
             try? await Task.sleep(for: .seconds(1.2))

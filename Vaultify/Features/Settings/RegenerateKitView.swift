@@ -32,7 +32,7 @@ struct RegenerateKitView: View {
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Space.s2)
-                    Button { env.clipboard.copy(newKey, label: "Recovery key") } label: {
+                    Button { env.clipboard.copy(newKey, label: appString("recovery key")) } label: {
                         Label { Text("Copy") } icon: { PolarisIcon(Icons.copy) }
                     }
                     ShareLink(item: newKey) { Label { Text("Share") } icon: { PolarisIcon(Icons.share) } }

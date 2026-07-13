@@ -334,7 +334,7 @@ private struct ApprovedCodeView: View {
 
     private func copy() {
         guard !copied else { return }
-        env.clipboard.copy(code, label: appString("Verification code"), sensitive: true)
+        env.clipboard.copy(code, label: appString("verification code"), sensitive: true)
         copied = true
         Task {
             try? await Task.sleep(for: .seconds(1.2))

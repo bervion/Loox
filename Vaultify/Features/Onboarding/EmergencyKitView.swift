@@ -110,7 +110,7 @@ struct EmergencyKitView: View {
 
     private func copyKey() {
         guard !recoveryKey.isEmpty else { return }
-        env.clipboard.copy(recoveryKey, label: "Recovery key", sensitive: true)
+        env.clipboard.copy(recoveryKey, label: appString("recovery key"), sensitive: true)
         withAnimation(.easeInOut(duration: 0.15)) { copiedKey = true }
         Task {
             try? await Task.sleep(for: .seconds(2))
