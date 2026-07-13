@@ -38,7 +38,6 @@ struct LooxSwirlAnimationView: View {
     private let ringStagger: Double = 0.20
     private let travel: Double = 1.0
     private var revealDur: Double { 3 * ringStagger + travel }   // 1.6s
-    private let loopDur: Double = 1.4      // journey time ≈ the video's outward speed
     private let dismissDur: Double = 0.7
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -120,48 +119,54 @@ struct LooxSwirlAnimationView: View {
         switch mode {
         case .reveal:  drawReveal(gc, c, d, t)
         case .loop:    drawLoop(gc, c, d, t)
-        case .dismiss: drawDismiss(gc, c, d, t)
+        case .dismiss: drawFadeOut(gc, c, d, t)
         }
     }
 
-    /// One-shot reveal, per the measured reference: the OUTER ring blooms first
-    /// from just outside the logo and expands out, trailing rings launch ~0.2s
-    /// apart and settle inward-last, while the whole pattern swirls ~57° with an
-    /// ease-out. Dot size follows its current radius; alpha follows ring progress.
-    private func drawReveal(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
-        let rot = swirl * easeOutCubic(clamp01(t / revealDur))
+    /// The measured emanation (shared by reveal and the loop's first act): the
+    /// OUTER ring blooms first from just outside the logo, trailing rings launch
+    /// ~0.2s apart and settle inward-last. Each ring swirls ~57° along ITS OWN
+    /// journey (later rings still turning while earlier ones have settled — the
+    /// staggered, non-uniform look of the reference). Dot size follows its
+    /// current radius; alpha follows ring progress.
+    private func drawEmanate(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
         for k in 0..<4 {                            // k = 0 OUTER … 3 inner
             let p = easeOutCubic(clamp01((t - Double(k) * ringStagger) / travel))
             guard p > 0.001 else { continue }
             let rf = ringOuter - CGFloat(k) * ringStep
             let radius = (spawnR + (rf - spawnR) * p) * d
             let dotR = dotK * radius * (0.6 + 0.4 * p)
-            // Interleave parity by the ring's FINAL slot so the settled pattern
-            // matches the static layout (inner ring offset 0).
+            // Interleave parity by the ring's FINAL slot (settled pattern matches
+            // the static layout); the ring turns INTO its final angle as p → 1.
             ring(gc, c, radius: radius, dotR: dotR, alpha: p,
-                 angleOffset: Double((3 - k) % 2) * halfStep + rot)
+                 angleOffset: Double((3 - k) % 2) * halfStep - swirl * (1 - p))
         }
     }
 
-    /// Continuous loading pulse: the same journey as the reveal, repeating —
-    /// generations spawn just outside the logo, travel outward at the video's
-    /// speed while the pattern swirls, dot size following the radius formula,
-    /// and fade to alpha 0 exactly at the outer ring before wrapping.
+    /// One-shot reveal: the emanation, frozen once settled.
+    private func drawReveal(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
+        drawEmanate(gc, c, d, min(t, revealDur))
+    }
+
+    /// Loading loop: the FULL cycle repeats — the emanation plays out exactly like
+    /// the reveal, holds a beat, everything fades to 0 completely (drifting a
+    /// little further out), rests a beat empty, then starts over from the top.
+    /// Not a continuous stream: one breath per cycle.
     private func drawLoop(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
-        let gens = 4
-        for g in 0..<gens {
-            let u = ((t / loopDur) + Double(g) / Double(gens)).truncatingRemainder(dividingBy: 1)
-            let radius = (spawnR + CGFloat(u) * (ringOuter - spawnR)) * d
-            let fadeIn = min(u / 0.15, 1)           // no pop at the spawn/wrap point
-            let alpha = fadeIn * (1 - u)            // → 0 at the outer ring
-            guard alpha > 0.01 else { continue }
-            ring(gc, c, radius: radius, dotR: dotK * radius, alpha: alpha,
-                 angleOffset: Double(g % 2) * halfStep + swirl * u)
+        let hold = 0.35, rest = 0.25
+        let cycle = revealDur + hold + dismissDur + rest
+        let tc = t.truncatingRemainder(dividingBy: cycle)
+        if tc < revealDur + hold {
+            drawEmanate(gc, c, d, min(tc, revealDur))
+        } else if tc < revealDur + hold + dismissDur {
+            drawFadeOut(gc, c, d, tc - revealDur - hold)
         }
+        // else: rest — empty beat before the next breath.
     }
 
-    /// One-shot: the settled rings expand outward and fade away to nothing.
-    private func drawDismiss(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
+    /// The settled rings expand outward and fade away to nothing (the dismiss
+    /// one-shot, and the fade act of each loop cycle).
+    private func drawFadeOut(_ gc: GraphicsContext, _ c: CGPoint, _ d: CGFloat, _ t: Double) {
         let p = easeOutCubic(clamp01(t / dismissDur))
         let alpha = 1 - p
         guard alpha > 0.01 else { return }
