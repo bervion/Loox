@@ -1,1 +1,1 @@
-A refreshed welcome screen greets new users with a cleaner first look, alongside an updated app logo.
+This update brings a fresh new look across the app, including a redesigned setup experience, a new brand identity, and a refreshed unlock screen. Restoring your vault is now simpler with clearer steps and QR support. Also includes several visual polish fixes and stability improvements.

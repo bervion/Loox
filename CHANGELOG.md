@@ -1,5 +1,101 @@
 # Changelog
 
+## [1.30.0] - 2026-07-13
+
+### Added
+- one onboarding concept across every step
+- Apple-style create-password step
+- 'Want to start fresh?' jumps straight into vault creation
+- neutral black default controls, brand-only colors, canvas convention
+- dots avatar reveals its rings when the profile screen opens
+- Loox dots avatar as the default profile mark
+- brand animation finale and a consistent pinned CTA across onboarding
+- theme previews in onboarding, light-first default, full-width save
+- mode-driven swirl loading indicator (reveal / loop / dismiss)
+- Telegram-style rounded QR rendering app-wide
+- play the Loox swirl once on appear, then freeze (no infinite loop)
+- Loox swirl brand animation on the restore QR and recovery screens
+- restore via bottom-sheet chooser, header nav, and PDF key import
+- refine Emergency Kit card interactions and warning placement
+- redesign the Emergency Kit step to the concept card + gated continue
+- use the brand lockup across all onboarding step headers
+- brand lockup (symbol + wordmark) inline in the create-password header
+- black primary unlock button in the AutoFill extension
+- neutral black primary buttons and simplify create-password title
+- roll the new brand into welcome, splash, lock, privacy and unlock
+- add QR code to item share invite
+
+### Fixed
+- memoji ghosting — hide the poster once the video renders
+- localized, sentence-case copy-toast labels
+- recovery-key label centres with the copy glyph, which confirms copies
+- opaque disabled Continue on the password step
+- restore sheet uses the native sheet chrome (no side gaps)
+- grouped-gray canvas behind onboarding form steps
+- unlock flourish plays the real brand animation's opening act
+- native iOS back button, swirl nearer the header, cleaner emanation
+- dismiss keyboard on scroll or tap-outside in the recovery key screen
+- PDF import picker opens and accepts files; dashed drop-zone UI
+- remove duplicate dismiss declaration in RestoreMethodSheet
+- restore sheet uses VaultSheetScaffold so the close X sits in the header
+- restore sheet uses solid gray bg and a plain (uncut) close X
+- memoji poster fallback and drop audio track on welcome landing
+
+### Changed
+- refresh the memoji-gray clip and poster
+- biometric step uses the looping dots mark with the SF biometry glyph
+- after a successful save only Continue remains
+- save-kit button drops its download glyph; VI label sentence-cased
+- kit note glyph swaps to the duotone hand-holding-medical mark
+- emergency-kit step polish
+- password info glyph swaps to the duotone handshake mark
+- lighter secondary text (#949497) on the Day theme
+- pinned CTAs ignore the keyboard; more air around the step logo
+- password info glyph swaps to the duotone door-open mark
+- duotone brand pair corrected to #009BFF over #94D5FF
+- dots mark heads every onboarding step; native back on password
+- duotone brand icons in the restore option boxes, top-aligned
+- restore sheet swirl hugs the header, air moves below it
+- welcome carousel gap reverted; more air below the restore link
+- welcome restore link uses the brand link blue; roomier carousel gap
+- restore sheet polish (roomier swirl, smaller title, glass close)
+- Apple-Account-style restore sheet
+- welcome carousel keeps a soft shadow via a cardOnWhite elevation
+- brand link blue #0065F4 for text links and link buttons
+- accent text rank floors at 3:1 so links stay near the brand blue
+- white core disc inside the avatar rings; flat Apple-style cards
+- card-white disc behind the dots avatar so it lifts off gray canvases
+- update accent expectations for the #009DFF rebrand
+- rebrand blue to #009DFF, avatar dots to #61C0FF
+- dots avatar matches the measured Apple Account mark
+- shorter unlock act with a smooth glide to centre
+- neutral black login arrow on the lock screen password field
+- neutral black tab bar highlight (Apple-style)
+- set autoNight explicitly in the system-following resolution test
+- primary buttons are welcome-style pills (capsule, content width)
+- sentence-case button labels, lighter CTA weight, welcome spacing
+- QR guide is the full sentence with the settings path highlighted inline
+- QR pairing guide as breadcrumb chips, clearer title spacing, refined error
+- dots emanate from the logo edge; loop flows without a held beat
+- dispersal is a smooth scale + rotate + fade, not a particle scatter
+- dispersal is a measured particle scatter with a lingering fade
+- loop never stops turning and spills past the frame while fading
+- loop is one full breath per cycle, per-ring swirl phases
+- match the reference video's measured motion law in reveal and loop
+- loop swirls out from the logo with a gentle spiral, not uniform rings
+- swirl radiates out from centre with even fade and gentle rotation
+- match reference swirl exactly (4 rings x 24 dots, half-step interleave)
+- 4-band interleaved swirl with roomy centre gap and varied dot sizes
+- denser spiral swirl with size-graded dots (closer to the reference)
+- solid 'or' rule and Loox symbol above the recovery key title
+- merge restore options into one flat grouped card with per-option badges
+- soft-green saved state on the Emergency Kit save button
+- make the Emergency Kit save button and key box border red
+- use lightweight breathing symbol for the privacy shield
+- rebrand logo, drop the infinity mark
+- note welcome landing redesign in codebase summary
+
+
 ## [1.29.0] - 2026-07-13
 
 ### Added
