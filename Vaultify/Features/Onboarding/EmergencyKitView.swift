@@ -171,7 +171,7 @@ struct EmergencyKitView: View {
             }
         }
         .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-            .strokeBorder(Color.looxBlue.opacity(0.4),
+            .strokeBorder(Color(rgb: theme.destructive).opacity(0.55),
                           style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
         .contentShape(Rectangle())
         .onTapGesture { copyKey() }
@@ -243,7 +243,8 @@ struct EmergencyKitView: View {
         if savedPDF {
             VaultColors.strengthStrong
         } else {
-            LinearGradient(colors: [.looxRoyal, .looxBlue], startPoint: .leading, endPoint: .trailing)
+            // Red to signal how critical saving this is; turns green once done.
+            Color(rgb: theme.destructive)
         }
     }
 
