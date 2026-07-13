@@ -4,12 +4,17 @@ import SwiftUI
 /// 0 none · 1 resting card · 2 menus · 3 floating tab bar / sheets · sheet (upward).
 nonisolated enum Elevation: Sendable {
     case level0, level1, level2, level3, sheet
+    /// Deliberate exception: a resting card sitting on a PLAIN WHITE canvas
+    /// (welcome carousel) — the flat grouped style has no gray to separate it,
+    /// so this one keeps the old soft card shadow.
+    case cardOnWhite
 
     var radius: CGFloat {
         switch self {
         case .level0: return 0
         case .level1: return 2
         case .level2: return 14
+        case .cardOnWhite: return 14
         case .level3: return 30
         case .sheet:  return 40
         }
@@ -20,6 +25,7 @@ nonisolated enum Elevation: Sendable {
         case .level0: return 0
         case .level1: return 1
         case .level2: return 4
+        case .cardOnWhite: return 4
         case .level3: return 10
         case .sheet:  return -8
         }

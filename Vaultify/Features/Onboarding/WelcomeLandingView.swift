@@ -221,7 +221,7 @@ private struct CapabilitySlide: View {
         .frame(maxHeight: .infinity)
         .background(VaultColors.surface)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .elevation(.level2)
+        .elevation(.cardOnWhite)
     }
 
     /// Art inside the card: a 16:9 illustration filling the top edge-to-edge
