@@ -1,41 +1,53 @@
 import SwiftUI
 
 /// First-launch Security surface: when the active persona has no items there is
-/// nothing to score, so the misleading "At risk" ring and 100% strength bar are
-/// replaced by one inviting card — the looping brand swirl (same mark as the QR
-/// pairing screen), a short line, and a single CTA into the item editor.
-struct WatchtowerEmptyStateCard: View {
+/// nothing to score, so the misleading "At risk" ring and 100% strength bar give
+/// way to a full-bleed plain-canvas screen — the brand swirl fronting the
+/// security shield (playing once), a short line, and a single CTA into the editor.
+struct WatchtowerEmptyStateView: View {
     let onAdd: () -> Void
+    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        VStack(spacing: Space.s5) {
-            // Continuous brand loop — the vault is idle, waiting for its first secret.
-            LooxSwirlAnimationView(mode: .loop)
-                .frame(width: 132, height: 132)
+        ZStack {
+            // Plain canvas (white in light, near-black in dark) — the swirl reads
+            // like the QR / biometric onboarding screens, not the grouped gray tab.
+            Color(rgb: env.theme.active.background).ignoresSafeArea()
 
-            VStack(spacing: Space.s2) {
-                Text("Nothing to protect yet")
-                    .vaultType(.headline)
-                    .themedForeground(.primary)
-                Text("Add your first password and Loox starts watching over your vault's security.")
-                    .vaultType(.subhead)
-                    .themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            VStack(spacing: Space.s6) {
+                Spacer()
+                // One-shot reveal fronting the security shield, tinted to the accent.
+                LooxSwirlAnimationView(mode: .reveal,
+                                       centerIcon: "dt_shield_keyhole",
+                                       centerTint: env.theme.active.color(.accent))
+                    .frame(width: 176, height: 176)
 
-            Button(action: onAdd) {
-                HStack(spacing: Space.s2) {
-                    PolarisIcon(Icons.pageAdd, size: Metric.iconInline)
-                    Text("Add your first password")
+                VStack(spacing: Space.s2) {
+                    Text("Nothing to protect yet")
+                        .vaultType(.headline)
+                        .themedForeground(.primary)
+                    Text("Add your first password and Loox starts watching over your vault's security.")
+                        .vaultType(.subhead)
+                        .themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, Space.s6)
                 }
-                .frame(maxWidth: .infinity)
+
+                Spacer()
+
+                Button(action: onAdd) {
+                    HStack(spacing: Space.s2) {
+                        PolarisIcon(Icons.pageAdd, size: Metric.iconInline)
+                        Text("Add your first password")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.themedProminent)
+                .padding(.horizontal, Space.gutter)
+                .padding(.bottom, Space.s8)
             }
-            .buttonStyle(.themedProminent)
         }
-        .padding(Space.s6)
-        .frame(maxWidth: .infinity)
-        .themedCard()
     }
 }
 

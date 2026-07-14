@@ -81,6 +81,10 @@ struct WatchtowerScreen: View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.watchtowerPath) {
             ZStack(alignment: .top) {
+                if emptyVault {
+                    // Full-bleed plain-canvas first-run state (its own white background).
+                    WatchtowerEmptyStateView(onAdd: { editorTarget = .new(.login) })
+                } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         // Top inset clears the floating header + reports scroll-edge state.
@@ -94,6 +98,7 @@ struct WatchtowerScreen: View {
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
                 .refreshable { reload() }
+                }
 
                 // Floating header overlays the scroll content — glass blurs beneath.
                 VaultScreenHeader("Security") {
@@ -307,16 +312,9 @@ struct WatchtowerScreen: View {
 
     // MARK: - Main content
 
-    @ViewBuilder
-    private var contentSection: some View {
-        if emptyVault {
-            WatchtowerEmptyStateCard(onAdd: { editorTarget = .new(.login) })
-                .padding(.horizontal, Space.gutter)
-                .padding(.top, Space.s4)
-        } else {
-            populatedContent
-        }
-    }
+    // Empty vault is handled full-screen at the body level; this is the
+    // populated scroll content.
+    private var contentSection: some View { populatedContent }
 
     @ViewBuilder
     private var populatedContent: some View {
