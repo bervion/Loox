@@ -20,7 +20,7 @@ struct FolderEditorSheet: View {
         self.folder = folder
         self.onSaved = onSaved
         _name = State(initialValue: folder?.name ?? "")
-        _icon = State(initialValue: folder?.iconAsset ?? "ic_folder")
+        _icon = State(initialValue: folder?.iconAsset ?? CuratedFolderIcons.defaultIcon)
         _color = State(initialValue: folder?.color ?? .blue)
     }
 
