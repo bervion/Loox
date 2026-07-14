@@ -53,8 +53,19 @@ struct SettingsSelectionScreen<Value: Hashable>: View {
         .toolbar {
             if let onCommit {
                 ToolbarItem(placement: .platformPrimaryAction) {
-                    Button { onCommit(staged) } label: { Text("Save") }
-                        .disabled(staged == selection)
+                    // Filled accent capsule (accent fill · WCAG onAccent text) so it
+                    // reads as the primary action; dimmed until a new value is staged.
+                    Button { onCommit(staged) } label: {
+                        Text("Save")
+                            .vaultType(.subhead)
+                            .foregroundStyle(env.theme.active.color(.onAccent))
+                            .padding(.horizontal, Space.s3)
+                            .padding(.vertical, Space.s1 + 2)
+                            .background(env.theme.active.color(.accent), in: Capsule())
+                            .opacity(staged == selection ? 0.4 : 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(staged == selection)
                 }
             }
         }
