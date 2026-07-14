@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Search tab — own NavigationStack + `.searchable`. With `Tab(role: .search)`
 /// (iOS 18+) this is the native search surface (search field in the tab bar /
@@ -119,7 +122,8 @@ struct SearchResultsList: View {
         let parsed = SearchOperators.parse(trimmed)
         switch scope {
         case .sharedWithMe:
-            guard !parsed.freeTextTokens.isEmpty || !parsed.operators.isEmpty else { return [] }
+            // No query → list everything in scope (the tab opens showing all items).
+            guard !parsed.freeTextTokens.isEmpty || !parsed.operators.isEmpty else { return env.sharedItems.items }
             // Shared projections aren't vault items/audited — only structural
             // operators (category, has-TOTP) are meaningful here; weak/reused/
             // passkey simply never match (empty Context), which is correct: we
@@ -162,26 +166,26 @@ struct SearchResultsList: View {
     }
 
     var body: some View {
-        Group {
-            if trimmed.isEmpty {
-                SearchZeroStateView(scope: scope, onSelectFilter: onSelectFilter)
-            } else {
-                resultsContent
+        VStack(spacing: 0) {
+            // Always visible while searching (Telegram-style), even before typing:
+            // the results below list everything in the selected scope until a query
+            // narrows them.
+            if availableScopes.count > 1 {
+                SearchScopeBar(scopes: availableScopes, selection: $scope, title: { label(for: $0) })
             }
+            resultsContent
         }
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
-        // Native scope selector: the system places it correctly beside the
-        // (role:.search) field above the keyboard. A custom bottom bar collides
-        // with that system-managed field (it ends up behind it), so use the
-        // built-in scopes — shown on text entry when more than one scope applies.
-        .searchScopes($scope, activation: .onTextEntry) {
-            if availableScopes.count > 1 {
-                ForEach(availableScopes, id: \.self) { chipScope in
-                    Text(verbatim: label(for: chipScope)).tag(chipScope)
-                }
-            }
-        }
+        // Tapping anywhere drops the keyboard; simultaneous so result rows still tap.
+        .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
         .onAppear(perform: seedScope)
+    }
+
+    private func dismissKeyboard() {
+        #if canImport(UIKit)
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
     }
 
     /// Seed the default scope once. Delegated to the repository so isolation is
@@ -201,6 +205,7 @@ struct SearchResultsList: View {
                 .platformInsetGroupedListStyle()
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
+                .scrollDismissesKeyboard(.immediately)
         }
     }
 
@@ -240,5 +245,69 @@ struct SearchResultsList: View {
 
     private func folderName(_ id: String) -> String {
         env.repository.activePersonaSpaces.first { $0.id == id }?.name ?? appString("This Space")
+    }
+}
+
+/// Telegram-style scope filter: a horizontal row of text filters where only the
+/// SELECTED one carries a rounded chip — Liquid Glass on iOS 26, a solid capsule
+/// otherwise. The active chip animates when the selection changes.
+private struct SearchScopeBar: View {
+    let scopes: [SpaceScope]
+    @Binding var selection: SpaceScope
+    let title: (SpaceScope) -> String
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s1) {
+                ForEach(scopes, id: \.self) { scope in
+                    chip(scope)
+                }
+            }
+            .padding(.horizontal, Space.gutter)
+            .padding(.vertical, Space.s2)
+        }
+    }
+
+    private func chip(_ scope: SpaceScope) -> some View {
+        let isActive = scope == selection
+        return Button {
+            withAnimation(.snappy(duration: 0.28)) { selection = scope }
+            Haptics.tap()
+        } label: {
+            Text(title(scope))
+                .vaultType(.subhead)
+                .themedForeground(isActive ? .primary : .secondary)
+                .padding(.horizontal, Space.s3)
+                .frame(minHeight: Metric.controlSmall)
+                .modifier(ScopeChipBackground(isActive: isActive))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// The selected chip's fill: interactive Liquid Glass on iOS 26 (guarded so a
+/// pre-Xcode-26 CI build never sees the symbol), a pressed-surface capsule
+/// otherwise. Nothing for an unselected chip.
+private struct ScopeChipBackground: ViewModifier {
+    let isActive: Bool
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    func body(content: Content) -> some View {
+        let shape = Capsule()
+        if isActive {
+            #if compiler(>=6.2)
+            if #available(iOS 26, macOS 26, *), !reduceTransparency {
+                content.glassEffect(.regular.interactive(), in: shape)
+            } else {
+                content.background(Color(rgb: env.theme.active.surfacePressed), in: shape)
+            }
+            #else
+            content.background(Color(rgb: env.theme.active.surfacePressed), in: shape)
+            #endif
+        } else {
+            content
+        }
     }
 }
