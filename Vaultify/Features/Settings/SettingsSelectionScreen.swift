@@ -13,8 +13,19 @@ struct SettingsSelectionScreen<Value: Hashable>: View {
     let options: [Option]
     @Binding var selection: Value
     var footer: LocalizedStringResource? = nil
+    /// When set, the choice is DEFERRED: tapping a row stages it (checkmark moves)
+    /// and a Save button commits it through this closure instead of the binding.
+    /// Used for language, which runs a branded switch transition on save rather
+    /// than mutating live. When nil, a tap applies immediately (the default).
+    var onCommit: ((Value) -> Void)? = nil
 
     @Environment(AppEnvironment.self) private var env
+    /// Staged choice in deferred mode; nil until the user taps a row.
+    @State private var pending: Value?
+
+    /// The row currently shown as chosen: the staged value in deferred mode, the
+    /// live selection otherwise.
+    private var staged: Value { pending ?? selection }
 
     /// Resolve a resource against the in-app language (same mechanism as
     /// `appLabel`): pinning `.locale` then `String(localized:)` selects the
@@ -39,18 +50,30 @@ struct SettingsSelectionScreen<Value: Hashable>: View {
         .themedFormBackground()
         .navigationTitle(localized(title))
         .platformNavigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let onCommit {
+                ToolbarItem(placement: .platformPrimaryAction) {
+                    Button { onCommit(staged) } label: { Text("Save") }
+                        .disabled(staged == selection)
+                }
+            }
+        }
     }
 
     private func row(_ option: Option) -> some View {
         Button {
-            guard option.value != selection else { return }
-            selection = option.value
+            guard option.value != staged else { return }
+            if onCommit != nil {
+                pending = option.value   // stage; Save commits
+            } else {
+                selection = option.value // apply immediately
+            }
             Haptics.tap()
         } label: {
             HStack {
                 Text(verbatim: localized(option.label)).themedForeground(.primary)
                 Spacer()
-                if option.value == selection {
+                if option.value == staged {
                     Image(systemName: "checkmark")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(env.theme.uiTint)

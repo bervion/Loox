@@ -74,6 +74,41 @@ final class AppNavigator {
         navigationController?.popToRootViewController(animated: true)
         #endif
     }
+
+    /// Apply an in-app language and land the user back on a freshly rendered
+    /// Settings, masked by a branded cover. A pushed screen's nav-bar title caches
+    /// the old language inside its detached hosting controller, so rather than
+    /// re-localize it in place we REBUILD: present an opaque cover, swap the
+    /// language + pop to a fresh Settings beneath it, then fade the cover out to
+    /// reveal Settings fully re-localized. Falls back to a plain swap off iOS.
+    func switchLanguage(to language: String) {
+        #if os(iOS)
+        guard let navigationController else {
+            env.settings.preferredLanguage = language
+            return
+        }
+        let overlay = UIHostingController(
+            rootView: LanguageSwitchOverlay().modifier(VaultRootEnvironment(env: env, navigator: self)))
+        overlay.modalPresentationStyle = .overFullScreen
+        overlay.modalTransitionStyle = .crossDissolve
+        // The SwiftUI overlay paints its own opaque themed background; keep the
+        // host clear so the cross-dissolve shows only that (no system-white flash).
+        overlay.view.backgroundColor = .clear
+        navigationController.present(overlay, animated: true) { [weak self, weak navigationController, weak overlay] in
+            guard let self, let navigationController else { return }
+            self.env.settings.preferredLanguage = language
+            navigationController.popToRootViewController(animated: false)
+            self.push { SettingsScreen() }
+            Task { @MainActor in
+                // Hold for one dots-swirl reveal cycle (~1.6s), then fade out.
+                try? await Task.sleep(for: .milliseconds(1600))
+                overlay?.dismiss(animated: true)
+            }
+        }
+        #else
+        env.settings.preferredLanguage = language
+        #endif
+    }
 }
 
 #if os(iOS)

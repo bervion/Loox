@@ -186,11 +186,7 @@ struct SettingsScreen: View {
         // Native iOS switch metrics (the app root applies a custom .themed style;
         // override it here). Colours come from each toggle's explicit .tint.
         .toggleStyle(.switch)
-        // `appString` (global in-app locale, re-resolved on every render) instead
-        // of a LocalizedStringKey: a navigator-pushed screen lives in a detached
-        // hosting controller whose nav-bar title otherwise caches the old language
-        // on an in-app switch. See `NavigatorPushHost`.
-        .navigationTitle(appString("Settings"))
+        .navigationTitle("Settings")
         .platformNavigationBarTitleDisplayMode(.large)
         .alert(Text("Network needed"), isPresented: $relayBlockErase) {
             Button("OK", role: .cancel) {}
