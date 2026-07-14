@@ -42,6 +42,15 @@ struct NotificationsSettingsView: View {
                 Text("Get a local notification on the day a password is due to rotate. The notification shows only the item name, never a password or username.")
             }
             .listRowBackground(VaultColors.surface)
+
+            Section {
+                Toggle(isOn: auditRemindersBinding) {
+                    Label { Text("Security checkup reminders") } icon: { PolarisIcon(Icons.shieldPerson) }
+                }
+            } footer: {
+                Text("Get a reminder every two weeks to open Loox and check your vault's health. The notification shows no scores or item details.")
+            }
+            .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
         .navigationTitle("Notifications")
@@ -58,6 +67,18 @@ struct NotificationsSettingsView: View {
             get: { env.settings.rotationRemindersEnabled },
             set: { isOn in
                 env.settings.rotationRemindersEnabled = isOn
+                Haptics.tap()
+            })
+    }
+
+    private var auditRemindersBinding: Binding<Bool> {
+        Binding(
+            get: { env.settings.auditRemindersEnabled },
+            set: { isOn in
+                env.settings.auditRemindersEnabled = isOn
+                // Turning off cancels immediately; turning on lets the next audit
+                // (or a Security-tab visit) schedule the reminder.
+                if !isOn { AuditReminderNotificationService.shared.cancel() }
                 Haptics.tap()
             })
     }

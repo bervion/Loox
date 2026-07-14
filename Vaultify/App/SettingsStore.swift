@@ -69,6 +69,9 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// `RotationNotificationService.schedule` call sites via `isRotationRemindersEnabled()`
     /// below rather than inside the service itself (kept untouched, no restructure).
     var rotationRemindersEnabled: Bool { didSet { defaults.set(rotationRemindersEnabled, forKey: Key.rotationReminders) } }
+    /// Master switch for the periodic security-checkup reminder notification.
+    /// Default ON; the WatchtowerScreen reschedules on each completed audit.
+    var auditRemindersEnabled: Bool { didSet { defaults.set(auditRemindersEnabled, forKey: Key.auditReminders) } }
     var iCloudSyncEnabled: Bool { didSet { defaults.set(iCloudSyncEnabled, forKey: Key.icloud) } }
     /// Approval Mode transport (CKShare grants/requests/responses). Deliberately
     /// SEPARATE from `iCloudSyncEnabled`: enabling approval sharing must never
@@ -133,6 +136,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         biometricKeyMigratedToSharedGroup = d.bool(forKey: Key.biometricKeyMigrated)
         hibpEnabled = d.object(forKey: Key.hibp) as? Bool ?? true
         rotationRemindersEnabled = d.object(forKey: Key.rotationReminders) as? Bool ?? true
+        auditRemindersEnabled = d.object(forKey: Key.auditReminders) as? Bool ?? true
         iCloudSyncEnabled = d.bool(forKey: Key.icloud)
         approvalModeEnabled = d.bool(forKey: Key.approvalMode)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
@@ -173,6 +177,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let biometricKeyMigrated = "biometric_key_migrated_shared_group"
         static let hibp = "hibp_enabled"
         static let rotationReminders = "rotation_reminders_enabled"
+        static let auditReminders = "audit_reminders_enabled"
         static let icloud = "icloud_sync_enabled"
         static let approvalMode = "approval_mode_enabled"
         static let favicons = "show_website_icons"
