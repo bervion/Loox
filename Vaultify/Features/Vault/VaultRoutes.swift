@@ -36,22 +36,26 @@ extension View {
                 // shared modifier gets the ordinary push, unaffected.
                 ItemDetailScreen(itemID: id)
                     .modifier(ZoomTransitionDestination(id: id))
+                    .fullScreenPush()
             }
             .navigationDestination(for: VaultRoute.self) { route in
-                switch route {
-                case .folder(let id): FolderItemsScreen(folderId: id)
-                case .tag(let tag): TagItemsScreen(tag: tag)
-                case .category(let category): ItemListScreen(category: category)
-                case .manageFolders: ManageFoldersScreen()
-                case .archive: ArchiveScreen()
-                case .recentlyDeleted: TrashScreen()
+                Group {
+                    switch route {
+                    case .folder(let id): FolderItemsScreen(folderId: id)
+                    case .tag(let tag): TagItemsScreen(tag: tag)
+                    case .category(let category): ItemListScreen(category: category)
+                    case .manageFolders: ManageFoldersScreen()
+                    case .archive: ArchiveScreen()
+                    case .recentlyDeleted: TrashScreen()
+                    }
                 }
+                .fullScreenPush()
             }
             // Shared-with-Me is reachable from Home AND the Items Spaces list.
             // Registered at the stack root — a destination declared inside
             // another destination's content doesn't reliably register,
             // leaving row taps dead.
-            .navigationDestination(for: SharedWithMeRoute.self) { _ in SharedWithMeScreen() }
-            .navigationDestination(for: NotificationsRoute.self) { _ in NotificationsScreen() }
+            .navigationDestination(for: SharedWithMeRoute.self) { _ in SharedWithMeScreen().fullScreenPush() }
+            .navigationDestination(for: NotificationsRoute.self) { _ in NotificationsScreen().fullScreenPush() }
     }
 }

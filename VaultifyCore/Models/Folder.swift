@@ -22,7 +22,7 @@ nonisolated struct Folder: Identifiable, Equatable, Sendable {
 
     init(id: String = UUID().uuidString,
          name: String,
-         iconAsset: String = "ic_folder",
+         iconAsset: String = "dt_folder",
          color: FolderColor = .blue,
          sortIndex: Int = 0,
          createdAt: Date = .now,

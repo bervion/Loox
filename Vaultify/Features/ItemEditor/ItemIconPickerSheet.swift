@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Grid of every Polaris icon for picking an item's thumbnail icon.
+/// Grid of the curated duotone icons for picking a custom item avatar — the
+/// same set offered for Spaces, so items and Spaces share one visual language.
 struct ItemIconPickerSheet: View {
     let selected: String?
     let onPick: (String) -> Void
@@ -15,7 +16,7 @@ struct ItemIconPickerSheet: View {
                            trailing: { SheetDismissButton("Done") }) {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: Space.s2) {
-                    ForEach(PolarisIconCatalog.all, id: \.self) { name in
+                    ForEach(CuratedFolderIcons.all, id: \.self) { name in
                         Button {
                             onPick(name)
                             dismiss()

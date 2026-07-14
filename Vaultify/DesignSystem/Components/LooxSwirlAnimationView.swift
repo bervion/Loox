@@ -20,6 +20,12 @@ struct LooxSwirlAnimationView: View {
     var mode: Mode = .reveal
     /// Centre logo height as a fraction of the view's smaller dimension.
     var logoFraction: CGFloat = 0.26
+    /// Optional custom centre glyph (a template asset name) replacing the default
+    /// `BrandSymbol` — lets the swirl front any icon (e.g. the security shield).
+    /// `nil` keeps the brand mark.
+    var centerIcon: String? = nil
+    /// Tint for a template `centerIcon` (ignored for the default brand mark).
+    var centerTint: Color? = nil
 
     // Layout (fractions of the view's smaller dimension).
     private let perRing = 24
@@ -62,9 +68,7 @@ struct LooxSwirlAnimationView: View {
                     .mask { maskContent }
                     .frame(width: geo.size.width * overscan, height: geo.size.height * overscan)
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
-                Image("BrandSymbol")
-                    .resizable()
-                    .scaledToFit()
+                centerMark
                     .frame(height: min(geo.size.width, geo.size.height) * logoFraction)
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -72,6 +76,22 @@ struct LooxSwirlAnimationView: View {
         .accessibilityHidden(true)
         .onAppear(perform: restart)
         .onChange(of: mode) { _, _ in restart() }
+    }
+
+    /// The glyph at the swirl's centre: a tinted template `centerIcon` when set,
+    /// otherwise the brand mark.
+    @ViewBuilder private var centerMark: some View {
+        if let centerIcon {
+            Image(centerIcon)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(centerTint ?? .primary)
+        } else {
+            Image("BrandSymbol")
+                .resizable()
+                .scaledToFit()
+        }
     }
 
     @ViewBuilder private var maskContent: some View {

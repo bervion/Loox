@@ -34,10 +34,17 @@ struct WatchtowerScreen: View {
     @State private var latestPayload: AuditReportPayload?
     @State private var health = VaultHealth.empty     // strength card + empty state
     @State private var editorTarget: EditorTarget?
+    /// Item-type picker + the category chosen there (presented as the editor once
+    /// the picker finishes dismissing).
+    @State private var showItemTypePicker = false
+    @State private var pendingNewCategory: ItemCategory?
     @State private var scrolledUnder = false
     /// Bumped when new audit data arrives so the gauge intro replays (see
     /// `WatchtowerIntroGate` — tab switches alone never replay it).
     @State private var refreshCount = 0
+    /// Auto-audit runs at most once per screen appearance so revisiting the tab
+    /// never re-triggers the engine; reset when the persona changes.
+    @State private var didAutoAudit = false
 
     /// Data-context identity for the intro animations: persona switch or a
     /// completed audit changes it; a mere tab revisit does not.
@@ -64,14 +71,24 @@ struct WatchtowerScreen: View {
             .map(\.key))
     }
 
+    /// Security only has something to say about credentials: login items (their
+    /// password / 2FA / passkey / URL hygiene) and anything else carrying a
+    /// password. A vault of only notes, identities, or cards has nothing to
+    /// score, so it shows the empty state rather than a misleading 100% ring.
     private var emptyVault: Bool {
-        health.analyzedCount == 0 && env.repository.activePersonaItems.isEmpty
+        env.repository.activePersonaItems.allSatisfy {
+            $0.category != .login && $0.passwordField == nil
+        }
     }
 
     var body: some View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.watchtowerPath) {
             ZStack(alignment: .top) {
+                if emptyVault {
+                    // Full-bleed plain-canvas first-run state (its own white background).
+                    WatchtowerEmptyStateView(onAdd: { showItemTypePicker = true })
+                } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         // Top inset clears the floating header + reports scroll-edge state.
@@ -85,26 +102,18 @@ struct WatchtowerScreen: View {
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
                 .refreshable { reload() }
+                }
 
                 // Floating header overlays the scroll content — glass blurs beneath.
                 VaultScreenHeader("Security") {
                     HeaderActionCluster {
-                        Menu {
-                            ForEach(ItemCategory.allCases) { category in
-                                Button {
-                                    editorTarget = .new(category)
-                                } label: {
-                                    Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
-                                }
-                            }
-                        } label: {
+                        Button { showItemTypePicker = true } label: {
                             PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
+                                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                                .contentShape(.rect)
                         }
-                        .menuStyle(.button)
                         .buttonStyle(.plain)
-                        .menuIndicator(.hidden)
-                        .frame(width: Metric.hitMin, height: Metric.hitMin)
                         .accessibilityLabel(Text("Add Item"))
                     }
                 }
@@ -114,26 +123,48 @@ struct WatchtowerScreen: View {
                              fallback: Color(rgb: env.theme.active.groupedBackground))
             .platformHiddenNavigationBar()
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+            .sheet(isPresented: $showItemTypePicker, onDismiss: {
+                if let category = pendingNewCategory {
+                    pendingNewCategory = nil
+                    editorTarget = .new(category)
+                }
+            }) {
+                ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
+            }
             .navigationDestination(for: String.self) { itemID in
-                ItemDetailScreen(itemID: itemID)
+                ItemDetailScreen(itemID: itemID).fullScreenPush()
             }
             .navigationDestination(for: WatchtowerCategory.self) { category in
-                categoryScreen(for: category)
+                categoryScreen(for: category).fullScreenPush()
             }
-            .task { reload() }
+            .task { reload(); autoAuditIfStale(); rescheduleAuditReminder() }
             // Security audits the ACTIVE persona's vault — switching persona reloads.
-            .onChange(of: env.repository.activePersona?.id) { reload() }
+            .onChange(of: env.repository.activePersona?.id) {
+                didAutoAudit = false
+                reload()
+                autoAuditIfStale()
+            }
             .onChange(of: env.repository.items.count) {
                 health = PasswordAudit.analyze(env.repository.activePersonaItems)
             }
-            // A completed run IS a data moment: refresh the payload + replay intro.
+            // A completed run IS a data moment: refresh the payload + replay intro,
+            // then push the next periodic reminder out from this fresh audit.
             .onChange(of: controller.phase) { _, phase in
-                if phase == .finished { reload() }
+                if phase == .finished {
+                    reload()
+                    rescheduleAuditReminder()
+                }
             }
-            // Lock mid-run: the plaintext snapshot inside the running task must
-            // not outlive the session — cancel immediately.
+            // Unlocking is when the key (and plaintext) becomes available again —
+            // the earliest safe moment to auto-run a stale audit.
             .onChange(of: env.session.vaultKey == nil) { _, locked in
-                if locked { controller.cancel() }
+                if locked {
+                    // Lock mid-run: the plaintext snapshot inside the running task
+                    // must not outlive the session — cancel immediately.
+                    controller.cancel()
+                } else {
+                    autoAuditIfStale()
+                }
             }
         }
     }
@@ -144,6 +175,37 @@ struct WatchtowerScreen: View {
             latestPayload = AuditReportStore(store: env.store).latest(personaID: personaID, key: key)
         }
         refreshCount += 1
+    }
+
+    // MARK: - Periodic auto-audit
+
+    /// The audit is stale when the vault has items and either was never audited
+    /// or the last audit is older than the reminder cadence.
+    private var auditIsStale: Bool {
+        guard !emptyVault else { return false }
+        guard let completedAt = latestPayload?.completedAt else { return true }
+        return Date.now.timeIntervalSince(completedAt) >= AuditReminder.cadence
+    }
+
+    /// Run an audit unprompted when the user opens Security and the vault is due,
+    /// so the score stays current without them remembering to tap the button.
+    /// Guarded to run once per appearance, only while unlocked and idle.
+    private func autoAuditIfStale() {
+        guard !didAutoAudit,
+              env.session.vaultKey != nil,
+              controller.phase == .idle,
+              auditIsStale else { return }
+        didAutoAudit = true
+        controller.start(env: env)
+    }
+
+    /// After an audit completes, push the local reminder out to the next cadence
+    /// window (or clear it if the user turned reminders off).
+    private func rescheduleAuditReminder() {
+        guard let completedAt = latestPayload?.completedAt else { return }
+        AuditReminderNotificationService.shared.reschedule(
+            lastAuditedAt: completedAt,
+            enabled: env.settings.auditRemindersEnabled)
     }
 
     // MARK: - Destinations
@@ -198,40 +260,49 @@ struct WatchtowerScreen: View {
 
     // MARK: - Score ring + audit meta
 
+    // Hidden entirely when the vault is empty — the empty-state card in
+    // `contentSection` owns that surface (no misleading score-0 ring).
+    @ViewBuilder
     private var ringSection: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                NavigationLink(value: WatchtowerCategory.whyScore) {
-                    WatchtowerScoreRing(score: latestPayload?.score ?? 0, introKey: introKey)
+        if !emptyVault {
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    if let latestPayload {
+                        NavigationLink(value: WatchtowerCategory.whyScore) {
+                            WatchtowerScoreRing(score: latestPayload.score, introKey: introKey)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text("Vault Health"))
+                        .accessibilityHint(Text("Why this score"))
+                    } else {
+                        // Items exist but no audit has completed yet.
+                        WatchtowerPendingRing()
+                    }
+                    Spacer()
                 }
-                .buttonStyle(.plain)
-                .disabled(latestPayload == nil)
-                .accessibilityLabel(Text("Vault Health"))
-                .accessibilityHint(Text("Why this score"))
-                Spacer()
-            }
-            .padding(.vertical, Space.s2)
+                .padding(.vertical, Space.s2)
 
-            VStack(spacing: Space.s1) {
-                if let latestPayload {
-                    Text(verbatim: lastAuditedText(latestPayload.completedAt))
-                        .vaultType(.footnote)
-                        .themedForeground(.tertiary)
-                    if latestPayload.confidenceLimited {
-                        Text(verbatim: appString("Based on \(latestPayload.analyzedItemCount) items"))
+                VStack(spacing: Space.s1) {
+                    if let latestPayload {
+                        Text(verbatim: lastAuditedText(latestPayload.completedAt))
                             .vaultType(.footnote)
                             .themedForeground(.tertiary)
+                        if latestPayload.confidenceLimited {
+                            Text(verbatim: appString("Based on \(latestPayload.analyzedItemCount) items"))
+                                .vaultType(.footnote)
+                                .themedForeground(.tertiary)
+                        }
+                    } else {
+                        Text("Run your first audit to see your vault's health score.")
+                            .vaultType(.callout)
+                            .themedForeground(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, Space.s7)
                     }
-                } else if !emptyVault {
-                    Text("Run your first audit to see your vault's health score.")
-                        .vaultType(.callout)
-                        .themedForeground(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, Space.s7)
                 }
+                .padding(.bottom, Space.s3)
             }
-            .padding(.bottom, Space.s3)
         }
     }
 
@@ -244,22 +315,24 @@ struct WatchtowerScreen: View {
 
     // MARK: - Main content
 
+    // Empty vault is handled full-screen at the body level; this is the
+    // populated scroll content.
+    private var contentSection: some View { populatedContent }
+
     @ViewBuilder
-    private var contentSection: some View {
+    private var populatedContent: some View {
         VStack(spacing: Space.s5) {
             // One filled primary; the resume path is the quiet tinted secondary
             // (the style owns typography and height — plain Text labels only).
-            if !emptyVault {
-                NavigationLink(value: WatchtowerCategory.audit) {
-                    HStack(spacing: Space.s2) {
-                        PolarisIcon(Icons.shieldPerson, size: Metric.iconInline)
-                        Text("Run Vault Audit")
-                    }
-                    .frame(maxWidth: .infinity)
+            NavigationLink(value: WatchtowerCategory.audit) {
+                HStack(spacing: Space.s2) {
+                    PolarisIcon(Icons.shieldPerson, size: Metric.iconInline)
+                    Text("Run Vault Audit")
                 }
-                .buttonStyle(.themedProminent)
-                .padding(.horizontal, Space.gutter)
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.themedProminent)
+            .padding(.horizontal, Space.gutter)
 
             if let sections, sections.actNowCount > 0 {
                 NavigationLink(value: WatchtowerCategory.fixQueue) {
@@ -278,9 +351,7 @@ struct WatchtowerScreen: View {
                                                cornerRadius: Radius.md))
             .padding(.horizontal, Space.gutter)
 
-            if emptyVault {
-                emptyVaultView
-            } else if let sections, !sections.isEmpty {
+            if let sections, !sections.isEmpty {
                 if !sections.actNow.isEmpty {
                     AuditGroupSectionView(title: LocalizedStringResource("Act now").inAppLocalized,
                                           rows: sections.actNow, tintRole: .destructive)
@@ -323,20 +394,7 @@ struct WatchtowerScreen: View {
         .padding(.top, Space.s4)
     }
 
-    // MARK: - Empty vault / all clear
-
-    private var emptyVaultView: some View {
-        HStack(spacing: Space.s3) {
-            PolarisIcon(Icons.shield, size: Metric.iconInline)
-                .themedForeground(.secondary)
-            Text("Add a password to see your vault's security score.")
-                .vaultType(.callout)
-                .themedForeground(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .themedCard()
-        .padding(.horizontal, Space.gutter)
-    }
+    // MARK: - All clear
 
     private var allClearView: some View {
         HStack(spacing: Space.s3) {

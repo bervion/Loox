@@ -403,31 +403,33 @@ struct ItemEditorScreen: View {
     /// Thumbnail. When the item has a website the favicon wins (icon picker disabled — no
     /// chevron badge); otherwise a custom icon / letter-avatar can be chosen via the menu.
     @ViewBuilder private var editorThumbnail: some View {
-        if let website = draft.urlField?.value, !website.isEmpty {
-            FaviconView(urlString: website, category: draft.category, size: 56, title: draft.title)
-        } else {
-            Menu {
-                Button { showIconPicker = true } label: {
-                    Label { Text("Choose icon") } icon: { PolarisIcon("ic_apps") }
-                }
-                Button { draft.iconAsset = nil } label: {
-                    Label { Text("Letter avatar") } icon: { PolarisIcon("ic_text") }
-                }
-            } label: {
-                ItemThumbnail(title: draft.title, category: draft.category,
-                              iconAsset: draft.iconAsset, size: 56)
-                    .overlay(alignment: .bottomTrailing) {
-                        PolarisIcon(Icons.chevronDown, size: 10)
-                            .themedForeground(.secondary)
-                            .padding(Space.s1)
-                            .background(VaultColors.surface, in: Circle())
-                            .overlay(Circle().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
-                            .elevation(.level1)
-                            .offset(x: 3, y: 3)
-                    }
+        Menu {
+            // Default: the category type icon (or the website favicon for logins).
+            // Menu glyphs use the single-tone category icon so all three rows share
+            // the line-icon weight/padding (the duotone glyph reads oversized here).
+            Button { draft.iconAsset = nil } label: {
+                Label { Text("Default") } icon: { PolarisIcon(draft.category.iconAsset, size: Metric.iconInline) }
             }
-            .buttonStyle(.plain)
+            Button { draft.iconAsset = ItemAvatarStyle.monogramToken } label: {
+                Label { Text("Letter avatar") } icon: { PolarisIcon("ic_text", size: Metric.iconInline) }
+            }
+            Button { showIconPicker = true } label: {
+                Label { Text("Choose icon") } icon: { PolarisIcon("ic_apps", size: Metric.iconInline) }
+            }
+        } label: {
+            FaviconView(urlString: draft.urlField?.value, category: draft.category, size: 56,
+                        title: draft.title, iconAsset: draft.iconAsset)
+                .overlay(alignment: .bottomTrailing) {
+                    PolarisIcon(Icons.chevronDown, size: 10)
+                        .themedForeground(.secondary)
+                        .padding(Space.s1)
+                        .background(VaultColors.surface, in: Circle())
+                        .overlay(Circle().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
+                        .elevation(.level1)
+                        .offset(x: 3, y: 3)
+                }
         }
+        .buttonStyle(.plain)
     }
 
     /// Bold title field on an elevated surface (adapts to light/dark for contrast).

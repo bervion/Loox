@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// First-run step that collects a display name + email (both required) — the flow
-/// seeds the mandatory default identity and a "Loox Account" login from them.
+/// seeds the mandatory default identity from them.
 /// Onboarding concept: white page, one gray grouped capsule holding both fields
 /// (no leading icons), and the blue capsule Continue pinned below the keyboard.
 struct NameStepView: View {

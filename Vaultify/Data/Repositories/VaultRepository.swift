@@ -537,6 +537,7 @@ import UserNotifications
                          fields: secret.fields,
                          favorite: record.favorite,
                          tags: secret.tags,
+                         iconAsset: secret.iconAsset,
                          lastUsedAt: record.lastUsedAt,
                          pinned: record.pinned,
                          archived: record.archived,

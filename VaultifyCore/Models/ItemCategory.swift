@@ -28,7 +28,22 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
         return base.inAppLocalized
     }
 
-    /// Polaris icon asset backing this category.
+    /// One-line description shown next to the title in the create-item picker.
+    var creationBlurb: LocalizedStringResource {
+        let base: LocalizedStringResource = switch self {
+        case .login: "Website and app passwords"
+        case .note: "Private text, encrypted at rest"
+        case .card: "Card numbers, PINs, and CVV"
+        case .identity: "Personal and contact details"
+        case .sshKey: "Public and private key pairs"
+        case .recoveryCodes: "Backup codes for two-factor sign in"
+        case .securityQuestions: "Question and answer pairs"
+        case .custom: "Your own fields, any shape"
+        }
+        return base.inAppLocalized
+    }
+
+    /// Polaris icon asset backing this category (chips, inline rows, pickers).
     var iconAsset: String {
         switch self {
         case .login: return "ic_globe"
@@ -39,6 +54,22 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
         case .recoveryCodes: return "ic_refresh"
         case .securityQuestions: return "ic_question_circle"
         case .custom: return "ic_metafields"
+        }
+    }
+
+    /// Duotone glyph used as the item's default AVATAR (type icon) — the modern
+    /// two-tone look, tinted to the category color. Distinct from `iconAsset`,
+    /// which stays single-tone for chips and inline rows.
+    var avatarIcon: String {
+        switch self {
+        case .login: return "dt_globe"
+        case .note: return "dt_note"
+        case .card: return "dt_credit_card"
+        case .identity: return "dt_id_card"
+        case .sshKey: return "dt_key"
+        case .recoveryCodes: return "dt_life_ring"
+        case .securityQuestions: return "dt_question"
+        case .custom: return "dt_sliders_up"
         }
     }
 

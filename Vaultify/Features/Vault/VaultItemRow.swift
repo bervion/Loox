@@ -28,7 +28,8 @@ struct VaultItemRow: View {
 
     var body: some View {
         HStack(spacing: Space.s3) {
-            FaviconView(urlString: item.urlField?.value, category: item.category, size: 40, title: item.title)
+            FaviconView(urlString: item.urlField?.value, category: item.category, size: 40,
+                        title: item.title, iconAsset: item.iconAsset)
                 // Favorite → a small star badge on the icon's bottom-right corner, so it
                 // never competes with the Space chip for the row's trailing width.
                 .overlay(alignment: .bottomTrailing) {
