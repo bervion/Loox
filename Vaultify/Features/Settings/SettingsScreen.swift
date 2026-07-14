@@ -130,11 +130,8 @@ struct SettingsScreen: View {
                 NavigationLink { PasskeysScreen() } label: {
                     Label { Text("Passkeys") } icon: { SettingsIconBadge(systemName: "person.badge.key.fill", tint: SettingsBadgeTint.purple) }
                 }
-                NavigationLink { ImportView() } label: {
-                    Label { Text("Import") } icon: { SettingsIconBadge(systemName: "square.and.arrow.down.fill", tint: SettingsBadgeTint.teal) }
-                }
-                NavigationLink { ExportView() } label: {
-                    Label { Text("Export") } icon: { SettingsIconBadge(systemName: "square.and.arrow.up.fill", tint: SettingsBadgeTint.orange) }
+                NavigationLink { BackupSettingsView() } label: {
+                    Label { Text("Backup") } icon: { SettingsIconBadge(systemName: "externaldrive.fill", tint: SettingsBadgeTint.teal) }
                 }
             }
             .listRowBackground(VaultColors.surface)

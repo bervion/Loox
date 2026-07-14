@@ -2854,7 +2854,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xác nhận email nhận thư trước khi dùng địa chỉ riêng này. Mở Hộp thư chuyển tiếp và bấm “Xác nhận email”."
+            "value": "Xác nhận email nhận thư trước khi dùng địa chỉ riêng này. Mở hộp thư chuyển tiếp và bấm “Xác nhận email”."
           }
         }
       }
@@ -10807,7 +10807,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hãy đặt mật khẩu Bảo vệ nâng cao trong Cài đặt → Bảo mật trước."
+            "value": "Hãy đặt mật khẩu bảo vệ nâng cao trong Cài đặt → Bảo mật trước."
           }
         }
       }
@@ -13051,7 +13051,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các trường của mục này đang được Bảo vệ nâng cao nên không thể gửi gì đến trình duyệt."
+            "value": "Các trường của mục này đang được bảo vệ nâng cao nên không thể gửi gì đến trình duyệt."
           }
         }
       }
@@ -15053,6 +15053,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Không máy chủ"
+          }
+        }
+      }
+    },
+    "Backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao lưu dữ liệu"
+          }
+        }
+      }
+    },
+    "Import from another password manager, or export your whole vault to a file you control.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import from another password manager, or export your whole vault to a file you control."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập từ trình quản lý mật khẩu khác, hoặc xuất toàn bộ kho ra một tệp do bạn kiểm soát."
           }
         }
       }
