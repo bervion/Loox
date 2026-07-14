@@ -14,11 +14,11 @@ enum ItemAvatarStyle: Equatable {
     static let monogramToken = "__monogram"
 
     static func resolve(_ iconAsset: String?) -> ItemAvatarStyle {
-        switch iconAsset {
-        case .none: return .auto
-        case .some(monogramToken): return .monogram
-        case .some(let asset): return .custom(asset)
-        }
+        // NB: match against the token with an explicit comparison — a bare
+        // `case .some(monogramToken)` would bind, not compare, and swallow every
+        // custom icon into `.monogram`.
+        guard let asset = iconAsset else { return .auto }
+        return asset == monogramToken ? .monogram : .custom(asset)
     }
 }
 

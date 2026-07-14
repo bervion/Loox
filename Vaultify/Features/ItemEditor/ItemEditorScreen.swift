@@ -405,14 +405,16 @@ struct ItemEditorScreen: View {
     @ViewBuilder private var editorThumbnail: some View {
         Menu {
             // Default: the category type icon (or the website favicon for logins).
+            // Menu glyphs use the single-tone category icon so all three rows share
+            // the line-icon weight/padding (the duotone glyph reads oversized here).
             Button { draft.iconAsset = nil } label: {
-                Label { Text("Type icon") } icon: { PolarisIcon(draft.category.avatarIcon) }
+                Label { Text("Default") } icon: { PolarisIcon(draft.category.iconAsset, size: Metric.iconInline) }
             }
             Button { draft.iconAsset = ItemAvatarStyle.monogramToken } label: {
-                Label { Text("Letter avatar") } icon: { PolarisIcon("ic_text") }
+                Label { Text("Letter avatar") } icon: { PolarisIcon("ic_text", size: Metric.iconInline) }
             }
             Button { showIconPicker = true } label: {
-                Label { Text("Choose icon") } icon: { PolarisIcon("ic_apps") }
+                Label { Text("Choose icon") } icon: { PolarisIcon("ic_apps", size: Metric.iconInline) }
             }
         } label: {
             FaviconView(urlString: draft.urlField?.value, category: draft.category, size: 56,
