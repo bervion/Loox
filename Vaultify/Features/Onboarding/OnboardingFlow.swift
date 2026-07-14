@@ -216,7 +216,7 @@ private struct OnboardingDoneStep: View {
             .buttonStyle(.themedProminent).controlSize(.large)
             .disabled(launch.phase != .idle)
             .opacity(contentHidden ? 0 : 1)
-            .padding(.horizontal, Space.s6).padding(.bottom, Space.gutter)
+            .padding(.horizontal, Space.s6).padding(.bottom, Space.s4)
         }
     }
 

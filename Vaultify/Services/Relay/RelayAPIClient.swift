@@ -134,7 +134,7 @@ nonisolated enum RelayAPIClient {
         var request = URLRequest(url: baseURL.appending(path: "/v1/relay/attestation/challenges"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let (data, response) = try await perform(request)
+        let (data, _) = try await perform(request)
         return try JSONDecoder().decode(AttestChallenge.self, from: data)
     }
 

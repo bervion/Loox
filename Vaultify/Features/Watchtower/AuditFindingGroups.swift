@@ -110,7 +110,7 @@ struct AuditGroupSectionView: View {
                         .buttonStyle(PressableSurfaceStyle(theme: env.theme.active))
                         if row.id != rows.last?.id {
                             ThemedDivider()
-                                .padding(.leading, Space.gutter + Metric.iconTile + Space.s3)
+                                .padding(.leading, Space.s4 + Metric.iconTile + Space.s3)
                         }
                     }
                 }

@@ -49,5 +49,8 @@ vendor/bundle/
 *.cer
 fastlane/api_key.json
 
-# Claude Code personal overrides
-.claude/settings.local.json
+# Claude Code local tooling (agents, hooks, rules, skills, settings) — machine
+# specific, not shared. Keep only the shared review/planner memory versioned.
+.claude/*
+!.claude/agent-memory/
+.agentkit/

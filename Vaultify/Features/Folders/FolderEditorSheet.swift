@@ -39,7 +39,7 @@ struct FolderEditorSheet: View {
                 .listRowBackground(VaultColors.surface)
                 Section {
                     IconColorPicker(icon: $icon, color: $color)
-                        .listRowInsets(EdgeInsets(top: Space.s3, leading: Space.gutter, bottom: Space.s3, trailing: Space.gutter))
+                        .listRowInsets(EdgeInsets(top: Space.s3, leading: Space.s4, bottom: Space.s3, trailing: Space.s4))
                 }
                 .listRowBackground(VaultColors.surface)
                 if isEditing {

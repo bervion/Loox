@@ -16,7 +16,7 @@ jobs:
     name: Compile check
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # The project is saved in a newer Xcode format (objectVersion 110), so the
       # runner must use an Xcode at least as new as the one that created it. Pick

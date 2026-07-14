@@ -123,7 +123,7 @@ struct AboutView: View {
         }
         .padding(Space.s4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .themedCard(cornerRadius: Radius.lg, padding: 0)
+        .themedCard(padding: 0)
     }
 
     // MARK: Signature
@@ -161,7 +161,7 @@ struct AboutView: View {
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .themedCard(cornerRadius: Radius.lg, padding: 0)
+            .themedCard(padding: 0)
         }
     }
 
@@ -181,7 +181,7 @@ struct AboutView: View {
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .themedCard(cornerRadius: Radius.lg, padding: 0)
+            .themedCard(padding: 0)
         }
     }
 

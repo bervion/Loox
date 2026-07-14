@@ -70,7 +70,7 @@ nonisolated struct QuickViewSessionEnvelope: Sendable, Equatable {
     }
 }
 
-extension QuickViewSessionEnvelope: Codable {
+nonisolated extension QuickViewSessionEnvelope: Codable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         version = try c.decode(Int.self, forKey: .version)

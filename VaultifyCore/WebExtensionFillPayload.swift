@@ -14,7 +14,7 @@ import Foundation
 extension WebExtensionReader {
 
     /// The only item categories `getFillPayload` will ever serve.
-    static let fillableCategories: Set<ItemCategory> = [.identity, .card]
+    nonisolated static let fillableCategories: Set<ItemCategory> = [.identity, .card]
 
     /// Values for one authorized fill, keyed by the canonical fill keys the
     /// extension's fill engine understands (`fullName`, `givenName`,

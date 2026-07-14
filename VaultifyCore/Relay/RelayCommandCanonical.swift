@@ -77,10 +77,10 @@ nonisolated enum RelayCommandCanonical {
 }
 
 private extension CanonicalWriter {
-    mutating func optionalString(_ value: String?) {
+    nonisolated mutating func optionalString(_ value: String?) {
         if let value { byte(1); string(value) } else { byte(0) }
     }
-    mutating func optionalBlob(_ value: Data?) {
+    nonisolated mutating func optionalBlob(_ value: Data?) {
         if let value { byte(1); blob(value) } else { byte(0) }
     }
 }

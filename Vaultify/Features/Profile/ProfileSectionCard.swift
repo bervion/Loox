@@ -91,7 +91,7 @@ struct ProfileSectionCard: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(Space.gutter)
+        .padding(Space.s4)
     }
 
     /// Trailing picker row — a menu listing every vault item of this type (checkmark on the
@@ -116,7 +116,7 @@ struct ProfileSectionCard: View {
                 Spacer()
                 PolarisIcon(Icons.chevronDown, size: 13).themedForeground(.tertiary)
             }
-            .padding(Space.gutter)
+            .padding(Space.s4)
             .contentShape(.rect)
         }
         .menuStyle(.button)
@@ -165,7 +165,7 @@ private struct ProfileCopyFieldRow: View {
                 CopyMorphIcon(copied: copied, size: 18)
                     .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
             }
-            .padding(Space.gutter)
+            .padding(Space.s4)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

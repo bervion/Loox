@@ -112,7 +112,7 @@ nonisolated struct DomainRegistryDocument: Codable, Sendable, Equatable {
 private extension CanonicalWriter {
     /// Flag byte then the string when present — the registry encoder's
     /// optional-field convention (same as the manifest's message_key).
-    mutating func optionalTranscriptString(_ value: String?) {
+    nonisolated mutating func optionalTranscriptString(_ value: String?) {
         if let value { byte(1); string(value) } else { byte(0) }
     }
 }

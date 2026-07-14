@@ -83,7 +83,9 @@ hardcode visual constants. Four layers: foundation tokens → semantic tokens �
 feature screens (screens only compose, never invent visual language).
 
 **Token API (Swift) — `Vaultify/DesignSystem/Tokens/` + `Typography.swift`:**
-- **Spacing** `Space.s1…s10` (4 → 64, 4pt grid), `Space.gutter` (16). Use instead of `.padding(16)`.
+- **Spacing** `Space.s1…s10` (4 → 64, 4pt grid), `Space.gutter` (adaptive screen margin: 16, or 20 on
+  ≥414pt-wide iPhones — matches nav bar / back button / List alignment). `gutter` is for SCREEN-edge
+  insets only; card/row interiors use fixed `Space.s4` so in-card alignment never shifts per device.
 - **Radius** `Radius.xs/sm/md/lg/xl/pill` (6/10/14/20/28/999). Helper `.vaultCornerRadius(Radius.x)`
   (continuous curve) instead of `RoundedRectangle(cornerRadius: N, style: .continuous)`.
 - **Metric** `Metric.hitMin(44)/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge`.

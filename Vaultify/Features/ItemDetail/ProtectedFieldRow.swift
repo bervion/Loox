@@ -31,7 +31,7 @@ struct ProtectedFieldRow: View {
             Spacer(minLength: 8)
             trailing
         }
-        .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
+        .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(copied ? theme.color(.accent) : Color.clear)
         .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))

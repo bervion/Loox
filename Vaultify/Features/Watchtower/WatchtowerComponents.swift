@@ -9,18 +9,11 @@ struct PressableSurfaceStyle: ButtonStyle {
     let theme: AppTheme
     var base: Color = .clear
     var cornerRadius: CGFloat = 0
-    var bordered: Bool = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(configuration.isPressed ? Color(rgb: theme.surfacePressed) : base)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay {
-                if bordered {
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(Color(rgb: theme.separator), lineWidth: 0.5)
-                }
-            }
             .animation(.easeOut(duration: Motion.fast), value: configuration.isPressed)
     }
 }

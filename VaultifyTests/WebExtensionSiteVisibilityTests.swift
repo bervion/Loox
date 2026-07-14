@@ -29,7 +29,7 @@ final class WebExtensionSiteVisibilityTests: XCTestCase {
     private func context() -> WebExtensionRouterContext {
         let bytes = keyBytes
         let sharedStore = store!
-        let suite = defaults!
+        nonisolated(unsafe) let suite = defaults!
         return WebExtensionRouterContext(retrieveKey: { bytes },
                                          makeStore: { sharedStore },
                                          nativeSaveActive: { false },
@@ -40,7 +40,7 @@ final class WebExtensionSiteVisibilityTests: XCTestCase {
     /// the session key — the hidden check must run strictly first.
     private func failingContext() -> WebExtensionRouterContext {
         let sharedStore = store!
-        let suite = defaults!
+        nonisolated(unsafe) let suite = defaults!
         return WebExtensionRouterContext(
             retrieveKey: {
                 XCTFail("hidden-site requests must never trigger an unlock")

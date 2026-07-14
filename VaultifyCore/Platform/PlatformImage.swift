@@ -22,7 +22,7 @@ public extension PlatformImage {
     }
 
     /// Wrap a `CGImage` at an explicit pixel size (macOS `NSImage` needs a size).
-    static func fromCGImage(_ cgImage: CGImage, pixelSize: CGSize) -> PlatformImage {
+    nonisolated static func fromCGImage(_ cgImage: CGImage, pixelSize: CGSize) -> PlatformImage {
         #if canImport(UIKit)
         return UIImage(cgImage: cgImage)
         #elseif canImport(AppKit)

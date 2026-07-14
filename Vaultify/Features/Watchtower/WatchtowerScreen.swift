@@ -275,7 +275,7 @@ struct WatchtowerScreen: View {
             }
             .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
                                                base: Color(rgb: env.theme.active.elevatedBackground),
-                                               cornerRadius: Radius.lg, bordered: true))
+                                               cornerRadius: Radius.md))
             .padding(.horizontal, Space.gutter)
 
             if emptyVault {
@@ -314,7 +314,7 @@ struct WatchtowerScreen: View {
                 }
                 .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
                                                    base: Color(rgb: env.theme.active.elevatedBackground),
-                                                   cornerRadius: Radius.lg, bordered: true))
+                                                   cornerRadius: Radius.md))
                 .padding(.horizontal, Space.gutter)
             }
 

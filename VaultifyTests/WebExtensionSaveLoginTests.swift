@@ -31,7 +31,7 @@ final class WebExtensionSaveLoginTests: XCTestCase {
     private func context(nativeSave: Bool = false) -> WebExtensionRouterContext {
         let bytes = keyBytes
         let sharedStore = store!
-        let suite = defaults!
+        nonisolated(unsafe) let suite = defaults!
         return WebExtensionRouterContext(retrieveKey: { bytes },
                                          makeStore: { sharedStore },
                                          nativeSaveActive: { nativeSave },
@@ -40,7 +40,7 @@ final class WebExtensionSaveLoginTests: XCTestCase {
 
     private func failingContext(nativeSave: Bool = false) -> WebExtensionRouterContext {
         let sharedStore = store!
-        let suite = defaults!
+        nonisolated(unsafe) let suite = defaults!
         return WebExtensionRouterContext(
             retrieveKey: {
                 XCTFail("rejected requests must never trigger an unlock")

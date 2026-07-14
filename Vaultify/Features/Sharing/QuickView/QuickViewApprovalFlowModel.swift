@@ -39,7 +39,7 @@ import LocalAuthentication
     /// directly without a live network resolve — production call sites
     /// (views, `resolve`/`approve`) all live in this module too, so this
     /// doesn't widen access outside it.
-    internal(set) var state: State = .idle
+    var state: State = .idle
     /// Mutated live by the approval sheet's toggles; read only when the
     /// ceremony actually runs — never cached before that.
     var selectedFieldIDs: Set<String>

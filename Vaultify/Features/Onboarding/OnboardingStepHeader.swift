@@ -37,7 +37,7 @@ struct OnboardingStepHeader: View {
             }
         }
         .padding(.horizontal, Space.s6)
-        .padding(.top, Space.gutter)
+        .padding(.top, Space.s4)
     }
 }
 
