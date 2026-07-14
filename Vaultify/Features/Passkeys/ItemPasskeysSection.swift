@@ -25,7 +25,7 @@ struct ItemPasskeysSection: View {
                             row(passkey)
                         }
                         .buttonStyle(.plain)
-                        if index < matches.count - 1 { Divider().padding(.leading, Space.gutter) }
+                        if index < matches.count - 1 { Divider().padding(.leading, Space.s4) }
                     }
                 }
                 .background(VaultColors.surface)
@@ -54,7 +54,7 @@ struct ItemPasskeysSection: View {
             Spacer(minLength: Space.s2)
             PolarisIcon(Icons.personLockFilled, size: 22).foregroundStyle(Self.passkeyPurple)
         }
-        .padding(.horizontal, Space.gutter)
+        .padding(.horizontal, Space.s4)
         .padding(.vertical, Space.s3)
         // Soft purple wash toward the trailing glyph (detail view only).
         .background(

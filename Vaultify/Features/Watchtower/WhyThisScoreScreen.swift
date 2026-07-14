@@ -24,7 +24,7 @@ struct WhyThisScoreScreen: View {
                     ForEach(payload.pillars, id: \.pillar) { pillar in
                         PillarRow(score: pillar)
                         if pillar != payload.pillars.last {
-                            ThemedDivider().padding(.leading, Space.gutter)
+                            ThemedDivider().padding(.leading, Space.s4)
                         }
                     }
                 }
@@ -77,7 +77,7 @@ private struct PillarRow: View {
                 .themedForeground(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(Space.gutter)
+        .padding(Space.s4)
         .accessibilityElement(children: .combine)
         .accessibilityValue(Text(verbatim: "\(score.earned) / \(score.max)"))
     }

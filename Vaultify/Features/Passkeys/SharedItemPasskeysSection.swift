@@ -23,7 +23,7 @@ struct SharedItemPasskeysSection: View {
                     ForEach(Array(passkeys.enumerated()), id: \.element.id) { index, passkey in
                         row(passkey)
                         if index < passkeys.count - 1 {
-                            Divider().padding(.leading, Space.gutter)
+                            Divider().padding(.leading, Space.s4)
                         }
                     }
                 }
@@ -47,7 +47,7 @@ struct SharedItemPasskeysSection: View {
             Spacer(minLength: Space.s2)
             PolarisIcon(Icons.personLockFilled, size: 22).foregroundStyle(Self.passkeyPurple)
         }
-        .padding(.horizontal, Space.gutter)
+        .padding(.horizontal, Space.s4)
         .padding(.vertical, Space.s3)
         .background(
             LinearGradient(colors: [.clear, Self.passkeyPurple.opacity(0.22)],

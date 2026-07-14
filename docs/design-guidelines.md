@@ -66,7 +66,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 
 | DS concept | Swift symbol | Location |
 | --- | --- | --- |
-| Spacing (4pt grid) | `Space.s1…s10`, `Space.gutter`, `Space.contentMax` | `DesignSystem/Tokens/Spacing.swift` |
+| Spacing (4pt grid) | `Space.s1…s10`, `Space.gutter` (adaptive screen margin 16/20, screen edges only — card interiors use `Space.s4`), `Space.contentMax` | `DesignSystem/Tokens/Spacing.swift` |
 | Corner radius | `Radius.xs/sm/md/lg/xl/pill` + `.vaultCornerRadius(_)` | `DesignSystem/Tokens/Radius.swift` |
 | Control / icon / row sizing | `Metric.hitMin/controlSmall/Medium/Large/rowHeight/iconInline/Utility/Tab/Tile/TileLarge/badgeTile/iconPickerTile` | `DesignSystem/Tokens/Metrics.swift` |
 | Legacy custom tab-bar layout | `TabBarMetric.*` | `DesignSystem/Tokens/Metrics.swift` |

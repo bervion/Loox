@@ -128,7 +128,7 @@ struct AttentionCell: View {
                 Rectangle()
                     .fill(Color(rgb: env.theme.active.separator))
                     .frame(height: 0.5)
-                    .padding(.leading, Space.gutter + 40 + Space.s3)
+                    .padding(.leading, Space.s4 + 40 + Space.s3)
             }
         }
     }

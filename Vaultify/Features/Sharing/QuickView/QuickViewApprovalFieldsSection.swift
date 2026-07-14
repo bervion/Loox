@@ -56,7 +56,7 @@ struct QuickViewApprovalFieldsSection: View {
             ForEach(Array(shareable.enumerated()), id: \.element.id) { index, field in
                 fieldToggleRow(field: field)
                 if index < shareable.count - 1 || hasTOTPSeed {
-                    Divider().padding(.leading, Space.gutter)
+                    Divider().padding(.leading, Space.s4)
                 }
             }
             if hasTOTPSeed {
@@ -92,13 +92,13 @@ struct QuickViewApprovalFieldsSection: View {
                     .vaultType(.footnote).themedForeground(.warning)
             }
         }
-        .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
+        .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
     }
 
     private var totpToggleRow: some View {
         Toggle(isOn: $flow.includeCurrentTOTP) {
             Text("Current 2FA code").vaultType(.body).themedForeground()
         }
-        .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
+        .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
     }
 }

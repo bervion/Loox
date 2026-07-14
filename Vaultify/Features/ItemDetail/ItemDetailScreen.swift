@@ -484,7 +484,7 @@ struct ItemDetailScreen: View {
                     }
                 }
                 if index < fields.count - 1 || !requestFieldIds.isEmpty {
-                    Divider().padding(.leading, Space.gutter)
+                    Divider().padding(.leading, Space.s4)
                 }
             }
             ForEach(Array(requestFieldIds.enumerated()), id: \.element) { index, fieldId in
@@ -500,10 +500,10 @@ struct ItemDetailScreen: View {
                                         onVerificationRequired: { showVerifySheet = true })
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, Space.gutter)
+                    .padding(.horizontal, Space.s4)
                     .padding(.vertical, Space.s3)
                     if index < requestFieldIds.count - 1 {
-                        Divider().padding(.leading, Space.gutter)
+                        Divider().padding(.leading, Space.s4)
                     }
                 }
             }
@@ -586,7 +586,7 @@ struct ItemDetailScreen: View {
                 VStack(spacing: 0) {
                     ForEach(shares) { share in
                         shareRow(share)
-                        Divider().padding(.leading, Space.gutter)
+                        Divider().padding(.leading, Space.s4)
                     }
                     // In-flow entry to add another recipient — the toolbar share
                     // icon stays, but sharing again from where the recipients
@@ -601,7 +601,7 @@ struct ItemDetailScreen: View {
                                     .foregroundStyle(env.theme.uiTint)
                                 Spacer(minLength: 0)
                             }
-                            .padding(.horizontal, Space.gutter).padding(.vertical, 12)
+                            .padding(.horizontal, Space.s4).padding(.vertical, 12)
                             .frame(minHeight: Metric.hitMin)
                             .contentShape(.rect)
                         }
@@ -646,7 +646,7 @@ struct ItemDetailScreen: View {
                         .padding(.leading, Metric.iconInline + Space.s3)
                 }
             }
-            .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
+            .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -684,7 +684,7 @@ struct ItemDetailScreen: View {
                 Text(label).vaultType(.body).foregroundStyle(color)
                 Spacer()
             }
-            .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
+            .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(VaultColors.surface,
                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))

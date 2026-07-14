@@ -75,7 +75,7 @@ struct EmergencyKitView: View {
                 } else {
                     saveButton
                         .padding(.horizontal, Space.s6)
-                        .padding(.bottom, Space.gutter)
+                        .padding(.bottom, Space.s4)
                 }
             }
         }

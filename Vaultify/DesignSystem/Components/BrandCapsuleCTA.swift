@@ -24,6 +24,6 @@ struct BrandCapsuleCTA: View {
         .disabled(!enabled || busy)
         .animation(.easeInOut(duration: 0.2), value: enabled)
         .padding(.horizontal, Space.s6)
-        .padding(.bottom, Space.gutter)
+        .padding(.bottom, Space.s4)
     }
 }

@@ -32,7 +32,7 @@ struct AttachmentFieldRow: View {
             }
             if let error { Text(error).vaultType(.caption).foregroundStyle(VaultColors.strengthWeak) }
         }
-        .padding(.horizontal, Space.gutter).padding(.vertical, Space.s3)
+        .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .onTapGesture { preview() }

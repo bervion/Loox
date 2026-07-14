@@ -193,7 +193,7 @@ private struct FindingDetailView: View {
                                 }
                                 .buttonStyle(PressableSurfaceStyle(theme: env.theme.active))
                                 if item.id != items.last?.id {
-                                    ThemedDivider().padding(.leading, Space.gutter)
+                                    ThemedDivider().padding(.leading, Space.s3 + 34 + Space.s3)
                                 }
                             }
                         }
