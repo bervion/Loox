@@ -35,7 +35,6 @@ struct HomeScreen: View {
     /// Guards the once-per-launch restore of the remembered Space so it can't
     /// clobber a selection the user makes after launch.
     @State private var didRestoreSelectedSpace = false
-    @State private var sortOrder: VaultSort = .updated
     @State private var scrolledUnder = false
     /// Cached Watchtower issue count for the quick-action badge (recomputed on appear and
     /// when the item set changes — `PasswordAudit.analyze` is too costly to run per render).
@@ -67,8 +66,10 @@ struct HomeScreen: View {
         // are auto-filtered to their folder, and a Space filter must not make
         // somebody's share invisible (review M1).
         let pool = env.repository.allItems(folder: selectedFolderId) + env.sharedItems.items
-        let sorted = sortOrder.apply(pool)
-        // Pinned items float to the top, keeping the chosen sort within each group.
+        // Newest first (most recently updated). Sort is fixed — the old Home sort control
+        // was removed; the full list in Search is where broader browsing happens.
+        let sorted = VaultSort.updated.apply(pool)
+        // Pinned items float to the top, keeping the sort within each group.
         return sorted.filter(\.pinned) + sorted.filter { !$0.pinned }
     }
 
@@ -440,50 +441,36 @@ struct HomeScreen: View {
 
     // MARK: Quick actions
 
-    /// Quick actions as a 2×2 grid of horizontal pills: Add · Generate · 2FA · Watchtower.
-    /// Half-width pills give Vietnamese labels ("Tạo mật khẩu") room to render whole —
-    /// a single row of four truncated them. Still secondary to the credential content
-    /// above: counts on 2FA/Watchtower stay a small trailing badge, not a headline.
+    /// Quick actions as a titled group card holding a 2×2 grid of grey tiles:
+    /// Add · Generate · 2FA · Security. Each tile pairs a single-hue accent duotone glyph
+    /// with a one-line label; half-width tiles give Vietnamese labels ("Tạo mật khẩu") room
+    /// to render whole. Still secondary to the credential content above: counts on
+    /// 2FA/Security stay a small trailing badge, not a headline.
     private var quickActionsGrid: some View {
-        // One GlassEffectContainer for all glass views (4 pills + badges) → a single
-        // backdrop layer; fixes the per-frame glass-update warning on theme changes.
-        // NON-lazy rows on purpose: LazyVGrid cell recycling churned the glass
-        // identities when a persona switch re-rendered Home, leaving the first
-        // row as empty coalesced glass blobs on iOS 26.
-        VaultGlassGroup {
-        VStack(spacing: Space.s3) {
-            HStack(spacing: Space.s3) {
-                // Add — opens the item-type picker sheet (matches the header).
-                Button {
-                    showItemTypePicker = true
-                } label: {
-                    QuickActionCardLabel(
-                        icon: Icons.pageAdd,
-                        label: LocalizedStringResource("Add Item").inAppLocalized,
-                        tint: Color(rgb: env.theme.active.accent)
-                    )
-                }
-                // Plain tile menu — macOS would otherwise draw a bordered pull-down button
-                // around the whole tile, breaking the compact row's visual consistency.
-                .menuStyle(.button)
-                .buttonStyle(.plain)
-                .menuIndicator(.hidden)
-                .accessibilityLabel(Text("Add Item"))
-
-                QuickActionCard.generate {
-                    showGenerator = true
-                }
-            }
-            HStack(spacing: Space.s3) {
-                QuickActionCard.totp(count: totpItems.count) {
-                    showTotpList = true
-                }
-                QuickActionCard.watchtower(count: watchtowerIssueCount) {
-                    NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil)
-                }
-            }
-        }
-        }
+        QuickActionsGroupCard(
+            title: LocalizedStringResource("Quick Actions").inAppLocalized,
+            subtitle: LocalizedStringResource("Jump straight to what you need").inAppLocalized,
+            items: [
+                .init(icon: "dt_square_plus",
+                      label: LocalizedStringResource("Add Item").inAppLocalized,
+                      tint: QuickActionsGroupCard.addTint,
+                      action: { showItemTypePicker = true }),
+                .init(icon: "dt_key",
+                      label: LocalizedStringResource("Generate Password").inAppLocalized,
+                      tint: QuickActionsGroupCard.generateTint,
+                      action: { showGenerator = true }),
+                .init(icon: "dt_clock",
+                      label: LocalizedStringResource("2FA Codes").inAppLocalized,
+                      tint: QuickActionsGroupCard.totpTint,
+                      count: totpItems.count,
+                      action: { showTotpList = true }),
+                .init(icon: "dt_shield_keyhole",
+                      label: LocalizedStringResource("Security").inAppLocalized,
+                      tint: QuickActionsGroupCard.securityTint,
+                      count: watchtowerIssueCount,
+                      action: { NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil) }),
+            ]
+        )
         .sheet(isPresented: $showTotpList) {
             TotpListScreen()
         }
@@ -570,66 +557,72 @@ struct HomeScreen: View {
 
     // MARK: All items
 
-    private var allItemsSection: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            allItemsHeader
+    /// Max rows shown in the Home "All items" preview card before "See all".
+    private let allItemsPreviewLimit = 5
 
-            groupedCard {
-                ForEach(Array(allItems.enumerated()), id: \.element.id) { idx, item in
-                    itemRow(item, showDivider: idx < allItems.count - 1)
-                }
+    /// "All items" preview card: the Space filter as the card's own dropdown title, a short
+    /// description, up to `allItemsPreviewLimit` rows (newest first), and a "See all" that
+    /// opens the full list in Search — scoped to this Space, keyboard suppressed.
+    private var allItemsSection: some View {
+        let preview = Array(allItems.prefix(allItemsPreviewLimit))
+        return VStack(alignment: .leading, spacing: 0) {
+            allItemsCardHeader
+                .padding(.horizontal, Space.s4)
+                .padding(.top, Space.s4)
+                .padding(.bottom, Space.s2)
+
+            ForEach(Array(preview.enumerated()), id: \.element.id) { idx, item in
+                itemRow(item, showDivider: idx < preview.count - 1)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(rgb: env.theme.active.elevatedBackground))
+        .vaultCornerRadius(Radius.lg)
+        .elevation(.level1)
     }
 
-    /// "All" section header — the Space switcher (name + item count + chevron) opening the
-    /// picker, with the Sort action trailing. The switcher moved here from the top header bar.
-    private var allItemsHeader: some View {
-        // .center (not .lastTextBaseline): both sides render the same
-        // `.sectionLabel` style, so centering is visually identical while
-        // staying correct once the invisible hit-target frames below add height.
+    /// Card header: the Space filter as a headline-size dropdown title (opens the Space
+    /// picker) with a quiet grey "See all" trailing. No description, item count, or sort
+    /// control — the title plus the rows below make the card self-evident; sort is fixed
+    /// newest-first.
+    private var allItemsCardHeader: some View {
+        // Title row only, headline size. NATURAL height (no 44pt frame) so it sits tight to
+        // the rows — a min-height frame here would center the title in a tall row and open a gap.
         HStack(alignment: .center) {
             Button { showFolderPicker = true } label: {
-                // Interactive switcher must not dress as a static section label:
-                // the Space name reads in primary ink and the chevron takes the
-                // accent (matching Sort across the row), so "this opens a picker"
-                // is visible without tapping. Count stays quiet.
                 HStack(spacing: Space.s1) {
-                    spaceTitleText.vaultType(.sectionLabel)
+                    spaceTitleText
+                        .vaultType(.headline)
                         .themedForeground(.primary)
-                    Text(verbatim: "(\(allItems.count))").vaultType(.sectionLabel)
-                        .themedForeground(.tertiary)
-                    PolarisIcon(Icons.chevronDown, size: 12)
+                    PolarisIcon(Icons.chevronDown, size: 13)
                         .foregroundStyle(env.theme.uiTint)
                 }
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .frame(minHeight: Metric.hitMin)
-            .contentShape(Rectangle())
 
-            Spacer()
+            Spacer(minLength: Space.s2)
 
-            // A real menu with a checkmark, not a silent toggle — tapping "Sort"
-            // and seeing nothing happen read as a dead button.
-            Menu {
-                Picker("Sort", selection: $sortOrder) {
-                    ForEach(VaultSort.allCases) { sort in
-                        Text(sort.label).tag(sort)
-                    }
+            Button { openAllItemsList() } label: {
+                HStack(spacing: 3) {
+                    Text(LocalizedStringResource("See all").inAppLocalized)
+                        .vaultType(.subhead)
+                    PolarisIcon(Icons.chevronRight, size: 11)
                 }
-            } label: {
-                Text(LocalizedStringResource("Sort").inAppLocalized)
-                    .vaultType(.sectionLabel)
-                    .foregroundStyle(env.theme.uiTint)
-                    .frame(minHeight: Metric.hitMin)
-                    .contentShape(Rectangle())
+                // Quiet grey (not accent) — a low-key affordance, per request.
+                .themedForeground(.secondary)
+                .contentShape(.rect)
             }
-            .menuStyle(.button)
             .buttonStyle(.plain)
-            .menuIndicator(.hidden)
         }
-        .padding(.bottom, Space.s1)
+    }
+
+    /// Open the full item list: switch to Search seeded with the Home Space filter and no
+    /// keyboard (browse), NOT a fresh search. A plain Search-tab tap still resets to All
+    /// Spaces + keyboard (see `UIStateStore.SearchEntry`).
+    private func openAllItemsList() {
+        uiState.searchEntry = .browse(spaceId: selectedFolderId)
+        NotificationCenter.default.post(name: .vaultSwitchToSearch, object: nil)
     }
 
     /// Selected Space name, or the localized "All Spaces" fallback (nil filter).

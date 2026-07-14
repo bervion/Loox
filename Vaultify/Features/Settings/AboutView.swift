@@ -94,10 +94,10 @@ struct AboutView: View {
             promiseCard(number: 1, tint: env.theme.active.color(.accent),
                         title: "Your device is the vault",
                         body: "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
-            promiseCard(number: 2, tint: QuickActionCard.tealTint,
+            promiseCard(number: 2, tint: AboutInk.promiseTeal,
                         title: "Trust is verified, never assumed",
                         body: "Share a password, pair a device, open on a computer. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")
-            promiseCard(number: 3, tint: QuickActionCard.purpleTint,
+            promiseCard(number: 3, tint: AboutInk.promisePurple,
                         title: "You can always walk away",
                         body: "Export everything, anytime, in formats other apps read. Your Emergency Kit recovers your vault without us. A lock that only locks in is a cage. Loox is a door, and you hold the key.")
         }
@@ -224,4 +224,7 @@ private enum AboutInk {
     static let text = Color.white
     static let textSecondary = Color.white.opacity(0.72)
     static let highlight = Color(rgb: 0x20BDFD)
+    /// Decorative numeral tints for the three-promise cards (light/dark hues).
+    static let promiseTeal = VaultColors.dynamic(light: 0x0E8A7D, dark: 0x1DB8A6)
+    static let promisePurple = VaultColors.dynamic(light: 0x7C3AED, dark: 0x9D65F5)
 }

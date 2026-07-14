@@ -33,6 +33,17 @@ import SwiftUI
     /// once-per-launch cold restore). Seeded from the restored `selectedTab` on cold launch.
     var sidebarSelection: SidebarSelection = .section(.home)
 
+    /// How the Search surface should open on its NEXT activation. Ephemeral — deliberately
+    /// NOT part of the on-disk `Snapshot`: `.normal` (the Search tab) resets the scope to
+    /// its default (All Spaces) and raises the keyboard; `.browse` (Home "See all") seeds the
+    /// scope from the chosen Home Space and does NOT raise the keyboard. `SearchScreen`
+    /// consumes it back to `.normal` on entry, so a later plain tab tap is always normal.
+    enum SearchEntry: Equatable {
+        case normal
+        case browse(spaceId: String?)
+    }
+    var searchEntry: SearchEntry = .normal
+
     var homePath = NavigationPath()
     var itemsPath = NavigationPath()
     var searchPath = NavigationPath()
