@@ -38,24 +38,26 @@ final class AppNavigator {
         #if os(iOS)
         guard let navigationController else { return }
         let dest = destination()
-        let hosted = NavigationStack {
-            dest
-                // Marks this as a navigator-push ROOT: its own `dismiss()` can't
-                // pop the UINavigationController, so self-dismissing screens pop
-                // via the navigator instead. Anything pushed deeper inside this
-                // stack resets the flag (see `vaultNavigationDestinations`).
-                .environment(\.isNavigatorRoot, true)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button { [weak self] in self?.pop() } label: {
-                            PolarisIcon(Icons.chevronLeft)
+        let hosted = NavigatorPushHost(env: env, navigator: self) {
+            NavigationStack {
+                dest
+                    // Marks this as a navigator-push ROOT: its own `dismiss()`
+                    // can't pop the UINavigationController, so self-dismissing
+                    // screens pop via the navigator instead. Anything pushed
+                    // deeper inside this stack resets the flag (see
+                    // `vaultNavigationDestinations`).
+                    .environment(\.isNavigatorRoot, true)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button { [weak self] in self?.pop() } label: {
+                                PolarisIcon(Icons.chevronLeft)
+                            }
+                            .accessibilityLabel(Text("Back"))
                         }
-                        .accessibilityLabel(Text("Back"))
                     }
-                }
-                .vaultNavigationDestinations()
+                    .vaultNavigationDestinations()
+            }
         }
-        .modifier(VaultRootEnvironment(env: env, navigator: self, rebuildsOnLanguageChange: true))
         let controller = UIHostingController(rootView: hosted)
         navigationController.pushViewController(controller, animated: true)
         #endif
@@ -73,6 +75,27 @@ final class AppNavigator {
         #endif
     }
 }
+
+#if os(iOS)
+/// Hosts a navigator-pushed screen. A DETACHED `UIHostingController` does not
+/// re-localize live on an in-app language switch — its nav title / labels go
+/// stale. Reading `preferredLanguage` in THIS View body (which then re-applies
+/// the shared environment, so `\.locale` is refreshed) forces the whole pushed
+/// subtree to re-render in place. A `.id`-based rebuild would fix localization
+/// too, but at the cost of popping the pushed navigation back to its root.
+private struct NavigatorPushHost<Content: View>: View {
+    let env: AppEnvironment
+    let navigator: AppNavigator
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        // Observe the language here so a switch re-runs this body and re-applies
+        // the environment chain (fresh `\.locale`) to the pushed content.
+        let _ = env.settings.preferredLanguage
+        content.modifier(VaultRootEnvironment(env: env, navigator: navigator))
+    }
+}
+#endif
 
 private struct IsNavigatorRootKey: EnvironmentKey {
     static let defaultValue = false

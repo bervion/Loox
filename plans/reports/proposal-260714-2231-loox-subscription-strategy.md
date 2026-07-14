@@ -263,7 +263,177 @@ Nguyên tắc: **cho thấy giá trị/vấn đề miễn phí → bán hành đ
 
 ---
 
-## 10. Phụ lục — khi nào build IAP (chưa làm bây giờ)
+## 10. Đấu đối thủ — mỗi gói nhắm hạ MỘT đối thủ cụ thể
+
+Trả lời thẳng câu "Free hay Plus có đủ đánh Apple / 1Password / app ẩn mail không": **có** —
+và mỗi gói được thiết kế để hạ đúng một đối thủ, không dàn hàng ngang.
+
+| Gói | Nhắm hạ | Thắng bằng |
+|-----|---------|------------|
+| **Free** | **Apple Passwords** (mặc định ai cũng có sẵn) | Watchtower (điểm + đếm), Spaces/tags/personas, item phong phú (identity/thẻ/note), TOTP tích hợp, cá nhân hoá, "là sản phẩm được chăm" — Apple chỉ là feature hệ thống tối giản |
+| **Plus** | **1Password** ($2.99, KHÔNG có bản free) | Watchtower đầy đủ ngang 1Password, nhưng **có bản free để bắt đầu** + native iOS + rẻ hơn thực tế ($1.67/mo trả năm) |
+| **Max** | **Proton Pass / all-in-one có ẩn mail** | Không đấu giá alias lẻ — thắng bằng **tích hợp** (alias sinh ngay lúc đăng ký, tự gắn login, tự autofill) gói chung share + personas + Watchtower + mở-trên-trình-duyệt, tất cả native |
+
+### 10.1 Ẩn mail: thị trường đã commodity hoá — ĐỪNG đấu bằng số lượng
+Sự thật phũ: masking giờ rẻ/free khắp nơi — DuckDuckGo Email (free **không giới hạn**),
+Firefox Relay (5 free rồi $0.99), Apple Hide My Email (kèm iCloud+), Proton Pass (không
+giới hạn $1.99). **Loox không thể bán alias như hàng xa xỉ, và Free KHÔNG cố thắng DDG ở
+mảng "free unlimited masking"** (đó là loss-leader DDG nuôi bằng tiền quảng cáo).
+
+→ Lợi thế Loox = **workflow tích hợp** mà app ẩn-mail đứng-riêng không có: alias sinh ra
+ngay khi điền form đăng ký, tự lưu kèm login, tự autofill lần sau, quản lý chung credential.
+Đó là giá trị, không phải con số.
+
+→ Phân bổ (cân bằng chi phí backend ↔ sức cạnh tranh):
+- **Free: 1 alias** — chỉ để *trình diễn* phép màu tích hợp (không thua trắng, nhưng vũ khí
+  thật của Free so với Apple là **Watchtower + tổ chức**, không phải masking).
+- **Plus: 5 alias** — dùng thực tế cho người thường (ngang mức free của Firefox).
+- **Max: không giới hạn (fair-use)** — người "đói" masking chính là chân dung khách Max.
+
+Người cần masking nhiều = đúng người convert lên Max. Free chỉ cần cho họ *nếm*.
+
+---
+
+## 11. HÀNG RÀO downgrade/huỷ gói — "data đi về đâu" (thiết kế để SCALE)
+
+Phần sống-còn khi scale. Làm sai = **chết lòng tin** (user tưởng bị giữ data làm con tin —
+tử huyệt của password manager), hoặc **chết biên lời** (alias forward mail miễn phí mãi
+mãi), hoặc vướng **App Review / GDPR**.
+
+### 11.1 Chia data làm HAI loại — nguyên tắc gốc
+- **🔒 KÉT CỦA BẠN (Vault data):** mật khẩu, passkey, note, thẻ, identity, TOTP, cấu trúc
+  Space/tag, **và địa chỉ alias ↔ login nó gắn vào**. Đây là dữ liệu của USER. **Vĩnh viễn
+  đọc/copy/autofill/export được — không bao giờ xoá, không bao giờ khoá, bất kể gói.**
+  (On-device + iCloud của user → chi phí 0 → không có lý do đụng vào.)
+- **📡 DỊCH VỤ ĐANG THUÊ (Service state):** forwarding email đang chạy, share-ra đang
+  active, link đang sống. Đây là **hạ tầng thuê theo sub**. Hạ gói → cuốn chiếu (wind-down),
+  nhưng **BẢN GHI vẫn hiện** → tái sub là bật lại nguyên trạng.
+
+### 11.2 Bốn luật của hàng rào
+1. **Giới hạn chặn TẠO MỚI, không xoá cái đang có.** "Free = 3 Spaces" = không tạo Space
+   thứ 4, KHÔNG phải xoá 5 Space đang có. Data cũ đóng băng ở trạng thái đọc/dùng-được.
+2. **Feature tốn-phí → wind-down có ÂN HẠN + cho user CHỌN cái giữ lại.** 30 ngày ân hạn
+   còn chạy, cảnh báo to trước, user tự chọn giữ alias/share nào trong hạn mức mới (đừng
+   tự tay giết alias ngân hàng của họ).
+3. **Export mọi lúc, mọi gói** (kể cả Free). Không nhốt data. Alias xuất được cả danh sách
+   địa chỉ đã dùng ở đâu.
+4. **Tái đăng ký = khôi phục nguyên trạng** trong cửa sổ giữ (đề xuất 90 ngày) → win-back
+   không ma sát.
+
+**⚠️ Luật bảo mật cứng:** một địa chỉ alias, một khi đã tạo, **KHÔNG BAO GIỜ tái cấp cho
+user khác** kể cả sau khi xoá — vì mail vẫn có thể gửi tới đó, tái dùng = rò mail sang
+người lạ. Alias là **"burn forever"** (chi phí lưu bản ghi tí xíu, nhưng là yêu cầu an ninh
+bắt buộc — precedent: Apple/Firefox/SimpleLogin đều không recycle).
+
+### 11.3 Bảng: mỗi feature, data đi về đâu khi hạ gói / hết hạn
+
+| Feature | Khi hạ gói / hết hạn (phần vượt hạn mức) | Loại |
+|---------|------------------------------------------|------|
+| Mật khẩu/passkey/note/thẻ/identity/TOTP | **Giữ 100%** — đọc/copy/autofill/export bình thường | 🔒 Két |
+| Spaces / tags / favorites / archive | Giữ hết; chỉ **chặn tạo mới** khi đang vượt | 🔒 Két |
+| Watchtower đầy đủ | Về "chỉ con số"; **item không suy suyển** | Feature off |
+| Themes / accents | Về mặc định; không xoá gì | Feature off |
+| **Personas** | **Đóng băng, KHÔNG merge:** giữ + đọc/dùng mọi persona đang có; chặn tạo mới. (Merge = rò rỉ strictAnonymous → CẤM) | 🔒 Két (freeze) |
+| **Email alias** | Phần vượt hạn mức: **ngừng forward sau 30d ân hạn**; địa chỉ + login-nó-gắn **vẫn hiện**; user **chọn cái giữ active**; tái sub → forward lại; địa chỉ **không bao giờ tái cấp** | 📡 Dịch vụ |
+| Loox Link / Quick View đang active | Để **hết hạn tự nhiên** (vốn 1h–30d); chỉ chặn tạo mới | 📡 (ephemeral) |
+| **Chia sẻ RA** (Approval Mode) | Wind-down 30d → thu hồi; cảnh báo người nhận sắp mất quyền; tái sub → khôi phục | 📡 Dịch vụ |
+| **Nhận share** (Shared-with-Me) | **KHÔNG ảnh hưởng** — nhận luôn miễn phí (vòng lan truyền) | Luôn free |
+
+### 11.4 Biến rủi ro downgrade thành đòn WIN-BACK (dùng lại cỗ máy §2.6)
+Khi alias/share bị đóng băng, Watchtower nêu công khai + trung thực: *"3 login đang dùng
+alias đã ngừng forward — bạn sẽ không nhận được email đặt lại mật khẩu. Cập nhật email
+thật, hoặc bật lại Max."* Vừa đúng đạo đức (rủi ro thật, nói thẳng), vừa là đòn kéo-lại
+mạnh nhất. **Đừng bao giờ để login của user âm thầm hỏng.**
+
+### 11.5 Toán scale — vì sao hàng rào này đúng
+- Chi phí biến đổi gần như chỉ từ alias-forward + Workers; vault/sync/Watchtower ≈ 0.
+- Khách Max churn có 50 alias: hàng rào **co về đúng hạn mức Free (1)** sau ân hạn → **chặn
+  chi phí chạy hoang**. Không hàng rào = 50 alias forward miễn phí mãi mãi = chết biên lời
+  khi lên triệu user.
+- Vault không bao giờ khoá → **lòng tin không sứt mẻ khi scale** (không bão review 1 sao
+  kiểu "chúng nó giữ mật khẩu của tôi làm con tin").
+- Alias burn-forever → **không sự cố rò mail khi scale**.
+
+### 11.6 Trial 7 ngày — cùng luật, cảnh báo gắt hơn
+User trial Max tạo 20 alias + 5 persona rồi không convert → về Free: áp đúng wind-down.
+Chính "sắp mất 20 alias" là áp lực convert (loss aversion §2.5) — nhưng phải **tử tế**: ân
+hạn + cho chọn giữ + export. Đừng dụ user phụ thuộc 20 alias rồi bắt làm con tin. Cân nhắc
+nhắc nhẹ ngay trong trial: "alias tạo khi dùng thử sẽ co về hạn mức Free khi hết hạn".
+
+---
+
+## 12. Đào sâu: Unit economics của "Max unlimited" (dựa trên hạ tầng Cloudflare THẬT)
+
+> Nguồn: `VaultifyCore/Relay/RelayConfig.swift` + `plans/260706-1238-…/proposal-v3-locked-decisions.md`.
+> Đây là phần lật ngược một giả định của §6/§9 — nên đọc kỹ.
+
+### 12.1 Sự thật hạ tầng (từ repo, không đoán)
+- Relay = **Cloudflare**. V1 **receive-only** (D14), forward tới destination đã verify.
+  Alias domain `relay.looxpassword.com` (client), registry có thể phục vụ thêm `@vexla.app`.
+- **Path A** (`forward()` → verified destination): chạy **Free tier $0**, NHƯNG **trần ~200
+  verified destinations** → chỉ đủ beta, **KHÔNG scale** tới triệu user.
+- **Path B (production)**: Cloudflare Email Sending Beta = **Workers Paid $5/mo + 3.000
+  email included + $0.35/1k** sau đó (số ghi trong doc bạn), hoặc contingency SES/Postmark
+  (~$0.10/1k). → **chi phí mỗi email forward ≈ $0.0001–0.00035.**
+- Alias DB = **D1 Free** (5GB, 5M row-reads/ngày) — đủ cho beta lâu dài.
+- **Đã thiết kế sẵn chống-abuse:** rate-limit **5 chiều** (IP/principal/device/alias/sender)
+  + hard caps + kill switch (global/principal/alias/sender) + retention tối thiểu (KHÔNG lưu
+  body/subject/attachment; chỉ message_id, alias_id, received_at, forward_status, size, error).
+
+### 12.2 Kết luận tài chính (phản trực giác — nhưng đây mới là điểm mấu chốt)
+**Chi phí KHÔNG phải ràng buộc scale của bạn.** Con số:
+- 1 khách Max $34.99/năm → **~$29.7 net** (sau Apple 15% Small Business Program).
+- Chi phí đó bù được **~85.000–290.000 lượt forward/năm**. Một user *nặng đô* (50 alias ×
+  20 mail/tháng) chỉ ~12.000 lượt/năm ≈ **$1.2–4.2/năm**. User thường: vài xu/năm.
+- → **Biên lời relay > 95%** kể cả user nặng. Fixed cost $5/mo Workers Paid: chỉ cần **~2
+  khách Max/tháng** là hoà. Vault thì on-device + iCloud của user = **$0**.
+- → Một khách Max nuôi được **hàng nghìn** user Free. Mô hình **scale cực đẹp** về tiền.
+
+> ⚠️ Vậy nên: **ĐỪNG định giá Max để "bù chi phí relay"** (§6/§9 hàm ý điều này — sai).
+> Chi phí ~0. Mọi đồng thu từ Max gần như thuần lời → dồn lực vào **CHUYỂN ĐỔI**, không phải
+> cắt chi phí. Giá Max neo vào **giá trị + đối thủ** (Proton $1.99 alias unlimited), không neo chi phí.
+
+### 12.3 Ràng buộc scale THẬT (trục dịch từ "tiền" sang "rủi ro hệ thống")
+1. **🔴 Deliverability / Reputation — RỦI RO SỐNG-CÒN.** Alias bị lạm dụng gửi/nhận spam →
+   `relay.looxpassword.com` vào blocklist → **mail của TẤT CẢ user chết cùng lúc.** Một sự
+   cố = hỏng feature cho toàn bộ base. **Đây mới là thứ phải "rào kĩ", không phải ví tiền.**
+2. **Abuse / DoS** — tạo 100k alias, mail-bomb. Chặn bằng rate-limit + hard cap + kill switch
+   (đã có thiết kế), **KHÔNG bằng giá gói.**
+3. **Trần 200 destination của Free path** — bắt buộc lên Workers Paid + Email Sending trước
+   khi scale thật (plan đã defer đúng tới P4C).
+
+### 12.4 Điều này ĐỔI gì trong chiến lược gói & fence
+- **Fence downgrade KHÔNG còn chủ yếu vì tiền** (forward gần free) — mà vì **(i) không cho
+  không giá trị premium, (ii) giảm bề mặt abuse + reputation.** → Bạn có thể **hào phóng hơn**
+  với forwarding của user churn (chi phí không đáng kể); siết là để bảo vệ value-prop + danh
+  tiếng domain, không phải cứu ví.
+- **"Unlimited" của Max = fair-use ~200–500 alias** (trần **chống-abuse**, không phải trần
+  chi phí) + rate-limit tạo alias. Con số này thoải mái với 99.9% user thật.
+- **Free 1 / Plus 5 alias** giờ là quyết định **value-positioning + abuse-surface**, KHÔNG
+  phải cost. (Chi phí cho phép hào phóng hơn — nhưng đừng, sẽ ăn mòn Max + nở abuse.)
+
+### 12.5 ⚠️ Căng thẳng thương hiệu phải rào trước (quan trọng, dễ bỏ sót)
+Repo đã tự chốt: **"ngừng marketing câu tuyệt đối no-backend khi relay ship."** Nghĩa là
+**feature flagship của gói trả tiền (relay) lại là thứ đục thủng lợi thế khác biệt LÕI của
+app (zero-backend, offline).** Cách rào:
+- Tách bạch tuyệt đối trong mọi copy: **Vault vẫn 100% E2E / on-device / zero-backend.**
+  Private Email là **capability opt-in, metadata tối thiểu, trust boundary riêng, disclose
+  minh bạch** (Privacy Policy + App Privacy label — đã nằm trong plan relay).
+- Biến thành **lợi thế bán**: khác Proton (server-side toàn bộ), Loox là **"local-first
+  vault + optional relay"** — story privacy MẠNH HƠN nếu kể đúng. "Két của bạn không bao giờ
+  rời máy; chỉ email đi qua relay khi bạn tự bật."
+- Đừng để relay làm loãng claim Vault trên App Store / landing.
+
+### 12.6 Số cần bạn tự chốt để khoá mô hình
+- **Provider production cuối:** Cloudflare Email Sending Beta hay SES/Postmark? (đổi $/1k +
+  deliverability Gmail/Outlook/Yahoo + abuse tooling — benchmark P4C của bạn chưa chạy).
+- **Rủi ro phụ thuộc Beta:** bán feature trả tiền dựa trên một dịch vụ còn Beta (chưa GA) —
+  cần plan B (SES) sẵn sàng trước khi lên paywall Max.
+- **Trần fair-use** alias/Max (đề xuất 200–500) + rate tạo alias/ngày.
+
+---
+
+## 13. Phụ lục — khi nào build IAP (chưa làm bây giờ)
 Để tham khảo cho tương lai, không phải việc lúc này:
 - **StoreKit 2, hợp với zero-backend:** xác định quyền lợi on-device qua
   `Transaction.currentEntitlements` — không cần server xác thực receipt.
@@ -275,7 +445,7 @@ Nguyên tắc: **cho thấy giá trị/vấn đề miễn phí → bán hành đ
 
 ---
 
-## 11. Quyết định cần bạn chốt (mình để mở, không tự quyết hộ)
+## 14. Quyết định cần bạn chốt (mình để mở, không tự quyết hộ)
 1. **Thị trường chính:** VN-first hay toàn cầu-first? (đổi mốc giá + copy + ưu tiên feature)
 2. **TOTP ở Free:** không giới hạn (thắng Apple mạnh hơn) hay cap ~10 (đòn chuyển đổi thêm)?
 3. **Hạn mức Plus cụ thể:** 3 alias / 10 link-tháng / 2 persona — con số này bạn thấy
@@ -284,3 +454,6 @@ Nguyên tắc: **cho thấy giá trị/vấn đề miễn phí → bán hành đ
 5. **Family SKU** (Max cho 5 người, 1 lần trả): làm ở V1 hay để V2?
 6. **Đặt tên hạn mức khi hết:** copy paywall theo hướng "nâng cấp để mở khoá" — cần viết
    EN + VI (theo rule localization của app).
+7. **Free alias = 1** (khuyến nghị, để có "câu chuyện masking") hay **0** (an toàn chi phí tối đa)?
+8. **Ân hạn wind-down 30 ngày** + **cửa sổ khôi-phục-khi-tái-sub 90 ngày** — thời lượng này ok, hay siết/nới?
+9. **Nhận-share luôn miễn phí** (khuyến nghị — vòng lan truyền kéo người mới vào Loox) — bạn đồng ý chứ?

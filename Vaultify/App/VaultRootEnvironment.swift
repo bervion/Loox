@@ -16,18 +16,9 @@ struct VaultRootEnvironment: ViewModifier {
     /// sidebar and the lock screen (those use ordinary SwiftUI navigation).
     var navigator: AppNavigator? = nil
     #endif
-    /// When true, key the content on the in-app language so a language switch
-    /// rebuilds it. A navigator-pushed screen lives in a DETACHED hosting
-    /// controller whose nav title / Form section headers cache in UIKit chrome
-    /// and would otherwise not re-localize live; the root window updates without
-    /// this, so it stays opt-in (only the navigator sets it).
-    var rebuildsOnLanguageChange: Bool = false
 
     func body(content: Content) -> some View {
-        let keyed: AnyView = rebuildsOnLanguageChange
-            ? AnyView(content.id(env.settings.preferredLanguage))
-            : AnyView(content)
-        let base = keyed
+        let base = content
             .environment(env)
             .environment(env.uiState)
             .environment(\.locale, appLocale(forCode: env.settings.preferredLanguage))
