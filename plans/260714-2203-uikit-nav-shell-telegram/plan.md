@@ -1,6 +1,25 @@
 # UIKit Navigation Shell — Telegram-parity (compact iOS)
 
-Status: **PLANNED** (not started) · Branch to use: `experiment/uikit-shell` (off `main`) · Base: `main` @ 850b352
+Status: **PHASE 1–3 BUILT, COMPILES, AWAITING RUNTIME TEST** · Branch: `experiment/uikit-shell` (pushed) · Base: `main` @ 850b352 · Commit: `d2e576e`
+
+## Progress
+- ✅ Built: `AppNavigator`, `VaultRootEnvironment`, `VaultUINavShell`; wired into `AdaptiveRootView` (compact iOS); `VaultifyApp` env chain refactored to the shared modifier; `vaultRouteDestination` extracted (DRY).
+- ✅ Converted top-level pushes: Home (item/settings/profile/notifications), Items (`navRow`), Watchtower (5 category links) — all with `if let navigator { push } else { path.append }` so the iPad/Mac sidebar is unchanged.
+- ✅ Search left unchanged (own stack for `.searchable` + zoom transition).
+- ✅ `xcodebuild` app + extension: **BUILD SUCCEEDED**.
+- ⏳ **Runtime test required (see below)** — I cannot verify UIKit/SwiftUI bridging.
+- ⬜ Phase 4 (scope-chip relocation) deferred until search elevation is confirmed.
+- ⬜ Phase 5 (DNA pass) after runtime sign-off.
+
+### Runtime test checklist (the gate)
+1. **Search elevation** (critical): tap the search tab → does the field fly up over the keyboard (native `role:.search`)? This is the exact thing that broke on the old experiment; the whole shell rides on it still working here.
+2. **Detail push**: tap a Home/Items item, a Watchtower category → smooth native slide, tab bar covered, back-swipe reveals it.
+3. **Back**: the leading chevron pops; edge swipe-back works.
+4. **`dismiss()`**: ItemDetail archive/trash/delete call `dismiss()` — confirm they pop the pushed controller (if not, replace those with `navigator.pop()`).
+5. **Live theme/locale switch** flows into an already-pushed detail.
+6. **iPad**: size-class flip to sidebar still navigates (SwiftUI-path fallback).
+
+---
 
 ## Goal
 Give the compact-iPhone shell **both** behaviors Telegram has and pure SwiftUI can't do together:
