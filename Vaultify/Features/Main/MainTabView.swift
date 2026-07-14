@@ -87,7 +87,9 @@ struct MainTabView: View {
                 Tab(value: VaultTab.home) { tabRoot { HomeScreen() } } label: { tabIcon(.home) }
                 Tab(value: VaultTab.items) { tabRoot { ItemsScreen() } } label: { tabIcon(.items) }
                 Tab(value: VaultTab.watchtower) { tabRoot { WatchtowerScreen(controller: auditController) } } label: { tabIcon(.watchtower) }
-                Tab(value: VaultTab.search) { tabRoot { SearchScreen() } } label: { tabIcon(.search) }
+                // role: .search → the detached search button (its own glass circle,
+                // trailing the main tab pill) on iOS 26, exactly like Telegram.
+                Tab(value: VaultTab.search, role: .search) { tabRoot { SearchScreen() } } label: { tabIcon(.search) }
             }
         } else {
             TabView(selection: $uiState.selectedTab) {
