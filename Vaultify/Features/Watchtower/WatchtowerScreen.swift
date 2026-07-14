@@ -67,8 +67,14 @@ struct WatchtowerScreen: View {
             .map(\.key))
     }
 
+    /// Security only has something to say about credentials: login items (their
+    /// password / 2FA / passkey / URL hygiene) and anything else carrying a
+    /// password. A vault of only notes, identities, or cards has nothing to
+    /// score, so it shows the empty state rather than a misleading 100% ring.
     private var emptyVault: Bool {
-        health.analyzedCount == 0 && env.repository.activePersonaItems.isEmpty
+        env.repository.activePersonaItems.allSatisfy {
+            $0.category != .login && $0.passwordField == nil
+        }
     }
 
     var body: some View {
@@ -168,7 +174,7 @@ struct WatchtowerScreen: View {
     /// The audit is stale when the vault has items and either was never audited
     /// or the last audit is older than the reminder cadence.
     private var auditIsStale: Bool {
-        guard !env.repository.activePersonaItems.isEmpty else { return false }
+        guard !emptyVault else { return false }
         guard let completedAt = latestPayload?.completedAt else { return true }
         return Date.now.timeIntervalSince(completedAt) >= AuditReminder.cadence
     }

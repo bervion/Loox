@@ -10,7 +10,11 @@ nonisolated struct URLHygieneRule: nonisolated AuditRule {
 
     func evaluate(_ snapshot: VaultAuditSnapshot, context: AuditContext) async throws -> [AuditFinding] {
         var findings: [AuditFinding] = []
-        for item in snapshot.activeItems {
+        // URL hygiene is a sign-in / phishing signal: a malformed, http, or IP
+        // "website" only matters where you authenticate. A reference link stored
+        // on a note, identity, or card is not a credential risk — auditing those
+        // categories is just noise, so scope the scan to logins.
+        for item in snapshot.activeItems where item.category == .login {
             // One finding per problem KIND per item (not per URL) keeps noise down.
             var flagged: Set<String> = []
             for raw in item.rawURLs {
