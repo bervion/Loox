@@ -387,17 +387,10 @@ struct ItemDetailScreen: View {
             }
 
             HStack(spacing: Space.s3) {
-                // Brand items always get the app-icon avatar (matching Home — without this
-                // a "Loox Account" with no website fell to the letter thumbnail); then the
-                // favicon when the item has a website; otherwise the custom icon / avatar.
-                if LooxAppIcon.isBrandTitle(item.title) {
-                    LooxAppIcon(size: 56)
-                } else if let url = item.urlField?.value, !url.isEmpty {
-                    FaviconView(urlString: url, category: item.category, size: 56, title: item.title)
-                } else {
-                    ItemThumbnail(title: item.title, category: item.category,
-                                  iconAsset: item.iconAsset, size: 56)
-                }
+                // One avatar for every case: brand app-icon, then (auto style) the
+                // website favicon, else the type / monogram / custom avatar.
+                FaviconView(urlString: item.urlField?.value, category: item.category, size: 56,
+                            title: item.title, iconAsset: item.iconAsset)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.title.isEmpty ? "Untitled" : item.title)
                         .vaultType(.screenTitle).lineLimit(1).truncationMode(.tail)

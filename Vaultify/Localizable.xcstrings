@@ -822,6 +822,7 @@
       }
     },
     "Add a password to see your vault's security score.": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -996,6 +997,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thêm thông tin đăng nhập, thẻ hoặc ghi chú bảo mật đầu tiên."
+          }
+        }
+      }
+    },
+    "Add your first password": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your first password"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm mật khẩu đầu tiên"
+          }
+        }
+      }
+    },
+    "Add your first password and Loox starts watching over your vault's security.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your first password and Loox starts watching over your vault's security."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm mật khẩu đầu tiên và Loox sẽ bắt đầu trông coi bảo mật cho kho của bạn."
           }
         }
       }
@@ -5210,6 +5243,22 @@
         }
       }
     },
+    "Get a reminder every two weeks to open Loox and check your vault's health. The notification shows no scores or item details.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get a reminder every two weeks to open Loox and check your vault's health. The notification shows no scores or item details."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhận nhắc nhở mỗi hai tuần để mở Loox và kiểm tra sức khỏe kho. Thông báo không hiển thị điểm số hay chi tiết mục nào."
+          }
+        }
+      }
+    },
     "Get started": {
       "localizations": {
         "vi": {
@@ -6404,6 +6453,7 @@
       }
     },
     "Loox Account": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -7620,6 +7670,22 @@
         }
       }
     },
+    "Not checked yet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not checked yet"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa kiểm tra"
+          }
+        }
+      }
+    },
     "Not now": {
       "localizations": {
         "vi": {
@@ -7752,6 +7818,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chưa có gì được chia sẻ với bạn"
+          }
+        }
+      }
+    },
+    "Nothing to protect yet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to protect yet"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa có gì để bảo vệ"
           }
         }
       }
@@ -7994,6 +8076,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mở Loox trên iPhone (Cài đặt → Đồng bộ iCloud → Ghép nối thiết bị mới) để quét mã của thiết bị mới."
+          }
+        }
+      }
+    },
+    "Open Loox to check your vault's health.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Loox to check your vault's health."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở Loox để kiểm tra sức khỏe kho của bạn."
           }
         }
       }
@@ -10288,6 +10386,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bảo mật"
+          }
+        }
+      }
+    },
+    "Security checkup reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Security checkup reminders"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhắc kiểm tra bảo mật"
           }
         }
       }
@@ -12683,6 +12797,7 @@
       }
     },
     "This is your Loox account, the identity for this vault. Keep the email safe; you may need it to set up sync or recover access.": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -13043,6 +13158,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tiếng Việt"
+          }
+        }
+      }
+    },
+    "Time for a security checkup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time for a security checkup"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã đến lúc kiểm tra bảo mật"
           }
         }
       }
@@ -14725,130 +14856,18 @@
         }
       }
     },
-    "Nothing to protect yet": {
+    "Type icon": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nothing to protect yet"
+            "value": "Type icon"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có gì để bảo vệ"
-          }
-        }
-      }
-    },
-    "Add your first password and Loox starts watching over your vault's security.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add your first password and Loox starts watching over your vault's security."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Thêm mật khẩu đầu tiên và Loox sẽ bắt đầu trông coi bảo mật cho kho của bạn."
-          }
-        }
-      }
-    },
-    "Add your first password": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add your first password"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Thêm mật khẩu đầu tiên"
-          }
-        }
-      }
-    },
-    "Not checked yet": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not checked yet"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chưa kiểm tra"
-          }
-        }
-      }
-    },
-    "Time for a security checkup": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Time for a security checkup"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Đã đến lúc kiểm tra bảo mật"
-          }
-        }
-      }
-    },
-    "Open Loox to check your vault's health.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open Loox to check your vault's health."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mở Loox để kiểm tra sức khỏe kho của bạn."
-          }
-        }
-      }
-    },
-    "Security checkup reminders": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Security checkup reminders"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nhắc kiểm tra bảo mật"
-          }
-        }
-      }
-    },
-    "Get a reminder every two weeks to open Loox and check your vault's health. The notification shows no scores or item details.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Get a reminder every two weeks to open Loox and check your vault's health. The notification shows no scores or item details."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nhận nhắc nhở mỗi hai tuần để mở Loox và kiểm tra sức khỏe kho. Thông báo không hiển thị điểm số hay chi tiết mục nào."
+            "value": "Icon theo loại"
           }
         }
       }

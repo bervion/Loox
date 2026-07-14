@@ -1,11 +1,34 @@
 import SwiftUI
 
-/// Square item thumbnail (continuous corner) used in the editor / detail header.
+/// How an item's avatar is drawn. Encoded in `VaultItem.iconAsset`:
+/// - `nil` → `.auto`: the category's duotone type icon (or the website favicon
+///   for logins, resolved one level up in `FaviconView`).
+/// - the reserved `monogramToken` → `.monogram`: initials on a title-derived color.
+/// - any other value → `.custom`: that (duotone) icon asset.
+enum ItemAvatarStyle: Equatable {
+    case auto
+    case monogram
+    case custom(String)
+
+    /// Reserved `iconAsset` value that means "letter avatar".
+    static let monogramToken = "__monogram"
+
+    static func resolve(_ iconAsset: String?) -> ItemAvatarStyle {
+        switch iconAsset {
+        case .none: return .auto
+        case .some(monogramToken): return .monogram
+        case .some(let asset): return .custom(asset)
+        }
+    }
+}
+
+/// Square item avatar (continuous corner) — the non-favicon part of the item
+/// icon, shown in rows, the detail header, and the editor preview.
 ///
-/// Resolution order:
-/// 1. explicit `iconAsset` override → tinted square + that Polaris icon,
-/// 2. else a letter-avatar from the title (initials + a colour derived from the title),
-/// 3. else (title still empty) the category icon, so a brand-new item still reads.
+/// Resolution by `ItemAvatarStyle`:
+/// - `.auto` → the category's duotone type icon (the default),
+/// - `.monogram` → initials from the title (empty title falls back to the type icon),
+/// - `.custom` → the chosen icon asset.
 struct ItemThumbnail: View {
     let title: String
     let category: ItemCategory
@@ -15,12 +38,17 @@ struct ItemThumbnail: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
         Group {
-            if let iconAsset {
-                tintedIcon(iconAsset, shape: shape)
-            } else if let initials = Self.initials(from: title) {
-                letterAvatar(initials, shape: shape)
-            } else {
-                tintedIcon(category.iconAsset, shape: shape)
+            switch ItemAvatarStyle.resolve(iconAsset) {
+            case .auto:
+                tintedIcon(category.avatarIcon, shape: shape)
+            case .custom(let asset):
+                tintedIcon(asset, shape: shape)
+            case .monogram:
+                if let initials = Self.initials(from: title) {
+                    letterAvatar(initials, shape: shape)
+                } else {
+                    tintedIcon(category.avatarIcon, shape: shape)
+                }
             }
         }
         .frame(width: size, height: size)

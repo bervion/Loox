@@ -10,17 +10,21 @@ struct FaviconView: View {
     /// When the item title carries the Loox brand (e.g. "Loox Account"), the avatar
     /// becomes the app icon instead of a favicon/badge. Pass the item title to opt in.
     var title: String? = nil
+    /// The item's stored avatar choice (`nil` = auto, monogram token = letters,
+    /// else a custom icon). A favicon is only fetched in the auto style.
+    var iconAsset: String? = nil
 
     @Environment(AppEnvironment.self) private var env
     @State private var image: PlatformImage?
 
     private var isBrandLoox: Bool { LooxAppIcon.isBrandTitle(title) }
+    private var isAuto: Bool { ItemAvatarStyle.resolve(iconAsset) == .auto }
 
     var body: some View {
         Group {
             if isBrandLoox {
                 LooxAppIcon(size: size)
-            } else if let image {
+            } else if isAuto, let image {
                 let shape = RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
                 Image(platformImage: image)
                     .resizable()
@@ -35,11 +39,16 @@ struct FaviconView: View {
                     .compositingGroup()
                     .shadow(color: .black.opacity(0.10), radius: 1.5, y: 1)
             } else {
-                CategoryBadge(category: category, size: size)
+                // Monogram / custom icon, or the auto type icon when no favicon.
+                ItemThumbnail(title: title ?? "", category: category,
+                              iconAsset: iconAsset, size: size)
             }
         }
-        .task(id: urlString) { await load() }
+        .task(id: faviconLoadKey) { await load() }
     }
+
+    /// Only fetch a favicon in the auto style; monogram/custom never trigger a load.
+    private var faviconLoadKey: String? { isAuto ? urlString : nil }
 
     /// Favicons are authored for light backgrounds, so the tile stays light in both
     /// appearances (a dark tile would swallow light/transparent logos). Dark mode uses a soft
@@ -49,7 +58,7 @@ struct FaviconView: View {
     private static let tileColor = Color.platformDynamic(light: 0xFFFFFF, dark: 0xE6E6E6)
 
     private func load() async {
-        guard env.settings.showWebsiteIcons,
+        guard isAuto, env.settings.showWebsiteIcons,
               let urlString, let host = FaviconService.host(from: urlString) else { image = nil; return }
         if let cached = env.faviconService.cachedIcon(host: host) { image = cached; return }
         image = await env.faviconService.fetchIcon(host: host)
