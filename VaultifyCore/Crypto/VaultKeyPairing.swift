@@ -107,14 +107,14 @@ nonisolated enum VaultKeyPairing {
 // MARK: - base64url helpers (QR payload legibility — no `+`/`/`/`=`)
 
 private extension Data {
-    var base64URLEncoded: String {
+    nonisolated var base64URLEncoded: String {
         base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
     }
 
-    init?(base64URLEncoded string: String) {
+    nonisolated init?(base64URLEncoded string: String) {
         var base64 = string
             .replacingOccurrences(of: "-", with: "+")
             .replacingOccurrences(of: "_", with: "/")

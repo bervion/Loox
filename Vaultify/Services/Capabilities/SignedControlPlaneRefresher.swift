@@ -16,7 +16,7 @@ import Foundation
 
     enum Trigger { case launchAfterUnlock, foreground, manual }
 
-    struct Policy {
+    nonisolated struct Policy {
         /// Refresh at launch-after-unlock when the last success is older than this.
         var launchStale: TimeInterval = 3600            // 1h
         /// Refresh on foreground when the last success is older than this.

@@ -35,7 +35,7 @@ import Foundation
         }
     }
 
-    static let host = "invite.looxpassword.com"
+    nonisolated static let host = "invite.looxpassword.com"
     private static let recordType = "LooxInvite"
     private static let blobField = "blob"
     private static let expiresField = "expiresAtMs"

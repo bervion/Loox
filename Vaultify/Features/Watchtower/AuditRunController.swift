@@ -53,9 +53,10 @@ import SwiftUI
         // hashing, scoring — on the main thread.
         task = Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                let run = try await coordinator.run(snapshot: snapshot, context: context) { p in
-                    Task { @MainActor [weak self] in
-                        guard let self, case .running = self.phase else { return }
+                let run = try await coordinator.run(snapshot: snapshot, context: context) { [weak self] p in
+                    guard let self else { return }
+                    Task { @MainActor in
+                        guard case .running = self.phase else { return }
                         self.phase = .running(stageRuleID: p.ruleID,
                                               completed: p.completedRules, total: p.totalRules)
                     }

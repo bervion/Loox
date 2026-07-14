@@ -21,7 +21,7 @@ struct DateFieldEditor: View {
     @Binding var value: String
 
     var body: some View {
-        if let date = Self.parsedDate(for: value) {
+        if Self.parsedDate(for: value) != nil {
             DatePicker("", selection: dateBinding, in: Self.range, displayedComponents: .date)
                 .datePickerStyle(.compact)
                 .labelsHidden()

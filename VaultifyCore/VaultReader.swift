@@ -108,13 +108,13 @@ enum VaultReader {
 extension VaultItem {
     /// Every non-empty website field value. An item may carry several websites so a
     /// single login autofills across all of a service's domains.
-    var urlValues: [String] {
+    nonisolated var urlValues: [String] {
         fields.filter { $0.kind == .url && !$0.isEmpty }.map(\.value)
     }
 
     /// All matchable hosts derived from every website field (deduped, lowercased),
     /// preserving field order. Drives multi-site AutoFill + passkey attachment.
-    var autofillHosts: [String] {
+    nonisolated var autofillHosts: [String] {
         var seen = Set<String>()
         var hosts: [String] = []
         for raw in urlValues {
@@ -126,7 +126,7 @@ extension VaultItem {
     }
 
     /// Best single host (first website). Kept for callers that need one host.
-    var autofillHost: String? { autofillHosts.first }
+    nonisolated var autofillHost: String? { autofillHosts.first }
 
     /// Whether this item is relevant to any of the requested service domains —
     /// true if ANY of the item's websites matches.

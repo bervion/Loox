@@ -59,7 +59,7 @@ enum CardScanHeuristics {
     /// Digit runs within a single line — a run continues across interior spaces/dashes but
     /// stops at any other character, so unrelated digits (e.g. an expiry date on the same
     /// line) don't merge into a PAN candidate.
-    private static func digitRuns(in line: String) -> [String] {
+    nonisolated private static func digitRuns(in line: String) -> [String] {
         var runs: [String] = []
         var current = ""
         for char in line {

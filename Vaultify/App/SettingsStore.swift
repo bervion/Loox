@@ -165,7 +165,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         UserDefaults.standard.object(forKey: Key.rotationReminders) as? Bool ?? true
     }
 
-    private enum Key {
+    private nonisolated enum Key {
         static let onboarding = "onboarding_completed"
         static let autoLock = "auto_lock_timeout"
         static let shakeToLock = "shake_to_lock"
