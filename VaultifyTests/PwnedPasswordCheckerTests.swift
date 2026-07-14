@@ -100,9 +100,7 @@ final class PwnedPasswordCheckerTests: XCTestCase {
     }
 
     func testTotalFailureThrowsSoCoordinatorFlagsPartial() async {
-        MockHIBPProtocol.lock.lock()
-        MockHIBPProtocol.failEverything = true
-        MockHIBPProtocol.lock.unlock()
+        MockHIBPProtocol.lock.withLock { MockHIBPProtocol.failEverything = true }
         do {
             _ = try await checker().counts(for: ["whatever-pw"])
             XCTFail("offline lookup must throw, not silently return 0")

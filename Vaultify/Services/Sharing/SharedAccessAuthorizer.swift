@@ -8,7 +8,7 @@ import Foundation
 /// view — there is deliberately no path from a satisfied network path
 /// (Layer A) straight to rendering, and no "render cached, verify later".
 @MainActor @Observable final class SharedAccessAuthorizer {
-    enum State: Equatable {
+    nonisolated enum State: Equatable {
         /// Network path not satisfied — "Cần kết nối mạng".
         case offline
         /// Authoritative check in flight — values are NOT materialized.

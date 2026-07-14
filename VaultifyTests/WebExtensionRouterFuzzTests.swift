@@ -32,7 +32,7 @@ final class WebExtensionRouterFuzzTests: XCTestCase {
     /// rejected before any key retrieval.
     private func failingContext() -> WebExtensionRouterContext {
         let sharedStore = store!
-        let suite = defaults!
+        nonisolated(unsafe) let suite = defaults!
         return WebExtensionRouterContext(
             retrieveKey: {
                 XCTFail("fuzzed requests must never trigger an unlock")
@@ -50,7 +50,7 @@ final class WebExtensionRouterFuzzTests: XCTestCase {
     private func liveContext() -> WebExtensionRouterContext {
         let bytes = keyBytes
         let sharedStore = store!
-        let suite = defaults!
+        nonisolated(unsafe) let suite = defaults!
         return WebExtensionRouterContext(retrieveKey: { bytes },
                                          makeStore: { sharedStore },
                                          nativeSaveActive: { false },
