@@ -7,8 +7,8 @@ struct SettingsRoute: Hashable, Codable {}
 
 /// Settings — pushed from Home. A large left-aligned title that collapses into
 /// the nav bar on scroll, and Apple-Settings-style root cards: no section
-/// headers (the badge + name carries the meaning), selection prefs open child
-/// screens with checkmark rows instead of inline popups.
+/// headers (the badge + name carries the meaning), everyday and security prefs
+/// gathered into child screens.
 struct SettingsScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var confirmErase = false
@@ -16,10 +16,6 @@ struct SettingsScreen: View {
     @State private var relayBlockErase = false
     @State private var confirmApprovalModeOff = false
 
-    /// Erase, but tear down live relay aliases first. If the vault has active
-    /// aliases and the relay can't be reached, the erase is BLOCKED (an "erase"
-    /// must never leave anonymous addresses forwarding to a real inbox forever).
-    /// With no active aliases (the common case) this awaits nothing meaningful.
     /// One Online Features row: preference toggle + operator/runtime status.
     /// The toggle mutates ONLY the user preference (INV-CAP-09).
     private func onlineFeatureRow(_ id: CapabilityID, title: LocalizedStringKey,
@@ -36,8 +32,12 @@ struct SettingsScreen: View {
                 }
             } icon: { badge }
         }
+        .tint(Color(rgb: env.theme.active.switchOn))
     }
 
+    /// Erase, but tear down live relay aliases first. If the vault has active
+    /// aliases and the relay can't be reached, the erase is BLOCKED (an "erase"
+    /// must never leave anonymous addresses forwarding to a real inbox forever).
     private func eraseWithRelayTeardown() {
         guard env.repository.aliases.contains(where: { $0.status == .active }) else {
             env.eraseEverything(); return
@@ -51,28 +51,10 @@ struct SettingsScreen: View {
         }
     }
 
-    private var biometricBinding: Binding<Bool> {
-        Binding(
-            get: { env.settings.biometricUnlockEnabled },
-            set: { isOn in
-                if isOn { Task { try? await env.session.enableBiometricUnlock() } }
-                else { env.session.disableBiometricUnlock() }
-            })
-    }
-
-    private var automaticPasskeyBinding: Binding<Bool> {
-        Binding(
-            get: { SharedConfig.automaticPasskeyUpgradesEnabled },
-            set: { SharedConfig.automaticPasskeyUpgradesEnabled = $0 })
-    }
-
     /// Approval Mode (ADR-2): deliberately independent of `iCloudSyncEnabled` — turning
-    /// this on/off must never touch vault-item sync. Turning ON is immediate (arms
-    /// listening; harmless with no shares yet). Turning OFF only pauses the approval
-    /// listening services (`OwnerShareRefresher`, `ApprovalCoordinator`,
-    /// `InviteInboxCoordinator`, `SharedZoneSubscriptionService` all early-return on this
-    /// flag) — it does not revoke or delete any existing CKShare, so a confirmation
-    /// states that plainly instead of silently flipping.
+    /// this on/off must never touch vault-item sync. Turning OFF only pauses the approval
+    /// listening services — it does not revoke or delete any existing CKShare, so a
+    /// confirmation states that plainly instead of silently flipping.
     private var approvalModeBinding: Binding<Bool> {
         Binding(
             get: { env.settings.approvalModeEnabled },
@@ -88,7 +70,7 @@ struct SettingsScreen: View {
 
     /// Ask iOS to turn Loox on as the AutoFill (password / passkey) provider. On iOS 18+
     /// this shows the system turn-on prompt right in the app; earlier iOS deep-links to the
-    /// Settings AutoFill screen — either way the user skips hunting through Settings by hand.
+    /// Settings AutoFill screen.
     private func setUpPasswordAutoFill() {
         Task {
             if #available(iOS 18.0, *) {
@@ -105,12 +87,15 @@ struct SettingsScreen: View {
     }
 
     var body: some View {
-        @Bindable var settings = env.settings
+        let switchTint = Color(rgb: env.theme.active.switchOn)
         Form {
-            // Everyday preferences, gathered into child screens.
+            // Everyday preferences + security, gathered into child screens.
             Section {
                 NavigationLink { GeneralSettingsView() } label: {
                     Label { Text("General") } icon: { SettingsIconBadge(systemName: "gear", tint: SettingsBadgeTint.gray) }
+                }
+                NavigationLink { SecuritySettingsView() } label: {
+                    Label { Text("Security") } icon: { SettingsIconBadge(systemName: "lock.fill", tint: SettingsBadgeTint.blue) }
                 }
                 NavigationLink { AppearanceSettingsView() } label: {
                     Label { Text("Appearance") } icon: { SettingsIconBadge(systemName: "paintbrush.fill", tint: SettingsBadgeTint.pink) }
@@ -121,53 +106,10 @@ struct SettingsScreen: View {
             }
             .listRowBackground(VaultColors.surface)
 
-            // Security
-            Section {
-                if BiometricAuth.isAvailable {
-                    Toggle(isOn: biometricBinding) {
-                        Label { Text("Unlock with \(BiometricAuth.displayName)") } icon: { SettingsIconBadge(systemName: BiometricAuth.systemImage, tint: SettingsBadgeTint.green) }
-                    }
-                }
-                NavigationLink {
-                    SettingsSelectionScreen(
-                        title: "Auto-Lock",
-                        options: AutoLockTimeout.allCases.map { .init(value: $0, label: $0.title) },
-                        selection: $settings.autoLock,
-                        footer: "Auto-Lock counts both time away from the app and idle time in it. \"Immediately\" locks the moment you leave; longer windows let you copy something into another app and come back without re-authenticating.")
-                } label: {
-                    LabeledContent {
-                        Text(settings.autoLock.title)
-                    } label: {
-                        Label { Text("Auto-Lock") } icon: { SettingsIconBadge(systemName: "lock.badge.clock", tint: SettingsBadgeTint.indigo) }
-                    }
-                }
-                Toggle(isOn: $settings.shakeToLock) {
-                    Label { Text("Shake to lock") } icon: { SettingsIconBadge(systemName: "iphone.radiowaves.left.and.right", tint: SettingsBadgeTint.orange) }
-                }
-                Toggle(isOn: $settings.hibpEnabled) {
-                    Label { Text("Check for known breaches") } icon: { SettingsIconBadge(systemName: "checkmark.shield.fill", tint: SettingsBadgeTint.green) }
-                }
-                NavigationLink { ChangeMasterPasswordView() } label: {
-                    Label { Text("Change Master Password") } icon: { SettingsIconBadge(systemName: "key.fill", tint: SettingsBadgeTint.blue) }
-                }
-                NavigationLink { RegenerateKitView() } label: {
-                    Label { Text("Emergency Kit") } icon: { SettingsIconBadge(systemName: "cross.case.fill", tint: SettingsBadgeTint.red) }
-                }
-                NavigationLink { Level2SettingsView() } label: {
-                    Label { Text("Extra Protection") } icon: { SettingsIconBadge(systemName: "lock.fill", tint: SettingsBadgeTint.gray) }
-                }
-                Toggle(isOn: automaticPasskeyBinding) {
-                    Label { Text("Automatic passkey upgrades") } icon: { SettingsIconBadge(systemName: "person.badge.key.fill", tint: SettingsBadgeTint.purple) }
-                }
-            } footer: {
-                Text("Passkey upgrades can create passkeys in the background. Using them still requires unlocking your vault.")
-            }
-            .listRowBackground(VaultColors.surface)
-
             // AutoFill
             Section {
                 Button(action: setUpPasswordAutoFill) {
-                    Label { Text("Set up password AutoFill") } icon: { SettingsIconBadge(systemName: "rectangle.and.pencil.and.ellipsis", tint: SettingsBadgeTint.blue) }
+                    Label { Text("Set up password AutoFill") } icon: { SettingsIconBadge(systemName: "keyboard.fill", tint: SettingsBadgeTint.blue) }
                 }
                 Button(action: setUpVerificationCodes) {
                     Label { Text("Set up verification codes") } icon: { SettingsIconBadge(systemName: "123.rectangle.fill", tint: SettingsBadgeTint.teal) }
@@ -204,6 +146,7 @@ struct SettingsScreen: View {
                 Toggle(isOn: approvalModeBinding) {
                     Label { Text("Approval Mode") } icon: { SettingsIconBadge(systemName: "person.2.fill", tint: SettingsBadgeTint.green) }
                 }
+                .tint(switchTint)
                 onlineFeatureRow(.privateEmail, title: "Private Email",
                                  badge: SettingsIconBadge(systemName: "envelope.fill", tint: SettingsBadgeTint.teal))
                 onlineFeatureRow(.shareLink, title: "Share Links",
@@ -243,8 +186,6 @@ struct SettingsScreen: View {
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
-        .themedColorScheme()
-        .tint(Color.primary)
         .navigationTitle("Settings")
         .platformNavigationBarTitleDisplayMode(.large)
         .alert(Text("Network needed"), isPresented: $relayBlockErase) {

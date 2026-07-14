@@ -26,6 +26,7 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         @Bindable var settings = env.settings
+        let switchTint = Color(rgb: env.theme.active.switchOn)
         Form {
             Section {
                 NavigationLink {
@@ -64,6 +65,7 @@ struct GeneralSettingsView: View {
                 Toggle(isOn: $settings.hideInAppSwitcher) {
                     Label { Text("Hide contents in App Switcher") } icon: { SettingsIconBadge(systemName: "eye.slash.fill", tint: SettingsBadgeTint.indigo) }
                 }
+                .tint(switchTint)
             }
             .listRowBackground(VaultColors.surface)
 
@@ -71,6 +73,7 @@ struct GeneralSettingsView: View {
                 Toggle(isOn: $settings.showWebsiteIcons) {
                     Label { Text("Show website icons") } icon: { SettingsIconBadge(systemName: "safari.fill", tint: SettingsBadgeTint.blue) }
                 }
+                .tint(switchTint)
             } footer: {
                 Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
             }

@@ -1841,7 +1841,9 @@
         }
       }
     },
+    "Auto-Lock counts both time away from the app and idle time in it. \"Immediately\" locks the moment you leave; longer windows let you copy something into another app and come back without re-authenticating.": {},
     "Auto-Lock counts both time away from the app and idle time in it. \"Immediately\" locks the moment you leave; longer windows let you copy something into another app and come back without re-authenticating.\n\nAutomatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -1852,6 +1854,7 @@
       }
     },
     "AutoFill": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -1953,6 +1956,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hình nền"
+          }
+        }
+      }
+    },
+    "Backup codes for two-factor sign in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup codes for two-factor sign in"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã dự phòng cho đăng nhập hai lớp"
           }
         }
       }
@@ -2140,6 +2159,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Số thẻ"
+          }
+        }
+      }
+    },
+    "Card numbers, PINs, and CVV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card numbers, PINs, and CVV"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số thẻ, mã PIN và CVV"
           }
         }
       }
@@ -2527,6 +2562,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chọn ảnh"
+          }
+        }
+      }
+    },
+    "Choose the kind of item to add to your vault.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the kind of item to add to your vault."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn loại mục để thêm vào kho."
           }
         }
       }
@@ -3720,6 +3771,7 @@
       }
     },
     "Data": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -5182,7 +5234,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chung"
+            "value": "Cài đặt chung"
           }
         }
       }
@@ -7080,6 +7132,22 @@
         }
       }
     },
+    "New item": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New item"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục mới"
+          }
+        }
+      }
+    },
     "New Item": {
       "localizations": {
         "vi": {
@@ -8013,6 +8081,7 @@
       }
     },
     "Online Features": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -8249,6 +8318,7 @@
       }
     },
     "Organization": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -8409,6 +8479,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Passkey"
+          }
+        }
+      }
+    },
+    "Passkey upgrades can create passkeys in the background. Using them still requires unlocking your vault.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkey upgrades can create passkeys in the background. Using them still requires unlocking your vault."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nâng cấp passkey có thể tạo passkey ở chế độ nền. Việc dùng chúng vẫn cần mở khóa kho."
           }
         }
       }
@@ -8799,6 +8885,22 @@
         }
       }
     },
+    "Personal and contact details": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal and contact details"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thông tin cá nhân và liên hệ"
+          }
+        }
+      }
+    },
     "Personas": {
       "comment": "Screen title / settings row for managing personas.",
       "localizations": {
@@ -9074,6 +9176,22 @@
         }
       }
     },
+    "Private text, encrypted at rest": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Private text, encrypted at rest"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi chú riêng tư, mã hoá khi lưu"
+          }
+        }
+      }
+    },
     "Professional": {
       "comment": "Persona kind.",
       "localizations": {
@@ -9188,6 +9306,22 @@
         }
       }
     },
+    "Public and private key pairs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public and private key pairs"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cặp khoá công khai và riêng tư"
+          }
+        }
+      }
+    },
     "Public Key": {
       "extractionState": "stale",
       "localizations": {
@@ -9217,6 +9351,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Câu hỏi 2"
+          }
+        }
+      }
+    },
+    "Question and answer pairs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question and answer pairs"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cặp câu hỏi và trả lời"
           }
         }
       }
@@ -10698,7 +10848,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thiết lập Tự động điền mật khẩu"
+            "value": "Thiết lập tự động điền mật khẩu"
           }
         }
       }
@@ -11190,6 +11340,7 @@
       }
     },
     "Sharing": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -12377,6 +12528,7 @@
       }
     },
     "Theme & Wallpaper": {
+      "extractionState": "stale",
       "localizations": {
         "vi": {
           "stringUnit": {
@@ -14329,6 +14481,22 @@
         }
       }
     },
+    "Website and app passwords": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Website and app passwords"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mật khẩu web và ứng dụng"
+          }
+        }
+      }
+    },
     "websites": {
       "localizations": {
         "vi": {
@@ -14772,6 +14940,22 @@
         }
       }
     },
+    "Your own fields, any shape": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your own fields, any shape"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trường tự tạo, tuỳ ý"
+          }
+        }
+      }
+    },
     "Your passwords guard everything.": {
       "comment": "About: hero headline line 1.",
       "localizations": {
@@ -14869,182 +15053,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Không máy chủ"
-          }
-        }
-      }
-    },
-    "New item": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "New item"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mục mới"
-          }
-        }
-      }
-    },
-    "Choose the kind of item to add to your vault.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose the kind of item to add to your vault."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chọn loại mục để thêm vào kho."
-          }
-        }
-      }
-    },
-    "Website and app passwords": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Website and app passwords"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mật khẩu web và ứng dụng"
-          }
-        }
-      }
-    },
-    "Private text, encrypted at rest": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Private text, encrypted at rest"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ghi chú riêng tư, mã hoá khi lưu"
-          }
-        }
-      }
-    },
-    "Card numbers, PINs, and CVV": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Card numbers, PINs, and CVV"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Số thẻ, mã PIN và CVV"
-          }
-        }
-      }
-    },
-    "Personal and contact details": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Personal and contact details"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Thông tin cá nhân và liên hệ"
-          }
-        }
-      }
-    },
-    "Public and private key pairs": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Public and private key pairs"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cặp khoá công khai và riêng tư"
-          }
-        }
-      }
-    },
-    "Backup codes for two-factor sign in": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Backup codes for two-factor sign in"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mã dự phòng cho đăng nhập hai lớp"
-          }
-        }
-      }
-    },
-    "Question and answer pairs": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Question and answer pairs"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cặp câu hỏi và trả lời"
-          }
-        }
-      }
-    },
-    "Your own fields, any shape": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your own fields, any shape"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trường tự tạo, tuỳ ý"
-          }
-        }
-      }
-    },
-    "Passkey upgrades can create passkeys in the background. Using them still requires unlocking your vault.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Passkey upgrades can create passkeys in the background. Using them still requires unlocking your vault."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nâng cấp passkey có thể tạo passkey ở chế độ nền. Việc dùng chúng vẫn cần mở khóa kho."
           }
         }
       }

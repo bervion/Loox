@@ -16,6 +16,15 @@ struct SettingsSelectionScreen<Value: Hashable>: View {
 
     @Environment(AppEnvironment.self) private var env
 
+    /// Resolve a resource against the in-app language (same mechanism as
+    /// `appLabel`): pinning `.locale` then `String(localized:)` selects the
+    /// chosen language's table, which a bare `Text(resource)` does not.
+    private func localized(_ resource: LocalizedStringResource) -> String {
+        var copy = resource
+        copy.locale = appResourceLocale
+        return String(localized: copy)
+    }
+
     var body: some View {
         Form {
             Section {
@@ -23,12 +32,12 @@ struct SettingsSelectionScreen<Value: Hashable>: View {
                     row(options[index])
                 }
             } footer: {
-                if let footer { Text(footer) }
+                if let footer { Text(verbatim: localized(footer)) }
             }
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
-        .navigationTitle(Text(title))
+        .navigationTitle(localized(title))
         .platformNavigationBarTitleDisplayMode(.inline)
     }
 
@@ -39,7 +48,7 @@ struct SettingsSelectionScreen<Value: Hashable>: View {
             Haptics.tap()
         } label: {
             HStack {
-                Text(option.label).themedForeground(.primary)
+                Text(verbatim: localized(option.label)).themedForeground(.primary)
                 Spacer()
                 if option.value == selection {
                     Image(systemName: "checkmark")
