@@ -4,6 +4,10 @@ import SwiftUI
 /// dots ring fronting the vault mark (playing once), then one row per vault type
 /// — a duotone glyph, a title, and a short description — replacing the old
 /// item-type popup menu. Presented from Home and Security.
+///
+/// The close control lives in the nav-bar toolbar (same as the item editor), so
+/// iOS 26 renders it as the standard circular liquid-glass X; the toolbar
+/// background is hidden so the white canvas reads full-bleed behind it.
 struct ItemTypePickerSheet: View {
     /// Called with the chosen category; the sheet dismisses itself first, so the
     /// caller can present the editor from the sheet's `onDismiss`.
@@ -13,41 +17,53 @@ struct ItemTypePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            // Plain white canvas (near-black in dark) — Apple-Account-sheet idiom.
-            Color(rgb: env.theme.active.background).ignoresSafeArea()
+        NavigationStack {
+            ZStack(alignment: .top) {
+                // Plain white canvas (near-black in dark) — Apple-Account-sheet idiom.
+                Color(rgb: env.theme.active.background).ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: Space.s5) {
-                    LooxDotsAvatar(size: 104, revealsOnAppear: true, centerIcon: "dt_vault")
-                        // Clear the floating X button (top-leading) so the logo sits below it.
-                        .padding(.top, Space.s10)
+                ScrollView {
+                    VStack(spacing: Space.s5) {
+                        LooxDotsAvatar(size: 104, revealsOnAppear: true, centerIcon: "dt_vault")
+                            .padding(.top, Space.s4)
 
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        Text("New item")
-                            .vaultType(.screenTitle)
-                            .themedForeground(.primary)
-                        Text("Choose the kind of item to add to your vault.")
-                            .vaultType(.subhead)
-                            .themedForeground(.secondary)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, Space.gutter)
-
-                    VStack(spacing: Space.s3) {
-                        ForEach(ItemCategory.allCases) { category in
-                            typeRow(category)
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text("New item")
+                                .vaultType(.screenTitle)
+                                .themedForeground(.primary)
+                            Text("Choose the kind of item to add to your vault.")
+                                .vaultType(.subhead)
+                                .themedForeground(.secondary)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                    }
-                    .padding(.horizontal, Space.gutter)
-                }
-                .padding(.bottom, Space.s8)
-            }
-            .scrollIndicators(.hidden)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, Space.gutter)
 
-            closeButton
+                        VStack(spacing: Space.s3) {
+                            ForEach(ItemCategory.allCases) { category in
+                                typeRow(category)
+                            }
+                        }
+                        .padding(.horizontal, Space.gutter)
+                    }
+                    .padding(.bottom, Space.s8)
+                }
+                .scrollIndicators(.hidden)
+            }
+            .navigationTitle("")
+            .platformNavigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .platformTopBarLeading) {
+                    // Icon-only toolbar button → iOS 26 gives it the circular
+                    // liquid-glass close treatment automatically (matches the editor).
+                    Button { dismiss() } label: {
+                        PolarisIcon(Icons.close, size: Metric.iconInline)
+                    }
+                    .accessibilityLabel(Text("Close"))
+                }
+            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
@@ -83,33 +99,5 @@ struct ItemTypePickerSheet: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-    }
-
-    @ViewBuilder private var closeButton: some View {
-        Group {
-            #if compiler(>=6.2)
-            if #available(iOS 26, macOS 26, *) {
-                // Native system close control — liquid glass on iOS 26.
-                Button(role: .close) { dismiss() }
-            } else {
-                legacyCloseButton
-            }
-            #else
-            legacyCloseButton
-            #endif
-        }
-        .padding(Space.gutter)
-    }
-
-    /// Pre-iOS-26 fallback (and Reduce Transparency): a solid circular X.
-    private var legacyCloseButton: some View {
-        Button { dismiss() } label: {
-            PolarisIcon(Icons.close, size: Metric.iconInline)
-                .themedForeground(.primary)
-                .frame(width: Metric.hitMin, height: Metric.hitMin)
-                .background(Color(rgb: env.theme.active.secondaryBackground), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Close"))
     }
 }
