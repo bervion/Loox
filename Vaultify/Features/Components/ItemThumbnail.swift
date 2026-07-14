@@ -40,24 +40,25 @@ struct ItemThumbnail: View {
         Group {
             switch ItemAvatarStyle.resolve(iconAsset) {
             case .auto:
-                tintedIcon(category.avatarIcon, shape: shape)
+                largeIcon(category.avatarIcon)
             case .custom(let asset):
-                tintedIcon(asset, shape: shape)
+                largeIcon(asset)
             case .monogram:
                 if let initials = Self.initials(from: title) {
                     letterAvatar(initials, shape: shape)
                 } else {
-                    tintedIcon(category.avatarIcon, shape: shape)
+                    largeIcon(category.avatarIcon)
                 }
             }
         }
         .frame(width: size, height: size)
     }
 
-    private func tintedIcon(_ asset: String, shape: some Shape) -> some View {
-        let tint = VaultColors.category(category)
-        return shape.fill(tint.opacity(0.18))
-            .overlay(PolarisIcon(asset, size: size * 0.5).foregroundStyle(tint))
+    /// Type / custom icons drop the tinted badge tile and fill the whole avatar —
+    /// the duotone glyph IS the avatar, at the category tint. (Only the monogram
+    /// keeps a colored backing tile.)
+    private func largeIcon(_ asset: String) -> some View {
+        PolarisIcon(asset, size: size).foregroundStyle(VaultColors.category(category))
     }
 
     private func letterAvatar(_ initials: String, shape: some Shape) -> some View {
