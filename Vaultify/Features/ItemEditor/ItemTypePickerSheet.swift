@@ -74,21 +74,25 @@ struct ItemTypePickerSheet: View {
             onSelect(category)
             dismiss()
         } label: {
-            HStack(alignment: .top, spacing: Space.s3) {
-                // Brand blue duotone glyph, aligned to the title's top line.
-                PolarisIcon(category.avatarIcon, size: 28)
-                    .foregroundStyle(Color.looxBlue)
-                    .frame(width: Metric.controlSmall, alignment: .top)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(category.title)
-                        .vaultType(.headline)
-                        .themedForeground(.primary)
-                    Text(category.creationBlurb)
-                        .vaultType(.subhead)
-                        .themedForeground(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            // Outer row centers the chevron vertically; the inner group top-aligns
+            // the glyph to the title line.
+            HStack(alignment: .center, spacing: Space.s2) {
+                HStack(alignment: .top, spacing: Space.s3) {
+                    // Brand blue duotone glyph, aligned to the title's top line.
+                    PolarisIcon(category.avatarIcon, size: 28)
+                        .foregroundStyle(Color.looxBlue)
+                        .frame(width: Metric.controlSmall, alignment: .top)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(category.title)
+                            .vaultType(.headline)
+                            .themedForeground(.primary)
+                        Text(category.creationBlurb)
+                            .vaultType(.subhead)
+                            .themedForeground(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: Space.s2)
                 PolarisIcon(Icons.chevronRight, size: 14)
                     .themedForeground(.tertiary)
             }
