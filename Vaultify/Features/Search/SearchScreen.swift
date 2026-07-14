@@ -351,10 +351,12 @@ private struct SearchScopeBar: View {
                 .padding(.horizontal, Space.s3)
                 .frame(minHeight: Metric.controlSmall)
                 .background {
-                    // Only the SELECTED chip carries a fill — a raised solid
-                    // capsule on the glass trough (glass-on-glass is avoided).
+                    // Only the SELECTED chip carries a fill — a soft adaptive grey
+                    // (surfacePressed: a blend toward the text colour, so it reads
+                    // in both themes) on the glass trough. A white fill blended into
+                    // the frosted trough; grey keeps clear contrast.
                     if isActive {
-                        Capsule().fill(Color(rgb: env.theme.active.elevatedBackground))
+                        Capsule().fill(Color(rgb: env.theme.active.surfacePressed))
                             .elevation(.level1)
                     }
                 }
@@ -378,10 +380,10 @@ private struct ScopeTroughGlass: ViewModifier {
             if #available(iOS 26, macOS 26, *), !reduceTransparency {
                 content.glassEffect(.regular, in: shape)
             } else {
-                content.background(Color(rgb: env.theme.active.surfacePressed), in: shape)
+                content.background(Color(rgb: env.theme.active.controlBackground), in: shape)
             }
             #else
-            content.background(Color(rgb: env.theme.active.surfacePressed), in: shape)
+            content.background(Color(rgb: env.theme.active.controlBackground), in: shape)
             #endif
         }
         .clipShape(shape)
