@@ -28,7 +28,7 @@ struct SearchScreen: View {
     var body: some View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.searchPath) {
-            SearchResultsList(query: search, onSelectFilter: { search = $0 })
+            SearchResultsList(query: search)
                 .navigationTitle("Search")
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
@@ -75,9 +75,6 @@ struct SearchScreen: View {
 struct SearchResultsList: View {
     @Environment(AppEnvironment.self) private var env
     let query: String
-    /// Invoked with an operator keyword when a zero-state quick filter chip is
-    /// tapped — the parent sets the search field's text to it.
-    var onSelectFilter: (String) -> Void = { _ in }
 
     /// Ephemeral per-session scope (never persisted). Seeded once on appear from
     /// the current Home Space.
