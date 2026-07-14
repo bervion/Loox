@@ -18,7 +18,7 @@ struct LanguageSwitchOverlay: View {
                 LooxSwirlAnimationView(mode: .reveal)
                     .frame(width: 140, height: 140)
 
-                Text("Changing language")
+                Text("Changing language…")
                     .vaultType(.subhead)
                     .themedForeground(.secondary)
             }

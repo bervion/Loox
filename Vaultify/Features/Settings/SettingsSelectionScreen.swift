@@ -53,19 +53,14 @@ struct SettingsSelectionScreen<Value: Hashable>: View {
         .toolbar {
             if let onCommit {
                 ToolbarItem(placement: .platformPrimaryAction) {
-                    // Filled accent capsule (accent fill · WCAG onAccent text) so it
-                    // reads as the primary action; dimmed until a new value is staged.
-                    Button { onCommit(staged) } label: {
-                        Text("Save")
-                            .vaultType(.subhead)
-                            .foregroundStyle(env.theme.active.color(.onAccent))
-                            .padding(.horizontal, Space.s3)
-                            .padding(.vertical, Space.s1 + 2)
-                            .background(env.theme.active.color(.accent), in: Capsule())
-                            .opacity(staged == selection ? 0.4 : 1)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(staged == selection)
+                    // Native prominent action: `.borderedProminent` is a real iOS
+                    // button style (Liquid Glass on iOS 26), tinted to the theme
+                    // accent — not a custom coloured view. It handles contrast and
+                    // the disabled state itself.
+                    Button("Save") { onCommit(staged) }
+                        .buttonStyle(.borderedProminent)
+                        .tint(env.theme.active.color(.accent))
+                        .disabled(staged == selection)
                 }
             }
         }

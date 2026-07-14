@@ -15089,12 +15089,12 @@
         }
       }
     },
-    "Changing language": {
+    "Changing language…": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đang đổi ngôn ngữ"
+            "value": "Đang đổi ngôn ngữ…"
           }
         }
       }
