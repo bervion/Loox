@@ -9,11 +9,17 @@ import UIKit
 /// the tab-bar search and the Home header magnifier drop straight into search.
 struct SearchScreen: View {
     @Environment(UIStateStore.self) private var uiState
+    @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
     @State private var search = ""
     @State private var searchPresented = false
     /// Guards the overlapping activation triggers below from racing each other.
     @State private var focusInFlight = false
+    /// Space scope, owned here so each entry (see `handleEntry`) can (re)seed it: the
+    /// Home "See all" seeds it from the chosen Home Space, a plain tab open resets it.
+    @State private var scope: SpaceScope = .allSpaces
+    /// Set per entry — `true` suppresses the auto-keyboard (the "See all" browse path).
+    @State private var suppressFocus = false
     /// Process-lifetime: the FIRST activation rides the cold-launch layout storm
     /// (the app persists `selectedTab`, so it can restore straight onto Search),
     /// where an immediate focus request is silently dropped — that one waits
@@ -28,7 +34,7 @@ struct SearchScreen: View {
     var body: some View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.searchPath) {
-            SearchResultsList(query: search)
+            SearchResultsList(query: search, scope: $scope)
                 .navigationTitle("Search")
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
@@ -36,16 +42,34 @@ struct SearchScreen: View {
                 .environment(\.vaultZoomNamespace, zoomNamespace)
                 .vaultNavigationDestinations()
         }
-        // Raise the search field + keyboard whenever Search becomes the active
-        // surface. Several triggers because a lone `onAppear` fires too early on a
-        // cold launch that restores straight onto this tab.
-        .onAppear { requestSearchFocus() }
+        // `onAppear` fires once per tab entry (intra-stack pushes don't re-fire it), so it
+        // is the single place the scope + focus intent is (re)applied per entry. The extra
+        // focus triggers below just retry the keyboard raise (cold launch fires `onAppear`
+        // too early; a background/return needs a re-raise) — they never re-seed the scope.
+        .onAppear { handleEntry() }
         .onChange(of: uiState.selectedTab) { _, tab in
             if tab == .search { requestSearchFocus() }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { requestSearchFocus() }
         }
+    }
+
+    /// Apply the pending entry mode once, on tab entry: seed the scope (Home "See all"
+    /// browse → the chosen Home Space; a plain tab open → reset to the default), decide
+    /// whether the keyboard auto-raises, then consume the mode back to `.normal`.
+    private func handleEntry() {
+        guard uiState.selectedTab == .search else { return }
+        switch uiState.searchEntry {
+        case .browse(let spaceId):
+            scope = env.repository.defaultSearchScope(currentSpaceId: spaceId)
+            suppressFocus = true
+        case .normal:
+            scope = env.repository.defaultSearchScope(currentSpaceId: nil)
+            suppressFocus = false
+        }
+        uiState.searchEntry = .normal
+        requestSearchFocus()
     }
 
     /// Present + focus the search field, deferred past the layout pass. A native
@@ -55,14 +79,16 @@ struct SearchScreen: View {
     /// overlapping triggers from clobbering each other; if an attempt didn't stick,
     /// a later trigger (next foreground / re-tap) retries.
     private func requestSearchFocus() {
-        guard uiState.selectedTab == .search, !searchPresented, !focusInFlight else { return }
+        guard uiState.selectedTab == .search, !searchPresented, !focusInFlight, !suppressFocus else { return }
         focusInFlight = true
         let cold = !Self.didFirstActivation
         Self.didFirstActivation = true
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(cold ? 400 : 150))
             focusInFlight = false
-            guard uiState.selectedTab == .search, !searchPresented else { return }
+            // Re-check `suppressFocus`: a browse entry may have set it AFTER this task was
+            // scheduled by an earlier trigger, so the keyboard stays down for "See all".
+            guard uiState.selectedTab == .search, !searchPresented, !suppressFocus else { return }
             searchPresented = true
         }
     }
@@ -75,11 +101,10 @@ struct SearchScreen: View {
 struct SearchResultsList: View {
     @Environment(AppEnvironment.self) private var env
     let query: String
-
-    /// Ephemeral per-session scope (never persisted). Seeded once on appear from
-    /// the current Home Space.
-    @State private var scope: SpaceScope = .allSpaces
-    @State private var didSeedScope = false
+    /// Owned by `SearchScreen` so each entry can (re)seed it — the Home "See all" browse
+    /// path seeds it from the chosen Home Space, a plain tab open resets it. The scope
+    /// chip row below still mutates it live within a session.
+    @Binding var scope: SpaceScope
 
     private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
 
@@ -178,7 +203,6 @@ struct SearchResultsList: View {
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
         // Tapping anywhere drops the keyboard; simultaneous so result rows still tap.
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
-        .onAppear(perform: seedScope)
     }
 
     private func dismissKeyboard() {
@@ -186,15 +210,6 @@ struct SearchResultsList: View {
         UIApplication.shared.sendAction(
             #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         #endif
-    }
-
-    /// Seed the default scope once. Delegated to the repository so isolation is
-    /// fail-closed: a strictAnonymous persona is never seeded to `.allSpaces` (which
-    /// would run a global cross-persona search even with the chip hidden).
-    private func seedScope() {
-        guard !didSeedScope else { return }
-        didSeedScope = true
-        scope = env.repository.defaultSearchScope(currentSpaceId: currentSpaceId)
     }
 
     @ViewBuilder private var resultsContent: some View {
