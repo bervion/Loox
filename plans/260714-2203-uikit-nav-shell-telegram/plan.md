@@ -1,6 +1,8 @@
 # UIKit Navigation Shell — Telegram-parity (compact iOS)
 
-Status: **PHASE 1–3 BUILT, COMPILES, AWAITING RUNTIME TEST** · Branch: `experiment/uikit-shell` (pushed) · Base: `main` @ 850b352 · Commit: `d2e576e`
+Status: **PHASE 1–3 RUNTIME-VERIFIED** ✅ (user: "mượt, quá xịn") · Branch: `experiment/uikit-shell` (pushed) · Base: `main` @ 850b352 · Commits: `d2e576e` shell, `fe75e21` cold-launch search-keyboard fix
+
+Verified live: smooth UIKit push covering the tab bar, native search field elevates the keyboard, cold-launch keyboard race fixed. Still to verify: ItemDetail `dismiss()` pop, live theme/locale into a pushed detail, iPad size-class flip. Remaining: Phase 4 (scope chips), Phase 5 (DNA pass), PR to main.
 
 ## Progress
 - ✅ Built: `AppNavigator`, `VaultRootEnvironment`, `VaultUINavShell`; wired into `AdaptiveRootView` (compact iOS); `VaultifyApp` env chain refactored to the shared modifier; `vaultRouteDestination` extracted (DRY).
