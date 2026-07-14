@@ -63,6 +63,18 @@ extension View {
         return toolbar(.hidden, for: .windowToolbar)
         #endif
     }
+
+    /// A pushed detail that fills the screen: hide the tab bar while it is on the
+    /// stack (the SwiftUI equivalent of UIKit's `hidesBottomBarWhenPushed`). iOS
+    /// reveals the bar again on the underlying screen during the back swipe. No-op
+    /// on macOS (no tab bar).
+    func fullScreenPush() -> some View {
+        #if os(iOS)
+        return toolbar(.hidden, for: .tabBar)
+        #else
+        return self
+        #endif
+    }
 }
 
 extension ToolbarItemPlacement {

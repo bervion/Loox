@@ -132,10 +132,10 @@ struct WatchtowerScreen: View {
                 ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
             }
             .navigationDestination(for: String.self) { itemID in
-                ItemDetailScreen(itemID: itemID)
+                ItemDetailScreen(itemID: itemID).fullScreenPush()
             }
             .navigationDestination(for: WatchtowerCategory.self) { category in
-                categoryScreen(for: category)
+                categoryScreen(for: category).fullScreenPush()
             }
             .task { reload(); autoAuditIfStale(); rescheduleAuditReminder() }
             // Security audits the ACTIVE persona's vault — switching persona reloads.

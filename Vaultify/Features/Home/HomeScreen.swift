@@ -162,8 +162,8 @@ struct HomeScreen: View {
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
-            .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
-            .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen() }
+            .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen().fullScreenPush() }
+            .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen().fullScreenPush() }
             .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
             // Also re-mirror into the App Group so the AutoFill extension defaults a

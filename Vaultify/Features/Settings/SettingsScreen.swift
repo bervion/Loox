@@ -188,10 +188,6 @@ struct SettingsScreen: View {
         .toggleStyle(.switch)
         .navigationTitle("Settings")
         .platformNavigationBarTitleDisplayMode(.large)
-        // Full-screen detail (Mail/News/Telegram idiom): hide the tab bar while
-        // pushed; iOS reveals it again on the underlying screen during the back
-        // swipe. Native on iOS 26.
-        .toolbar(.hidden, for: .tabBar)
         .alert(Text("Network needed"), isPresented: $relayBlockErase) {
             Button("OK", role: .cancel) {}
         } message: {
