@@ -433,7 +433,87 @@ app (zero-backend, offline).** Cách rào:
 
 ---
 
-## 13. Phụ lục — khi nào build IAP (chưa làm bây giờ)
+## 13. Đào sâu: Trial & Win-back (tận dụng chi phí ~0)
+
+> Vì Free user tốn ~$0 (§12), Loox được phép chơi trial & win-back HÀO PHÓNG hơn hẳn app có
+> chi phí biên cao. Đây là **lợi thế cấu trúc** — dùng nó. Và fence §11 chính là thứ khiến
+> mọi thứ ở đây an toàn + tử tế.
+
+### 13.1 Chọn kiểu trial: Reverse Trial là vũ khí mạnh nhất
+
+| Kiểu | Cách chạy | Hợp cho |
+|------|-----------|---------|
+| **⭐ Reverse trial (KHÔNG cần thẻ)** | User mới **bắt đầu bằng Max đầy đủ** 14 ngày, không thẻ; hết hạn **tự rơi về Free** (fence §11 lo hạ cánh mềm) | Onboarding chính — tin-trước, loss aversion tối đa |
+| Standard trial (cần thẻ, tự charge) | StoreKit intro offer 7 ngày, thẻ on-file, tự tính tiền | Paywall theo ngữ cảnh, high-intent |
+| Just-in-time trial | Chạm tường Max (persona 2, alias 6, share) → "Dùng thử Max 7 ngày" | Điểm painpoint, intent cao nhất |
+
+**Vì sao reverse trial thắng:** user không "thử rồi mua" — họ **dùng bản đầy đủ rồi MẤT**.
+Sau 14 ngày họ đã nhập cả vault, tạo personas, mask email, thấy full Watchtower, share với
+gia đình → rơi về Free = **mất thứ đang có** (loss aversion §2.5), mạnh hơn nhiều "mua thứ
+chưa từng có". **Fence §11 khiến reverse trial AN TOÀN + tử tế** (vault giữ 100%, chỉ premium
+cuốn chiếu) — hai mảnh khớp nhau.
+
+**Cơ chế:** reverse-trial-không-thẻ = **entitlement app tự quản** (cờ "trial tới ngày X",
+lưu App Group/iCloud), KHÔNG đụng StoreKit tới khi user chủ động mua. Reinstall reset được →
+**chấp nhận** (cost ~0). Standard/JIT trial = StoreKit intro offer (Apple lo, không reset,
+convert cao hơn).
+
+**Khuyến nghị:** reverse trial **không thẻ, 14 ngày** làm onboarding chính (tin-trước, hợp
+brand bảo mật; cost cho phép) + standard trial **có thẻ** ở paywall ngữ cảnh cho high-intent.
+14 ngày vì password manager cần thời gian tích item + gặp breach + muốn share mới thấy giá trị.
+
+### 13.2 Engineer "khoảnh khắc aha" trong trial (trial rỗng = convert kém)
+Trial chỉ convert nếu user CHẠM giá trị lõi trong lúc thử. Onboarding phải lùa tới:
+1. **Import password sẵn có** (iCloud Keychain / manager khác / CSV) **NGAY** — đòn kích hoạt
+   số 1. Vault rỗng → Watchtower vô nghĩa, không gì để endowed. Import = lấp vault + cho
+   Watchtower dữ liệu để audit.
+2. **Watchtower reveal sớm** (session đầu): "Điểm 620 · 12 yếu · 3 đã lộ — mục nào & cách sửa."
+3. **1 lần AutoFill** — móc thói quen hằng ngày.
+4. **1 alias tại form đăng ký thật** — khoảnh khắc "phép màu".
+→ Thiết kế first-run lùa đúng 4 việc này, đừng để user tự mò.
+
+### 13.3 Vòng đời đầy đủ: Reverse trial → Free → Win-back
+1. **Ngày 0:** Max đầy đủ, không thẻ; onboarding lùa import + Watchtower.
+2. **Ngày 1–13:** lấp vault, endowed dần; nhắc giá trị tích cực ("đã sửa 8 vấn đề / mask 4 email").
+3. **Ngày 11–13:** nhắc trước hết hạn, khung **loss aversion**: "Trial còn 3 ngày. Giữ tất cả
+   với $34.99/năm. Bạn GIỮ mọi mật khẩu, nhưng sẽ MẤT: full Watchtower, 5/6 alias, chia sẻ, personas."
+4. **Ngày 14:** rơi về Free **mềm** qua fence §11 (vault 100% nguyên; premium cuốn chiếu). KHÔNG tường cứng.
+5. **Free về sau:** vẫn hạnh phúc (hơn Apple Passwords); nhắc "show problem sell fix" khi nợ bảo mật tích lại.
+6. **Win-back:** khi cảm nhận MẤT cụ thể (alias ngừng forward, breach mới) → offer win-back.
+
+### 13.4 Win-back: công cụ Apple + trigger hành vi
+**Công cụ StoreKit (iOS 18+):**
+- **Win-back offers** — Apple cho cấu hình ưu đãi riêng cho sub đã rời, hiện cả App Store lẫn
+  in-app. Dùng làm xương sống.
+- **Promotional offers / offer codes** — giảm giá cho sub đã lapse, hiện in-app.
+
+**Trigger (cost ~0 → hào phóng được):**
+1. **Fence chính là máy win-back** (§11.4): alias ngừng forward → Watchtower cảnh báo thật →
+   "3 login sắp mất email reset — bật lại Max." Thời điểm intent CAO NHẤT (mất cụ thể).
+2. **Nợ bảo mật tích lũy:** điểm Watchtower của Free user tụt dần (breach mới HIBP, mật khẩu
+   già). Nhắc thật định kỳ: "4 breach mới từ khi bạn hạ gói — xem & sửa với Plus."
+3. **Trong 30d ân hạn:** "Giữ tất cả — bật lại giảm 30% năm đầu." Gần như thuần lời.
+4. **Lifecycle 60/90 ngày:** re-engage kèm win-back offer.
+
+**Hào phóng CÓ KỶ LUẬT:** biên lời >95% → một sub cứu lại (giảm 50% ≈ $17) gần như thuần lời
+→ **đừng bỏ churned user trên bàn.** NHƯNG đừng dạy user "huỷ để được giảm" (moral hazard):
+win-back **nhắm mục tiêu + có hạn giờ**, KHÔNG hiện cho sub đang active, không always-on.
+
+### 13.5 Đo lường (privacy-first, hợp brand)
+Trial-start rate · trial→paid · time-to-aha (đã import? đã xem Watchtower?) · kích hoạt D14 ·
+win-back rate · lý do churn. Zero-backend → analytics phải **tôn trọng riêng tư** (tổng hợp,
+on-device tối đa, hoặc analytics privacy-friendly) — kẻo phá chính claim đang bán.
+
+### 13.6 Phản biện thẳng
+- **ĐỪNG bắt nhập thẻ ở lần trial đầu** — app bảo mật, chi phí lòng tin quá cao; cost cho phép không-thẻ.
+- **ĐỪNG dựng tường cứng cuối trial** — đúng fence §11: hạ cánh mềm, vault nguyên vẹn.
+- **ĐỪNG nhắc quá nhiều** — app bảo mật bán sự an tâm; nagging phá đúng thứ đang bán. Nhắc phải thật + đúng ngữ cảnh + thưa.
+- **Trial abuse qua reinstall** (reverse trial không thẻ reset được): chấp nhận (cost ~0),
+  hoặc buộc nhẹ vào Apple ID qua 1 cờ iCloud KV để giới hạn thử lặp. Ưu tiên thấp.
+
+---
+
+## 14. Phụ lục — khi nào build IAP (chưa làm bây giờ)
 Để tham khảo cho tương lai, không phải việc lúc này:
 - **StoreKit 2, hợp với zero-backend:** xác định quyền lợi on-device qua
   `Transaction.currentEntitlements` — không cần server xác thực receipt.
@@ -445,7 +525,7 @@ app (zero-backend, offline).** Cách rào:
 
 ---
 
-## 14. Quyết định cần bạn chốt (mình để mở, không tự quyết hộ)
+## 15. Quyết định cần bạn chốt (mình để mở, không tự quyết hộ)
 1. **Thị trường chính:** VN-first hay toàn cầu-first? (đổi mốc giá + copy + ưu tiên feature)
 2. **TOTP ở Free:** không giới hạn (thắng Apple mạnh hơn) hay cap ~10 (đòn chuyển đổi thêm)?
 3. **Hạn mức Plus cụ thể:** 3 alias / 10 link-tháng / 2 persona — con số này bạn thấy
@@ -457,3 +537,6 @@ app (zero-backend, offline).** Cách rào:
 7. **Free alias = 1** (khuyến nghị, để có "câu chuyện masking") hay **0** (an toàn chi phí tối đa)?
 8. **Ân hạn wind-down 30 ngày** + **cửa sổ khôi-phục-khi-tái-sub 90 ngày** — thời lượng này ok, hay siết/nới?
 9. **Nhận-share luôn miễn phí** (khuyến nghị — vòng lan truyền kéo người mới vào Loox) — bạn đồng ý chứ?
+10. **Kiểu trial:** reverse trial 14d không-thẻ làm onboarding chính (khuyến nghị) + standard 7d có-thẻ ở paywall — hay chỉ một kiểu?
+11. **Win-back:** bật Apple win-back offers + nudge-qua-fence (khuyến nghị) — mức giảm tối đa cho win-back (đề xuất ≤50% năm đầu)?
+12. **Analytics privacy-first:** chọn hướng nào (on-device aggregate / SDK privacy-friendly) để đo trial-funnel mà không phá claim riêng tư?

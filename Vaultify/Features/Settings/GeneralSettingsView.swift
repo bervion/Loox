@@ -81,7 +81,7 @@ struct GeneralSettingsView: View {
         }
         .themedFormBackground()
         .toggleStyle(.switch)
-        .navigationTitle("General")
+        .navigationTitle(appString("General"))
         .platformNavigationBarTitleDisplayMode(.inline)
     }
 }
