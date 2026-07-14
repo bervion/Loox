@@ -53,3 +53,4 @@ fastlane/api_key.json
 # specific, not shared. Keep only the shared review/planner memory versioned.
 .claude/*
 !.claude/agent-memory/
+.agentkit/
