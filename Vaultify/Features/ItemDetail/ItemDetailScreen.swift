@@ -7,6 +7,12 @@ struct ItemDetailScreen: View {
     let itemID: String
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
+    // Compact-iOS UIKit shell: a navigator-pushed detail cannot be popped by
+    // SwiftUI `dismiss()` — the nested NavigationStack root swallows it — so pop
+    // the shell's UINavigationController instead. A nested push / modal / the
+    // iPad-Mac sidebar (isNavigatorRoot == false) keeps using `dismiss()`.
+    @Environment(AppNavigator.self) private var navigator: AppNavigator?
+    @Environment(\.isNavigatorRoot) private var isNavigatorRoot
     @State private var editing: EditorTarget?
     @State private var confirmTrash = false
     @State private var confirmDelete = false
@@ -94,6 +100,18 @@ struct ItemDetailScreen: View {
             return appString("This item's fields are behind Extra Protection, so nothing can be sent to a browser.")
         }
         return appString("This item has nothing to send to a browser yet.")
+    }
+
+    /// Close this detail after a mutation. On the compact-iOS shell a
+    /// navigator-pushed root pops the UINavigationController; everywhere else
+    /// (nested push, modal, sidebar) SwiftUI `dismiss()` already does the right
+    /// thing.
+    private func closeDetail() {
+        if isNavigatorRoot, let navigator {
+            navigator.pop()
+        } else {
+            dismiss()
+        }
     }
 
     var body: some View {
@@ -210,7 +228,7 @@ struct ItemDetailScreen: View {
                                     if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
                                         showLastIdentityBlock = true
                                     } else {
-                                        env.repository.archive(item); dismiss()
+                                        env.repository.archive(item); closeDetail()
                                     }
                                 } label: { Label("Archive", image: Icons.archive) }
                             }
@@ -267,13 +285,13 @@ struct ItemDetailScreen: View {
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
                 Haptics.error()
-                if let item { try? env.repository.moveToTrash(item); dismiss() }
+                if let item { try? env.repository.moveToTrash(item); closeDetail() }
             }
         }
         .confirmationDialog("Permanently delete this item?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Permanently", role: .destructive) {
                 Haptics.error()
-                if let item { try? env.repository.delete(item); dismiss() }
+                if let item { try? env.repository.delete(item); closeDetail() }
             }
         } message: {
             Text("This can’t be undone.")
@@ -302,7 +320,7 @@ struct ItemDetailScreen: View {
         .task(id: env.sharedItems.hasLoaded ? "loaded" : "loading") {
             if itemID.hasPrefix("shared::"), env.sharedItems.hasLoaded,
                env.sharedItems.item(id: itemID) == nil {
-                dismiss()
+                closeDetail()
             }
         }
         // Safety code loads once per shared item (needs the unlocked Vault Key).
@@ -317,7 +335,7 @@ struct ItemDetailScreen: View {
         guard let vaultKey = env.session.vaultKey?.bytes else { return }
         do {
             try await env.sharedItems.leave(itemId: itemID, vaultKey: vaultKey)
-            dismiss()
+            closeDetail()
         } catch {
             // Swallowing this reads as "the button does nothing" — say why.
             leaveError = error.localizedDescription
@@ -660,7 +678,7 @@ struct ItemDetailScreen: View {
         } else if item.isTrashed {
             VStack(spacing: Space.s3) {
                 actionRow("Restore", icon: Icons.refresh, color: env.theme.active.color(.success)) {
-                    try? env.repository.restore(item); dismiss()
+                    try? env.repository.restore(item); closeDetail()
                 }
                 actionRow("Delete Permanently", icon: Icons.delete, color: env.theme.active.color(.destructive)) {
                     confirmDelete = true

@@ -50,6 +50,10 @@ extension View {
                 // `\.vaultZoomNamespace` (currently Search) — every other caller of this
                 // shared modifier gets the ordinary push, unaffected.
                 ItemDetailScreen(itemID: id)
+                    // Pushed INSIDE a stack (from a folder/tag/category/search
+                    // list) — here SwiftUI `dismiss()` pops correctly, so clear the
+                    // navigator-root flag inherited from the enclosing push.
+                    .environment(\.isNavigatorRoot, false)
                     .modifier(ZoomTransitionDestination(id: id))
                     .fullScreenPush()
             }

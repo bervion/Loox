@@ -126,6 +126,7 @@ Chỉ chặn **quyền năng & hạ tầng**.
 - Import/Export CSV + backup mã hoá (KHÔNG BAO GIỜ nhốt dữ liệu — bắt buộc free vì lòng tin + App Review)
 - Spaces/tags/favorites/pinned/archive/thùng rác (đề xuất cap mềm: **3 Spaces** ở Free)
 - **Watchtower cơ bản**: điểm 0–1000 + ĐẾM số vấn đề (mồi lo lắng), chưa mở danh sách
+- Email alias: **1** (nếm masking tích hợp — đấu Apple/DDG ở mức "cho thấy", xem §10.1)
 - 2 theme (Day/Night) + accent mặc định
 
 ### 🟡 Loox+ (Plus) — DECOY: lớp bảo mật-cá-nhân + nếm thử hạ tầng
@@ -136,7 +137,7 @@ Mọi thứ ở Free, cộng:
 - Toàn bộ 7 accent + auto-night + cỡ chữ (+ theme/wallpaper tương lai khi bật lại)
 - TOTP không giới hạn (nếu Free cap), Spaces không giới hạn
 - **Nếm thử hạ tầng (cố ý "lưng chừng"):**
-  - Email alias: **3 cái** (nếm masking — power-user 20 login sẽ thèm thêm)
+  - Email alias: **5 cái** (nếm masking — power-user 20 login sẽ thèm thêm)
   - Loox Link / Quick View: **~10 lượt / tháng**
   - Personas: **2** (1 thêm ngoài mặc định)
 - ⛔ KHÔNG có (giữ cho Max): alias không giới hạn · chia sẻ với NGƯỜI KHÁC · personas không
