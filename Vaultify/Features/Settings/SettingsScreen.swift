@@ -185,6 +185,9 @@ struct SettingsScreen: View {
         .themedFormBackground()
         .navigationTitle("Settings")
         .platformNavigationBarTitleDisplayMode(.large)
+        // Settings is a "leave the browsing context" destination — hide the tab
+        // bar while it (and its child screens) are on screen, like a modal used to.
+        .toolbar(.hidden, for: .tabBar)
         .alert(Text("Network needed"), isPresented: $relayBlockErase) {
             Button("OK", role: .cancel) {}
         } message: {
