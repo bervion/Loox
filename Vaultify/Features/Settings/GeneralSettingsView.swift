@@ -80,6 +80,7 @@ struct GeneralSettingsView: View {
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
+        .toggleStyle(.switch)
         .navigationTitle("General")
         .platformNavigationBarTitleDisplayMode(.inline)
     }

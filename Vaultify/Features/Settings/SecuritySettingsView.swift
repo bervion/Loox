@@ -79,6 +79,7 @@ struct SecuritySettingsView: View {
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
+        .toggleStyle(.switch)
         .navigationTitle("Security")
         .platformNavigationBarTitleDisplayMode(.inline)
     }

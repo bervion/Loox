@@ -53,6 +53,8 @@ struct NotificationsSettingsView: View {
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
+        .toggleStyle(.switch)
+        .tint(Color(rgb: env.theme.active.switchOn))
         .navigationTitle("Notifications")
         .platformNavigationBarTitleDisplayMode(.inline)
         .task { await refreshAuthorizationStatus() }

@@ -183,6 +183,9 @@ struct SettingsScreen: View {
             .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
+        // Native iOS switch metrics (the app root applies a custom .themed style;
+        // override it here). Colours come from each toggle's explicit .tint.
+        .toggleStyle(.switch)
         .navigationTitle("Settings")
         .platformNavigationBarTitleDisplayMode(.large)
         // Settings is a "leave the browsing context" destination — hide the tab
