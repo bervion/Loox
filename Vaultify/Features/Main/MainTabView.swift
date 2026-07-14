@@ -14,6 +14,10 @@ struct MainTabView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
 
+    /// One audit controller for the whole shell so the Security tab and its
+    /// drill-down screens (now on the shared root stack) share a running audit.
+    @State private var auditController = AuditRunController()
+
     var body: some View {
         shell
             // Apple-style neutral chrome: the selected tab icon AND default
@@ -28,6 +32,25 @@ struct MainTabView: View {
     /// shells hide it per tab (`tabRoot`) and mount the floating chip bar as a
     /// bottom safe-area inset — scroll views then clear it automatically.
     @ViewBuilder private var shell: some View {
+        @Bindable var uiState = uiState
+        // Telegram architecture: ONE root NavigationStack with the TabView as its
+        // base. Detail pushes cover the whole TabView (tab bar included), so the
+        // tab bar hides on push and reappears on back — no per-screen flag.
+        NavigationStack(path: $uiState.rootPath) {
+            tabBarBase
+                .platformHiddenNavigationBar()
+                .vaultNavigationDestinations()
+                .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
+                .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen() }
+                .navigationDestination(for: WatchtowerCategory.self) { category in
+                    WatchtowerCategoryDestination(category: category, controller: auditController)
+                }
+        }
+    }
+
+    /// The tab bar itself: native Liquid Glass bar on iOS 26; the floating chip
+    /// bar as a bottom inset pre-26.
+    @ViewBuilder private var tabBarBase: some View {
         @Bindable var uiState = uiState
         if #available(iOS 26.0, *) {
             tabContent
@@ -63,14 +86,14 @@ struct MainTabView: View {
             TabView(selection: $uiState.selectedTab) {
                 Tab(value: VaultTab.home) { tabRoot { HomeScreen() } } label: { tabIcon(.home) }
                 Tab(value: VaultTab.items) { tabRoot { ItemsScreen() } } label: { tabIcon(.items) }
-                Tab(value: VaultTab.watchtower) { tabRoot { WatchtowerScreen() } } label: { tabIcon(.watchtower) }
-                Tab(value: VaultTab.search, role: .search) { tabRoot { SearchScreen() } } label: { tabIcon(.search) }
+                Tab(value: VaultTab.watchtower) { tabRoot { WatchtowerScreen(controller: auditController) } } label: { tabIcon(.watchtower) }
+                Tab(value: VaultTab.search) { tabRoot { SearchScreen() } } label: { tabIcon(.search) }
             }
         } else {
             TabView(selection: $uiState.selectedTab) {
                 legacyTab(.home) { HomeScreen() }
                 legacyTab(.items) { ItemsScreen() }
-                legacyTab(.watchtower) { WatchtowerScreen() }
+                legacyTab(.watchtower) { WatchtowerScreen(controller: auditController) }
                 legacyTab(.search) { SearchScreen() }
             }
         }

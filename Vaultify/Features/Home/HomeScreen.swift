@@ -122,8 +122,6 @@ struct HomeScreen: View {
     }
 
     var body: some View {
-        @Bindable var uiState = uiState
-        return NavigationStack(path: $uiState.homePath) {
             // ZStack lets the header float over scroll content so glass blurs it.
             ZStack(alignment: .top) {
                 Group {
@@ -153,7 +151,7 @@ struct HomeScreen: View {
                         #if os(macOS)
                         openSettings()
                         #else
-                        uiState.homePath.append(SettingsRoute())
+                        uiState.rootPath.append(SettingsRoute())
                         #endif
                     }
                 )
@@ -161,9 +159,6 @@ struct HomeScreen: View {
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .platformHiddenNavigationBar()
-            .vaultNavigationDestinations()
-            .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen().fullScreenPush() }
-            .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen().fullScreenPush() }
             .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
             // Also re-mirror into the App Group so the AutoFill extension defaults a
@@ -205,7 +200,6 @@ struct HomeScreen: View {
             // the last pending share removes that conditional view mid-dismiss, which
             // would strand the sheet binding and re-present a stale record later.
             .sheet(item: $homeResumeShare) { ShareResumeStepperSheet(share: $0) }
-        }
     }
 
     // MARK: Main scrollable content
@@ -395,7 +389,7 @@ struct HomeScreen: View {
     /// the identity deserves a visible anchor, and the card reads cleanly against the
     /// grouped background without competing with the credential band below.
     private var profileRow: some View {
-        Button { uiState.homePath.append(ProfileRoute()) } label: {
+        Button { uiState.rootPath.append(ProfileRoute()) } label: {
             HStack(spacing: Space.s3) {
                 profileAvatar
                 VStack(alignment: .leading, spacing: 2) {
@@ -525,7 +519,7 @@ struct HomeScreen: View {
                     AttentionCell(
                         item: item,
                         onEdit: { editorTarget = .edit($0) },
-                        onOpen: { uiState.homePath.append($0.id) },
+                        onOpen: { uiState.rootPath.append($0.id) },
                         showDivider: idx < attentionItems.count - 1
                     )
                 }
@@ -816,7 +810,7 @@ struct HomeScreen: View {
     @ViewBuilder
     private func itemRow(_ item: VaultItem, showDivider: Bool) -> some View {
         Button {
-            uiState.homePath.append(item.id)
+            uiState.rootPath.append(item.id)
         } label: {
             VaultItemRow(item: item, showSpace: selectedFolderId == nil)
                 .padding(.horizontal, Space.s4)

@@ -10,6 +10,9 @@ import SwiftUI
 struct VaultSidebarView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
+    @State private var auditController = AuditRunController()
+
+    private var rootPathBinding: Binding<NavigationPath> { Bindable(uiState).rootPath }
 
     var body: some View {
         @Bindable var uiState = uiState
@@ -69,17 +72,30 @@ struct VaultSidebarView: View {
     @ViewBuilder
     private func detail(for selection: UIStateStore.SidebarSelection) -> some View {
         switch selection {
-        case .section(.home): HomeScreen()
-        case .section(.items): ItemsScreen()
-        case .section(.watchtower): WatchtowerScreen()
-        case .section(.search): SearchScreen()
+        case .section(.home): sidebarStack { HomeScreen() }
+        case .section(.items): sidebarStack { ItemsScreen() }
+        case .section(.watchtower): sidebarStack { WatchtowerScreen(controller: auditController) }
+        case .section(.search): sidebarStack { SearchScreen() }
         case .space(let folderId):
-            NavigationStack {
-                FolderItemsScreen(folderId: folderId)
-                    .vaultNavigationDestinations()
-            }
+            sidebarStack { FolderItemsScreen(folderId: folderId) }
         case .profile:
             NavigationStack { ProfileScreen() }
+        }
+    }
+
+    /// One detail-column stack (bound to the shared `rootPath`, since only one
+    /// sidebar section is mounted at a time) carrying every push destination the
+    /// tab screens used to register themselves.
+    @ViewBuilder
+    private func sidebarStack<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        NavigationStack(path: rootPathBinding) {
+            content()
+                .vaultNavigationDestinations()
+                .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
+                .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen() }
+                .navigationDestination(for: WatchtowerCategory.self) { category in
+                    WatchtowerCategoryDestination(category: category, controller: auditController)
+                }
         }
     }
 }

@@ -18,9 +18,7 @@ struct ItemsScreen: View {
     private var tags: [(tag: String, count: Int)] { env.repository.allTags() }
 
     var body: some View {
-        @Bindable var uiState = uiState
-        return NavigationStack(path: $uiState.itemsPath) {
-            ZStack(alignment: .top) {
+        ZStack(alignment: .top) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s6) {
                         // Top inset clears the floating header + reports scroll-edge state.
@@ -68,10 +66,8 @@ struct ItemsScreen: View {
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             .platformHiddenNavigationBar()
-            .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
-        }
     }
 
     // MARK: - Sections

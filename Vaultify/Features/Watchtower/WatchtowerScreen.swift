@@ -30,7 +30,11 @@ struct WatchtowerScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
 
-    @State private var controller = AuditRunController()
+    /// Shared from the tab shell so a running audit stays connected to its
+    /// drill-down screens (which now live on the app-wide root stack).
+    let controller: AuditRunController
+    init(controller: AuditRunController) { self.controller = controller }
+
     @State private var latestPayload: AuditReportPayload?
     @State private var health = VaultHealth.empty     // strength card + empty state
     @State private var editorTarget: EditorTarget?
@@ -82,8 +86,6 @@ struct WatchtowerScreen: View {
     }
 
     var body: some View {
-        @Bindable var uiState = uiState
-        return NavigationStack(path: $uiState.watchtowerPath) {
             ZStack(alignment: .top) {
                 if emptyVault {
                     // Full-bleed plain-canvas first-run state (its own white background).
@@ -131,12 +133,6 @@ struct WatchtowerScreen: View {
             }) {
                 ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
             }
-            .navigationDestination(for: String.self) { itemID in
-                ItemDetailScreen(itemID: itemID).fullScreenPush()
-            }
-            .navigationDestination(for: WatchtowerCategory.self) { category in
-                categoryScreen(for: category).fullScreenPush()
-            }
             .task { reload(); autoAuditIfStale(); rescheduleAuditReminder() }
             // Security audits the ACTIVE persona's vault — switching persona reloads.
             .onChange(of: env.repository.activePersona?.id) {
@@ -166,7 +162,6 @@ struct WatchtowerScreen: View {
                     autoAuditIfStale()
                 }
             }
-        }
     }
 
     private func reload() {
@@ -206,56 +201,6 @@ struct WatchtowerScreen: View {
         AuditReminderNotificationService.shared.reschedule(
             lastAuditedAt: completedAt,
             enabled: env.settings.auditRemindersEnabled)
-    }
-
-    // MARK: - Destinations
-
-    @ViewBuilder
-    private func categoryScreen(for category: WatchtowerCategory) -> some View {
-        switch category {
-        case .strength:
-            WatchtowerStrengthScreen()
-        case .audit:
-            VaultAuditFlowScreen(controller: controller)
-        case .whyScore:
-            if let latestPayload { WhyThisScoreScreen(payload: latestPayload) }
-        case .fullReport:
-            if let latestPayload { AuditFullReportScreen(payload: latestPayload) }
-        case .findingGroup(let ruleID):
-            findingGroupScreen(ruleID: ruleID)
-        case .fixQueue:
-            AuditFixQueueScreen(findings: queuedFindings,
-                                ruleVersions: controller.lastRun?.ruleVersions
-                                    ?? latestPayload?.ruleVersions ?? [:])
-        case .history:
-            AuditHistoryScreen()
-        case .historyDetail(let index):
-            AuditHistoryDetailScreen(index: index)
-        }
-    }
-
-    /// Queue source: full findings from this session's run, else saved digests.
-    private var queuedFindings: [QueuedFinding] {
-        if let report = controller.lastRun { return report.findings.map(QueuedFinding.init) }
-        return latestPayload?.findings.map(QueuedFinding.init) ?? []
-    }
-
-    @ViewBuilder
-    private func findingGroupScreen(ruleID: String) -> some View {
-        let itemIDs = sections.map {
-            ($0.actNow + $0.improve + $0.maintain).first { $0.ruleID == ruleID }?.itemIDs ?? []
-        } ?? []
-        let itemsByID = Dictionary(uniqueKeysWithValues: env.repository.activePersonaItems
-            .map { ($0.id, $0) })
-        let issues = itemIDs.compactMap { itemsByID[$0] }.map { item in
-            VaultIssue(itemID: item.id,
-                       itemTitle: item.title.isEmpty ? appString("Untitled") : item.title,
-                       category: item.category, kind: .weak, detail: nil)
-        }
-        WatchtowerCategoryScreen(
-            title: AuditFindingCopy.title(ruleID: ruleID),
-            issues: issues,
-            infoNote: LocalizedStringKey(String(localized: AuditFindingCopy.explanation(ruleID: ruleID))))
     }
 
     // MARK: - Score ring + audit meta

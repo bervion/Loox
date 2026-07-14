@@ -33,6 +33,10 @@ import SwiftUI
     /// once-per-launch cold restore). Seeded from the restored `selectedTab` on cold launch.
     var sidebarSelection: SidebarSelection = .section(.home)
 
+    /// Single shared navigation stack for the whole iPhone tab shell
+    /// (Telegram-style: details push OVER the TabView so the tab bar is covered).
+    /// The old per-tab paths remain for the macOS/iPad sidebar columns.
+    var rootPath = NavigationPath()
     var homePath = NavigationPath()
     var itemsPath = NavigationPath()
     var searchPath = NavigationPath()

@@ -14,17 +14,13 @@ struct SearchScreen: View {
     @Namespace private var zoomNamespace
 
     var body: some View {
-        @Bindable var uiState = uiState
-        return NavigationStack(path: $uiState.searchPath) {
-            SearchResultsList(query: search, onSelectFilter: { search = $0 })
-                .navigationTitle("Search")
-                .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
-                .autocorrectionDisabled()
-                .platformAutocapitalization(.never)
-                .environment(\.vaultZoomNamespace, zoomNamespace)
-                .vaultNavigationDestinations()
-        }
-        .onAppear { searchPresented = true }
+        SearchResultsList(query: search, onSelectFilter: { search = $0 })
+            .navigationTitle("Search")
+            .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
+            .autocorrectionDisabled()
+            .platformAutocapitalization(.never)
+            .environment(\.vaultZoomNamespace, zoomNamespace)
+            .onAppear { searchPresented = true }
     }
 }
 
