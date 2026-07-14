@@ -15032,6 +15032,22 @@
           }
         }
       }
+    },
+    "Passkey upgrades can create passkeys in the background. Using them still requires unlocking your vault.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkey upgrades can create passkeys in the background. Using them still requires unlocking your vault."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nâng cấp passkey có thể tạo passkey ở chế độ nền. Việc dùng chúng vẫn cần mở khóa kho."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

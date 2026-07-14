@@ -22,7 +22,6 @@ struct HomeScreen: View {
     /// editor once the picker finishes dismissing.
     @State private var showItemTypePicker = false
     @State private var pendingNewCategory: ItemCategory?
-    @State private var showSettings = false
     @State private var showGenerator = false
     @State private var showTotpList = false
     @State private var showFolderPicker = false
@@ -154,7 +153,7 @@ struct HomeScreen: View {
                         #if os(macOS)
                         openSettings()
                         #else
-                        showSettings = true
+                        uiState.homePath.append(SettingsRoute())
                         #endif
                     }
                 )
@@ -164,6 +163,7 @@ struct HomeScreen: View {
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen() }
+            .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen() }
             .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
             // Also re-mirror into the App Group so the AutoFill extension defaults a
@@ -195,7 +195,6 @@ struct HomeScreen: View {
             }) {
                 ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
             }
-            .sheet(isPresented: $showSettings) { SettingsScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
             .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
             // Persona-empty state's "Create a Space" CTA — reuses the standard Space
