@@ -166,13 +166,13 @@ struct SearchResultsList: View {
             if trimmed.isEmpty {
                 SearchZeroStateView(scope: scope, onSelectFilter: onSelectFilter)
             } else {
-                VStack(spacing: 0) {
-                    scopeChips
-                    resultsContent
-                }
+                resultsContent
             }
         }
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
+        // Telegram-style: the scope filter sits at the BOTTOM, just above the
+        // search field / keyboard, instead of atop the results.
+        .safeAreaInset(edge: .bottom, spacing: 0) { scopeFilterBar }
         .onAppear(perform: seedScope)
     }
 
@@ -185,20 +185,29 @@ struct SearchResultsList: View {
         scope = env.repository.defaultSearchScope(currentSpaceId: currentSpaceId)
     }
 
-    @ViewBuilder private var scopeChips: some View {
+    /// Bottom-pinned scope filter (Telegram-style): a horizontal pill row on a
+    /// solid bar with a hairline top edge, shown only with an active query and
+    /// more than one available scope. Sits just above the search field.
+    @ViewBuilder private var scopeFilterBar: some View {
         let chips = availableScopes
-        if chips.count > 1 {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Space.s2) {
-                    ForEach(chips, id: \.self) { chipScope in
-                        ScopeChip(label: label(for: chipScope), isActive: scope == chipScope) {
-                            scope = chipScope
+        if !trimmed.isEmpty, chips.count > 1 {
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color(rgb: env.theme.active.separator))
+                    .frame(height: 0.5)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Space.s2) {
+                        ForEach(chips, id: \.self) { chipScope in
+                            ScopeChip(label: label(for: chipScope), isActive: scope == chipScope) {
+                                scope = chipScope
+                            }
                         }
                     }
+                    .padding(.horizontal, Space.gutter)
+                    .padding(.vertical, Space.s2)
                 }
-                .padding(.horizontal, Space.gutter)
-                .padding(.vertical, Space.s2)
             }
+            .background(Color(rgb: env.theme.active.groupedBackground))
         }
     }
 
