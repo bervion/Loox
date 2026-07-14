@@ -135,11 +135,13 @@ private struct ThemedFormBackgroundModifier: ViewModifier {
 
 // MARK: - Card
 
-/// An elevated surface that floats over the background / wallpaper and stays legible.
+/// A grouped card surface — the iOS inset-grouped idiom. It reads as a card
+/// purely from the fill contrast against the grouped page background (present it
+/// on `themedFormBackground` / `groupedBackground`), with no hairline stroke.
 struct ThemedCard<Content: View>: View {
     @Environment(AppEnvironment.self) private var env
-    // DS scale: `Radius.lg` (20) is the card tier.
-    var cornerRadius: CGFloat = Radius.lg
+    // DS scale: `Radius.md` (14) is the grouped-card tier.
+    var cornerRadius: CGFloat = Radius.md
     var padding: CGFloat = Space.s4
     @ViewBuilder var content: Content
 
@@ -150,14 +152,12 @@ struct ThemedCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(rgb: theme.elevatedBackground))
             .vaultCornerRadius(cornerRadius)
-            .overlay(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(Color(rgb: theme.separator), lineWidth: 0.5))
     }
 }
 
 extension View {
     /// Wrap the receiver in a themed card surface.
-    func themedCard(cornerRadius: CGFloat = Radius.lg, padding: CGFloat = Space.s4) -> some View {
+    func themedCard(cornerRadius: CGFloat = Radius.md, padding: CGFloat = Space.s4) -> some View {
         ThemedCard(cornerRadius: cornerRadius, padding: padding) { self }
     }
 }

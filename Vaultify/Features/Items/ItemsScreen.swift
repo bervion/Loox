@@ -185,11 +185,7 @@ struct ItemsScreen: View {
     private func groupedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) { content() }
             .background(Color(rgb: env.theme.active.elevatedBackground))
-            .vaultCornerRadius(Radius.lg)
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5)
-            )
+            .vaultCornerRadius(Radius.md)
     }
 
     /// Navigation row inside a grouped card: leading badge + title + optional count

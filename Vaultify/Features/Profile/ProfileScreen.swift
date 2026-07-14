@@ -95,12 +95,7 @@ struct ProfileScreen: View {
                     personaRowLabel("Private Email", icon: Icons.mail)
                 }
             }
-            .padding(Space.s4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(rgb: env.theme.active.elevatedBackground))
-            .vaultCornerRadius(Radius.lg)
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.5))
+            .themedCard()
         }
     }
 
