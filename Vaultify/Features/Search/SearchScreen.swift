@@ -172,6 +172,9 @@ struct SearchResultsList: View {
             }
             resultsContent
         }
+        // Pin to the top: otherwise the content rides down with the search field
+        // when the keyboard is dismissed, leaving a gap above the filter.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
         // Tapping anywhere drops the keyboard; simultaneous so result rows still tap.
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
@@ -325,6 +328,14 @@ private struct SearchScopeBar: View {
     @Binding var selection: SpaceScope
     let title: (SpaceScope) -> String
 
+    /// Selected-chip fill: a soft blend toward the text colour — gentle on light
+    /// (5%) so it doesn't read as a heavy grey block over the frosted trough,
+    /// the usual weight on dark (14%). Adaptive, so contrast holds in both.
+    private var selectedChipColor: Color {
+        let t = env.theme.active
+        return Color(rgb: RGBMath.blend(t.controlBackground, t.primaryText, t.isDark ? 0.14 : 0.05))
+    }
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Space.s1) {
@@ -352,12 +363,9 @@ private struct SearchScopeBar: View {
                 .frame(minHeight: Metric.controlSmall)
                 .background {
                     // Only the SELECTED chip carries a fill — a soft adaptive grey
-                    // (surfacePressed: a blend toward the text colour, so it reads
-                    // in both themes) on the glass trough. A white fill blended into
-                    // the frosted trough; grey keeps clear contrast.
+                    // over the frosted trough (no shadow: keep it smooth).
                     if isActive {
-                        Capsule().fill(Color(rgb: env.theme.active.surfacePressed))
-                            .elevation(.level1)
+                        Capsule().fill(selectedChipColor)
                     }
                 }
                 .contentShape(Capsule())
