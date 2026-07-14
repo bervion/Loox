@@ -8,6 +8,8 @@ import SwiftUI
 struct ItemsScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
+    // Compact-iOS UIKit shell; nil on the iPad/Mac sidebar (SwiftUI-path fallback).
+    @Environment(AppNavigator.self) private var navigator: AppNavigator?
     @State private var creatingSpace = false
     @State private var editorTarget: EditorTarget?
     @State private var scrolledUnder = false
@@ -188,6 +190,19 @@ struct ItemsScreen: View {
             .vaultCornerRadius(Radius.md)
     }
 
+    /// Compact iOS pushes onto the UIKit shell (native slide covering the tab
+    /// bar); the iPad/Mac sidebar (no navigator) appends to its own SwiftUI stack.
+    private func open<Route: Hashable>(_ route: Route) {
+        guard let navigator else { uiState.itemsPath.append(route); return }
+        if let vaultRoute = route as? VaultRoute {
+            navigator.push { vaultRouteDestination(vaultRoute) }
+        } else if route is SharedWithMeRoute {
+            navigator.push { SharedWithMeScreen() }
+        } else {
+            uiState.itemsPath.append(route)
+        }
+    }
+
     /// Navigation row inside a grouped card: leading badge + title + optional count
     /// + chevron, with a leading-inset hairline divider.
     @ViewBuilder
@@ -198,7 +213,7 @@ struct ItemsScreen: View {
         showDivider: Bool,
         @ViewBuilder leading: () -> Leading
     ) -> some View {
-        NavigationLink(value: route) {
+        Button { open(route) } label: {
             HStack(spacing: Space.s3) {
                 leading()
                 title.themedForeground()

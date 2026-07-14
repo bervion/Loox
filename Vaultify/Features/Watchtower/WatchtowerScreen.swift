@@ -29,6 +29,8 @@ enum WatchtowerCategory: Hashable {
 struct WatchtowerScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
+    // Compact-iOS UIKit shell; nil on the iPad/Mac sidebar (SwiftUI-path fallback).
+    @Environment(AppNavigator.self) private var navigator: AppNavigator?
 
     @State private var controller = AuditRunController()
     @State private var latestPayload: AuditReportPayload?
@@ -210,6 +212,14 @@ struct WatchtowerScreen: View {
 
     // MARK: - Destinations
 
+    /// Compact iOS pushes the category screen onto the UIKit shell (native slide
+    /// covering the tab bar); the iPad/Mac sidebar (no navigator) appends to its
+    /// own SwiftUI stack path.
+    private func openCategory(_ category: WatchtowerCategory) {
+        if let navigator { navigator.push { categoryScreen(for: category) } }
+        else { uiState.watchtowerPath.append(category) }
+    }
+
     @ViewBuilder
     private func categoryScreen(for category: WatchtowerCategory) -> some View {
         switch category {
@@ -269,7 +279,7 @@ struct WatchtowerScreen: View {
                 HStack {
                     Spacer()
                     if let latestPayload {
-                        NavigationLink(value: WatchtowerCategory.whyScore) {
+                        Button { openCategory(.whyScore) } label: {
                             WatchtowerScoreRing(score: latestPayload.score, introKey: introKey)
                         }
                         .buttonStyle(.plain)
@@ -324,7 +334,7 @@ struct WatchtowerScreen: View {
         VStack(spacing: Space.s5) {
             // One filled primary; the resume path is the quiet tinted secondary
             // (the style owns typography and height — plain Text labels only).
-            NavigationLink(value: WatchtowerCategory.audit) {
+            Button { openCategory(.audit) } label: {
                 HStack(spacing: Space.s2) {
                     PolarisIcon(Icons.shieldPerson, size: Metric.iconInline)
                     Text("Run Vault Audit")
@@ -335,7 +345,7 @@ struct WatchtowerScreen: View {
             .padding(.horizontal, Space.gutter)
 
             if let sections, sections.actNowCount > 0 {
-                NavigationLink(value: WatchtowerCategory.fixQueue) {
+                Button { openCategory(.fixQueue) } label: {
                     Text(verbatim: appString("Continue fixing \(sections.actNowCount) issues"))
                         .frame(maxWidth: .infinity)
                 }
@@ -343,7 +353,7 @@ struct WatchtowerScreen: View {
                 .padding(.horizontal, Space.gutter)
             }
 
-            NavigationLink(value: WatchtowerCategory.strength) {
+            Button { openCategory(.strength) } label: {
                 WatchtowerStrengthCard(overallStrength: health.overallStrength, introKey: introKey)
             }
             .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
@@ -369,7 +379,7 @@ struct WatchtowerScreen: View {
             }
 
             if latestPayload != nil {
-                NavigationLink(value: WatchtowerCategory.history) {
+                Button { openCategory(.history) } label: {
                     HStack(spacing: Space.s3) {
                         PolarisIcon(Icons.clock, size: Metric.iconInline)
                             .themedForeground(.secondary)

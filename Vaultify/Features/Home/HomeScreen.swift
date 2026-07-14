@@ -14,6 +14,9 @@ import SwiftUI
 struct HomeScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
+    // Present in the compact-iOS UIKit shell; nil on the iPad/Mac sidebar (which
+    // navigates via its own SwiftUI stack). See `openItem`/`openSettingsScreen`.
+    @Environment(AppNavigator.self) private var navigator: AppNavigator?
     #if os(macOS)
     @Environment(\.openSettings) private var openSettings
     #endif
@@ -153,7 +156,7 @@ struct HomeScreen: View {
                         #if os(macOS)
                         openSettings()
                         #else
-                        uiState.homePath.append(SettingsRoute())
+                        openSettingsScreen()
                         #endif
                     }
                 )
@@ -343,7 +346,7 @@ struct HomeScreen: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                NavigationLink(value: NotificationsRoute()) {
+                Button { openNotifications() } label: {
                     approvalRowLabel(count: requests.count)
                 }
                 .buttonStyle(.plain)
@@ -395,7 +398,7 @@ struct HomeScreen: View {
     /// the identity deserves a visible anchor, and the card reads cleanly against the
     /// grouped background without competing with the credential band below.
     private var profileRow: some View {
-        Button { uiState.homePath.append(ProfileRoute()) } label: {
+        Button { openProfile() } label: {
             HStack(spacing: Space.s3) {
                 profileAvatar
                 VStack(alignment: .leading, spacing: 2) {
@@ -525,7 +528,7 @@ struct HomeScreen: View {
                     AttentionCell(
                         item: item,
                         onEdit: { editorTarget = .edit($0) },
-                        onOpen: { uiState.homePath.append($0.id) },
+                        onOpen: { openItem($0.id) },
                         showDivider: idx < attentionItems.count - 1
                     )
                 }
@@ -812,11 +815,32 @@ struct HomeScreen: View {
         .elevation(.level1)
     }
 
+    // MARK: Navigation — compact iOS pushes onto the UIKit shell (native slide
+    // that covers the tab bar); the iPad/Mac sidebar (no navigator) falls back to
+    // its own SwiftUI stack path so its navigation is unchanged.
+
+    private func openItem(_ id: String) {
+        if let navigator { navigator.push { ItemDetailScreen(itemID: id) } }
+        else { uiState.homePath.append(id) }
+    }
+    private func openSettingsScreen() {
+        if let navigator { navigator.push { SettingsScreen() } }
+        else { uiState.homePath.append(SettingsRoute()) }
+    }
+    private func openProfile() {
+        if let navigator { navigator.push { ProfileScreen() } }
+        else { uiState.homePath.append(ProfileRoute()) }
+    }
+    private func openNotifications() {
+        if let navigator { navigator.push { NotificationsScreen() } }
+        else { uiState.homePath.append(NotificationsRoute()) }
+    }
+
     /// A tappable item row reusing VaultItemRow inside the grouped card.
     @ViewBuilder
     private func itemRow(_ item: VaultItem, showDivider: Bool) -> some View {
         Button {
-            uiState.homePath.append(item.id)
+            openItem(item.id)
         } label: {
             VaultItemRow(item: item, showSpace: selectedFolderId == nil)
                 .padding(.horizontal, Space.s4)
