@@ -28,6 +28,21 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
         return base.inAppLocalized
     }
 
+    /// One-line description shown next to the title in the create-item picker.
+    var creationBlurb: LocalizedStringResource {
+        let base: LocalizedStringResource = switch self {
+        case .login: "Website and app passwords"
+        case .note: "Private text, encrypted at rest"
+        case .card: "Card numbers, PINs, and CVV"
+        case .identity: "Personal and contact details"
+        case .sshKey: "Public and private key pairs"
+        case .recoveryCodes: "Backup codes for two-factor sign in"
+        case .securityQuestions: "Question and answer pairs"
+        case .custom: "Your own fields, any shape"
+        }
+        return base.inAppLocalized
+    }
+
     /// Polaris icon asset backing this category (chips, inline rows, pickers).
     var iconAsset: String {
         switch self {

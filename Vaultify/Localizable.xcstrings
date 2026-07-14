@@ -13348,6 +13348,23 @@
         }
       }
     },
+    "Type icon": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type icon"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon theo loại"
+          }
+        }
+      }
+    },
     "Type the code shown on your computer.": {
       "localizations": {
         "vi": {
@@ -14856,18 +14873,162 @@
         }
       }
     },
-    "Type icon": {
+    "New item": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Type icon"
+            "value": "New item"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Icon theo loại"
+            "value": "Mục mới"
+          }
+        }
+      }
+    },
+    "Choose the kind of item to add to your vault.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the kind of item to add to your vault."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn loại mục để thêm vào kho."
+          }
+        }
+      }
+    },
+    "Website and app passwords": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Website and app passwords"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mật khẩu web và ứng dụng"
+          }
+        }
+      }
+    },
+    "Private text, encrypted at rest": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Private text, encrypted at rest"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi chú riêng tư, mã hoá khi lưu"
+          }
+        }
+      }
+    },
+    "Card numbers, PINs, and CVV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card numbers, PINs, and CVV"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số thẻ, mã PIN và CVV"
+          }
+        }
+      }
+    },
+    "Personal and contact details": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal and contact details"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thông tin cá nhân và liên hệ"
+          }
+        }
+      }
+    },
+    "Public and private key pairs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public and private key pairs"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cặp khoá công khai và riêng tư"
+          }
+        }
+      }
+    },
+    "Backup codes for two-factor sign in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup codes for two-factor sign in"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã dự phòng cho đăng nhập hai lớp"
+          }
+        }
+      }
+    },
+    "Question and answer pairs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question and answer pairs"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cặp câu hỏi và trả lời"
+          }
+        }
+      }
+    },
+    "Your own fields, any shape": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your own fields, any shape"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trường tự tạo, tuỳ ý"
           }
         }
       }

@@ -18,6 +18,10 @@ struct HomeScreen: View {
     @Environment(\.openSettings) private var openSettings
     #endif
     @State private var editorTarget: EditorTarget?
+    /// The create-item type picker + the category chosen there, presented as the
+    /// editor once the picker finishes dismissing.
+    @State private var showItemTypePicker = false
+    @State private var pendingNewCategory: ItemCategory?
     @State private var showSettings = false
     @State private var showGenerator = false
     @State private var showTotpList = false
@@ -143,7 +147,7 @@ struct HomeScreen: View {
 
                 // Header overlays the scroll content — glass blurs whatever scrolls beneath.
                 HomeHeaderBar(
-                    onAddCategory: { editorTarget = .new($0) },
+                    onAdd: { showItemTypePicker = true },
                     onSettings: {
                         // macOS opens the native Settings window (⌘,) instead of the
                         // iOS-style sheet — the platform-idiomatic home for settings.
@@ -182,6 +186,15 @@ struct HomeScreen: View {
             // New items inherit the Space currently selected on Home (nil = All Spaces →
             // editor falls back to the primary Space).
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
+            // Item-type picker → present the editor once it finishes dismissing.
+            .sheet(isPresented: $showItemTypePicker, onDismiss: {
+                if let category = pendingNewCategory {
+                    pendingNewCategory = nil
+                    editorTarget = .new(category)
+                }
+            }) {
+                ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
+            }
             .sheet(isPresented: $showSettings) { SettingsScreen() }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
             .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
@@ -438,9 +451,9 @@ struct HomeScreen: View {
         VaultGlassGroup {
         VStack(spacing: Space.s3) {
             HStack(spacing: Space.s3) {
-                // Add — presents the item-type menu (uses ic_page_add, matches the header).
-                Menu {
-                    newItemMenuItems
+                // Add — opens the item-type picker sheet (matches the header).
+                Button {
+                    showItemTypePicker = true
                 } label: {
                     QuickActionCardLabel(
                         icon: Icons.pageAdd,
@@ -678,8 +691,8 @@ struct HomeScreen: View {
                     .frame(maxWidth: 300)
             }
 
-            Menu {
-                newItemMenuItems
+            Button {
+                showItemTypePicker = true
             } label: {
                 HStack(spacing: Space.s2) {
                     PolarisIcon(Icons.add, size: Metric.iconInline)
@@ -733,8 +746,8 @@ struct HomeScreen: View {
                 .padding(.horizontal, Space.s8)
                 .padding(.top, Space.s2)
             } else {
-                Menu {
-                    newItemMenuItems
+                Button {
+                    showItemTypePicker = true
                 } label: {
                     HStack(spacing: Space.s2) {
                         PolarisIcon(Icons.add, size: Metric.iconInline)
@@ -753,20 +766,6 @@ struct HomeScreen: View {
         env.repository.activePersonaSpaces.isEmpty
             ? "This identity doesn’t have a Space yet. Create one to start adding items."
             : "Add your first item to this identity’s vault."
-    }
-
-    // MARK: Add-item menu
-
-    /// Item-type menu shared by the header "+", the Add quick action, and the empty
-    /// state — lets the user choose which kind of item to create (not just a login).
-    @ViewBuilder private var newItemMenuItems: some View {
-        ForEach(ItemCategory.allCases) { category in
-            Button {
-                editorTarget = .new(category)
-            } label: {
-                Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
-            }
-        }
     }
 
     // MARK: Shared helpers

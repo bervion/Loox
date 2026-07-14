@@ -7,7 +7,7 @@ import SwiftUI
 /// logic all live in one shared place.
 struct HomeHeaderBar: View {
     /// Called with the chosen item category when the user picks from the Add menu.
-    let onAddCategory: (ItemCategory) -> Void
+    let onAdd: () -> Void
     let onSettings: () -> Void
 
     @Environment(AppEnvironment.self) private var env
@@ -61,32 +61,16 @@ struct HomeHeaderBar: View {
                     .accessibilityLabel(Text("Notifications"))
 
 
-                    // Add — menu to choose item type
-                    Menu {
-                        ForEach(ItemCategory.allCases) { category in
-                            Button {
-                                onAddCategory(category)
-                            } label: {
-                                Label {
-                                    Text(category.title)
-                                } icon: {
-                                    PolarisIcon(category.iconAsset)
-                                }
-                            }
-                        }
-                    } label: {
+                    // Add — opens the item-type picker sheet.
+                    Button(action: onAdd) {
                         // Frame + contentShape inside the label so the full 44pt
-                        // area triggers the menu, not just the 24pt glyph.
+                        // area triggers it, not just the 24pt glyph.
                         PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
                             .themedForeground()
                             .frame(width: Metric.hitMin, height: Metric.hitMin)
                             .contentShape(.rect)
                     }
-                    // Plain glyph menu — macOS would otherwise draw a bordered
-                    // pull-down button (gray box + chevron) around the icon.
-                    .menuStyle(.button)
                     .buttonStyle(.plain)
-                    .menuIndicator(.hidden)
                     .accessibilityLabel(Text("Add Item"))
 
                     // Settings — direct, no "more" indirection

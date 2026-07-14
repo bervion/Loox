@@ -14,6 +14,9 @@ struct LooxDotsAvatar: View {
     /// Play the ring reveal on appear without the camera loop (brand mark on
     /// onboarding step headers).
     var revealsOnAppear: Bool = false
+    /// Optional custom centre glyph (a template asset) replacing the brand spark —
+    /// lets the dots ring front any icon (e.g. the vault mark on the create sheet).
+    var centerIcon: String? = nil
     /// SF Symbol to bubble-swap with the spark instead of the Polaris camera
     /// (e.g. "faceid" on the biometric step).
     var loopSystemGlyph: String? = nil
@@ -146,6 +149,14 @@ struct LooxDotsAvatar: View {
                 }
                 .foregroundStyle(accent)
                 .transition(.scale.combined(with: .opacity))
+            } else if let centerIcon {
+                Image(centerIcon)
+                    .resizable()
+                    .renderingMode(.template)
+                    .scaledToFit()
+                    .frame(width: size * 0.36, height: size * 0.36)
+                    .foregroundStyle(accent)
+                    .transition(.scale.combined(with: .opacity))
             } else {
                 Image("LooxSpark")
                     .resizable()

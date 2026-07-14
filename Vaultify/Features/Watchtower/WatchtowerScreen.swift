@@ -34,6 +34,10 @@ struct WatchtowerScreen: View {
     @State private var latestPayload: AuditReportPayload?
     @State private var health = VaultHealth.empty     // strength card + empty state
     @State private var editorTarget: EditorTarget?
+    /// Item-type picker + the category chosen there (presented as the editor once
+    /// the picker finishes dismissing).
+    @State private var showItemTypePicker = false
+    @State private var pendingNewCategory: ItemCategory?
     @State private var scrolledUnder = false
     /// Bumped when new audit data arrives so the gauge intro replays (see
     /// `WatchtowerIntroGate` — tab switches alone never replay it).
@@ -83,7 +87,7 @@ struct WatchtowerScreen: View {
             ZStack(alignment: .top) {
                 if emptyVault {
                     // Full-bleed plain-canvas first-run state (its own white background).
-                    WatchtowerEmptyStateView(onAdd: { editorTarget = .new(.login) })
+                    WatchtowerEmptyStateView(onAdd: { showItemTypePicker = true })
                 } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
@@ -103,22 +107,13 @@ struct WatchtowerScreen: View {
                 // Floating header overlays the scroll content — glass blurs beneath.
                 VaultScreenHeader("Security") {
                     HeaderActionCluster {
-                        Menu {
-                            ForEach(ItemCategory.allCases) { category in
-                                Button {
-                                    editorTarget = .new(category)
-                                } label: {
-                                    Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
-                                }
-                            }
-                        } label: {
+                        Button { showItemTypePicker = true } label: {
                             PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
+                                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                                .contentShape(.rect)
                         }
-                        .menuStyle(.button)
                         .buttonStyle(.plain)
-                        .menuIndicator(.hidden)
-                        .frame(width: Metric.hitMin, height: Metric.hitMin)
                         .accessibilityLabel(Text("Add Item"))
                     }
                 }
@@ -128,6 +123,14 @@ struct WatchtowerScreen: View {
                              fallback: Color(rgb: env.theme.active.groupedBackground))
             .platformHiddenNavigationBar()
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+            .sheet(isPresented: $showItemTypePicker, onDismiss: {
+                if let category = pendingNewCategory {
+                    pendingNewCategory = nil
+                    editorTarget = .new(category)
+                }
+            }) {
+                ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
+            }
             .navigationDestination(for: String.self) { itemID in
                 ItemDetailScreen(itemID: itemID)
             }
