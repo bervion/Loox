@@ -6,8 +6,17 @@ import SwiftUI
 /// the tab-bar search and the Home header magnifier drop straight into search.
 struct SearchScreen: View {
     @Environment(UIStateStore.self) private var uiState
+    @Environment(\.scenePhase) private var scenePhase
     @State private var search = ""
     @State private var searchPresented = false
+    /// Guards the overlapping activation triggers below from racing each other.
+    @State private var focusInFlight = false
+    /// Process-lifetime: the FIRST activation rides the cold-launch layout storm
+    /// (the app persists `selectedTab`, so it can restore straight onto Search),
+    /// where an immediate focus request is silently dropped — that one waits
+    /// longer. Later (warm) activations stay snappy. Resets only on app kill,
+    /// which is exactly what "cold launch" means.
+    @MainActor private static var didFirstActivation = false
     /// Deferred zoom source (Design DNA #5): shared between the result rows
     /// (`VaultItemRowLink`, via `ZoomTransitionSource`) and the pushed `ItemDetailScreen`
     /// (via `ZoomTransitionDestination`), both living inside this stack.
@@ -24,7 +33,35 @@ struct SearchScreen: View {
                 .environment(\.vaultZoomNamespace, zoomNamespace)
                 .vaultNavigationDestinations()
         }
-        .onAppear { searchPresented = true }
+        // Raise the search field + keyboard whenever Search becomes the active
+        // surface. Several triggers because a lone `onAppear` fires too early on a
+        // cold launch that restores straight onto this tab.
+        .onAppear { requestSearchFocus() }
+        .onChange(of: uiState.selectedTab) { _, tab in
+            if tab == .search { requestSearchFocus() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { requestSearchFocus() }
+        }
+    }
+
+    /// Present + focus the search field, deferred past the layout pass. A native
+    /// tab tap already focuses instantly (`role: .search`), so this mainly drives
+    /// the programmatic paths — the Home magnifier and a cold restore onto Search —
+    /// where an immediate request is dropped. The in-flight guard stops the
+    /// overlapping triggers from clobbering each other; if an attempt didn't stick,
+    /// a later trigger (next foreground / re-tap) retries.
+    private func requestSearchFocus() {
+        guard uiState.selectedTab == .search, !searchPresented, !focusInFlight else { return }
+        focusInFlight = true
+        let cold = !Self.didFirstActivation
+        Self.didFirstActivation = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(cold ? 400 : 150))
+            focusInFlight = false
+            guard uiState.selectedTab == .search, !searchPresented else { return }
+            searchPresented = true
+        }
     }
 }
 
