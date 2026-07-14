@@ -85,7 +85,24 @@ struct ItemTypePickerSheet: View {
         .buttonStyle(.plain)
     }
 
-    private var closeButton: some View {
+    @ViewBuilder private var closeButton: some View {
+        Group {
+            #if compiler(>=6.2)
+            if #available(iOS 26, macOS 26, *) {
+                // Native system close control — liquid glass on iOS 26.
+                Button(role: .close) { dismiss() }
+            } else {
+                legacyCloseButton
+            }
+            #else
+            legacyCloseButton
+            #endif
+        }
+        .padding(Space.gutter)
+    }
+
+    /// Pre-iOS-26 fallback (and Reduce Transparency): a solid circular X.
+    private var legacyCloseButton: some View {
         Button { dismiss() } label: {
             PolarisIcon(Icons.close, size: Metric.iconInline)
                 .themedForeground(.primary)
@@ -93,6 +110,6 @@ struct ItemTypePickerSheet: View {
                 .background(Color(rgb: env.theme.active.secondaryBackground), in: Circle())
         }
         .buttonStyle(.plain)
-        .padding(Space.gutter)
+        .accessibilityLabel(Text("Close"))
     }
 }
