@@ -198,12 +198,83 @@ struct SearchResultsList: View {
         if results.isEmpty {
             emptyInScope
         } else {
-            List(results) { VaultItemRowLink(item: $0, highlight: trimmed) }
-                .platformInsetGroupedListStyle()
-                .scrollContentBackground(.hidden)
-                .scrollIndicators(.hidden)
-                .scrollDismissesKeyboard(.immediately)
+            List {
+                if trimmed.isEmpty {
+                    // Browse mode: smart sections per scope (by type / group / owner).
+                    ForEach(browseSections) { section in
+                        Section {
+                            ForEach(section.items) { VaultItemRowLink(item: $0, highlight: "") }
+                        } header: {
+                            Text(section.title)
+                        }
+                    }
+                } else {
+                    // Search mode: a flat, ranked list.
+                    ForEach(results) { VaultItemRowLink(item: $0, highlight: trimmed) }
+                }
+            }
+            .platformInsetGroupedListStyle()
+            .textCase(nil)                 // section titles shown as-is, not uppercased
+            .scrollContentBackground(.hidden)
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.immediately)
         }
+    }
+
+    // MARK: Browse-mode grouping (no query) — sections depend on the active scope.
+
+    private struct BrowseSection: Identifiable {
+        let id: String
+        let title: String
+        let items: [VaultItem]
+    }
+
+    private var browseSections: [BrowseSection] {
+        switch scope {
+        case .thisSpace:    return groupedByCategory(results)   // by vault type
+        case .allSpaces:    return groupedByFolder(results)     // by Space name
+        case .sharedWithMe: return groupedByOwner(results)      // by who shared it
+        }
+    }
+
+    private func sortedByTitle(_ items: [VaultItem]) -> [VaultItem] {
+        items.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    private func groupedByCategory(_ items: [VaultItem]) -> [BrowseSection] {
+        let grouped = Dictionary(grouping: items, by: \.category)
+        return ItemCategory.allCases.compactMap { category in
+            guard let group = grouped[category], !group.isEmpty else { return nil }
+            return BrowseSection(id: category.rawValue,
+                                 title: String(localized: category.title),
+                                 items: sortedByTitle(group))
+        }
+    }
+
+    private func groupedByFolder(_ items: [VaultItem]) -> [BrowseSection] {
+        let names = Dictionary(env.repository.folders.map { ($0.id, $0.name) },
+                               uniquingKeysWith: { first, _ in first })
+        let grouped = Dictionary(grouping: items, by: { $0.folderId })
+        var sections: [BrowseSection] = grouped.compactMap { folderId, group in
+            guard let folderId else { return nil }
+            return BrowseSection(id: folderId,
+                                 title: names[folderId] ?? appString("Unfiled"),
+                                 items: sortedByTitle(group))
+        }
+        .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        // Unfiled last.
+        if let unfiled = grouped[nil], !unfiled.isEmpty {
+            sections.append(BrowseSection(id: "__unfiled__", title: appString("Unfiled"),
+                                          items: sortedByTitle(unfiled)))
+        }
+        return sections
+    }
+
+    private func groupedByOwner(_ items: [VaultItem]) -> [BrowseSection] {
+        let grouped = Dictionary(grouping: items) { $0.sharedOrigin?.ownerName ?? appString("Shared with Me") }
+        return grouped.keys
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+            .map { owner in BrowseSection(id: owner, title: owner, items: sortedByTitle(grouped[owner] ?? [])) }
     }
 
     /// Empty-in-scope: offer a one-tap widen to All Spaces (when allowed), rather
@@ -249,6 +320,7 @@ struct SearchResultsList: View {
 /// SELECTED one carries a rounded chip — Liquid Glass on iOS 26, a solid capsule
 /// otherwise. The active chip animates when the selection changes.
 private struct SearchScopeBar: View {
+    @Environment(AppEnvironment.self) private var env
     let scopes: [SpaceScope]
     @Binding var selection: SpaceScope
     let title: (SpaceScope) -> String
@@ -260,9 +332,11 @@ private struct SearchScopeBar: View {
                     chip(scope)
                 }
             }
-            .padding(.horizontal, Space.gutter)
-            .padding(.vertical, Space.s2)
+            .padding(Space.s1)
         }
+        .modifier(ScopeTroughGlass())          // outer Liquid Glass trough, rounded ends
+        .padding(.horizontal, Space.gutter)
+        .padding(.vertical, Space.s2)
     }
 
     private func chip(_ scope: SpaceScope) -> some View {
@@ -276,35 +350,40 @@ private struct SearchScopeBar: View {
                 .themedForeground(isActive ? .primary : .secondary)
                 .padding(.horizontal, Space.s3)
                 .frame(minHeight: Metric.controlSmall)
-                .modifier(ScopeChipBackground(isActive: isActive))
+                .background {
+                    // Only the SELECTED chip carries a fill — a raised solid
+                    // capsule on the glass trough (glass-on-glass is avoided).
+                    if isActive {
+                        Capsule().fill(Color(rgb: env.theme.active.elevatedBackground))
+                            .elevation(.level1)
+                    }
+                }
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }
 }
 
-/// The selected chip's fill: interactive Liquid Glass on iOS 26 (guarded so a
+/// The outer filter trough: interactive Liquid Glass on iOS 26 (guarded so a
 /// pre-Xcode-26 CI build never sees the symbol), a pressed-surface capsule
-/// otherwise. Nothing for an unselected chip.
-private struct ScopeChipBackground: ViewModifier {
-    let isActive: Bool
+/// otherwise. Rounded ends; the chips scroll and clip within it.
+private struct ScopeTroughGlass: ViewModifier {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
         let shape = Capsule()
-        if isActive {
+        return Group {
             #if compiler(>=6.2)
             if #available(iOS 26, macOS 26, *), !reduceTransparency {
-                content.glassEffect(.regular.interactive(), in: shape)
+                content.glassEffect(.regular, in: shape)
             } else {
                 content.background(Color(rgb: env.theme.active.surfacePressed), in: shape)
             }
             #else
             content.background(Color(rgb: env.theme.active.surfacePressed), in: shape)
             #endif
-        } else {
-            content
         }
+        .clipShape(shape)
     }
 }
