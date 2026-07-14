@@ -1,1 +1,1 @@
-This update brings a fresh new look across the app, including a redesigned setup experience, a new brand identity, and a refreshed unlock screen. Restoring your vault is now simpler with clearer steps and QR support. Also includes several visual polish fixes and stability improvements.
+This update refreshes Home with clearer group cards and quick actions, plus a smoother search experience with pinned filters and an easier way to switch languages. General polish and stability improvements throughout.

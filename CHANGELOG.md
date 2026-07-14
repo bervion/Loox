@@ -1,5 +1,62 @@
 # Changelog
 
+## [1.31.0] - 2026-07-15
+
+### Added
+- group-card redesign for quick actions and items
+- glass filter trough + smart browse sections
+- always-on Telegram-style scope filter + keyboard dismissal
+- pin the scope filter above the search field (Telegram-style)
+- branded language-switch transition on the UIKit shell
+- UIKit navigation shell for compact iOS
+- Backup child screen; fix two mid-sentence VI casings
+- reusable item-type picker bottom sheet
+- full-bleed empty state with a custom swirl mark
+- duotone type-icon avatars with selectable style
+- duotone FontAwesome icon set for the Space picker
+- first-launch empty state + periodic auto-audit
+
+### Fixed
+- softer selected chip + pin results to the top
+- selected filter chip uses adaptive grey for contrast
+- native scope selector instead of a custom bottom bar
+- native Save button + loading ellipsis on language switch
+- re-resolve Settings/General nav titles on language switch
+- re-localize pushed screens in place, without resetting navigation
+- pop navigator-pushed detail on self-dismiss; relocalize pushed screens
+- reliably raise the search keyboard on cold launch
+- persist the custom avatar icon across loads
+- apply custom avatar icon, relabel Default, even menu glyphs
+- scope the audit to credentials only
+- resolve remaining test-target warnings
+- resolve compiler and CI warnings
+
+### Changed
+- remove the quick-filter zero state
+- Save button reads as a filled accent action
+- mark UIKit nav shell Phase 1-3 runtime-verified
+- update UIKit nav shell plan status
+- full-screen pushes hide the tab bar app-wide
+- hide tab bar on push (Mail/News/Telegram idiom)
+- Revert tab-bar hide on Settings; keep it visible for a smooth pop
+- native iOS switches instead of the app-wide custom style
+- i18n(settings): shorten VI AutoFill row to 'Tự động điền mật khẩu'
+- hide the tab bar while Settings is pushed
+- Security child screen, native switches, localized pickers
+- Apple-style pushed screen, SF icons, child pickers
+- vertically center the type-row chevron
+- close the type sheet via a toolbar button, not text
+- native iOS close button on the item-type sheet
+- drop the picker logo below the close button
+- refine the item-type picker sheet
+- type/custom avatars fill the frame without a badge tile
+- drop the seeded Loox Account login
+- gitignore .agentkit local tooling
+- gitignore local .claude tooling, keep shared agent-memory
+- borderless inset-grouped cards, unify radius to md
+- adaptive screen gutter, fixed card interior padding
+
+
 ## [1.30.0] - 2026-07-13
 
 ### Added

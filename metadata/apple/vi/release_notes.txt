@@ -1,1 +1,1 @@
-Bản cập nhật này mang đến diện mạo mới cho toàn bộ ứng dụng, gồm trải nghiệm thiết lập được thiết kế lại, nhận diện thương hiệu mới và màn hình mở khóa làm mới. Khôi phục kho mật khẩu giờ đơn giản hơn với các bước rõ ràng và hỗ trợ mã QR. Ngoài ra còn có nhiều cải thiện giao diện và độ ổn định.
+Bản cập nhật này làm mới màn hình Trang chủ với thẻ nhóm rõ ràng hơn và thao tác nhanh, cùng trải nghiệm tìm kiếm mượt mà hơn với bộ lọc ghim sẵn và chuyển ngôn ngữ dễ dàng hơn. Cải thiện tổng thể về giao diện và độ ổn định.
