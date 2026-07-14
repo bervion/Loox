@@ -108,15 +108,9 @@ struct VaultifyApp: App {
                 } message: {
                     Text("Unlock your vault and open \"Shared with Me\" on Home to finish setting up.")
                 }
-                .environment(env)
-                .environment(env.uiState)
-                .environment(\.locale, locale)
-                .environment(\.appTheme, env.theme.active)
-                .toggleStyle(.themed)
-                .tint(Color.primary)
-                .preferredColorScheme(env.theme.preferredColorScheme)
-                .appFontScale(env.theme.settings.fontScale)
-                .environment(\.meshPhase, env.theme.meshPhase)
-                .environment(\.meshAnimated, !env.theme.settings.reduceMotion)
+                // One shared environment chain (see `VaultRootEnvironment`) — the
+                // same modifier every UIKit-pushed hosting controller re-applies,
+                // so the root window and pushed detail screens can never drift.
+                .modifier(VaultRootEnvironment(env: env))
     }
 }

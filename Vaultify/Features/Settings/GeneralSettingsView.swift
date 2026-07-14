@@ -6,6 +6,10 @@ import SwiftUI
 /// instead of inline popups.
 struct GeneralSettingsView: View {
     @Environment(AppEnvironment.self) private var env
+    // Compact-iOS UIKit shell only. When present, a language change runs the
+    // branded switch transition (a pushed screen's nav-bar title caches the old
+    // language otherwise); the iPad/Mac sidebar (nil) applies it live in place.
+    @Environment(AppNavigator.self) private var navigator: AppNavigator?
 
     private var languageLabel: LocalizedStringResource {
         switch env.settings.preferredLanguage {
@@ -35,7 +39,10 @@ struct GeneralSettingsView: View {
                         options: [.init(value: "system", label: "System"),
                                   .init(value: "en", label: "English"),
                                   .init(value: "vi", label: "Tiếng Việt")],
-                        selection: $settings.preferredLanguage)
+                        selection: $settings.preferredLanguage,
+                        // Deferred + branded transition on the UIKit shell; the
+                        // sidebar keeps the plain live apply.
+                        onCommit: navigator.map { nav in { nav.switchLanguage(to: $0) } })
                 } label: {
                     LabeledContent {
                         Text(languageLabel)

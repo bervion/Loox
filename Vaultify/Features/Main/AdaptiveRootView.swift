@@ -9,6 +9,7 @@ import SwiftUI
 /// `sidebarSelection`/`selectedTab` model rather than a one-shot restore.
 struct AdaptiveRootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
         #if os(macOS)
@@ -17,7 +18,11 @@ struct AdaptiveRootView: View {
         MacRootView()
         #else
         if horizontalSizeClass == .compact {
-            MainTabView()
+            // UIKit navigation shell: `MainTabView` (native search + Liquid Glass
+            // tab bar) hosted in a `UINavigationController` so detail pushes cover
+            // the tab bar with a native slide. See `VaultUINavShell`.
+            VaultUINavShell(env: env)
+                .ignoresSafeArea()
         } else {
             VaultSidebarView()
         }

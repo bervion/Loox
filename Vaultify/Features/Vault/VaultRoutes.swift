@@ -25,6 +25,21 @@ enum VaultSort: String, CaseIterable, Identifiable {
     }
 }
 
+/// The screen a `VaultRoute` resolves to. Shared by `vaultNavigationDestinations`
+/// (SwiftUI-path navigation on the iPad/Mac sidebar) and `AppNavigator` (the
+/// compact-iOS UIKit push), so both routes render an identical destination.
+@ViewBuilder
+func vaultRouteDestination(_ route: VaultRoute) -> some View {
+    switch route {
+    case .folder(let id): FolderItemsScreen(folderId: id)
+    case .tag(let tag): TagItemsScreen(tag: tag)
+    case .category(let category): ItemListScreen(category: category)
+    case .manageFolders: ManageFoldersScreen()
+    case .archive: ArchiveScreen()
+    case .recentlyDeleted: TrashScreen()
+    }
+}
+
 extension View {
     /// The destinations every tab stack can push. Declared once (DRY) so Home,
     /// Items, and Search resolve item detail + folder/tag/category/archive/trash.
@@ -35,21 +50,15 @@ extension View {
                 // `\.vaultZoomNamespace` (currently Search) — every other caller of this
                 // shared modifier gets the ordinary push, unaffected.
                 ItemDetailScreen(itemID: id)
+                    // Pushed INSIDE a stack (from a folder/tag/category/search
+                    // list) — here SwiftUI `dismiss()` pops correctly, so clear the
+                    // navigator-root flag inherited from the enclosing push.
+                    .environment(\.isNavigatorRoot, false)
                     .modifier(ZoomTransitionDestination(id: id))
                     .fullScreenPush()
             }
             .navigationDestination(for: VaultRoute.self) { route in
-                Group {
-                    switch route {
-                    case .folder(let id): FolderItemsScreen(folderId: id)
-                    case .tag(let tag): TagItemsScreen(tag: tag)
-                    case .category(let category): ItemListScreen(category: category)
-                    case .manageFolders: ManageFoldersScreen()
-                    case .archive: ArchiveScreen()
-                    case .recentlyDeleted: TrashScreen()
-                    }
-                }
-                .fullScreenPush()
+                vaultRouteDestination(route).fullScreenPush()
             }
             // Shared-with-Me is reachable from Home AND the Items Spaces list.
             // Registered at the stack root — a destination declared inside

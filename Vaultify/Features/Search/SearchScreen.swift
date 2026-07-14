@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Search tab — own NavigationStack + `.searchable`. With `Tab(role: .search)`
 /// (iOS 18+) this is the native search surface (search field in the tab bar /
@@ -6,8 +9,17 @@ import SwiftUI
 /// the tab-bar search and the Home header magnifier drop straight into search.
 struct SearchScreen: View {
     @Environment(UIStateStore.self) private var uiState
+    @Environment(\.scenePhase) private var scenePhase
     @State private var search = ""
     @State private var searchPresented = false
+    /// Guards the overlapping activation triggers below from racing each other.
+    @State private var focusInFlight = false
+    /// Process-lifetime: the FIRST activation rides the cold-launch layout storm
+    /// (the app persists `selectedTab`, so it can restore straight onto Search),
+    /// where an immediate focus request is silently dropped — that one waits
+    /// longer. Later (warm) activations stay snappy. Resets only on app kill,
+    /// which is exactly what "cold launch" means.
+    @MainActor private static var didFirstActivation = false
     /// Deferred zoom source (Design DNA #5): shared between the result rows
     /// (`VaultItemRowLink`, via `ZoomTransitionSource`) and the pushed `ItemDetailScreen`
     /// (via `ZoomTransitionDestination`), both living inside this stack.
@@ -16,7 +28,7 @@ struct SearchScreen: View {
     var body: some View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.searchPath) {
-            SearchResultsList(query: search, onSelectFilter: { search = $0 })
+            SearchResultsList(query: search)
                 .navigationTitle("Search")
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
@@ -24,7 +36,35 @@ struct SearchScreen: View {
                 .environment(\.vaultZoomNamespace, zoomNamespace)
                 .vaultNavigationDestinations()
         }
-        .onAppear { searchPresented = true }
+        // Raise the search field + keyboard whenever Search becomes the active
+        // surface. Several triggers because a lone `onAppear` fires too early on a
+        // cold launch that restores straight onto this tab.
+        .onAppear { requestSearchFocus() }
+        .onChange(of: uiState.selectedTab) { _, tab in
+            if tab == .search { requestSearchFocus() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { requestSearchFocus() }
+        }
+    }
+
+    /// Present + focus the search field, deferred past the layout pass. A native
+    /// tab tap already focuses instantly (`role: .search`), so this mainly drives
+    /// the programmatic paths — the Home magnifier and a cold restore onto Search —
+    /// where an immediate request is dropped. The in-flight guard stops the
+    /// overlapping triggers from clobbering each other; if an attempt didn't stick,
+    /// a later trigger (next foreground / re-tap) retries.
+    private func requestSearchFocus() {
+        guard uiState.selectedTab == .search, !searchPresented, !focusInFlight else { return }
+        focusInFlight = true
+        let cold = !Self.didFirstActivation
+        Self.didFirstActivation = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(cold ? 400 : 150))
+            focusInFlight = false
+            guard uiState.selectedTab == .search, !searchPresented else { return }
+            searchPresented = true
+        }
     }
 }
 
@@ -35,9 +75,6 @@ struct SearchScreen: View {
 struct SearchResultsList: View {
     @Environment(AppEnvironment.self) private var env
     let query: String
-    /// Invoked with an operator keyword when a zero-state quick filter chip is
-    /// tapped — the parent sets the search field's text to it.
-    var onSelectFilter: (String) -> Void = { _ in }
 
     /// Ephemeral per-session scope (never persisted). Seeded once on appear from
     /// the current Home Space.
@@ -82,7 +119,8 @@ struct SearchResultsList: View {
         let parsed = SearchOperators.parse(trimmed)
         switch scope {
         case .sharedWithMe:
-            guard !parsed.freeTextTokens.isEmpty || !parsed.operators.isEmpty else { return [] }
+            // No query → list everything in scope (the tab opens showing all items).
+            guard !parsed.freeTextTokens.isEmpty || !parsed.operators.isEmpty else { return env.sharedItems.items }
             // Shared projections aren't vault items/audited — only structural
             // operators (category, has-TOTP) are meaningful here; weak/reused/
             // passkey simply never match (empty Context), which is correct: we
@@ -125,18 +163,29 @@ struct SearchResultsList: View {
     }
 
     var body: some View {
-        Group {
-            if trimmed.isEmpty {
-                SearchZeroStateView(scope: scope, onSelectFilter: onSelectFilter)
-            } else {
-                VStack(spacing: 0) {
-                    scopeChips
-                    resultsContent
-                }
+        VStack(spacing: 0) {
+            // Always visible while searching (Telegram-style), even before typing:
+            // the results below list everything in the selected scope until a query
+            // narrows them.
+            if availableScopes.count > 1 {
+                SearchScopeBar(scopes: availableScopes, selection: $scope, title: { label(for: $0) })
             }
+            resultsContent
         }
+        // Pin to the top: otherwise the content rides down with the search field
+        // when the keyboard is dismissed, leaving a gap above the filter.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
+        // Tapping anywhere drops the keyboard; simultaneous so result rows still tap.
+        .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
         .onAppear(perform: seedScope)
+    }
+
+    private func dismissKeyboard() {
+        #if canImport(UIKit)
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
     }
 
     /// Seed the default scope once. Delegated to the repository so isolation is
@@ -148,32 +197,87 @@ struct SearchResultsList: View {
         scope = env.repository.defaultSearchScope(currentSpaceId: currentSpaceId)
     }
 
-    @ViewBuilder private var scopeChips: some View {
-        let chips = availableScopes
-        if chips.count > 1 {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Space.s2) {
-                    ForEach(chips, id: \.self) { chipScope in
-                        ScopeChip(label: label(for: chipScope), isActive: scope == chipScope) {
-                            scope = chipScope
-                        }
-                    }
-                }
-                .padding(.horizontal, Space.gutter)
-                .padding(.vertical, Space.s2)
-            }
-        }
-    }
-
     @ViewBuilder private var resultsContent: some View {
         if results.isEmpty {
             emptyInScope
         } else {
-            List(results) { VaultItemRowLink(item: $0, highlight: trimmed) }
-                .platformInsetGroupedListStyle()
-                .scrollContentBackground(.hidden)
-                .scrollIndicators(.hidden)
+            List {
+                if trimmed.isEmpty {
+                    // Browse mode: smart sections per scope (by type / group / owner).
+                    ForEach(browseSections) { section in
+                        Section {
+                            ForEach(section.items) { VaultItemRowLink(item: $0, highlight: "") }
+                        } header: {
+                            Text(section.title)
+                        }
+                    }
+                } else {
+                    // Search mode: a flat, ranked list.
+                    ForEach(results) { VaultItemRowLink(item: $0, highlight: trimmed) }
+                }
+            }
+            .platformInsetGroupedListStyle()
+            .textCase(nil)                 // section titles shown as-is, not uppercased
+            .scrollContentBackground(.hidden)
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.immediately)
         }
+    }
+
+    // MARK: Browse-mode grouping (no query) — sections depend on the active scope.
+
+    private struct BrowseSection: Identifiable {
+        let id: String
+        let title: String
+        let items: [VaultItem]
+    }
+
+    private var browseSections: [BrowseSection] {
+        switch scope {
+        case .thisSpace:    return groupedByCategory(results)   // by vault type
+        case .allSpaces:    return groupedByFolder(results)     // by Space name
+        case .sharedWithMe: return groupedByOwner(results)      // by who shared it
+        }
+    }
+
+    private func sortedByTitle(_ items: [VaultItem]) -> [VaultItem] {
+        items.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    private func groupedByCategory(_ items: [VaultItem]) -> [BrowseSection] {
+        let grouped = Dictionary(grouping: items, by: \.category)
+        return ItemCategory.allCases.compactMap { category in
+            guard let group = grouped[category], !group.isEmpty else { return nil }
+            return BrowseSection(id: category.rawValue,
+                                 title: String(localized: category.title),
+                                 items: sortedByTitle(group))
+        }
+    }
+
+    private func groupedByFolder(_ items: [VaultItem]) -> [BrowseSection] {
+        let names = Dictionary(env.repository.folders.map { ($0.id, $0.name) },
+                               uniquingKeysWith: { first, _ in first })
+        let grouped = Dictionary(grouping: items, by: { $0.folderId })
+        var sections: [BrowseSection] = grouped.compactMap { folderId, group in
+            guard let folderId else { return nil }
+            return BrowseSection(id: folderId,
+                                 title: names[folderId] ?? appString("Unfiled"),
+                                 items: sortedByTitle(group))
+        }
+        .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        // Unfiled last.
+        if let unfiled = grouped[nil], !unfiled.isEmpty {
+            sections.append(BrowseSection(id: "__unfiled__", title: appString("Unfiled"),
+                                          items: sortedByTitle(unfiled)))
+        }
+        return sections
+    }
+
+    private func groupedByOwner(_ items: [VaultItem]) -> [BrowseSection] {
+        let grouped = Dictionary(grouping: items) { $0.sharedOrigin?.ownerName ?? appString("Shared with Me") }
+        return grouped.keys
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+            .map { owner in BrowseSection(id: owner, title: owner, items: sortedByTitle(grouped[owner] ?? [])) }
     }
 
     /// Empty-in-scope: offer a one-tap widen to All Spaces (when allowed), rather
@@ -215,26 +319,81 @@ struct SearchResultsList: View {
     }
 }
 
-/// A single search-scope pill. Active = accent-soft fill; inactive = pressed surface.
-private struct ScopeChip: View {
+/// Telegram-style scope filter: a horizontal row of text filters where only the
+/// SELECTED one carries a rounded chip — Liquid Glass on iOS 26, a solid capsule
+/// otherwise. The active chip animates when the selection changes.
+private struct SearchScopeBar: View {
     @Environment(AppEnvironment.self) private var env
-    let label: String
-    let isActive: Bool
-    let action: () -> Void
+    let scopes: [SpaceScope]
+    @Binding var selection: SpaceScope
+    let title: (SpaceScope) -> String
+
+    /// Selected-chip fill: a soft blend toward the text colour — gentle on light
+    /// (5%) so it doesn't read as a heavy grey block over the frosted trough,
+    /// the usual weight on dark (14%). Adaptive, so contrast holds in both.
+    private var selectedChipColor: Color {
+        let t = env.theme.active
+        return Color(rgb: RGBMath.blend(t.controlBackground, t.primaryText, t.isDark ? 0.14 : 0.05))
+    }
 
     var body: some View {
-        Button(action: action) {
-            Text(label)
-                .vaultType(.footnote)
-                .themedForeground(isActive ? .accent : .secondary)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s1) {
+                ForEach(scopes, id: \.self) { scope in
+                    chip(scope)
+                }
+            }
+            .padding(Space.s1)
+        }
+        .modifier(ScopeTroughGlass())          // outer Liquid Glass trough, rounded ends
+        .padding(.horizontal, Space.gutter)
+        .padding(.vertical, Space.s2)
+    }
+
+    private func chip(_ scope: SpaceScope) -> some View {
+        let isActive = scope == selection
+        return Button {
+            withAnimation(.snappy(duration: 0.28)) { selection = scope }
+            Haptics.tap()
+        } label: {
+            Text(title(scope))
+                .vaultType(.subhead)
+                .themedForeground(isActive ? .primary : .secondary)
                 .padding(.horizontal, Space.s3)
-                .padding(.vertical, Space.s2)
-                .frame(minHeight: Metric.hitMin)
-                .background(
-                    Color(rgb: isActive ? env.theme.active.accentSoft : env.theme.active.surfacePressed),
-                    in: Capsule()
-                )
+                .frame(minHeight: Metric.controlSmall)
+                .background {
+                    // Only the SELECTED chip carries a fill — a soft adaptive grey
+                    // over the frosted trough (no shadow: keep it smooth).
+                    if isActive {
+                        Capsule().fill(selectedChipColor)
+                    }
+                }
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// The outer filter trough: interactive Liquid Glass on iOS 26 (guarded so a
+/// pre-Xcode-26 CI build never sees the symbol), a pressed-surface capsule
+/// otherwise. Rounded ends; the chips scroll and clip within it.
+private struct ScopeTroughGlass: ViewModifier {
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    func body(content: Content) -> some View {
+        let shape = Capsule()
+        return Group {
+            #if compiler(>=6.2)
+            if #available(iOS 26, macOS 26, *), !reduceTransparency {
+                content.glassEffect(.regular, in: shape)
+            } else {
+                content.background(Color(rgb: env.theme.active.controlBackground), in: shape)
+            }
+            #else
+            content.background(Color(rgb: env.theme.active.controlBackground), in: shape)
+            #endif
+        }
+        .clipShape(shape)
     }
 }
