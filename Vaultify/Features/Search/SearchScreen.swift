@@ -170,9 +170,17 @@ struct SearchResultsList: View {
             }
         }
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
-        // Telegram-style: the scope filter sits at the BOTTOM, just above the
-        // search field / keyboard, instead of atop the results.
-        .safeAreaInset(edge: .bottom, spacing: 0) { scopeFilterBar }
+        // Native scope selector: the system places it correctly beside the
+        // (role:.search) field above the keyboard. A custom bottom bar collides
+        // with that system-managed field (it ends up behind it), so use the
+        // built-in scopes — shown on text entry when more than one scope applies.
+        .searchScopes($scope, activation: .onTextEntry) {
+            if availableScopes.count > 1 {
+                ForEach(availableScopes, id: \.self) { chipScope in
+                    Text(verbatim: label(for: chipScope)).tag(chipScope)
+                }
+            }
+        }
         .onAppear(perform: seedScope)
     }
 
@@ -183,32 +191,6 @@ struct SearchResultsList: View {
         guard !didSeedScope else { return }
         didSeedScope = true
         scope = env.repository.defaultSearchScope(currentSpaceId: currentSpaceId)
-    }
-
-    /// Bottom-pinned scope filter (Telegram-style): a horizontal pill row on a
-    /// solid bar with a hairline top edge, shown only with an active query and
-    /// more than one available scope. Sits just above the search field.
-    @ViewBuilder private var scopeFilterBar: some View {
-        let chips = availableScopes
-        if !trimmed.isEmpty, chips.count > 1 {
-            VStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color(rgb: env.theme.active.separator))
-                    .frame(height: 0.5)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Space.s2) {
-                        ForEach(chips, id: \.self) { chipScope in
-                            ScopeChip(label: label(for: chipScope), isActive: scope == chipScope) {
-                                scope = chipScope
-                            }
-                        }
-                    }
-                    .padding(.horizontal, Space.gutter)
-                    .padding(.vertical, Space.s2)
-                }
-            }
-            .background(Color(rgb: env.theme.active.groupedBackground))
-        }
     }
 
     @ViewBuilder private var resultsContent: some View {
@@ -258,29 +240,5 @@ struct SearchResultsList: View {
 
     private func folderName(_ id: String) -> String {
         env.repository.activePersonaSpaces.first { $0.id == id }?.name ?? appString("This Space")
-    }
-}
-
-/// A single search-scope pill. Active = accent-soft fill; inactive = pressed surface.
-private struct ScopeChip: View {
-    @Environment(AppEnvironment.self) private var env
-    let label: String
-    let isActive: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .vaultType(.footnote)
-                .themedForeground(isActive ? .accent : .secondary)
-                .padding(.horizontal, Space.s3)
-                .padding(.vertical, Space.s2)
-                .frame(minHeight: Metric.hitMin)
-                .background(
-                    Color(rgb: isActive ? env.theme.active.accentSoft : env.theme.active.surfacePressed),
-                    in: Capsule()
-                )
-        }
-        .buttonStyle(.plain)
     }
 }
