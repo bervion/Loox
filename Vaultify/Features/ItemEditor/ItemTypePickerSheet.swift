@@ -20,7 +20,8 @@ struct ItemTypePickerSheet: View {
             ScrollView {
                 VStack(spacing: Space.s5) {
                     LooxDotsAvatar(size: 104, revealsOnAppear: true, centerIcon: "dt_vault")
-                        .padding(.top, Space.s7)
+                        // Clear the floating X button (top-leading) so the logo sits below it.
+                        .padding(.top, Space.s10)
 
                     VStack(alignment: .leading, spacing: Space.s2) {
                         Text("New item")
