@@ -22,17 +22,18 @@ struct ItemTypePickerSheet: View {
                     LooxDotsAvatar(size: 104, revealsOnAppear: true, centerIcon: "dt_vault")
                         .padding(.top, Space.s7)
 
-                    VStack(spacing: Space.s2) {
+                    VStack(alignment: .leading, spacing: Space.s2) {
                         Text("New item")
                             .vaultType(.screenTitle)
                             .themedForeground(.primary)
                         Text("Choose the kind of item to add to your vault.")
                             .vaultType(.subhead)
                             .themedForeground(.secondary)
-                            .multilineTextAlignment(.center)
+                            .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.horizontal, Space.s6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Space.gutter)
 
                     VStack(spacing: Space.s3) {
                         ForEach(ItemCategory.allCases) { category in
@@ -56,10 +57,11 @@ struct ItemTypePickerSheet: View {
             onSelect(category)
             dismiss()
         } label: {
-            HStack(spacing: Space.s3) {
-                PolarisIcon(category.avatarIcon, size: 30)
-                    .foregroundStyle(VaultColors.category(category))
-                    .frame(width: Metric.controlMedium, height: Metric.controlMedium)
+            HStack(alignment: .top, spacing: Space.s3) {
+                // Brand blue duotone glyph, aligned to the title's top line.
+                PolarisIcon(category.avatarIcon, size: 28)
+                    .foregroundStyle(Color.looxBlue)
+                    .frame(width: Metric.controlSmall, alignment: .top)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(category.title)
                         .vaultType(.headline)

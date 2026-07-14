@@ -69,7 +69,7 @@ nonisolated enum ItemCategory: String, Codable, CaseIterable, Sendable, Identifi
         case .sshKey: return "dt_key"
         case .recoveryCodes: return "dt_life_ring"
         case .securityQuestions: return "dt_question"
-        case .custom: return "dt_shapes"
+        case .custom: return "dt_sliders_up"
         }
     }
 

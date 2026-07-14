@@ -154,7 +154,7 @@ struct LooxDotsAvatar: View {
                     .resizable()
                     .renderingMode(.template)
                     .scaledToFit()
-                    .frame(width: size * 0.36, height: size * 0.36)
+                    .frame(width: size * 0.30, height: size * 0.30)
                     .foregroundStyle(accent)
                     .transition(.scale.combined(with: .opacity))
             } else {
