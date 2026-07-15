@@ -1,6 +1,116 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Add a card to keep it handy for autofill." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm thẻ để tự động điền tiện lợi."
+          }
+        }
+      }
+    },
+    "Add card" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm thẻ"
+          }
+        }
+      }
+    },
+    "Card" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thẻ"
+          }
+        }
+      }
+    },
+    "Devices" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị"
+          }
+        }
+      }
+    },
+    "Family" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gia đình"
+          }
+        }
+      }
+    },
+    "Family sharing" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chia sẻ gia đình"
+          }
+        }
+      }
+    },
+    "Invite people to share vault items with your family. This is coming soon." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mời mọi người chia sẻ mục trong kho với gia đình. Tính năng sắp ra mắt."
+          }
+        }
+      }
+    },
+    "Other devices you pair with this vault will appear here." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các thiết bị khác bạn ghép nối với kho này sẽ hiện ở đây."
+          }
+        }
+      }
+    },
+    "Personal Information" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thông tin cá nhân"
+          }
+        }
+      }
+    },
+    "Switch profile" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi hồ sơ"
+          }
+        }
+      }
+    },
+    "This device" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị này"
+          }
+        }
+      }
+    },
     "" : {
 
     },

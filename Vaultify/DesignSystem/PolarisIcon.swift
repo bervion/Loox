@@ -103,6 +103,8 @@ enum Icons {
     static let mail = "ic_email"
     static let camera = "ic_camera"
     static let image = "ic_image"
+    /// A single device (phone) — used in the Profile Devices list.
+    static let device = "ic_phone"
     /// Document with a plus badge — used on the Add quick-action tile and header cluster.
     static let pageAdd = "ic_page_add"
     /// Horizontal three-dot overflow ("•••") — used in the header action cluster.
