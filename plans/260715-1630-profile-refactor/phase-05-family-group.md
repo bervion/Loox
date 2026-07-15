@@ -25,3 +25,7 @@ Full family group: an owner invites members and shares vault items / a Space to 
 
 ## Validation
 - Design/ADR approved first. Then: `make check`; no persona leakage; EN + VI; existing sharing crypto unchanged and re-verified.
+
+## Status (session 260715)
+- **First slice SHIPPED** (PR #105 branch): `FamilyScreen` lists members grouped from `SharingStore.shares` by recipient; tapping a member opens `FamilyMemberScreen` (their shared items) → each row opens the existing `ShareRecipientDetailSheet` to manage/revoke. Read-only aggregation over existing sharing — no new crypto, no model change. Compile-verified; EN + VI added.
+- **ADR-F direction (chosen):** grow the full group from a fan-out of per-member grants (reuse existing CKShare/Approval crypto) rather than a new shared zone, so the members list and revoke stay on the proven per-item pipeline. Invite flow + shared-space permissions still need a dedicated design + `/ak:security` pass before building.

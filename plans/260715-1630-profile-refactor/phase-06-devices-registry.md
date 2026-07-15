@@ -33,3 +33,8 @@ Full CloudKit device registry now: a cross-device list with revoke. Prior spec �
 
 ## Validation
 - ADR approved. `make check`; a device appears/updates across two devices; EN + VI; security review for revoke before it ships.
+
+## Status (session 260715) — ADR-D resolved
+- **Revoke:** v1 is **list-only, NO revoke button.** A "Remove device" that only deletes the CloudKit record WITHOUT rotating the vault key would imply security it doesn't provide (the device keeps its copy of the key) — worse than absent. Real revoke = key rotation + re-provision, deferred to v2 behind its own security pass.
+- **Schema:** the `Device` record type auto-creates in the CloudKit **development** environment on first save, but must be **promoted in the CloudKit dashboard** before a TestFlight/prod build can publish — a manual step outside code.
+- **Blocked on device verification:** publish + cross-device list can't be validated headlessly (needs two devices + iCloud). So this session ships the **interim `DevicesScreen`** (this device, real, from `UIDevice`) and holds the CloudKit registry for a build where it can be tested end-to-end.
