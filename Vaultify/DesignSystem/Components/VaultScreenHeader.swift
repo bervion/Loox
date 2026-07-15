@@ -61,6 +61,21 @@ private struct VaultScreenHeaderBackground: View {
     @Environment(\.vaultHeaderScrolledUnder) private var scrolledUnder
 
     var body: some View {
+        // Content scrolls behind a fully transparent header — the scroll-triggered
+        // background reveal is disabled by product decision. The reveal engine below is
+        // retained; flip `revealsOnScroll` to bring back the glass / material band.
+        if Self.revealsOnScroll {
+            reveal
+        } else {
+            Color.clear
+        }
+    }
+
+    /// When false, the header never grows a background as content scrolls beneath it —
+    /// the tab-root screens (Home, Items, Watchtower) keep a clean transparent header.
+    private static let revealsOnScroll = false
+
+    @ViewBuilder private var reveal: some View {
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
             glassReveal
@@ -174,6 +189,16 @@ extension VaultScreenHeader where Leading == AnyView, Trailing == EmptyView {
     /// Convenience init: plain title, no trailing actions.
     init(_ title: LocalizedStringResource) {
         self.init(title) { EmptyView() }
+    }
+}
+
+// MARK: Convenience: no leading, trailing only
+
+extension VaultScreenHeader where Leading == EmptyView {
+    /// Convenience init: no leading title — just a floating trailing action set over
+    /// transparent scroll content (Items, Security).
+    init(@ViewBuilder trailing: () -> Trailing) {
+        self.init(leading: { EmptyView() }, trailing: trailing)
     }
 }
 

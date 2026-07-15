@@ -39,6 +39,9 @@ struct HomeScreen: View {
     /// Cached Watchtower issue count for the quick-action badge (recomputed on appear and
     /// when the item set changes — `PasswordAudit.analyze` is too costly to run per render).
     @State private var watchtowerIssueCount = 0
+    /// Home layout edit mode — flips the screen into the section arranger (reorder +
+    /// show/hide), driven from the header's edit button.
+    @State private var isEditingLayout = false
 
     // MARK: Filtered sections (recomputed when items or folder changes)
 
@@ -131,11 +134,14 @@ struct HomeScreen: View {
             // ZStack lets the header float over scroll content so glass blurs it.
             ZStack(alignment: .top) {
                 Group {
-                    // A vault that's empty but RECEIVING shares still has a feed.
-                    // Empty states keep the PROFILE ROW: with no Space or vault the
-                    // way out is often switching persona — hiding the switcher
-                    // stranded the user on the empty identity.
-                    if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
+                    // Layout edit mode replaces the feed with the section arranger (reorder +
+                    // show/hide); the profile row is intentionally omitted there. Otherwise: a
+                    // vault that's empty but RECEIVING shares still has a feed, and the empty
+                    // states keep the PROFILE ROW so switching persona stays reachable.
+                    if isEditingLayout {
+                        HomeLayoutEditor()
+                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                    } else if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
                         emptyStateScaffold { emptyVaultState }
                     } else if env.repository.activePersonaItems.isEmpty && env.sharedItems.items.isEmpty {
                         // The vault overall has data, but the ACTIVE persona has nothing to
@@ -145,11 +151,13 @@ struct HomeScreen: View {
                         emptyStateScaffold { personaEmptyState }
                     } else {
                         scrollContent
+                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     }
                 }
 
                 // Header overlays the scroll content — glass blurs whatever scrolls beneath.
                 HomeHeaderBar(
+                    isEditingLayout: $isEditingLayout,
                     onAdd: { showItemTypePicker = true },
                     onSettings: {
                         // macOS opens the native Settings window (⌘,) instead of the
@@ -200,6 +208,10 @@ struct HomeScreen: View {
                 ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
             }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
+            // TOTP list is reachable from both the Authenticator section header and the
+            // Quick Actions tile, so its sheet anchors at the stable root — not on a section
+            // the user can now hide (which would strand the trigger).
+            .sheet(isPresented: $showTotpList) { TotpListScreen() }
             .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
             // Persona-empty state's "Create a Space" CTA — reuses the standard Space
             // creation flow; the newly owned Space then satisfies the persona-scoped
@@ -222,57 +234,20 @@ struct HomeScreen: View {
                 VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    // 0. Identity context line — a thin "acting as" strip, not a card.
-                    // Sits at the very top so which persona you're operating as is
-                    // always visible (INV-R03 discoverability) without competing with
-                    // the protagonist band below.
+                    // Identity context line — a thin "acting as" strip pinned above the
+                    // customizable band so which persona you're operating as is always
+                    // visible (INV-R03). Never hidden or reordered (see `HomeSection`).
                     profileRow
 
-                    // Protagonist band — live/urgent credential content leads the screen
-                    // (find & use a credential instantly). Order: time-sensitive share/approval
-                    // alerts, then TOTP, Needs Attention, Recently Used, Favorites, All items.
-
-                    // 1. Shares I sent that are still pending (design 12a): first-class,
-                    // persists across app kill — not tied to whichever sheet created it.
-                    if !pendingOutgoingShares.isEmpty {
-                        pendingSharesSection
+                    // Customizable protagonist band — order and visibility come from
+                    // `SettingsStore` (edited via the header's layout editor). Each section
+                    // still renders only when it has content; `allItems` / `quickActions`
+                    // always do. The default order matches the original hand-tuned sequence.
+                    ForEach(orderedSections) { section in
+                        if !isHidden(section) {
+                            sectionView(section)
+                        }
                     }
-
-                    // 2. Pending approval requests (owner side): one → open the
-                    // ceremony directly; several → the notifications inbox.
-                    if !env.approvalCoordinator.pendingOwnerRequests.isEmpty {
-                        approvalAttentionRow
-                    }
-
-                    // 3. TOTP scroller (only when items with TOTP exist)
-                    if !totpItems.isEmpty {
-                        totpSection
-                    }
-
-                    // 4. Needs attention (max 4)
-                    if !attentionItems.isEmpty {
-                        attentionSection
-                    }
-
-                    // 5. Recently used — "reach for it again" signal, distinct from All
-                    // items' edit-time sort. Only shown once the vault is big enough for
-                    // it to add signal: on a small vault everything is already on screen
-                    // and this strip just duplicates the list right below it.
-                    if !recentlyUsedItems.isEmpty, allItems.count > 5 {
-                        recentlyUsedSection
-                    }
-
-                    // 6. Favorites
-                    if !favoriteItems.isEmpty {
-                        favoritesSection
-                    }
-
-                    // 7. All items (pinned first)
-                    allItemsSection
-
-                    // 8. Quick-actions grid (Add/Generate/2FA/Watchtower) — secondary,
-                    // 2×2 horizontal pills so Vietnamese labels never truncate.
-                    quickActionsGrid
                 }
                 .padding(.horizontal, Space.gutter)
                 // Bottom inset so the floating tab bar never obscures the last row.
@@ -280,6 +255,42 @@ struct HomeScreen: View {
             }
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: Section layout (order + visibility)
+
+    /// Sections in the user's saved order (falling back to the canonical default), with any
+    /// newly shipped section appended so it can't silently vanish.
+    private var orderedSections: [HomeSection] {
+        HomeSection.ordered(savedOrder: env.settings.homeSectionOrder)
+    }
+
+    private func isHidden(_ section: HomeSection) -> Bool {
+        env.settings.homeHiddenSections.contains(section.rawValue)
+    }
+
+    /// Resolves a section id to its view, preserving each section's original
+    /// "only render when it has content" rule (an empty section stays absent).
+    @ViewBuilder
+    private func sectionView(_ section: HomeSection) -> some View {
+        switch section {
+        case .pendingShares:
+            if !pendingOutgoingShares.isEmpty { pendingSharesSection }
+        case .approvals:
+            if !env.approvalCoordinator.pendingOwnerRequests.isEmpty { approvalAttentionRow }
+        case .totp:
+            if !totpItems.isEmpty { totpSection }
+        case .attention:
+            if !attentionItems.isEmpty { attentionSection }
+        case .recentlyUsed:
+            if !recentlyUsedItems.isEmpty, allItems.count > 5 { recentlyUsedSection }
+        case .favorites:
+            if !favoriteItems.isEmpty { favoritesSection }
+        case .allItems:
+            allItemsSection
+        case .quickActions:
+            quickActionsGrid
+        }
     }
 
     // MARK: Pending outgoing shares (design 12a)
@@ -471,9 +482,6 @@ struct HomeScreen: View {
                       action: { NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil) }),
             ]
         )
-        .sheet(isPresented: $showTotpList) {
-            TotpListScreen()
-        }
     }
 
     // MARK: TOTP scroller

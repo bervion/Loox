@@ -38,8 +38,8 @@ struct ItemsScreen: View {
                 }
                 .scrollIndicators(.hidden)
 
-                // Floating header overlays scroll content — glass blurs beneath.
-                VaultScreenHeader("Items") {
+                // Floating header overlays scroll content — no title, just the action set.
+                VaultScreenHeader {
                     HeaderActionCluster {
                         // Add — menu to choose item type to create
                         Menu {
