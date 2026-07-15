@@ -106,8 +106,8 @@ struct WatchtowerScreen: View {
                 .refreshable { reload() }
                 }
 
-                // Floating header overlays the scroll content — glass blurs beneath.
-                VaultScreenHeader("Security") {
+                // Floating header overlays the scroll content — no title, just the action set.
+                VaultScreenHeader {
                     HeaderActionCluster {
                         Button { showItemTypePicker = true } label: {
                             PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)

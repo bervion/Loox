@@ -100,6 +100,14 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// name. nil / stale falls back to the default persona.
     var activePersonaID: String? { didSet { defaults.set(activePersonaID, forKey: Key.activePersona) } }
 
+    /// Home section display order (identifiers from `HomeSection.rawValue`). Device-local
+    /// layout preference — not synced. Empty = first-run default (canonical order); unknown
+    /// or removed ids are ignored and newly shipped sections append at the end.
+    var homeSectionOrder: [String] { didSet { defaults.set(homeSectionOrder, forKey: Key.homeSectionOrder) } }
+    /// Home sections the user has hidden (identifiers from `HomeSection.rawValue`).
+    /// Device-local; a hidden section is simply skipped when composing the Home feed.
+    var homeHiddenSections: [String] { didSet { defaults.set(homeHiddenSections, forKey: Key.homeHiddenSections) } }
+
     /// The remembered Home Space for an identity: a folderId, "" for an explicit
     /// "All Spaces" choice, or nil when the user never chose one.
     func lastSelectedSpace(persona: String) -> String? {
@@ -145,6 +153,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         selectedPaymentCardId = d.string(forKey: Key.selectedCard)
         lastSelectedSpaceByPersona = d.dictionary(forKey: Key.lastSelectedSpaces) as? [String: String] ?? [:]
         activePersonaID = d.string(forKey: Key.activePersona)
+        homeSectionOrder = d.stringArray(forKey: Key.homeSectionOrder) ?? []
+        homeHiddenSections = d.stringArray(forKey: Key.homeHiddenSections) ?? []
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
         SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
         appResourceLocale = appLocale(forCode: preferredLanguage)
@@ -186,6 +196,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let selectedCard = "profile_selected_payment_card_id"
         static let lastSelectedSpaces = "last_selected_space_by_persona"
         static let activePersona = "active_persona_id"
+        static let homeSectionOrder = "home_section_order"
+        static let homeHiddenSections = "home_hidden_sections"
         static let language = "preferred_language"
     }
 }
