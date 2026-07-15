@@ -1,36 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Unknown device" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thiết bị không rõ"
-          }
-        }
-      }
-    },
-    "No one yet" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chưa có ai"
-          }
-        }
-      }
-    },
-    "Share a vault item with someone and they will appear here. Inviting people into a shared family group is coming soon." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chia sẻ một mục trong kho với ai đó và họ sẽ hiện ở đây. Tính năng mời mọi người vào nhóm gia đình chung sắp ra mắt."
-          }
-        }
-      }
-    },
     "" : {
 
     },
@@ -5064,6 +5034,7 @@
       }
     },
     "Family sharing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -6084,6 +6055,7 @@
       }
     },
     "Invite people to share vault items with your family. This is coming soon." : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -7753,6 +7725,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không có thông báo nào"
+          }
+        }
+      }
+    },
+    "No one yet" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa có ai"
           }
         }
       }
@@ -11197,6 +11179,16 @@
         }
       }
     },
+    "Share a vault item with someone and they will appear here. Inviting people into a shared family group is coming soon." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chia sẻ một mục trong kho với ai đó và họ sẽ hiện ở đây. Tính năng mời mọi người vào nhóm gia đình chung sắp ra mắt."
+          }
+        }
+      }
+    },
     "Share Access" : {
       "localizations" : {
         "en" : {
@@ -13892,6 +13884,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không rõ"
+          }
+        }
+      }
+    },
+    "Unknown device" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị không rõ"
           }
         }
       }
