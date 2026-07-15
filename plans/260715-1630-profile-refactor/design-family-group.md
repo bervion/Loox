@@ -38,3 +38,10 @@ A group key (one symmetric key sealed to each member, items re-sealed under it) 
 
 ## F2 guardrails
 Resumable, idempotent fan-out (per member×item status; retry only what's missing) · reuse `ShareLifecycle` for per-member state, surface partials · cap scope (items×members) with a warning · removal revokes zones per member + UI states the cached-plaintext caveat · **no change to the grant/HPKE crypto — orchestration only.**
+
+## Red-team finding — fan-out into ONE zone is a BLOCKER (session 260715)
+A first cut (`ShareSpaceSheet`: one zone + one ceremony, loop `SharedGrantComposer.publish` over the Space's items) was built and adversarially reviewed. **It does not work — the "fan-out is pure orchestration" assumption above is FALSE.** The Approval transport is **one grant per zone**:
+- `ApprovalConfig.grantRecordName` / `displayEnvelopeRecordName` are FIXED singleton record names, and `publishGrant` **deletes every `ApprovalSharedField` record in the zone before writing**. Fanning N items into one zone therefore leaves **only the LAST item shared** (fail-safe: under-shares, not a leak) while the owner is told "Shared N logins." `SharingStore` is also zone-keyed (`id = zoneName`), so it structurally can't hold N items in one zone.
+- **Capability over-share**: a blanket `.value(.shared)` ships EVERY non-Level-2 field — freeform Notes, `protected` custom fields, secure-note bodies — as an irreversible hand-over, without the per-field consent the per-item sheet enforces. Any real F2 MUST safelist login fields (username / password / url / email) and exclude notes / custom / protected.
+
+**Conclusion:** "share a Space in one ceremony" needs a **transport-level change** — namespace grant / display / field records per `grant.id` within a zone (touches recipient projection, revoke, and `SharedGrantLiveCheck`) — OR N zones / N ceremonies (unacceptable UX). It is a **dedicated transport project, not orchestration.** The fan-out attempt was reverted; **F1 (members list) remains the shipped Family surface.**
