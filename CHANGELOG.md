@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.32.0] - 2026-07-15
+
+### Added
+- customizable section layout and transparent tab headers
+
+
 ## [1.31.0] - 2026-07-15
 
 ### Added

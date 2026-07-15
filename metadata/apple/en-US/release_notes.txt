@@ -1,1 +1,1 @@
-This update refreshes Home with clearer group cards and quick actions, plus a smoother search experience with pinned filters and an easier way to switch languages. General polish and stability improvements throughout.
+You can now arrange home sections your way and enjoy a cleaner tab bar with transparent headers.

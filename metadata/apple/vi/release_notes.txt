@@ -1,1 +1,1 @@
-Bản cập nhật này làm mới màn hình Trang chủ với thẻ nhóm rõ ràng hơn và thao tác nhanh, cùng trải nghiệm tìm kiếm mượt mà hơn với bộ lọc ghim sẵn và chuyển ngôn ngữ dễ dàng hơn. Cải thiện tổng thể về giao diện và độ ổn định.
+Bạn có thể sắp xếp các mục trên trang chủ theo ý mình và tận hưởng thanh điều hướng gọn gàng hơn với tiêu đề trong suốt.
