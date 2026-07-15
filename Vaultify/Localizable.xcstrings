@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Unknown device" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị không rõ"
+          }
+        }
+      }
+    },
     "No one yet" : {
       "localizations" : {
         "vi" : {

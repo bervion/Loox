@@ -37,4 +37,12 @@ Full CloudKit device registry now: a cross-device list with revoke. Prior spec �
 ## Status (session 260715) — ADR-D resolved
 - **Revoke:** v1 is **list-only, NO revoke button.** A "Remove device" that only deletes the CloudKit record WITHOUT rotating the vault key would imply security it doesn't provide (the device keeps its copy of the key) — worse than absent. Real revoke = key rotation + re-provision, deferred to v2 behind its own security pass.
 - **Schema:** the `Device` record type auto-creates in the CloudKit **development** environment on first save, but must be **promoted in the CloudKit dashboard** before a TestFlight/prod build can publish — a manual step outside code.
-- **Blocked on device verification:** publish + cross-device list can't be validated headlessly (needs two devices + iCloud). So this session ships the **interim `DevicesScreen`** (this device, real, from `UIDevice`) and holds the CloudKit registry for a build where it can be tested end-to-end.
+- **Blocked on device verification:** publish + cross-device list can't be validated headlessly (needs two devices + iCloud).
+
+## Implemented — list-only registry (session 260715, PR #105 branch)
+- `DeviceRegistryService` (`Services/Sync/`) publishes THIS device to a private-DB `OwnerDevice` record (deviceID, name, model, lastSeenAt, appVersion) and queries all such records; `DevicesScreen` lists them (this device = Active; others = locale-aware "N ago"). Best-effort + gated (`isConfigured` + `iCloudSyncEnabled` + not tests) → degrades to "just this device", never crashes. **No revoke** (ADR-D). Stable device id = 16 random bytes in the shared Keychain group (`OwnerDeviceIdentity`). Publishes when the Devices screen is opened (moving publish into the sync path so peers appear without opening the screen is a small follow-up).
+- **Owner must do once in the CloudKit dashboard** before a TestFlight/prod build lists peers:
+  1. Record type **`OwnerDevice`** in the private **`Vault`** zone (dev infers it on first save).
+  2. A **Queryable index on `recordName`** for `OwnerDevice` (the list query uses it).
+  3. Promote the schema Development → Production.
+- Verify end-to-end on two signed-in devices with iCloud Sync ON.
