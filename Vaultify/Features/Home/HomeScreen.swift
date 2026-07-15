@@ -159,6 +159,7 @@ struct HomeScreen: View {
                 HomeHeaderBar(
                     isEditingLayout: $isEditingLayout,
                     onAdd: { showItemTypePicker = true },
+                    onNotifications: { openNotifications() },
                     onSettings: {
                         // macOS opens the native Settings window (⌘,) instead of the
                         // iOS-style sheet — the platform-idiomatic home for settings.

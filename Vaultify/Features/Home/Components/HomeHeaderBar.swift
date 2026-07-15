@@ -11,6 +11,9 @@ struct HomeHeaderBar: View {
     @Binding var isEditingLayout: Bool
     /// Called with the chosen item category when the user picks from the Add menu.
     let onAdd: () -> Void
+    /// Opens Notifications through the compact-iOS navigator (native slide over the tab
+    /// bar) rather than a SwiftUI push, so the tab bar doesn't reveal late on back.
+    let onNotifications: () -> Void
     let onSettings: () -> Void
 
     @Environment(AppEnvironment.self) private var env
@@ -59,9 +62,10 @@ struct HomeHeaderBar: View {
                 HStack(spacing: Space.s2) {
                     HeaderActionCluster {
                         // Notifications — pending share invitations + approval requests (V7).
-                        // Badge = actionable count; the bell is a NavigationLink because the
-                        // header lives inside Home's stack.
-                        NavigationLink(value: NotificationsRoute()) {
+                        // A Button routed through the navigator (like Settings), NOT a
+                        // NavigationLink: the SwiftUI push hid the tab bar via a toolbar modifier
+                        // that reveals late on pop; the navigator slide covers it cleanly.
+                        Button(action: onNotifications) {
                             PolarisIcon(Icons.notification, size: Metric.iconUtility)
                                 .themedForeground()
                                 .frame(width: Metric.hitMin, height: Metric.hitMin)
