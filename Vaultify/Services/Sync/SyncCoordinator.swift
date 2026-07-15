@@ -18,6 +18,9 @@ import Foundation
     private let escrow = VaultKeyEscrowService()
     /// Registers the silent-push zone subscription (near-real-time sync).
     private let pushService = SyncPushService()
+    /// Publishes this device to the owner device registry after each successful sync, so
+    /// peers appear in Profile › Devices without opening the screen (best-effort, list-only).
+    private let deviceRegistry: DeviceRegistryService
 
     private var debounceTask: Task<Void, Never>?
     /// Shared coalescing primitive (same semantics as the previous inline
@@ -32,6 +35,7 @@ import Foundation
         self.cloudSync = cloudSync
         self.repository = repository
         self.settings = settings
+        self.deviceRegistry = DeviceRegistryService(settings: settings)
         let center = NotificationCenter.default
         observers.append(center.addObserver(
             forName: .vaultLocalMutation, object: nil, queue: .main
@@ -86,6 +90,7 @@ import Foundation
         if settings.iCloudSyncEnabled, case .success = cloudSync.status {
             await escrow.pushRecoveryEnvelopeIfNeeded()
             await pushService.ensureSubscribedIfNeeded()
+            await deviceRegistry.publish()
         }
     }
 }

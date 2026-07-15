@@ -4,155 +4,102 @@ import SwiftUI
 /// item-detail route). Codable so it survives `homePath` state restoration.
 struct ProfileRoute: Hashable, Codable {}
 
-/// The user's profile as two vault-backed sections: their Identity and their Payment card.
-/// Each shows the selected item's tap-to-copy fields (or an empty state), an Edit button that
-/// opens the item editor, and a picker row to choose which vault item of that type to show.
-/// Pushed onto the Home stack (not a sheet); all data mirrors the vault, so there is no
-/// separate "edit profile" — editing happens on the underlying items.
+/// Profile hub — avatar + name + email at the top, then grouped nav rows that open detail
+/// screens (Personal Information, Payment, Loox, Family, Devices), and a bottom button to
+/// switch the active profile (persona). Pushed onto the Home stack; every row's data mirrors
+/// the vault and scopes to the ACTIVE persona (INV-R03).
 struct ProfileScreen: View {
     @Environment(AppEnvironment.self) private var env
-    @State private var editing: EditorTarget?
+    @State private var showSwitcher = false
 
-    /// Profile follows the ACTIVE persona: its own profile card, and a picker pool
-    /// limited to identities that persona owns (never another persona's — INV-R03).
+    private var persona: Persona? { env.repository.activePersona }
     private var identity: VaultItem? { env.repository.activeProfileItem }
-    private var identities: [VaultItem] {
-        guard let persona = env.repository.activePersona else { return env.repository.activeIdentities }
-        return env.repository.items(for: persona).filter { $0.category == .identity }
-    }
-    private var cards: [VaultItem] { env.repository.items.filter { $0.category == .card } }
 
-    /// The card shown in the Payment section: the device-local pick, else the first card.
-    private var selectedCard: VaultItem? {
-        if let id = env.settings.selectedPaymentCardId, let card = cards.first(where: { $0.id == id }) {
-            return card
+    /// Name under the avatar: the identity's Full Name when set, else the persona name.
+    private var displayName: String {
+        if let full = identity?.fields.first(where: { $0.label == "Full Name" })?.value, !full.isEmpty {
+            return full
         }
-        return cards.first
+        return persona?.displayName ?? appString("Profile")
+    }
+
+    /// Email under the avatar — the active persona's identity email (nil under strict anonymity).
+    private var displayEmail: String? {
+        persona.flatMap { env.repository.identityUsername(forPersona: $0) }
     }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 22) {
-                if let identity { avatarHeader(identity) }
-                personaSection
-                identitySection
-                paymentSection
+            VStack(spacing: Space.s6) {
+                header
+
+                ProfileGroupCard {
+                    ProfileNavRow(title: "Personal Information", icon: Icons.identityCard) { PersonalInformationScreen() }
+                    ProfileRowDivider()
+                    ProfileNavRow(title: "Payment", icon: Icons.creditCard) { PaymentCardsScreen() }
+                }
+
+                ProfileGroupCard {
+                    ProfileNavRow(title: "Loox", icon: Icons.globe) { LooxHubScreen() }
+                    ProfileRowDivider()
+                    ProfileNavRow(title: "Family", icon: Icons.organization) { FamilyScreen() }
+                }
+
+                ProfileGroupCard {
+                    ProfileNavRow(title: "Devices", icon: Icons.device) { DevicesScreen() }
+                }
+
+                switchButton
             }
             .padding(Space.gutter)
+            .padding(.bottom, Space.s8)
         }
         .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle("Profile")
         .platformNavigationBarTitleDisplayMode(.inline)
-        .sheet(item: $editing) { ItemEditorScreen(target: $0) }
+        // Switch profile — the persona picker (dismisses itself on select).
+        .sheet(isPresented: $showSwitcher) {
+            NavigationStack { PersonaSwitcherScreen() }
+        }
     }
 
-    /// Avatar header — the tap-badge lets the user change the photo. No name here: the
-    /// Identity section below already shows it (and the rest of the vault fields).
-    @ViewBuilder private func avatarHeader(_ identity: VaultItem) -> some View {
-        ProfileAvatarView(identity: identity)
-            .frame(maxWidth: .infinity)
-            .padding(.top, Space.s2)
-    }
+    // MARK: Header (avatar + name + email)
 
-    /// The active persona — the identity you're currently acting as. Shows kind +
-    /// isolation, lets you switch, and is the home for persona + email management
-    /// (moved here from Settings so identities live with the profile).
-    @ViewBuilder private var personaSection: some View {
-        if let persona = env.repository.activePersona {
-            VStack(alignment: .leading, spacing: Space.s3) {
-                HStack(spacing: Space.s3) {
-                    PolarisIcon(PersonaKindStyle.icon(persona.kind), size: Metric.iconUtility)
-                        .themedForeground(.accentText)
-                        .frame(width: Metric.controlMedium, height: Metric.controlMedium)
-                        .background(Color(rgb: env.theme.active.accentSoft),
-                                    in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: persona.displayName).vaultType(.headline).themedForeground()
-                        Text(verbatim: personaMeta(persona)).vaultType(.footnote).themedForeground(.secondary)
-                    }
-                    Spacer()
-                    if env.repository.personas.count > 1 {
-                        Menu {
-                            ForEach(env.repository.personas) { candidate in
-                                Button { env.repository.setActivePersona(candidate.id) } label: {
-                                    if candidate.id == persona.id {
-                                        Label { Text(verbatim: candidate.displayName) } icon: { PolarisIcon(Icons.checkCircle) }
-                                    } else {
-                                        Text(verbatim: candidate.displayName)
-                                    }
-                                }
-                            }
-                        } label: {
-                            Text("Switch").vaultType(.subhead).themedForeground(.accentText)
-                        }
-                    }
-                }
-                Divider().overlay(Color(rgb: env.theme.active.separator))
-                NavigationLink { PersonaSwitcherScreen() } label: {
-                    personaRowLabel("Manage personas", icon: Icons.identityCard)
-                }
-                NavigationLink { PersonaAliasesScreen() } label: {
-                    personaRowLabel("Private Email", icon: Icons.mail)
+    @ViewBuilder private var header: some View {
+        VStack(spacing: Space.s3) {
+            if let identity {
+                ProfileAvatarView(identity: identity, size: 88)
+            } else {
+                LooxDotsAvatar(size: 88)
+            }
+            VStack(spacing: 2) {
+                Text(verbatim: displayName)
+                    .vaultType(.screenTitle)
+                    .themedForeground()
+                    .lineLimit(1)
+                if let displayEmail, !displayEmail.isEmpty {
+                    Text(verbatim: displayEmail)
+                        .vaultType(.subhead)
+                        .themedForeground(.secondary)
+                        .lineLimit(1)
                 }
             }
-            .themedCard()
         }
+        .frame(maxWidth: .infinity)
+        .padding(.top, Space.s2)
     }
 
-    private func personaMeta(_ persona: Persona) -> String {
-        var parts = [PersonaKindStyle.label(persona.kind)]
-        if persona.isolationPolicy != .standard {
-            parts.append(PersonaKindStyle.policyLabel(persona.isolationPolicy))
+    // MARK: Bottom — switch profile
+
+    private var switchButton: some View {
+        Button { showSwitcher = true } label: {
+            HStack(spacing: Space.s2) {
+                PolarisIcon(Icons.orderRepeat, size: Metric.iconInline)
+                Text("Switch profile")
+            }
+            .frame(maxWidth: .infinity)
         }
-        return parts.joined(separator: ", ")
-    }
-
-    private func personaRowLabel(_ title: LocalizedStringKey, icon: String) -> some View {
-        HStack(spacing: Space.s3) {
-            PolarisIcon(icon, size: 18).themedForeground(.iconSecondary)
-            Text(title).vaultType(.body).themedForeground()
-            Spacer()
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
-        }
-        // Full list-row height: the bare HStack rows sat ~24pt tall — cramped
-        // against each other and under the 44pt hit minimum (DNA rule 6).
-        .frame(minHeight: Metric.hitMin)
-        .contentShape(.rect)
-    }
-
-    private var identitySection: some View {
-        ProfileSectionCard(
-            title: "Identity",
-            emptyTitle: "No identity yet",
-            chooseLabel: identity == nil ? "Choose identity" : "Change identity",
-            // Swap glyph, not a person: the row switches WHICH identity fills this
-            // card — a person icon here read as "the identity itself".
-            icon: Icons.orderRepeat,
-            selected: identity,
-            pool: identities,
-            onEdit: { if let identity { editing = .edit(identity) } },
-            onChoose: { item in
-                // Re-point the ACTIVE persona's profile card (for the default
-                // persona this also moves the synced default-identity marker).
-                if let persona = env.repository.activePersona {
-                    env.repository.setProfileItem(item, for: persona)
-                } else {
-                    env.repository.setDefaultIdentity(item)
-                }
-            },
-            onCreate: { editing = .new(.identity) })
-    }
-
-    private var paymentSection: some View {
-        ProfileSectionCard(
-            title: "Payment",
-            emptyTitle: "No payment card yet",
-            chooseLabel: selectedCard == nil ? "Choose a card" : "Change card",
-            icon: Icons.creditCard,
-            selected: selectedCard,
-            pool: cards,
-            onEdit: { if let selectedCard { editing = .edit(selectedCard) } },
-            onChoose: { env.settings.selectedPaymentCardId = $0.id },
-            onCreate: { editing = .new(.card) })
+        .buttonStyle(.themedProminent)
+        .padding(.top, Space.s2)
     }
 }
