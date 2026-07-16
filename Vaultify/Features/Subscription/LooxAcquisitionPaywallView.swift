@@ -72,11 +72,13 @@ struct LooxAcquisitionPaywallView: View {
 
     private var header: some View {
         VStack(spacing: Space.s4) {
-            Image("BrandSymbol")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 76, height: 76)
+            // One-shot brand reveal, same animation as the Security empty
+            // state (owner request 260716) — the component collapses under
+            // Reduce Motion; the headline right below carries the information.
+            LooxSwirlAnimationView(mode: .reveal)
+                .frame(width: 96, height: 96)
                 .padding(.top, Space.s5)
+                .accessibilityHidden(true)
             Text(context.headline)
                 .vaultType(.screenTitle)
                 .themedForeground()
