@@ -183,6 +183,16 @@
         }
       }
     },
+    "%lld in 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld trong 30 ngày"
+          }
+        }
+      }
+    },
     "%lld in a data breach" : {
       "comment" : "Watchtower category subtitle: count of items found in data breaches.",
       "extractionState" : "stale",
@@ -191,6 +201,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld mục trong rò rỉ dữ liệu"
+          }
+        }
+      }
+    },
+    "%lld in use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang dùng %lld"
           }
         }
       }
@@ -252,6 +272,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld trong %2$lld bước kiểm tra"
+          }
+        }
+      }
+    },
+    "%lld of %lld in 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld trên %lld trong 30 ngày"
+          }
+        }
+      }
+    },
+    "%lld of %lld in use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang dùng %lld trên %lld"
           }
         }
       }
@@ -2358,6 +2398,16 @@
         }
       }
     },
+    "Change plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi gói"
+          }
+        }
+      }
+    },
     "Change these as soon as possible." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3752,6 +3802,16 @@
         }
       }
     },
+    "Current period ends %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chu kỳ hiện tại kết thúc %@"
+          }
+        }
+      }
+    },
     "Currently unavailable" : {
       "localizations" : {
         "vi" : {
@@ -4186,6 +4246,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bỏ qua phát hiện này"
+          }
+        }
+      }
+    },
+    "Do more with Loox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Làm nhiều hơn với Loox"
           }
         }
       }
@@ -4773,6 +4843,16 @@
         }
       }
     },
+    "Essentials" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết yếu"
+          }
+        }
+      }
+    },
     "Estimated fix time: %lld minutes" : {
       "localizations" : {
         "vi" : {
@@ -5336,6 +5416,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Họ và tên"
+          }
+        }
+      }
+    },
+    "Full Watchtower protection and fixes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo vệ Giám sát đầy đủ và khắc phục"
+          }
+        }
+      }
+    },
+    "Full protection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo vệ đầy đủ"
           }
         }
       }
@@ -5985,6 +6085,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thêm số"
+          }
+        }
+      }
+    },
+    "Included with Loox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đi kèm với Loox"
           }
         }
       }
@@ -6732,6 +6842,16 @@
         }
       }
     },
+    "Loox member" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thành viên Loox"
+          }
+        }
+      }
+    },
     "Loox waits for the next %lld-second window so %@ gets a full-life code. The old one is never sent." : {
       "comment" : "Approval issuing state: explains waiting for a fresh TOTP window (named requester). %lld = period seconds.",
       "localizations" : {
@@ -6952,6 +7072,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quản lý nhóm & thành viên"
+          }
+        }
+      }
+    },
+    "Manage plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quản lý gói"
+          }
+        }
+      }
+    },
+    "Manage subscription" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quản lý đăng ký"
           }
         }
       }
@@ -8399,6 +8539,16 @@
         }
       }
     },
+    "Open on Computer limit reached for these 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã hết lượt Mở trên máy tính trong 30 ngày"
+          }
+        }
+      }
+    },
     "Open security settings" : {
       "localizations" : {
         "vi" : {
@@ -9032,6 +9182,26 @@
         }
       }
     },
+    "Per month, Loox Max yearly costs about the same as Loox+ monthly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tính theo tháng, Loox Max theo năm xấp xỉ bằng Loox+ theo tháng"
+          }
+        }
+      }
+    },
+    "Per month, Loox Max yearly costs less than Loox+ monthly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tính theo tháng, Loox Max theo năm rẻ hơn Loox+ theo tháng"
+          }
+        }
+      }
+    },
     "Per-site aliases" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9453,6 +9623,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ảnh hồ sơ"
+          }
+        }
+      }
+    },
+    "Profiles" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hồ sơ"
           }
         }
       }
@@ -10785,6 +10965,16 @@
         }
       }
     },
+    "Secure sharing with up to 10 people" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chia sẻ an toàn với tối đa 10 người"
+          }
+        }
+      }
+    },
     "Security" : {
       "localizations" : {
         "vi" : {
@@ -11432,6 +11622,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Liên kết chia sẻ đang tắt trong Cài đặt."
+          }
+        }
+      }
+    },
+    "Share link limit reached for these 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã hết lượt liên kết chia sẻ trong 30 ngày"
           }
         }
       }
@@ -14042,6 +14242,16 @@
         }
       }
     },
+    "Unlock every accent and theme" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở toàn bộ màu nhấn và giao diện"
+          }
+        }
+      }
+    },
     "Unlock failed." : {
       "comment" : "Error message when unlocking a Level-2 password fails.",
       "isCommentAutoGenerated" : true,
@@ -14070,6 +14280,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mở khóa Loox ở cửa sổ chính để thay đổi cài đặt."
+          }
+        }
+      }
+    },
+    "Unlock the full Watchtower workflow" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở toàn bộ quy trình Giám sát"
           }
         }
       }
@@ -14223,6 +14443,16 @@
         }
       }
     },
+    "Up to 200 private email aliases" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tối đa 200 địa chỉ email riêng tư"
+          }
+        }
+      }
+    },
     "Update automatically" : {
       "localizations" : {
         "vi" : {
@@ -14269,6 +14499,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã cập nhật"
+          }
+        }
+      }
+    },
+    "Upgrade to Loox Max" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nâng cấp lên Loox Max"
           }
         }
       }
@@ -15398,6 +15638,26 @@
         }
       }
     },
+    "Your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gói của bạn"
+          }
+        }
+      }
+    },
+    "Your plan's sharing seats are all in use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết chỗ chia sẻ trong gói"
+          }
+        }
+      }
+    },
     "Your previous recovery key will stop working." : {
       "comment" : "A message displayed when the user is asked to regenerate their recovery key.",
       "isCommentAutoGenerated" : true,
@@ -15441,6 +15701,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kho của bạn đã sẵn sàng. Thêm mục đầu tiên để bắt đầu."
+          }
+        }
+      }
+    },
+    "You've used every email alias in your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết địa chỉ email trong gói"
+          }
+        }
+      }
+    },
+    "You've used every profile in your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết hồ sơ trong gói"
           }
         }
       }
