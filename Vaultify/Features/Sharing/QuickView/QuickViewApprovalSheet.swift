@@ -10,6 +10,7 @@ struct QuickViewApprovalSheet: View {
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
+    @State private var paywallContext: LooxPaywallContext?
 
     private var item: VaultItem? { env.repository.item(id: flow.itemID) }
 
@@ -17,6 +18,13 @@ struct QuickViewApprovalSheet: View {
         if case .approving = flow.state { return true }
         if case .resolving = flow.state { return true }
         return false
+    }
+
+    /// Device-local approximation of the rolling 30-day successful-approval
+    /// count — the backend counter is the enforcement authority once it exists.
+    private var quickViewCompletions30d: Int {
+        let cutoff = Date.now.addingTimeInterval(-30 * 24 * 3600)
+        return env.quickViewHistory.rows.filter { $0.result == .completed && $0.timestamp >= cutoff }.count
     }
 
     var body: some View {
@@ -66,12 +74,22 @@ struct QuickViewApprovalSheet: View {
 
                 VStack(spacing: Space.s3) {
                     Button {
-                        Task { await flow.approve() }
+                        // Over-quota upsell gate (§5.3), pre-Face-ID so biometrics
+                        // never run for an approval the plan wouldn't cover. Only
+                        // successful approvals consume the rolling quota (§3.2).
+                        if env.entitlements.purchasesEnabled,
+                           case .needsUpgrade = LooxGate.canApproveQuickView(
+                               tier: env.entitlements.tier, approvedIn30d: quickViewCompletions30d) {
+                            paywallContext = .quickViewQuota
+                        } else {
+                            Task { await flow.approve() }
+                        }
                     } label: {
                         Text("Approve with Face ID")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.themedProminent)
+                    .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
 
                     Button(role: .destructive) {
                         flow.abortSASMismatch()

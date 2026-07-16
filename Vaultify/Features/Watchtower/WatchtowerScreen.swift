@@ -47,6 +47,7 @@ struct WatchtowerScreen: View {
     /// Auto-audit runs at most once per screen appearance so revisiting the tab
     /// never re-triggers the engine; reset when the persona changes.
     @State private var didAutoAudit = false
+    @State private var paywallContext: LooxPaywallContext?
 
     /// Data-context identity for the intro animations: persona switch or a
     /// completed audit changes it; a mere tab revisit does not.
@@ -124,6 +125,7 @@ struct WatchtowerScreen: View {
             .themedWallpaper(env.theme.wallpaper,
                              fallback: Color(rgb: env.theme.active.groupedBackground))
             .platformHiddenNavigationBar()
+            .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             .sheet(isPresented: $showItemTypePicker, onDismiss: {
                 if let category = pendingNewCategory {
@@ -216,8 +218,25 @@ struct WatchtowerScreen: View {
     /// covering the tab bar); the iPad/Mac sidebar (no navigator) appends to its
     /// own SwiftUI stack path.
     private func openCategory(_ category: WatchtowerCategory) {
+        // Paid-surface gate (§5.3): full report, Fix Queue and history are the
+        // paid workflow (§3.1). The Free floor never gates — score, strength,
+        // audit runs and every finding group (Critical/High visibility with
+        // affected items) stay open below.
+        if env.entitlements.purchasesEnabled,
+           !LooxGate.fullWatchtower(env.entitlements.tier),
+           isPaidSurface(category) {
+            paywallContext = .watchtower
+            return
+        }
         if let navigator { navigator.push { categoryScreen(for: category) } }
         else { uiState.watchtowerPath.append(category) }
+    }
+
+    private func isPaidSurface(_ category: WatchtowerCategory) -> Bool {
+        switch category {
+        case .fullReport, .fixQueue, .history, .historyDetail: return true
+        case .strength, .audit, .whyScore, .findingGroup: return false
+        }
     }
 
     @ViewBuilder

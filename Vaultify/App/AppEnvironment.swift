@@ -73,6 +73,9 @@ import SwiftUI
     /// foreground, so freshness never depends on visiting a feature screen
     /// (INV-CP-01). Non-blocking; assigned once all three clients exist.
     let controlPlaneRefresher: SignedControlPlaneRefresher
+    /// Loox tier from verified StoreKit 2 transactions (Free when none).
+    /// Entitlement state gates offers/quotas only — never vault data.
+    let entitlements = LooxEntitlementStore()
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
@@ -150,6 +153,9 @@ import SwiftUI
         // handler until the triggered CloudKit work actually finishes.
         SilentPushWork.shareRefresher = ownerShareRefresher
         SilentPushWork.syncCoordinator = syncCoordinator
+        // StoreKit transaction listener must run from launch so purchases,
+        // renewals and refunds land without a restart.
+        entitlements.start()
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through

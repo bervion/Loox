@@ -172,20 +172,45 @@ enum ProfileBadgeTint {
 /// A Profile nav row: leading tile + title + optional trailing value + chevron, pushing
 /// `destination` onto the enclosing (navigator-hosted) stack.
 struct ProfileNavRow<Destination: View>: View {
-    let title: LocalizedStringResource
-    /// Polaris asset name — the original tile look; ignored when `tile` is provided.
-    var icon: String? = nil
-    /// Overrides the leading tile's visual treatment with the Profile-only SF Symbol redesign
-    /// (see `ProfileTileStyle`).
-    var tile: ProfileTileStyle? = nil
-    var value: String? = nil
-    @ViewBuilder let destination: () -> Destination
+    private let titleView: AnyView
+    private let tileStyle: ProfileTileStyle
+    private let value: String?
+    private let destination: () -> Destination
+
+    /// `icon` is a Polaris asset name (the original tile look); `tile` overrides it with the
+    /// Profile-only SF Symbol redesign (see `ProfileTileStyle`).
+    init(title: LocalizedStringResource, icon: String? = nil, tile: ProfileTileStyle? = nil,
+         value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
+        self.titleView = AnyView(Text(title))
+        self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
+        self.value = value
+        self.destination = destination
+    }
+
+    /// Verbatim title for locale-invariant brand nouns.
+    init(verbatimTitle: String, icon: String? = nil, tile: ProfileTileStyle? = nil,
+         value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
+        self.titleView = AnyView(Text(verbatim: verbatimTitle))
+        self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
+        self.value = value
+        self.destination = destination
+    }
+
+    /// Custom title content (the Loox row renders the tier lockup — "Loox"
+    /// plus the MAX badge). The view inherits the row's font and foreground.
+    init(titleView: some View, icon: String? = nil, tile: ProfileTileStyle? = nil,
+         value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
+        self.titleView = AnyView(titleView)
+        self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
+        self.value = value
+        self.destination = destination
+    }
 
     var body: some View {
         NavigationLink { destination() } label: {
             HStack(spacing: Space.s3) {
-                ProfileRowTile(style: tile ?? .polaris(icon ?? Icons.info))
-                Text(title).vaultType(.body).themedForeground()
+                ProfileRowTile(style: tileStyle)
+                titleView.vaultType(.body).themedForeground()
                 Spacer(minLength: Space.s2)
                 if let value {
                     Text(verbatim: value).vaultType(.subhead).themedForeground(.secondary)

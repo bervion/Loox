@@ -171,6 +171,30 @@ struct SettingsScreen: View {
                 NavigationLink { ShareDiagnosticsView() } label: {
                     Label { Text(verbatim: "Share Diagnostics") } icon: { SettingsIconBadge(systemName: "ladybug.fill", tint: SettingsBadgeTint.gray) }
                 }
+                // Dev-only purchase surfaces (paywall, plan section, gate
+                // sheets) — Release beta builds get these automatically via
+                // AppTransaction; DEBUG opts in here (paywall preview works
+                // best under the Vaultify-StoreKit scheme).
+                Toggle(isOn: Binding(
+                    get: { env.entitlements.debugPurchasesEnabled },
+                    set: { env.entitlements.debugPurchasesEnabled = $0 }
+                )) {
+                    Label { Text(verbatim: "Purchase Surfaces") } icon: { SettingsIconBadge(systemName: "cart.fill", tint: SettingsBadgeTint.gray) }
+                }
+                .tint(switchTint)
+                // Dev-only tier override (`LooxTier(rawValue: -1)` is nil = follow
+                // StoreKit) so membership UI is testable without ASC products.
+                Picker(selection: Binding(
+                    get: { env.entitlements.debugTierOverride?.rawValue ?? -1 },
+                    set: { env.entitlements.debugTierOverride = LooxTier(rawValue: $0) }
+                )) {
+                    Text(verbatim: "StoreKit").tag(-1)
+                    Text(verbatim: "Free").tag(LooxTier.free.rawValue)
+                    Text(verbatim: "Loox+").tag(LooxTier.plus.rawValue)
+                    Text(verbatim: "Loox Max").tag(LooxTier.max.rawValue)
+                } label: {
+                    Label { Text(verbatim: "Loox Tier Override") } icon: { SettingsIconBadge(systemName: "crown.fill", tint: SettingsBadgeTint.gray) }
+                }
             }
             .listRowBackground(VaultColors.surface)
             #endif

@@ -283,5 +283,23 @@ let project = Project(
             resources: ["VaultifyTests/Fixtures/**"],
             dependencies: [.target(name: "Vaultify")]
         ),
+    ],
+    schemes: [
+        // Additive dev-only scheme: same app, but the run action loads the local
+        // StoreKit configuration (Loox.storekit) so subscription purchases are
+        // testable in the simulator without App Store Connect. CI, `make check`
+        // and `make test` keep using the auto-generated "Vaultify" scheme, which
+        // Tuist still emits alongside this one. The .storekit file is scheme
+        // metadata only — it is deliberately NOT a bundle resource.
+        .scheme(
+            name: "Vaultify-StoreKit",
+            shared: true,
+            buildAction: .buildAction(targets: ["Vaultify"]),
+            testAction: .targets(["VaultifyTests"]),
+            runAction: .runAction(
+                executable: "Vaultify",
+                options: .options(storeKitConfigurationPath: "Loox.storekit")
+            )
+        ),
     ]
 )

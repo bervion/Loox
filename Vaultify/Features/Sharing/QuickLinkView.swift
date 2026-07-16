@@ -24,6 +24,7 @@ struct QuickLinkView: View {
     @State private var seeded = false
     /// Link pending the destructive revoke confirmation.
     @State private var revokeTarget: LooxLinkRecord?
+    @State private var paywallContext: LooxPaywallContext?
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
 
@@ -181,7 +182,16 @@ struct QuickLinkView: View {
 
     private var createButton: some View {
         Button {
-            Task { await create() }
+            // Over-quota upsell gate (§5.3): only successful creates in the
+            // rolling window count (§3.2); revoking/expiry never refunds.
+            // Managing or revoking existing links never gates.
+            if env.entitlements.purchasesEnabled,
+               case .needsUpgrade = LooxGate.canCreateLink(
+                   tier: env.entitlements.tier, createdIn30d: linkCreates30d) {
+                paywallContext = .linkQuota
+            } else {
+                Task { await create() }
+            }
         } label: {
             Text("Create Link")
                 .frame(maxWidth: .infinity)
@@ -189,6 +199,14 @@ struct QuickLinkView: View {
         .buttonStyle(.themedProminent)
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)
+        .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
+    }
+
+    /// Device-local approximation of the rolling 30-day create count — the
+    /// backend counter is the enforcement authority once it exists.
+    private var linkCreates30d: Int {
+        let cutoff = Date.now.addingTimeInterval(-30 * 24 * 3600)
+        return env.looxLinks.records.records.filter { $0.createdAt >= cutoff }.count
     }
 
     private func shareStateFootnote(_ state: CapabilityAvailability) -> String {

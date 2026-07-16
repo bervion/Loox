@@ -16,6 +16,26 @@
         }
       }
     },
+    "%@ a month" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ mỗi tháng"
+          }
+        }
+      }
+    },
+    "%@ a year" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ mỗi năm"
+          }
+        }
+      }
+    },
     "%@ accepted. Tap to finish setting up the share." : {
       "comment" : "Local notification body when a recipient finished accepting a share; %@ is the recipient email (device-local).",
       "localizations" : {
@@ -161,6 +181,16 @@
         }
       }
     },
+    "%lld days free" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Miễn phí %lld ngày"
+          }
+        }
+      }
+    },
     "%lld easy to guess" : {
       "comment" : "Watchtower category subtitle: count of items with weak passwords.",
       "extractionState" : "stale",
@@ -183,6 +213,16 @@
         }
       }
     },
+    "%lld in 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld trong 30 ngày"
+          }
+        }
+      }
+    },
     "%lld in a data breach" : {
       "comment" : "Watchtower category subtitle: count of items found in data breaches.",
       "extractionState" : "stale",
@@ -191,6 +231,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld mục trong rò rỉ dữ liệu"
+          }
+        }
+      }
+    },
+    "%lld in use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang dùng %lld"
           }
         }
       }
@@ -252,6 +302,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld trong %2$lld bước kiểm tra"
+          }
+        }
+      }
+    },
+    "%lld of %lld in 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld trên %lld trong 30 ngày"
+          }
+        }
+      }
+    },
+    "%lld of %lld in use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang dùng %lld trên %lld"
           }
         }
       }
@@ -505,6 +575,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bản xuất CSV **không được mã hóa**. Bất kỳ ai có tệp đều đọc được mọi mật khẩu. Passkey không bao giờ được đưa vào CSV."
+          }
+        }
+      }
+    },
+    "A different address for every site. Pause or delete one the moment it leaks." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mỗi trang một địa chỉ riêng. Tạm dừng hoặc xóa ngay khi bị lộ."
           }
         }
       }
@@ -1278,6 +1358,16 @@
         }
       }
     },
+    "about %@ a month" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "khoảng %@ mỗi tháng"
+          }
+        }
+      }
+    },
     "an item" : {
       "localizations" : {
         "en" : {
@@ -1431,6 +1521,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cần phê duyệt"
+          }
+        }
+      }
+    },
+    "Approval Mode seats for the people you trust. They ask, you approve, and secrets stay in your vault." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỗ chia sẻ Chế độ phê duyệt cho những người bạn tin. Họ yêu cầu, bạn phê duyệt, bí mật vẫn nằm trong kho của bạn."
           }
         }
       }
@@ -1751,6 +1851,16 @@
         }
       }
     },
+    "Ask to Buy request sent. You can finish once it's approved." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã gửi yêu cầu Hỏi để mua. Bạn có thể hoàn tất sau khi được phê duyệt."
+          }
+        }
+      }
+    },
     "At risk" : {
       "comment" : "Watchtower score band label: score < 50.",
       "localizations" : {
@@ -1892,6 +2002,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tự động khoá tính cả thời gian rời app lẫn thời gian không thao tác trong app. \"Ngay lập tức\" khoá ngay khi bạn rời đi; các mốc dài hơn cho phép bạn sao chép sang app khác rồi quay lại mà không phải xác thực lại.\n\nNâng cấp passkey tự động có thể tạo passkey ở chế độ nền với khoá công khai chỉ ghi. Việc đọc hoặc dùng passkey vẫn yêu cầu mở khoá kho."
+          }
+        }
+      }
+    },
+    "Auto-renews at %@ each month until canceled. Cancel anytime in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tự động gia hạn %@ mỗi tháng cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
+          }
+        }
+      }
+    },
+    "Auto-renews at %@ each year until canceled. Cancel anytime in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tự động gia hạn %@ mỗi năm cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
           }
         }
       }
@@ -2354,6 +2484,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đổi ảnh"
+          }
+        }
+      }
+    },
+    "Change plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi gói"
           }
         }
       }
@@ -3203,6 +3343,16 @@
         }
       }
     },
+    "Couldn't load plans. Check your connection and try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa tải được các gói. Kiểm tra kết nối và thử lại."
+          }
+        }
+      }
+    },
     "Couldn't load shares" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3752,6 +3902,16 @@
         }
       }
     },
+    "Current period ends %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chu kỳ hiện tại kết thúc %@"
+          }
+        }
+      }
+    },
     "Currently unavailable" : {
       "localizations" : {
         "vi" : {
@@ -4186,6 +4346,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bỏ qua phát hiện này"
+          }
+        }
+      }
+    },
+    "Do more with Loox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Làm nhiều hơn với Loox"
           }
         }
       }
@@ -4773,6 +4943,16 @@
         }
       }
     },
+    "Essentials" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết yếu"
+          }
+        }
+      }
+    },
     "Estimated fix time: %lld minutes" : {
       "localizations" : {
         "vi" : {
@@ -4790,6 +4970,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mọi tài khoản bạn có, tiền bạc, ảnh, những cuộc trò chuyện, đều phụ thuộc vào vài mật khẩu. Chúng tôi tin rằng thứ nắm giữ chúng phải chịu trách nhiệm với bạn, và không ai khác."
+          }
+        }
+      }
+    },
+    "Every finding with the Fix Queue, history and reminders, not just the critical ones." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mọi phát hiện kèm Hàng đợi khắc phục, lịch sử và nhắc nhở, không chỉ các cảnh báo nghiêm trọng."
           }
         }
       }
@@ -4814,6 +5004,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mọi mật khẩu đều mạnh và duy nhất."
+          }
+        }
+      }
+    },
+    "Everything Loox can do." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tất cả những gì Loox làm được."
           }
         }
       }
@@ -5146,6 +5346,16 @@
         }
       }
     },
+    "First %lld days free, then %@ each year. Auto-renews until canceled. Cancel anytime in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Miễn phí %lld ngày đầu, sau đó %@ mỗi năm. Tự động gia hạn cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
+          }
+        }
+      }
+    },
     "First time sharing with someone? A Messages nudge helps them find the invite." : {
       "localizations" : {
         "vi" : {
@@ -5194,6 +5404,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cho ứng dụng này"
+          }
+        }
+      }
+    },
+    "For your whole world." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cho cả thế giới của bạn."
           }
         }
       }
@@ -5340,6 +5560,36 @@
         }
       }
     },
+    "Full protection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo vệ đầy đủ"
+          }
+        }
+      }
+    },
+    "Full Watchtower protection and fixes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo vệ Giám sát đầy đủ và khắc phục"
+          }
+        }
+      }
+    },
+    "Full security workflow, sharing and services" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trọn bộ bảo mật, chia sẻ và dịch vụ"
+          }
+        }
+      }
+    },
     "General" : {
       "localizations" : {
         "vi" : {
@@ -5439,6 +5689,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tốt"
+          }
+        }
+      }
+    },
+    "Good security is a habit. Loox+ makes it an easy one." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo mật tốt là một thói quen. Loox+ khiến thói quen đó trở nên dễ dàng."
           }
         }
       }
@@ -5596,6 +5856,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ẩn nội dung trong App Switcher"
+          }
+        }
+      }
+    },
+    "Higher limits everywhere, sharing seats for the people around you, and every service sized for daily use." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hạn mức cao hơn ở mọi nơi, chỗ chia sẻ cho những người quanh bạn, và mọi dịch vụ đủ dùng hằng ngày."
           }
         }
       }
@@ -5985,6 +6255,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thêm số"
+          }
+        }
+      }
+    },
+    "Included with Loox" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đi kèm với Loox"
           }
         }
       }
@@ -6429,6 +6709,16 @@
         }
       }
     },
+    "Learn more about %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tìm hiểu thêm về %@"
+          }
+        }
+      }
+    },
     "Leave Share" : {
       "localizations" : {
         "en" : {
@@ -6716,6 +7006,16 @@
         }
       }
     },
+    "Loox Max is the full product: room for every alias, sharing for the people you trust, and services sized for daily use." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox Max là bản đầy đủ: dư sức cho mọi địa chỉ, chia sẻ cho những người bạn tin, và dịch vụ đủ dùng mỗi ngày."
+          }
+        }
+      }
+    },
     "Loox Password" : {
       "localizations" : {
         "en" : {
@@ -6792,6 +7092,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loox sẽ ngừng nhắc bạn về phát hiện này. Nó sẽ xuất hiện lại nếu nội dung kiểm tra thay đổi."
+          }
+        }
+      }
+    },
+    "Loox+ keeps your digital life maintained: weak spots surfaced, private addresses for sites that leak, and a workflow that does the follow-up for you." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox+ giữ đời sống số của bạn luôn được chăm sóc: điểm yếu được chỉ ra, địa chỉ riêng cho các trang hay rò rỉ, và một quy trình tự lo phần việc còn lại cho bạn."
           }
         }
       }
@@ -6929,6 +7239,16 @@
         }
       }
     },
+    "Manage plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quản lý gói"
+          }
+        }
+      }
+    },
     "Manage Spaces" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6952,6 +7272,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quản lý nhóm & thành viên"
+          }
+        }
+      }
+    },
+    "Manage subscription" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quản lý đăng ký"
           }
         }
       }
@@ -7057,6 +7387,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chuỗi mã hóa"
+          }
+        }
+      }
+    },
+    "Monthly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hàng tháng"
           }
         }
       }
@@ -8100,6 +8440,16 @@
         }
       }
     },
+    "Nothing to restore on this Apple Account." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có giao dịch nào để khôi phục trên tài khoản Apple này."
+          }
+        }
+      }
+    },
     "Notification permission" : {
       "localizations" : {
         "vi" : {
@@ -8230,6 +8580,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trên thiết bị kia, mở Cài đặt → Đồng bộ iCloud → Ghép nối thiết bị mới, rồi quét mã này."
+          }
+        }
+      }
+    },
+    "One plan that covers everything you protect." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một gói bao trọn mọi thứ bạn bảo vệ."
           }
         }
       }
@@ -8395,6 +8755,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tính năng Mở trên máy tính tạm thời không khả dụng. Kho của bạn không bị ảnh hưởng."
+          }
+        }
+      }
+    },
+    "Open on Computer limit reached for these 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã hết lượt Mở trên máy tính trong 30 ngày"
           }
         }
       }
@@ -9032,6 +9402,26 @@
         }
       }
     },
+    "Per month, Loox Max yearly costs about the same as Loox+ monthly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tính theo tháng, Loox Max theo năm xấp xỉ bằng Loox+ theo tháng"
+          }
+        }
+      }
+    },
+    "Per month, Loox Max yearly costs less than Loox+ monthly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tính theo tháng, Loox Max theo năm rẻ hơn Loox+ theo tháng"
+          }
+        }
+      }
+    },
     "Per-site aliases" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9121,6 +9511,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thông tin cá nhân"
+          }
+        }
+      }
+    },
+    "Personal security, maintained" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo mật cá nhân, duy trì liên tục"
           }
         }
       }
@@ -9339,6 +9739,16 @@
         }
       }
     },
+    "Privacy Policy" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chính sách quyền riêng tư"
+          }
+        }
+      }
+    },
     "Private Email" : {
       "localizations" : {
         "vi" : {
@@ -9453,6 +9863,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ảnh hồ sơ"
+          }
+        }
+      }
+    },
+    "Profiles" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hồ sơ"
+          }
+        }
+      }
+    },
+    "Profiles without a cap" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hồ sơ không giới hạn số lượng"
           }
         }
       }
@@ -10163,6 +10593,16 @@
         }
       }
     },
+    "Restore Purchases" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khôi phục giao dịch mua"
+          }
+        }
+      }
+    },
     "Restore data" : {
       "localizations" : {
         "vi" : {
@@ -10180,6 +10620,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khôi phục dữ liệu?"
+          }
+        }
+      }
+    },
+    "Restore didn't finish. Try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khôi phục chưa hoàn tất. Vui lòng thử lại."
           }
         }
       }
@@ -10418,6 +10868,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thu hồi sẽ chặn ngay mọi yêu cầu sau này. Các giá trị bạn đã đánh dấu Chia sẻ thì đã được gửi và vẫn ở lại với họ."
+          }
+        }
+      }
+    },
+    "Room for everyday sharing" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thoải mái chia sẻ hằng ngày"
           }
         }
       }
@@ -10785,6 +11245,16 @@
         }
       }
     },
+    "Secure sharing with up to %lld people" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chia sẻ an toàn với tối đa %lld người"
+          }
+        }
+      }
+    },
     "Security" : {
       "localizations" : {
         "vi" : {
@@ -11043,6 +11513,16 @@
         }
       }
     },
+    "Separate work, personal, and anything in between." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tách bạch công việc, cá nhân và mọi thứ ở giữa."
+          }
+        }
+      }
+    },
     "Separator" : {
       "comment" : "A label for the separator used in a passphrase.",
       "isCommentAutoGenerated" : true,
@@ -11083,6 +11563,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đặt làm mặc định"
+          }
+        }
+      }
+    },
+    "Set it once." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết lập một lần."
           }
         }
       }
@@ -11396,6 +11886,16 @@
         }
       }
     },
+    "Share link limit reached for these 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã hết lượt liên kết chia sẻ trong 30 ngày"
+          }
+        }
+      }
+    },
     "Share Links" : {
       "localizations" : {
         "vi" : {
@@ -11482,6 +11982,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chia sẻ với người dùng Loox"
+          }
+        }
+      }
+    },
+    "Share with one trusted person" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chia sẻ với một người tin cậy"
           }
         }
       }
@@ -11646,7 +12156,6 @@
       }
     },
     "Sharing" : {
-      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -12151,6 +12660,16 @@
         }
       }
     },
+    "Stay protected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luôn được bảo vệ."
+          }
+        }
+      }
+    },
     "Step %lld of %lld" : {
       "localizations" : {
         "vi" : {
@@ -12254,6 +12773,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trình tạo mạnh, mã một lần và kiểm tra bảo mật."
+          }
+        }
+      }
+    },
+    "Subscribe to" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng ký"
+          }
+        }
+      }
+    },
+    "Subscribe to %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng ký %@"
+          }
+        }
+      }
+    },
+    "Subscriber" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Người đăng ký"
           }
         }
       }
@@ -12444,6 +12993,16 @@
         }
       }
     },
+    "Terms of Use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Điều khoản sử dụng"
+          }
+        }
+      }
+    },
     "Text" : {
       "comment" : "Display name for a field type that accepts plain text input.",
       "isCommentAutoGenerated" : true,
@@ -12565,6 +13124,16 @@
         }
       }
     },
+    "The full Watchtower workflow keeps watch, and private addresses keep your real inbox out of strangers' databases." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quy trình Giám sát đầy đủ luôn để mắt, còn địa chỉ riêng giữ hộp thư thật của bạn ngoài cơ sở dữ liệu của người lạ."
+          }
+        }
+      }
+    },
     "The link disappears the first time it's opened. If nobody opens it, it expires on its own after 24 hours. The viewer asks for a tap first, so link previews can't use it up." : {
       "localizations" : {
         "vi" : {
@@ -12660,6 +13229,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dịch vụ Xem nhanh đã gửi phản hồi không mong đợi."
+          }
+        }
+      }
+    },
+    "The purchase didn't go through. You have not been charged." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giao dịch chưa hoàn tất. Bạn chưa bị trừ tiền."
           }
         }
       }
@@ -13839,12 +14418,32 @@
         }
       }
     },
+    "Try Again" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
     "Try again" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "Try free for %lld days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng thử miễn phí %lld ngày"
           }
         }
       }
@@ -14042,6 +14641,16 @@
         }
       }
     },
+    "Unlock every accent and theme" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở toàn bộ màu nhấn và giao diện"
+          }
+        }
+      }
+    },
     "Unlock failed." : {
       "comment" : "Error message when unlocking a Level-2 password fails.",
       "isCommentAutoGenerated" : true,
@@ -14070,6 +14679,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mở khóa Loox ở cửa sổ chính để thay đổi cài đặt."
+          }
+        }
+      }
+    },
+    "Unlock the full Watchtower workflow" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở toàn bộ quy trình Giám sát"
           }
         }
       }
@@ -14223,6 +14842,46 @@
         }
       }
     },
+    "Up to %lld private addresses" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tối đa %lld địa chỉ riêng tư"
+          }
+        }
+      }
+    },
+    "Up to %lld private email aliases" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tối đa %lld địa chỉ email riêng tư"
+          }
+        }
+      }
+    },
+    "Up to %lld profiles" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tối đa %lld hồ sơ"
+          }
+        }
+      }
+    },
+    "Up to %lld share links and %lld computer approvals in any 30 days." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tối đa %lld liên kết chia sẻ và %lld lượt duyệt trên máy tính trong mỗi 30 ngày."
+          }
+        }
+      }
+    },
     "Update automatically" : {
       "localizations" : {
         "vi" : {
@@ -14269,6 +14928,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã cập nhật"
+          }
+        }
+      }
+    },
+    "Upgrade to Loox Max" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nâng cấp lên Loox Max"
           }
         }
       }
@@ -14708,6 +15377,16 @@
         }
       }
     },
+    "Waiting for approval" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chờ phê duyệt"
+          }
+        }
+      }
+    },
     "Waiting for approval…" : {
       "localizations" : {
         "en" : {
@@ -14788,7 +15467,6 @@
       }
     },
     "Watchtower" : {
-      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -15101,6 +15779,16 @@
         }
       }
     },
+    "Why upgrade" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vì sao nâng cấp"
+          }
+        }
+      }
+    },
     "Why we built Loox" : {
       "comment" : "About: refusal block eyebrow.",
       "localizations" : {
@@ -15139,6 +15827,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "XXXX-XXXX"
+          }
+        }
+      }
+    },
+    "Yearly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hàng năm"
           }
         }
       }
@@ -15306,6 +16004,26 @@
         }
       }
     },
+    "You've used every email alias in your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết địa chỉ email trong gói"
+          }
+        }
+      }
+    },
+    "You've used every profile in your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết hồ sơ trong gói"
+          }
+        }
+      }
+    },
     "Your device is the vault" : {
       "comment" : "About: promise 1 title.",
       "localizations" : {
@@ -15394,6 +16112,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ảnh của bạn chỉ ở trên thiết bị này."
+          }
+        }
+      }
+    },
+    "Your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gói của bạn"
+          }
+        }
+      }
+    },
+    "Your plan's sharing seats are all in use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết chỗ chia sẻ trong gói"
           }
         }
       }

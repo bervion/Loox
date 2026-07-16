@@ -9,6 +9,7 @@ struct PersonaSwitcherScreen: View {
     @State private var editorTarget: PersonaEditorTarget?
     @State private var blockedReason: PersonaRemovalGate?
     @State private var pendingDelete: Persona?
+    @State private var paywallContext: LooxPaywallContext?
 
     var body: some View {
         List {
@@ -29,7 +30,7 @@ struct PersonaSwitcherScreen: View {
             .listRowBackground(VaultColors.surface)
 
             Section {
-                Button { editorTarget = .create } label: {
+                Button { attemptCreate() } label: {
                     Label { Text("Add persona") } icon: { PolarisIcon(Icons.addCircle) }
                 }
             }
@@ -37,6 +38,7 @@ struct PersonaSwitcherScreen: View {
         }
         .navigationTitle(Text("Personas"))
         .sheet(item: $editorTarget) { PersonaEditorSheet(target: $0) }
+        .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
         .alert(Text("Can’t delete this identity"), isPresented: blockedBinding, presenting: blockedReason) { _ in
             Button("OK", role: .cancel) {}
         } message: { reason in
@@ -52,6 +54,18 @@ struct PersonaSwitcherScreen: View {
             }
         } message: { _ in
             Text("This also permanently deletes its private email addresses. Its logins and other items move to your default identity.")
+        }
+    }
+
+    /// Over-quota upsell gate (§5.3): fires only at the create action, only
+    /// once purchases are live. Editing/switching existing personas never gates.
+    private func attemptCreate() {
+        if env.entitlements.purchasesEnabled,
+           case .needsUpgrade = LooxGate.canCreatePersona(
+               tier: env.entitlements.tier, current: env.repository.personas.count) {
+            paywallContext = .personaLimit
+        } else {
+            editorTarget = .create
         }
     }
 
