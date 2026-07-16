@@ -112,7 +112,7 @@ struct LooxHubScreen: View {
             // Subscriber stamp — paid tiers only (owner 260716); Free keeps a
             // clean title-only header.
             if tier > .free {
-                LooxMemberSeal()
+                LooxMemberSeal(tier: tier)
             }
         }
         .padding(.top, Space.s2)

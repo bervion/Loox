@@ -11,29 +11,35 @@ import SwiftUI
 /// straight to the final state.
 struct LooxMemberSeal: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Bottom arc names the PLAN ("LOOX PLUS" / "LOOX MAX") — longer brand
+    /// text is what gives the stamp its near-full ring coverage (owner 260716).
+    var tier: LooxTier = .plus
     var diameter: CGFloat = 68
     @State private var revealed = false
 
     var body: some View {
         let ringRadius = diameter / 2 - diameter * 0.115
         let subscriber = appString("Subscriber").uppercased(with: appResourceLocale)
+        let brand = "✦ LOOX \(tier == .max ? "MAX" : "PLUS") ✦"
         ZStack {
             // Two balanced arcs like the reference stamp: the subscriber word
-            // hugs the TOP arc, the brand hugs the BOTTOM arc — flipped so it
-            // reads left-to-right instead of upside down. Fixed-size fonts by
-            // design (documented exemption from the vaultType rule): the ring
-            // is geometry — glyphs scale with the seal's diameter, never with
-            // Dynamic Type, or they overflow the circle. Decorative +
-            // accessibilityHidden. The "•" is a ring divider, not prose.
+            // hugs the TOP arc (~190°), the plan name hugs the BOTTOM arc
+            // (~160°) — flipped so it reads left-to-right — with the "✦"
+            // joints landing near 3 and 9 o'clock, ≈350° of coverage total.
+            // Fixed-size fonts by design (documented exemption from the
+            // vaultType rule): the ring is geometry — glyphs scale with the
+            // seal's diameter, never with Dynamic Type, or they overflow the
+            // circle. Decorative + accessibilityHidden; the "✦" is a ring
+            // divider, not prose.
             Group {
                 SealArcText(text: subscriber, radius: ringRadius,
-                            step: min(13.5, 165 / Double(max(subscriber.count, 1))),
+                            step: min(15, 190 / Double(max(subscriber.count, 1))),
                             center: 0)
                     .font(.system(size: diameter * 0.105, weight: .black))
-                // The brand arc runs slightly larger for coverage (owner 260716).
-                SealArcText(text: "• LOOX •", radius: ringRadius,
-                            step: 15.5, center: 180, flipped: true)
-                    .font(.system(size: diameter * 0.125, weight: .black))
+                SealArcText(text: brand, radius: ringRadius,
+                            step: min(14, 160 / Double(max(brand.count, 1))),
+                            center: 180, flipped: true)
+                    .font(.system(size: diameter * 0.115, weight: .black))
             }
             .themedForeground(.primary)
             .scaleEffect(revealed ? 1 : 0.5)
