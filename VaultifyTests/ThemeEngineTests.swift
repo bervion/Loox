@@ -4,9 +4,21 @@ import CoreGraphics
 @testable import Vaultify
 
 /// Pure-logic coverage for the theme engine: settings codec, accent recolor,
-/// auto-night resolution, legacy migration mapping, mesh math/renderer, and the
-/// `.vaultheme` exchange codec. (Visual pieces are verified on device.)
+/// auto-night resolution, legacy migration mapping, mesh math/renderer, the
+/// `.vaultheme` exchange codec, and the onboarding forced-light gate. (Visual
+/// pieces are verified on device.) `@MainActor` because `ThemeStore`/`SettingsStore`
+/// are main-actor isolated.
+@MainActor
 final class ThemeEngineTests: XCTestCase {
+
+    override func tearDown() {
+        // `ThemeStore`/`SettingsStore` construction below persists through
+        // `ThemeReader`/`UserDefaults` (App Group when available, else `.standard`,
+        // matching production) — reset so later tests never see a `forceLight`
+        // or theme override written by a run of this suite.
+        ThemeReader.save(.default)
+        super.tearDown()
+    }
 
     // MARK: Settings codec
 
@@ -179,6 +191,91 @@ final class ThemeEngineTests: XCTestCase {
         } else {
             XCTFail("night tinted should default to a gradient wallpaper")
         }
+    }
+
+    // MARK: Forced light (onboarding)
+
+    /// Fresh state: `forceLight` pins the resolved palette, `preferredColorScheme`,
+    /// `interfaceStyle`, and the legacy `appearanceMode` bridge to Light — regardless
+    /// of whatever `ThemeSettings` happen to be persisted (day/night/system).
+    func testForceLightPinsLightRegardlessOfSettings() {
+        let store = ThemeStore(forceLight: true)
+        XCTAssertFalse(store.active.isDark)
+        XCTAssertEqual(store.preferredColorScheme, .light)
+        XCTAssertEqual(store.interfaceStyle, .light)
+        XCTAssertEqual(store.appearanceMode, .light)
+    }
+
+    /// Regression test for the welcome-carousel background→foreground flip: a
+    /// reported system scheme change is recorded, but must not leak into the active
+    /// palette while the onboarding forced-light gate is still up.
+    func testForceLightIgnoresSystemColorSchemeChanges() {
+        let store = ThemeStore(forceLight: true)
+        store.systemColorSchemeChanged(.dark)
+        XCTAssertTrue(store.systemIsDark, "the device scheme is still recorded")
+        XCTAssertFalse(store.active.isDark, "but must not flip the active palette")
+        XCTAssertEqual(store.preferredColorScheme, .light)
+        XCTAssertEqual(store.interfaceStyle, .light)
+    }
+
+    /// After `markAppearanceChosen()`: a pick made while still forced applies live,
+    /// and the gate never re-engages afterward.
+    func testMarkAppearanceChosenAppliesPendingChoiceAndReleasesGate() {
+        let store = ThemeStore(forceLight: true)
+        store.appearanceMode = .dark
+        // Still pinned light until the choice is confirmed.
+        XCTAssertFalse(store.active.isDark)
+
+        store.markAppearanceChosen()
+        XCTAssertFalse(store.forceLight)
+        XCTAssertTrue(store.active.isDark)
+        XCTAssertEqual(store.preferredColorScheme, .dark)
+        XCTAssertEqual(store.appearanceMode, .dark)
+
+        // Idempotent: calling again (e.g. onboarding's completion safety net) is a no-op.
+        store.markAppearanceChosen()
+        XCTAssertFalse(store.forceLight)
+        XCTAssertTrue(store.active.isDark)
+    }
+
+    /// Onboarded user, never forced: with the gate already released at construction
+    /// (mirrors an already-onboarded `SettingsStore.hasChosenAppearance == true`),
+    /// `appearanceMode` mutations apply exactly as before this fix — including
+    /// following the device via `.system`.
+    func testThemeStoreNotForcedRespectsAppearanceModeImmediately() {
+        let store = ThemeStore(forceLight: false)
+        store.appearanceMode = .dark
+        XCTAssertTrue(store.active.isDark)
+        XCTAssertEqual(store.preferredColorScheme, .dark)
+
+        store.appearanceMode = .system
+        XCTAssertEqual(store.appearanceMode, .system)
+        XCTAssertNil(store.preferredColorScheme, "System mode must keep following the device")
+    }
+
+    /// `SettingsStore.hasChosenAppearance` back-compat: an already-onboarded install
+    /// predates this flag (its key is absent), so it must back-fill to "already
+    /// chosen" from `onboardingCompleted` — never force-light an existing user. A
+    /// genuinely fresh install has `onboardingCompleted == false` too, so the same
+    /// fallback correctly yields "not yet chosen" there.
+    func testHasChosenAppearanceBackCompatDefaultsToOnboardingCompleted() {
+        let defaults = UserDefaults.standard
+        let savedOnboarding = defaults.object(forKey: "onboarding_completed")
+        let savedChosen = defaults.object(forKey: "has_chosen_appearance")
+        defer {
+            if let savedOnboarding { defaults.set(savedOnboarding, forKey: "onboarding_completed") }
+            else { defaults.removeObject(forKey: "onboarding_completed") }
+            if let savedChosen { defaults.set(savedChosen, forKey: "has_chosen_appearance") }
+            else { defaults.removeObject(forKey: "has_chosen_appearance") }
+        }
+
+        defaults.removeObject(forKey: "has_chosen_appearance")
+        defaults.set(true, forKey: "onboarding_completed")
+        XCTAssertTrue(SettingsStore().hasChosenAppearance, "already-onboarded install must never be forced")
+
+        defaults.removeObject(forKey: "has_chosen_appearance")
+        defaults.set(false, forKey: "onboarding_completed")
+        XCTAssertFalse(SettingsStore().hasChosenAppearance, "fresh install has not chosen yet")
     }
 
     // MARK: Legacy migration mapping

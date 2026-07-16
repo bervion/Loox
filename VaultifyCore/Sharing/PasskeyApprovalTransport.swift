@@ -41,10 +41,8 @@ nonisolated enum PasskeyApprovalTransport {
         #else
         let zoneID = CKRecordZone.ID(zoneName: zoneName, ownerName: ownerName)
         let database = CKContainer(identifier: ApprovalConfig.containerID).sharedCloudDatabase
-        let grantRecordID = CKRecord.ID(recordName: ApprovalConfig.grantRecordName, zoneID: zoneID)
-        guard let grantRecord = try? await database.record(for: grantRecordID),
-              let blob = grantRecord[blobField] as? Data,
-              let grant = try? AccessGrant.decode(blob),
+        guard let grant = try? await Self.fetchGrant(database: database, zoneID: zoneID,
+                                                      grantId: expectedGrantId),
               grant.id == expectedGrantId else {
             throw Failure.grantUnavailable
         }
@@ -78,6 +76,42 @@ nonisolated enum PasskeyApprovalTransport {
                       ownerSigningPubKey: grant.ownerSigningPubKey, zoneID: zoneID)
         #endif
     }
+
+    #if VAULTIFY_ICLOUD
+    /// Fetch one grant by id: probes the deterministic per-grant record AND
+    /// the legacy zone-wide singleton CONCURRENTLY (this gate is on the
+    /// extension's user-visible ceremony latency budget — a sequential
+    /// per-grant-miss-then-legacy round trip would double it on every call
+    /// where `FamilyShareTransport.perGrantEnabled` is off, i.e. always
+    /// today) and prefers the per-grant result when both resolve. The
+    /// caller compares the returned grant's own `id` against
+    /// `expectedGrantId` — never inferred from which name it was found
+    /// under (INV-FAM-01).
+    private static func fetchGrant(database: CKDatabase, zoneID: CKRecordZone.ID,
+                                   grantId: String) async throws -> AccessGrant {
+        let perGrantID = CKRecord.ID(recordName: ApprovalConfig.grantRecordName(grantId: grantId),
+                                     zoneID: zoneID)
+        let legacyID = CKRecord.ID(recordName: ApprovalConfig.legacyGrantRecordName, zoneID: zoneID)
+        async let perGrantRecord = Self.fetchRecordOrNil(perGrantID, database: database)
+        async let legacyRecord = Self.fetchRecordOrNil(legacyID, database: database)
+        let (perGrant, legacy) = await (perGrantRecord, legacyRecord)
+        if let record = perGrant,
+           let blob = record[blobField] as? Data,
+           let grant = try? AccessGrant.decode(blob) {
+            return grant
+        }
+        guard let record = legacy,
+              let blob = record[blobField] as? Data,
+              let grant = try? AccessGrant.decode(blob) else {
+            throw Failure.grantUnavailable
+        }
+        return grant
+    }
+
+    private static func fetchRecordOrNil(_ recordID: CKRecord.ID, database: CKDatabase) async -> CKRecord? {
+        try? await database.record(for: recordID)
+    }
+    #endif
 
     /// Poll for the owner's answer within the extension's budget. Every echo
     /// in the opened payload is validated against the ticket before the

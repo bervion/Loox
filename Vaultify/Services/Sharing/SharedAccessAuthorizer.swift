@@ -73,7 +73,7 @@ import Foundation
         let live: Result<(id: String, epoch: UInt32), any Error>
         do {
             let grant = try await Self.withDeadline(deadline) {
-                try await recipient.fetchGrant(zoneID: zoneID, nowUnixMs: nowMs)
+                try await recipient.fetchGrant(zoneID: zoneID, grantId: expected.id, nowUnixMs: nowMs)
             }
             live = .success((grant.id, grant.epoch))
         } catch {

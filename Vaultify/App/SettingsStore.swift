@@ -47,6 +47,13 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     @ObservationIgnored private let defaults = UserDefaults.standard
 
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
+    /// Whether the user has made an explicit appearance choice (onboarding's
+    /// ChooseTheme step), or onboarding completed without one (e.g. restoring a
+    /// vault, which skips that step) — see `ThemeStore.forceLight`. Gates the
+    /// fresh-install forced-light window: until this is true, the app is pinned to
+    /// LIGHT regardless of the device scheme, so first-run screens never flash/flip
+    /// dark before the user opts in.
+    var hasChosenAppearance: Bool { didSet { defaults.set(hasChosenAppearance, forKey: Key.hasChosenAppearance) } }
     /// Single lock timer: `.immediate` locks the moment the app is hidden; any other
     /// window applies to BOTH backgrounding and foreground idle (the old separate
     /// "lock on background" toggle instant-locked regardless of this, which made a
@@ -137,7 +144,17 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
 
     init() {
         let d = UserDefaults.standard
-        onboardingCompleted = d.bool(forKey: Key.onboarding)
+        // Captured locally (not read back via `self.onboardingCompleted`): `@Observable`
+        // accessors touch `self` as a whole, which Swift disallows before every stored
+        // property has its first value.
+        let onboarded = d.bool(forKey: Key.onboarding)
+        onboardingCompleted = onboarded
+        // Back-compat: this key didn't exist before `hasChosenAppearance` shipped, so
+        // an already-onboarded install has no persisted value — fall back to
+        // `onboarded` so an existing user is never force-lit. A genuinely fresh
+        // install has `onboarded == false` too, so this correctly defaults to false
+        // there (forced-light applies).
+        hasChosenAppearance = d.object(forKey: Key.hasChosenAppearance) as? Bool ?? onboarded
         autoLock = AutoLockTimeout(rawValue: d.object(forKey: Key.autoLock) as? Int ?? 300) ?? .fiveMinutes
         shakeToLock = d.object(forKey: Key.shakeToLock) as? Bool ?? false
         biometricUnlockEnabled = d.bool(forKey: Key.biometric)
@@ -181,6 +198,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
 
     private nonisolated enum Key {
         static let onboarding = "onboarding_completed"
+        static let hasChosenAppearance = "has_chosen_appearance"
         static let autoLock = "auto_lock_timeout"
         static let shakeToLock = "shake_to_lock"
         static let biometric = "biometric_unlock_enabled"

@@ -54,3 +54,4 @@ fastlane/api_key.json
 .claude/*
 !.claude/agent-memory/
 .agentkit/
+.agents/

@@ -58,7 +58,23 @@ struct OnboardingFlow: View {
                                  iCloudAccount: userEmail) { step = .theme }
             case .theme:
                 navStep(back: { step = .emergencyKit }) {
-                    ChooseThemeView(selection: Binding(get: { env.theme.appearanceMode }, set: { env.theme.appearanceMode = $0 })) {
+                    ChooseThemeView(selection: Binding(
+                        get: { env.theme.appearanceMode },
+                        set: { newMode in
+                            env.theme.appearanceMode = newMode
+                            // Live from the moment of the tap (see `ThemeStore.forceLight`):
+                            // Light stays light, Dark/System take over immediately.
+                            env.markAppearanceChosen()
+                        }
+                    )) {
+                        // Commit whatever is currently shown (Light, unless the user
+                        // already tapped a card) as the explicit choice before leaving.
+                        // Without this, an untouched pick would only release the gate
+                        // later (onboarding completion) and could resolve to a
+                        // different appearance (e.g. system-dark) right then — the
+                        // same kind of flip this gate exists to prevent.
+                        env.theme.appearanceMode = env.theme.appearanceMode
+                        env.markAppearanceChosen()
                         step = BiometricAuth.isAvailable ? .biometric : .done
                     }
                 }

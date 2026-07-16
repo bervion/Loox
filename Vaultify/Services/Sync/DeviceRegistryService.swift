@@ -2,6 +2,7 @@ import Foundation
 import CloudKit
 #if canImport(UIKit)
 import UIKit
+import Darwin
 #endif
 
 /// One device that syncs this vault (owner-side registry). **List-only** — there is no
@@ -110,11 +111,35 @@ nonisolated struct VaultDevice: Identifiable, Sendable {
     }
     private static func deviceModel() -> String {
         #if canImport(UIKit)
-        return UIDevice.current.model
+        return DeviceModelNames.marketingName(forIdentifier: hardwareIdentifier())
         #else
         return "Mac"
         #endif
     }
+
+    #if canImport(UIKit)
+    /// Raw hardware identifier (`hw.machine`, e.g. "iPhone17,2") for `DeviceModelNames` to
+    /// resolve into a marketing name. `UIDevice.current.model` only ever returns the generic
+    /// "iPhone"/"iPad" — this reads the actual model off the kernel instead. On the Simulator,
+    /// `uname`'s `machine` field reports the HOST Mac's architecture ("arm64"/"x86_64") rather
+    /// than a simulated device identifier, so this reads `SIMULATOR_MODEL_IDENTIFIER` from the
+    /// process environment first (set by Xcode/simctl for every simulated run, so Simulator
+    /// testing still shows a real device name) and only falls back to `uname` on a real device.
+    private static func hardwareIdentifier() -> String {
+        #if targetEnvironment(simulator)
+        if let simulatorIdentifier = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"],
+           !simulatorIdentifier.isEmpty {
+            return simulatorIdentifier
+        }
+        #endif
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        return withUnsafeBytes(of: &systemInfo.machine) { rawBuffer in
+            let pointer = rawBuffer.baseAddress!.assumingMemoryBound(to: CChar.self)
+            return String(cString: pointer)
+        }
+    }
+    #endif
     private static func appVersion() -> String {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? ""
     }

@@ -200,11 +200,20 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         var builtGrants: [String: AccessGrant] = [:]
         var liveGrantIDs: Set<String> = []
         for zoneID in zones {
+            let liveGrants: [AccessGrant]
             do {
-                let grant = try await recipient.fetchGrant(zoneID: zoneID, nowUnixMs: nowMs)
-                // Auto-TOFU pin on first sight (single-confirm pairing model);
-                // a later key CHANGE is rejected by the pin store, not re-pinned.
-                if ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) == nil {
+                // Every LIVE grant in the zone (Family per-grant transport —
+                // ApprovalRecipientService.fetchAllGrants): per-grant records
+                // AND the legacy singleton, deduped by grant id, so a zone
+                // can now project more than one item.
+                liveGrants = try await recipient.fetchAllGrants(zoneID: zoneID, nowUnixMs: nowMs)
+                // Auto-TOFU pin on first sight of this owner (single-confirm
+                // pairing model; every grant sharing a zone shares that
+                // zone's one owner identity, so the pin stays per-zone, not
+                // per-grant) — a later key CHANGE is rejected by the pin
+                // store, not re-pinned.
+                if let firstGrant = liveGrants.first,
+                   ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) == nil {
                     // A fresh pin freezes the key but trusts no one yet:
                     // the human decision (compare the safety code, or
                     // explicitly skip) is recorded separately and gates
@@ -217,47 +226,63 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
                     // pin retries next refresh and `pending` fails closed.
                     try ApprovalRecipientService.setOwnerKeyVerificationOrThrow(
                         .pending, zoneID: zoneID)
-                    try ApprovalRecipientService.pinOwnerKey(grant.ownerSigningPubKey, zoneID: zoneID)
+                    try ApprovalRecipientService.pinOwnerKey(
+                        firstGrant.ownerSigningPubKey, zoneID: zoneID)
                 }
-                // v2 single-device grants exclude this device entirely: keep
-                // a Tier-0 placeholder (generic state, no metadata, no
-                // values) instead of dropping the zone — the user should see
-                // WHY there's nothing here (INV-10).
-                var deviceAuthorized = true
-                var values: [String: Data] = [:]
-                do {
-                    values = try await recipient.fetchSharedFieldValues(
-                        grant: grant, identity: identity, zoneID: zoneID)
-                } catch ApprovalRecipientService.Failure.deviceNotAuthorized {
-                    deviceAuthorized = false
-                }
-                let display = deviceAuthorized
-                    ? await recipient.fetchDisplayEnvelope(
-                        grant: grant, identity: identity, zoneID: zoneID)
-                    : nil
-                let origin = SharedOrigin(zoneName: zoneID.zoneName,
-                                          ownerName: zoneID.ownerName, grantId: grant.id,
-                                          deviceAuthorized: deviceAuthorized)
-                let item = Self.buildItem(origin: origin, grant: grant,
-                                          display: display, values: values)
-                built.append(item)
-                builtGrants[item.id] = grant
-                cachePasskeys[item.id] = Self.passkeyEntries(grant: grant,
-                                                             display: display,
-                                                             values: values)
-                liveGrantIDs.insert(grant.id)
             } catch let error as CKError
                 where error.code == .zoneNotFound || error.code == .userDeletedZone {
-                continue // Revoked/left — the item simply stops existing.
+                continue // Revoked/left — every item in this zone stops existing.
             } catch {
-                // Transient (offline, throttle): keep the previous projection
-                // of THIS zone so the list doesn't flicker empty.
-                if let existing = items.first(where: {
-                    $0.sharedOrigin?.zoneName == zoneID.zoneName
-                        && $0.sharedOrigin?.ownerName == zoneID.ownerName
-                }) {
+                // Transient (offline, throttle) or not-yet-granted: keep
+                // every item this zone previously projected so the list
+                // doesn't flicker empty mid-refresh.
+                for existing in items where existing.sharedOrigin?.zoneName == zoneID.zoneName
+                    && existing.sharedOrigin?.ownerName == zoneID.ownerName {
                     built.append(existing)
                     if let grant = grants[existing.id] {
+                        builtGrants[existing.id] = grant
+                        liveGrantIDs.insert(grant.id)
+                    }
+                }
+                continue
+            }
+            for grant in liveGrants {
+                do {
+                    // v2 single-device grants exclude this device entirely:
+                    // keep a Tier-0 placeholder (generic state, no metadata,
+                    // no values) instead of dropping the item — the user
+                    // should see WHY there's nothing here (INV-10).
+                    var deviceAuthorized = true
+                    var values: [String: Data] = [:]
+                    do {
+                        values = try await recipient.fetchSharedFieldValues(
+                            grant: grant, identity: identity, zoneID: zoneID)
+                    } catch ApprovalRecipientService.Failure.deviceNotAuthorized {
+                        deviceAuthorized = false
+                    }
+                    let display = deviceAuthorized
+                        ? await recipient.fetchDisplayEnvelope(
+                            grant: grant, identity: identity, zoneID: zoneID)
+                        : nil
+                    let origin = SharedOrigin(zoneName: zoneID.zoneName,
+                                              ownerName: zoneID.ownerName, grantId: grant.id,
+                                              deviceAuthorized: deviceAuthorized)
+                    let item = Self.buildItem(origin: origin, grant: grant,
+                                              display: display, values: values)
+                    built.append(item)
+                    builtGrants[item.id] = grant
+                    cachePasskeys[item.id] = Self.passkeyEntries(grant: grant,
+                                                                 display: display,
+                                                                 values: values)
+                    liveGrantIDs.insert(grant.id)
+                } catch {
+                    // Transient failure fetching THIS grant's fields/display:
+                    // keep whatever was previously projected for it, if
+                    // anything — sibling grants in the same zone (and the
+                    // ones already appended above this refresh pass) are
+                    // unaffected.
+                    if let existing = items.first(where: { grants[$0.id]?.id == grant.id }) {
+                        built.append(existing)
                         builtGrants[existing.id] = grant
                         liveGrantIDs.insert(grant.id)
                     }

@@ -5,9 +5,10 @@ import SwiftUI
 struct ProfileRoute: Hashable, Codable {}
 
 /// Profile hub — avatar + name + email at the top, then grouped nav rows that open detail
-/// screens (Personal Information, Payment, Loox, Family, Devices), and a bottom button to
-/// switch the active profile (persona). Pushed onto the Home stack; every row's data mirrors
-/// the vault and scopes to the ACTIVE persona (INV-R03).
+/// screens (Personal Information, Payment, Loox, Family), an inline Devices list
+/// (`ProfileDevicesCard`), and a bottom button to switch the active profile (persona). Pushed
+/// onto the Home stack; every row's data mirrors the vault and scopes to the ACTIVE persona
+/// (INV-R03).
 struct ProfileScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var showSwitcher = false
@@ -33,21 +34,28 @@ struct ProfileScreen: View {
             VStack(spacing: Space.s6) {
                 header
 
+                // Section 1 — "system" rows: white SF Symbol glyph on a neutral gray tile,
+                // matching the iOS Settings app's own icon rows (owner-approved SF Symbol
+                // exception, Profile-only, 260715).
                 ProfileGroupCard {
-                    ProfileNavRow(title: "Personal Information", icon: Icons.identityCard) { PersonalInformationScreen() }
+                    ProfileNavRow(title: "Personal Information", tile: .system("person.text.rectangle.fill")) { PersonalInformationScreen() }
                     ProfileRowDivider()
-                    ProfileNavRow(title: "Payment", icon: Icons.creditCard) { PaymentCardsScreen() }
+                    ProfileNavRow(title: "Payment", tile: .system("creditcard.fill")) { PaymentCardsScreen() }
                 }
 
+                // Section 2 — "badge" rows: colored/brand art on a white tile + hairline border.
                 ProfileGroupCard {
-                    ProfileNavRow(title: "Loox", icon: Icons.globe) { LooxHubScreen() }
+                    ProfileNavRow(title: "Loox", tile: .brandMark) { LooxHubScreen() }
                     ProfileRowDivider()
-                    ProfileNavRow(title: "Family", icon: Icons.organization) { FamilyScreen() }
+                    // "fa_users" — FontAwesome6 Duotone "users" glyph (imported into
+                    // Assets.xcassets mirroring the DeviceIcons import, see DeviceIcons.swift),
+                    // tinted green on the section-2 white tile (260715 owner request).
+                    ProfileNavRow(title: "Family", tile: .colored(.templateAsset("fa_users"), ProfileBadgeTint.family)) { FamilyScreen() }
                 }
 
-                ProfileGroupCard {
-                    ProfileNavRow(title: "Devices", icon: Icons.device) { DevicesScreen() }
-                }
+                // Devices — the list itself lives inline here now (previously a nav row that
+                // pushed `DevicesScreen`); see `ProfileDevicesCard`.
+                ProfileDevicesCard()
 
                 switchButton
             }

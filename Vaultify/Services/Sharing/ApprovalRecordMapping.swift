@@ -29,12 +29,20 @@ nonisolated enum ApprovalRecordMapping {
         static let expiresAtMs = "expiresAtMs"
     }
 
-    // MARK: Grant (singleton per zone)
+    // MARK: Grant (per-grant name behind FamilyShareTransport; legacy singleton otherwise)
 
+    /// Names this grant's record deterministically by `grant.id` when
+    /// `FamilyShareTransport.perGrantEnabled` — the id is already the
+    /// AUTHENTICATED identity (part of the signed grant body decoded from
+    /// `blob`), the record name is only a lookup convenience (INV-FAM-01).
+    /// Flag off (default) reproduces the pre-Family-sharing legacy singleton
+    /// byte for byte.
     static func grantRecord(_ grant: AccessGrant, zoneID: CKRecordZone.ID) -> CKRecord {
+        let name = FamilyShareTransport.perGrantEnabled
+            ? ApprovalConfig.grantRecordName(grantId: grant.id)
+            : ApprovalConfig.legacyGrantRecordName
         let record = CKRecord(recordType: ApprovalConfig.grantRecordType,
-                              recordID: CKRecord.ID(recordName: ApprovalConfig.grantRecordName,
-                                                    zoneID: zoneID))
+                              recordID: CKRecord.ID(recordName: name, zoneID: zoneID))
         record[Field.blob] = grant.encoded() as CKRecordValue
         return record
     }
@@ -86,13 +94,18 @@ nonisolated enum ApprovalRecordMapping {
         return try? ApprovalResponse.decode(blob)
     }
 
-    // MARK: Display envelope (singleton per zone; ciphertext only)
+    // MARK: Display envelope (per-grant name behind FamilyShareTransport; ciphertext only)
 
+    /// Same per-grant/legacy naming split as `grantRecord` — the `grantId`
+    /// FIELD (already present, ciphertext-adjacent cleartext linkage) is
+    /// what the recipient matches on; the name is a fetch convenience.
     static func displayEnvelopeRecord(sealedBlob: Data, grantId: String,
                                       zoneID: CKRecordZone.ID) -> CKRecord {
+        let name = FamilyShareTransport.perGrantEnabled
+            ? ApprovalConfig.displayEnvelopeRecordName(grantId: grantId)
+            : ApprovalConfig.legacyDisplayEnvelopeRecordName
         let record = CKRecord(recordType: ApprovalConfig.displayEnvelopeRecordType,
-                              recordID: CKRecord.ID(recordName: ApprovalConfig.displayEnvelopeRecordName,
-                                                    zoneID: zoneID))
+                              recordID: CKRecord.ID(recordName: name, zoneID: zoneID))
         record[Field.blob] = sealedBlob as CKRecordValue
         record[Field.grantId] = grantId as CKRecordValue
         return record

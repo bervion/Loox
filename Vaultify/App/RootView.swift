@@ -67,6 +67,13 @@ struct RootView: View {
                 env.sharedItems.wipe()
             }
         }
+        .onChange(of: env.settings.onboardingCompleted) { _, completed in
+            // Safety net for onboarding paths that skip the ChooseTheme step (e.g.
+            // restoring an existing vault via JoinVaultFlow) — release the
+            // fresh-install forced-light gate the moment onboarding completes, even
+            // without an explicit appearance pick. A no-op if already released.
+            if completed { env.markAppearanceChosen() }
+        }
         .onChange(of: scenePhase) { _, phase in handleScenePhase(phase) }
         .onChange(of: colorScheme) { _, scheme in env.theme.systemColorSchemeChanged(scheme) }
         .onAppear {
