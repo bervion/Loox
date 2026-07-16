@@ -45,7 +45,11 @@ struct ProfileScreen: View {
 
                 // Section 2 — "badge" rows: colored/brand art on a white tile + hairline border.
                 ProfileGroupCard {
-                    ProfileNavRow(title: "Loox", tile: .brandMark) { LooxHubScreen() }
+                    // Row title follows the CURRENT tier's brand noun — "Loox" /
+                    // "Loox+" / "Loox Max" (owner request 260716), matching the
+                    // membership screen's header behind it.
+                    ProfileNavRow(verbatimTitle: env.entitlements.tier.displayName,
+                                  tile: .brandMark) { LooxHubScreen() }
                     ProfileRowDivider()
                     // "fa_users" — FontAwesome6 Duotone "users" glyph (imported into
                     // Assets.xcassets mirroring the DeviceIcons import, see DeviceIcons.swift),

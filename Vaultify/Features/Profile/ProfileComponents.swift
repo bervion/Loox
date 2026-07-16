@@ -172,20 +172,36 @@ enum ProfileBadgeTint {
 /// A Profile nav row: leading tile + title + optional trailing value + chevron, pushing
 /// `destination` onto the enclosing (navigator-hosted) stack.
 struct ProfileNavRow<Destination: View>: View {
-    let title: LocalizedStringResource
-    /// Polaris asset name — the original tile look; ignored when `tile` is provided.
-    var icon: String? = nil
-    /// Overrides the leading tile's visual treatment with the Profile-only SF Symbol redesign
-    /// (see `ProfileTileStyle`).
-    var tile: ProfileTileStyle? = nil
-    var value: String? = nil
-    @ViewBuilder let destination: () -> Destination
+    private let titleText: Text
+    private let tileStyle: ProfileTileStyle
+    private let value: String?
+    private let destination: () -> Destination
+
+    /// `icon` is a Polaris asset name (the original tile look); `tile` overrides it with the
+    /// Profile-only SF Symbol redesign (see `ProfileTileStyle`).
+    init(title: LocalizedStringResource, icon: String? = nil, tile: ProfileTileStyle? = nil,
+         value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
+        self.titleText = Text(title)
+        self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
+        self.value = value
+        self.destination = destination
+    }
+
+    /// Verbatim title for locale-invariant brand nouns — the Loox row shows the CURRENT
+    /// tier's display name ("Loox" / "Loox+" / "Loox Max"), which never localizes.
+    init(verbatimTitle: String, icon: String? = nil, tile: ProfileTileStyle? = nil,
+         value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
+        self.titleText = Text(verbatim: verbatimTitle)
+        self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
+        self.value = value
+        self.destination = destination
+    }
 
     var body: some View {
         NavigationLink { destination() } label: {
             HStack(spacing: Space.s3) {
-                ProfileRowTile(style: tile ?? .polaris(icon ?? Icons.info))
-                Text(title).vaultType(.body).themedForeground()
+                ProfileRowTile(style: tileStyle)
+                titleText.vaultType(.body).themedForeground()
                 Spacer(minLength: Space.s2)
                 if let value {
                     Text(verbatim: value).vaultType(.subhead).themedForeground(.secondary)
