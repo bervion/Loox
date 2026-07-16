@@ -1,19 +1,20 @@
 import Foundation
 
-/// Launch gate for the commercial surfaces. While `purchasesEnabled` is false,
+/// Launch gate for the commercial surfaces. While purchases are disabled,
 /// every purchase entry point stays dark: the paywall, the membership screen's
 /// upgrade/manage-plan section, and the contextual over-quota gate sheets.
-///
 /// It never hides the membership screen itself, its usage counts, or any
-/// existing feature behavior — with the flag off the app behaves exactly as if
-/// subscriptions didn't exist (everyone is effectively on the current
-/// everything-included experience).
+/// existing feature behavior.
 ///
-/// Flip to `true` only when the proposal §12 launch gates are green: the four
-/// App Store Connect products exist with EN+VI metadata, the intro offer and
-/// Billing Grace Period are configured, and the paywall QA matrix passed.
+/// `launchEnabled` is the REAL-USER switch: App Store builds show purchase
+/// surfaces only when it is true. Flip it only when the proposal §12 launch
+/// gates are green (and per the backend proposal's rollout order). Beta
+/// environments — TestFlight, App Review, Xcode/StoreKit-config runs — get the
+/// surfaces early through `LooxEntitlementStore.purchasesEnabled`
+/// (`AppTransaction.environment != .production`), which is the value every
+/// surface consults; this file only holds the launch decision.
 nonisolated enum LooxMembership {
-    static let purchasesEnabled = false
+    static let launchEnabled = false
 
     /// Policy links the paywall must expose (§5.2). Both pages are a §12 launch
     /// gate — they must resolve before `purchasesEnabled` ever flips.

@@ -185,7 +185,7 @@ struct QuickLinkView: View {
             // Over-quota upsell gate (§5.3): only successful creates in the
             // rolling window count (§3.2); revoking/expiry never refunds.
             // Managing or revoking existing links never gates.
-            if LooxMembership.purchasesEnabled,
+            if env.entitlements.purchasesEnabled,
                case .needsUpgrade = LooxGate.canCreateLink(
                    tier: env.entitlements.tier, createdIn30d: linkCreates30d) {
                 paywallContext = .linkQuota

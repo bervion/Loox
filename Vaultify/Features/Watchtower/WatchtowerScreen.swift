@@ -222,7 +222,7 @@ struct WatchtowerScreen: View {
         // paid workflow (§3.1). The Free floor never gates — score, strength,
         // audit runs and every finding group (Critical/High visibility with
         // affected items) stay open below.
-        if LooxMembership.purchasesEnabled,
+        if env.entitlements.purchasesEnabled,
            !LooxGate.fullWatchtower(env.entitlements.tier),
            isPaidSurface(category) {
             paywallContext = .watchtower

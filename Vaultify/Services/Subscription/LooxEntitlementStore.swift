@@ -31,6 +31,39 @@ import StoreKit
         return storeTier
     }
 
+    /// Whether purchase surfaces render (paywall, plan section, gate sheets).
+    /// True once the real launch flag flips — and early in beta environments
+    /// (TestFlight, App Review) so sandbox purchases are testable end-to-end
+    /// before launch. App Store builds stay dark until
+    /// `LooxMembership.launchEnabled`. DEBUG builds use the explicit dev
+    /// toggle instead (see `debugPurchasesEnabled`).
+    var purchasesEnabled: Bool {
+        #if DEBUG
+        return LooxMembership.launchEnabled || debugPurchasesEnabled
+        #else
+        return LooxMembership.launchEnabled || betaPurchaseAccess
+        #endif
+    }
+
+    /// `AppTransaction.environment != .production` — the supported signal for
+    /// TestFlight/App Review (`.sandbox`). Resolved once at start, RELEASE
+    /// only and only when a receipt file exists: TestFlight/App Store installs
+    /// always have one, so the call never triggers App Store auth UI. Missing
+    /// or unverifiable receipts leave it false (dark is the safe default).
+    private(set) var betaPurchaseAccess = false
+
+    #if DEBUG
+    /// DEBUG builds never consult AppTransaction — a dev install without a
+    /// receipt could trigger an App Store sign-in prompt at launch. Purchase
+    /// surfaces open via this explicit toggle (Settings → Debug) instead,
+    /// e.g. for paywall preview under the Vaultify-StoreKit scheme. Default
+    /// OFF so daily dev behavior stays byte-identical.
+    var debugPurchasesEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(debugPurchasesEnabled, forKey: Self.debugPurchasesKey) }
+    }
+    private static let debugPurchasesKey = "debug.looxPurchasesEnabled"
+    #endif
+
     #if DEBUG
     /// Dev/simulator override so tier-dependent UI is testable without App
     /// Store Connect products. `nil` follows StoreKit. Debug menu only.
@@ -53,6 +86,7 @@ import StoreKit
         if UserDefaults.standard.object(forKey: Self.debugOverrideKey) != nil {
             debugTierOverride = LooxTier(rawValue: UserDefaults.standard.integer(forKey: Self.debugOverrideKey))
         }
+        debugPurchasesEnabled = UserDefaults.standard.bool(forKey: Self.debugPurchasesKey)
         #endif
     }
 
@@ -60,6 +94,18 @@ import StoreKit
     /// called once from the composition root at launch.
     func start() {
         guard updatesTask == nil else { return }
+        #if !DEBUG
+        // Receipt-presence pre-check keeps this prompt-free (see
+        // `betaPurchaseAccess`); TestFlight/App Store installs always pass it.
+        if let receiptURL = Bundle.main.appStoreReceiptURL,
+           FileManager.default.fileExists(atPath: receiptURL.path) {
+            Task { [weak self] in
+                guard let result = try? await AppTransaction.shared,
+                      case .verified(let appTransaction) = result else { return }
+                self?.betaPurchaseAccess = appTransaction.environment != .production
+            }
+        }
+        #endif
         updatesTask = Task { [weak self] in
             await self?.refresh()
             for await update in Transaction.updates {

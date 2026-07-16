@@ -119,7 +119,7 @@ struct PersonaAliasesScreen: View {
     /// + paused across the whole vault — the quota follows the subscription
     /// identity, not the persona (§3.2). Pausing/deleting/detail never gates.
     private func guardQuota(_ proceed: () -> Void) {
-        guard LooxMembership.purchasesEnabled else { return proceed() }
+        guard env.entitlements.purchasesEnabled else { return proceed() }
         let retained = env.repository.aliases.filter { $0.status == .active || $0.status == .paused }.count
         if case .needsUpgrade = LooxGate.canCreateAlias(tier: env.entitlements.tier, retained: retained) {
             paywallContext = .aliasLimit

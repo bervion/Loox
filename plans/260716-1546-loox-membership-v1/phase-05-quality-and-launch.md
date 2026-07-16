@@ -38,8 +38,11 @@ plus repo docs kept honest.
 - [x] Intro offer 7d on Max Annual only (free trial, 1 week, 175 countries, no
       end date); Billing Grace 16d paid-to-paid prod+sandbox — DONE 260716.
 - [ ] Review screenshot (paywall image) uploaded to each of the 4 products —
-      needs a local run with `purchasesEnabled` flipped (uncommitted) +
-      `Vaultify-StoreKit` scheme; only blocks SUBMISSION, not development.
+      run the `Vaultify-StoreKit` scheme in Xcode, flip Settings → Debug →
+      "Purchase Surfaces" ON (no code flip needed), then Profile → Loox →
+      Upgrade to Loox Max; capture on a 6.7" simulator.
+      NOTE: TestFlight only loads products in "Ready to Submit" or later, so
+      screenshots gate TESTFLIGHT TESTING too, not just submission.
 - [ ] First subscription submits WITH a new app version (ASC warning noted).
 - [ ] `Loox.storekit` matrix pass (phase 3 list) + sandbox pass on device
 - [ ] Subscriber never sees acquisition paywall; outage ≠ paywall state (§2.7)

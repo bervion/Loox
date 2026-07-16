@@ -22,7 +22,7 @@ struct LooxHubScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s6) {
                 header
-                if LooxMembership.purchasesEnabled { planSection }
+                if env.entitlements.purchasesEnabled { planSection }
                 featureGrid
                 // Approval Mode stays a control (not a nav tile): app-wide flag,
                 // independent of iCloud vault sync (ADR-2).
@@ -196,7 +196,7 @@ struct LooxHubScreen: View {
     /// nothing enforces it would lie. In DEBUG an active tier override also
     /// reveals them, so the full tier UI is testable before ASC exists.
     private var showsQuotas: Bool {
-        if LooxMembership.purchasesEnabled { return true }
+        if env.entitlements.purchasesEnabled { return true }
         #if DEBUG
         return env.entitlements.debugTierOverride != nil
         #else

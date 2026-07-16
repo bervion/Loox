@@ -38,8 +38,9 @@ enum LooxPaywallContext: String, Identifiable {
 /// subscriber never sees the acquisition pitch (§5.3); they get the current
 /// plan summary with Change plan and Manage subscription instead.
 ///
-/// Dark until `LooxMembership.purchasesEnabled` — no entry point renders it
-/// before the §12 launch gates pass.
+/// Dark until purchases are enabled (`LooxEntitlementStore.purchasesEnabled`:
+/// the launch flag, or a beta environment — TestFlight/App Review/Xcode) — no
+/// entry point renders it for App Store users before the §12 gates pass.
 struct LooxPaywallScreen: View {
     @Environment(AppEnvironment.self) private var env
     var context: LooxPaywallContext = .profile

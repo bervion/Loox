@@ -9,7 +9,8 @@ import Foundation
 /// gate can never strand a user with an offer that wouldn't help.
 ///
 /// Gates never touch data: a blocked action simply doesn't start. Call sites
-/// consult these only while `LooxMembership.purchasesEnabled` is true.
+/// consult these only while purchases are enabled
+/// (`LooxEntitlementStore.purchasesEnabled` — launch flag or beta environment).
 nonisolated enum LooxGate {
     enum Allowance: Equatable, Sendable {
         case allowed

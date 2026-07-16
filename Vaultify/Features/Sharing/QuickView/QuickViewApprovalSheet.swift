@@ -77,7 +77,7 @@ struct QuickViewApprovalSheet: View {
                         // Over-quota upsell gate (§5.3), pre-Face-ID so biometrics
                         // never run for an approval the plan wouldn't cover. Only
                         // successful approvals consume the rolling quota (§3.2).
-                        if LooxMembership.purchasesEnabled,
+                        if env.entitlements.purchasesEnabled,
                            case .needsUpgrade = LooxGate.canApproveQuickView(
                                tier: env.entitlements.tier, approvedIn30d: quickViewCompletions30d) {
                             paywallContext = .quickViewQuota

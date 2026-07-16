@@ -60,7 +60,7 @@ struct PersonaSwitcherScreen: View {
     /// Over-quota upsell gate (§5.3): fires only at the create action, only
     /// once purchases are live. Editing/switching existing personas never gates.
     private func attemptCreate() {
-        if LooxMembership.purchasesEnabled,
+        if env.entitlements.purchasesEnabled,
            case .needsUpgrade = LooxGate.canCreatePersona(
                tier: env.entitlements.tier, current: env.repository.personas.count) {
             paywallContext = .personaLimit
