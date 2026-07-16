@@ -99,7 +99,7 @@ struct LooxAcquisitionPaywallView: View {
                     Text("Learn more about \(selectedTier.displayName)")
                         .vaultType(.subhead)
                 }
-                .foregroundStyle(LooxPlanTint.accent(selectedTier))
+                .foregroundStyle(LooxPlanTint.link(selectedTier))
                 .frame(minHeight: Metric.hitMin)
                 .contentShape(.rect)
             }
@@ -171,6 +171,18 @@ struct LooxAcquisitionPaywallView: View {
                     .multilineTextAlignment(.center)
                     .padding(.top, Space.s1)
             }
+
+            // In scrollable content by design: Apple only requires these links
+            // be reachable from the purchase screen (3.1.2), not pinned —
+            // the iCloud+ sheet itself scrolls them with the disclosure.
+            HStack(spacing: Space.s6) {
+                Link("Terms of Use", destination: LooxMembership.termsURL)
+                Link("Privacy Policy", destination: LooxMembership.privacyURL)
+            }
+            .vaultType(.footnote)
+            .tint(LooxPlanTint.link(selectedTier))
+            .frame(maxWidth: .infinity)
+            .padding(.top, Space.s2)
         }
     }
 
@@ -302,13 +314,6 @@ struct LooxAcquisitionPaywallView: View {
                 Task { await restore() }
             }
             .disabled(purchasing)
-
-            HStack(spacing: Space.s6) {
-                Link("Terms of Use", destination: LooxMembership.termsURL)
-                Link("Privacy Policy", destination: LooxMembership.privacyURL)
-            }
-            .vaultType(.footnote)
-            .tint(LooxPlanTint.accent(selectedTier))
         }
         .padding(.horizontal, Self.margin)
         .padding(.top, Space.s3)

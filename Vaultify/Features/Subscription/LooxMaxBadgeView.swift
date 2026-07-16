@@ -62,6 +62,15 @@ enum LooxPlanTint {
     static func onFill(_ tier: LooxTier) -> Color {
         tier == .max ? LooxMaxTint.onTint : Color(rgb: 0xFFFFFF)
     }
+
+    /// Text-link color: must read as a LINK, so it never uses the Max ink
+    /// (black text is indistinguishable from copy in light mode). Max links
+    /// take the identity's violet whisper in light UI and fuchsia in dark;
+    /// Loox+ keeps the pinned blue.
+    static func link(_ tier: LooxTier) -> Color {
+        tier == .max ? VaultColors.dynamic(light: 0x6D28D9, dark: 0xE879F9)
+                     : LooxPaywallBlue.color
+    }
 }
 
 /// The "MAX" badge (mirrors `Design System/loox-max-badge.svg`): a fixed dark
