@@ -267,19 +267,82 @@ import UIKit
 
     // MARK: Grant + shared fields
 
-    /// Fetch and verify the grant. Before the pin exists (pre-fingerprint)
-    /// the grant is returned for DISPLAY/ceremony purposes only — callers
-    /// must not decrypt or request against an unpinned grant.
-    func fetchGrant(zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws -> AccessGrant {
-        let id = CKRecord.ID(recordName: ApprovalConfig.grantRecordName, zoneID: zoneID)
-        guard let record = try? await sharedDatabase.record(for: id),
-              let grant = ApprovalRecordMapping.grant(from: record) else {
+    /// Fetch and verify ONE specific grant by id. Before the pin exists
+    /// (pre-fingerprint) the grant is returned for DISPLAY/ceremony purposes
+    /// only — callers must not decrypt or request against an unpinned grant.
+    func fetchGrant(zoneID: CKRecordZone.ID, grantId: String,
+                    nowUnixMs: Int64) async throws -> AccessGrant {
+        guard let grant = try await fetchGrantRecord(zoneID: zoneID, grantId: grantId) else {
             throw Failure.grantMissing
         }
         if let failure = ApprovalVerifier.verifyGrant(
             grant, pinnedOwnerSigningKey: Self.pinnedOwnerKey(zoneID: zoneID),
             nowUnixMs: nowUnixMs) {
             throw Failure.verifyFailed(failure)
+        }
+        return grant
+    }
+
+    /// Every LIVE grant currently in the zone: enumerates every
+    /// `ApprovalGrant` record (per-grant AND the legacy singleton, if
+    /// present) and reduces them with `dedupedLiveGrants` below.
+    func fetchAllGrants(zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws -> [AccessGrant] {
+        var records: [CKRecord] = []
+        try await ZoneDeltaFetch.pull(database: sharedDatabase, zoneID: zoneID, cursor: nil) { record in
+            records.append(record)
+        }
+        let grants = Self.dedupedLiveGrants(from: records,
+                                            pinnedOwnerSigningKey: Self.pinnedOwnerKey(zoneID: zoneID),
+                                            nowUnixMs: nowUnixMs)
+        guard !grants.isEmpty else { throw Failure.grantMissing }
+        return grants
+    }
+
+    /// Pure mapping (unit-tested): decode every `ApprovalGrant`-type record,
+    /// VERIFY each against the zone's pinned owner key FIRST, then dedupe
+    /// the SURVIVORS by the decoded blob's own `id` — NEVER by record name
+    /// (INV-FAM-01), so a per-grant record and the legacy singleton
+    /// describing the SAME grant collapse to one entry instead of
+    /// double-projecting, while per-grant records for DIFFERENT grants (or
+    /// a legacy singleton alongside them) all survive. Verify-BEFORE-dedupe
+    /// is load-bearing: a compromised recipient device has write access to
+    /// this zone, so it could publish a bogus `ApprovalGrant` record that
+    /// decodes to the SAME id as a legitimate grant but fails signature
+    /// verification — deduping first (by insertion order into the id→grant
+    /// map) would let that forged record EVICT the real one whenever it
+    /// happened to enumerate last, silently hiding a legitimately shared
+    /// item. Filtering first means a same-id forgery can never win the slot
+    /// no matter its enumeration order; it simply never enters the map.
+    /// Oldest-first so callers get a stable order.
+    nonisolated static func dedupedLiveGrants(from records: [CKRecord], pinnedOwnerSigningKey: Data?,
+                                              nowUnixMs: Int64) -> [AccessGrant] {
+        var byId: [String: AccessGrant] = [:]
+        for record in records {
+            guard let grant = ApprovalRecordMapping.grant(from: record),
+                  ApprovalVerifier.verifyGrant(grant, pinnedOwnerSigningKey: pinnedOwnerSigningKey,
+                                               nowUnixMs: nowUnixMs) == nil else { continue }
+            byId[grant.id] = grant
+        }
+        return byId.values.sorted { $0.createdAtUnixMs < $1.createdAtUnixMs }
+    }
+
+    /// Fetch one grant's record by id: the deterministic per-grant name
+    /// first, the legacy zone-wide singleton as a back-compat fallback (a
+    /// share published before per-grant naming, or while
+    /// `FamilyShareTransport.perGrantEnabled` was off). The legacy record is
+    /// only accepted when its OWN decoded `id` matches — never inferred from
+    /// which name it was found under (INV-FAM-01).
+    private func fetchGrantRecord(zoneID: CKRecordZone.ID, grantId: String) async throws -> AccessGrant? {
+        let perGrantID = CKRecord.ID(recordName: ApprovalConfig.grantRecordName(grantId: grantId),
+                                     zoneID: zoneID)
+        if let record = try? await sharedDatabase.record(for: perGrantID),
+           let grant = ApprovalRecordMapping.grant(from: record), grant.id == grantId {
+            return grant
+        }
+        let legacyID = CKRecord.ID(recordName: ApprovalConfig.legacyGrantRecordName, zoneID: zoneID)
+        guard let record = try? await sharedDatabase.record(for: legacyID),
+              let grant = ApprovalRecordMapping.grant(from: record), grant.id == grantId else {
+            return nil
         }
         return grant
     }
@@ -335,10 +398,9 @@ import UIKit
     func fetchDisplayEnvelope(grant: AccessGrant, identity: ParticipantIdentity,
                               zoneID: CKRecordZone.ID) async -> SharedDisplayEnvelope? {
         guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else { return nil }
-        let id = CKRecord.ID(recordName: ApprovalConfig.displayEnvelopeRecordName, zoneID: zoneID)
-        guard let record = try? await sharedDatabase.record(for: id),
-              let payload = ApprovalRecordMapping.displayEnvelope(from: record),
-              payload.grantId == grant.id else { return nil }
+        guard let payload = await fetchDisplayEnvelopePayload(grantId: grant.id, zoneID: zoneID) else {
+            return nil
+        }
         if !grant.allowedDeviceKeyBindings.isEmpty {
             // v2: Tier-1 metadata is per-device too — an unbound device gets
             // nil (generic Tier-0 title), not the real title (INV-10).
@@ -356,6 +418,29 @@ import UIKit
         }
         return try? SharedDisplayEnvelope.open(payload.blob, participantIdentity: identity,
                                                grantId: grant.id)
+    }
+
+    /// Fetch the display-envelope payload for one grant: the deterministic
+    /// per-grant name first, the legacy zone-wide singleton as a fallback —
+    /// matched by the record's OWN `grantId` field either way, never by
+    /// which name it was found under (INV-FAM-01), so a legacy singleton
+    /// that (in a mixed zone) actually belongs to a DIFFERENT grant is never
+    /// mistaken for this one.
+    private func fetchDisplayEnvelopePayload(grantId: String, zoneID: CKRecordZone.ID)
+        async -> (grantId: String, blob: Data)? {
+        let perGrantID = CKRecord.ID(
+            recordName: ApprovalConfig.displayEnvelopeRecordName(grantId: grantId), zoneID: zoneID)
+        if let record = try? await sharedDatabase.record(for: perGrantID),
+           let payload = ApprovalRecordMapping.displayEnvelope(from: record),
+           payload.grantId == grantId {
+            return payload
+        }
+        let legacyID = CKRecord.ID(recordName: ApprovalConfig.legacyDisplayEnvelopeRecordName,
+                                   zoneID: zoneID)
+        guard let record = try? await sharedDatabase.record(for: legacyID),
+              let payload = ApprovalRecordMapping.displayEnvelope(from: record),
+              payload.grantId == grantId else { return nil }
+        return payload
     }
 
     // MARK: Request / response

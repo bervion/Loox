@@ -34,10 +34,24 @@ nonisolated enum ApprovalConfig {
     // name inside it leaks nothing beyond the already-visible recordType, and
     // singleton naming gives last-writer-wins conflict election for free).
 
-    static let grantRecordName = "grant"
-    static let displayEnvelopeRecordName = "display-envelope"
+    /// Pre-Family-sharing zone-wide singleton names: at most ONE grant (and
+    /// its display envelope) per zone. Kept as read/write fallbacks so a
+    /// share published before per-grant naming (`FamilyShareTransport`)
+    /// keeps working — never remove without a migration.
+    static let legacyGrantRecordName = "grant"
+    static let legacyDisplayEnvelopeRecordName = "display-envelope"
     static let participantProfileRecordName = "participant-profile"
     static let participantEscrowRecordName = "approval-participant-escrow"
+
+    /// Deterministic per-grant record name (Family sharing, `FamilyShareTransport`):
+    /// lets N grants coexist in one zone instead of the legacy singleton
+    /// overwriting on every publish. `grantId` is already opaque (CSPRNG),
+    /// so the name leaks nothing beyond record existence + count.
+    static func grantRecordName(grantId: String) -> String { "grant:" + grantId }
+
+    /// Deterministic per-grant display-envelope name — pairs with
+    /// `grantRecordName(grantId:)`.
+    static func displayEnvelopeRecordName(grantId: String) -> String { "display:" + grantId }
 
     // MARK: Subscription identifiers (push routing keys — see AppPushKind)
 

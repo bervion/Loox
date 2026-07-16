@@ -33,7 +33,14 @@ nonisolated enum ShareLifecycle: String, Codable, Sendable {
 /// bookkeeping only. The recipient label (email) never leaves this device;
 /// CloudKit sees only the opaque zone name (M2).
 nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
-    var id: String { zoneName }
+    /// Composite identity (Family full-group sharing, A2): a zone can now
+    /// hold N item-shares — one Space share publishes one grant per eligible
+    /// item into the SAME member zone — so `zoneName` alone no longer names a
+    /// record uniquely. `id` is computed, never stored/`Codable` (it was
+    /// never encoded even under the old `zoneName`-only identity), so a
+    /// legacy JSON blob (written when a zone held exactly one share) decodes
+    /// unchanged and simply recomputes `id` from its two stored fields.
+    var id: String { "\(zoneName)::\(itemId)" }
     var itemId: String
     var zoneName: String
     var recipientLabel: String
@@ -87,6 +94,13 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
         shares.filter { $0.itemId == itemId }
     }
 
+    /// Every item-share for one recipient, across all their zones (a member
+    /// re-shared under a Personal vs. Work persona gets separate zones,
+    /// INV-R03 — this spans both).
+    func shares(forRecipient recipientLabel: String) -> [ItemShareRecord] {
+        shares.filter { $0.recipientLabel == recipientLabel }
+    }
+
     /// Shares waiting on the OWNER's hands (the fingerprint ceremony) — the
     /// one lifecycle state that is actionable rather than merely pending.
     /// Feeds the Home bell badge alongside invites and approval requests.
@@ -94,23 +108,54 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
         shares.filter { $0.status == .readyForCeremony }.count
     }
 
+    /// Replace the record for this exact `(zoneName, itemId)` pair, leaving
+    /// every OTHER item-share in the same zone untouched. Matching on
+    /// `zoneName` alone (the old behavior) would wipe every sibling item-share
+    /// in the zone the moment a second item republished — the bug this
+    /// composite identity exists to fix. With one item per zone (today's
+    /// shipped shape, `FamilyShareTransport.perGrantEnabled == false`) this is
+    /// byte-for-byte the old `removeAll { $0.zoneName == record.zoneName }`,
+    /// since `(zoneName, itemId)` is always the same pair across a share's
+    /// pending → confirmed upserts.
     func upsert(_ record: ItemShareRecord) {
-        shares.removeAll { $0.zoneName == record.zoneName }
+        shares.removeAll { $0.zoneName == record.zoneName && $0.itemId == record.itemId }
         shares.append(record)
         persist()
     }
 
-    /// Advance a share's lifecycle. Monotonic (never downgrades) and never
-    /// touches a ceremony-confirmed record — a transient refresh miss must not
-    /// undo real progress.
+    /// Advance every item-share in this zone to `status` (still keyed by
+    /// `zoneName` alone, not per item): the fingerprint ceremony is a
+    /// per-zone/per-member event — ALL item-shares published into a member's
+    /// zone become ready/confirmed together, so they must advance together
+    /// too, or siblings added after the first would read a stale status.
+    /// Monotonic per record (never downgrades) and never touches an
+    /// already-confirmed record — a transient refresh miss must not undo real
+    /// progress. With one item per zone this is behaviorally identical to the
+    /// old single-record update (the loop body runs exactly once).
     func updateStatus(zoneName: String, to status: ShareLifecycle) {
-        guard let idx = shares.firstIndex(where: { $0.zoneName == zoneName }),
-              !shares[idx].fingerprintConfirmed,
-              status.rank > shares[idx].status.rank else { return }
-        shares[idx].statusRaw = status.rawValue
+        var changed = false
+        for idx in shares.indices where shares[idx].zoneName == zoneName {
+            guard !shares[idx].fingerprintConfirmed,
+                  status.rank > shares[idx].status.rank else { continue }
+            shares[idx].statusRaw = status.rawValue
+            changed = true
+        }
+        if changed { persist() }
+    }
+
+    /// Remove exactly one item-share (an item left the Space, was deleted, or
+    /// the owner unshared just that one item) — leaves every other item-share
+    /// in the same zone untouched.
+    func remove(zoneName: String, itemId: String) {
+        shares.removeAll { $0.zoneName == zoneName && $0.itemId == itemId }
         persist()
     }
 
+    /// Remove EVERY item-share in this zone — a whole-member revoke (deleting
+    /// the zone removes all of that member's access atomically, the family
+    /// semantic). Unchanged from before this identity rework: with one item
+    /// per zone it already meant "remove this share"; now it explicitly means
+    /// "remove all of this member's item-shares."
     func remove(zoneName: String) {
         shares.removeAll { $0.zoneName == zoneName }
         persist()

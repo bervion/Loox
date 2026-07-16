@@ -35,7 +35,7 @@ final class SharedItemsProjectionTests: XCTestCase {
             origin: origin, grant: grant, display: display,
             values: ["f-pass": Data("hunter2".utf8)])
 
-        XCTAssertEqual(item.id, "shared::_owner1::apz-abc")
+        XCTAssertEqual(item.id, "shared::_owner1::apz-abc::grant-1")
         XCTAssertEqual(item.sharedOrigin, origin)
         XCTAssertEqual(item.title, "GitHub")
         // Shared value → protected password-kind field, same field id.

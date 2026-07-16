@@ -274,8 +274,21 @@ import Foundation
             records.append(ApprovalRecordMapping.sharedFieldRecord(
                 sealedBlob: sealed, grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
         }
-        // Old blobs became garbage the moment the grant id rotated; delete them.
-        let staleBlobIDs = try await recordIDs(ofType: ApprovalConfig.sharedFieldRecordType, zoneID: zoneID)
+        // Flag OFF (default, legacy): a zone holds at most ONE grant, so
+        // clean-replacing EVERY `ApprovalSharedField` blob in the zone is
+        // exactly the pre-Family-sharing behavior, byte for byte — and it
+        // is REQUIRED for back-compat here: `grant.id` is freshly minted
+        // above, so scoping the delete to it would match zero records (the
+        // id has never existed before) and silently orphan the PRIOR
+        // grant's field ciphertext on every re-share/edit instead of
+        // replacing it, which is what shipped before this transport existed.
+        // Flag ON (Family sharing): scope to THIS grant's id only, so a
+        // sibling grant's fields in the same zone are never wiped
+        // (INV-FAM-01). Cleaning up a PRIOR grant for the SAME item on
+        // re-share is owner-side reconciler work (Project A, phase A2), not
+        // this call.
+        let staleBlobIDs = try await sharedFieldRecordIDs(
+            grantId: FamilyShareTransport.perGrantEnabled ? grant.id : nil, zoneID: zoneID)
         let saved = try await database.modifyRecords(saving: records, deleting: staleBlobIDs,
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
@@ -320,10 +333,11 @@ import Foundation
                 sealedBlob: sealed, grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
         }
         guard !records.isEmpty else { return }
-        // Old blobs are superseded ciphertext — replace atomically, same
-        // pattern as publishGrant's stale cleanup.
-        let staleBlobIDs = try await recordIDs(ofType: ApprovalConfig.sharedFieldRecordType,
-                                               zoneID: zoneID)
+        // Old blobs are superseded ciphertext for THIS grant — replace
+        // atomically, scoped to `grant.id` so a sibling grant's fields in
+        // the same zone are never touched (INV-FAM-01), same pattern as
+        // publishGrant's stale cleanup.
+        let staleBlobIDs = try await sharedFieldRecordIDs(grantId: grant.id, zoneID: zoneID)
         let saved = try await database.modifyRecords(saving: records, deleting: staleBlobIDs,
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
@@ -332,8 +346,13 @@ import Foundation
     // MARK: Inbound requests
 
     /// Fresh server fetch — the epoch check must never trust a cached grant.
+    /// Reads the LEGACY singleton only: owner-side republish/verify against a
+    /// SPECIFIC grant in a multi-grant zone needs `SharingStore`'s
+    /// per-(zone,item) → grantId identity (Project A, phase A2) to know which
+    /// grant it means. Inert while `FamilyShareTransport.perGrantEnabled` is
+    /// off (default) — the owner never publishes anything else to fetch here.
     func fetchGrantFresh(zoneID: CKRecordZone.ID) async throws -> AccessGrant {
-        let id = CKRecord.ID(recordName: ApprovalConfig.grantRecordName, zoneID: zoneID)
+        let id = CKRecord.ID(recordName: ApprovalConfig.legacyGrantRecordName, zoneID: zoneID)
         guard let record = try? await database.record(for: id),
               let grant = ApprovalRecordMapping.grant(from: record) else {
             throw Failure.grantMissing
@@ -432,11 +451,26 @@ import Foundation
         }
     }
 
-    private func recordIDs(ofType type: String, zoneID: CKRecordZone.ID) async throws -> [CKRecord.ID] {
+    /// Record IDs of every `ApprovalSharedField` in the zone — scoped to
+    /// `grantId` when given (matched by the AUTHENTICATED cleartext
+    /// `grantId` field each record already carries, via
+    /// `ApprovalRecordMapping.sharedFieldRecord` — never by name or
+    /// name-prefix, INV-FAM-01), or EVERY field record in the zone when
+    /// `grantId` is nil. The nil case exists solely for the legacy
+    /// (`FamilyShareTransport.perGrantEnabled == false`) clean-replacement
+    /// in `publishGrant` — matches by `recordType` only, same as pre-A1,
+    /// since a legacy zone holds at most one grant and "all" and "this
+    /// grant's" are the same set there.
+    private func sharedFieldRecordIDs(grantId: String?, zoneID: CKRecordZone.ID) async throws -> [CKRecord.ID] {
         var ids: [CKRecord.ID] = []
-        // Stateless: GC must see the CURRENT record set every time.
+        // Stateless: cleanup must see the CURRENT record set every time.
         try await ZoneDeltaFetch.pull(database: database, zoneID: zoneID, cursor: nil) { record in
-            if record.recordType == type { ids.append(record.recordID) }
+            guard record.recordType == ApprovalConfig.sharedFieldRecordType else { return }
+            if let grantId {
+                guard let field = ApprovalRecordMapping.sharedField(from: record),
+                      field.grantId == grantId else { return }
+            }
+            ids.append(record.recordID)
         }
         return ids
     }

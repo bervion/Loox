@@ -31,6 +31,9 @@ nonisolated struct SharedOrigin: Codable, Equatable, Hashable, Sendable {
     }
 
     /// Stable projected item id — the `shared::` prefix can never collide
-    /// with owned items (UUID ids) and parses back to the zone address.
-    var itemID: String { "shared::\(ownerName)::\(zoneName)" }
+    /// with owned items (UUID ids). Includes `grantId` so distinct grants
+    /// sharing the SAME zone (Family per-grant transport — more than one
+    /// item can now be granted into one zone) each get a distinct id; a
+    /// single-grant zone still resolves to one stable id per grant.
+    var itemID: String { "shared::\(ownerName)::\(zoneName)::\(grantId)" }
 }
