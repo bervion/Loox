@@ -15,18 +15,30 @@ struct LooxMemberSeal: View {
     @State private var revealed = false
 
     var body: some View {
+        let ringRadius = diameter / 2 - diameter * 0.115
+        let subscriber = appString("Subscriber").uppercased(with: appResourceLocale)
         ZStack {
-            SealRingText(text: ringText, radius: diameter / 2 - diameter * 0.115)
-                // Fixed-size font by design (documented exemption from the
-                // vaultType rule): the ring is geometry, not text — its glyph
-                // size must scale with the seal's diameter, never with Dynamic
-                // Type, or the ring overflows the circle. The whole seal is
-                // decorative and accessibilityHidden.
-                .font(.system(size: diameter * 0.105, weight: .heavy))
-                .themedForeground(.primary)
-                .scaleEffect(revealed ? 1 : 0.5)
-                .opacity(revealed ? 1 : 0)
-                .rotationEffect(.degrees(revealed ? 0 : -12))
+            // Two balanced arcs like the reference stamp: the subscriber word
+            // hugs the TOP arc, the brand hugs the BOTTOM arc — flipped so it
+            // reads left-to-right instead of upside down. Fixed-size fonts by
+            // design (documented exemption from the vaultType rule): the ring
+            // is geometry — glyphs scale with the seal's diameter, never with
+            // Dynamic Type, or they overflow the circle. Decorative +
+            // accessibilityHidden. The "•" is a ring divider, not prose.
+            Group {
+                SealArcText(text: subscriber, radius: ringRadius,
+                            step: min(13.5, 165 / Double(max(subscriber.count, 1))),
+                            center: 0)
+                    .font(.system(size: diameter * 0.105, weight: .black))
+                // The brand arc runs slightly larger for coverage (owner 260716).
+                SealArcText(text: "• LOOX •", radius: ringRadius,
+                            step: 15.5, center: 180, flipped: true)
+                    .font(.system(size: diameter * 0.125, weight: .black))
+            }
+            .themedForeground(.primary)
+            .scaleEffect(revealed ? 1 : 0.5)
+            .opacity(revealed ? 1 : 0)
+            .rotationEffect(.degrees(revealed ? 0 : -12))
             Image("BrandSymbol")
                 .resizable()
                 .scaledToFit()
@@ -43,31 +55,31 @@ struct LooxMemberSeal: View {
             withAnimation(Motion.spring.delay(0.05)) { revealed = true }
         }
     }
-
-    /// One pass around the circle (iCloud+ layout): the localized subscriber
-    /// word, then the brand. The "•" is a decorative ring divider, not
-    /// sentence punctuation — the no-"·"-separator copy rule governs prose,
-    /// and this whole view is hidden from assistive tech.
-    private var ringText: String {
-        let subscriber = appString("Subscriber").uppercased(with: appResourceLocale)
-        return "\(subscriber) • LOOX • "
-    }
 }
 
-/// Lays glyphs of `text` evenly around a circle of `radius`, starting at
-/// 12 o'clock. Even angular distribution (rather than width-metric arc layout)
-/// matches the stamp look: uniform rhythm, no kerning cliffs between locales.
-private struct SealRingText: View {
+/// Lays glyphs of `text` along an arc of `radius`, evenly stepped and centered
+/// on `center` (degrees; 0 = 12 o'clock, 180 = 6 o'clock). `flipped` renders
+/// stamp-style bottom text: each glyph rotates 180° about its own center and
+/// the sequence runs right-to-left in angle, so it reads left-to-right.
+private struct SealArcText: View {
     let text: String
     let radius: CGFloat
+    /// Degrees between consecutive glyph centers.
+    let step: Double
+    let center: Double
+    var flipped = false
 
     var body: some View {
         let glyphs = Array(text)
+        let count = glyphs.count
         ZStack {
             ForEach(glyphs.indices, id: \.self) { index in
+                let progress = Double(index) - Double(count - 1) / 2
+                let angle = center + (flipped ? -progress : progress) * step
                 Text(verbatim: String(glyphs[index]))
+                    .rotationEffect(.degrees(flipped ? 180 : 0))
                     .offset(y: -radius)
-                    .rotationEffect(.degrees(Double(index) / Double(glyphs.count) * 360))
+                    .rotationEffect(.degrees(angle))
             }
         }
     }
