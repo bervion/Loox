@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.33.0] - 2026-07-16
+
+### Added
+- Share-a-Space ceremony + enable per-grant transport
+- replace-safe re-share + Space membership executor
+- settings-style icon tiles + inline device list with real model names
+- per-grant Family transport + live-membership reconciler behind a flag
+- publish device on the sync path so peers appear without opening Devices
+- Devices registry (list-only) over CloudKit private zone
+- Family members list (first slice) + resolve family/devices ADRs
+- Apple-Account-style hub with Personal Information, Payment cards, and Loox
+
+### Fixed
+- hide the empty top nav bar on iOS 26 so the chip-bar header stays flush
+- force light until the user picks a theme; stop foreground carousel flip
+- flush chip-bar header (no large title) + auto-scroll the selected chip
+- open Notifications via the navigator to stop tab-bar reveal delay
+
+### Changed
+- update codex
+- update docs
+- execution-ready plans for family full-group and devices key-rotation
+- record red-team blocker for space fan-out
+- security designs + threat models for family group and devices revoke
+
+
 ## [1.32.0] - 2026-07-15
 
 ### Added

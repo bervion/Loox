@@ -1,1 +1,1 @@
-Bạn có thể sắp xếp các mục trên trang chủ theo ý mình và tận hưởng thanh điều hướng gọn gàng hơn với tiêu đề trong suốt.
+Bản cập nhật này tinh chỉnh giao diện: thanh tiêu đề gọn gàng và thẳng hàng hơn trên phiên bản iOS mới nhất, ứng dụng mở ở giao diện sáng cho đến khi bạn chọn chủ đề, và mở mục Thông báo nhanh hơn. Chúng tôi cũng cải thiện độ ổn định để trải nghiệm mượt mà hơn.

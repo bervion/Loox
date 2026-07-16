@@ -1,1 +1,1 @@
-You can now arrange home sections your way and enjoy a cleaner tab bar with transparent headers.
+This update polishes the interface: the header stays clean and properly aligned on the latest iOS, the app opens in light mode until you pick a theme, and opening Notifications is quicker. We also made behind-the-scenes improvements for a smoother, more reliable experience.
