@@ -419,9 +419,11 @@ struct LooxAcquisitionPaywallView: View {
         purchasing = true
         defer { purchasing = false }
         do {
-            // The backend integration phase adds
-            // `purchase(options: [.appAccountToken(...)])` here (BE proposal B3).
-            let result = try await product.purchase()
+            // The appAccountToken IS the pseudonymous billing identity the
+            // backend keys everything on (contract §1) — set from the very
+            // first purchase, always.
+            let result = try await product.purchase(
+                options: [.appAccountToken(LooxSubscriptionAccountToken.loadOrCreate())])
             switch result {
             case .success(let verification):
                 guard case .verified(let transaction) = verification else {
@@ -430,6 +432,9 @@ struct LooxAcquisitionPaywallView: View {
                 }
                 await env.entitlements.refreshNow()
                 await transaction.finish()
+                // Attach trigger (1): purchase success → backend learns the
+                // subscription and hands back grants/leases (dormant plumbing).
+                await env.entitlementCoordinator.attachNow()
                 Haptics.success()
                 dismiss()
             case .pending:
@@ -456,6 +461,10 @@ struct LooxAcquisitionPaywallView: View {
         }
         await env.entitlements.refreshNow()
         if env.entitlements.tier > .free {
+            // Attach trigger (2): restore on this device — the coordinator
+            // adopts the appAccountToken from the verified transaction, so
+            // every install converges on the purchase's identity.
+            await env.entitlementCoordinator.attachNow()
             Haptics.success()
             dismiss()
         } else {
