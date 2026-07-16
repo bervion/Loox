@@ -1,0 +1,17 @@
+<svg width="120" height="48" viewBox="0 0 120 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Loox Max badge — fixed ink chip with the teal→green Max identity
+       gradient ring and a heavy italic wordmark. The chip stays dark in both
+       appearances (its own surface); the gradient stops are the dark-mode
+       hues (light UI deepens them in code: 0x0E8A7D → 0x15803D). -->
+  <defs>
+    <linearGradient id="maxRing" x1="0" y1="0" x2="120" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2FD0BF"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+  </defs>
+  <rect x="3" y="3" width="114" height="42" rx="12" fill="#101114"/>
+  <rect x="4.5" y="4.5" width="111" height="39" rx="10.5" stroke="url(#maxRing)" stroke-width="3"/>
+  <text x="60" y="33.5" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif"
+        font-size="26" font-weight="900" font-style="italic" letter-spacing="3"
+        fill="#FFFFFF" text-anchor="middle">MAX</text>
+</svg>

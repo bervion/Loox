@@ -97,7 +97,7 @@ struct LooxAcquisitionPaywallView: View {
                     Text("Learn more about \(selectedTier.displayName)")
                         .vaultType(.subhead)
                 }
-                .foregroundStyle(LooxPaywallBlue.color)
+                .foregroundStyle(LooxPlanTint.accent(selectedTier))
                 .frame(minHeight: Metric.hitMin)
                 .contentShape(.rect)
             }
@@ -119,12 +119,13 @@ struct LooxAcquisitionPaywallView: View {
 
     private func benefit(_ icon: String, _ text: String) -> some View {
         HStack(spacing: Space.s3) {
-            // Round badge on the pinned paywall blue with a white glyph —
-            // same white-on-tint exemption class as the CTA and check badge.
+            // Round badge on the SELECTED plan's identity fill with an
+            // on-tint glyph — the whole surface re-tints when the plan
+            // changes (blue for Loox+, teal→green for Max).
             ZStack {
-                Circle().fill(LooxPaywallBlue.color)
+                Circle().fill(LooxPlanTint.fill(selectedTier))
                 PolarisIcon(icon, size: 16)
-                    .foregroundStyle(Color(rgb: 0xFFFFFF))
+                    .foregroundStyle(LooxPlanTint.onFill(selectedTier))
             }
             .frame(width: 32, height: 32)
             .accessibilityHidden(true)
@@ -184,7 +185,7 @@ struct LooxAcquisitionPaywallView: View {
         } label: {
             HStack(alignment: .top, spacing: Space.s3) {
                 VStack(alignment: .leading, spacing: Space.s1) {
-                    Text(verbatim: tier.displayName)
+                    LooxTierLabel(tier: tier, badgeHeight: 18)
                         .vaultType(.headline)
                         .themedForeground()
                     if let product {
@@ -213,12 +214,12 @@ struct LooxAcquisitionPaywallView: View {
                 Spacer(minLength: Space.s2)
                 if selected {
                     ZStack {
-                        Circle().fill(LooxPaywallBlue.color)
-                        // White-on-tint badge glyph — the documented fixed-tile
-                        // exemption class (fill already clears the 3:1 floor
-                        // by construction, see LooxPaywallBlue).
+                        Circle().fill(LooxPlanTint.fill(tier))
+                        // On-tint badge glyph — the documented fixed-tile
+                        // exemption class (each identity fill clears the 3:1
+                        // floor for its on-tint color by construction).
                         PolarisIcon(Icons.check, size: 13)
-                            .foregroundStyle(Color(rgb: 0xFFFFFF))
+                            .foregroundStyle(LooxPlanTint.onFill(tier))
                     }
                     .frame(width: 24, height: 24)
                     .accessibilityHidden(true)
@@ -232,7 +233,8 @@ struct LooxAcquisitionPaywallView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .strokeBorder(selected ? LooxPaywallBlue.color : .clear, lineWidth: 2)
+                    .strokeBorder(selected ? LooxPlanTint.fill(tier) : AnyShapeStyle(.clear),
+                                  lineWidth: 2)
             )
             .contentShape(.rect)
         }
@@ -247,24 +249,24 @@ struct LooxAcquisitionPaywallView: View {
     /// read too dark against this screen's plain background (owner 260716).
     private static let cardFill = VaultColors.dynamic(light: 0xF2F2F7, dark: 0x1C1C1E)
 
-    /// Trial pill on blue-tinted liquid glass (owner: the soft-tint version
-    /// read washed out) — solid pinned blue below iOS 26 or under Reduce
-    /// Transparency; white label is the white-on-tint exemption class.
+    /// Trial pill on Max-identity liquid glass (the pill only exists on the
+    /// Max card) — solid identity fill below iOS 26 or under Reduce
+    /// Transparency; the on-tint label follows the identity convention.
     @ViewBuilder private func trialPill(days: Int) -> some View {
         let label = Text("\(days) days free")
             .vaultType(.caption)
             .fontWeight(.semibold)
-            .foregroundStyle(Color(rgb: 0xFFFFFF))
+            .foregroundStyle(LooxMaxTint.onTint)
             .padding(.horizontal, Space.s3)
             .padding(.vertical, 4)
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
-            label.glassEffect(.regular.tint(LooxPaywallBlue.color), in: Capsule())
+            label.glassEffect(.regular.tint(LooxMaxTint.solid), in: Capsule())
         } else {
-            label.background(LooxPaywallBlue.color, in: Capsule())
+            label.background(LooxMaxTint.solid, in: Capsule())
         }
         #else
-        label.background(LooxPaywallBlue.color, in: Capsule())
+        label.background(LooxMaxTint.solid, in: Capsule())
         #endif
     }
 
@@ -289,17 +291,10 @@ struct LooxAcquisitionPaywallView: View {
 
     private var bottomBar: some View {
         VStack(spacing: Space.s3) {
-            Button { Task { await purchase() } } label: {
-                Group {
-                    if purchasing {
-                        ProgressView().tint(Color(rgb: 0xFFFFFF))
-                    } else {
-                        Text(verbatim: ctaTitle)
-                    }
-                }
-            }
-            .buttonStyle(LooxBlueProminentButtonStyle())
-            .disabled(purchasing || restoring || product(for: selectedTier) == nil)
+            Button { Task { await purchase() } } label: { ctaLabel }
+                .buttonStyle(LooxPlanProminentButtonStyle(tier: selectedTier))
+                .disabled(purchasing || restoring || product(for: selectedTier) == nil)
+                .accessibilityLabel(Text(verbatim: ctaTitle))
 
             LooxGlassButton(title: "Restore Purchases", busy: restoring) {
                 Task { await restore() }
@@ -311,7 +306,7 @@ struct LooxAcquisitionPaywallView: View {
                 Link("Privacy Policy", destination: LooxMembership.privacyURL)
             }
             .vaultType(.footnote)
-            .tint(LooxPaywallBlue.color)
+            .tint(LooxPlanTint.accent(selectedTier))
         }
         .padding(.horizontal, Self.margin)
         .padding(.top, Space.s3)
@@ -319,6 +314,24 @@ struct LooxAcquisitionPaywallView: View {
         .background(Color(rgb: env.theme.active.background).ignoresSafeArea())
     }
 
+    /// CTA content: the Max selection renders the brand-plus-badge lockup
+    /// ("Subscribe to Loox [MAX]"); everything else stays plain text.
+    @ViewBuilder private var ctaLabel: some View {
+        if purchasing {
+            ProgressView().tint(LooxPlanTint.onFill(selectedTier))
+        } else if isTrialSelection, let trialDays {
+            Text("Try free for \(trialDays) days")
+        } else if selectedTier == .max {
+            HStack(spacing: Space.s2) {
+                Text("Subscribe to")
+                LooxTierLabel(tier: .max, badgeHeight: 20)
+            }
+        } else {
+            Text(verbatim: appString("Subscribe to \(selectedTier.displayName)"))
+        }
+    }
+
+    /// Plain-text mirror of the CTA for assistive tech.
     private var ctaTitle: String {
         if isTrialSelection, let trialDays {
             return appString("Try free for \(trialDays) days")
@@ -459,19 +472,21 @@ enum LooxPaywallBlue {
     static var color: Color { VaultColors.dynamic(light: lightHex, dark: darkHex) }
 }
 
-/// Full-width capsule CTA on the pinned paywall blue with a white label
-/// (white-on-tint control — the documented fixed-tile exemption class).
-private struct LooxBlueProminentButtonStyle: ButtonStyle {
+/// Full-width capsule CTA on the SELECTED plan's identity fill (pinned blue
+/// for Loox+, the teal→green Max gradient for Max) with the matching on-tint
+/// label — the documented fixed-tile exemption class.
+private struct LooxPlanProminentButtonStyle: ButtonStyle {
+    let tier: LooxTier
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .vaultType(.body)
             .fontWeight(.semibold)
-            .foregroundStyle(Color(rgb: 0xFFFFFF))
+            .foregroundStyle(LooxPlanTint.onFill(tier))
             .frame(maxWidth: .infinity)
             .frame(minHeight: Metric.controlLarge)
-            .background(LooxPaywallBlue.color, in: Capsule())
+            .background(LooxPlanTint.fill(tier), in: Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.5)
             .scaleEffect(configuration.isPressed ? Motion.pressScale : 1)
             .contentShape(Capsule())

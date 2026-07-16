@@ -78,7 +78,7 @@ struct LooxCurrentPlanView: View {
                         ProfileRowTile(style: .brandMark)
                         Text("Your plan").vaultType(.body).themedForeground()
                         Spacer(minLength: Space.s2)
-                        Text(verbatim: env.entitlements.tier.displayName)
+                        LooxTierLabel(tier: env.entitlements.tier, badgeHeight: 15)
                             .vaultType(.subhead).themedForeground(.secondary)
                     }
                     .padding(.horizontal, Space.s4)

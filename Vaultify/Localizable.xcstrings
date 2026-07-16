@@ -12787,6 +12787,16 @@
         }
       }
     },
+    "Subscribe to" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng ký"
+          }
+        }
+      }
+    },
     "Subscribe to %@" : {
       "localizations" : {
         "vi" : {

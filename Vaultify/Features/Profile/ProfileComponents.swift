@@ -172,7 +172,7 @@ enum ProfileBadgeTint {
 /// A Profile nav row: leading tile + title + optional trailing value + chevron, pushing
 /// `destination` onto the enclosing (navigator-hosted) stack.
 struct ProfileNavRow<Destination: View>: View {
-    private let titleText: Text
+    private let titleView: AnyView
     private let tileStyle: ProfileTileStyle
     private let value: String?
     private let destination: () -> Destination
@@ -181,17 +181,26 @@ struct ProfileNavRow<Destination: View>: View {
     /// Profile-only SF Symbol redesign (see `ProfileTileStyle`).
     init(title: LocalizedStringResource, icon: String? = nil, tile: ProfileTileStyle? = nil,
          value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
-        self.titleText = Text(title)
+        self.titleView = AnyView(Text(title))
         self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
         self.value = value
         self.destination = destination
     }
 
-    /// Verbatim title for locale-invariant brand nouns — the Loox row shows the CURRENT
-    /// tier's display name ("Loox" / "Loox+" / "Loox Max"), which never localizes.
+    /// Verbatim title for locale-invariant brand nouns.
     init(verbatimTitle: String, icon: String? = nil, tile: ProfileTileStyle? = nil,
          value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
-        self.titleText = Text(verbatim: verbatimTitle)
+        self.titleView = AnyView(Text(verbatim: verbatimTitle))
+        self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
+        self.value = value
+        self.destination = destination
+    }
+
+    /// Custom title content (the Loox row renders the tier lockup — "Loox"
+    /// plus the MAX badge). The view inherits the row's font and foreground.
+    init(titleView: some View, icon: String? = nil, tile: ProfileTileStyle? = nil,
+         value: String? = nil, @ViewBuilder destination: @escaping () -> Destination) {
+        self.titleView = AnyView(titleView)
         self.tileStyle = tile ?? .polaris(icon ?? Icons.info)
         self.value = value
         self.destination = destination
@@ -201,7 +210,7 @@ struct ProfileNavRow<Destination: View>: View {
         NavigationLink { destination() } label: {
             HStack(spacing: Space.s3) {
                 ProfileRowTile(style: tileStyle)
-                titleText.vaultType(.body).themedForeground()
+                titleView.vaultType(.body).themedForeground()
                 Spacer(minLength: Space.s2)
                 if let value {
                     Text(verbatim: value).vaultType(.subhead).themedForeground(.secondary)

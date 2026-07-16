@@ -99,7 +99,7 @@ struct LooxHubScreen: View {
     private var header: some View {
         HStack(alignment: .top, spacing: Space.s4) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(verbatim: tier.displayName)
+                LooxTierLabel(tier: tier, badgeHeight: 30)
                     .vaultType(.largeTitle)
                     .themedForeground()
                 Text(verbatim: memberName)
