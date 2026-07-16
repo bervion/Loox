@@ -119,17 +119,19 @@ struct LooxTierLabel: View {
     var badgeHeight: CGFloat = 16
     /// Tight, glow-free badge for dense lockups like the CTA.
     var compactBadge = false
+    /// The brand word carries the HEAVIEST weight in plan-name lockups by
+    /// default (owner 260716); pass `nil` to inherit the surrounding weight
+    /// (the Profile row keeps its regular body rank).
+    var brandWeight: Font.Weight? = .black
 
     var body: some View {
-        // The brand word carries the HEAVIEST weight in plan-name lockups
-        // (owner 260716); size still follows the surrounding vaultType font.
         if tier == .max {
             HStack(spacing: badgeHeight * (compactBadge ? 0.22 : 0.3)) {
-                Text(verbatim: "Loox").fontWeight(.black)
+                Text(verbatim: "Loox").fontWeight(brandWeight)
                 LooxMaxBadgeView(height: badgeHeight, glows: !compactBadge)
             }
         } else {
-            Text(verbatim: tier.displayName).fontWeight(.black)
+            Text(verbatim: tier.displayName).fontWeight(brandWeight)
         }
     }
 }

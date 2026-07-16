@@ -48,7 +48,8 @@ struct ProfileScreen: View {
                     // Row title follows the CURRENT tier — "Loox" / "Loox+" /
                     // "Loox" + MAX badge lockup (owner request 260716),
                     // matching the membership screen's header behind it.
-                    ProfileNavRow(titleView: LooxTierLabel(tier: env.entitlements.tier, badgeHeight: 15),
+                    ProfileNavRow(titleView: LooxTierLabel(tier: env.entitlements.tier,
+                                                           badgeHeight: 15, brandWeight: nil),
                                   tile: .brandMark) { LooxHubScreen() }
                     ProfileRowDivider()
                     // "fa_users" — FontAwesome6 Duotone "users" glyph (imported into
