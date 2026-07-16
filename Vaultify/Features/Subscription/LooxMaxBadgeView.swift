@@ -1,19 +1,17 @@
 import SwiftUI
 
-/// The Max plan identity: an AURORA over black (owner-tuned 260716 against
-/// the Duolingo Max reference) — mint → ice cyan carrying the field, with a
-/// violet whisper compressed into the gradient tail as the accent, never the
-/// body. Light UI deepens the stops under WHITE labels; dark UI keeps the
-/// bright aurora under BLACK labels (the bright-tint/black-label convention
-/// of system green controls). Every stop clears the 3:1 control floor for
-/// its appearance's label (verified per stop).
+/// The Max plan identity (owner-tuned 260716): premium BLACK in light UI —
+/// an ink field with a deep-violet whisper compressed into the gradient
+/// tail — and a cosmic purple→pink AURORA in dark UI. White labels ride the
+/// light ink; black labels ride the bright dark aurora. Every stop clears
+/// the 3:1 control floor for its appearance's label (verified per stop).
 enum LooxMaxTint {
-    /// Deep spruce → teal-ink → violet stops for light UI (white label).
-    static let lightStops: [UInt32] = [0x047857, 0x0E7490, 0x6D28D9]
-    /// Bright mint → ice cyan → violet stops for dark UI (black label).
-    static let darkStops: [UInt32] = [0x6EE7B7, 0x67E8F9, 0x8B5CF6]
+    /// Ink → charcoal → deep-violet-whisper stops for light UI (white label).
+    static let lightStops: [UInt32] = [0x0B0B0F, 0x1F1F26, 0x4C1D95]
+    /// Bright violet → magenta → pink stops for dark UI (black label).
+    static let darkStops: [UInt32] = [0x8B5CF6, 0xEC4899, 0xF472B6]
 
-    /// Appearance-adaptive identity gradient. The violet stop sits at the
+    /// Appearance-adaptive identity gradient. The accent stop sits at the
     /// tail (0.62 → 1.0) so it reads as a streak, not the field.
     static var gradient: LinearGradient {
         LinearGradient(
@@ -26,13 +24,27 @@ enum LooxMaxTint {
     }
 
     /// Solid accent for rings, links and text where a gradient would be
-    /// noise — the teal anchor (light 0x0F766E ≈ 5.5:1 on white, dark
-    /// 0x5EEAD4 ≈ 13:1 on near-black).
-    static var solid: Color { VaultColors.dynamic(light: 0x0F766E, dark: 0x5EEAD4) }
+    /// noise — ink in light UI (≈ 17:1 on white), fuchsia in dark UI
+    /// (0xE879F9 ≈ 6.8:1 on near-black).
+    static var solid: Color { VaultColors.dynamic(light: 0x111114, dark: 0xE879F9) }
 
-    /// Label color on the identity fill: white on the deep light stops,
-    /// black on the bright dark stops.
+    /// Label color on the identity fill: white on the light ink field,
+    /// black on the bright dark aurora.
     static var onTint: Color { VaultColors.dynamic(light: 0xFFFFFF, dark: 0x000000) }
+
+    /// The badge ring/glow pin the PURPLE-PINK aurora in BOTH appearances:
+    /// the chip is a fixed dark surface, so light mode's ink stops would
+    /// vanish against it.
+    static var badgeRing: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: Color(rgb: darkStops[0]), location: 0),
+                .init(color: Color(rgb: darkStops[1]), location: 0.62),
+                .init(color: Color(rgb: darkStops[2]), location: 1),
+            ],
+            startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+    static let badgeGlow = Color(rgb: 0xA78BFA)
 }
 
 /// Per-plan paywall identity: Loox+ (and the default surface) keeps the
@@ -73,9 +85,9 @@ struct LooxMaxBadgeView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: height * 0.26, style: .continuous)
-                    .strokeBorder(LooxMaxTint.gradient, lineWidth: max(1.5, height * 0.09))
+                    .strokeBorder(LooxMaxTint.badgeRing, lineWidth: max(1.5, height * 0.09))
             )
-            .shadow(color: LooxMaxTint.solid.opacity(0.35), radius: height * 0.16)
+            .shadow(color: LooxMaxTint.badgeGlow.opacity(0.35), radius: height * 0.16)
             .accessibilityLabel(Text(verbatim: "Max"))
     }
 }
