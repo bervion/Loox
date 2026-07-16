@@ -16,6 +16,7 @@ struct PersonaAliasesScreen: View {
     @State private var promptReusableLabel = false
     @State private var reusableLabelDraft = ""
     @State private var defaultDomainID = PrivateEmailDomainDefault.domainID
+    @State private var paywallContext: LooxPaywallContext?
 
     private var persona: Persona? { env.repository.activePersona }
 
@@ -111,6 +112,20 @@ struct PersonaAliasesScreen: View {
         } message: {
             Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
         }
+        .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
+    }
+
+    /// Over-quota upsell gate (§5.3) for BOTH create flows. Retained = active
+    /// + paused across the whole vault — the quota follows the subscription
+    /// identity, not the persona (§3.2). Pausing/deleting/detail never gates.
+    private func guardQuota(_ proceed: () -> Void) {
+        guard LooxMembership.purchasesEnabled else { return proceed() }
+        let retained = env.repository.aliases.filter { $0.status == .active || $0.status == .paused }.count
+        if case .needsUpgrade = LooxGate.canCreateAlias(tier: env.entitlements.tier, retained: retained) {
+            paywallContext = .aliasLimit
+        } else {
+            proceed()
+        }
     }
 
     private var warningBanner: some View {
@@ -134,7 +149,7 @@ struct PersonaAliasesScreen: View {
                 aliasRow(alias, subtitle: alias.label ?? persona.displayName)
             }
             Button {
-                guardEmail(persona) { promptReusableLabel = true }
+                guardQuota { guardEmail(persona) { promptReusableLabel = true } }
             } label: {
                 Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
             }
@@ -155,7 +170,7 @@ struct PersonaAliasesScreen: View {
             ForEach(perSite) { alias in
                 aliasRow(alias, subtitle: alias.boundDomain)
             }
-            Button { guardEmail(persona) { showingPerSiteEditor = true } } label: {
+            Button { guardQuota { guardEmail(persona) { showingPerSiteEditor = true } } } label: {
                 Label { Text("Add site-specific address") } icon: { PolarisIcon(Icons.addCircle) }
             }
         }
