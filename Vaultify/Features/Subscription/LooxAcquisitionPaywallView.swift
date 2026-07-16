@@ -135,6 +135,9 @@ struct LooxAcquisitionPaywallView: View {
         }
     }
 
+    /// One plan card in the iCloud+ storage-card idiom: light gray in BOTH
+    /// states; selection shows only the thick pinned-blue ring plus the
+    /// blue check badge on the title row.
     private func planCard(_ tier: LooxTier) -> some View {
         let product = product(for: tier)
         let selected = selectedTier == tier
@@ -143,11 +146,24 @@ struct LooxAcquisitionPaywallView: View {
             selectedTier = tier
             Haptics.selection()
         } label: {
-            HStack(alignment: .center, spacing: Space.s4) {
+            HStack(alignment: .top, spacing: Space.s3) {
                 VStack(alignment: .leading, spacing: Space.s1) {
                     Text(verbatim: tier.displayName)
                         .vaultType(.headline)
                         .themedForeground()
+                    if let product {
+                        // Total charged price stays the prominent figure; the
+                        // per-month equivalent is a secondary caption (§5.2).
+                        Text(yearly ? "\(product.displayPrice) a year"
+                                    : "\(product.displayPrice) a month")
+                            .vaultType(.body)
+                            .themedForeground()
+                        if yearly {
+                            Text("about \(perMonthDisplay(product)) a month")
+                                .vaultType(.caption)
+                                .themedForeground(.secondary)
+                        }
+                    }
                     Text(tier == .max
                          ? "Full security workflow, sharing and services"
                          : "Personal security, maintained")
@@ -157,38 +173,35 @@ struct LooxAcquisitionPaywallView: View {
                     if tier == .max, yearly, trialEligible, let trialDays {
                         Text("\(trialDays) days free")
                             .vaultType(.caption)
-                            .themedForeground(.accentText)
+                            .foregroundStyle(LooxPaywallBlue.color)
                             .padding(.horizontal, Space.s2)
                             .padding(.vertical, 3)
-                            .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
+                            .background(LooxPaywallBlue.color.opacity(0.12), in: Capsule())
                     }
                 }
                 Spacer(minLength: Space.s2)
-                VStack(alignment: .trailing, spacing: 2) {
-                    if let product {
-                        // Total charged price stays the prominent figure; the
-                        // per-month equivalent is secondary (§5.2).
-                        Text(verbatim: product.displayPrice)
-                            .vaultType(.headline)
-                            .themedForeground()
-                        if yearly {
-                            Text("about \(perMonthDisplay(product)) a month")
-                                .vaultType(.caption)
-                                .themedForeground(.secondary)
-                        }
+                if selected {
+                    ZStack {
+                        Circle().fill(LooxPaywallBlue.color)
+                        // White-on-tint badge glyph — the documented fixed-tile
+                        // exemption class (fill already clears the 3:1 floor
+                        // by construction, see LooxPaywallBlue).
+                        PolarisIcon(Icons.check, size: 11)
+                            .foregroundStyle(Color(rgb: 0xFFFFFF))
                     }
+                    .frame(width: 22, height: 22)
+                    .accessibilityHidden(true)
                 }
             }
             .padding(Space.s5)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .fill(selected ? Color(rgb: env.theme.active.accentSoft) : VaultColors.fill)
+                    .fill(Self.cardFill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .strokeBorder(selected ? Color(rgb: env.theme.active.accent) : .clear,
-                                  lineWidth: 1.5)
+                    .strokeBorder(selected ? LooxPaywallBlue.color : .clear, lineWidth: 3)
             )
             .contentShape(.rect)
         }
@@ -196,6 +209,12 @@ struct LooxAcquisitionPaywallView: View {
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
+
+    /// Fixed light-gray card fill mirroring the iCloud+ storage cards
+    /// (systemGray6-class light / elevated dark) — a documented fixed-tile
+    /// pair like `ProfileRowTile.systemGrayTile`: the themed `controlBackground`
+    /// read too dark against this screen's plain background (owner 260716).
+    private static let cardFill = VaultColors.dynamic(light: 0xF2F2F7, dark: 0x1C1C1E)
 
     private var failedState: some View {
         VStack(spacing: Space.s3) {
@@ -221,14 +240,13 @@ struct LooxAcquisitionPaywallView: View {
             Button { Task { await purchase() } } label: {
                 Group {
                     if purchasing {
-                        ProgressView()
+                        ProgressView().tint(Color(rgb: 0xFFFFFF))
                     } else {
                         Text(verbatim: ctaTitle)
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.themedProminent)
+            .buttonStyle(LooxBlueProminentButtonStyle())
             .disabled(purchasing || restoring || product(for: selectedTier) == nil)
 
             LooxGlassButton(title: "Restore Purchases", busy: restoring) {
@@ -241,7 +259,7 @@ struct LooxAcquisitionPaywallView: View {
                 Link("Privacy Policy", destination: LooxMembership.privacyURL)
             }
             .vaultType(.footnote)
-            .tint(Color(rgb: env.theme.active.accentText))
+            .tint(LooxPaywallBlue.color)
         }
         .padding(.horizontal, Self.margin)
         .padding(.top, Space.s3)
@@ -373,6 +391,38 @@ struct LooxAcquisitionPaywallView: View {
 
     private var flowBinding: Binding<Bool> {
         Binding(get: { flowMessage != nil }, set: { if !$0 { flowMessage = nil } })
+    }
+}
+
+/// The paywall's pinned Design-System blue — this commerce surface reads
+/// iCloud-blue for EVERY user accent (owner decision 260716), so it must not
+/// follow the live theme accent (a mono/graphite accent would render the CTA
+/// black). Derived from the DS blue preset, deepened minimally by
+/// `ensureContrast` so a WHITE label clears the 3:1 control floor — the same
+/// non-destructive guard the theme itself applies to accents ("Loox may
+/// adjust the selected color slightly to keep text and controls readable").
+enum LooxPaywallBlue {
+    static let lightHex = RGBMath.ensureContrast(AccentPreset.blue.lightRGB, on: 0xFFFFFF, floor: 3.0)
+    static let darkHex = RGBMath.ensureContrast(AccentPreset.blue.darkRGB, on: 0xFFFFFF, floor: 3.0)
+    static var color: Color { VaultColors.dynamic(light: lightHex, dark: darkHex) }
+}
+
+/// Full-width capsule CTA on the pinned paywall blue with a white label
+/// (white-on-tint control — the documented fixed-tile exemption class).
+private struct LooxBlueProminentButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .vaultType(.body)
+            .fontWeight(.semibold)
+            .foregroundStyle(Color(rgb: 0xFFFFFF))
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: Metric.controlLarge)
+            .background(LooxPaywallBlue.color, in: Capsule())
+            .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.5)
+            .scaleEffect(configuration.isPressed ? Motion.pressScale : 1)
+            .contentShape(Capsule())
     }
 }
 

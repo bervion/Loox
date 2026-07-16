@@ -16,6 +16,26 @@
         }
       }
     },
+    "%@ a month" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ mỗi tháng"
+          }
+        }
+      }
+    },
+    "%@ a year" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ mỗi năm"
+          }
+        }
+      }
+    },
     "%@ accepted. Tap to finish setting up the share." : {
       "comment" : "Local notification body when a recipient finished accepting a share; %@ is the recipient email (device-local).",
       "localizations" : {
