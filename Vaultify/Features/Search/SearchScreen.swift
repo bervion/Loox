@@ -35,7 +35,13 @@ struct SearchScreen: View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.searchPath) {
             SearchResultsList(query: search, scope: $scope)
-                .navigationTitle("Search")
+                // No visible title on this screen: the header IS the scope chip bar
+                // (below). An empty INLINE title removes the large-title area entirely —
+                // a large title would collapse/expand as the search field activates and
+                // shove the content down (the reported jump). Inline keeps the nav bar
+                // present so the iOS 17.6 fallback (search field in the nav bar) still works.
+                .navigationTitle("")
+                .platformNavigationBarTitleDisplayMode(.inline)
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
                 .platformAutocapitalization(.never)
@@ -352,15 +358,22 @@ private struct SearchScopeBar: View {
     }
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Space.s1) {
-                ForEach(scopes, id: \.self) { scope in
-                    chip(scope)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Space.s1) {
+                    ForEach(scopes, id: \.self) { scope in
+                        chip(scope).id(scope)
+                    }
                 }
+                .padding(Space.s1)
             }
-            .padding(Space.s1)
+            .modifier(ScopeTroughGlass())          // outer Liquid Glass trough, rounded ends
+            .onChange(of: selection) { _, newValue in
+                // A cut-off chip (long VI labels overflow the row) must reveal itself
+                // when picked: scroll the newly-selected chip fully into view.
+                withAnimation(Motion.standard) { proxy.scrollTo(newValue, anchor: .center) }
+            }
         }
-        .modifier(ScopeTroughGlass())          // outer Liquid Glass trough, rounded ends
         .padding(.horizontal, Space.gutter)
         .padding(.vertical, Space.s2)
     }
