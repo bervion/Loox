@@ -76,6 +76,10 @@ import SwiftUI
     /// Loox tier from verified StoreKit 2 transactions (Free when none).
     /// Entitlement state gates offers/quotas only — never vault data.
     let entitlements = LooxEntitlementStore()
+    /// B3 attach orchestration (dormant): grants/leases for the backend
+    /// entitlement service, fed to the relay/link/quick-view clients through
+    /// `LooxEntitlementClientHooks`. Enforces nothing until B5.
+    let entitlementCoordinator = LooxEntitlementCoordinator()
 
     /// A 2FA login imported from an `otpauth://` link/QR, awaiting the editor. Presented once the
     /// vault is unlocked; cleared when the editor dismisses.
@@ -156,6 +160,18 @@ import SwiftUI
         // StoreKit transaction listener must run from launch so purchases,
         // renewals and refunds land without a restart.
         entitlements.start()
+        // B3 seams: service clients pull lease/grant payloads and the
+        // refresh-required recovery from the coordinator; every verified
+        // transaction update (purchase, renewal, restore) re-attaches.
+        LooxEntitlementClientHooks.payloadProvider = { [weak entitlementCoordinator = entitlementCoordinator] service in
+            await MainActor.run { entitlementCoordinator?.payload(for: service) }
+        }
+        LooxEntitlementClientHooks.refreshHandler = { [weak entitlementCoordinator = entitlementCoordinator] in
+            await entitlementCoordinator?.refreshAndReport() ?? false
+        }
+        entitlements.onVerifiedTransactionUpdate = { [weak entitlementCoordinator = entitlementCoordinator] in
+            Task { await entitlementCoordinator?.attachNow() }
+        }
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through

@@ -14,6 +14,14 @@ import Foundation
 /// endless generate→attest loop.
 nonisolated enum LooxLinkAttestation {
     private static let keyIdAccount = "loox-link-app-attest-key-id"
+
+    /// The persisted App Attest key id (the exact `X-Loox-App-Attest-Key-Id`
+    /// header string) — read by the entitlement attach flow to request the
+    /// `attest_key_link` binding. nil until a key has been minted.
+    static var storedKeyId: String? {
+        guard let data = try? KeychainStore.get(account: keyIdAccount) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
     private static let registeredAccount = "loox-link-app-attest-registered"
 
     static var isSupported: Bool { DCAppAttestService.shared.isSupported }

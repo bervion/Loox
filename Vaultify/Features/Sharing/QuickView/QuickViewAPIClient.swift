@@ -127,11 +127,19 @@ nonisolated struct QuickViewAPIClient: Sendable {
         // tripwire that rejects a body exposing an un-encrypted key). `aad` is
         // the exact AAD byte string the sealer authenticated; `ciphertext` is
         // the opaque IV(12)‖ct‖tag.
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "ciphertext": QuickViewWire.base64URLEncode(ciphertext),
             "app_eph_pub": QuickViewWire.base64URLEncode(appEphemeralPublicKey),
             "aad": QuickViewWire.base64URLEncode(aad),
         ]
+        // Entitlement lease/grant (contract §3) — inside the asserted body;
+        // the header is the client-capable coverage signal (§6.6).
+        if let provider = LooxEntitlementClientHooks.payloadProvider,
+           let entitlement = await provider("quickview") {
+            body["entitlement"] = entitlement
+            request.setValue(LooxEntitlementConfig.contractVersion,
+                             forHTTPHeaderField: LooxEntitlementConfig.contractHeader)
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         if let count = request.httpBody?.count, count > QuickViewConfig.maxBodyBytes {
             throw QuickViewAPIError.payloadTooLarge
