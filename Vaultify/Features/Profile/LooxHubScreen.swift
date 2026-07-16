@@ -99,7 +99,9 @@ struct LooxHubScreen: View {
     private var header: some View {
         HStack(alignment: .top, spacing: Space.s4) {
             VStack(alignment: .leading, spacing: 0) {
-                LooxTierLabel(tier: tier, badgeHeight: 30)
+                // Bold (not black) at this size, with the badge a step under
+                // the cap height — balanced, not shouting (owner 260716).
+                LooxTierLabel(tier: tier, badgeHeight: 26, brandWeight: .bold)
                     .vaultType(.largeTitle)
                     .themedForeground()
                 Text(verbatim: memberName)
