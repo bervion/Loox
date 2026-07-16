@@ -1,1 +1,1 @@
-This update polishes the interface: the header stays clean and properly aligned on the latest iOS, the app opens in light mode until you pick a theme, and opening Notifications is quicker. We also made behind-the-scenes improvements for a smoother, more reliable experience.
+Loox now has its own membership identity, with a refreshed subscription hub and a redesigned upgrade screen. Also includes visual polish and stability fixes throughout the app.

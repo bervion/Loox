@@ -1,1 +1,1 @@
-Bản cập nhật này tinh chỉnh giao diện: thanh tiêu đề gọn gàng và thẳng hàng hơn trên phiên bản iOS mới nhất, ứng dụng mở ở giao diện sáng cho đến khi bạn chọn chủ đề, và mở mục Thông báo nhanh hơn. Chúng tôi cũng cải thiện độ ổn định để trải nghiệm mượt mà hơn.
+Loox giờ có nhận diện gói thành viên riêng, cùng trang quản lý gói và màn hình nâng cấp được làm mới hoàn toàn. Phiên bản này cũng tinh chỉnh giao diện và sửa một số lỗi nhỏ.

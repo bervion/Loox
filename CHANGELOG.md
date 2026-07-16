@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.34.0] - 2026-07-16
+
+### Added
+- paywall hero plays the brand reveal once
+- ink Max identity in light UI, purple-pink aurora in dark
+- cosmic nebula Max identity and heaviest brand weight
+- MAX badge identity and per-plan paywall tinting
+- plan landing hero plays the brand reveal once
+- plan landing pages and paywall polish per reference
+- custom acquisition paywall in the iCloud+ idiom
+- Loox row title follows the current tier
+- open purchase surfaces in beta environments
+- contextual over-quota gates behind the launch flag
+- membership hub redesign with tier header, member seal and usage grid
+- paywall on the native subscription store
+- Loox tier contract, StoreKit 2 entitlements and launch flag
+
+### Fixed
+- layout editor enters edit mode as one animated beat
+- owner-tuned seal reveal timing
+- seal ring localizes in-app and the reveal is visible
+- balanced membership header lockup
+- seal coverage matches the reference stamp
+- seal reads as two balanced stamp arcs
+- subscriber seal matches the iCloud+ stamp
+- Loox row title keeps the regular body weight
+- dark aurora readability and a tighter CTA lockup
+- link colors read as links; policy links scroll with content
+- Max identity retuned to the aurora formula
+- benefit badges and a glass trial pill
+- restore button matches the CTA height exactly
+- paywall cards and CTA match the iCloud+ reference
+
+### Changed
+- backend entitlement proposal v4 after third review round
+- backend entitlement proposal v3 for Cloudflare
+- record live App Store Connect subscription group
+- Loox membership V1 client summary and execution plan
+
+
 ## [1.33.0] - 2026-07-16
 
 ### Added
