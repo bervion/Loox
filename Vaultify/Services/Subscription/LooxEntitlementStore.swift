@@ -79,6 +79,10 @@ import StoreKit
     private static let debugOverrideKey = "debug.looxTierOverride"
     #endif
 
+    /// Fired after each VERIFIED transaction lands (purchase, renewal,
+    /// restore) — the entitlement coordinator hangs its attach trigger here.
+    @ObservationIgnored var onVerifiedTransactionUpdate: (() -> Void)?
+
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
     init() {
@@ -113,6 +117,7 @@ import StoreKit
                 await self.refresh()
                 if case .verified(let transaction) = update {
                     await transaction.finish()
+                    self.onVerifiedTransactionUpdate?()
                 }
             }
         }
