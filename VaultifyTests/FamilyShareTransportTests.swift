@@ -63,22 +63,29 @@ final class FamilyShareTransportTests: XCTestCase {
 
     // MARK: ApprovalRecordMapping — record-name round-trip (pure)
 
-    /// Acceptance criterion: with `FamilyShareTransport.perGrantEnabled`
-    /// false (default), the owner write path is byte-for-byte what it was
-    /// before this transport existed.
-    func testGrantRecordUsesLegacyNameWhileFlagDisabled() throws {
-        XCTAssertFalse(FamilyShareTransport.perGrantEnabled,
-                       "default must stay off — flipping it is a deliberate, separate decision")
+    /// Acceptance criterion, updated for phase A3 stage 2 ("Share a Space"):
+    /// `FamilyShareTransport.perGrantEnabled` flipped to `true` once the
+    /// ceremony UI + fan-out executor that need multi-grant zones existed —
+    /// this pin now tracks THAT default instead of the pre-A3 "stay off"
+    /// one. The legacy singleton naming this test used to pin is still
+    /// covered flag-independently by `testLegacyRecordNameConstantsUnchangedByRename`
+    /// and `testGrantRecordDecodeIsIndependentOfRecordName` above, so
+    /// decode-side back-compat has no coverage gap from this change.
+    func testGrantRecordUsesPerGrantNameNowThatTransportIsEnabled() throws {
+        XCTAssertTrue(FamilyShareTransport.perGrantEnabled,
+                      "Family Space sharing needs multi-grant zones — see phase A3 stage 2")
         let grant = try makeGrant(id: "grant-y", owner: owner)
         let record = ApprovalRecordMapping.grantRecord(grant, zoneID: zoneID)
-        XCTAssertEqual(record.recordID.recordName, ApprovalConfig.legacyGrantRecordName)
+        XCTAssertEqual(record.recordID.recordName, ApprovalConfig.grantRecordName(grantId: grant.id))
     }
 
-    func testDisplayEnvelopeRecordUsesLegacyNameWhileFlagDisabled() {
+    /// See `testGrantRecordUsesPerGrantNameNowThatTransportIsEnabled` above —
+    /// same update, same reasoning, for the display envelope's naming.
+    func testDisplayEnvelopeRecordUsesPerGrantNameNowThatTransportIsEnabled() {
         let blob = Data("ciphertext".utf8)
         let record = ApprovalRecordMapping.displayEnvelopeRecord(
             sealedBlob: blob, grantId: "grant-z", zoneID: zoneID)
-        XCTAssertEqual(record.recordID.recordName, ApprovalConfig.legacyDisplayEnvelopeRecordName)
+        XCTAssertEqual(record.recordID.recordName, ApprovalConfig.displayEnvelopeRecordName(grantId: "grant-z"))
         XCTAssertEqual(ApprovalRecordMapping.displayEnvelope(from: record)?.grantId, "grant-z")
         XCTAssertEqual(ApprovalRecordMapping.displayEnvelope(from: record)?.blob, blob)
     }

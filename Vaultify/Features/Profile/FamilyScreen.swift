@@ -7,12 +7,14 @@ private struct FamilyMember: Identifiable {
     var id: String { label }
 }
 
-/// Family — the people you share vault items with, grouped from `SharingStore`. First slice
-/// of the family feature: a members list; tap a person to see and manage (or revoke) what
-/// they can access. Inviting members into a shared family group is the next increment
-/// (plan `260715-1630-profile-refactor` phase 05 / ADR-F).
+/// Family — the people you share vault items with, grouped from `SharingStore`. A members
+/// list; tap a person to see and manage (or revoke) what they can access. "Share a Space"
+/// (`ShareSpaceSheet`) fans a whole Space's eligible logins out to one member in a single
+/// ceremony (Family full-group sharing, phase A3); individual items can still be shared
+/// via each item's own Share sheet, and both paths populate this same members list.
 struct FamilyScreen: View {
     @Environment(AppEnvironment.self) private var env
+    @State private var showShareSpace = false
 
     private var members: [FamilyMember] {
         Dictionary(grouping: env.sharingStore.shares, by: \.recipientLabel)
@@ -23,6 +25,7 @@ struct FamilyScreen: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Space.s5) {
+                shareSpaceButton
                 if members.isEmpty {
                     emptyState
                 } else {
@@ -44,6 +47,20 @@ struct FamilyScreen: View {
         .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle("Family")
         .platformNavigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showShareSpace) { ShareSpaceSheet() }
+    }
+
+    /// Sole primary action on this screen (action-hierarchy rule) — fans a
+    /// whole Space out to one member in a single ceremony (`ShareSpaceSheet`).
+    private var shareSpaceButton: some View {
+        Button { showShareSpace = true } label: {
+            HStack(spacing: Space.s2) {
+                PolarisIcon(Icons.share, size: Metric.iconInline)
+                Text("Share a Space")
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.themedProminent)
     }
 
     private func memberRow(_ member: FamilyMember) -> some View {
@@ -74,7 +91,7 @@ struct FamilyScreen: View {
             }
             VStack(spacing: Space.s2) {
                 Text("No one yet").vaultType(.headline).themedForeground()
-                Text("Share a vault item with someone and they will appear here. Inviting people into a shared family group is coming soon.")
+                Text("Share an item, or share a whole Space above, and they'll appear here.")
                     .vaultType(.callout).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 320)
