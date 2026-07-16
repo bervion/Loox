@@ -14,6 +14,7 @@ import StoreKit
 struct LooxAcquisitionPaywallView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     let context: LooxPaywallContext
 
     private enum LoadState { case loading, ready, failed }
@@ -118,8 +119,15 @@ struct LooxAcquisitionPaywallView: View {
 
     private func benefit(_ icon: String, _ text: String) -> some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(icon, size: Metric.iconInline)
-                .themedForeground(.accentText)
+            // Round badge on the pinned paywall blue with a white glyph —
+            // same white-on-tint exemption class as the CTA and check badge.
+            ZStack {
+                Circle().fill(LooxPaywallBlue.color)
+                PolarisIcon(icon, size: 16)
+                    .foregroundStyle(Color(rgb: 0xFFFFFF))
+            }
+            .frame(width: 32, height: 32)
+            .accessibilityHidden(true)
             Text(verbatim: text)
                 .vaultType(.callout)
                 .themedForeground()
@@ -199,12 +207,7 @@ struct LooxAcquisitionPaywallView: View {
                         .themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     if tier == .max, yearly, trialEligible, let trialDays {
-                        Text("\(trialDays) days free")
-                            .vaultType(.caption)
-                            .foregroundStyle(LooxPaywallBlue.color)
-                            .padding(.horizontal, Space.s2)
-                            .padding(.vertical, 3)
-                            .background(LooxPaywallBlue.color.opacity(0.12), in: Capsule())
+                        trialPill(days: trialDays)
                     }
                 }
                 Spacer(minLength: Space.s2)
@@ -243,6 +246,27 @@ struct LooxAcquisitionPaywallView: View {
     /// pair like `ProfileRowTile.systemGrayTile`: the themed `controlBackground`
     /// read too dark against this screen's plain background (owner 260716).
     private static let cardFill = VaultColors.dynamic(light: 0xF2F2F7, dark: 0x1C1C1E)
+
+    /// Trial pill on blue-tinted liquid glass (owner: the soft-tint version
+    /// read washed out) — solid pinned blue below iOS 26 or under Reduce
+    /// Transparency; white label is the white-on-tint exemption class.
+    @ViewBuilder private func trialPill(days: Int) -> some View {
+        let label = Text("\(days) days free")
+            .vaultType(.caption)
+            .fontWeight(.semibold)
+            .foregroundStyle(Color(rgb: 0xFFFFFF))
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, 4)
+        #if compiler(>=6.2)
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
+            label.glassEffect(.regular.tint(LooxPaywallBlue.color), in: Capsule())
+        } else {
+            label.background(LooxPaywallBlue.color, in: Capsule())
+        }
+        #else
+        label.background(LooxPaywallBlue.color, in: Capsule())
+        #endif
+    }
 
     private var failedState: some View {
         VStack(spacing: Space.s3) {
