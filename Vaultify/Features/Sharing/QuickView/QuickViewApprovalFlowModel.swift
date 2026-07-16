@@ -200,11 +200,31 @@ import LocalAuthentication
                 api: api, sessionID: session.sessionID, sessionIDBytes: session.sessionIDBytes,
                 uploadBody: uploadBody)
 
-            try await api.upload(
-                sessionID: session.sessionID, ciphertext: sealed.ciphertext,
-                appEphemeralPublicKey: sealed.appEphemeralPublicKey,
-                aad: aadBytes,   // the exact AAD the sealer authenticated + the assertion covers
-                assertion: assertion)
+            do {
+                try await api.upload(
+                    sessionID: session.sessionID, ciphertext: sealed.ciphertext,
+                    appEphemeralPublicKey: sealed.appEphemeralPublicKey,
+                    aad: aadBytes,   // the exact AAD the sealer authenticated + the assertion covers
+                    assertion: assertion)
+            } catch QuickViewAPIError.server(let status, let code)
+                        where status == 409 && code == "entitlement_refresh_required" {
+                // Lease died with an account state change (entitlement
+                // contract §4): re-attach once and retry with a FRESH
+                // assertion (the first challenge was consumed). The sealed
+                // payload and AAD are unchanged, so the same approval is
+                // simply re-presented.
+                guard await LooxEntitlementClientHooks.refreshHandler?() == true else {
+                    throw QuickViewAPIError.server(status: 409, code: "entitlement_refresh_required")
+                }
+                let retryAssertion = await QuickViewAttestation.assertUpload(
+                    api: api, sessionID: session.sessionID, sessionIDBytes: session.sessionIDBytes,
+                    uploadBody: uploadBody)
+                try await api.upload(
+                    sessionID: session.sessionID, ciphertext: sealed.ciphertext,
+                    appEphemeralPublicKey: sealed.appEphemeralPublicKey,
+                    aad: aadBytes,
+                    assertion: retryAssertion)
+            }
             capabilities?.noteSuccess(.quickView)
 
             history.record(itemID: itemID, result: .completed)

@@ -14,6 +14,13 @@ nonisolated enum RelayAPIClient {
         case aliasExists           // 409 alias_exists — regenerate the local-part
         case aliasCapReached       // 409 alias_cap_reached — active+paused at cap; deletes free space
         case rateLimited           // 429 — user-attributable budget; honor Retry-After, never an operator state
+        /// 429 quota_exceeded — the COMMERCIAL tier quota (entitlement
+        /// contract §4), distinct from the abuse budget above; maps to the
+        /// upsell paywall once purchases are live.
+        case quotaExceeded
+        /// 409 entitlement_refresh_required — the lease died with an account
+        /// state change; re-attach and re-sign (fresh nonce), never a user error.
+        case entitlementRefreshRequired
         /// 503 `*_capacity_reached` — a GLOBAL ceiling, not an outage: the
         /// service answered deliberately, so this must not trip the
         /// infrastructure breaker. Distinct from `capability` (operator state).
@@ -73,9 +80,20 @@ nonisolated enum RelayAPIClient {
             request.setValue(attestKeyId, forHTTPHeaderField: "X-Loox-App-Attest-Key-Id")
             request.setValue(assertionB64, forHTTPHeaderField: "X-Loox-App-Attest-Assertion")
         }
-        request.httpBody = try JSONSerialization.data(
-            withJSONObject: body(for: command, signature: signature,
-                                 genesisPublicKey: genesisPublicKey, commandVersion: commandVersion))
+        var jsonBody = body(for: command, signature: signature,
+                            genesisPublicKey: genesisPublicKey, commandVersion: commandVersion)
+        // Entitlement lease/grant ride as a TOP-LEVEL SIBLING, deliberately
+        // outside the signed transcript (contract §3 — the server reads them
+        // only after consumeNonce + principal verification; the frozen
+        // LOOX-RELAY-AUTHZ transcript stays byte-identical). The contract
+        // header is the client-capable coverage signal (§6.6).
+        if let provider = LooxEntitlementClientHooks.payloadProvider,
+           let entitlement = await provider("relay") {
+            jsonBody["entitlement"] = entitlement
+            request.setValue(LooxEntitlementConfig.contractVersion,
+                             forHTTPHeaderField: LooxEntitlementConfig.contractHeader)
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: jsonBody)
 
         let (data, response): (Data, URLResponse)
         do { (data, response) = try await URLSession.shared.data(for: request) }
@@ -90,7 +108,12 @@ nonisolated enum RelayAPIClient {
                 .flatMap { $0?["error"] as? String } ?? ""
             throw code == "destination_not_verified" ? Failure.destinationNotVerified : Failure.server(403)
         case 409: throw conflictFailure(from: data)
-        case 429: throw Failure.rateLimited
+        case 429:
+            // Commercial tier quota answers with an explicit code; anything
+            // else stays the abuse/rate budget it always was.
+            let code = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+                .flatMap { $0?["error"] as? String } ?? ""
+            throw code == "quota_exceeded" ? Failure.quotaExceeded : Failure.rateLimited
         case 410, 503:
             // Capacity ceilings answer 503 problem+json (`*_capacity_reached`):
             // a deliberate reply, so classify BEFORE the operator/infra split.
@@ -203,6 +226,7 @@ nonisolated enum RelayAPIClient {
         let code = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
             .flatMap { $0?["error"] as? String } ?? ""
         switch code {
+        case "entitlement_refresh_required": return .entitlementRefreshRequired
         case "nonce_replay": return .nonceReplay
         case "epoch_stale": return .epochStale
         case "alias_exists": return .aliasExists

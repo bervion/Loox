@@ -121,6 +121,15 @@ nonisolated struct LooxLinkAPIClient: Sendable {
         // in the body = false on the verifier), so the wire must never be
         // ambiguous about the burn-after-read flag.
         body["one_time"] = .bool(oneTime)
+        // Entitlement lease/grant (contract §3) — inside the asserted body,
+        // so it is covered like every other byte; the header is the
+        // client-capable coverage signal (§6.6).
+        if let provider = LooxEntitlementClientHooks.payloadProvider,
+           let entitlement = await provider("link") {
+            body["entitlement"] = .stringMap(entitlement)
+            request.setValue(LooxEntitlementConfig.contractVersion,
+                             forHTTPHeaderField: LooxEntitlementConfig.contractHeader)
+        }
         request.httpBody = try JSONEncoder().encode(body)
         if let count = request.httpBody?.count, count > LooxLinkConfig.maxBodyBytes {
             throw LooxLinkAPIError.payloadTooLarge
@@ -218,6 +227,8 @@ nonisolated enum AnyEncodableValue: Encodable, Sendable {
     case int(Int)
     case bool(Bool)
     case null
+    /// Flat string map (the entitlement lease/grant object).
+    case stringMap([String: String])
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -226,6 +237,7 @@ nonisolated enum AnyEncodableValue: Encodable, Sendable {
         case .int(let value): try container.encode(value)
         case .bool(let value): try container.encode(value)
         case .null: try container.encodeNil()
+        case .stringMap(let value): try container.encode(value)
         }
     }
 }

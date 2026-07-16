@@ -284,6 +284,10 @@ import Foundation
             let principal: RelayPrincipalIdentity
             do { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
             catch { throw Failure.principalUnavailable }
+            // Publish the wire identity (std-b64 WITH padding — the exact
+            // `principal_id` string the server hashes) for entitlement
+            // binding requests; the attach flow reads it lazily.
+            RelayPrincipalWireIdentity.currentB64 = principal.principalID.base64EncodedString()
 
             let command = RelayCommand(principalID: principal.principalID, epoch: principal.epoch,
                                        nonce: Data(CryptoRandom.bytes(16)),
@@ -308,6 +312,18 @@ import Foundation
                 if case .aliasExists = failure {
                     capabilities?.noteServiceResponded(.privateEmail)
                     throw failure  // mint's retry loop handles it
+                }
+                if case .entitlementRefreshRequired = failure {
+                    // Lease died with an account state change (contract §4):
+                    // re-attach once, then loop — the nonce was consumed, so
+                    // the retry MUST re-sign with a fresh nonce, which this
+                    // outer loop already does. Not a user-facing error.
+                    capabilities?.noteServiceResponded(.privateEmail)
+                    guard attempt < 3,
+                          await LooxEntitlementClientHooks.refreshHandler?() == true else {
+                        throw Failure.rejected("entitlement_refresh_required")
+                    }
+                    continue
                 }
                 if case .capability(let mode, let retryAfter) = failure {
                     // Verified operator state — persist it; the service is UP.

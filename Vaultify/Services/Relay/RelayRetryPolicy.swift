@@ -22,6 +22,11 @@ nonisolated enum RelayRetryPolicy {
             return attempt == 1 ? .refreshEpochThenRetry : .fail("epoch_stale")
         case .unauthorized: return .fail("unauthorized")
         case .rateLimited:  return .fail("rate_limited")
+        // Both defensive here: RelayService intercepts refresh-required with
+        // its own attach-then-fresh-nonce loop before the policy runs, and
+        // quota maps to the upsell surface once purchases are live.
+        case .entitlementRefreshRequired: return .fail("entitlement_refresh_required")
+        case .quotaExceeded: return .fail("quota_exceeded")
         // Global ceiling, deliberately answered — same "try again later" lane
         // as rate_limited, never the infrastructure/server_5xx lane.
         case .capacityReached: return .fail("capacity_reached")

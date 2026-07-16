@@ -79,6 +79,36 @@ import Foundation
                 ciphertextB64: cipher.ciphertextB64, ivB64: cipher.ivB64,
                 expiresInSeconds: expiry, oneTime: oneTime, assertion: assertion)
             capabilities?.noteSuccess(.shareLink)
+        } catch LooxLinkAPIError.server(let status, let code)
+                    where status == 409 && code == "entitlement_refresh_required" {
+            // Lease died with an account state change (entitlement contract
+            // §4): re-attach once, then ONE retry with a FRESH assertion (the
+            // first challenge was consumed). Never a user-facing error unless
+            // the refresh itself fails.
+            guard await LooxEntitlementClientHooks.refreshHandler?() == true else {
+                let failure = LooxLinkAPIError.server(status: 409, code: "entitlement_refresh_required")
+                note(failure)
+                throw failure
+            }
+            var retryAssertion: LooxLinkAPIClient.AssertionHeaders?
+            if LooxLinkConfig.attestationEnabled, LooxLinkAttestation.isSupported {
+                do {
+                    retryAssertion = try await LooxLinkAttestation.assertCreateShare(
+                        api: api, ciphertext: cipher.ciphertextRaw, iv: cipher.ivRaw,
+                        expiresInSeconds: expiry, oneTime: oneTime)
+                } catch {
+                    if LooxLinkConfig.attestationRequired { throw error }
+                }
+            }
+            do {
+                response = try await api.createShare(
+                    ciphertextB64: cipher.ciphertextB64, ivB64: cipher.ivB64,
+                    expiresInSeconds: expiry, oneTime: oneTime, assertion: retryAssertion)
+                capabilities?.noteSuccess(.shareLink)
+            } catch {
+                note(error)
+                throw error
+            }
         } catch {
             note(error)
             throw error
