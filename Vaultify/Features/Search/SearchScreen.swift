@@ -35,13 +35,16 @@ struct SearchScreen: View {
         @Bindable var uiState = uiState
         return NavigationStack(path: $uiState.searchPath) {
             SearchResultsList(query: search, scope: $scope)
-                // No visible title on this screen: the header IS the scope chip bar
-                // (below). An empty INLINE title removes the large-title area entirely —
-                // a large title would collapse/expand as the search field activates and
-                // shove the content down (the reported jump). Inline keeps the nav bar
-                // present so the iOS 17.6 fallback (search field in the nav bar) still works.
+                // The header IS the scope chip bar (below) — no title. An empty INLINE title
+                // kills the large-title TEXT; but on iOS 26 the search field lives in the TAB
+                // BAR (Tab role: .search), so the top nav bar is empty chrome whose INSET still
+                // grows/shrinks as the field activates — dropping the chip bar ~60pt on dismiss
+                // (the reported jump). Hide that nav bar on iOS 26 so the chip bar is a flush,
+                // stable header. Pre-26 keeps the inline nav bar — the classic `.searchable`
+                // field renders inside it there, so hiding it would remove the search field.
                 .navigationTitle("")
                 .platformNavigationBarTitleDisplayMode(.inline)
+                .modifier(FlushSearchHeaderChrome())
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
                 .autocorrectionDisabled()
                 .platformAutocapitalization(.never)
@@ -399,6 +402,23 @@ private struct SearchScopeBar: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// Hides the top navigation bar on iOS 26, where the Search tab's field lives in
+/// the TAB BAR (`Tab(role: .search)`) — the empty top nav bar there otherwise
+/// reserves a variable inset that appears/disappears as the search field
+/// activates, dropping the scope-chip header on dismiss. Pre-26 keeps the nav bar
+/// because the classic `.searchable` field renders inside it. Uses a plain runtime
+/// `#available` (no `#if compiler` guard): `.toolbar(.hidden:)` is an iOS-16 API, so
+/// this compiles on any Xcode and the fix ships in CI/TestFlight builds too.
+private struct FlushSearchHeaderChrome: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.toolbar(.hidden, for: .navigationBar)
+        } else {
+            content
+        }
     }
 }
 
