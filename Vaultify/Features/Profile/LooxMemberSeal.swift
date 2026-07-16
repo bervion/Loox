@@ -63,10 +63,10 @@ struct LooxMemberSeal: View {
                 revealed = true
                 return
             }
-            // Delayed past the push transition (~0.35s) so the reveal plays
-            // on a settled screen, and slowed a step so it registers —
-            // onAppear fires mid-push, where an instant spring goes unseen.
-            withAnimation(Motion.spring.speed(0.75).delay(0.4)) { revealed = true }
+            // Owner-tuned 260716: a short beat then a slightly slowed spring —
+            // starts while the push settles and finishes just after, which
+            // reads smoother than waiting the transition out entirely.
+            withAnimation(Motion.spring.speed(0.8).delay(0.1)) { revealed = true }
         }
     }
 }
