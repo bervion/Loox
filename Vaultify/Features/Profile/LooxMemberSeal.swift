@@ -1,46 +1,56 @@
 import SwiftUI
 
-/// Circular membership seal for the Loox screen header — the brand symbol in
-/// the middle with the localized "Loox member" phrase curved around it, in the
-/// spirit of the iCloud+ subscriber stamp. Purely decorative: fixed size (the
-/// header title carries the information), hidden from accessibility, static
-/// under Reduce Motion by construction (nothing animates).
+/// Circular subscriber seal for the membership screen header, in the spirit of
+/// the iCloud+ stamp: the brand symbol with "NGƯỜI ĐĂNG KÝ • LOOX •" (localized)
+/// curved around it in the HEAVY primary label color — no chip behind it, the
+/// ring sits directly on the screen. Shown to SUBSCRIBERS only (the caller
+/// gates on tier); purely decorative and hidden from assistive tech.
+///
+/// On first appear the ring radiates outward from the logo once (scale + fade
+/// + a slight unfurl), echoing the brand reveal animation; Reduce Motion skips
+/// straight to the final state.
 struct LooxMemberSeal: View {
-    @Environment(AppEnvironment.self) private var env
-    /// Paid tiers tint the ring with the accent; Free keeps it quiet.
-    var tier: LooxTier
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var diameter: CGFloat = 68
+    @State private var revealed = false
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color(rgb: env.theme.active.elevatedBackground))
-                .overlay(Circle().strokeBorder(Color(rgb: env.theme.active.separator), lineWidth: 0.75))
             SealRingText(text: ringText, radius: diameter / 2 - diameter * 0.115)
                 // Fixed-size font by design (documented exemption from the
                 // vaultType rule): the ring is geometry, not text — its glyph
                 // size must scale with the seal's diameter, never with Dynamic
                 // Type, or the ring overflows the circle. The whole seal is
                 // decorative and accessibilityHidden.
-                .font(.system(size: diameter * 0.105, weight: .semibold))
-                .themedForeground(tier > .free ? .accentText : .secondary)
+                .font(.system(size: diameter * 0.105, weight: .heavy))
+                .themedForeground(.primary)
+                .scaleEffect(revealed ? 1 : 0.5)
+                .opacity(revealed ? 1 : 0)
+                .rotationEffect(.degrees(revealed ? 0 : -12))
             Image("BrandSymbol")
                 .resizable()
                 .scaledToFit()
-                .frame(width: diameter * 0.4, height: diameter * 0.4)
+                .frame(width: diameter * 0.44, height: diameter * 0.44)
         }
         .frame(width: diameter, height: diameter)
-        .elevation(.level1)
         .accessibilityHidden(true)
+        .onAppear {
+            guard !revealed else { return }
+            guard !reduceMotion else {
+                revealed = true
+                return
+            }
+            withAnimation(Motion.spring.delay(0.05)) { revealed = true }
+        }
     }
 
-    /// The phrase repeated twice so the ring reads dense at any locale's length
-    /// (a single short phrase leaves the circle sparse). The "•" is a decorative
-    /// ring divider, not sentence punctuation — the no-"·"-separator copy rule
-    /// governs prose, and this whole view is hidden from assistive tech.
+    /// One pass around the circle (iCloud+ layout): the localized subscriber
+    /// word, then the brand. The "•" is a decorative ring divider, not
+    /// sentence punctuation — the no-"·"-separator copy rule governs prose,
+    /// and this whole view is hidden from assistive tech.
     private var ringText: String {
-        let phrase = appString("Loox member").uppercased(with: appResourceLocale)
-        return "\(phrase) • \(phrase) • "
+        let subscriber = appString("Subscriber").uppercased(with: appResourceLocale)
+        return "\(subscriber) • LOOX • "
     }
 }
 

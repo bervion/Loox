@@ -109,7 +109,11 @@ struct LooxHubScreen: View {
                     .minimumScaleFactor(0.65)
             }
             Spacer(minLength: Space.s3)
-            LooxMemberSeal(tier: tier)
+            // Subscriber stamp — paid tiers only (owner 260716); Free keeps a
+            // clean title-only header.
+            if tier > .free {
+                LooxMemberSeal()
+            }
         }
         .padding(.top, Space.s2)
     }

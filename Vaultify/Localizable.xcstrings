@@ -7006,16 +7006,6 @@
         }
       }
     },
-    "Loox member" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thành viên Loox"
-          }
-        }
-      }
-    },
     "Loox Max is the full product: room for every alias, sharing for the people you trust, and services sized for daily use." : {
       "localizations" : {
         "vi" : {
@@ -12803,6 +12793,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đăng ký %@"
+          }
+        }
+      }
+    },
+    "Subscriber" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Người đăng ký"
           }
         }
       }
