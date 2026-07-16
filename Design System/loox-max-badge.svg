@@ -1,12 +1,12 @@
 <svg width="120" height="48" viewBox="0 0 120 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Loox Max badge — fixed ink chip with the teal→green Max identity
+  <!-- Loox Max badge — fixed ink chip with the violet→magenta Max identity
        gradient ring and a heavy italic wordmark. The chip stays dark in both
        appearances (its own surface); the gradient stops are the dark-mode
-       hues (light UI deepens them in code: 0x0E8A7D → 0x15803D). -->
+       hues (light UI deepens them in code: 0x6D28D9 → 0xDB2777). -->
   <defs>
     <linearGradient id="maxRing" x1="0" y1="0" x2="120" y2="48" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2FD0BF"/>
-      <stop offset="1" stop-color="#34D399"/>
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#EC4899"/>
     </linearGradient>
   </defs>
   <rect x="3" y="3" width="114" height="42" rx="12" fill="#101114"/>

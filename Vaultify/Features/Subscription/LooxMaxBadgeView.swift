@@ -1,15 +1,14 @@
 import SwiftUI
 
-/// The Max plan identity: a teal→green pair distinct from the paywall's
-/// pinned blue, with per-appearance stops chosen so the LABEL color passes
-/// the 3:1 control floor on both gradient ends — white labels on the deep
-/// light-mode stops, black labels on the bright dark-mode stops (the same
-/// bright-tint/black-label convention as system green controls).
+/// The Max plan identity: a cosmic violet→magenta nebula (owner 260716 —
+/// black plus purple-pink, premium), distinct from the paywall's pinned blue.
+/// Both appearances keep DEEP stops so a WHITE label clears the 3:1 control
+/// floor on both gradient ends (verified: every stop ≥ 3.9:1 vs white).
 enum LooxMaxTint {
-    /// Deep stops for light UI (white label ≥ 3:1 on both).
-    static let lightStops: [UInt32] = [0x0E8A7D, 0x15803D]
-    /// Bright neon stops for dark UI (black label ≥ 3:1 on both).
-    static let darkStops: [UInt32] = [0x2FD0BF, 0x34D399]
+    /// Deep nebula stops for light UI.
+    static let lightStops: [UInt32] = [0x6D28D9, 0xDB2777]
+    /// Slightly brighter nebula stops for dark UI (still white-label safe).
+    static let darkStops: [UInt32] = [0x8B5CF6, 0xEC4899]
 
     /// Appearance-adaptive identity gradient (stops are dynamic colors, so
     /// the gradient re-resolves per color scheme without environment plumbing).
@@ -20,12 +19,14 @@ enum LooxMaxTint {
             startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
-    /// Solid accent for rings, links and text where a gradient would be noise.
-    static var solid: Color { VaultColors.dynamic(light: lightStops[0], dark: darkStops[0]) }
+    /// Solid accent for rings, links and text where a gradient would be
+    /// noise — the violet end, lifted in dark mode for contrast on dark
+    /// surfaces (0xA78BFA ≈ 6.8:1 on near-black).
+    static var solid: Color { VaultColors.dynamic(light: 0x6D28D9, dark: 0xA78BFA) }
 
-    /// Label color on the identity fill: white on the deep light stops,
-    /// black on the bright dark stops.
-    static var onTint: Color { VaultColors.dynamic(light: 0xFFFFFF, dark: 0x000000) }
+    /// Label color on the identity fill — white on both appearances (the
+    /// nebula stays deep in dark mode, unlike the old neon variant).
+    static var onTint: Color { Color(rgb: 0xFFFFFF) }
 }
 
 /// Per-plan paywall identity: Loox+ (and the default surface) keeps the
@@ -82,13 +83,15 @@ struct LooxTierLabel: View {
     var badgeHeight: CGFloat = 16
 
     var body: some View {
+        // The brand word carries the HEAVIEST weight in plan-name lockups
+        // (owner 260716); size still follows the surrounding vaultType font.
         if tier == .max {
             HStack(spacing: badgeHeight * 0.35) {
-                Text(verbatim: "Loox")
+                Text(verbatim: "Loox").fontWeight(.black)
                 LooxMaxBadgeView(height: badgeHeight)
             }
         } else {
-            Text(verbatim: tier.displayName)
+            Text(verbatim: tier.displayName).fontWeight(.black)
         }
     }
 }
