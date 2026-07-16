@@ -87,7 +87,7 @@ import SwiftUI
         let session = VaultSession(settings: settings)
         let store = VaultStore()
         self.settings = settings
-        self.theme = ThemeStore()
+        self.theme = ThemeStore(forceLight: !settings.hasChosenAppearance)
         self.session = session
         self.store = store
         let repository = VaultRepository(store: store, session: session)
@@ -157,6 +157,17 @@ import SwiftUI
     /// overlap (single-flight + follow-up).
     func syncNow() {
         syncCoordinator.syncNow()
+    }
+
+    /// Releases the onboarding forced-light gate (see `ThemeStore.forceLight`) — the
+    /// user made an explicit appearance choice, or onboarding completed without one
+    /// (e.g. restoring an existing vault, which skips the ChooseTheme step).
+    /// Idempotent. Keeps `SettingsStore.hasChosenAppearance` (persistence) and
+    /// `ThemeStore.forceLight` (live rendering) in lockstep — every call site that
+    /// releases the gate goes through here rather than touching both stores itself.
+    func markAppearanceChosen() {
+        theme.markAppearanceChosen()
+        settings.hasChosenAppearance = true
     }
 
     /// Wipe all data and key material (Settings → Erase Vault). Also best-effort

@@ -23,7 +23,18 @@ import AppKit
     /// Phase 05; a neutral default keeps the trigger inert until then.
     private var brightness: Double = 1.0
 
-    init() {
+    /// True until the user makes an explicit appearance choice (onboarding's
+    /// ChooseTheme step) or onboarding completes without one (e.g. restoring an
+    /// existing vault, which skips that step). While true, the resolved palette,
+    /// `preferredColorScheme`, and `interfaceStyle` are pinned to LIGHT regardless of
+    /// `appearanceMode` / the device scheme — first-run screens (splash, welcome,
+    /// capability carousel) render predictably and never flip dark on a
+    /// background→foreground during that window. Mirrors
+    /// `SettingsStore.hasChosenAppearance`, which owns persistence; released via
+    /// `markAppearanceChosen()`.
+    private(set) var forceLight: Bool
+
+    init(forceLight: Bool) {
         var loaded = ThemeReader.load()
         // Sanitize an invalid persisted combo: auto-night switches primary↔night by
         // light/dark, so the primary must be a LIGHT theme. A dark primary + auto-night
@@ -40,7 +51,8 @@ import AppKit
         #endif
         self.settings = loaded
         self.systemIsDark = dark
-        self.active = ThemePalette.resolve(loaded, systemIsDark: dark, brightness: 1.0)
+        self.forceLight = forceLight
+        self.active = forceLight ? BuiltinThemes.day : ThemePalette.resolve(loaded, systemIsDark: dark, brightness: 1.0)
         ThemeHolder.current = self.active
     }
 
@@ -58,8 +70,10 @@ import AppKit
     }
 
     /// `preferredColorScheme` for the window. `nil` follows the system (so the real
-    /// `colorScheme` flows back into `systemIsDark` for auto-night).
+    /// `colorScheme` flows back into `systemIsDark` for auto-night). Pinned to
+    /// `.light` while `forceLight` — see that property.
     var preferredColorScheme: ColorScheme? {
+        if forceLight { return .light }
         switch settings.autoNight {
         case .system: return nil
         case .off, .time, .brightness: return active.isDark ? .dark : .light
@@ -80,6 +94,7 @@ import AppKit
     /// SwiftUI `.preferredColorScheme` on the root does NOT reliably reach (so a sheet
     /// can stay dark on a light theme → invisible system text + dark sheet background).
     var interfaceStyle: PlatformAppearance.Style {
+        if forceLight { return .light }
         switch settings.autoNight {
         case .system: return .unspecified
         case .off, .time, .brightness: return active.isDark ? .dark : .light
@@ -95,8 +110,23 @@ import AppKit
 
     // MARK: - System input
 
+    /// True device appearance, reported by the root view on every scheme change
+    /// (foreground, background→foreground, or a live device toggle). Recorded
+    /// unconditionally — even while `forceLight` — but `recompute()` keeps serving
+    /// the light palette until the gate releases, so this alone can never flip the
+    /// active theme dark during the forced-light window.
     func systemColorSchemeChanged(_ scheme: ColorScheme) {
         systemIsDark = (scheme == .dark)
+    }
+
+    /// Releases the fresh-install forced-light gate (see `forceLight`): the user made
+    /// an explicit appearance choice, or onboarding completed without one (e.g.
+    /// restoring an existing vault, which skips the ChooseTheme step). Idempotent;
+    /// re-resolves the active palette immediately so the release is live.
+    func markAppearanceChosen() {
+        guard forceLight else { return }
+        forceLight = false
+        recompute()
     }
 
     // MARK: - Mutation
@@ -112,7 +142,8 @@ import AppKit
     }
 
     private func recompute() {
-        active = ThemePalette.resolve(settings, systemIsDark: systemIsDark, brightness: brightness)
+        active = forceLight ? BuiltinThemes.day
+            : ThemePalette.resolve(settings, systemIsDark: systemIsDark, brightness: brightness)
         ThemeHolder.current = active
         applyInterfaceStyle()
     }
@@ -184,6 +215,10 @@ import AppKit
     /// new model until the full Appearance UI lands in Phase 05.
     var appearanceMode: AppearanceMode {
         get {
+            // While forced, report Light — what onboarding is actually showing right
+            // now — rather than the (possibly System/Dark) underlying settings, so
+            // the ChooseTheme picker highlights the option the user is looking at.
+            if forceLight { return .light }
             switch settings.autoNight {
             case .system: return .system
             default: return active.isDark ? .dark : .light

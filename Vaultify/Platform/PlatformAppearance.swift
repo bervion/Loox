@@ -14,7 +14,7 @@ import AppKit
 /// `resignFirstResponder` → `makeFirstResponder(nil)`;
 /// `UIApplication.open` → `NSWorkspace.open`).
 @MainActor enum PlatformAppearance {
-    enum Style { case light, dark, unspecified }
+    enum Style: Equatable { case light, dark, unspecified }
 
     /// Force the app to a light/dark appearance so presented sheets and system
     /// chrome match the rendered theme. On iOS this sets every window's
