@@ -275,12 +275,12 @@ struct LooxAcquisitionPaywallView: View {
             .padding(.vertical, 4)
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
-            label.glassEffect(.regular.tint(LooxMaxTint.solid), in: Capsule())
+            label.glassEffect(.regular.tint(LooxMaxTint.pillTint), in: Capsule())
         } else {
-            label.background(LooxMaxTint.solid, in: Capsule())
+            label.background(LooxMaxTint.pillTint, in: Capsule())
         }
         #else
-        label.background(LooxMaxTint.solid, in: Capsule())
+        label.background(LooxMaxTint.pillTint, in: Capsule())
         #endif
     }
 
@@ -329,9 +329,11 @@ struct LooxAcquisitionPaywallView: View {
         } else if isTrialSelection, let trialDays {
             Text("Try free for \(trialDays) days")
         } else if selectedTier == .max {
-            HStack(spacing: Space.s2) {
+            // Sentence-tight lockup: word gap only, compact glow-free badge —
+            // the floating chip read disconnected from the label.
+            HStack(spacing: 6) {
                 Text("Subscribe to")
-                LooxTierLabel(tier: .max, badgeHeight: 20)
+                LooxTierLabel(tier: .max, badgeHeight: 19, compactBadge: true)
             }
         } else {
             Text(verbatim: appString("Subscribe to \(selectedTier.displayName)"))

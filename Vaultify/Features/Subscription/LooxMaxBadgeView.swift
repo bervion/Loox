@@ -8,8 +8,9 @@ import SwiftUI
 enum LooxMaxTint {
     /// Ink → charcoal → deep-violet-whisper stops for light UI (white label).
     static let lightStops: [UInt32] = [0x0B0B0F, 0x1F1F26, 0x4C1D95]
-    /// Bright violet → magenta → pink stops for dark UI (black label).
-    static let darkStops: [UInt32] = [0x8B5CF6, 0xEC4899, 0xF472B6]
+    /// Violet → magenta → pink stops for dark UI, deepened one step so a
+    /// WHITE label clears 3:1 on every stop (black-on-neon read muddy).
+    static let darkStops: [UInt32] = [0x7C3AED, 0xDB2777, 0xEC4899]
 
     /// Appearance-adaptive identity gradient. The accent stop sits at the
     /// tail (0.62 → 1.0) so it reads as a streak, not the field.
@@ -28,9 +29,13 @@ enum LooxMaxTint {
     /// (0xE879F9 ≈ 6.8:1 on near-black).
     static var solid: Color { VaultColors.dynamic(light: 0x111114, dark: 0xE879F9) }
 
-    /// Label color on the identity fill: white on the light ink field,
-    /// black on the bright dark aurora.
-    static var onTint: Color { VaultColors.dynamic(light: 0xFFFFFF, dark: 0x000000) }
+    /// Label color on the identity fill — WHITE in both appearances (the
+    /// dark aurora is deepened enough to carry it; verified ≥ 3.9:1 per stop).
+    static var onTint: Color { Color(rgb: 0xFFFFFF) }
+
+    /// Trial-pill fill: ink in light UI, the magenta anchor in dark — both
+    /// carry the white on-tint label (dark 0xDB2777 ≈ 4.6:1).
+    static var pillTint: Color { VaultColors.dynamic(light: 0x111114, dark: 0xDB2777) }
 
     /// The badge ring/glow pin the PURPLE-PINK aurora in BOTH appearances:
     /// the chip is a fixed dark surface, so light mode's ink stops would
@@ -79,6 +84,9 @@ enum LooxPlanTint {
 /// soft identity glow. Scales with `height` so it can sit beside any text rank.
 struct LooxMaxBadgeView: View {
     var height: CGFloat = 18
+    /// Off inside dense lockups (the CTA): the glow made the chip float
+    /// apart from its neighboring text on busy fills.
+    var glows = true
 
     var body: some View {
         Text(verbatim: "MAX")
@@ -96,7 +104,8 @@ struct LooxMaxBadgeView: View {
                 RoundedRectangle(cornerRadius: height * 0.26, style: .continuous)
                     .strokeBorder(LooxMaxTint.badgeRing, lineWidth: max(1.5, height * 0.09))
             )
-            .shadow(color: LooxMaxTint.badgeGlow.opacity(0.35), radius: height * 0.16)
+            .shadow(color: glows ? LooxMaxTint.badgeGlow.opacity(0.35) : .clear,
+                    radius: glows ? height * 0.16 : 0)
             .accessibilityLabel(Text(verbatim: "Max"))
     }
 }
@@ -108,14 +117,16 @@ struct LooxMaxBadgeView: View {
 struct LooxTierLabel: View {
     let tier: LooxTier
     var badgeHeight: CGFloat = 16
+    /// Tight, glow-free badge for dense lockups like the CTA.
+    var compactBadge = false
 
     var body: some View {
         // The brand word carries the HEAVIEST weight in plan-name lockups
         // (owner 260716); size still follows the surrounding vaultType font.
         if tier == .max {
-            HStack(spacing: badgeHeight * 0.35) {
+            HStack(spacing: badgeHeight * (compactBadge ? 0.22 : 0.3)) {
                 Text(verbatim: "Loox").fontWeight(.black)
-                LooxMaxBadgeView(height: badgeHeight)
+                LooxMaxBadgeView(height: badgeHeight, glows: !compactBadge)
             }
         } else {
             Text(verbatim: tier.displayName).fontWeight(.black)
