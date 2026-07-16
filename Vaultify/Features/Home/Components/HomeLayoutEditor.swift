@@ -4,12 +4,20 @@ import SwiftUI
 /// Lists every customizable `HomeSection` as a reorderable row with a leading visibility
 /// checkmark; order and hidden-set persist to `SettingsStore` as the user edits.
 ///
-/// Reorder reuses the `List` + `.onMove` pattern from `ManageFoldersScreen`; a forced-active
-/// edit mode surfaces the trailing drag handles without an explicit Edit button (the header's
+/// Reorder reuses the `List` + `.onMove` pattern from `ManageFoldersScreen`; edit mode
+/// surfaces the trailing drag handles without an explicit Edit button (the header's
 /// Done button exits). A checkmark-styled `Toggle` (not a bare `Button`) keeps the
 /// show/hide control interactive inside the active edit mode.
 struct HomeLayoutEditor: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Starts INACTIVE and animates to active after the insertion transition:
+    /// a List born with `.constant(.active)` gets UIKit's editing layout in
+    /// late, non-animated passes that land as two visible snaps right after
+    /// the Home fade/scale settles (frame-verified on the iOS 27 runtime).
+    /// Activating inside `withAnimation` turns that into one deliberate
+    /// Reminders-style handle slide instead.
+    @State private var editMode: EditMode = .inactive
 
     /// Height reserved at the top so the first row clears the floating header overlay —
     /// mirrors `VaultHeaderScrollSpacer`'s inset so the editor lines up with the feed.
@@ -36,9 +44,19 @@ struct HomeLayoutEditor: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .contentMargins(.top, headerInset, for: .scrollContent)
-        // Active edit mode surfaces the reorder handles; there is no selection binding, so
-        // rows stay tappable and the checkmark toggle keeps working.
-        .environment(\.editMode, .constant(.active))
+        // Binding (not a selection binding) keeps rows tappable and the
+        // checkmark toggle working while the handles are up.
+        .environment(\.editMode, $editMode)
+        .onAppear {
+            guard editMode != .active else { return }
+            guard !reduceMotion else {
+                editMode = .active
+                return
+            }
+            // Waits out the header's Motion.spring insertion, then slides the
+            // handles in as their own beat.
+            withAnimation(Motion.standard.delay(0.3)) { editMode = .active }
+        }
     }
 
     private func row(_ section: HomeSection) -> some View {
