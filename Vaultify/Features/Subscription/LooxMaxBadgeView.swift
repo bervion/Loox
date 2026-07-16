@@ -1,32 +1,38 @@
 import SwiftUI
 
-/// The Max plan identity: a cosmic violet→magenta nebula (owner 260716 —
-/// black plus purple-pink, premium), distinct from the paywall's pinned blue.
-/// Both appearances keep DEEP stops so a WHITE label clears the 3:1 control
-/// floor on both gradient ends (verified: every stop ≥ 3.9:1 vs white).
+/// The Max plan identity: an AURORA over black (owner-tuned 260716 against
+/// the Duolingo Max reference) — mint → ice cyan carrying the field, with a
+/// violet whisper compressed into the gradient tail as the accent, never the
+/// body. Light UI deepens the stops under WHITE labels; dark UI keeps the
+/// bright aurora under BLACK labels (the bright-tint/black-label convention
+/// of system green controls). Every stop clears the 3:1 control floor for
+/// its appearance's label (verified per stop).
 enum LooxMaxTint {
-    /// Deep nebula stops for light UI.
-    static let lightStops: [UInt32] = [0x6D28D9, 0xDB2777]
-    /// Slightly brighter nebula stops for dark UI (still white-label safe).
-    static let darkStops: [UInt32] = [0x8B5CF6, 0xEC4899]
+    /// Deep spruce → teal-ink → violet stops for light UI (white label).
+    static let lightStops: [UInt32] = [0x047857, 0x0E7490, 0x6D28D9]
+    /// Bright mint → ice cyan → violet stops for dark UI (black label).
+    static let darkStops: [UInt32] = [0x6EE7B7, 0x67E8F9, 0x8B5CF6]
 
-    /// Appearance-adaptive identity gradient (stops are dynamic colors, so
-    /// the gradient re-resolves per color scheme without environment plumbing).
+    /// Appearance-adaptive identity gradient. The violet stop sits at the
+    /// tail (0.62 → 1.0) so it reads as a streak, not the field.
     static var gradient: LinearGradient {
         LinearGradient(
-            colors: [VaultColors.dynamic(light: lightStops[0], dark: darkStops[0]),
-                     VaultColors.dynamic(light: lightStops[1], dark: darkStops[1])],
+            stops: [
+                .init(color: VaultColors.dynamic(light: lightStops[0], dark: darkStops[0]), location: 0),
+                .init(color: VaultColors.dynamic(light: lightStops[1], dark: darkStops[1]), location: 0.62),
+                .init(color: VaultColors.dynamic(light: lightStops[2], dark: darkStops[2]), location: 1),
+            ],
             startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
     /// Solid accent for rings, links and text where a gradient would be
-    /// noise — the violet end, lifted in dark mode for contrast on dark
-    /// surfaces (0xA78BFA ≈ 6.8:1 on near-black).
-    static var solid: Color { VaultColors.dynamic(light: 0x6D28D9, dark: 0xA78BFA) }
+    /// noise — the teal anchor (light 0x0F766E ≈ 5.5:1 on white, dark
+    /// 0x5EEAD4 ≈ 13:1 on near-black).
+    static var solid: Color { VaultColors.dynamic(light: 0x0F766E, dark: 0x5EEAD4) }
 
-    /// Label color on the identity fill — white on both appearances (the
-    /// nebula stays deep in dark mode, unlike the old neon variant).
-    static var onTint: Color { Color(rgb: 0xFFFFFF) }
+    /// Label color on the identity fill: white on the deep light stops,
+    /// black on the bright dark stops.
+    static var onTint: Color { VaultColors.dynamic(light: 0xFFFFFF, dark: 0x000000) }
 }
 
 /// Per-plan paywall identity: Loox+ (and the default surface) keeps the
