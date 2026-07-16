@@ -140,6 +140,14 @@ struct HomeScreen: View {
                     // states keep the PROFILE ROW so switching persona stays reachable.
                     if isEditingLayout {
                         HomeLayoutEditor()
+                            // Stable layer order for the cross-fade: without an
+                            // explicit zIndex, SwiftUI may swap which of the two
+                            // transitioning views composites on top mid-flight —
+                            // invisible at 60Hz (simulator) but a visible flash
+                            // on ProMotion devices (owner's 16 Pro Max, 260717).
+                            // The editor always renders ABOVE the feed in both
+                            // directions of the toggle.
+                            .zIndex(1)
                             .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     } else if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
                         emptyStateScaffold { emptyVaultState }
@@ -151,6 +159,7 @@ struct HomeScreen: View {
                         emptyStateScaffold { personaEmptyState }
                     } else {
                         scrollContent
+                            .zIndex(0)
                             .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     }
                 }
