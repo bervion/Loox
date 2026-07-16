@@ -284,12 +284,21 @@ import Foundation
         // replacing it, which is what shipped before this transport existed.
         // Flag ON (Family sharing): scope to THIS grant's id only, so a
         // sibling grant's fields in the same zone are never wiped
-        // (INV-FAM-01). Cleaning up a PRIOR grant for the SAME item on
-        // re-share is owner-side reconciler work (Project A, phase A2), not
-        // this call.
+        // (INV-FAM-01).
         let staleBlobIDs = try await sharedFieldRecordIDs(
             grantId: FamilyShareTransport.perGrantEnabled ? grant.id : nil, zoneID: zoneID)
-        let saved = try await database.modifyRecords(saving: records, deleting: staleBlobIDs,
+        // Flag ON only (Project A, phase A3): a re-share of the SAME item
+        // must REPLACE its prior grant, never duplicate it. `grant.id` above
+        // is freshly minted, so `staleBlobIDs` just above (scoped to it) can
+        // never match a PRIOR grant for this item — find that prior grant
+        // (if any) by the AUTHENTICATED decoded `itemId`, never a record
+        // name (INV-FAM-01), and fold its full footprint (grant + display +
+        // fields) into the same delete batch so create/replace is one write.
+        let supersededIDs = FamilyShareTransport.perGrantEnabled
+            ? try await supersededGrantRecordIDs(itemId: itemId, zoneID: zoneID)
+            : []
+        let saved = try await database.modifyRecords(saving: records,
+                                                     deleting: staleBlobIDs + supersededIDs,
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
         return grant
@@ -471,6 +480,126 @@ import Foundation
                       field.grantId == grantId else { return }
             }
             ids.append(record.recordID)
+        }
+        return ids
+    }
+
+    // MARK: Family Space-share support (Project A, phase A3)
+    //
+    // Owner-side "every live grant in a zone" read + a per-grant (not
+    // per-zone) revoke — both used by `SpaceShareMembershipExecutor` to
+    // execute a `SpaceShareMembershipReconciler.Ops` plan. Neither runs in
+    // production yet: the executor isn't wired to any UI, and
+    // `FamilyShareTransport.perGrantEnabled` stays off this stage.
+
+    /// Every LIVE, OWNER-SIGNED `ApprovalGrant` currently published into this
+    /// zone — the owner's OWN private-DB copy (NOT the recipient's shared-DB
+    /// projection `ApprovalRecipientService.fetchAllGrants` reads; a zone the
+    /// owner created never appears in their OWN `sharedCloudDatabase`).
+    /// Reuses `ApprovalRecipientService.dedupedLiveGrants` verbatim (no new
+    /// verify/dedupe logic here): a recipient holds `.readWrite` on a shared
+    /// zone (`createShare`), so a compromised recipient device could
+    /// otherwise inject a same-shaped `ApprovalGrant` record that would make
+    /// the Space-share reconciler believe an item is already synced when it
+    /// is not — fail-safe (under-share, never a leak), the exact same threat
+    /// `dedupedLiveGrants` already defends against (verify-before-dedupe, so
+    /// a same-id forgery can never evict the legitimate grant).
+    func fetchAllGrants(zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws -> [AccessGrant] {
+        let identity = try DeviceSigningIdentity.loadOrCreate()
+        let records = try await allZoneRecords(zoneID: zoneID)
+        return ApprovalRecipientService.dedupedLiveGrants(
+            from: records, pinnedOwnerSigningKey: identity.publicKeyRaw, nowUnixMs: nowUnixMs)
+    }
+
+    /// Delete ONE grant — its grant record, its display record, and every
+    /// field record scoped to it — never the zone, never a sibling grant
+    /// (INV-FAM-01). Used by the Space-share reconciler's per-item revoke
+    /// (an item left the Space, was deleted, or became ineligible);
+    /// `revoke(zoneName:)` above remains the separate whole-member/zone-level
+    /// revoke and is untouched by this.
+    func revokeGrant(_ grantId: String, zoneID: CKRecordZone.ID) async throws {
+        let records = try await allZoneRecords(zoneID: zoneID)
+        let ids = Self.recordIDs(forGrantId: grantId, in: records)
+        guard !ids.isEmpty else { return }
+        _ = try await database.modifyRecords(saving: [], deleting: ids)
+    }
+
+    /// Every record currently in the zone (owner's private DB) — the shared
+    /// scan behind `fetchAllGrants`, `revokeGrant`, and
+    /// `supersededGrantRecordIDs`. Stateless (nil cursor): every caller needs
+    /// the CURRENT record set, same rationale as `sharedFieldRecordIDs`.
+    private func allZoneRecords(zoneID: CKRecordZone.ID) async throws -> [CKRecord] {
+        var records: [CKRecord] = []
+        try await ZoneDeltaFetch.pull(database: database, zoneID: zoneID, cursor: nil) {
+            records.append($0)
+        }
+        return records
+    }
+
+    /// IO wrapper around the pure `supersededRecordIDs(forItemId:in:)` below,
+    /// used by `publishGrant`'s flag-on replace-on-republish path.
+    private func supersededGrantRecordIDs(itemId: String, zoneID: CKRecordZone.ID) async throws -> [CKRecord.ID] {
+        let records = try await allZoneRecords(zoneID: zoneID)
+        return Self.supersededRecordIDs(forItemId: itemId, in: records)
+    }
+
+    /// Pure + unit-tested: any PRIOR grant(s) for `itemId` found in `records`
+    /// — matched by the AUTHENTICATED decoded `itemId`, never a record name
+    /// (INV-FAM-01) — reduced to the full record-id footprint (grant +
+    /// display + fields) `publishGrant` must delete so a re-share of the
+    /// same item REPLACES rather than duplicates it. Empty when no prior
+    /// grant for this item exists. (Normally at most one match; a defensive
+    /// loop in case a bug ever left more than one — deduped, so a grant
+    /// found under two names, e.g. a legacy singleton alongside a per-grant
+    /// record describing the same id, never yields the same record id twice
+    /// in one CloudKit delete batch.)
+    nonisolated static func supersededRecordIDs(forItemId itemId: String, in records: [CKRecord]) -> [CKRecord.ID] {
+        var ids: [CKRecord.ID] = []
+        var seen: Set<CKRecord.ID> = []
+        for record in records {
+            guard let grant = ApprovalRecordMapping.grant(from: record), grant.itemId == itemId else { continue }
+            for id in recordFootprint(forGrant: grant, record: record, allRecords: records)
+            where !seen.contains(id) {
+                seen.insert(id)
+                ids.append(id)
+            }
+        }
+        return ids
+    }
+
+    /// Pure + unit-tested: one grant's full record-id footprint, found by its
+    /// OWN id (the executor's per-item revoke). Empty when `grantId` isn't
+    /// found among `records`.
+    nonisolated static func recordIDs(forGrantId grantId: String, in records: [CKRecord]) -> [CKRecord.ID] {
+        for record in records {
+            guard let grant = ApprovalRecordMapping.grant(from: record), grant.id == grantId else { continue }
+            return recordFootprint(forGrant: grant, record: record, allRecords: records)
+        }
+        return []
+    }
+
+    /// One grant's grant record, its display record, and every field record
+    /// scoped to its id. `record` is the ALREADY-MATCHED grant record from a
+    /// zone scan; `allRecords` is that SAME scan, reused for the field lookup
+    /// so callers pay for one scan, not N+1. If `record` was found under the
+    /// legacy singleton name, the legacy display name is included too — the
+    /// legacy grant + display are always written TOGETHER (both keyed off
+    /// the SAME `FamilyShareTransport.perGrantEnabled` value at write time),
+    /// so a legacy-named grant's display is never at the deterministic
+    /// per-grant name.
+    private nonisolated static func recordFootprint(forGrant grant: AccessGrant, record: CKRecord,
+                                                     allRecords: [CKRecord]) -> [CKRecord.ID] {
+        var ids: [CKRecord.ID] = [record.recordID]
+        let zoneID = record.recordID.zoneID
+        ids.append(CKRecord.ID(recordName: ApprovalConfig.displayEnvelopeRecordName(grantId: grant.id),
+                               zoneID: zoneID))
+        if record.recordID.recordName == ApprovalConfig.legacyGrantRecordName {
+            ids.append(CKRecord.ID(recordName: ApprovalConfig.legacyDisplayEnvelopeRecordName, zoneID: zoneID))
+        }
+        for candidate in allRecords {
+            guard let field = ApprovalRecordMapping.sharedField(from: candidate),
+                  field.grantId == grant.id else { continue }
+            ids.append(candidate.recordID)
         }
         return ids
     }
