@@ -29,10 +29,11 @@ struct LooxAcquisitionPaywallView: View {
     @State private var purchasePending = false
     @State private var flowMessage: String?
     @State private var comparison: LooxPriceMath.AnnualVersusMonthly = .notComparable
+    @State private var showLanding = false
 
-    /// Wide iCloud+-style screen margins (owner request) — deliberately larger
-    /// than `Space.gutter`; card interiors keep their own fixed padding.
-    private static let margin = Space.s6
+    /// iCloud+-sheet screen margins (matched to the reference at 20pt);
+    /// card interiors keep their own fixed padding.
+    private static let margin = Space.s5
 
     var body: some View {
         ScrollView {
@@ -79,20 +80,47 @@ struct LooxAcquisitionPaywallView: View {
                 .vaultType(.screenTitle)
                 .themedForeground()
                 .multilineTextAlignment(.center)
+            // The three benefits follow the SELECTED plan (quota-driven), so
+            // switching cards immediately shows what Loox+ vs Max differ in.
             VStack(alignment: .leading, spacing: Space.s3) {
-                benefit(Icons.mail, "Up to 200 private email aliases")
-                benefit(Icons.organization, "Secure sharing with up to 10 people")
-                benefit(Icons.watchtower, "Full Watchtower protection and fixes")
+                benefit(Icons.mail, appString("Up to \(selectedQuotas.retainedAliases) private email aliases"))
+                benefit(Icons.organization, sharingBenefit)
+                benefit(Icons.watchtower, appString("Full Watchtower protection and fixes"))
             }
             .padding(.top, Space.s2)
+            .animation(.default, value: selectedTier)
+
+            Button { showLanding = true } label: {
+                HStack(spacing: Space.s2) {
+                    PolarisIcon(Icons.info, size: 15)
+                    Text("Learn more about \(selectedTier.displayName)")
+                        .vaultType(.subhead)
+                }
+                .foregroundStyle(LooxPaywallBlue.color)
+                .frame(minHeight: Metric.hitMin)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+        }
+        .navigationDestination(isPresented: $showLanding) {
+            LooxPlanLandingScreen(tier: selectedTier)
         }
     }
 
-    private func benefit(_ icon: String, _ text: LocalizedStringResource) -> some View {
+    private var selectedQuotas: LooxQuotas { selectedTier.quotas }
+
+    private var sharingBenefit: String {
+        let seats = selectedQuotas.outgoingRecipients
+        return seats == 1
+            ? appString("Share with one trusted person")
+            : appString("Secure sharing with up to \(seats) people")
+    }
+
+    private func benefit(_ icon: String, _ text: String) -> some View {
         HStack(spacing: Space.s3) {
             PolarisIcon(icon, size: Metric.iconInline)
                 .themedForeground(.accentText)
-            Text(text)
+            Text(verbatim: text)
                 .vaultType(.callout)
                 .themedForeground()
                 .fixedSize(horizontal: false, vertical: true)
@@ -186,10 +214,10 @@ struct LooxAcquisitionPaywallView: View {
                         // White-on-tint badge glyph — the documented fixed-tile
                         // exemption class (fill already clears the 3:1 floor
                         // by construction, see LooxPaywallBlue).
-                        PolarisIcon(Icons.check, size: 11)
+                        PolarisIcon(Icons.check, size: 13)
                             .foregroundStyle(Color(rgb: 0xFFFFFF))
                     }
-                    .frame(width: 22, height: 22)
+                    .frame(width: 24, height: 24)
                     .accessibilityHidden(true)
                 }
             }
@@ -201,7 +229,7 @@ struct LooxAcquisitionPaywallView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .strokeBorder(selected ? LooxPaywallBlue.color : .clear, lineWidth: 3)
+                    .strokeBorder(selected ? LooxPaywallBlue.color : .clear, lineWidth: 2)
             )
             .contentShape(.rect)
         }
@@ -458,15 +486,15 @@ private struct LooxGlassButton: View {
                 Text(title).vaultType(.body).themedForeground()
             }
         }
+        // Same control height as the blue CTA so the two bottom buttons
+        // read as one stack (reference: iCloud+ sheet's equal-height pair).
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Space.s1)
+        .frame(minHeight: Metric.controlLarge)
     }
 
     private var fallback: some View {
         Button(action: action) {
             label
-                .padding(.vertical, Space.s2)
-                .frame(minHeight: Metric.hitMin)
                 .background(fallbackFill, in: Capsule())
                 .contentShape(Capsule())
         }

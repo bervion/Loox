@@ -219,7 +219,9 @@ struct AboutView: View {
 
 /// Fixed palette for the About page's dark ink block (deliberately identical
 /// in light and dark themes — it is its own surface, not a themed one).
-private enum AboutInk {
+/// Internal (not private): the Loox plan landing screens reuse the same
+/// editorial ink treatment so the membership story reads like About.
+enum AboutInk {
     static let surface = Color(rgb: 0x17181C)
     static let text = Color.white
     static let textSecondary = Color.white.opacity(0.72)
