@@ -1,0 +1,160 @@
+{
+  "identifier" : "5A1E6C2B-7D34-4F8A-9B0C-3E5D7F9A1B2C",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21000001",
+      "localizations" : [
+        {
+          "description" : "Loox membership",
+          "displayName" : "Loox",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Gói thành viên Loox",
+          "displayName" : "Loox",
+          "locale" : "vi"
+        }
+      ],
+      "name" : "Loox Membership",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "34.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6746100001",
+          "introductoryOffer" : {
+            "internalID" : "6746100011",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Full security workflow, sharing and services",
+              "displayName" : "Loox Max",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "Trọn bộ bảo mật, chia sẻ và dịch vụ",
+              "displayName" : "Loox Max",
+              "locale" : "vi"
+            }
+          ],
+          "productID" : "com.bervion.vaultify.subscription.max.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Loox Max Annual",
+          "subscriptionGroupID" : "21000001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6746100002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full security workflow, sharing and services",
+              "displayName" : "Loox Max",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "Trọn bộ bảo mật, chia sẻ và dịch vụ",
+              "displayName" : "Loox Max",
+              "locale" : "vi"
+            }
+          ],
+          "productID" : "com.bervion.vaultify.subscription.max.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Loox Max Monthly",
+          "subscriptionGroupID" : "21000001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "19.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6746100003",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Personal security, maintained",
+              "displayName" : "Loox+",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "Bảo mật cá nhân, duy trì liên tục",
+              "displayName" : "Loox+",
+              "locale" : "vi"
+            }
+          ],
+          "productID" : "com.bervion.vaultify.subscription.plus.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Loox Plus Annual",
+          "subscriptionGroupID" : "21000001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6746100004",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Personal security, maintained",
+              "displayName" : "Loox+",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "Bảo mật cá nhân, duy trì liên tục",
+              "displayName" : "Loox+",
+              "locale" : "vi"
+            }
+          ],
+          "productID" : "com.bervion.vaultify.subscription.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Loox Plus Monthly",
+          "subscriptionGroupID" : "21000001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
