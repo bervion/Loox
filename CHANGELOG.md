@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.35.0] - 2026-07-17
+
+### Added
+- purchases carry the billing token and attach
+- entitlement payloads ride the three service clients
+- entitlement attach client, billing token and lease state
+
+### Fixed
+- stable layer order for the edit-mode cross-fade
+
+
 ## [1.34.0] - 2026-07-16
 
 ### Added

@@ -1,1 +1,1 @@
-Loox now has its own membership identity, with a refreshed subscription hub and a redesigned upgrade screen. Also includes visual polish and stability fixes throughout the app.
+This update improves subscription reliability and fixes a visual glitch when switching in and out of edit mode on the Home screen.
