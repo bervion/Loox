@@ -19,7 +19,12 @@ struct LooxMemberSeal: View {
 
     var body: some View {
         let ringRadius = diameter / 2 - diameter * 0.115
-        let subscriber = appString("Subscriber").uppercased(with: appResourceLocale)
+        // appLabel, not appString: the latter's `String(localized:locale:)`
+        // only drives formatting, not table selection (see Localization.swift),
+        // so the ring would stick to the SYSTEM language instead of the
+        // in-app choice. appLabel routes through LocalizedStringResource with
+        // the explicit in-app locale — the repo's correct table selector.
+        let subscriber = appLabel("Subscriber").uppercased(with: appResourceLocale)
         let brand = "✦ LOOX \(tier == .max ? "MAX" : "PLUS") ✦"
         ZStack {
             // Two balanced arcs like the reference stamp: the subscriber word
@@ -42,9 +47,9 @@ struct LooxMemberSeal: View {
                     .font(.system(size: diameter * 0.115, weight: .black))
             }
             .themedForeground(.primary)
-            .scaleEffect(revealed ? 1 : 0.5)
+            .scaleEffect(revealed ? 1 : 0.35)
             .opacity(revealed ? 1 : 0)
-            .rotationEffect(.degrees(revealed ? 0 : -12))
+            .rotationEffect(.degrees(revealed ? 0 : -20))
             Image("BrandSymbol")
                 .resizable()
                 .scaledToFit()
@@ -58,7 +63,10 @@ struct LooxMemberSeal: View {
                 revealed = true
                 return
             }
-            withAnimation(Motion.spring.delay(0.05)) { revealed = true }
+            // Delayed past the push transition (~0.35s) so the reveal plays
+            // on a settled screen, and slowed a step so it registers —
+            // onAppear fires mid-push, where an instant spring goes unseen.
+            withAnimation(Motion.spring.speed(0.75).delay(0.4)) { revealed = true }
         }
     }
 }
