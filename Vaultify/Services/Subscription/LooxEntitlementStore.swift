@@ -118,6 +118,14 @@ import StoreKit
         }
     }
 
+    /// On-demand recompute for flows that just changed entitlements themselves
+    /// (the paywall's `product.purchase()` result, Restore Purchases) — the
+    /// caller finishes its transaction AFTER this returns, keeping the
+    /// finish-after-grant order.
+    func refreshNow() async {
+        await refresh()
+    }
+
     /// Recompute the tier from the verified current entitlements (highest wins,
     /// `LooxProductID.resolveTier`). Unverified results and revoked
     /// transactions never grant anything.

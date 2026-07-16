@@ -161,6 +161,16 @@
         }
       }
     },
+    "%lld days free" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Miễn phí %lld ngày"
+          }
+        }
+      }
+    },
     "%lld easy to guess" : {
       "comment" : "Watchtower category subtitle: count of items with weak passwords.",
       "extractionState" : "stale",
@@ -1318,6 +1328,16 @@
         }
       }
     },
+    "about %@ a month" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "khoảng %@ mỗi tháng"
+          }
+        }
+      }
+    },
     "an item" : {
       "localizations" : {
         "en" : {
@@ -1791,6 +1811,16 @@
         }
       }
     },
+    "Ask to Buy request sent. You can finish once it's approved." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã gửi yêu cầu Hỏi để mua. Bạn có thể hoàn tất sau khi được phê duyệt."
+          }
+        }
+      }
+    },
     "At risk" : {
       "comment" : "Watchtower score band label: score < 50.",
       "localizations" : {
@@ -1932,6 +1962,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tự động khoá tính cả thời gian rời app lẫn thời gian không thao tác trong app. \"Ngay lập tức\" khoá ngay khi bạn rời đi; các mốc dài hơn cho phép bạn sao chép sang app khác rồi quay lại mà không phải xác thực lại.\n\nNâng cấp passkey tự động có thể tạo passkey ở chế độ nền với khoá công khai chỉ ghi. Việc đọc hoặc dùng passkey vẫn yêu cầu mở khoá kho."
+          }
+        }
+      }
+    },
+    "Auto-renews at %@ each month until canceled. Cancel anytime in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tự động gia hạn %@ mỗi tháng cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
+          }
+        }
+      }
+    },
+    "Auto-renews at %@ each year until canceled. Cancel anytime in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tự động gia hạn %@ mỗi năm cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
           }
         }
       }
@@ -3249,6 +3299,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không thể rời chia sẻ"
+          }
+        }
+      }
+    },
+    "Couldn't load plans. Check your connection and try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa tải được các gói. Kiểm tra kết nối và thử lại."
           }
         }
       }
@@ -5226,6 +5286,16 @@
         }
       }
     },
+    "First %lld days free, then %@ each year. Auto-renews until canceled. Cancel anytime in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Miễn phí %lld ngày đầu, sau đó %@ mỗi năm. Tự động gia hạn cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
+          }
+        }
+      }
+    },
     "First time sharing with someone? A Messages nudge helps them find the invite." : {
       "localizations" : {
         "vi" : {
@@ -5436,6 +5506,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bảo vệ Giám sát đầy đủ và khắc phục"
+          }
+        }
+      }
+    },
+    "Full security workflow, sharing and services" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trọn bộ bảo mật, chia sẻ và dịch vụ"
           }
         }
       }
@@ -7201,6 +7281,16 @@
         }
       }
     },
+    "Monthly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hàng tháng"
+          }
+        }
+      }
+    },
     "More" : {
       "localizations" : {
         "vi" : {
@@ -8236,6 +8326,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chưa có gì để bảo vệ"
+          }
+        }
+      }
+    },
+    "Nothing to restore on this Apple Account." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có giao dịch nào để khôi phục trên tài khoản Apple này."
           }
         }
       }
@@ -9295,6 +9395,16 @@
         }
       }
     },
+    "Personal security, maintained" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo mật cá nhân, duy trì liên tục"
+          }
+        }
+      }
+    },
     "Personas" : {
       "comment" : "Screen title / settings row for managing personas.",
       "localizations" : {
@@ -9505,6 +9615,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Email ẩn danh"
+          }
+        }
+      }
+    },
+    "Privacy Policy" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chính sách quyền riêng tư"
           }
         }
       }
@@ -10343,6 +10463,16 @@
         }
       }
     },
+    "Restore Purchases" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khôi phục giao dịch mua"
+          }
+        }
+      }
+    },
     "Restore data" : {
       "localizations" : {
         "vi" : {
@@ -10360,6 +10490,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khôi phục dữ liệu?"
+          }
+        }
+      }
+    },
+    "Restore didn't finish. Try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khôi phục chưa hoàn tất. Vui lòng thử lại."
           }
         }
       }
@@ -12457,6 +12597,16 @@
         }
       }
     },
+    "Subscribe to %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đăng ký %@"
+          }
+        }
+      }
+    },
     "Suggested email" : {
       "comment" : "Header above tap-to-fill username suggestions in the new-login editor.",
       "localizations" : {
@@ -12639,6 +12789,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tạm thời không khả dụng"
+          }
+        }
+      }
+    },
+    "Terms of Use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Điều khoản sử dụng"
           }
         }
       }
@@ -12859,6 +13019,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dịch vụ Xem nhanh đã gửi phản hồi không mong đợi."
+          }
+        }
+      }
+    },
+    "The purchase didn't go through. You have not been charged." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giao dịch chưa hoàn tất. Bạn chưa bị trừ tiền."
           }
         }
       }
@@ -14038,12 +14208,32 @@
         }
       }
     },
+    "Try Again" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
     "Try again" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "Try free for %lld days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng thử miễn phí %lld ngày"
           }
         }
       }
@@ -14947,6 +15137,16 @@
         }
       }
     },
+    "Waiting for approval" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chờ phê duyệt"
+          }
+        }
+      }
+    },
     "Waiting for approval…" : {
       "localizations" : {
         "en" : {
@@ -15377,6 +15577,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "XXXX-XXXX"
+          }
+        }
+      }
+    },
+    "Yearly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hàng năm"
           }
         }
       }

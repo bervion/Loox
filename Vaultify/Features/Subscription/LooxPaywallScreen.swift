@@ -32,15 +32,16 @@ enum LooxPaywallContext: String, Identifiable {
     }
 }
 
-/// The purchase surface (proposal §5): Loox merchandising on top, the native
-/// StoreKit subscription store below. Prices, periods and trial eligibility
-/// all come from live `Product`s — nothing monetary is hardcoded. An existing
-/// subscriber never sees the acquisition pitch (§5.3); they get the current
-/// plan summary with Change plan and Manage subscription instead.
+/// The purchase surface (proposal §5): custom iCloud+-style acquisition layout
+/// (owner decision 260716 — plain background, gray plan cards, Year/Month
+/// segment, accent CTA pinned at the bottom, glass Restore) driven by live
+/// `Product`s; prices, periods and trial eligibility are never hardcoded. An
+/// existing subscriber never sees the acquisition pitch (§5.3); they get the
+/// current plan summary with Change plan and Manage subscription instead.
 ///
 /// Dark until purchases are enabled (`LooxEntitlementStore.purchasesEnabled`:
-/// the launch flag, or a beta environment — TestFlight/App Review/Xcode) — no
-/// entry point renders it for App Store users before the §12 gates pass.
+/// the launch flag, or a beta environment — TestFlight/App Review) — no entry
+/// point renders it for App Store users before the §12 gates pass.
 struct LooxPaywallScreen: View {
     @Environment(AppEnvironment.self) private var env
     var context: LooxPaywallContext = .profile
@@ -49,103 +50,21 @@ struct LooxPaywallScreen: View {
         Group {
             if env.entitlements.tier > .free {
                 LooxCurrentPlanView()
+                    .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             } else {
-                acquisition
+                LooxAcquisitionPaywallView(context: context)
             }
         }
-        .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
-    }
-
-    // MARK: Acquisition (Free → paid)
-
-    private var acquisition: some View {
-        // Product order puts Max first (§5.1 — Max Annual is the protagonist);
-        // StoreKit renders the plan/period choice, purchase, redemption and
-        // localized disclosures natively.
-        SubscriptionStoreView(productIDs: LooxProductID.all) {
-            LooxPaywallMarketingHeader(context: context)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) { SheetDismissButton("Close") }
         }
-        .subscriptionStoreControlStyle(.prominentPicker)
-        .storeButton(.visible, for: .restorePurchases)
-        .subscriptionStorePolicyDestination(url: LooxMembership.termsURL, for: .termsOfService)
-        .subscriptionStorePolicyDestination(url: LooxMembership.privacyURL, for: .privacyPolicy)
-        .onInAppPurchaseCompletion { _, result in
-            // The entitlement itself lands through LooxEntitlementStore's
-            // Transaction.updates listener (single grant path) — this is
-            // feedback only. Pending (Ask to Buy) and cancel/failure stay in
-            // StoreKit's own UI; a failure must never imply vault risk (§5.4).
-            if case .success(.success(let verification)) = result,
-               case .verified = verification {
-                Haptics.success()
-            }
-        }
-    }
-}
-
-/// Merchandising above the store controls: brand mark, context headline, and
-/// the three concrete Max benefits (§5.1). Below them, a factual per-month
-/// comparison line that renders only when live prices prove it (§4.3).
-private struct LooxPaywallMarketingHeader: View {
-    @Environment(AppEnvironment.self) private var env
-    let context: LooxPaywallContext
-    @State private var comparison: LooxPriceMath.AnnualVersusMonthly = .notComparable
-
-    var body: some View {
-        VStack(spacing: Space.s4) {
-            Image("BrandSymbol")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 52, height: 52)
-                .padding(.top, Space.s4)
-            Text(context.headline)
-                .vaultType(.screenTitle)
-                .themedForeground()
-                .multilineTextAlignment(.center)
-            VStack(alignment: .leading, spacing: Space.s3) {
-                benefit(Icons.mail, "Up to 200 private email aliases")
-                benefit(Icons.organization, "Secure sharing with up to 10 people")
-                benefit(Icons.watchtower, "Full Watchtower protection and fixes")
-            }
-            .padding(.vertical, Space.s2)
-            if comparison != .notComparable {
-                Text(comparison == .cheaperPerMonth
-                     ? "Per month, Loox Max yearly costs less than Loox+ monthly"
-                     : "Per month, Loox Max yearly costs about the same as Loox+ monthly")
-                    .vaultType(.footnote)
-                    .themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .padding(.horizontal, Space.gutter)
-        .task { await loadComparison() }
-    }
-
-    private func benefit(_ icon: String, _ text: LocalizedStringResource) -> some View {
-        HStack(spacing: Space.s3) {
-            PolarisIcon(icon, size: Metric.iconInline)
-                .themedForeground(.accentText)
-            Text(text)
-                .vaultType(.callout)
-                .themedForeground()
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    /// A product-load failure is a store state, not an error surface — the
-    /// comparison line simply stays hidden and StoreKit's own view retries.
-    private func loadComparison() async {
-        guard let products = try? await Product.products(
-            for: [LooxProductID.maxAnnual, LooxProductID.plusMonthly]) else { return }
-        guard let annual = products.first(where: { $0.id == LooxProductID.maxAnnual }),
-              let monthly = products.first(where: { $0.id == LooxProductID.plusMonthly }) else { return }
-        comparison = LooxPriceMath.compare(maxAnnual: annual.price, plusMonthly: monthly.price)
     }
 }
 
 /// Subscriber view: current plan, when the paid period ends, and the two
 /// management actions. Plan changes and cancellation are Apple's flows —
 /// upgrade/downgrade timing is Apple's decision, so no proration promises here.
-private struct LooxCurrentPlanView: View {
+struct LooxCurrentPlanView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var periodEnd: Date?
     @State private var showManageSheet = false
