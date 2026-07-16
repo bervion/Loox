@@ -454,9 +454,13 @@ private struct LooxBlueProminentButtonStyle: ButtonStyle {
     }
 }
 
-/// Liquid-glass secondary button (iOS 26 `.glass`), mirroring the
-/// `VaultScreenHeader` availability/Reduce-Transparency ladder: material
-/// capsule below iOS 26 or under Reduce Transparency's solid fallback.
+/// Liquid-glass secondary button. Deliberately NOT `.buttonStyle(.glass)`:
+/// that style adds its own insets around the label, so it can never match the
+/// CTA's height exactly. Instead the label uses the SAME frame recipe as
+/// `LooxBlueProminentButtonStyle` (maxWidth + `Metric.controlLarge`) and the
+/// glass is applied as a background via `.glassEffect(_:in:)` — the primitive
+/// `VaultScreenHeader` already uses — so the two bottom buttons are equal by
+/// construction. Material capsule below iOS 26; solid under Reduce Transparency.
 private struct LooxGlassButton: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -465,16 +469,20 @@ private struct LooxGlassButton: View {
     let action: () -> Void
 
     var body: some View {
+        Button(action: action) { core }
+            .buttonStyle(LooxPressFeedbackStyle())
+            .disabled(busy)
+    }
+
+    @ViewBuilder private var core: some View {
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
-            Button(action: action) { label }
-                .buttonStyle(.glass)
-                .disabled(busy)
+            label.glassEffect(.regular, in: Capsule())
         } else {
-            fallback
+            label.background(fallbackFill, in: Capsule())
         }
         #else
-        fallback
+        label.background(fallbackFill, in: Capsule())
         #endif
     }
 
@@ -486,25 +494,26 @@ private struct LooxGlassButton: View {
                 Text(title).vaultType(.body).themedForeground()
             }
         }
-        // Same control height as the blue CTA so the two bottom buttons
-        // read as one stack (reference: iCloud+ sheet's equal-height pair).
+        // Identical box math to the blue CTA (frame → shape background, no
+        // extra padding) so the bottom pair reads as one equal-height stack.
         .frame(maxWidth: .infinity)
         .frame(minHeight: Metric.controlLarge)
-    }
-
-    private var fallback: some View {
-        Button(action: action) {
-            label
-                .background(fallbackFill, in: Capsule())
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .disabled(busy)
+        .contentShape(Capsule())
     }
 
     private var fallbackFill: AnyShapeStyle {
         reduceTransparency
             ? AnyShapeStyle(Color(rgb: env.theme.active.surfaceFloatingSolid))
             : AnyShapeStyle(.regularMaterial)
+    }
+}
+
+/// Press feedback only (opacity + scale) — all sizing/chrome lives on the
+/// label so custom-shaped buttons keep exact control of their bounds.
+private struct LooxPressFeedbackStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.8 : 1)
+            .scaleEffect(configuration.isPressed ? Motion.pressScale : 1)
     }
 }
