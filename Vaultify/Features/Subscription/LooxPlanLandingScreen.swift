@@ -32,7 +32,13 @@ struct LooxPlanLandingScreen: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            BrandLogoMark(size: 22, shadowRadius: 0, shadowY: 0)
+            // One-shot brand reveal, same animation as the Security empty
+            // state (owner request 260716) — leading-aligned with the
+            // editorial copy; the component collapses under Reduce Motion.
+            LooxSwirlAnimationView(mode: .reveal)
+                .frame(width: 112, height: 112)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
                 if tier == .max {
                     Text("Everything Loox can do.")
