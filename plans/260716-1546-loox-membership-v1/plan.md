@@ -2,7 +2,7 @@
 
 **Source contract:** [proposal-260714-2231-loox-subscription-strategy.md](../reports/proposal-260714-2231-loox-subscription-strategy.md)
 **Status:** IMPLEMENTED 260716 (branch `feat/loox-membership-v1`) — phases 1–3 + 5 complete; phase 4 complete for 5 of 7 surfaces. Flag `LooxMembership.purchasesEnabled` remains OFF.
-**Remaining before flag-flip (tracked in phase-04/phase-05):** outgoing-recipient seat gate (share-ceremony choke point needs its own scout), Free accent/theme subset with §8.3 preference preservation, ASC products + §12 launch gates.
+**Remaining before flag-flip (tracked in phase-04/phase-05):** outgoing-recipient seat gate (share-ceremony choke point needs its own scout), Free accent/theme subset with §8.3 preference preservation, §12 launch gates. ASC products CREATED 260716 (group 22241495; pending review screenshots + submit-with-version). Backend entitlement service proposal v3: `plans/reports/proposal-260716-1653-loox-entitlement-backend.md` — its B1–B6 rollout (client dormant → purchases → enforcement) governs the flag-flip order.
 **Scope:** iOS client only — tier model, StoreKit 2 entitlements, Loox membership screen
 (iCloud+-style redesign of `LooxHubScreen`), paywall, contextual feature gates, EN+VI.
 **Out of scope (this repo, V1):** backend Loox Entitlement API, App Store Server

@@ -78,6 +78,12 @@ nonisolated struct LooxQuotas: Equatable, Sendable {
 /// The permanent App Store product identifiers (proposal §4.2) and their tier
 /// mapping. IDs are an allowlist — an unknown ID maps to no tier, never a guess.
 nonisolated enum LooxProductID {
+    /// "Loox Membership" subscription group in App Store Connect (created
+    /// 260716). The paywall renders by explicit product-ID list (Max-first
+    /// ordering), so this is recorded for the alternative
+    /// `SubscriptionStoreView(groupID:)` init and server-side API scoping.
+    static let subscriptionGroupID = "22241495"
+
     static let maxAnnual = "com.bervion.vaultify.subscription.max.annual"
     static let maxMonthly = "com.bervion.vaultify.subscription.max.monthly"
     static let plusAnnual = "com.bervion.vaultify.subscription.plus.annual"

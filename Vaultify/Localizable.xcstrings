@@ -5420,22 +5420,22 @@
         }
       }
     },
-    "Full Watchtower protection and fixes" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bảo vệ Giám sát đầy đủ và khắc phục"
-          }
-        }
-      }
-    },
     "Full protection" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bảo vệ đầy đủ"
+          }
+        }
+      }
+    },
+    "Full Watchtower protection and fixes" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo vệ Giám sát đầy đủ và khắc phục"
           }
         }
       }
@@ -6826,6 +6826,16 @@
         }
       }
     },
+    "Loox member" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thành viên Loox"
+          }
+        }
+      }
+    },
     "Loox Password" : {
       "localizations" : {
         "en" : {
@@ -6838,16 +6848,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loox Password"
-          }
-        }
-      }
-    },
-    "Loox member" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thành viên Loox"
           }
         }
       }
@@ -7049,6 +7049,16 @@
         }
       }
     },
+    "Manage plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quản lý gói"
+          }
+        }
+      }
+    },
     "Manage Spaces" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7072,16 +7082,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quản lý nhóm & thành viên"
-          }
-        }
-      }
-    },
-    "Manage plan" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quản lý gói"
           }
         }
       }
@@ -11586,6 +11586,16 @@
         }
       }
     },
+    "Share link limit reached for these 30 days" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã hết lượt liên kết chia sẻ trong 30 ngày"
+          }
+        }
+      }
+    },
     "Share Links" : {
       "localizations" : {
         "vi" : {
@@ -11622,16 +11632,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Liên kết chia sẻ đang tắt trong Cài đặt."
-          }
-        }
-      }
-    },
-    "Share link limit reached for these 30 days" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã hết lượt liên kết chia sẻ trong 30 ngày"
           }
         }
       }
@@ -11846,7 +11846,6 @@
       }
     },
     "Sharing" : {
-      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -15028,7 +15027,6 @@
       }
     },
     "Watchtower" : {
-      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -15546,6 +15544,26 @@
         }
       }
     },
+    "You've used every email alias in your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết địa chỉ email trong gói"
+          }
+        }
+      }
+    },
+    "You've used every profile in your plan" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn đã dùng hết hồ sơ trong gói"
+          }
+        }
+      }
+    },
     "Your device is the vault" : {
       "comment" : "About: promise 1 title.",
       "localizations" : {
@@ -15701,26 +15719,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kho của bạn đã sẵn sàng. Thêm mục đầu tiên để bắt đầu."
-          }
-        }
-      }
-    },
-    "You've used every email alias in your plan" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bạn đã dùng hết địa chỉ email trong gói"
-          }
-        }
-      }
-    },
-    "You've used every profile in your plan" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bạn đã dùng hết hồ sơ trong gói"
           }
         }
       }

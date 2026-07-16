@@ -11,7 +11,7 @@
   },
   "subscriptionGroups" : [
     {
-      "id" : "21000001",
+      "id" : "22241495",
       "localizations" : [
         {
           "description" : "Loox membership",
@@ -57,7 +57,7 @@
           "productID" : "com.bervion.vaultify.subscription.max.annual",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Loox Max Annual",
-          "subscriptionGroupID" : "21000001",
+          "subscriptionGroupID" : "22241495",
           "type" : "RecurringSubscription"
         },
         {
@@ -87,7 +87,7 @@
           "productID" : "com.bervion.vaultify.subscription.max.monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Loox Max Monthly",
-          "subscriptionGroupID" : "21000001",
+          "subscriptionGroupID" : "22241495",
           "type" : "RecurringSubscription"
         },
         {
@@ -117,7 +117,7 @@
           "productID" : "com.bervion.vaultify.subscription.plus.annual",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Loox Plus Annual",
-          "subscriptionGroupID" : "21000001",
+          "subscriptionGroupID" : "22241495",
           "type" : "RecurringSubscription"
         },
         {
@@ -147,7 +147,7 @@
           "productID" : "com.bervion.vaultify.subscription.plus.monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Loox Plus Monthly",
-          "subscriptionGroupID" : "21000001",
+          "subscriptionGroupID" : "22241495",
           "type" : "RecurringSubscription"
         }
       ]

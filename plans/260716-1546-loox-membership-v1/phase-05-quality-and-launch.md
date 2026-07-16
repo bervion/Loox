@@ -28,12 +28,29 @@ plus repo docs kept honest.
 - This plan's `plan.md` status updates per phase.
 
 ### Launch-gate checklist (client rows of §12 — owner-driven, tracked here)
-- [ ] ASC: group + 4 products + EN/VI metadata, Max L1/Plus L2, Family Sharing OFF
-- [ ] Intro offer 7d on Max Annual only; Billing Grace 16d paid-to-paid prod+sandbox
+- [x] ASC: group + 4 products + EN/VI metadata, Max L1/Plus L2, Family Sharing OFF
+      — DONE 260716. Group "Loox Membership" id **22241495** (recorded in
+      `LooxProductID.subscriptionGroupID` + synced into `Loox.storekit`).
+      All four products "Missing Metadata" pending ONLY the review screenshot.
+      Apple comparable-price suggestions for VN (recorded per §4.3, ours kept):
+      Max Annual đ999k→**349k**, Max Monthly đ149k→**49k**,
+      Plus Annual đ599k→**199k**, Plus Monthly đ99k→**29k**.
+- [x] Intro offer 7d on Max Annual only (free trial, 1 week, 175 countries, no
+      end date); Billing Grace 16d paid-to-paid prod+sandbox — DONE 260716.
+- [ ] Review screenshot (paywall image) uploaded to each of the 4 products —
+      needs a local run with `purchasesEnabled` flipped (uncommitted) +
+      `Vaultify-StoreKit` scheme; only blocks SUBMISSION, not development.
+- [ ] First subscription submits WITH a new app version (ASC warning noted).
 - [ ] `Loox.storekit` matrix pass (phase 3 list) + sandbox pass on device
 - [ ] Subscriber never sees acquisition paywall; outage ≠ paywall state (§2.7)
 - [ ] Free still identifies Critical/High Watchtower items
-- [ ] Privacy Policy / App Privacy / About copy aligned (§10.1) — owner
+- [ ] Privacy Policy / App Privacy / About copy aligned (§10.1) — owner;
+      Terms + Privacy pages must be live at looxpassword.com/terms + /privacy
+- [ ] Backend entitlement service per
+      `plans/reports/proposal-260716-1653-loox-entitlement-backend.md` (v3)
+      reaches its B5 gate (enforcement active) — flag-flip rollout order is
+      defined THERE (client dormant → purchases on → enforcement) and
+      supersedes any earlier phase ordering here.
 - [ ] Only then: `LooxMembership.purchasesEnabled = true` + release via `make release`
 
 ## Out of scope reminders
