@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.36.0] - 2026-07-17
+
+### Added
+- VaultPasskey CloudKit plane and honest backup badge
+- sealed records carry folder-parity sync metadata
+
+### Fixed
+- layered TestFlight detection with diagnostics
+- review hardening for the sync plane
+- recovery envelope reaches iCloud independently of item sync
+- per-grant owner reads, foreign-grant protection, loud passkey failures
+- keep auto-lock touch tracking alive on pushed screens
+
+### Changed
+- passkey sync plane in codebase summary, plan status, audit follow-up
+- passkey CloudKit sync plan
+- audit report for restore, share-passkey, and auto-lock fixes
+
+
 ## [1.35.1] - 2026-07-17
 
 ### Fixed

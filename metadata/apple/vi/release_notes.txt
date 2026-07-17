@@ -1,1 +1,1 @@
-Bản cập nhật này khắc phục sự cố người dùng TestFlight không thể truy cập trực tiếp giao dịch mua thử nghiệm.
+Bản cập nhật này cải thiện độ tin cậy đồng bộ passkey, bao gồm hiển thị rõ trạng thái sao lưu và tăng cường bảo vệ khi chia sẻ kho dữ liệu. Cùng với đó là các cải thiện ổn định và sửa lỗi chung trong toàn bộ ứng dụng.
