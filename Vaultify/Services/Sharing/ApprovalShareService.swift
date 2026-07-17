@@ -308,10 +308,11 @@ import Foundation
     /// display envelope with a bumped revision — presentation metadata has
     /// its own lifecycle, the signed grant is untouched (U2). Revision is
     /// second-granular monotonic so recipients drop out-of-order updates.
-    func republishDisplayEnvelope(title: String, websiteHost: String?,
+    func republishDisplayEnvelope(itemId: String, title: String, websiteHost: String?,
                                   displayFields: [String: SharedDisplayEnvelope.FieldMeta],
                                   zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws {
-        let grant = try await fetchGrantFresh(zoneID: zoneID)
+        let grant = try await fetchGrantFresh(zoneID: zoneID, forItemId: itemId,
+                                              nowUnixMs: nowUnixMs)
         let display = SharedDisplayEnvelope(title: title, websiteHost: websiteHost,
                                             updatedAtUnixMs: nowUnixMs,
                                             revision: UInt32(clamping: nowUnixMs / 1000),
@@ -329,9 +330,10 @@ import Foundation
     /// field so the recipient's projection follows edits near-realtime (the
     /// shared-db silent push triggers their refresh). Authorization is
     /// untouched — same grant, same capabilities, fresh ciphertext.
-    func republishSharedValues(values: [String: Data],
-                               zoneID: CKRecordZone.ID) async throws {
-        let grant = try await fetchGrantFresh(zoneID: zoneID)
+    func republishSharedValues(itemId: String, values: [String: Data],
+                               zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws {
+        let grant = try await fetchGrantFresh(zoneID: zoneID, forItemId: itemId,
+                                              nowUnixMs: nowUnixMs)
         var records: [CKRecord] = []
         for (fieldId, plaintext) in values
         where grant.capabilities[fieldId]?.isSharedValue == true {
@@ -354,19 +356,46 @@ import Foundation
 
     // MARK: Inbound requests
 
-    /// Fresh server fetch — the epoch check must never trust a cached grant.
-    /// Reads the LEGACY singleton only: owner-side republish/verify against a
-    /// SPECIFIC grant in a multi-grant zone needs `SharingStore`'s
-    /// per-(zone,item) → grantId identity (Project A, phase A2) to know which
-    /// grant it means. Inert while `FamilyShareTransport.perGrantEnabled` is
-    /// off (default) — the owner never publishes anything else to fetch here.
-    func fetchGrantFresh(zoneID: CKRecordZone.ID) async throws -> AccessGrant {
-        let id = CKRecord.ID(recordName: ApprovalConfig.legacyGrantRecordName, zoneID: zoneID)
-        guard let record = try? await database.record(for: id),
-              let grant = ApprovalRecordMapping.grant(from: record) else {
+    /// Fresh server fetch of ONE grant by its authenticated id — the epoch
+    /// check must never trust a cached grant. Per-grant record name first,
+    /// then the legacy zone-wide singleton (a share published before
+    /// `FamilyShareTransport.perGrantEnabled` flipped on); either is accepted
+    /// only when the DECODED grant id matches — never inferred from the
+    /// record name it was found under (INV-FAM-01). Owner-side mirror of the
+    /// recipient's `fetchGrantRecord`.
+    func fetchGrantFresh(zoneID: CKRecordZone.ID, grantId: String) async throws -> AccessGrant {
+        let perGrantID = CKRecord.ID(recordName: ApprovalConfig.grantRecordName(grantId: grantId),
+                                     zoneID: zoneID)
+        if let record = try? await database.record(for: perGrantID),
+           let grant = ApprovalRecordMapping.grant(from: record), grant.id == grantId {
+            return grant
+        }
+        let legacyID = CKRecord.ID(recordName: ApprovalConfig.legacyGrantRecordName, zoneID: zoneID)
+        guard let record = try? await database.record(for: legacyID),
+              let grant = ApprovalRecordMapping.grant(from: record), grant.id == grantId else {
             throw Failure.grantMissing
         }
         return grant
+    }
+
+    /// Fresh server fetch of the live grant covering `itemId` — for owner
+    /// flows that know the item but not the grant id (item-edit republish,
+    /// the share-edit sheet). A zone holds at most one live grant per item
+    /// (`publishGrant`'s supersede); if a crash ever left two, the newest
+    /// wins (epoch, then createdAt, then id — the Space reconciler's order).
+    func fetchGrantFresh(zoneID: CKRecordZone.ID, forItemId itemId: String,
+                         nowUnixMs: Int64) async throws -> AccessGrant {
+        let candidates = try await fetchAllGrants(zoneID: zoneID, nowUnixMs: nowUnixMs)
+            .filter { $0.itemId == itemId }
+        let newest = candidates.max { lhs, rhs in
+            if lhs.epoch != rhs.epoch { return lhs.epoch < rhs.epoch }
+            if lhs.createdAtUnixMs != rhs.createdAtUnixMs {
+                return lhs.createdAtUnixMs < rhs.createdAtUnixMs
+            }
+            return lhs.id < rhs.id
+        }
+        guard let newest else { throw Failure.grantMissing }
+        return newest
     }
 
     /// All request records currently in the zone that are still within their
@@ -387,7 +416,7 @@ import Foundation
     /// all grants (multi-device owner signing is a Phase-3+ open item).
     func verifyInbound(_ request: ApprovalRequest, zoneID: CKRecordZone.ID,
                        nowUnixMs: Int64) async throws -> AccessGrant {
-        let grant = try await fetchGrantFresh(zoneID: zoneID)
+        let grant = try await fetchGrantFresh(zoneID: zoneID, grantId: request.grantId)
         let identity = try DeviceSigningIdentity.loadOrCreate()
         let nonceStore = CloudKitNonceStore(zoneName: zoneID.zoneName)
         if let failure = await ApprovalVerifier.verifyRequest(

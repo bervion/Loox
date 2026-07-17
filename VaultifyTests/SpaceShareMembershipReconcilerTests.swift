@@ -289,4 +289,60 @@ final class SpaceShareMembershipReconcilerTests: XCTestCase {
         XCTAssertEqual(planA, planB)
         XCTAssertEqual(planA.creates.map(\.itemId), ["item-2"])
     }
+
+    // MARK: planManaged() — foreign-grant protection
+
+    /// A standalone (per-item ceremony) passkey share living in the reused
+    /// member zone must survive a Space fan-out that doesn't contain its item
+    /// — the reconciler may revoke only grants the Space flow created.
+    func testPlanManagedNeverRevokesAForeignGrantWhoseItemIsOutsideTheSpace() {
+        let foreign = makeGrant(id: "grant-pk", itemId: "item-pk",
+                                capabilities: ["slot": .passkey(.askEachTime)])
+        let desired = Reconciler.desired(spaceItems: [loginItem(id: "item-1")])
+
+        let ops = Reconciler.planManaged(
+            desired: desired,
+            published: Reconciler.published(grants: [foreign]),
+            spaceManagedItemIds: [])
+
+        XCTAssertTrue(ops.revokes.isEmpty)
+        XCTAssertEqual(ops.creates.map(\.itemId), ["item-1"])
+    }
+
+    /// When the foreign grant's item IS in the Space, the reconciler must
+    /// neither downgrade it to the safelist (stripping passkey capabilities)
+    /// nor re-create over it — a flag-on publish for the same item would
+    /// SUPERSEDE the ceremony grant, destroying it through another door.
+    func testPlanManagedLeavesAForeignGrantInsideTheSpaceCompletelyUntouched() {
+        let login = loginItem(id: "item-1")
+        let desired = Reconciler.desired(spaceItems: [login])
+        let foreign = makeGrant(id: "grant-1", itemId: "item-1",
+                                capabilities: ["slot": .passkey(.shared)])
+
+        let ops = Reconciler.planManaged(
+            desired: desired,
+            published: Reconciler.published(grants: [foreign]),
+            spaceManagedItemIds: [])
+
+        XCTAssertTrue(ops.isEmpty)
+    }
+
+    /// Grants in the ownership registry keep the full create/update/revoke
+    /// lifecycle — the guard must not freeze the Space's own reconciliation.
+    func testPlanManagedKeepsFullLifecycleForSpaceManagedGrants() {
+        let desired = Reconciler.desired(spaceItems: [loginItem(id: "item-1")])
+        let staleManaged = makeGrant(id: "grant-1", itemId: "item-1",
+                                     capabilities: ["stale": .value(.shared)])
+        let goneManaged = makeGrant(id: "grant-gone", itemId: "item-gone",
+                                    capabilities: ["f": .value(.shared)])
+
+        let ops = Reconciler.planManaged(
+            desired: desired,
+            published: Reconciler.published(grants: [staleManaged, goneManaged]),
+            spaceManagedItemIds: ["item-1", "item-gone"])
+
+        XCTAssertEqual(ops.updates.map(\.existingGrantId), ["grant-1"])
+        XCTAssertEqual(ops.revokes, ["grant-gone"])
+        XCTAssertTrue(ops.creates.isEmpty)
+    }
 }

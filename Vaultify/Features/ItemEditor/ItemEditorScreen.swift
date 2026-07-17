@@ -691,12 +691,14 @@ struct ItemEditorScreen: View {
             for share in active {
                 let zoneID = CKRecordZone.ID(zoneName: share.zoneName)
                 try? await env.approvalShare.republishDisplayEnvelope(
+                    itemId: share.itemId,
                     title: title, websiteHost: host, displayFields: displayFields,
                     zoneID: zoneID, nowUnixMs: nowUnixMs)
                 // Edited values follow to the recipient near-realtime (their
                 // shared-db push triggers a projection refresh).
                 try? await env.approvalShare.republishSharedValues(
-                    values: currentValues, zoneID: zoneID)
+                    itemId: share.itemId, values: currentValues,
+                    zoneID: zoneID, nowUnixMs: nowUnixMs)
             }
         }
     }

@@ -132,10 +132,20 @@ nonisolated struct RequestScanGate {
                         // kernel checks reaches any UI. Display verification
                         // uses PreviewNonceStore — the single-use nonce burns
                         // only at approve, not at render.
-                        guard let grant = try? await self.shareService.fetchGrantFresh(zoneID: zoneID),
-                              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw
+                        // Per-grant transport: one zone can hold several
+                        // grants (one per item), each under its own record
+                        // name — resolve every request against ITS grant by
+                        // the authenticated `request.grantId`. A thrown fetch
+                        // flows to the catches below (zone gone vs transient),
+                        // exactly like the request fetch above.
+                        let grants = try await self.shareService.fetchAllGrants(
+                            zoneID: zoneID, nowUnixMs: nowUnixMs)
+                        guard let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw
                         else { continue }
+                        let grantsById = Dictionary(grants.map { ($0.id, $0) },
+                                                    uniquingKeysWith: { _, newer in newer })
                         for request in live where !self.handledRequestIds.contains(request.requestId) {
+                            guard let grant = grantsById[request.grantId] else { continue }
                             let failure = await ApprovalVerifier.verifyRequest(
                                 request, grant: grant,
                                 trustedOwnerSigningKeys: [ownerKey],

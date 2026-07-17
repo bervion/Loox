@@ -59,6 +59,13 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
     /// Persisted owner-side lifecycle (nil in records that predate this field →
     /// derived from `fingerprintConfirmed` on read). Only ever advances.
     var statusRaw: String? = nil
+    /// True when the SPACE fan-out (`SpaceShareMembershipExecutor`) created or
+    /// last republished this share — the device-local ownership registry the
+    /// Space reconciler consults before updating or revoking a grant. nil
+    /// (records predating the field, and every single-item ceremony share) =
+    /// NOT space-managed: the blanket Space flow must never touch a grant the
+    /// owner configured per item.
+    var spaceManaged: Bool? = nil
 
     var isAutoUpdate: Bool { autoUpdate ?? true }
 

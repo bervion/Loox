@@ -135,4 +135,26 @@ nonisolated enum SpaceShareMembershipReconciler {
         revokes.sort()
         return Ops(creates: creates, updates: updates, revokes: revokes)
     }
+
+    /// Ownership-aware wrapper around `plan`: the Space flow may update or
+    /// revoke ONLY grants it created — `spaceManagedItemIds` is the caller's
+    /// device-local registry (`ItemShareRecord.spaceManaged`). Any other live
+    /// grant in the zone is a per-item ceremony's explicit owner decision
+    /// (hand-picked fields, passkeys, ask-each-time TOTP), and the blanket
+    /// share must not override it in EITHER direction:
+    /// - never revoked when its item isn't in the Space (a reused zone also
+    ///   carries the recipient's other shares);
+    /// - never updated (downgraded to the safelist, stripping passkey/TOTP
+    ///   capabilities) when its item IS in the Space;
+    /// - never re-created over: its item is removed from `desired` too,
+    ///   because a flag-on publish for the same item SUPERSEDES the existing
+    ///   grant — the same destruction through another door.
+    static func planManaged(desired: [String: DesiredGrant],
+                            published: [String: PublishedGrant],
+                            spaceManagedItemIds: Set<String>) -> Ops {
+        let managed = published.filter { spaceManagedItemIds.contains($0.key) }
+        let foreign = Set(published.keys).subtracting(managed.keys)
+        let safeDesired = desired.filter { !foreign.contains($0.key) }
+        return plan(desired: safeDesired, published: managed)
+    }
 }
