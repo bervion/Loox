@@ -9,6 +9,13 @@ import SwiftUI
 /// unlock. This installs one passthrough gesture recognizer on the host window that observes
 /// touches without consuming them, so buttons, lists, and gestures are unaffected.
 ///
+/// The recognizer's lifetime is tied to the SHELL, not to the probe's window membership:
+/// the compact shell pushes details onto a UIKit `UINavigationController` (`AppNavigator`),
+/// and UIKit removes the tab root's view — this probe included — from the window once a
+/// push settles. Touches on pushed screens (Profile, Settings, a paywall sheet above them)
+/// still reach the window's recognizers, so the observer keeps working there — but only if
+/// it stays attached while the probe is off-window.
+///
 /// iOS only. On macOS (native slice, no UIKit) the modifier is a no-op — the sidebar and
 /// `MacRootView` already register activity on their interactions.
 extension View {
@@ -44,7 +51,7 @@ private struct UserActivityMonitor: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
-        coordinator.attach(to: nil)
+        coordinator.detach()
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
@@ -68,14 +75,17 @@ private struct UserActivityMonitor: UIViewRepresentable {
 
         @objc private func textDidChange() { onActivity() }
 
-        /// Move the observer to `window` (or detach when nil). Lock/unlock recreates the shell,
-        /// so detaching the previous recognizer avoids leaking one per unlock onto the same window.
+        /// Park the observer on `window`. A nil window (probe left the hierarchy) deliberately
+        /// KEEPS the recognizer attached: a `UINavigationController` push or a full-screen
+        /// cover removes the presenting shell's view — probe included — from the window, and
+        /// detaching here would stop touch tracking exactly while the user is on the pushed
+        /// screen, so the idle timer would lock the vault mid-use. The recognizer moves only
+        /// when the probe surfaces in a genuinely different window, and is removed only by
+        /// `detach()` when the shell is dismantled (lock/unlock recreates it — that removal
+        /// is what avoids leaking one recognizer per unlock onto the same window).
         func attach(to window: UIWindow?) {
-            if let existing = recognizer {
-                existing.view?.removeGestureRecognizer(existing)
-                recognizer = nil
-            }
-            guard let window else { return }
+            guard let window, recognizer?.view !== window else { return }
+            detach()
             let gr = ActivityGestureRecognizer()
             gr.onTouch = { [weak self] in self?.onActivity() }
             gr.delegate = self
@@ -84,6 +94,14 @@ private struct UserActivityMonitor: UIViewRepresentable {
             gr.delaysTouchesEnded = false
             window.addGestureRecognizer(gr)
             recognizer = gr
+        }
+
+        /// Remove the observer from whichever window holds it (shell teardown).
+        func detach() {
+            if let existing = recognizer {
+                existing.view?.removeGestureRecognizer(existing)
+                recognizer = nil
+            }
         }
 
         // Pure observer — never block another recognizer from firing.
