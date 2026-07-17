@@ -22,14 +22,36 @@ struct PasskeyVault {
     func save(_ secret: PasskeySecret, key: [UInt8]) throws -> SaveResult {
         try PasskeyEnvelope.validate(secret)
         let sealed = try seal(secret, key: key)
+        let newID = secret.credentialID.base64URLEncodedString()
         let replaced = secretsForReplacement(secret, key: key)
-        for entry in replaced { deletePending(credentialID: entry.credentialID) }
-        let record = PasskeyRecord(id: secret.credentialID.base64URLEncodedString(),
-                                   sealed: sealed, createdAt: secret.createdAt)
-        // Content mutation now, whatever the credential's own creation date —
-        // the LWW gate must reflect when THIS device (re)wrote the record.
-        record.updatedAt = .now
-        store.context.insert(record)
+        for entry in replaced where entry.credentialID != secret.credentialID {
+            deletePending(credentialID: entry.credentialID)
+        }
+        // Same-id re-save (backup re-import, re-registration) updates IN
+        // PLACE via the raw store lookup, so a tombstoned row revives
+        // deterministically. Relying on SwiftData's unique-constraint upsert
+        // here proved unreliable: the merge does not overwrite existing
+        // columns with the inserted instance's nils, so `deletedAt` survived
+        // and the "revived" credential stayed invisible.
+        if let existing = store.passkeyRecord(id: newID) {
+            existing.sealed = sealed
+            existing.envelopeSealed = nil
+            existing.relyingPartyHint = nil
+            existing.userNameHint = nil
+            existing.userHandleHint = nil
+            existing.largeBlobSealed = nil
+            existing.createdAt = secret.createdAt
+            existing.usedAt = nil
+            existing.deletedAt = nil
+            existing.updatedAt = .now
+            existing.dirty = true
+        } else {
+            let record = PasskeyRecord(id: newID, sealed: sealed, createdAt: secret.createdAt)
+            // Content mutation now, whatever the credential's own creation
+            // date — the LWW gate reflects when THIS device wrote the record.
+            record.updatedAt = .now
+            store.context.insert(record)
+        }
         try store.context.save()
         return SaveResult(replaced: replaced)
     }
@@ -85,9 +107,17 @@ struct PasskeyVault {
     /// Soft-delete: a tombstone that WIPES the key material and syncs, so the
     /// deletion reaches CloudKit and every other device instead of the record
     /// resurrecting on the next pull. Every read path filters tombstones.
+    /// Locked-write staging is the exception — it never reached CloudKit, and
+    /// a tombstone would CREATE a cloud record for a credential that never
+    /// synced (the silent-registration rollback hits this path), so it hard
+    /// deletes like `deletePending`.
     func delete(credentialID: Data) throws {
         guard let record = record(credentialID: credentialID) else { return }
-        tombstone(record)
+        if record.envelopeSealed != nil {
+            store.context.delete(record)
+        } else {
+            tombstone(record)
+        }
         try store.context.save()
     }
 

@@ -246,6 +246,9 @@ final class VaultStore {
     func upsertPasskeyFromRemote(id: String, sealed: Data, largeBlobSealed: Data?,
                                  deletedAt: Date?, createdAt: Date, updatedAt: Date,
                                  changeTag: String?) {
+        // The wire encodes "no blob" as empty Data (a field must ALWAYS be
+        // written or `.changedKeys` could never clear it server-side).
+        let blob = (largeBlobSealed?.isEmpty == false) ? largeBlobSealed : nil
         if let existing = passkeyRecord(id: id) {
             // Same server revision already merged — skip regardless of clocks.
             if let changeTag, changeTag == existing.ckChangeTag { return }
@@ -259,14 +262,22 @@ final class VaultStore {
                 return
             }
             existing.sealed = sealed
-            existing.largeBlobSealed = largeBlobSealed
+            existing.largeBlobSealed = blob
             existing.deletedAt = deletedAt
+            if deletedAt != nil {
+                // Mirror the local tombstone shape — no staging or hints may
+                // outlive a deletion, wherever it originated.
+                existing.envelopeSealed = nil
+                existing.relyingPartyHint = nil
+                existing.userNameHint = nil
+                existing.userHandleHint = nil
+            }
             existing.updatedAt = updatedAt
             existing.ckChangeTag = changeTag
             existing.dirty = false
         } else {
             let record = PasskeyRecord(id: id, sealed: sealed,
-                                       largeBlobSealed: largeBlobSealed,
+                                       largeBlobSealed: blob,
                                        createdAt: createdAt)
             record.updatedAt = updatedAt
             record.deletedAt = deletedAt

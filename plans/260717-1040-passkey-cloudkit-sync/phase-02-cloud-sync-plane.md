@@ -10,7 +10,7 @@
 ## OPS GATE (user, blocking before this phase ships)
 CloudKit Console → container `iCloud.com.bervion.vaultify`:
 1. Run a Debug build with this phase once against the **Development** environment (JIT creates `VaultPasskey` with all fields), or create the type manually.
-2. Fields: `sealed` (Bytes), `largeBlobSealed` (Bytes, optional), `createdAt` (Date/Time), `updatedAt` (Date/Time), `deletedAt` (Date/Time, optional). No queryable indexes needed (zone delta fetch only — same rationale as the folder plane comment).
+2. Fields (all ALWAYS written — `.changedKeys` can only clear a field it transmits, so absence is encoded in-band): `sealed` (Bytes; empty on tombstones), `largeBlobSealed` (Bytes; empty = none), `createdAt` (Date/Time), `updatedAt` (Date/Time), `deletedAtMs` (Int64; 0 = live). No queryable indexes needed (zone delta fetch only — same rationale as the folder plane comment).
 3. **Deploy Schema Changes → Production.** Same session: deploy the audit's still-pending types (`VaultPersona`, `VaultEmailAlias`, `VaultForwardingInbox`, `AuditReport`, `AuditFindingState`) if not done yet.
 
 ## Files

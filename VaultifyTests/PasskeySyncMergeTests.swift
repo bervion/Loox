@@ -189,6 +189,72 @@ final class PasskeySyncMergeTests: XCTestCase {
         XCTAssertEqual(record.usedAt, used, "usedAt is device-local and survives remote applies")
     }
 
+    // MARK: Revival (SwiftData unique-id upsert — backup re-import path)
+
+    func testReSaveSameCredentialUpsertsToASingleLiveDirtyRow() throws {
+        let store = makeStore()
+        let vault = PasskeyVault(store: store)
+        let secret = makeSecret()
+        _ = try vault.save(secret, key: key)
+        let first = store.allPasskeyRecords().first!
+        store.markPasskeySynced(first, changeTag: "t1", snapshotUpdatedAt: first.updatedAt)
+
+        _ = try vault.save(secret, key: key)
+
+        let records = store.allPasskeyRecords()
+        XCTAssertEqual(records.count, 1, "same credential id must upsert, not duplicate")
+        XCTAssertNil(records.first?.deletedAt)
+        XCTAssertTrue(records.first!.dirty, "the re-seal must re-push")
+    }
+
+    func testDeleteThenReImportRevivesTheTombstoneAsALiveDirtyRow() throws {
+        let store = makeStore()
+        let vault = PasskeyVault(store: store)
+        let secret = makeSecret()
+        _ = try vault.save(secret, key: key)
+        try vault.delete(credentialID: secret.credentialID)
+        XCTAssertNotNil(store.allPasskeyRecords().first?.deletedAt)
+
+        _ = try vault.save(secret, key: key)
+
+        let records = store.allPasskeyRecords()
+        XCTAssertEqual(records.count, 1)
+        XCTAssertNil(records.first?.deletedAt, "revival must clear the tombstone")
+        XCTAssertTrue(records.first!.dirty, "the revival must push (and clear the cloud tombstone)")
+        XCTAssertEqual(vault.all(key: key).count, 1)
+    }
+
+    func testDeletingEnvelopeStagingIsHardAndLeavesNothingToSync() throws {
+        let store = makeStore()
+        let vault = PasskeyVault(store: store)
+        let secret = makeSecret()
+        try vault.saveEnvelope(secret, envelopeSealed: Data([9]))
+
+        try vault.delete(credentialID: secret.credentialID)
+
+        XCTAssertTrue(store.allPasskeyRecords().isEmpty,
+                      "a never-synced staged record must not leave a tombstone behind")
+    }
+
+    func testRemoteEmptyBlobClearsTheLocalLargeBlob() throws {
+        let store = makeStore()
+        let vault = PasskeyVault(store: store)
+        let secret = makeSecret()
+        _ = try vault.save(secret, key: key)
+        XCTAssertTrue(vault.setLargeBlob(Data([5]), credentialID: secret.credentialID, key: key))
+        let record = store.allPasskeyRecords().first!
+        store.markPasskeySynced(record, changeTag: "t1", snapshotUpdatedAt: record.updatedAt)
+
+        // The wire always writes the blob field; empty Data means "cleared".
+        store.upsertPasskeyFromRemote(id: record.id, sealed: record.sealed,
+                                      largeBlobSealed: Data(),
+                                      deletedAt: nil, createdAt: record.createdAt,
+                                      updatedAt: record.updatedAt.addingTimeInterval(10),
+                                      changeTag: "t2")
+
+        XCTAssertNil(record.largeBlobSealed)
+    }
+
     // MARK: Mark-synced snapshot guard
 
     func testMarkSyncedClearsDirtyOnlyWhenUnchangedSinceSnapshot() throws {

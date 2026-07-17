@@ -487,6 +487,9 @@ import UserNotifications
     func deletePasskey(credentialID: Data) throws {
         try PasskeyVault(store: store).delete(credentialID: credentialID)
         reload()
+        // The tombstone must reach CloudKit promptly, like every other vault
+        // mutation — not wait for the next foreground sync.
+        noteLocalMutation()
     }
 
     // MARK: Attention list
