@@ -100,6 +100,9 @@ struct OnboardingFlow: View {
         .task(id: step) {
             if step == .emergencyKit, recoveryKey.isEmpty {
                 recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""
+                // The kit is only a lifeline once its envelope reaches iCloud —
+                // push now instead of leaving it to the next debounced sync.
+                if !recoveryKey.isEmpty { env.syncNow() }
             }
         }
         // Grouped-gray canvas so the white cards/fields of the form steps read
