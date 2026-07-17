@@ -22,6 +22,7 @@ import CloudKit
     private let zone = CKRecordZone(zoneName: "Vault")
     private let recordType = "VaultItem"
     private let folderRecordType = "VaultFolder"
+    private let passkeyRecordType = "VaultPasskey"
     private let personaRecordType = "VaultPersona"
     private let aliasRecordType = "VaultEmailAlias"
     private let inboxRecordType = "VaultForwardingInbox"
@@ -107,6 +108,7 @@ import CloudKit
         var firstError: Error?
         do { try await pushItems() } catch { firstError = firstError ?? error }
         do { try await pushFolders() } catch { firstError = firstError ?? error }
+        do { try await pushPasskeys() } catch { firstError = firstError ?? error }
         do { try await pushPersonas() } catch { firstError = firstError ?? error }
         do { try await pushAliases() } catch { firstError = firstError ?? error }
         do { try await pushInboxes() } catch { firstError = firstError ?? error }
@@ -169,6 +171,7 @@ import CloudKit
             switch record.recordType {
             case self.recordType: self.apply(record)
             case self.folderRecordType: self.applyFolder(record)
+            case self.passkeyRecordType: self.applyPasskey(record)
             case self.personaRecordType: self.applyPersona(record)
             case self.aliasRecordType: self.applyAlias(record)
             case self.inboxRecordType: self.applyInbox(record)
@@ -254,6 +257,50 @@ import CloudKit
             id: record.recordID.recordName, sealed: sealed,
             iconAsset: iconAsset, colorRaw: colorRaw,
             sortIndex: (record["sortIndex"] as? Int) ?? 0,
+            deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            changeTag: record.recordChangeTag)
+    }
+
+    private func pushPasskeys() async throws {
+        // Locked-write staging (`envelopeSealed != nil`) never syncs — only
+        // this device's envelope key can promote it to a sealed record; the
+        // unlock migration marks it dirty at that moment.
+        let dirty = store.allPasskeyRecords().filter { $0.dirty && $0.envelopeSealed == nil }
+        guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
+        let records = dirty.map(ckPasskeyRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult,
+               let local = store.passkeyRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markPasskeySynced(local, changeTag: saved.recordChangeTag,
+                                        snapshotUpdatedAt: snapshot)
+            }
+        }
+    }
+
+    private func ckPasskeyRecord(from record: PasskeyRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: passkeyRecordType, recordID: id)
+        ck["sealed"] = record.sealed as CKRecordValue
+        if let largeBlobSealed = record.largeBlobSealed {
+            ck["largeBlobSealed"] = largeBlobSealed as CKRecordValue
+        }
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        if let deletedAt = record.deletedAt { ck["deletedAt"] = deletedAt as CKRecordValue }
+        return ck
+    }
+
+    private func applyPasskey(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        store.upsertPasskeyFromRemote(
+            id: record.recordID.recordName, sealed: sealed,
+            largeBlobSealed: record["largeBlobSealed"] as? Data,
             deletedAt: record["deletedAt"] as? Date,
             createdAt: createdAt, updatedAt: updatedAt,
             changeTag: record.recordChangeTag)
