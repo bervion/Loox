@@ -142,6 +142,7 @@ struct WatchtowerScreen: View {
                 categoryScreen(for: category).fullScreenPush()
             }
             .task { reload(); autoAuditIfStale(); rescheduleAuditReminder() }
+            .analyticsScreen("watchtower")
             // Security audits the ACTIVE persona's vault — switching persona reloads.
             .onChange(of: env.repository.activePersona?.id) {
                 didAutoAudit = false

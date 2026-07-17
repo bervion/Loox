@@ -212,6 +212,7 @@ struct SettingsScreen: View {
         .toggleStyle(.switch)
         .navigationTitle("Settings")
         .platformNavigationBarTitleDisplayMode(.large)
+        .analyticsScreen("settings")
         .alert(Text("Network needed"), isPresented: $relayBlockErase) {
             Button("OK", role: .cancel) {}
         } message: {

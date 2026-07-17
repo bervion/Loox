@@ -156,6 +156,13 @@ import AppKit
     // MARK: - Settings mutators
 
     func setTheme(_ ref: AppThemeReference) {
+        // Builtin identifiers only; a custom theme id is meaningless (and
+        // high-cardinality) off-device, so it reports as "custom".
+        if case .builtin(let builtin) = ref {
+            AnalyticsEngine.shared.log(.themeChanged(builtin.rawValue))
+        } else {
+            AnalyticsEngine.shared.log(.themeChanged("custom"))
+        }
         update { settings in
             settings.theme = ref
             // Switching a theme resets it to its own defaults: drop any saved accent /

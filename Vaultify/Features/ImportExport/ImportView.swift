@@ -141,12 +141,15 @@ struct ImportView: View {
         }
         var folderCache: [String: String] = [:]   // lowercased name → folder id
         do {
-            for row in parsed {
-                var item = row.item
-                if let name = row.folderName, !name.isEmpty {
-                    item.folderId = resolveFolder(name, cache: &folderCache)
+            // Bulk: one vault_imported summary below, never per-item events.
+            try AnalyticsEngine.shared.runSuppressed {
+                for row in parsed {
+                    var item = row.item
+                    if let name = row.folderName, !name.isEmpty {
+                        item.folderId = resolveFolder(name, cache: &folderCache)
+                    }
+                    try env.repository.add(item)
                 }
-                try env.repository.add(item)
             }
             if let key = env.session.vaultKey {
                 let vault = PasskeyVault(store: env.store)
@@ -159,6 +162,8 @@ struct ImportView: View {
                 // CloudKit without waiting for the next foreground sync.
                 if !parsedPasskeys.isEmpty { env.repository.noteLocalMutation() }
             }
+            AnalyticsEngine.shared.log(.vaultImported(
+                countBucket: AnalyticsBucket.count(parsed.count + parsedPasskeys.count)))
             Haptics.success()
             dismiss()
         } catch {

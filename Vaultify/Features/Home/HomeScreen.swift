@@ -187,6 +187,7 @@ struct HomeScreen: View {
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen().fullScreenPush() }
             .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen().fullScreenPush() }
             .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
+            .analyticsScreen("home")
             // Remember the Home Space across launches (per identity; device-local, not synced).
             // Also re-mirror into the App Group so the AutoFill extension defaults a
             // newly saved login into this same Space (see `mirrorActivePersonaContext`).

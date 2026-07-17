@@ -109,6 +109,20 @@ Repo → Settings → Actions → Runners → **New self-hosted runner** (macOS)
 
 ---
 
+### 7. Firebase Analytics (GA4) config
+
+Done for this repo: Firebase project `loox-63383`, iOS app `com.bervion.vaultify`,
+`GoogleService-Info.plist` committed in **`Vaultify/Resources/`** (ships inside every IPA;
+not a secret). A fork repeats: console.firebase.google.com → add iOS app → download the
+plist into that folder. Without it, builds succeed and analytics stays dark, so CI/forks
+are unaffected. The app-level privacy manifest lives at
+`Vaultify/Resources/PrivacyInfo.xcprivacy` (no-tracking declaration + UserDefaults
+required-reason; Firebase SDK bundles carry their own manifests). Verify events with the DEBUG console mirror (Console.app, category `analytics`)
+or Firebase DebugView (`-FIRDebugEnabled` launch argument). At the next App Store
+submission, declare **Product Interaction — not linked to identity** in App Privacy
+(the SDK ships its own privacy manifest; no IDFA/tracking declaration needed since the
+build links `FirebaseAnalyticsCore`).
+
 ## Day-to-day
 
 ```bash

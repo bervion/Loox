@@ -53,6 +53,7 @@ struct LooxPaywallScreen: View {
                     .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             } else {
                 LooxAcquisitionPaywallView(context: context)
+                    .onAppear { AnalyticsEngine.shared.log(.paywallShown(source: context.rawValue)) }
             }
         }
         .toolbar {

@@ -25,6 +25,9 @@ import SwiftUI
         recentCopyLabel = label ?? "Copied"
         scheduleToastDismiss()
         Haptics.success()
+        // Copy frequency is the core daily-use signal; only the sensitivity
+        // class travels — never the value, field, or item.
+        AnalyticsEngine.shared.log(.copiedToClipboard(sensitive: sensitive))
     }
 
     private func scheduleToastDismiss() {

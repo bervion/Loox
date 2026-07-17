@@ -428,6 +428,7 @@ struct LooxAcquisitionPaywallView: View {
         guard let product = product(for: selectedTier), !purchasing else { return }
         purchasing = true
         defer { purchasing = false }
+        AnalyticsEngine.shared.log(.purchaseStarted(productID: product.id))
         do {
             // The appAccountToken IS the pseudonymous billing identity the
             // backend keys everything on (contract §1) — set from the very
@@ -437,9 +438,11 @@ struct LooxAcquisitionPaywallView: View {
             switch result {
             case .success(let verification):
                 guard case .verified(let transaction) = verification else {
+                    AnalyticsEngine.shared.log(.purchaseFailed(productID: product.id, reason: "verification"))
                     flowMessage = appString("The purchase didn't go through. You have not been charged.")
                     return
                 }
+                AnalyticsEngine.shared.log(.purchaseCompleted(productID: product.id))
                 // The verified transaction in hand IS the entitlement — grant
                 // the tier from it directly; `currentEntitlements` can trail
                 // a fresh purchase (sandbox especially).
@@ -462,6 +465,7 @@ struct LooxAcquisitionPaywallView: View {
                 break
             }
         } catch {
+            AnalyticsEngine.shared.log(.purchaseFailed(productID: product.id, reason: "error"))
             flowMessage = appString("The purchase didn't go through. You have not been charged.")
         }
     }
@@ -483,6 +487,7 @@ struct LooxAcquisitionPaywallView: View {
             // every install converges on the purchase's identity.
             // Fire-and-forget, same rule as the purchase path.
             Task { await env.entitlementCoordinator.attachNow() }
+            AnalyticsEngine.shared.log(.purchaseRestored)
             Haptics.success()
             dismiss()
         } else {

@@ -46,6 +46,9 @@ struct SearchScreen: View {
                 .platformNavigationBarTitleDisplayMode(.inline)
                 .modifier(FlushSearchHeaderChrome())
                 .searchable(text: $search, isPresented: $searchPresented, prompt: "Search vault")
+                // Count that a search happened — the term itself never leaves
+                // the device (see the catalog note on `searchPerformed`).
+                .onSubmit(of: .search) { AnalyticsEngine.shared.log(.searchPerformed) }
                 .autocorrectionDisabled()
                 .platformAutocapitalization(.never)
                 .environment(\.vaultZoomNamespace, zoomNamespace)
@@ -56,6 +59,7 @@ struct SearchScreen: View {
         // focus triggers below just retry the keyboard raise (cold launch fires `onAppear`
         // too early; a background/return needs a re-raise) — they never re-seed the scope.
         .onAppear { handleEntry() }
+        .analyticsScreen("search")
         .onChange(of: uiState.selectedTab) { _, tab in
             if tab == .search { requestSearchFocus() }
         }

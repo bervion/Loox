@@ -169,8 +169,17 @@ import SwiftUI
         LooxEntitlementClientHooks.refreshHandler = { [weak entitlementCoordinator = entitlementCoordinator] in
             await entitlementCoordinator?.refreshAndReport() ?? false
         }
-        entitlements.onVerifiedTransactionUpdate = { [weak entitlementCoordinator = entitlementCoordinator] in
+        entitlements.onVerifiedTransactionUpdate = { [weak entitlementCoordinator = entitlementCoordinator, weak self] in
             Task { await entitlementCoordinator?.attachNow() }
+            // The tier user property follows VERIFIED transactions (purchase,
+            // renewal, refund, restore) — the same signal that grants the tier.
+            Task { @MainActor in
+                guard let self else { return }
+                AnalyticsEngine.shared.refreshUserProperties(
+                    tier: self.entitlements.tier,
+                    language: self.settings.preferredLanguage,
+                    iCloudSyncEnabled: self.settings.iCloudSyncEnabled)
+            }
         }
     }
 

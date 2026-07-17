@@ -2,7 +2,8 @@
 
 Private, offline, **zero-backend** password & passkey manager for iOS. Built with native
 SwiftUI. Your vault is encrypted with Argon2id and never leaves the device — no account,
-no server, no tracking.
+no server. The only telemetry is anonymous usage statistics (GA4, no ad identifiers,
+never vault contents) with an opt-out in Settings → General.
 
 ## Highlights
 
@@ -112,8 +113,13 @@ secrets, self-hosted runner) is documented in **[docs/deployment-guide.md](docs/
 
 - Master password → **Argon2id** → vault key; vault is an encrypted file in the
   `group.com.bervion.vaultify` App Group container (so the AutoFill extension can read it)
-- No network, no analytics, no account. Optional iCloud sync is **off** unless built with
-  the `VAULTIFY_ICLOUD` flag and the iCloud capability enabled.
+- Vault data never touches a server we run — there is none. Optional iCloud sync is
+  **off** unless built with the `VAULTIFY_ICLOUD` flag and the iCloud capability enabled.
+- Usage analytics: GA4 via `FirebaseAnalyticsCore` (no AdSupport/IDFA), app target only —
+  never the AutoFill/Safari extensions. Events carry item *types*, count buckets and
+  setting states; never item names, values, websites, or search terms (contract in
+  `Vaultify/Analytics/`). Opt-out toggle in Settings → General; without a bundled
+  `GoogleService-Info.plist` the app runs with analytics dark.
 
 ## Documentation
 

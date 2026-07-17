@@ -238,6 +238,9 @@ struct PasswordGeneratorView: View {
 
     private func copy() {
         guard !copied, !output.isEmpty else { return }
+        // Logged on copy, not in `regenerate()` — sliders regenerate on every
+        // tick; taking the password is the one deliberate act worth counting.
+        AnalyticsEngine.shared.log(.passwordGenerated(mode: mode.rawValue))
         env.clipboard.copy(output, label: appString("password"))
         copied = true
         Task {

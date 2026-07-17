@@ -23,6 +23,13 @@ struct VaultifyApp: App {
 
     private var locale: Locale { appLocale(forCode: env.settings.preferredLanguage) }
 
+    init() {
+        // Providers must exist before the first event. Runs fine without a
+        // GoogleService-Info.plist — the engine then stays dark (see
+        // `FirebaseAnalyticsProvider.bootstrapped`).
+        AnalyticsEngine.bootstrap()
+    }
+
     var body: some Scene {
         mainWindow
 
@@ -93,6 +100,10 @@ struct VaultifyApp: App {
                 // this view (and its onReceive) existed — drain it now.
                 .task {
                     if let url = PendingInviteLink.url { handleInviteLink(url) }
+                    AnalyticsEngine.shared.refreshUserProperties(
+                        tier: env.entitlements.tier,
+                        language: env.settings.preferredLanguage,
+                        iCloudSyncEnabled: env.settings.iCloudSyncEnabled)
                 }
                 // A dead/expired invite link must say so — silence here reads
                 // as "the app is broken" and gets blamed on the sender.

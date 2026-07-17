@@ -18,6 +18,14 @@ let project = Project(
         defaultKnownRegions: ["en", "vi"],
         developmentRegion: "en"
     ),
+    // GA4 usage analytics. `FirebaseAnalyticsCore` measures WITHOUT AdSupport/IDFA
+    // (GoogleAppMeasurementCore) — no ATT prompt, no ad identifiers, which is the
+    // only Analytics flavor acceptable for a password manager. Linked into the APP
+    // target only: the AutoFill/Safari extensions must never carry telemetry.
+    packages: [
+        .remote(url: "https://github.com/firebase/firebase-ios-sdk",
+                requirement: .exact("12.16.0")),
+    ],
     settings: .settings(
         base: [
             "DEVELOPMENT_TEAM": "WDNL2F75V7",
@@ -113,6 +121,10 @@ let project = Project(
                     "UIInterfaceOrientationLandscapeLeft",
                     "UIInterfaceOrientationLandscapeRight",
                 ],
+                // Firebase's automatic screen tracking swizzles UIKit view
+                // controllers and reports hosting-controller noise under SwiftUI —
+                // screens are logged manually via `.analyticsScreen(_:)` instead.
+                "FirebaseAutomaticScreenReportingEnabled": false,
             ]),
             sources: ["Vaultify/**", "VaultifyCore/**"],
             resources: [
@@ -132,6 +144,8 @@ let project = Project(
                 // Safari web extension (identity/card fill) — iOS-only appex,
                 // same reasoning as the AutoFill embed above.
                 .target(name: "VaultifySafari", condition: .when([.ios])),
+                // GA4 without ad identifiers (see `packages` above). App only.
+                .package(product: "FirebaseAnalyticsCore"),
             ],
             settings: .settings(base: [
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "vaultify",

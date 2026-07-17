@@ -3284,6 +3284,16 @@
         }
       }
     },
+    "Counts which features are used to help improve Loox. Never your vault contents, item names, websites, or search terms. Not linked to your identity." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đếm các tính năng được sử dụng để giúp cải thiện Loox. Không bao giờ gồm nội dung kho, tên mục, trang web hay từ khóa tìm kiếm. Không gắn với danh tính của bạn."
+          }
+        }
+      }
+    },
     "Couldn't accept the invitation" : {
       "localizations" : {
         "en" : {
@@ -11765,6 +11775,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chia sẻ một mục trong kho với ai đó và họ sẽ hiện ở đây. Tính năng mời mọi người vào nhóm gia đình chung sắp ra mắt."
+          }
+        }
+      }
+    },
+    "Share anonymous usage statistics" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chia sẻ thống kê sử dụng ẩn danh"
           }
         }
       }

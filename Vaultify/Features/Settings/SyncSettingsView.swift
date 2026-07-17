@@ -17,6 +17,10 @@ struct SyncSettingsView: View {
             get: { env.settings.iCloudSyncEnabled },
             set: { isOn in
                 env.settings.iCloudSyncEnabled = isOn
+                // Logged here, not in the store didSet — erase/onboarding set the
+                // flag programmatically and must not read as user toggles.
+                AnalyticsEngine.shared.log(.icloudSyncToggled(enabled: isOn))
+                AnalyticsEngine.shared.setUserProperty(.icloudSync, isOn ? "on" : "off")
                 if isOn { env.syncNow() }
             })
     }
