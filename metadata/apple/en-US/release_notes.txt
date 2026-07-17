@@ -1,1 +1,1 @@
-This update improves passkey sync reliability, including clearer backup status and stronger protections for shared vault access. General stability improvements and bug fixes throughout the app.
+This update fixes an issue where some purchases weren't reflected correctly after completing a transaction. Membership status now updates reliably every time.

@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện độ tin cậy đồng bộ passkey, bao gồm hiển thị rõ trạng thái sao lưu và tăng cường bảo vệ khi chia sẻ kho dữ liệu. Cùng với đó là các cải thiện ổn định và sửa lỗi chung trong toàn bộ ứng dụng.
+Bản cập nhật này khắc phục lỗi trạng thái gói thành viên đôi khi chưa cập nhật đúng sau khi mua. Giờ đây trạng thái luôn được ghi nhận chính xác.

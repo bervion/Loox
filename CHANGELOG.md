@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.36.1] - 2026-07-17
+
+### Fixed
+- grant tier from the in-hand purchase and unblock the success path
+
+### Changed
+- update docs
+
+
 ## [1.36.0] - 2026-07-17
 
 ### Added
