@@ -107,6 +107,12 @@ struct ExportView: View {
                                          uniquingKeysWith: { a, _ in a })
             if mode == .encrypted {
                 let passkeys = env.session.vaultKey.map { PasskeyVault(store: env.store).secrets(key: $0) } ?? []
+                // A backup that silently omits existing passkeys would betray
+                // its purpose exactly when it matters (restore) — refuse
+                // instead of exporting an incomplete vault.
+                if passkeys.count < env.repository.passkeys.count {
+                    throw ExportError.passkeysUnavailable
+                }
                 let data = try await VaultBackup.exportEncrypted(items, folderNames: folderNames,
                                                                  passkeys: passkeys, passphrase: passphrase)
                 exportURL = try write(data, name: "loox-backup.vaultify")
@@ -125,5 +131,16 @@ struct ExportView: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         try data.write(to: url, options: .completeFileProtection)
         return url
+    }
+}
+
+/// An encrypted export must be COMPLETE to be a backup — a passkey the vault
+/// holds but the export can't resolve (vault key unavailable mid-flight, or a
+/// credential that fails to decode) would make the file silently lossy,
+/// discovered only at restore time.
+private enum ExportError: LocalizedError {
+    case passkeysUnavailable
+    var errorDescription: String? {
+        appString("Passkeys couldn't be included in this export. Lock the app, unlock it, then try again.")
     }
 }

@@ -65,9 +65,12 @@ import CloudKit
         status = .syncing
         do {
             _ = try await database.modifyRecordZones(saving: [zone], deleting: [])
-            try await push()
+            // Push errors are collected, not thrown mid-way: pull + reload
+            // still run, then the first push failure surfaces as the status.
+            let pushError = await push()
             try await pull()
             reload()
+            if let pushError { throw pushError }
             status = .success(.now)
         } catch let error as CKError where error.code == .notAuthenticated {
             status = .error(appString("Sign in to iCloud to sync."))
@@ -93,14 +96,23 @@ import CloudKit
         savedChangeToken = nil
     }
 
-    private func push() async throws {
-        try await pushItems()
-        try await pushFolders()
-        try await pushPersonas()
-        try await pushAliases()
-        try await pushInboxes()
-        try await pushAuditReports()
-        try await pushFindingStates()
+    /// Push every plane, isolating failures: one record type the server
+    /// rejects (typically a type not yet deployed to the PRODUCTION CloudKit
+    /// schema, where just-in-time creation is off) must not starve the other
+    /// planes or the pull — that coupling once kept fresh installs from ever
+    /// uploading items or the recovery envelope after the auto-seeded persona
+    /// hit an undeployed `VaultPersona` type. Returns the FIRST error so the
+    /// caller can surface it after everything ran.
+    private func push() async -> Error? {
+        var firstError: Error?
+        do { try await pushItems() } catch { firstError = firstError ?? error }
+        do { try await pushFolders() } catch { firstError = firstError ?? error }
+        do { try await pushPersonas() } catch { firstError = firstError ?? error }
+        do { try await pushAliases() } catch { firstError = firstError ?? error }
+        do { try await pushInboxes() } catch { firstError = firstError ?? error }
+        do { try await pushAuditReports() } catch { firstError = firstError ?? error }
+        do { try await pushFindingStates() } catch { firstError = firstError ?? error }
+        return firstError
     }
 
     private func pushItems() async throws {

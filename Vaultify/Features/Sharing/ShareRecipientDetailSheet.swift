@@ -175,9 +175,11 @@ struct ShareRecipientDetailSheet: View {
 
     /// Seed the capability editor from the LIVE grant (never a local guess).
     private func loadGrant() async {
-        guard share.fingerprintConfirmed,
-              let grant = try? await env.approvalShare.fetchGrantFresh(zoneID: zoneID),
-              let item else { return }
+        guard share.fingerprintConfirmed, let item,
+              let grant = try? await env.approvalShare.fetchGrantFresh(
+                  zoneID: zoneID, forItemId: item.id,
+                  nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
+        else { return }
         loadedGrant = grant
         // Preserve the live grant's device scope on any republish (INV-04).
         editingDeviceScope = grant.allowedDeviceKeyBindings.isEmpty ? .multi : .single
@@ -201,13 +203,15 @@ struct ShareRecipientDetailSheet: View {
         do {
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
             try await env.approvalShare.republishDisplayEnvelope(
+                itemId: item.id,
                 title: item.title.isEmpty ? appString("Shared item") : item.title,
                 websiteHost: item.urlField?.value.isEmpty == false
                     ? URL(string: item.urlField!.value)?.host : nil,
                 displayFields: Self.displayFields(for: item),
                 zoneID: zoneID, nowUnixMs: nowUnixMs)
             try await env.approvalShare.republishSharedValues(
-                values: Self.currentValues(for: item), zoneID: zoneID)
+                itemId: item.id, values: Self.currentValues(for: item),
+                zoneID: zoneID, nowUnixMs: nowUnixMs)
             statusNote = appString("Update sent.")
         } catch {
             errorMessage = error.localizedDescription

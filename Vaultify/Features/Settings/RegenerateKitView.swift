@@ -109,6 +109,9 @@ struct RegenerateKitView: View {
         busy = true; generateError = nil
         do {
             newKey = try await env.session.generateRecoveryKit()
+            // A regenerated key invalidates the synced envelope for future
+            // joins — push the replacement now, not on the next item sync.
+            env.syncNow()
             Haptics.success()
         } catch {
             generateError = appString("Couldn’t generate a new recovery key. Please try again.")

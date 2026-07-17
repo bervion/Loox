@@ -18,7 +18,7 @@ import Foundation
 /// signed-in iCloud account; the QR scan is what proves physical presence.
 @MainActor final class VaultKeyEscrowService {
     enum Failure: Error, LocalizedError {
-        case notConfigured, noEnvelope, timedOut
+        case notConfigured, noEnvelope, timedOut, cloudUnavailable
 
         var errorDescription: String? {
             switch self {
@@ -26,6 +26,8 @@ import Foundation
             case .noEnvelope:
                 return appString("No synced vault found for this iCloud account. Create the Emergency Kit on your other device with iCloud Sync on, then try again.")
             case .timedOut: return appString("No response from your other device. Generate a fresh QR code and try again.")
+            case .cloudUnavailable:
+                return appString("iCloud can't be reached right now. Check your connection and iCloud sign-in, then try again.")
             }
         }
     }
@@ -80,6 +82,10 @@ import Foundation
         record["kdf"] = kdfData as CKRecordValue
         record["updatedAt"] = Date.now as CKRecordValue
         do {
+            // Ensure the zone itself: the envelope must upload even when no
+            // item sync ever succeeded (fresh install, kit just generated) —
+            // saving an existing zone is a cheap server-side no-op.
+            _ = try await database.modifyRecordZones(saving: [zone], deleting: [])
             _ = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
             defaults.set(fingerprint, forKey: Self.pushedFingerprintKey)
         } catch {
@@ -88,11 +94,25 @@ import Foundation
     }
 
     /// Fetch the synced recovery envelope (new-device join by Emergency Kit).
+    /// Only an authoritative server "this record/zone doesn't exist" reads as
+    /// `.noEnvelope` — network, auth, or throttle failures propagate as
+    /// `.cloudUnavailable` instead. Collapsing every error into "no synced
+    /// vault" sent users doubting a perfectly good recovery key while the
+    /// device was merely offline.
     func fetchRecoveryEnvelope() async throws -> (wrapped: Data, salt: Data, kdf: KdfParams) {
         guard CloudSyncService.isConfigured else { throw Failure.notConfigured }
         let id = CKRecord.ID(recordName: Self.envelopeRecordName, zoneID: zone.zoneID)
-        guard let record = try? await database.record(for: id),
-              let wrapped = record["wrappedByRecovery"] as? Data,
+        let record: CKRecord
+        do {
+            record = try await database.record(for: id)
+        } catch let error as CKError
+            where error.code == .unknownItem || error.code == .zoneNotFound
+                || error.code == .userDeletedZone {
+            throw Failure.noEnvelope
+        } catch {
+            throw Failure.cloudUnavailable
+        }
+        guard let wrapped = record["wrappedByRecovery"] as? Data,
               let salt = record["recoverySalt"] as? Data,
               let kdfData = record["kdf"] as? Data,
               let kdf = try? JSONDecoder().decode(KdfParams.self, from: kdfData)

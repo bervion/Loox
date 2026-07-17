@@ -372,6 +372,36 @@
         }
       }
     },
+    "iCloud can't be reached right now. Check your connection and iCloud sign-in, then try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện chưa kết nối được iCloud. Hãy kiểm tra kết nối mạng và đăng nhập iCloud rồi thử lại."
+          }
+        }
+      }
+    },
+    "Passkeys couldn't be included in this export. Lock the app, unlock it, then try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa thể đưa passkey vào bản xuất này. Hãy khóa ứng dụng, mở khóa lại rồi thử lại."
+          }
+        }
+      }
+    },
+    "The passkey couldn't be prepared for sharing. Lock the app, unlock it, then try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa thể chuẩn bị passkey để chia sẻ. Hãy khóa ứng dụng, mở khóa lại rồi thử lại."
+          }
+        }
+      }
+    },
     "＋ Create new login" : {
       "localizations" : {
         "vi" : {

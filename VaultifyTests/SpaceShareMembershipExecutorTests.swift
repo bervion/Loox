@@ -135,6 +135,9 @@ import XCTest
                                     capabilities: ["stale": .value(.shared)], epoch: 3)]
         let store = makeStore()
         defer { store.wipe() }
+        store.upsert(ItemShareRecord(itemId: "item-1", zoneName: "apz-fam", recipientLabel: "member@example.com",
+                                    grantId: "grant-old", createdAtUnixMs: 0, fingerprintConfirmed: true,
+                                    spaceManaged: true))
         let executor = SpaceShareMembershipExecutor(publisher: fake, store: store)
 
         let summary = try await executor.reconcile(spaceItems: [item], recipient: makeRecipient(), nowUnixMs: 2000)
@@ -157,7 +160,7 @@ import XCTest
         defer { store.wipe() }
         store.upsert(ItemShareRecord(itemId: "item-1", zoneName: "apz-fam", recipientLabel: "member@example.com",
                                     grantId: "grant-old", createdAtUnixMs: 500,
-                                    fingerprintConfirmed: true, autoUpdate: false))
+                                    fingerprintConfirmed: true, autoUpdate: false, spaceManaged: true))
         let executor = SpaceShareMembershipExecutor(publisher: fake, store: store)
 
         _ = try await executor.reconcile(spaceItems: [item], recipient: makeRecipient(), nowUnixMs: 9000)
@@ -177,7 +180,8 @@ import XCTest
         let store = makeStore()
         defer { store.wipe() }
         store.upsert(ItemShareRecord(itemId: "item-1", zoneName: "apz-fam", recipientLabel: "member@example.com",
-                                    grantId: "grant-gone", createdAtUnixMs: 0, fingerprintConfirmed: true))
+                                    grantId: "grant-gone", createdAtUnixMs: 0, fingerprintConfirmed: true,
+                                    spaceManaged: true))
         let executor = SpaceShareMembershipExecutor(publisher: fake, store: store)
 
         let summary = try await executor.reconcile(spaceItems: [], recipient: makeRecipient(), nowUnixMs: 1000)
@@ -220,6 +224,12 @@ import XCTest
         ]
         let store = makeStore()
         defer { store.wipe() }
+        for (itemId, grantId) in [("item-2", "grant-2"), ("item-3", "grant-3"), ("item-4", "grant-4")] {
+            store.upsert(ItemShareRecord(itemId: itemId, zoneName: "apz-fam",
+                                        recipientLabel: "member@example.com", grantId: grantId,
+                                        createdAtUnixMs: 0, fingerprintConfirmed: true,
+                                        spaceManaged: true))
+        }
         let executor = SpaceShareMembershipExecutor(publisher: fake, store: store)
 
         let summary = try await executor.reconcile(
@@ -265,9 +275,11 @@ import XCTest
         let store = makeStore()
         defer { store.wipe() }
         store.upsert(ItemShareRecord(itemId: "item-1", zoneName: "apz-fam", recipientLabel: "member@example.com",
-                                    grantId: "grant-stuck", createdAtUnixMs: 0, fingerprintConfirmed: true))
+                                    grantId: "grant-stuck", createdAtUnixMs: 0, fingerprintConfirmed: true,
+                                    spaceManaged: true))
         store.upsert(ItemShareRecord(itemId: "item-2", zoneName: "apz-fam", recipientLabel: "member@example.com",
-                                    grantId: "grant-ok", createdAtUnixMs: 0, fingerprintConfirmed: true))
+                                    grantId: "grant-ok", createdAtUnixMs: 0, fingerprintConfirmed: true,
+                                    spaceManaged: true))
         let executor = SpaceShareMembershipExecutor(publisher: fake, store: store)
 
         let summary = try await executor.reconcile(spaceItems: [], recipient: makeRecipient(), nowUnixMs: 1000)
@@ -297,5 +309,31 @@ import XCTest
         XCTAssertTrue(second.outcomes.isEmpty)
         XCTAssertTrue(second.isFullySuccessful)
         XCTAssertEqual(fake.calls.count, 1, "the second reconcile must not re-publish anything")
+    }
+
+    // MARK: foreign grants (per-item ceremony shares in a reused zone)
+
+    /// A grant with no `spaceManaged` marker is a per-item ceremony share —
+    /// the fan-out must not revoke it, not downgrade it, and not publish over
+    /// it, while the Space's own items still reconcile normally.
+    func testReconcileLeavesForeignGrantsInTheReusedZoneUntouched() async throws {
+        let fake = FakePublisher()
+        fake.liveGrants = [makeGrant(id: "grant-foreign", itemId: "item-foreign",
+                                    capabilities: ["slot": .passkey(.shared)])]
+        let store = makeStore()
+        defer { store.wipe() }
+        store.upsert(ItemShareRecord(itemId: "item-foreign", zoneName: "apz-fam",
+                                    recipientLabel: "member@example.com",
+                                    grantId: "grant-foreign", createdAtUnixMs: 0,
+                                    fingerprintConfirmed: true))
+        let executor = SpaceShareMembershipExecutor(publisher: fake, store: store)
+
+        let summary = try await executor.reconcile(
+            spaceItems: [loginItem(id: "item-new")], recipient: makeRecipient(), nowUnixMs: 1000)
+
+        XCTAssertEqual(summary.outcomes, [Outcome(itemId: "item-new", kind: .created)])
+        XCTAssertFalse(fake.calls.contains(.revoke(grantId: "grant-foreign")))
+        XCTAssertFalse(store.shares(forItem: "item-foreign").isEmpty,
+                       "the ceremony share record must survive the fan-out")
     }
 }

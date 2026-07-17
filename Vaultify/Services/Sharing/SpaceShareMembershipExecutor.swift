@@ -136,7 +136,16 @@ struct SpaceShareRecipientContext {
         let desired = Reconciler.desired(spaceItems: spaceItems)
         let liveGrants = try await publisher.fetchAllGrants(zoneID: recipient.zoneID, nowUnixMs: nowUnixMs)
         let published = Reconciler.published(grants: liveGrants)
-        let ops = Reconciler.plan(desired: desired, published: published)
+        // Ownership registry: only grants THIS flow created may be updated or
+        // revoked — a reused zone also carries the recipient's per-item
+        // ceremony shares (passkeys, ask-each-time TOTP), which the blanket
+        // fan-out must leave exactly as the owner configured them.
+        let zoneName = recipient.zoneID.zoneName
+        let spaceManagedItemIds = Set(store.shares
+            .filter { $0.zoneName == zoneName && $0.spaceManaged == true }
+            .map(\.itemId))
+        let ops = Reconciler.planManaged(desired: desired, published: published,
+                                         spaceManagedItemIds: spaceManagedItemIds)
         guard !ops.isEmpty else { return Summary() }
 
         let itemsById = Dictionary(uniqueKeysWithValues: spaceItems.map { ($0.id, $0) })
@@ -211,6 +220,7 @@ struct SpaceShareRecipientContext {
             fingerprintConfirmed: true,
             inviteRecordName: zoneSibling?.inviteRecordName,
             dropRecordName: zoneSibling?.dropRecordName,
-            autoUpdate: existing?.autoUpdate)
+            autoUpdate: existing?.autoUpdate,
+            spaceManaged: true)
     }
 }

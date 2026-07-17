@@ -87,8 +87,15 @@ import Foundation
         await singleFlight.run { [cloudSync, repository] in
             await cloudSync.sync(reload: { repository.reloadAfterRemoteSync() })
         }
-        if settings.iCloudSyncEnabled, case .success = cloudSync.status {
-            await escrow.pushRecoveryEnvelopeIfNeeded()
+        guard settings.iCloudSyncEnabled else { return }
+        // The recovery envelope is the restore lifeline — it must reach
+        // CloudKit even when the item sync errored (one record type missing
+        // from the production schema was enough). Gating it on full-sync
+        // success starved it forever on affected installs, which surfaced as
+        // "restore with recovery key" finding no synced vault. The escrow
+        // write ensures its own zone and is fingerprint-cheap when unchanged.
+        await escrow.pushRecoveryEnvelopeIfNeeded()
+        if case .success = cloudSync.status {
             await pushService.ensureSubscribedIfNeeded()
             await deviceRegistry.publish()
         }

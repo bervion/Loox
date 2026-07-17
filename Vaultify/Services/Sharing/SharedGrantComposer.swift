@@ -18,8 +18,21 @@ enum SharedGrantComposer {
 
     enum ComposeError: LocalizedError {
         case singleDeviceUnavailable
+        /// A granted passkey's key material couldn't be resolved at publish
+        /// time (vault key momentarily unavailable, or the stored credential
+        /// failed to decode). Publishing anyway would hand the recipient a
+        /// signed grant that NAMES a passkey with no display metadata or
+        /// sealed key behind it — the silent way shares lose passkeys — so
+        /// the ceremony fails loudly and stays retryable.
+        case passkeyMaterialUnavailable
+
         var errorDescription: String? {
-            appString("Single-device sharing needs the recipient to update Loox first.")
+            switch self {
+            case .singleDeviceUnavailable:
+                return appString("Single-device sharing needs the recipient to update Loox first.")
+            case .passkeyMaterialUnavailable:
+                return appString("The passkey couldn't be prepared for sharing. Lock the app, unlock it, then try again.")
+            }
         }
     }
 
@@ -89,6 +102,14 @@ enum SharedGrantComposer {
                 return (field.id, Data(field.value.utf8))
             })
         var displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []
+        // Every slot the grant opens (any non-none passkey mode) must
+        // materialize its artifacts below — a slot named by the signed grant
+        // with nothing behind it renders as "nothing arrived" on the
+        // recipient, with no error anywhere.
+        let grantedPasskeySlots = Set(capabilities.compactMap { slot, capability -> String? in
+            guard case .passkey = capability, capability.grantsAnything else { return nil }
+            return slot
+        })
         if let vaultKey {
             let vault = PasskeyVault(store: store)
             let secretsBySlot: [(slot: String, secret: PasskeySecret)] = itemPasskeys.compactMap { pk in
@@ -96,9 +117,19 @@ enum SharedGrantComposer {
                 else { return nil }
                 return (PasskeySlot.slotId(credentialID: pk.credentialID), secret)
             }
+            let unresolved = grantedPasskeySlots.subtracting(secretsBySlot.map(\.slot))
+            guard unresolved.isEmpty else { throw ComposeError.passkeyMaterialUnavailable }
             let artifacts = passkeyArtifacts(secretsBySlot: secretsBySlot, capabilities: capabilities)
             displayPasskeys = artifacts.display
             for (slot, blob) in artifacts.shared { sharedValues[slot] = blob }
+            // Hand-over additionally needs its sealed key blob (a failed
+            // secret encode would otherwise be skipped silently).
+            for slot in grantedPasskeySlots
+            where capabilities[slot]?.isSharedValue == true && sharedValues[slot] == nil {
+                throw ComposeError.passkeyMaterialUnavailable
+            }
+        } else if !grantedPasskeySlots.isEmpty {
+            throw ComposeError.passkeyMaterialUnavailable
         }
         let displayFields = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
             capabilities[field.id]?.isSharedValue == true
