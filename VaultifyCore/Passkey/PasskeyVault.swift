@@ -24,8 +24,12 @@ struct PasskeyVault {
         let sealed = try seal(secret, key: key)
         let replaced = secretsForReplacement(secret, key: key)
         for entry in replaced { deletePending(credentialID: entry.credentialID) }
-        store.context.insert(PasskeyRecord(id: secret.credentialID.base64URLEncodedString(),
-                                           sealed: sealed, createdAt: secret.createdAt))
+        let record = PasskeyRecord(id: secret.credentialID.base64URLEncodedString(),
+                                   sealed: sealed, createdAt: secret.createdAt)
+        // Content mutation now, whatever the credential's own creation date —
+        // the LWW gate must reflect when THIS device (re)wrote the record.
+        record.updatedAt = .now
+        store.context.insert(record)
         try store.context.save()
         return SaveResult(replaced: replaced)
     }
@@ -78,10 +82,27 @@ struct PasskeyVault {
         key.withUnsafeBytes { secret(credentialID: credentialID, key: Array($0)) }
     }
 
+    /// Soft-delete: a tombstone that WIPES the key material and syncs, so the
+    /// deletion reaches CloudKit and every other device instead of the record
+    /// resurrecting on the next pull. Every read path filters tombstones.
     func delete(credentialID: Data) throws {
         guard let record = record(credentialID: credentialID) else { return }
-        store.context.delete(record)
+        tombstone(record)
         try store.context.save()
+    }
+
+    /// Shared tombstone shape (delete + synced replacement): wipe every secret
+    /// and hint, keep only the id + dates the sync plane needs.
+    private func tombstone(_ record: PasskeyRecord) {
+        record.sealed = Data()
+        record.envelopeSealed = nil
+        record.largeBlobSealed = nil
+        record.relyingPartyHint = nil
+        record.userNameHint = nil
+        record.userHandleHint = nil
+        record.deletedAt = .now
+        record.updatedAt = .now
+        record.dirty = true
     }
 
     func hasRecord(credentialID: Data) -> Bool {
@@ -106,6 +127,9 @@ struct PasskeyVault {
         guard let record = record(credentialID: credentialID) else { return false }
         do {
             record.largeBlobSealed = try AESGCM.seal(data, key: key)
+            // The blob syncs with the record — a write is a content mutation.
+            record.updatedAt = .now
+            record.dirty = true
             try store.context.save()
             return true
         } catch {
@@ -119,7 +143,9 @@ struct PasskeyVault {
         key.withUnsafeBytes { setLargeBlob(data, credentialID: credentialID, key: Array($0)) }
     }
 
-    /// Non-fatal metadata touch after successful assertion.
+    /// Non-fatal metadata touch after successful assertion. Deliberately does
+    /// NOT bump `updatedAt` or mark dirty — `usedAt` is device-local, and every
+    /// assertion would otherwise re-push the record to CloudKit.
     func touchLastUsed(credentialID: Data) {
         guard let record = record(credentialID: credentialID) else { return }
         record.usedAt = .now
@@ -135,8 +161,13 @@ struct PasskeyVault {
         return try AESGCM.seal(JSONEncoder().encode(secret), key: key)
     }
 
+    /// LIVE records only — tombstoned (deleted) passkeys are invisible to every
+    /// read and ceremony path. Sync reconciliation reads the raw set, including
+    /// tombstones, via `VaultStore.allPasskeyRecords` instead.
     func records() -> [PasskeyRecord] {
-        (try? store.context.fetch(FetchDescriptor<PasskeyRecord>())) ?? []
+        let descriptor = FetchDescriptor<PasskeyRecord>(
+            predicate: #Predicate { $0.deletedAt == nil })
+        return (try? store.context.fetch(descriptor)) ?? []
     }
 
     private func allDecoded(key: [UInt8]) -> [(record: PasskeyRecord, secret: PasskeySecret)] {
@@ -169,14 +200,22 @@ struct PasskeyVault {
     }
 
     func record(id: String) -> PasskeyRecord? {
-        var descriptor = FetchDescriptor<PasskeyRecord>(predicate: #Predicate { $0.id == id })
+        var descriptor = FetchDescriptor<PasskeyRecord>(
+            predicate: #Predicate { $0.id == id && $0.deletedAt == nil })
         descriptor.fetchLimit = 1
         return try? store.context.fetch(descriptor).first
     }
 
+    /// Replacement removal. An envelope-staged record never synced (locked
+    /// writes stay device-local), so it can be hard-deleted; a sealed record
+    /// may already live in CloudKit and must TOMBSTONE instead — otherwise the
+    /// replaced credential resurrects from the cloud on the next pull.
     func deletePending(credentialID: Data) {
-        if let record = record(credentialID: credentialID) {
+        guard let record = record(credentialID: credentialID) else { return }
+        if record.envelopeSealed != nil {
             store.context.delete(record)
+        } else {
+            tombstone(record)
         }
     }
 

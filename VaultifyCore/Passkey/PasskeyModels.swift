@@ -79,7 +79,25 @@ final class PasskeyRecord {
     /// assertion; interactive ceremonies only (never the locked silent path).
     var largeBlobSealed: Data?
     var createdAt: Date
+    /// Device-local by design — never synced and never marks the record dirty
+    /// (assertions would otherwise re-push a record on every use).
     var usedAt: Date?
+    /// Last content mutation (create, envelope promotion, large-blob write,
+    /// tombstone) — the LWW gate for CloudKit sync. The sealed payload is
+    /// immutable after creation (constant-zero sign counter, `WebAuthn.swift`),
+    /// so one content gate suffices, exactly like `FolderRecord`.
+    var updatedAt: Date = Date.now
+    /// Soft-delete tombstone retained for sync reconciliation. A tombstone also
+    /// WIPES `sealed`/`largeBlobSealed` — deleting a passkey removes its key
+    /// material everywhere, it never merely hides it.
+    var deletedAt: Date?
+
+    // Sync metadata (CloudKit) — mirrors FolderRecord. `dirty` defaults true so
+    // records created before these columns existed upload on the first sync
+    // after the update: the backfill IS the migration default.
+    var dirty: Bool = true
+    var ckRecordName: String?
+    var ckChangeTag: String?
 
     init(id: String, sealed: Data, envelopeSealed: Data? = nil,
          relyingPartyHint: String? = nil, userNameHint: String? = nil,
@@ -94,6 +112,9 @@ final class PasskeyRecord {
         self.largeBlobSealed = largeBlobSealed
         self.createdAt = createdAt
         self.usedAt = usedAt
+        self.updatedAt = createdAt
+        self.deletedAt = nil
+        self.dirty = true
     }
 }
 
