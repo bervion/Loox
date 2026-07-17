@@ -46,10 +46,10 @@ import StoreKit
     }
 
     /// `AppTransaction.environment != .production` — the supported signal for
-    /// TestFlight/App Review (`.sandbox`). Resolved once at start, RELEASE
-    /// only and only when a receipt file exists: TestFlight/App Store installs
-    /// always have one, so the call never triggers App Store auth UI. Missing
-    /// or unverifiable receipts leave it false (dark is the safe default).
+    /// TestFlight/App Review (`.sandbox`). Resolved once at start on RELEASE
+    /// builds straight from `AppTransaction.shared` (store-distributed
+    /// installs answer from the store record; anything without store context
+    /// throws and stays false — dark is the safe default).
     private(set) var betaPurchaseAccess = false
 
     #if DEBUG
@@ -99,15 +99,17 @@ import StoreKit
     func start() {
         guard updatesTask == nil else { return }
         #if !DEBUG
-        // Receipt-presence pre-check keeps this prompt-free (see
-        // `betaPurchaseAccess`); TestFlight/App Store installs always pass it.
-        if let receiptURL = Bundle.main.appStoreReceiptURL,
-           FileManager.default.fileExists(atPath: receiptURL.path) {
-            Task { [weak self] in
-                guard let result = try? await AppTransaction.shared,
-                      case .verified(let appTransaction) = result else { return }
-                self?.betaPurchaseAccess = appTransaction.environment != .production
-            }
+        // AppTransaction is consulted DIRECTLY on Release: the earlier
+        // legacy-receipt-file pre-check never opened on the owner's iOS 27
+        // TestFlight install (modern TestFlight builds can ship without the
+        // legacy receipt file), which kept every purchase surface dark
+        // (observed on-device 260717). Store-distributed installs resolve the
+        // app transaction from the store record without auth UI; an install
+        // with no store context simply throws and stays dark — the safe state.
+        Task { [weak self] in
+            guard let result = try? await AppTransaction.shared,
+                  case .verified(let appTransaction) = result else { return }
+            self?.betaPurchaseAccess = appTransaction.environment != .production
         }
         #endif
         updatesTask = Task { [weak self] in
