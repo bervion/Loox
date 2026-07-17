@@ -28,8 +28,12 @@ struct EmergencyKitInfo {
     /// without the synced vault, so this matches the safety of the manual-entry path.
     var qrPayload: String { recoveryKey }
 
-    /// File name offered by the exporter (the `.pdf` extension is added by the exporter).
-    var suggestedFilename: String { "Loox Emergency Kit" }
+    /// File name offered by the exporter. The `.pdf` extension must be part of the
+    /// name: iOS's `fileExporter` does NOT reliably append it from the content type
+    /// (an extensionless kit has no UTI — Files/QuickLook can't open it, exactly
+    /// when the kit is needed). A name whose extension already matches the export
+    /// content type is kept as-is, never doubled.
+    var suggestedFilename: String { "Loox Emergency Kit.pdf" }
 
     /// Localized "Created for {name} on {date}." — omits the name clause when unknown.
     var createdLine: String {

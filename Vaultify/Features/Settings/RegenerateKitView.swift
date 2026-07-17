@@ -74,8 +74,10 @@ struct RegenerateKitView: View {
         } message: {
             Text("Your previous recovery key will stop working.")
         }
+        // Extension in the name on purpose — iOS's fileExporter doesn't reliably
+        // append it from the content type (see EmergencyKitInfo.suggestedFilename).
         .fileExporter(isPresented: $showExporter, document: pdfFile, contentType: .pdf,
-                      defaultFilename: "Loox Emergency Kit") { result in
+                      defaultFilename: "Loox Emergency Kit.pdf") { result in
             if case .failure(let error) = result, (error as NSError).code != NSUserCancelledError {
                 exportError = appString("Couldn’t save the Emergency Kit. Please try again.")
                 Haptics.error()
