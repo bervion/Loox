@@ -1,1 +1,1 @@
-This update fixes an issue where some purchases weren't reflected correctly after completing a transaction. Membership status now updates reliably every time.
+This update adds anonymous, privacy-respecting usage insights with a toggle to opt out anytime, and fixes an issue where exported emergency kit files were missing the correct extension.

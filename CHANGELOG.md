@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.37.0] - 2026-07-17
+
+### Added
+- GA4 engine with typed event catalog and consent toggle
+
+### Fixed
+- include .pdf extension in exported kit filename
+
+### Changed
+- update docs
+
+
 ## [1.36.1] - 2026-07-17
 
 ### Fixed

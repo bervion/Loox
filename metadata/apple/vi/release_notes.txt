@@ -1,1 +1,1 @@
-Bản cập nhật này khắc phục lỗi trạng thái gói thành viên đôi khi chưa cập nhật đúng sau khi mua. Giờ đây trạng thái luôn được ghi nhận chính xác.
+Bản cập nhật này bổ sung thống kê sử dụng ẩn danh, tôn trọng quyền riêng tư, có thể tắt bất cứ lúc nào, đồng thời khắc phục lỗi thiếu đuôi file khi xuất bộ hồ sơ khẩn cấp.
