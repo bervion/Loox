@@ -1,5 +1,10 @@
 import Foundation
+import os
 import StoreKit
+
+/// Diagnostic logger for beta purchase-access resolution. Booleans and
+/// environment names only — never receipts or transaction payloads.
+private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category: "subscription")
 
 /// Client-side source of truth for the user's Loox tier: verified StoreKit 2
 /// transactions, projected into an observable value the UI and gates read.
@@ -99,18 +104,7 @@ import StoreKit
     func start() {
         guard updatesTask == nil else { return }
         #if !DEBUG
-        // AppTransaction is consulted DIRECTLY on Release: the earlier
-        // legacy-receipt-file pre-check never opened on the owner's iOS 27
-        // TestFlight install (modern TestFlight builds can ship without the
-        // legacy receipt file), which kept every purchase surface dark
-        // (observed on-device 260717). Store-distributed installs resolve the
-        // app transaction from the store record without auth UI; an install
-        // with no store context simply throws and stays dark — the safe state.
-        Task { [weak self] in
-            guard let result = try? await AppTransaction.shared,
-                  case .verified(let appTransaction) = result else { return }
-            self?.betaPurchaseAccess = appTransaction.environment != .production
-        }
+        Task { [weak self] in await self?.resolveBetaPurchaseAccess() }
         #endif
         updatesTask = Task { [weak self] in
             await self?.refresh()
@@ -132,6 +126,43 @@ import StoreKit
     func refreshNow() async {
         await refresh()
     }
+
+    #if !DEBUG
+    /// TestFlight/App Review detection, layered — any ONE signal opens beta
+    /// purchase surfaces; none marks production, so App Store installs stay
+    /// dark until `LooxMembership.launchEnabled`:
+    /// 1. The receipt URL NAME, synchronous and offline-safe: sandbox
+    ///    (TestFlight) installs point at "sandboxReceipt" even when the
+    ///    legacy receipt FILE is absent — the original fileExists pre-check
+    ///    went dark exactly there (observed on-device 260717).
+    /// 2. `AppTransaction.shared` environment, retried briefly: the previous
+    ///    one-shot attempt could fail on a launch-time hiccup (network,
+    ///    App Store session) and leave every surface dark until the next
+    ///    cold launch, with nothing logged to say why.
+    private func resolveBetaPurchaseAccess() async {
+        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
+            subscriptionLog.log("beta access ON: sandbox receipt URL")
+            betaPurchaseAccess = true
+            return
+        }
+        for attempt in 1...3 {
+            do {
+                let result = try await AppTransaction.shared
+                guard case .verified(let appTransaction) = result else {
+                    subscriptionLog.error("beta access OFF: app transaction unverified")
+                    return
+                }
+                let beta = appTransaction.environment != .production
+                subscriptionLog.log("beta access \(beta ? "ON" : "OFF", privacy: .public): environment \(appTransaction.environment.rawValue, privacy: .public)")
+                betaPurchaseAccess = beta
+                return
+            } catch {
+                subscriptionLog.error("beta access attempt \(attempt, privacy: .public)/3 failed: \(String(describing: error), privacy: .public)")
+                if attempt < 3 { try? await Task.sleep(for: .seconds(attempt == 1 ? 5 : 20)) }
+            }
+        }
+    }
+    #endif
 
     /// Recompute the tier from the verified current entitlements (highest wins,
     /// `LooxProductID.resolveTier`). Unverified results and revoked
