@@ -136,6 +136,7 @@ struct LockScreen: View {
         .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: mode)
         .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: requireSlide)
         .sheet(isPresented: $showRecovery) { RecoveryView() }
+        .analyticsScreen("lock")
         .onAppear {
             // After a shake-lock, wait for the slide; otherwise auto-prompt as usual.
             guard !requireSlide else { return }
@@ -201,9 +202,11 @@ struct LockScreen: View {
         defer { bioAuthenticating = false }
         do {
             try await env.session.unlockWithBiometrics()
+            AnalyticsEngine.shared.log(.vaultUnlocked(method: "biometric"))
             onUnlockSuccess()
             // Success → session state flips to unlocked → this view is replaced.
         } catch {
+            AnalyticsEngine.shared.log(.vaultUnlockFailed(method: "biometric"))
             bioFailCount += 1
             Haptics.error()
             if bioFailCount >= maxBioAttempts {
@@ -219,9 +222,11 @@ struct LockScreen: View {
         busy = true; error = nil
         do {
             try await env.session.unlock(password: password)
+            AnalyticsEngine.shared.log(.vaultUnlocked(method: "password"))
             onUnlockSuccess()
             password = ""
         } catch {
+            AnalyticsEngine.shared.log(.vaultUnlockFailed(method: "password"))
             self.error = error.localizedDescription
             Haptics.error()
             env.theme.morphMesh()

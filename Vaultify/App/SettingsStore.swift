@@ -86,6 +86,15 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// gated by the vault-sync toggle (control plane ≠ secret plane).
     var approvalModeEnabled: Bool { didSet { defaults.set(approvalModeEnabled, forKey: Key.approvalMode) } }
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
+    /// Anonymous GA4 usage statistics (see `AnalyticsEngine`'s privacy contract).
+    /// Opt-out; the didSet keeps the live engine in lockstep so flipping the
+    /// switch applies immediately, no relaunch.
+    var analyticsEnabled: Bool {
+        didSet {
+            defaults.set(analyticsEnabled, forKey: Key.analytics)
+            AnalyticsEngine.shared.setEnabled(analyticsEnabled)
+        }
+    }
     var clipboardClearSeconds: Int { didSet { defaults.set(clipboardClearSeconds, forKey: Key.clipboard) } }
     var hideInAppSwitcher: Bool { didSet { defaults.set(hideInAppSwitcher, forKey: Key.privacyScreen) } }
     /// Which payment card the Profile screen shows as "your" card. Device-local (not synced) —
@@ -139,6 +148,10 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
             // Mirror into the App Group so the AutoFill extension localizes against the same choice.
             SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
             appResourceLocale = appLocale(forCode: preferredLanguage)
+            // Every UI path (iOS selection screen, Mac segmented picker) funnels
+            // through this setter, so the language signal lives here, not per-view.
+            AnalyticsEngine.shared.log(.languageChanged(preferredLanguage))
+            AnalyticsEngine.shared.setUserProperty(.appLanguage, preferredLanguage)
         }
     }
 
@@ -165,6 +178,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         iCloudSyncEnabled = d.bool(forKey: Key.icloud)
         approvalModeEnabled = d.bool(forKey: Key.approvalMode)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
+        analyticsEnabled = d.object(forKey: Key.analytics) as? Bool ?? true
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
         selectedPaymentCardId = d.string(forKey: Key.selectedCard)
@@ -196,6 +210,12 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         UserDefaults.standard.object(forKey: Key.rotationReminders) as? Bool ?? true
     }
 
+    /// Consent read for `AnalyticsEngine` bootstrap, which runs before any
+    /// `SettingsStore` instance exists.
+    nonisolated static func isAnalyticsEnabled() -> Bool {
+        UserDefaults.standard.object(forKey: Key.analytics) as? Bool ?? true
+    }
+
     private nonisolated enum Key {
         static let onboarding = "onboarding_completed"
         static let hasChosenAppearance = "has_chosen_appearance"
@@ -209,6 +229,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let icloud = "icloud_sync_enabled"
         static let approvalMode = "approval_mode_enabled"
         static let favicons = "show_website_icons"
+        static let analytics = "analytics_enabled"
         static let clipboard = "clipboard_clear_seconds"
         static let privacyScreen = "hide_in_app_switcher"
         static let selectedCard = "profile_selected_payment_card_id"

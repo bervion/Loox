@@ -375,6 +375,7 @@ import UserNotifications
         try store.context.save()
         reload()
         noteLocalMutation()
+        AnalyticsEngine.shared.log(.itemCreated(item.category))
         if SettingsStore.isRotationRemindersEnabled() {
             RotationNotificationService.shared.schedule(item: item, passwordChangedAt: record.passwordChangedAt)
         }
@@ -408,6 +409,7 @@ import UserNotifications
         try store.context.save()
         reload()
         noteLocalMutation()
+        AnalyticsEngine.shared.log(.itemUpdated(item.category))
         if SettingsStore.isRotationRemindersEnabled() {
             RotationNotificationService.shared.schedule(
                 item: updated, passwordChangedAt: record.passwordChangedAt)
@@ -481,6 +483,7 @@ import UserNotifications
         try store.context.save()
         reload()
         noteLocalMutation()
+        AnalyticsEngine.shared.log(.itemDeleted(item.category))
         RotationNotificationService.shared.cancel(itemID: item.id)
     }
 

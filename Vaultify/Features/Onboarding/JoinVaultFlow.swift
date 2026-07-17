@@ -141,6 +141,7 @@ struct JoinVaultFlow: View {
 
     /// Leave onboarding — the unlocked app takes over (content arrives via sync).
     private func finish() {
+        AnalyticsEngine.shared.log(.vaultRestored(method: method == .qr ? "qr" : "recovery"))
         env.settings.onboardingCompleted = true
     }
 }

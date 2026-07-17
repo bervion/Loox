@@ -147,6 +147,18 @@ opt.c), wired via a bridging header + `HEADER_SEARCH_PATHS=$(SRCROOT)/VaultifyCo
 KAT: `Argon2id(password, somesalt, t=2, m=65536, p=1, len=32)` =
 `09316115d5cf24ed5a15a31a3ba326e5cf32edc24702987c02b6566f61913cf7`.
 
+## Analytics (GA4)
+
+`Vaultify/Analytics/` — `AnalyticsEngine.shared.log(...)` with events from the **typed
+catalog** (`AnalyticsEvents.swift`) only; never inline `AnalyticsEvent("...")` at call
+sites, and every new factory gets an `auditSamples` entry (GA4 limits are test-enforced).
+PRIVACY CONTRACT: parameters carry item TYPES, `AnalyticsBucket` counts, product IDs,
+setting states — never item names/values, websites, search terms, or user content. App
+target only (extensions must never link Firebase; product is `FirebaseAnalyticsCore` —
+no IDFA). Bulk flows wrap repository writes in `runSuppressed` + one summary event.
+Screens: `.analyticsScreen("snake_name")`. Works without `GoogleService-Info.plist`
+(analytics dark); the real plist lives in `Vaultify/Resources/`.
+
 ## Verifying runtime behavior
 
 stdout/console capture is unreliable here. Use a DEBUG file-based self-test: write to

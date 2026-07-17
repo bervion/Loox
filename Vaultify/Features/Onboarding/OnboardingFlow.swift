@@ -81,7 +81,10 @@ struct OnboardingFlow: View {
             case .biometric:
                 EnableBiometricView(onEnable: enableBiometric) { step = .done }
             case .done:
-                OnboardingDoneStep { env.settings.onboardingCompleted = true }
+                OnboardingDoneStep {
+                    AnalyticsEngine.shared.log(.tutorialComplete)
+                    env.settings.onboardingCompleted = true
+                }
             }
         }
         .animation(.vault(.smooth(duration: 0.35), reduceMotion: reduceMotion), value: step)
@@ -109,6 +112,7 @@ struct OnboardingFlow: View {
         // (Apple grouped style). Welcome and Done paint their own white page
         // over this, so only the form steps show the gray.
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
+        .onAppear { AnalyticsEngine.shared.log(.tutorialBegin) }
     }
 
     /// Wraps a step in native nav chrome with a standard iOS back control.
@@ -131,6 +135,7 @@ struct OnboardingFlow: View {
     private func createVault(_ password: String) async -> String? {
         do {
             try await env.session.createVault(masterPassword: password)
+            AnalyticsEngine.shared.log(.vaultCreated)
             // Turn on iCloud sync by default for new vaults — the Emergency Kit / recovery
             // path restores from the synced copy, so a fresh user gets multi-device recovery
             // without hunting through Settings. No-op unless the build is iCloud-configured
@@ -158,7 +163,8 @@ struct OnboardingFlow: View {
             note: note, tag: tag)
         // File the seed into "My Vault" (matches the editor's default) so it isn't Unfiled.
         identity.folderId = defaultFolderId ?? env.repository.primarySpaceId
-        try? env.repository.add(identity)
+        // Seeded, not user-created — keep it out of the item_created stream.
+        AnalyticsEngine.shared.runSuppressed { try? env.repository.add(identity) }
     }
 
     private func enableBiometric() {

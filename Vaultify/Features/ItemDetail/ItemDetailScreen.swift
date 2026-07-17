@@ -329,6 +329,9 @@ struct ItemDetailScreen: View {
                   let vaultKey = env.session.vaultKey?.bytes else { return }
             safetyCode = await env.sharedItems.safetyCode(forItem: itemID, vaultKey: vaultKey)
         }
+        .onAppear {
+            if let item { AnalyticsEngine.shared.log(.itemViewed(item.category)) }
+        }
     }
 
     private func leaveShare() async {

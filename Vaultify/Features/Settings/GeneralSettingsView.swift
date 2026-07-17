@@ -85,6 +85,16 @@ struct GeneralSettingsView: View {
                 Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
             }
             .listRowBackground(VaultColors.surface)
+
+            Section {
+                Toggle(isOn: $settings.analyticsEnabled) {
+                    Label { Text("Share anonymous usage statistics") } icon: { SettingsIconBadge(systemName: "chart.bar.fill", tint: SettingsBadgeTint.green) }
+                }
+                .tint(switchTint)
+            } footer: {
+                Text("Counts which features are used to help improve Loox. Never your vault contents, item names, websites, or search terms. Not linked to your identity.")
+            }
+            .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
         .toggleStyle(.switch)

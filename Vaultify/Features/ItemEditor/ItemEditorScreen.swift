@@ -188,6 +188,7 @@ struct ItemEditorScreen: View {
             // fired. TextFields/Menus have their own UIKit gestures and still work; scroll
             // dismissal covers the keyboard.)
             .scrollDismissesKeyboard(.immediately)
+            .analyticsScreen(isNew ? "item_editor_new" : "item_editor_edit")
             .onAppear {
                 // New items default to the primary Space ("My Vault") so they have
                 // a home; applied once so it never overrides a user's own pick.

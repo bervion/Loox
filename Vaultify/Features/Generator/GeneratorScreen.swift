@@ -18,6 +18,7 @@ struct GeneratorScreen: View {
         ) {
             PasswordGeneratorView(output: $output)
         }
+        .analyticsScreen("generator")
     }
 }
 

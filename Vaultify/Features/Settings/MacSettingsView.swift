@@ -146,6 +146,14 @@ private struct MacGeneralSettingsPane: View {
             }
 
             Section {
+                Toggle(isOn: $settings.analyticsEnabled) {
+                    Label { Text("Share anonymous usage statistics") } icon: { PolarisIcon(Icons.chartFill) }
+                }
+            } footer: {
+                Text("Counts which features are used to help improve Loox. Never your vault contents, item names, websites, or search terms. Not linked to your identity.")
+            }
+
+            Section {
                 Button { env.session.lock(deliberate: true) } label: {
                     Label { Text("Lock Now") } icon: { PolarisIcon(Icons.lockFill) }
                 }

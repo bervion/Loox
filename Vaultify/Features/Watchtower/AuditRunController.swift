@@ -75,6 +75,8 @@ import SwiftUI
                         .save(report: report, personaID: personaID, key: freshKey)
                     lastRun = report
                     phase = .finished
+                    AnalyticsEngine.shared.log(.watchtowerScanCompleted(
+                        findingsBucket: AnalyticsBucket.count(report.findings.count)))
                     Haptics.success()
                 }
             } catch {
