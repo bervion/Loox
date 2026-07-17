@@ -1,1 +1,1 @@
-Bản cập nhật này bổ sung thống kê sử dụng ẩn danh, tôn trọng quyền riêng tư, có thể tắt bất cứ lúc nào, đồng thời khắc phục lỗi thiếu đuôi file khi xuất bộ hồ sơ khẩn cấp.
+Bản cập nhật này tăng độ tin cậy bằng cách đảm bảo một bước kiểm tra tải lên hiếm gặp không còn cho phép truy cập ngoài ý muốn khi bước kiểm tra đó không thể thực hiện.

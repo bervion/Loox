@@ -1,1 +1,1 @@
-This update adds anonymous, privacy-respecting usage insights with a toggle to opt out anytime, and fixes an issue where exported emergency kit files were missing the correct extension.
+This update improves reliability by ensuring a rare upload check no longer allows unintended access when the check itself cannot run.

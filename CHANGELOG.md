@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.37.1] - 2026-07-18
+
+### Fixed
+- fail closed when the upload assertion is unavailable
+
+
 ## [1.37.0] - 2026-07-17
 
 ### Added
