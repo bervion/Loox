@@ -58,6 +58,16 @@ struct LooxAcquisitionPaywallView: View {
             if loadState == .ready { bottomBar }
         }
         .task { await load() }
+        // Prices are storefront-bound: before the first sandbox sign-in the
+        // device answers from the DEFAULT storefront (USD), then the purchase
+        // sheet attaches the sandbox account's real one (VND). Repricing on
+        // storefront change keeps the paywall and the payment sheet telling
+        // the same number — and covers real users switching regions too.
+        .task {
+            for await _ in Storefront.updates {
+                await load()
+            }
+        }
         .alert(Text("Waiting for approval"), isPresented: $purchasePending) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -430,11 +440,18 @@ struct LooxAcquisitionPaywallView: View {
                     flowMessage = appString("The purchase didn't go through. You have not been charged.")
                     return
                 }
+                // The verified transaction in hand IS the entitlement — grant
+                // the tier from it directly; `currentEntitlements` can trail
+                // a fresh purchase (sandbox especially).
+                env.entitlements.applyVerified(transaction)
                 await env.entitlements.refreshNow()
                 await transaction.finish()
                 // Attach trigger (1): purchase success → backend learns the
-                // subscription and hands back grants/leases (dormant plumbing).
-                await env.entitlementCoordinator.attachNow()
+                // subscription (dormant plumbing). Fire-and-forget — a slow
+                // or waking backend must never hold the paid-and-confirmed
+                // moment hostage (it blocked the success haptic + dismiss
+                // for up to a minute on-device).
+                Task { await env.entitlementCoordinator.attachNow() }
                 Haptics.success()
                 dismiss()
             case .pending:
@@ -464,7 +481,8 @@ struct LooxAcquisitionPaywallView: View {
             // Attach trigger (2): restore on this device — the coordinator
             // adopts the appAccountToken from the verified transaction, so
             // every install converges on the purchase's identity.
-            await env.entitlementCoordinator.attachNow()
+            // Fire-and-forget, same rule as the purchase path.
+            Task { await env.entitlementCoordinator.attachNow() }
             Haptics.success()
             dismiss()
         } else {
