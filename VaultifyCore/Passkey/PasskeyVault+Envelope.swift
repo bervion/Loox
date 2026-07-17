@@ -16,7 +16,11 @@ extension PasskeyVault {
     /// make replacement impossible without opening; unlock migration reconciles.
     func saveEnvelope(_ secret: PasskeySecret, envelopeSealed: Data) throws {
         let id = secret.credentialID.base64URLEncodedString()
-        if let existing = record(id: id) {
+        // Raw lookup (tombstones included): an insert on a tombstoned unique
+        // id would hit SwiftData's constraint merge, which does not clear the
+        // existing row's tombstone columns — update in place instead (same
+        // determinism rule as `save`).
+        if let existing = store.passkeyRecord(id: id) {
             existing.sealed = Data()
             existing.envelopeSealed = envelopeSealed
             existing.relyingPartyHint = secret.relyingParty
@@ -24,12 +28,18 @@ extension PasskeyVault {
             existing.userHandleHint = secret.userHandle
             existing.createdAt = secret.createdAt
             existing.usedAt = nil
+            existing.deletedAt = nil
+            // Locked-write staging never syncs — only THIS device's envelope
+            // key can promote it. It becomes dirty at unlock migration.
+            existing.dirty = false
         } else {
-            store.context.insert(PasskeyRecord(id: id, sealed: Data(), envelopeSealed: envelopeSealed,
-                                               relyingPartyHint: secret.relyingParty,
-                                               userNameHint: secret.userName,
-                                               userHandleHint: secret.userHandle,
-                                               createdAt: secret.createdAt))
+            let record = PasskeyRecord(id: id, sealed: Data(), envelopeSealed: envelopeSealed,
+                                       relyingPartyHint: secret.relyingParty,
+                                       userNameHint: secret.userName,
+                                       userHandleHint: secret.userHandle,
+                                       createdAt: secret.createdAt)
+            record.dirty = false
+            store.context.insert(record)
         }
         try store.context.save()
     }
@@ -80,6 +90,10 @@ extension PasskeyVault {
                 record.userNameHint = nil
                 record.userHandleHint = nil
                 record.createdAt = secret.createdAt
+                // Promotion to a Vault-Key sealed record is the moment a
+                // locked write becomes syncable.
+                record.updatedAt = .now
+                record.dirty = true
                 result.migrated += 1
                 result.replaced.append(contentsOf: replaced)
             } catch {

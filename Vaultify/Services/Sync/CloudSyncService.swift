@@ -22,6 +22,7 @@ import CloudKit
     private let zone = CKRecordZone(zoneName: "Vault")
     private let recordType = "VaultItem"
     private let folderRecordType = "VaultFolder"
+    private let passkeyRecordType = "VaultPasskey"
     private let personaRecordType = "VaultPersona"
     private let aliasRecordType = "VaultEmailAlias"
     private let inboxRecordType = "VaultForwardingInbox"
@@ -107,6 +108,7 @@ import CloudKit
         var firstError: Error?
         do { try await pushItems() } catch { firstError = firstError ?? error }
         do { try await pushFolders() } catch { firstError = firstError ?? error }
+        do { try await pushPasskeys() } catch { firstError = firstError ?? error }
         do { try await pushPersonas() } catch { firstError = firstError ?? error }
         do { try await pushAliases() } catch { firstError = firstError ?? error }
         do { try await pushInboxes() } catch { firstError = firstError ?? error }
@@ -169,6 +171,7 @@ import CloudKit
             switch record.recordType {
             case self.recordType: self.apply(record)
             case self.folderRecordType: self.applyFolder(record)
+            case self.passkeyRecordType: self.applyPasskey(record)
             case self.personaRecordType: self.applyPersona(record)
             case self.aliasRecordType: self.applyAlias(record)
             case self.inboxRecordType: self.applyInbox(record)
@@ -255,6 +258,64 @@ import CloudKit
             iconAsset: iconAsset, colorRaw: colorRaw,
             sortIndex: (record["sortIndex"] as? Int) ?? 0,
             deletedAt: record["deletedAt"] as? Date,
+            createdAt: createdAt, updatedAt: updatedAt,
+            changeTag: record.recordChangeTag)
+    }
+
+    private func pushPasskeys() async throws {
+        // Locked-write staging (`envelopeSealed != nil`) never syncs — only
+        // this device's envelope key can promote it to a sealed record; the
+        // unlock migration marks it dirty at that moment. The id-length guard
+        // covers CKRecord's 255-char record-name cap: every Vaultify-minted
+        // credential id is 22 chars, but iOS 26 credential exchange can import
+        // foreign ids up to 1024 bytes — those stay device-local (and in
+        // encrypted exports) instead of crashing the plane; revisit with a
+        // hashed-name scheme if real imports ever hit this.
+        let dirty = store.allPasskeyRecords().filter {
+            $0.dirty && $0.envelopeSealed == nil && $0.id.utf8.count <= 255
+        }
+        guard !dirty.isEmpty else { return }
+        let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
+        let records = dirty.map(ckPasskeyRecord(from:))
+        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
+        for (recordID, saveResult) in result.saveResults {
+            if case .success(let saved) = saveResult,
+               let local = store.passkeyRecord(id: recordID.recordName),
+               let snapshot = snapshots[recordID.recordName] {
+                store.markPasskeySynced(local, changeTag: saved.recordChangeTag,
+                                        snapshotUpdatedAt: snapshot)
+            }
+        }
+    }
+
+    private func ckPasskeyRecord(from record: PasskeyRecord) -> CKRecord {
+        let id = CKRecord.ID(recordName: record.id, zoneID: zone.zoneID)
+        let ck = CKRecord(recordType: passkeyRecordType, recordID: id)
+        // Every field is ALWAYS assigned: `.changedKeys` transmits only the
+        // keys set on this fresh CKRecord, so an omitted-when-nil optional
+        // could never be CLEARED server-side — a tombstone couldn't wipe the
+        // cloud blob, and a revived credential (backup re-import) couldn't
+        // clear its cloud tombstone, permanently diverging devices. Absence
+        // is encoded in-band instead: empty Data / 0 ms.
+        ck["sealed"] = record.sealed as CKRecordValue
+        ck["largeBlobSealed"] = (record.largeBlobSealed ?? Data()) as CKRecordValue
+        ck["createdAt"] = record.createdAt as CKRecordValue
+        ck["updatedAt"] = record.updatedAt as CKRecordValue
+        let deletedAtMs = record.deletedAt.map { Int64($0.timeIntervalSince1970 * 1000) } ?? 0
+        ck["deletedAtMs"] = deletedAtMs as CKRecordValue
+        return ck
+    }
+
+    private func applyPasskey(_ record: CKRecord) {
+        guard let sealed = record["sealed"] as? Data,
+              let createdAt = record["createdAt"] as? Date,
+              let updatedAt = record["updatedAt"] as? Date else { return }
+        let deletedAtMs = (record["deletedAtMs"] as? Int64) ?? 0
+        store.upsertPasskeyFromRemote(
+            id: record.recordID.recordName, sealed: sealed,
+            largeBlobSealed: record["largeBlobSealed"] as? Data,
+            deletedAt: deletedAtMs > 0
+                ? Date(timeIntervalSince1970: TimeInterval(deletedAtMs) / 1000) : nil,
             createdAt: createdAt, updatedAt: updatedAt,
             changeTag: record.recordChangeTag)
     }

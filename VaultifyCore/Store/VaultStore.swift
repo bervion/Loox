@@ -219,6 +219,86 @@ final class VaultStore {
         try? context.save()
     }
 
+    // MARK: Passkey sync access (opaque sealed credential — no Vault Key needed)
+
+    /// All records including soft-deleted tombstones (for sync reconciliation).
+    /// UI/ceremony reads go through `PasskeyVault`, which filters tombstones.
+    @MainActor
+    func allPasskeyRecords() -> [PasskeyRecord] {
+        (try? context.fetch(FetchDescriptor<PasskeyRecord>())) ?? []
+    }
+
+    @MainActor
+    func passkeyRecord(id: String) -> PasskeyRecord? {
+        var descriptor = FetchDescriptor<PasskeyRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Last-writer-wins upsert of a remote passkey record. The sealed payload
+    /// is immutable after creation (constant-zero sign counter), so `updatedAt`
+    /// moves only on creation, envelope promotion, large-blob writes, and
+    /// tombstones — one content gate suffices, exactly like folders. Local
+    /// `usedAt` and any locked-write `envelopeSealed` staging are never
+    /// touched: the first is device-local by design, the second can only be
+    /// promoted by THIS device's envelope key.
+    @MainActor
+    func upsertPasskeyFromRemote(id: String, sealed: Data, largeBlobSealed: Data?,
+                                 deletedAt: Date?, createdAt: Date, updatedAt: Date,
+                                 changeTag: String?) {
+        // The wire encodes "no blob" as empty Data (a field must ALWAYS be
+        // written or `.changedKeys` could never clear it server-side).
+        let blob = (largeBlobSealed?.isEmpty == false) ? largeBlobSealed : nil
+        if let existing = passkeyRecord(id: id) {
+            // Same server revision already merged — skip regardless of clocks.
+            if let changeTag, changeTag == existing.ckChangeTag { return }
+            guard updatedAt > existing.updatedAt else {
+                // Server holds a different, strictly-older revision → an
+                // out-of-order push overwrote it; re-push the local winner.
+                if existing.updatedAt > updatedAt {
+                    existing.dirty = true
+                    try? context.save()
+                }
+                return
+            }
+            existing.sealed = sealed
+            existing.largeBlobSealed = blob
+            existing.deletedAt = deletedAt
+            if deletedAt != nil {
+                // Mirror the local tombstone shape — no staging or hints may
+                // outlive a deletion, wherever it originated.
+                existing.envelopeSealed = nil
+                existing.relyingPartyHint = nil
+                existing.userNameHint = nil
+                existing.userHandleHint = nil
+            }
+            existing.updatedAt = updatedAt
+            existing.ckChangeTag = changeTag
+            existing.dirty = false
+        } else {
+            let record = PasskeyRecord(id: id, sealed: sealed,
+                                       largeBlobSealed: blob,
+                                       createdAt: createdAt)
+            record.updatedAt = updatedAt
+            record.deletedAt = deletedAt
+            record.ckChangeTag = changeTag
+            record.dirty = false
+            context.insert(record)
+        }
+        try? context.save()
+    }
+
+    /// Post-push bookkeeping (same snapshot rule as `markSynced` on items:
+    /// clear `dirty` only when nothing changed mid-flight).
+    @MainActor
+    func markPasskeySynced(_ record: PasskeyRecord, changeTag: String?, snapshotUpdatedAt: Date) {
+        record.ckChangeTag = changeTag
+        if record.updatedAt == snapshotUpdatedAt {
+            record.dirty = false
+        }
+        try? context.save()
+    }
+
     // MARK: Persona sync access (sealed identity content + plaintext default/sort)
 
     @MainActor

@@ -72,10 +72,16 @@ struct PasskeyDetailSheet: View {
     }
 
     /// Backup/sync status pill, mirroring how 1Password surfaces passkey portability.
+    /// The BE/BS flags speak for the relying party's view (registrations mint
+    /// BE=BS=1), but the user-facing promise is only honest while iCloud Sync
+    /// actually carries the credential — with sync off, the truthful storage
+    /// story is "this device" (manual encrypted exports aside).
     @ViewBuilder private var statusBadge: some View {
         switch passkey.backupStatus {
-        case .backedUp:
+        case .backedUp where env.settings.iCloudSyncEnabled:
             badge(Text("Backed up"), icon: Icons.checkCircle, role: .success)
+        case .backedUp:
+            badge(Text("This device only"), icon: Icons.lockFill, role: .secondary)
         case .backupEligible:
             // SF icloud: the eligibility is specifically iCloud Keychain backup —
             // the generic sync arrows read as "refreshing", not the feature.

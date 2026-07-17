@@ -33,6 +33,9 @@ enum CredentialExchangeService {
         if let key = session.vaultKey {
             let vault = PasskeyVault(store: store)
             for passkey in mapped.passkeys { _ = try vault.save(passkey, key: key) }
+            // Item adds above schedule their own push; a passkey-only import
+            // needs an explicit nudge to sync promptly.
+            if !mapped.passkeys.isEmpty { repository.noteLocalMutation() }
         }
         repository.reload()
         return ImportSummary(imported: mapped.items.count + mapped.passkeys.count, skipped: mapped.skipped)

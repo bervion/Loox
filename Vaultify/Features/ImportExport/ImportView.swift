@@ -154,6 +154,10 @@ struct ImportView: View {
                     _ = try vault.save(passkey, key: key)
                 }
                 env.repository.reload()
+                // A passkey-only restore has no item add to schedule the
+                // debounced push for it — imported credentials should reach
+                // CloudKit without waiting for the next foreground sync.
+                if !parsedPasskeys.isEmpty { env.repository.noteLocalMutation() }
             }
             Haptics.success()
             dismiss()
