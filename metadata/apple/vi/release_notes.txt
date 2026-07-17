@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện độ ổn định của gói thành viên và khắc phục lỗi hiển thị khi chuyển vào và ra khỏi chế độ chỉnh sửa ở màn hình chính.
+Bản cập nhật này khắc phục sự cố người dùng TestFlight không thể truy cập trực tiếp giao dịch mua thử nghiệm.

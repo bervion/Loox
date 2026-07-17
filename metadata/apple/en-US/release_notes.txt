@@ -1,1 +1,1 @@
-This update improves subscription reliability and fixes a visual glitch when switching in and out of edit mode on the Home screen.
+This update fixes an issue where TestFlight users could not access beta purchases directly.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.35.1] - 2026-07-17
+
+### Fixed
+- TestFlight resolves beta purchase access directly
+
+
 ## [1.35.0] - 2026-07-17
 
 ### Added
