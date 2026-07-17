@@ -1,6 +1,7 @@
 import CryptoKit
 import DeviceCheck
 import Foundation
+import OSLog
 
 /// App Attest gate for Quick View uploads/binds — proves "this request came
 /// from a genuine Loox app instance", never a user identity. Key lifecycle
@@ -16,6 +17,17 @@ import Foundation
 /// own, so the two can't drift.
 nonisolated enum QuickViewAttestation {
     private static let keyIdAccount = "quick-view-app-attest-key-id"
+    /// Every nil-return below logs its reason — a silently degraded assertion
+    /// once shipped a naked upload straight into the server's fail-closed 401
+    /// with zero device-side evidence of which step died.
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "vaultify",
+                                       category: "quick-view-attest")
+
+    /// Error domain + code + text, no user data — safe for `.public` logging.
+    private static func describe(_ error: Error) -> String {
+        let ns = error as NSError
+        return "\(ns.domain)#\(ns.code) \(ns.localizedDescription)"
+    }
 
     /// The persisted App Attest key id (the exact `X-Loox-App-Attest-Key-Id`
     /// header string) — read by the entitlement attach flow to request the
@@ -34,15 +46,25 @@ nonisolated enum QuickViewAttestation {
     /// bytes (`sessionIDBytes`), per the frozen contract.
     static func assertUpload(api: QuickViewAPIClient, sessionID: String, sessionIDBytes: Data,
                              uploadBody: Data) async -> QuickViewAPIClient.AssertionHeaders? {
-        guard isSupported else { return nil }
+        guard isSupported else {
+            logger.warning("App Attest unsupported on this device, no upload assertion")
+            return nil
+        }
         do {
             return try await assertUploadOnce(api: api, sessionID: sessionID,
                                               sessionIDBytes: sessionIDBytes, uploadBody: uploadBody)
         } catch let error as DCError where error.code == .invalidKey {
+            logger.warning("upload assertion key invalid, re-keying once")
             resetKey()
-            return try? await assertUploadOnce(api: api, sessionID: sessionID,
-                                               sessionIDBytes: sessionIDBytes, uploadBody: uploadBody)
+            do {
+                return try await assertUploadOnce(api: api, sessionID: sessionID,
+                                                  sessionIDBytes: sessionIDBytes, uploadBody: uploadBody)
+            } catch {
+                logger.error("re-keyed upload assertion failed: \(describe(error), privacy: .public)")
+                return nil
+            }
         } catch {
+            logger.error("upload assertion failed: \(describe(error), privacy: .public)")
             return nil
         }
     }
@@ -66,14 +88,21 @@ nonisolated enum QuickViewAttestation {
     /// attestation succeeding.
     static func assertBind(api: QuickViewAPIClient, sessionID: String) async
         -> QuickViewAPIClient.AssertionHeaders? {
-        guard isSupported,
-              let keyId = try? await registeredKeyId(api: api),
-              let challenge = try? await api.getChallenge() else { return nil }
-        let hash = Data(SHA256.hash(data: Data("\(challenge.challengeId)|\(sessionID)".utf8)))
-        guard let assertion = try? await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: hash)
-        else { return nil }
-        return .init(challengeId: challenge.challengeId, keyId: keyId,
-                     assertionB64: assertion.base64EncodedString())
+        guard isSupported else { return nil }
+        do {
+            let keyId = try await registeredKeyId(api: api)
+            let challenge = try await api.getChallenge()
+            let hash = Data(SHA256.hash(data: Data("\(challenge.challengeId)|\(sessionID)".utf8)))
+            let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: hash)
+            return .init(challengeId: challenge.challengeId, keyId: keyId,
+                         assertionB64: assertion.base64EncodedString())
+        } catch {
+            // Bind stays advisory (never gates approve) — but the skip reason
+            // must be visible: bind failures foreshadow the upload assertion
+            // failing the same way.
+            logger.warning("bind assertion skipped: \(describe(error), privacy: .public)")
+            return nil
+        }
     }
 
     /// Key id of a key the server has verified — registering first if needed.
@@ -95,6 +124,7 @@ nonisolated enum QuickViewAttestation {
                 // A key can be attested with Apple only ONCE — retrying a
                 // failed register would re-attest a burned key and fail
                 // forever. Drop it and start fresh next time.
+                logger.error("key register failed, dropping key: \(describe(error), privacy: .public)")
                 resetKey()
                 throw error
             }

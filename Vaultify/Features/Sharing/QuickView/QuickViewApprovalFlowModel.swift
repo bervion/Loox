@@ -199,6 +199,13 @@ import LocalAuthentication
             let assertion = await QuickViewAttestation.assertUpload(
                 api: api, sessionID: session.sessionID, sessionIDBytes: session.sessionIDBytes,
                 uploadBody: uploadBody)
+            // The server rejects an assertion-less /payload (fail-closed,
+            // INV-QV-24) — a naked upload is a guaranteed 401 that burns the
+            // session attempt. Fail here with the same user-facing message,
+            // and leave attestation's own diagnostics to say why it was nil.
+            if QuickViewConfig.assertionRequired, assertion == nil {
+                throw QuickViewAPIError.unauthorized
+            }
 
             do {
                 try await api.upload(
@@ -219,6 +226,10 @@ import LocalAuthentication
                 let retryAssertion = await QuickViewAttestation.assertUpload(
                     api: api, sessionID: session.sessionID, sessionIDBytes: session.sessionIDBytes,
                     uploadBody: uploadBody)
+                // Same fail-closed rule as the first attempt.
+                if QuickViewConfig.assertionRequired, retryAssertion == nil {
+                    throw QuickViewAPIError.unauthorized
+                }
                 try await api.upload(
                     sessionID: session.sessionID, ciphertext: sealed.ciphertext,
                     appEphemeralPublicKey: sealed.appEphemeralPublicKey,
