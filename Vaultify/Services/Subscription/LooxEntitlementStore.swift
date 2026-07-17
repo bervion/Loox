@@ -164,6 +164,22 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     }
     #endif
 
+    /// Fold ONE just-verified transaction into the tier immediately. The
+    /// paywall holds the verified purchase result in hand — deriving from it
+    /// never races `Transaction.currentEntitlements` freshness, which lags in
+    /// sandbox right after a purchase and left a successful buy rendering as
+    /// Free (observed on-device 260717). Only ever upgrades; downgrades stay
+    /// the entitlement stream's job.
+    func applyVerified(_ transaction: StoreKit.Transaction) {
+        guard transaction.revocationDate == nil else { return }
+        let tier = LooxProductID.resolveTier(from: [transaction.productID])
+        if tier > storeTier {
+            subscriptionLog.log("tier from in-hand transaction: \(String(describing: tier), privacy: .public)")
+            storeTier = tier
+            lastInHandApplyAt = .now
+        }
+    }
+
     /// Recompute the tier from the verified current entitlements (highest wins,
     /// `LooxProductID.resolveTier`). Unverified results and revoked
     /// transactions never grant anything.
@@ -174,6 +190,23 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
                   transaction.revocationDate == nil else { continue }
             productIDs.append(transaction.productID)
         }
-        storeTier = LooxProductID.resolveTier(from: productIDs)
+        let resolved = LooxProductID.resolveTier(from: productIDs)
+        subscriptionLog.log("refresh: \(productIDs.count, privacy: .public) entitlements → \(String(describing: resolved), privacy: .public)")
+        // A just-purchased transaction can trail `currentEntitlements` for a
+        // beat (sandbox especially) — an empty read must not stomp the tier
+        // `applyVerified` just granted from the in-hand verified result. Real
+        // expiry/refund downgrades still land: those reads carry the OTHER
+        // still-live entitlements, and a fully-expired account converges on
+        // the next launch/foreground refresh once the purchase session ended.
+        if resolved >= storeTier || applyGuardExpired {
+            storeTier = resolved
+        }
     }
+
+    /// True once no in-hand grant is recent enough to protect (60s window).
+    private var applyGuardExpired: Bool {
+        guard let appliedAt = lastInHandApplyAt else { return true }
+        return Date.now.timeIntervalSince(appliedAt) > 60
+    }
+    @ObservationIgnored private var lastInHandApplyAt: Date?
 }

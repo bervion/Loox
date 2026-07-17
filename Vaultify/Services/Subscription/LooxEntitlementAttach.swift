@@ -124,6 +124,10 @@ nonisolated enum LooxEntitlementAttachClient {
         }
         request.httpBody = try JSONEncoder().encode(
             Body(transactionJws: transactionJWS, requestedBindings: bindings))
+        // Dormant plumbing must stay bounded: the default 60s request timeout
+        // let a slow/waking worker hang whatever awaited an attach. The
+        // coordinator's retry/backoff owns transient recovery, not the socket.
+        request.timeoutInterval = 15
 
         let (data, response): (Data, URLResponse)
         do { (data, response) = try await URLSession.shared.data(for: request) }
