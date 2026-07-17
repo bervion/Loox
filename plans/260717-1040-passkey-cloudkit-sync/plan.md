@@ -1,6 +1,10 @@
 # Passkey CloudKit Sync (`VaultPasskey`)
 
-**Status:** PLANNED — not started
+**Status:** IMPLEMENTED (branch `feat/passkey-cloudkit-sync`, 260717) — code + tests done; PENDING: CloudKit Production deploy of `VaultPasskey` (OPS gate) and the phase-3 two-device checklist.
+- Phase 1 ✓ (columns, tombstone-with-wipe, LWW helpers, `PasskeySyncMergeTests` 11 tests green + all legacy passkey suites)
+- Phase 2 ✓ (plane wired into the fault-isolated push + pull switch; post-sync reload verified to refresh passkeys + QuickType) — OPS gate outstanding
+- Phase 3 ✓ code (badge honesty via existing localized strings; docs synced) / ☐ device checklist (user)
+- Deviation: badge copy reuses existing "This device only" (EN+VI already in catalog) instead of new strings — badge length constraint, zero new localization surface.
 **Goal:** passkeys survive delete-app → reinstall → restore-by-recovery-key, and sync between the user's devices, closing the last gap from the 260717 audit (`plans/reports/audit-260717-0900-restore-share-autolock.md`, Bug 1/RC-2: `PasskeyRecord` was never part of CloudKit sync — restores mechanically lose passkeys).
 
 ## Approach (one paragraph)

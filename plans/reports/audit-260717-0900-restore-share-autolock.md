@@ -66,7 +66,7 @@ True idle — zero touches for the whole window — still locks in the foregroun
 - **Full-suite verdict is blocked by a machine-level issue, not the fixes**: the test HOST intermittently crashes at launch with `malloc: pointer being freed was not allocated` (constant address → runtime/dyld object over-release). Proven ENVIRONMENTAL by bisect: `git stash` (yesterday's green baseline) crashes identically on both iOS 26.3.1 and 18.6 sims. Appeared the same morning Xcode/simulator state changed (duplicate "iPhone 16" devices also broke `make test`'s `name=iPhone 16` destination resolution). Remedy: reboot / `xcrun simctl shutdown all` + erase duplicate sims, then rerun `make test`; if the ambiguity persists, pin the Makefile destination by simulator id.
 
 ## Follow-ups (proposed, not implemented)
-1. **Passkey CloudKit sync** (`VaultPasskey` sealed record plane mirroring folders LWW) — the real fix for "restore loses passkeys". MUST deploy its record type to Production BEFORE the build ships. Also decide the extension-created-passkey dirty-tracking story. Until then the manual encrypted backup is the only passkey-preserving path.
+1. **Passkey CloudKit sync** — IMPLEMENTED same day: `plans/260717-1040-passkey-cloudkit-sync/` (branch feat/passkey-cloudkit-sync). Closes RC-2. Production schema deploy for `VaultPasskey` still required before shipping.
 2. Escrow-upload status surfaced in Settings ("Recovery backup uploaded ✓ / pending") — monitoring gap that let Bug 1 ship silently.
 3. Consider CI check: grep for new `recordType` strings vs a checked-in production-schema manifest.
 
