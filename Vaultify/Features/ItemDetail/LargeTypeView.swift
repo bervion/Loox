@@ -175,6 +175,6 @@ struct LargeTypeView: View {
             Haptics.tap()
             if isEntered { entered.remove(index) } else { entered.insert(index) }
         }
-        .animation(.easeOut(duration: 0.12), value: isEntered)
+        .animation(.easeOut(duration: 0.15), value: isEntered)
     }
 }
