@@ -86,12 +86,19 @@ jobs:
           PR_NUM: ${{ github.event.pull_request.number }}
           TITLE: ${{ github.event.pull_request.title }}
         run: |
+          set +e
           PROMPT="PR #${PR_NUM} in ${REPO} was just MERGED (${TITLE}). Clone or pull the repo into your workspace, verify the change actually resolves its linked issue and nothing obvious regressed. Report pass or fail concisely."
           BODY=$(jq -nc --arg p "$PROMPT" '{input:$p, mode:"sync"}')
-          RESP=$(curl -sS --max-time 240 -X POST "$WH" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d "$BODY")
-          VERDICT=$(echo "$RESP" | jq -r '.output // .reply // "no verify result"')
+          # Rex may need to clone the repo; allow generous time. Tolerate slow/partial responses.
+          RESP=$(curl -sS --max-time 300 -X POST "$WH" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d "$BODY")
+          # Parse defensively: if the body is not valid JSON (timeout/partial), fall back to a note.
+          VERDICT=$(printf '%s' "$RESP" | jq -r '.output // .reply // empty' 2>/dev/null)
+          if [ -z "$VERDICT" ]; then
+            VERDICT="verify call returned no parseable result (Rex may still be running; check GoClaw dashboard)"
+          fi
           if [ -n "$DISCORD_WH" ]; then
             jq -nc --arg c "[verify] Post-merge #${PR_NUM}: ${VERDICT}" '{content:$c}' | \
               curl -sS -X POST "$DISCORD_WH" -H "Content-Type: application/json" -d @- || true
           fi
           echo "$VERDICT"
+          exit 0
