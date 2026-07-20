@@ -32,14 +32,25 @@ jobs:
           REPO: ${{ github.repository }}
           TITLE: ${{ github.event.pull_request.title }}
         run: |
-          set -e
+          set +e
           PROMPT="A pull request needs your review. Repo: ${REPO}. PR #${PR_NUM}: ${TITLE}. URL: ${PR_URL}. Read the diff with 'gh pr diff ${PR_NUM} --repo ${REPO}' and 'gh pr view ${PR_NUM} --repo ${REPO}', evaluate correctness, regressions and UI-UX (use ui-ux-pro-max for UI changes), then give a concise verdict: either 'LGTM' with one line why, or specific non-blocking notes. Do NOT merge. Return only your review text."
           BODY=$(jq -nc --arg p "$PROMPT" '{input:$p, mode:"sync"}')
-          RESP=$(curl -sS --max-time 180 -X POST "$WH" \
-            -H "Authorization: Bearer $SECRET" \
-            -H "Content-Type: application/json" \
-            -d "$BODY")
-          REVIEW=$(echo "$RESP" | jq -r '.output // .reply // .response // "Rex did not return a review."')
+          # Rex is a single agent; if his lane is busy the webhook can return a non-JSON
+          # error. Retry a few times with backoff, and parse defensively either way.
+          REVIEW=""
+          for attempt in 1 2 3; do
+            RESP=$(curl -sS --max-time 180 -X POST "$WH" \
+              -H "Authorization: Bearer $SECRET" \
+              -H "Content-Type: application/json" \
+              -d "$BODY")
+            REVIEW=$(printf '%s' "$RESP" | jq -r '.output // .reply // .response // empty' 2>/dev/null)
+            if [ -n "$REVIEW" ]; then break; fi
+            echo "attempt ${attempt}: no parseable review yet (Rex may be busy), retrying..."
+            sleep 20
+          done
+          if [ -z "$REVIEW" ]; then
+            REVIEW="Rex was busy and could not complete a review in time (non-blocking). Retry by re-opening the PR, or check the GoClaw dashboard."
+          fi
           {
             echo 'review<<REXEOF'
             echo "$REVIEW"
