@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.37.2] - 2026-07-20
+
+### Fixed
+- keep Home header above the layout editor so Done stays tappable (#131)
+- raise LargeTypeView tap animation to 150ms threshold (#129)
+
+### Changed
+- remove B4 merge-gate test file
+- b4 merge gate (#128)
+- harden pr-notify verify step (#120)
+- verify Dev-Quality PR review triggers Rex (#119)
+- fix pr-notify workflow startup failure
+- add Dev-Quality PR review workflow
+
+
 ## [1.37.1] - 2026-07-18
 
 ### Fixed

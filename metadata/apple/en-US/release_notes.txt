@@ -1,1 +1,1 @@
-This update improves reliability by ensuring a rare upload check no longer allows unintended access when the check itself cannot run.
+This update fixes small display issues: the Home screen header now stays accessible while editing your layout, and tap animations feel smoother when viewing large text. Overall stability improvements included.

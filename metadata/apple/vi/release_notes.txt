@@ -1,1 +1,1 @@
-Bản cập nhật này tăng độ tin cậy bằng cách đảm bảo một bước kiểm tra tải lên hiếm gặp không còn cho phép truy cập ngoài ý muốn khi bước kiểm tra đó không thể thực hiện.
+Bản cập nhật này khắc phục vài lỗi hiển thị nhỏ: thanh tiêu đề màn hình chính giờ luôn thao tác được khi chỉnh sửa bố cục, và hiệu ứng chạm khi xem chữ lớn mượt hơn. Đã cải thiện thêm độ ổn định tổng thể.
