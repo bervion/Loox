@@ -10,22 +10,18 @@ import SwiftUI
 /// show/hide control interactive inside the active edit mode.
 struct HomeLayoutEditor: View {
     @Environment(AppEnvironment.self) private var env
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Starts INACTIVE and animates to active after the insertion transition:
-    /// a List born with `.constant(.active)` gets UIKit's editing layout in
-    /// late, non-animated passes that land as two visible snaps right after
-    /// the Home fade/scale settles (frame-verified on the iOS 27 runtime).
-    /// Activating inside `withAnimation` turns that into one deliberate
-    /// Reminders-style handle slide instead.
-    @State private var editMode: EditMode = .inactive
+    /// Permanently ACTIVE: this view is resident in Home's ZStack at opacity 0
+    /// (see HomeScreen), so UIKit's editing layout — including its late,
+    /// non-animated passes that used to land as visible snaps — runs once at
+    /// launch while the editor is invisible. By the time the user opens edit
+    /// mode the handles are already laid out; the toggle animates opacity only.
+    @State private var editMode: EditMode = .active
 
     /// Height reserved at the top so the first row clears the floating header overlay —
     /// mirrors `VaultHeaderScrollSpacer`'s inset so the editor lines up with the feed.
     /// Applied as real PADDING (the List's frame starts below the header), not a scroll
-    /// content margin: the editor composites above the header (see HomeScreen's layer
-    /// notes), so an overlapping List would hit-test first and swallow the Done tap.
-    /// Rows clip at the padding edge instead of sliding under the header — acceptable
-    /// for this short list, and it keeps rows from ever crossing the Done button.
+    /// content margin, so on overflow rows clip at the padding edge instead of sliding
+    /// beneath the transparent header and visually crossing the Done button.
     private var headerInset: CGFloat { Metric.hitMin + Space.s6 }
 
     private var sections: [HomeSection] {
@@ -52,16 +48,6 @@ struct HomeLayoutEditor: View {
         // Binding (not a selection binding) keeps rows tappable and the
         // checkmark toggle working while the handles are up.
         .environment(\.editMode, $editMode)
-        .onAppear {
-            guard editMode != .active else { return }
-            guard !reduceMotion else {
-                editMode = .active
-                return
-            }
-            // Waits out the header's Motion.spring insertion, then slides the
-            // handles in as their own beat.
-            withAnimation(Motion.standard.delay(0.3)) { editMode = .active }
-        }
     }
 
     private func row(_ section: HomeSection) -> some View {
