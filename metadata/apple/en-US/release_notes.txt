@@ -1,1 +1,1 @@
-This update fixes small display issues: the Home screen header now stays accessible while editing your layout, and tap animations feel smoother when viewing large text. Overall stability improvements included.
+This update fixes an issue where tapping Done during edit mode could feel unresponsive. Editing your vault is now smoother and more reliable.

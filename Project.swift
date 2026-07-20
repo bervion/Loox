@@ -29,8 +29,8 @@ let project = Project(
     settings: .settings(
         base: [
             "DEVELOPMENT_TEAM": "WDNL2F75V7",
-            "MARKETING_VERSION": "1.37.2",
-            "CURRENT_PROJECT_VERSION": "58",
+            "MARKETING_VERSION": "1.37.3",
+            "CURRENT_PROJECT_VERSION": "59",
             "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
             "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
             "SWIFT_VERSION": "5.0",

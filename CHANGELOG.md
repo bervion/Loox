@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.37.3] - 2026-07-20
+
+### Fixed
+- resolve edit-mode hitch vs Done tap by removing the header overlap (#132)
+
+
 ## [1.37.2] - 2026-07-20
 
 ### Fixed

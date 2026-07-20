@@ -1,1 +1,1 @@
-Bản cập nhật này khắc phục vài lỗi hiển thị nhỏ: thanh tiêu đề màn hình chính giờ luôn thao tác được khi chỉnh sửa bố cục, và hiệu ứng chạm khi xem chữ lớn mượt hơn. Đã cải thiện thêm độ ổn định tổng thể.
+Bản cập nhật này khắc phục lỗi chạm nút Xong khi đang ở chế độ chỉnh sửa có thể bị khựng. Việc chỉnh sửa kho mật khẩu giờ mượt mà và ổn định hơn.
