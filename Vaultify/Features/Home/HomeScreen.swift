@@ -165,10 +165,13 @@ struct HomeScreen: View {
                 }
 
                 // Header overlays the scroll content — glass blurs whatever scrolls beneath.
-                // Explicit zIndex ABOVE the editor's (1): the layout editor's List is a
-                // full-screen scroll view, transparent over the header area — without this
-                // it hit-tests above the header and swallows every tap, making the Done
-                // button (the only exit from edit mode) unreachable.
+                // NO explicit zIndex: the layout editor (zIndex 1) must composite ABOVE
+                // this header — lifting SwiftUI glass content over the editor's freshly
+                // inserted UIKit-backed List lands a frame late on ProMotion and shows as
+                // a one-beat hitch (device-verified both ways on the 16 Pro Max). Header
+                // taps in edit mode survive because the editor's List frame starts BELOW
+                // the header (real top padding, not a content margin) — no overlap, so
+                // the List never hit-tests over the Done button.
                 HomeHeaderBar(
                     isEditingLayout: $isEditingLayout,
                     onAdd: { showItemTypePicker = true },
@@ -183,7 +186,6 @@ struct HomeScreen: View {
                         #endif
                     }
                 )
-                .zIndex(2)
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
