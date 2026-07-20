@@ -1,1 +1,1 @@
-This update fixes an issue where tapping Done during edit mode could feel unresponsive. Editing your vault is now smoother and more reliable.
+This update improves stability when switching to edit mode on the Home screen, making the transition smoother.

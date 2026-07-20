@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.37.4] - 2026-07-20
+
+### Fixed
+- keep both Home layers resident so the edit-mode toggle animates opacity only (#133)
+
+
 ## [1.37.3] - 2026-07-20
 
 ### Fixed

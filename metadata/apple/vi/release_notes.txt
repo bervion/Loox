@@ -1,1 +1,1 @@
-Bản cập nhật này khắc phục lỗi chạm nút Xong khi đang ở chế độ chỉnh sửa có thể bị khựng. Việc chỉnh sửa kho mật khẩu giờ mượt mà và ổn định hơn.
+Bản cập nhật này cải thiện độ ổn định khi chuyển sang chế độ chỉnh sửa ở màn hình chính, giúp thao tác mượt mà hơn.
