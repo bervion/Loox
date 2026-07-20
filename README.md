@@ -126,3 +126,5 @@ secrets, self-hosted runner) is documented in **[docs/deployment-guide.md](docs/
 - **[docs/codebase-summary.md](docs/codebase-summary.md)** — architecture deep-dive
 - **[docs/deployment-guide.md](docs/deployment-guide.md)** — CI/CD, signing, TestFlight runbook
 - **[CLAUDE.md](CLAUDE.md)** — conventions & gotchas for AI-assisted development
+
+<!-- Dev-Quality PR review smoke test — safe to revert. -->
