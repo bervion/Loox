@@ -21,6 +21,11 @@ struct HomeLayoutEditor: View {
 
     /// Height reserved at the top so the first row clears the floating header overlay —
     /// mirrors `VaultHeaderScrollSpacer`'s inset so the editor lines up with the feed.
+    /// Applied as real PADDING (the List's frame starts below the header), not a scroll
+    /// content margin: the editor composites above the header (see HomeScreen's layer
+    /// notes), so an overlapping List would hit-test first and swallow the Done tap.
+    /// Rows clip at the padding edge instead of sliding under the header — acceptable
+    /// for this short list, and it keeps rows from ever crossing the Done button.
     private var headerInset: CGFloat { Metric.hitMin + Space.s6 }
 
     private var sections: [HomeSection] {
@@ -43,7 +48,7 @@ struct HomeLayoutEditor: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .contentMargins(.top, headerInset, for: .scrollContent)
+        .padding(.top, headerInset)
         // Binding (not a selection binding) keeps rows tappable and the
         // checkmark toggle working while the handles are up.
         .environment(\.editMode, $editMode)
