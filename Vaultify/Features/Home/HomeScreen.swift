@@ -133,23 +133,18 @@ struct HomeScreen: View {
         return NavigationStack(path: $uiState.homePath) {
             // ZStack lets the header float over scroll content so glass blurs it.
             ZStack(alignment: .top) {
+                // BOTH content layers stay mounted; the edit-mode toggle only cross-fades
+                // opacity/scale. Inserting either side mid-animation (the editor's
+                // UIKit-backed List on the way in, the whole feed on the way out) costs a
+                // build + layout pass inside the animation window — more than one 8.3ms
+                // frame at 120Hz, which reads as a one-beat hitch on ProMotion. Keeping
+                // them resident moves that cost to launch, where it's invisible, and as a
+                // side effect the feed's scroll position survives an edit session.
                 Group {
-                    // Layout edit mode replaces the feed with the section arranger (reorder +
-                    // show/hide); the profile row is intentionally omitted there. Otherwise: a
-                    // vault that's empty but RECEIVING shares still has a feed, and the empty
-                    // states keep the PROFILE ROW so switching persona stays reachable.
-                    if isEditingLayout {
-                        HomeLayoutEditor()
-                            // Stable layer order for the cross-fade: without an
-                            // explicit zIndex, SwiftUI may swap which of the two
-                            // transitioning views composites on top mid-flight —
-                            // invisible at 60Hz (simulator) but a visible flash
-                            // on ProMotion devices (owner's 16 Pro Max, 260717).
-                            // The editor always renders ABOVE the feed in both
-                            // directions of the toggle.
-                            .zIndex(1)
-                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                    } else if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
+                    // The feed (or its empty states — those keep the PROFILE ROW so
+                    // switching persona stays reachable; a vault that's empty but
+                    // RECEIVING shares still has a feed).
+                    if env.repository.items.isEmpty && env.sharedItems.items.isEmpty {
                         emptyStateScaffold { emptyVaultState }
                     } else if env.repository.activePersonaItems.isEmpty && env.sharedItems.items.isEmpty {
                         // The vault overall has data, but the ACTIVE persona has nothing to
@@ -159,19 +154,27 @@ struct HomeScreen: View {
                         emptyStateScaffold { personaEmptyState }
                     } else {
                         scrollContent
-                            .zIndex(0)
-                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     }
                 }
+                .opacity(isEditingLayout ? 0 : 1)
+                .scaleEffect(isEditingLayout ? 0.98 : 1)
+                .allowsHitTesting(!isEditingLayout)
+                .accessibilityHidden(isEditingLayout)
 
-                // Header overlays the scroll content — glass blurs whatever scrolls beneath.
-                // NO explicit zIndex: the layout editor (zIndex 1) must composite ABOVE
-                // this header — lifting SwiftUI glass content over the editor's freshly
-                // inserted UIKit-backed List lands a frame late on ProMotion and shows as
-                // a one-beat hitch (device-verified both ways on the 16 Pro Max). Header
-                // taps in edit mode survive because the editor's List frame starts BELOW
-                // the header (real top padding, not a content margin) — no overlap, so
-                // the List never hit-tests over the Done button.
+                // Section arranger (reorder + show/hide) — resident at opacity 0 outside
+                // edit mode; its profile row is intentionally omitted. Born with edit mode
+                // already active so UIKit's editing layout never runs inside the toggle
+                // animation (see HomeLayoutEditor).
+                HomeLayoutEditor()
+                    .opacity(isEditingLayout ? 1 : 0)
+                    .scaleEffect(isEditingLayout ? 1 : 0.98)
+                    .allowsHitTesting(isEditingLayout)
+                    .accessibilityHidden(!isEditingLayout)
+
+                // Header overlays the scroll content — glass blurs whatever scrolls
+                // beneath. Declared last so it's topmost for hit testing (the Done button
+                // must stay tappable over the editor); with no view insertion left in the
+                // toggle, layer order no longer affects the animation.
                 HomeHeaderBar(
                     isEditingLayout: $isEditingLayout,
                     onAdd: { showItemTypePicker = true },
