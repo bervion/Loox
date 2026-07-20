@@ -165,6 +165,10 @@ struct HomeScreen: View {
                 }
 
                 // Header overlays the scroll content — glass blurs whatever scrolls beneath.
+                // Explicit zIndex ABOVE the editor's (1): the layout editor's List is a
+                // full-screen scroll view, transparent over the header area — without this
+                // it hit-tests above the header and swallows every tap, making the Done
+                // button (the only exit from edit mode) unreachable.
                 HomeHeaderBar(
                     isEditingLayout: $isEditingLayout,
                     onAdd: { showItemTypePicker = true },
@@ -179,6 +183,7 @@ struct HomeScreen: View {
                         #endif
                     }
                 )
+                .zIndex(2)
             }
             .environment(\.vaultHeaderScrolledUnder, scrolledUnder)
             .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
