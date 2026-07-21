@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "states": [
+    {"state_id": "STATE-ONB-WELCOME", "surface_id": "SURF-ONB-001", "name": "Welcome", "critical": false, "fixture_ids": [], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-ONB-MASTER-PASSWORD", "surface_id": "SURF-ONB-001", "name": "Create master password", "critical": true, "fixture_ids": ["FIX-KDF-PASSWORD"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-LOCK-BIOMETRIC", "surface_id": "SURF-LOCK-001", "name": "Biometric unlock", "critical": true, "fixture_ids": ["FIX-KDF-PASSWORD"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-LOCK-PASSWORD", "surface_id": "SURF-LOCK-001", "name": "Password unlock", "critical": true, "fixture_ids": ["FIX-KDF-PASSWORD"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-LOCK-ERROR", "surface_id": "SURF-LOCK-001", "name": "Unlock failure", "critical": true, "fixture_ids": ["FIX-KDF-PASSWORD"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-HOME-EMPTY", "surface_id": "SURF-HOME-001", "name": "Empty vault", "critical": false, "fixture_ids": [], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-HOME-POPULATED", "surface_id": "SURF-HOME-001", "name": "Populated vault", "critical": false, "fixture_ids": ["FIX-VAULT-POPULATED"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-ITEMS-ORGANIZED", "surface_id": "SURF-ITEMS-001", "name": "Spaces, categories and tags", "critical": false, "fixture_ids": ["FIX-VAULT-POPULATED"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-SEARCH-IDLE", "surface_id": "SURF-SEARCH-001", "name": "Search ready", "critical": false, "fixture_ids": [], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-SEARCH-RESULTS", "surface_id": "SURF-SEARCH-001", "name": "Search results", "critical": false, "fixture_ids": ["FIX-VAULT-POPULATED"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-SEARCH-ISOLATED", "surface_id": "SURF-SEARCH-001", "name": "Strict-anonymous search scope", "critical": true, "fixture_ids": ["FIX-PERSONA-ISOLATION"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-WATCH-ISSUES", "surface_id": "SURF-WATCH-001", "name": "Issues detected", "critical": false, "fixture_ids": ["FIX-AUDIT-ISSUES"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-DETAIL-OWNED", "surface_id": "SURF-DETAIL-001", "name": "Owned item", "critical": false, "fixture_ids": ["FIX-VAULT-POPULATED"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-DETAIL-SHARED-GATED", "surface_id": "SURF-DETAIL-001", "name": "Shared item awaiting trust decision", "critical": true, "fixture_ids": ["FIX-SHARED-AUTHZ"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-DETAIL-SHARED-VISIBLE", "surface_id": "SURF-DETAIL-001", "name": "Authorized shared fields", "critical": true, "fixture_ids": ["FIX-SHARED-AUTHZ"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-EDITOR-EDITING", "surface_id": "SURF-EDITOR-001", "name": "Editing an item", "critical": false, "fixture_ids": ["FIX-ITEM-WRITE"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-SETTINGS-OFFLINE", "surface_id": "SURF-SETTINGS-001", "name": "Online services unavailable", "critical": false, "fixture_ids": [], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-AUTOFILL-LOCKED", "surface_id": "SURF-AUTOFILL-001", "name": "Extension locked", "critical": true, "fixture_ids": ["FIX-AUTOFILL-SESSION"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-AUTOFILL-READY", "surface_id": "SURF-AUTOFILL-001", "name": "Extension session authorized", "critical": true, "fixture_ids": ["FIX-AUTOFILL-SESSION"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-SAFARI-FILL-READY", "surface_id": "SURF-SAFARI-001", "name": "Field-scoped fill available", "critical": true, "fixture_ids": ["FIX-SAFARI-PAYLOAD"], "verification_status": "known", "evidence_ids": []}
+  ]
+}

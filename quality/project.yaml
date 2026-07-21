@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "project_id": "vaultify",
+  "adapter": "apple-tuist",
+  "ledger": {
+    "surfaces": "quality/coverage-ledger/surfaces.yaml",
+    "states": "quality/coverage-ledger/states.yaml",
+    "transitions": "quality/coverage-ledger/transitions.yaml",
+    "freshness": "quality/coverage-ledger/freshness.yaml",
+    "journeys": "quality/journeys/journeys.yaml",
+    "fixtures": "quality/fixture-registry.yaml",
+    "evidence": "quality/verification/evidence-index.yaml"
+  },
+  "sources": {
+    "feature_map": "docs/app-feature-map-ui-ux.md",
+    "architecture": "docs/codebase-summary.md",
+    "design_contract": "docs/design-dna-standard.md",
+    "repository_rules": "AGENTS.md"
+  },
+  "verification": {
+    "statuses": ["known", "verified", "stale", "blocked"],
+    "import_default": "known",
+    "freshness_days": 7,
+    "evidence_retention_days": 30,
+    "independent_verifier_required": true,
+    "evidence_root": "quality/verification/evidence"
+  },
+  "reports": {
+    "json": "quality/generated/coverage-report.json",
+    "markdown": "quality/generated/coverage-report.md",
+    "generated_by": "scripts/quality/report.py"
+  }
+}

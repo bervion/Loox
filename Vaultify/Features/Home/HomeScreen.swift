@@ -562,7 +562,7 @@ struct HomeScreen: View {
 
             groupedCard {
                 ForEach(Array(recentlyUsedItems.enumerated()), id: \.element.id) { idx, item in
-                    itemRow(item, showDivider: idx < recentlyUsedItems.count - 1)
+                    itemRow(item, context: "recent", showDivider: idx < recentlyUsedItems.count - 1)
                 }
             }
         }
@@ -578,7 +578,7 @@ struct HomeScreen: View {
 
             groupedCard {
                 ForEach(Array(favoriteItems.enumerated()), id: \.element.id) { idx, item in
-                    itemRow(item, showDivider: idx < favoriteItems.count - 1)
+                    itemRow(item, context: "favorite", showDivider: idx < favoriteItems.count - 1)
                 }
             }
         }
@@ -601,7 +601,7 @@ struct HomeScreen: View {
                 .padding(.bottom, Space.s2)
 
             ForEach(Array(preview.enumerated()), id: \.element.id) { idx, item in
-                itemRow(item, showDivider: idx < preview.count - 1)
+                itemRow(item, context: "all", showDivider: idx < preview.count - 1)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -860,7 +860,7 @@ struct HomeScreen: View {
 
     /// A tappable item row reusing VaultItemRow inside the grouped card.
     @ViewBuilder
-    private func itemRow(_ item: VaultItem, showDivider: Bool) -> some View {
+    private func itemRow(_ item: VaultItem, context: String, showDivider: Bool) -> some View {
         Button {
             openItem(item.id)
         } label: {
@@ -879,6 +879,7 @@ struct HomeScreen: View {
                 }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("vault.item.\(item.id).\(context)")
     }
 }
 

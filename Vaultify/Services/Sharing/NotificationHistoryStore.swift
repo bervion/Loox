@@ -18,11 +18,13 @@ import Foundation
 
     private static let key = "sharing_notification_history"
     private static let cap = 50
+    @ObservationIgnored private let defaults: UserDefaults
 
     private(set) var entries: [Entry]
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: Self.key),
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        if let data = defaults.data(forKey: Self.key),
            let decoded = try? JSONDecoder().decode([Entry].self, from: data) {
             entries = decoded
         } else {
@@ -36,12 +38,12 @@ import Foundation
                              atUnixMs: Int64(Date().timeIntervalSince1970 * 1000)), at: 0)
         if entries.count > Self.cap { entries.removeLast(entries.count - Self.cap) }
         if let data = try? JSONEncoder().encode(entries) {
-            UserDefaults.standard.set(data, forKey: Self.key)
+            defaults.set(data, forKey: Self.key)
         }
     }
 
     func wipe() {
         entries = []
-        UserDefaults.standard.removeObject(forKey: Self.key)
+        defaults.removeObject(forKey: Self.key)
     }
 }

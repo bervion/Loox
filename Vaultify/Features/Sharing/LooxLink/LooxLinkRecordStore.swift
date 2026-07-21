@@ -56,11 +56,14 @@ nonisolated struct LooxLinkRecord: Codable, Identifiable, Equatable, Sendable {
 /// Keychain-backed registry of the device's active quick links.
 @MainActor @Observable final class LooxLinkRecordStore {
     private static let account = "loox-link-records"
+    @ObservationIgnored private let persistenceEnabled: Bool
 
     private(set) var records: [LooxLinkRecord] = []
 
-    init() {
-        if let data = try? KeychainStore.get(account: Self.account),
+    init(persistenceEnabled: Bool = true) {
+        self.persistenceEnabled = persistenceEnabled
+        if persistenceEnabled,
+           let data = try? KeychainStore.get(account: Self.account),
            let decoded = try? JSONDecoder().decode([LooxLinkRecord].self, from: data) {
             // Expired links are dead server-side (404) — drop them on load.
             records = decoded.filter { !$0.isExpired }
@@ -93,10 +96,13 @@ nonisolated struct LooxLinkRecord: Codable, Identifiable, Equatable, Sendable {
 
     func wipe() {
         records = []
-        KeychainStore.delete(account: Self.account)
+        if persistenceEnabled {
+            KeychainStore.delete(account: Self.account)
+        }
     }
 
     private func persist() {
+        guard persistenceEnabled else { return }
         if let data = try? JSONEncoder().encode(records) {
             try? KeychainStore.set(data, account: Self.account)
         }

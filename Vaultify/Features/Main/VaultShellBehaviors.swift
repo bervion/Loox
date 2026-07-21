@@ -77,7 +77,7 @@ struct VaultShellBehaviors: ViewModifier {
             // verified sheet. Pushes are best-effort — refresh the inbox on
             // every foreground activation too, so a missed push can't strand B.
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active {
+                if phase == .active, !env.uiTestConfiguration.isEnabled {
                     env.approvalCoordinator.refreshOwnerRequests()
                     // Owner side: re-resolve outgoing share acceptance off-sheet
                     // so a share accepted after the waiting sheet closed still
@@ -94,6 +94,7 @@ struct VaultShellBehaviors: ViewModifier {
                 }
             }
             .onAppear {
+                guard !env.uiTestConfiguration.isEnabled else { return }
                 env.approvalCoordinator.refreshOwnerRequests()
                 env.ownerShareRefresher.refresh()
                 // Drain a tapped share-acceptance banner BEFORE the ambient
@@ -126,6 +127,7 @@ struct VaultShellBehaviors: ViewModifier {
             // idempotent, crash-safe, survives onboarding), then re-project
             // the shared items so lists reflect the accepted/revoked state.
             .task(id: env.approvalCoordinator.recipientChangeCounter) {
+                guard !env.uiTestConfiguration.isEnabled else { return }
                 await resumePendingShareAcceptance()
                 if let vaultKey = env.session.vaultKey?.bytes {
                     await env.sharedItems.refresh(vaultKey: vaultKey)
@@ -180,6 +182,7 @@ struct VaultShellBehaviors: ViewModifier {
     /// keeps the flag and retries with backoff, and any leftover is picked up
     /// by the next foreground/unlock.
     private func resumePendingShareAcceptance() async {
+        guard !env.uiTestConfiguration.isEnabled else { return }
         let flag = UserDefaults.standard.bool(forKey: SharedConfig.pendingShareAcceptanceKey)
         let unlocked = env.session.vaultKey != nil
         guard flag, let vaultKey = env.session.vaultKey?.bytes, !resumingShareAcceptance else {
@@ -222,6 +225,10 @@ struct VaultShellBehaviors: ViewModifier {
 
     /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).
     private func updateShakeDetector() {
+        guard !env.uiTestConfiguration.isEnabled else {
+            shakeDetector.stop()
+            return
+        }
         if env.settings.shakeToLock, scenePhase == .active {
             shakeDetector.start {
                 Haptics.success()

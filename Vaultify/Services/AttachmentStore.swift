@@ -37,10 +37,10 @@ nonisolated struct AttachmentMeta: Codable, Sendable, Identifiable {
     private let session: VaultSession
     private let directory: URL
 
-    init(session: VaultSession) {
+    init(session: VaultSession, directory: URL? = nil) {
         self.session = session
-        directory = SharedConfig.containerURL.appending(path: "Attachments")
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        self.directory = directory ?? SharedConfig.containerURL.appending(path: "Attachments")
+        try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
     }
 
     private func url(for id: String) -> URL { directory.appending(path: "\(id).enc") }

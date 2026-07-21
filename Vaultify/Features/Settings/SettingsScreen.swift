@@ -159,6 +159,7 @@ struct SettingsScreen: View {
                 Button { env.session.lock(deliberate: true) } label: {
                     Label { Text("Lock Now") } icon: { SettingsIconBadge(systemName: "lock.fill", tint: SettingsBadgeTint.gray) }
                 }
+                .accessibilityIdentifier("settings.lock-now")
                 Button(role: .destructive) { confirmErase = true } label: {
                     Label { Text("Erase Vault").foregroundStyle(env.theme.active.color(.destructive)) }
                         icon: { SettingsIconBadge(systemName: "trash.fill", tint: SettingsBadgeTint.red) }

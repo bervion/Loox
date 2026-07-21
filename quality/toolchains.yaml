@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "tools": {
+    "tuist": {
+      "version": "4.200.1",
+      "source": ".mise.toml"
+    },
+    "maestro": {
+      "version": "2.4.0",
+      "archive_url": "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.4.0/maestro.zip",
+      "sha256": "aea22ce67ab6718997ec990c58652ede0c2be8f10ac4799039ca3dce3390d634"
+    },
+    "snapshot_testing": {
+      "version": "1.19.2",
+      "source": "Project.swift"
+    },
+    "xcode": {
+      "version": "26.5",
+      "selector": "scripts/ci/select-xcode.sh"
+    },
+    "simulator": {
+      "runtime": "iOS 26.5",
+      "device": "iPhone 17 Pro",
+      "selector": "scripts/ci/create-simulator.sh"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Feature proposal",
+  "description": "Define a user outcome and its quality coverage before implementation.",
+  "title": "feat: ",
+  "labels": ["feature"],
+  "body": [
+    {"type": "textarea", "id": "outcome", "attributes": {"label": "User outcome", "description": "Describe the observable user result, not an implementation."}, "validations": {"required": true}},
+    {"type": "textarea", "id": "ledger", "attributes": {"label": "Quality impact", "description": "List affected SurfaceIDs, StateIDs, TransitionIDs and RiskIDs."}, "validations": {"required": true}},
+    {"type": "textarea", "id": "invariants", "attributes": {"label": "Privacy, security and accessibility invariants"}, "validations": {"required": true}},
+    {"type": "textarea", "id": "verification", "attributes": {"label": "Deterministic verification plan", "description": "Include fixtures, test layers, evidence and rollback."}, "validations": {"required": true}}
+  ]
+}

@@ -204,6 +204,7 @@ struct ItemDetailScreen: View {
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
+                            .accessibilityIdentifier("item.detail.edit")
                         if quickViewEntryVisible {
                             Button {
                                 if let reason = quickViewDisabledReason(for: item) {
@@ -247,6 +248,8 @@ struct ItemDetailScreen: View {
                             } label: { Label("Move to Trash", image: Icons.trash) }
                         }
                     } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
+                        .accessibilityLabel(Text("More"))
+                        .accessibilityIdentifier("item.detail.more")
                 }
             } else if item?.sharedOrigin != nil {
                 ToolbarItem(placement: .platformPrimaryAction) {
@@ -255,6 +258,7 @@ struct ItemDetailScreen: View {
                             Label("Leave Share", image: Icons.trash)
                         }
                     } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
+                        .accessibilityLabel(Text("More"))
                 }
             }
         }
@@ -415,6 +419,7 @@ struct ItemDetailScreen: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.title.isEmpty ? "Untitled" : item.title)
                         .vaultType(.screenTitle).lineLimit(1).truncationMode(.tail)
+                        .accessibilityIdentifier("item.detail.title")
                     Text(item.category.title).vaultType(.subhead).themedForeground(.secondary)
                 }
                 Spacer(minLength: 0)

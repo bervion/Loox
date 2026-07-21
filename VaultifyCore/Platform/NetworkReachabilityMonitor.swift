@@ -15,9 +15,16 @@ import Network
 @MainActor @Observable final class NetworkReachabilityMonitor {
     private(set) var hasSatisfiedNetworkPath = false
 
-    @ObservationIgnored private let monitor = NWPathMonitor()
+    @ObservationIgnored private let monitor: NWPathMonitor?
 
-    init() {
+    init(monitoringEnabled: Bool = true, initialSatisfied: Bool = false) {
+        hasSatisfiedNetworkPath = initialSatisfied
+        guard monitoringEnabled else {
+            monitor = nil
+            return
+        }
+        let monitor = NWPathMonitor()
+        self.monitor = monitor
         monitor.pathUpdateHandler = { [weak self] path in
             let satisfied = path.status == .satisfied
             Task { @MainActor [weak self] in
@@ -27,5 +34,5 @@ import Network
         monitor.start(queue: DispatchQueue(label: "com.bervion.vaultify.reachability"))
     }
 
-    deinit { monitor.cancel() }
+    deinit { monitor?.cancel() }
 }

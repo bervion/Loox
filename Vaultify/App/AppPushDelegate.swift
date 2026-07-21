@@ -18,6 +18,8 @@ import UIKit
 final class AppPushDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        guard !UITestConfiguration.current.isEnabled,
+              !CloudSyncService.isHostingUnitTests else { return true }
         // Silent CloudKit pushes need remote-notification registration; this never
         // shows a permission prompt (alert notifications are a separate opt-in).
         application.registerForRemoteNotifications()
@@ -220,6 +222,8 @@ final class VaultSceneDelegate: NSObject, UIWindowSceneDelegate {
 #elseif canImport(AppKit)
 final class AppPushDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard !UITestConfiguration.current.isEnabled,
+              !CloudSyncService.isHostingUnitTests else { return }
         NSApplication.shared.registerForRemoteNotifications()
     }
 

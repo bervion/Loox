@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-2026-0001",
+  "impact_type": "runtime",
+  "summary": "Add a fail-closed Debug-only synthetic UI-test composition seam, accessibility contracts, deterministic native and Maestro critical-journey proof, production quality ledgers and isolated CI/release workflows.",
+  "changed_scopes": [
+    ".goclaw/**",
+    ".github/**",
+    ".mise.toml",
+    "CODEOWNERS",
+    "Project.swift",
+    "Vaultify/App/**",
+    "Vaultify/Data/Repositories/VaultRepository.swift",
+    "Vaultify/DesignSystem/Components/VaultScreenHeader.swift",
+    "Vaultify/DesignSystem/Theme/ThemeStore.swift",
+    "Vaultify/Features/Home/**",
+    "Vaultify/Features/ItemDetail/ItemDetailScreen.swift",
+    "Vaultify/Features/ItemEditor/ItemEditorScreen.swift",
+    "Vaultify/Features/Main/VaultShellBehaviors.swift",
+    "Vaultify/Features/Settings/SettingsScreen.swift",
+    "Vaultify/Features/Sharing/InviteInboxBehaviors.swift",
+    "Vaultify/Features/Unlock/**",
+    "Vaultify/Platform/AppNavigator.swift",
+    "Vaultify/Security/VaultSession.swift",
+    "VaultifyTests/**",
+    "VaultifySnapshotTests/**",
+    "VaultifyUITests/**",
+    "docs/**",
+    "quality/**",
+    "scripts/ci/**",
+    "scripts/quality/**",
+    "specs/**"
+  ],
+  "surfaces": [
+    "SURF-LOCK-001",
+    "SURF-HOME-001",
+    "SURF-DETAIL-001",
+    "SURF-EDITOR-001",
+    "SURF-SETTINGS-001"
+  ],
+  "states": [
+    "STATE-LOCK-PASSWORD",
+    "STATE-HOME-POPULATED",
+    "STATE-DETAIL-OWNED",
+    "STATE-EDITOR-EDITING"
+  ],
+  "transitions": [
+    "TRANS-UNLOCK-PASSWORD",
+    "TRANS-OPEN-ITEM",
+    "TRANS-EDIT-ITEM",
+    "TRANS-SAVE-ITEM",
+    "TRANS-CLOSE-ITEM",
+    "TRANS-RELOCK"
+  ],
+  "test_paths": [
+    "VaultifyTests/UITestConfigurationTests.swift",
+    "VaultifySnapshotTests/LockControlSnapshotTests.swift",
+    "VaultifyUITests/VaultEditSaveRelockUITests.swift",
+    "quality/maestro/vault-edit-save-relock.yaml",
+    "scripts/quality/tests/test_quality.py"
+  ],
+  "evidence_paths": []
+}

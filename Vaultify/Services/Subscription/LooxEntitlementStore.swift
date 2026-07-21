@@ -22,6 +22,8 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
 /// Entitlement state must never touch vault data — this store only ever
 /// changes what the UI offers, never what the vault contains.
 @MainActor @Observable final class LooxEntitlementStore {
+    @ObservationIgnored private let defaults: UserDefaults
+
     /// Tier granted by verified App Store transactions. Free when none.
     /// `Transaction.currentEntitlements` is local device state (it already
     /// reflects grace periods and does not require the network), so recomputing
@@ -64,7 +66,7 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     /// e.g. for paywall preview under the Vaultify-StoreKit scheme. Default
     /// OFF so daily dev behavior stays byte-identical.
     var debugPurchasesEnabled: Bool = false {
-        didSet { UserDefaults.standard.set(debugPurchasesEnabled, forKey: Self.debugPurchasesKey) }
+        didSet { defaults.set(debugPurchasesEnabled, forKey: Self.debugPurchasesKey) }
     }
     private static let debugPurchasesKey = "debug.looxPurchasesEnabled"
     #endif
@@ -75,9 +77,9 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     var debugTierOverride: LooxTier? {
         didSet {
             if let debugTierOverride {
-                UserDefaults.standard.set(debugTierOverride.rawValue, forKey: Self.debugOverrideKey)
+                defaults.set(debugTierOverride.rawValue, forKey: Self.debugOverrideKey)
             } else {
-                UserDefaults.standard.removeObject(forKey: Self.debugOverrideKey)
+                defaults.removeObject(forKey: Self.debugOverrideKey)
             }
         }
     }
@@ -90,12 +92,13 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
 
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         #if DEBUG
-        if UserDefaults.standard.object(forKey: Self.debugOverrideKey) != nil {
-            debugTierOverride = LooxTier(rawValue: UserDefaults.standard.integer(forKey: Self.debugOverrideKey))
+        if defaults.object(forKey: Self.debugOverrideKey) != nil {
+            debugTierOverride = LooxTier(rawValue: defaults.integer(forKey: Self.debugOverrideKey))
         }
-        debugPurchasesEnabled = UserDefaults.standard.bool(forKey: Self.debugPurchasesKey)
+        debugPurchasesEnabled = defaults.bool(forKey: Self.debugPurchasesKey)
         #endif
     }
 

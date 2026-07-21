@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "journeys": [
+    {
+      "journey_id": "vault-edit-save-relock",
+      "name": "Unlock, edit, save and relock",
+      "critical": true,
+      "fixture_ids": ["FIX-KDF-PASSWORD", "FIX-VAULT-POPULATED", "FIX-ITEM-WRITE", "FIX-UI-VAULT-CRITICAL"],
+      "transition_ids": ["TRANS-UNLOCK-PASSWORD", "TRANS-OPEN-ITEM", "TRANS-EDIT-ITEM", "TRANS-SAVE-ITEM", "TRANS-CLOSE-ITEM", "TRANS-RELOCK"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "journey_id": "shared-item-authorize",
+      "name": "Authorize a shared item before values appear",
+      "critical": true,
+      "fixture_ids": ["FIX-SHARED-AUTHZ"],
+      "transition_ids": ["TRANS-SHARED-AUTHORIZE"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "journey_id": "autofill-unlock-session",
+      "name": "Authorize an AutoFill extension session",
+      "critical": true,
+      "fixture_ids": ["FIX-AUTOFILL-SESSION"],
+      "transition_ids": ["TRANS-AUTOFILL-AUTHORIZE"],
+      "verification_status": "known",
+      "evidence_ids": []
+    }
+  ]
+}

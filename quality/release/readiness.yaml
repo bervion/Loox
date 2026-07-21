@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "release_id": null,
+  "status": "not-evaluated",
+  "gates": [
+    {"gate_id": "GATE-OWNER", "description": "bervion approved the exact release commit", "required": true, "passed": false, "evidence_ids": []},
+    {"gate_id": "GATE-LEDGER", "description": "Critical journeys and states are fresh and verified", "required": true, "passed": false, "evidence_ids": []},
+    {"gate_id": "GATE-TESTS", "description": "Unit, integration, UI, snapshot and bounded exploratory checks meet declared scope", "required": true, "passed": false, "evidence_ids": []},
+    {"gate_id": "GATE-PRIVACY", "description": "Evidence redaction and analytics privacy contracts pass", "required": true, "passed": false, "evidence_ids": []},
+    {"gate_id": "GATE-LOCALIZATION", "description": "EN and VI copy and accessibility matrix pass", "required": true, "passed": false, "evidence_ids": []},
+    {"gate_id": "GATE-ROLLBACK", "description": "Previous-source higher-build fix-forward functionally unlocks and reads a candidate-format encrypted vault sentinel; production downgrade is not claimed", "required": true, "passed": false, "evidence_ids": []},
+    {"gate_id": "GATE-RISKS", "description": "No critical/high risk is open; mitigations are evidenced and owner acceptances are explicit", "required": true, "passed": false, "evidence_ids": []},
+    {"gate_id": "GATE-OPERATIONS", "description": "Release notes and an owner-approved post-release monitoring/fix-forward plan are complete", "required": true, "passed": false, "evidence_ids": []}
+  ]
+}

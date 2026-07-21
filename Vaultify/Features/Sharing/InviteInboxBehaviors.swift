@@ -58,7 +58,8 @@ struct InviteInboxBehaviors: ViewModifier {
     }
 
     private func presentNextIfIdle() {
-        guard presentedInvite == nil, acceptError == nil, !accepting,
+        guard !env.uiTestConfiguration.isEnabled,
+              presentedInvite == nil, acceptError == nil, !accepting,
               !env.inviteInboxCoordinator.alertsSuppressed else { return }
         presentedInvite = env.inviteInboxCoordinator.pendingInvites.first
     }
@@ -85,6 +86,7 @@ struct InviteInboxBehaviors: ViewModifier {
     }
 
     private func reconcileAndPresent() async {
+        guard !env.uiTestConfiguration.isEnabled else { return }
         await env.inviteInboxCoordinator.reconcile()
         presentNextIfIdle()
     }

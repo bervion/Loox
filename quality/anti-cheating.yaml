@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "scan_added_lines_only": true,
+  "exclude_paths": [
+    "scripts/quality/tests/**"
+  ],
+  "protected_policy_globs": [
+    ".github/workflows/**",
+    ".goclaw/**",
+    "quality/**",
+    "scripts/quality/**",
+    "scripts/ci/**",
+    "Project.swift",
+    ".mise.toml",
+    ".package.resolved",
+    "CODEOWNERS",
+    "*Tests/**",
+    "**/*Tests.swift"
+  ],
+  "protected_snapshot_globs": [
+    "**/__Snapshots__/**"
+  ],
+  "protected_deletion_globs": [
+    "*Tests/**",
+    "**/*Tests.swift",
+    "quality/maestro/**",
+    "scripts/quality/tests/**"
+  ],
+  "patterns": [
+    {"pattern_id": "ANTI-DISABLED-TEST", "regex": "(?:XCTSkip|\\.disabled\\b|@Test\\s*\\([^\\n]*disabled|\\b(?:xit|xdescribe)\\s*\\()", "path_globs": ["*Tests/**", "**/*Tests.swift", "**/*.test.*", "**/*.spec.*"], "description": "Disabled or skipped tests cannot provide evidence.", "severity": "error"},
+    {"pattern_id": "ANTI-CONSTANT-ASSERT", "regex": "(?:XCTAssertTrue\\s*\\(\\s*true\\s*\\)|#expect\\s*\\(\\s*true\\s*\\))", "path_globs": ["*Tests/**", "**/*Tests.swift", "**/*.test.*", "**/*.spec.*"], "description": "Constant-success assertions do not exercise production behavior.", "severity": "error"},
+    {"pattern_id": "ANTI-IGNORE-FAILURE", "regex": "(?:continue-on-error\\s*:\\s*true|\\|\\|\\s*true\\s*$)", "path_globs": [".github/workflows/**", "scripts/**", "Makefile"], "description": "Ignored command failures cannot satisfy a quality gate.", "severity": "error"},
+    {"pattern_id": "ANTI-FOCUSED-TEST", "regex": "(?:\\bfdescribe\\s*\\(|\\bfit\\s*\\()", "path_globs": ["*Tests/**", "**/*Tests.swift", "**/*.test.*", "**/*.spec.*"], "description": "Focused tests can hide the rest of the suite.", "severity": "error"},
+    {"pattern_id": "ANTI-SNAPSHOT-RECORD", "regex": "(?:record\\s*:\\s*\\.all|isRecording\\s*=\\s*true|SNAPSHOT_TESTING_RECORD\\s*=)", "path_globs": ["*Tests/**", ".github/workflows/**", "scripts/**"], "description": "Snapshot recording mode cannot be committed as a quality gate.", "severity": "error"},
+    {"pattern_id": "ANTI-SNAPSHOT-PRECISION", "regex": "(?:perceptualPrecision|precision)\\s*:\\s*0(?:\\.\\d+)?", "path_globs": ["*Tests/**"], "description": "Explicitly weakened snapshot precision requires an owner-approved exception.", "severity": "error"}
+  ]
+}

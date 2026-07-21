@@ -5,65 +5,109 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+  actions: read
+
 concurrency:
   group: release-ios
   cancel-in-progress: false
 
+env:
+  CI: '1'
+
 jobs:
-  release-ios:
-    name: Build & upload to TestFlight
-    runs-on: self-hosted
+  release-preflight:
+    name: Verify exact-commit release readiness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout immutable tag without credentials
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
-      # The project uses a newer Xcode format (objectVersion 110); select the
-      # highest-versioned Xcode on the runner so xcodebuild/gym can open it.
-      - name: Select newest Xcode
+      - name: Validate independent gates for this tag
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          newest=""; newest_ver=""
-          for xc in /Applications/Xcode*.app; do
-            [ -d "$xc" ] || continue
-            ver=$("$xc/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | awk 'NR==1{print $2}')
-            [ -n "$ver" ] || continue
-            if [ -z "$newest_ver" ] || [ "$(printf '%s\n%s\n' "$ver" "$newest_ver" | sort -V | tail -1)" = "$ver" ]; then
-              newest="$xc"; newest_ver="$ver"
-            fi
-          done
-          echo "Selected Xcode $newest_ver ($newest)"
-          echo "DEVELOPER_DIR=$newest/Contents/Developer" >> "$GITHUB_ENV"
+          python3 scripts/quality/verify_release_readiness.py \
+            --sha "$GITHUB_SHA" \
+            --release-id "$GITHUB_REF_NAME" \
+            --owner "$GITHUB_ACTOR" \
+            --triggering-owner "$GITHUB_TRIGGERING_ACTOR" \
+            --output "$RUNNER_TEMP/release-preflight.json"
 
-      # Version lives in Project.swift (bumped & committed by release.sh before tag).
-      - name: Show version
+      - name: Upload secret-free preflight receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-preflight-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-preflight.json
+          if-no-files-found: error
+          retention-days: 30
+
+  release-ios:
+    name: Sign and upload to TestFlight
+    needs: release-preflight
+    # Creating the immutable release tag is the owner approval fallback on
+    # plans that do not support protected-environment reviewers. A rerun by a
+    # different actor remains blocked as well.
+    if: github.actor == 'bervion' && github.triggering_actor == 'bervion'
+    environment: production-ios-release
+    runs-on: [self-hosted, macOS, ARM64, vaultify-release]
+    timeout-minutes: 90
+    steps:
+      - name: Checkout immutable tag
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select pinned Xcode
+        run: scripts/ci/select-xcode.sh
+
+      - name: Verify tag is reachable from main
         run: |
-          V=$(grep -m1 '"MARKETING_VERSION":' Project.swift | sed -E 's/.*"MARKETING_VERSION": "([^"]+)".*/\1/')
-          B=$(grep -m1 '"CURRENT_PROJECT_VERSION":' Project.swift | sed -E 's/.*"CURRENT_PROJECT_VERSION": "([0-9]+)".*/\1/')
-          echo "Releasing $V ($B) from ${GITHUB_REF_NAME}"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Release tag must point to a commit reachable from main" >&2
+            exit 1
+          fi
 
-      # Generate Vaultify.xcworkspace/.xcodeproj using this runner's Xcode.
-      # TUIST_LOOX_LINK_PROD_TOKEN bakes the interim Loox Link create token
-      # into the app's Info.plist (Project.swift reads it at generation) —
-      # without it, TestFlight builds get 401 creating quick links. Interim
-      # only: retired when App Attest becomes the create auth (loox-link C7).
-      - name: Generate Xcode project
+      - name: Install pinned Tuist
+        uses: jdx/mise-action@c53b9236f0b3370f31520f8b142f141256d839c6 # v3.6.0
+
+      - name: Show release identity
+        run: |
+          version=$(grep -m1 '"MARKETING_VERSION":' Project.swift | sed -E 's/.*"MARKETING_VERSION": "([^"]+)".*/\1/')
+          number=$(grep -m1 '"CURRENT_PROJECT_VERSION":' Project.swift | sed -E 's/.*"CURRENT_PROJECT_VERSION": "([0-9]+)".*/\1/')
+          case "$GITHUB_REF_NAME" in
+            "v$version"|"v$version-beta."*) ;;
+            *)
+              echo "Tag $GITHUB_REF_NAME does not match MARKETING_VERSION $version" >&2
+              exit 1
+              ;;
+          esac
+          echo "Releasing $version ($number) from $GITHUB_REF_NAME"
+
+      - name: Generate project with release configuration
         env:
           TUIST_LOOX_LINK_PROD_TOKEN: ${{ secrets.LOOX_LINK_PROD_TOKEN }}
         run: |
-          if [ -z "$TUIST_LOOX_LINK_PROD_TOKEN" ]; then
-            echo "::error::LOOX_LINK_PROD_TOKEN repo secret is not set — quick-link creation would 401 in this release. Set it (Settings → Secrets → Actions) and re-run."
+          if [[ -z "$TUIST_LOOX_LINK_PROD_TOKEN" ]]; then
+            echo "LOOX_LINK_PROD_TOKEN is not configured" >&2
             exit 1
           fi
-          tuist generate --no-open
+          scripts/ci/prepare-project.sh
 
-      # Use a managed Ruby — the runner's macOS system Ruby (2.6) is too old for
-      # modern bundler/fastlane. bundler-cache installs the locked gems (and the
-      # bundler version pinned in Gemfile.lock).
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Setup managed Ruby
+        uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # pinned master, 2026-07-20
         with:
           ruby-version: '3.4'
           bundler-cache: true
 
-      - name: Sign & upload to TestFlight
+      - name: Sign and upload
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_AUTH }}

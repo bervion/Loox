@@ -98,9 +98,11 @@ struct RootView: View {
                 // or render (INV-CP-01/02). Fire-and-forget: the coordinator dedupes
                 // the launch-after-unlock and foreground triggers into one request
                 // per document family and applies its own freshness/backoff.
-                Task {
-                    await env.controlPlaneRefresher.refreshIfNeeded(trigger: .launchAfterUnlock)
-                    await env.controlPlaneRefresher.refreshIfNeeded(trigger: .foreground)
+                if !env.uiTestConfiguration.isEnabled {
+                    Task {
+                        await env.controlPlaneRefresher.refreshIfNeeded(trigger: .launchAfterUnlock)
+                        await env.controlPlaneRefresher.refreshIfNeeded(trigger: .foreground)
+                    }
                 }
             }
         case .inactive:

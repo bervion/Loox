@@ -7,7 +7,7 @@ import SwiftUI
 
 @main
 struct VaultifyApp: App {
-    @State private var env = AppEnvironment()
+    @State private var env: AppEnvironment
     /// Localized failure from an invite universal link (expired/invalid).
     @State private var inviteError: String?
     /// Acceptance succeeded — tell the user where to look (the accept itself
@@ -24,10 +24,14 @@ struct VaultifyApp: App {
     private var locale: Locale { appLocale(forCode: env.settings.preferredLanguage) }
 
     init() {
+        let uiTestConfiguration = UITestConfiguration.current
+        _env = State(initialValue: AppEnvironment(uiTestConfiguration: uiTestConfiguration))
         // Providers must exist before the first event. Runs fine without a
         // GoogleService-Info.plist — the engine then stays dark (see
         // `FirebaseAnalyticsProvider.bootstrapped`).
-        AnalyticsEngine.bootstrap()
+        if !uiTestConfiguration.isEnabled, !CloudSyncService.isHostingUnitTests {
+            AnalyticsEngine.bootstrap()
+        }
     }
 
     var body: some Scene {
@@ -76,6 +80,9 @@ struct VaultifyApp: App {
 
     private var rootContent: some View {
         RootView()
+                .transaction { transaction in
+                    if env.uiTestConfiguration.isEnabled { transaction.animation = nil }
+                }
                 .onOpenURL { url in
                     // 2FA setup from an otpauth:// link/QR → stash a draft login; presented once
                     // the vault is unlocked (see MainTabView).

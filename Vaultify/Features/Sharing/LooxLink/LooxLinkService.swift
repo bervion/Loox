@@ -7,11 +7,16 @@ import Foundation
 /// The server never sees a plaintext field or the key; revocation stores only
 /// an opaque token.
 @MainActor @Observable final class LooxLinkService {
-    let records = LooxLinkRecordStore()
-    private let api = LooxLinkAPIClient()
+    let records: LooxLinkRecordStore
+    private let api: LooxLinkAPIClient
     /// Optional-capability state sink — independent from Private Email's
     /// (INV-CAP-03). Optional so tests without an AppEnvironment run unchanged.
     weak var capabilities: CapabilityStore?
+
+    init(persistenceEnabled: Bool = true) {
+        self.records = LooxLinkRecordStore(persistenceEnabled: persistenceEnabled)
+        self.api = LooxLinkAPIClient()
+    }
 
     struct CreatedLink {
         let url: URL

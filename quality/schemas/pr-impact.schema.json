@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vaultify.local/quality/pr-impact.schema.json",
+  "title": "Vaultify pull request impact declaration",
+  "type": "object",
+  "required": ["schema_version", "task_id", "impact_type", "summary", "changed_scopes", "surfaces", "states", "transitions", "test_paths", "evidence_paths"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "task_id": {"type": "string", "pattern": "^TASK-[0-9]{4}-[0-9]{4}$"},
+    "impact_type": {"enum": ["runtime", "test", "documentation", "governance", "infrastructure"]},
+    "summary": {"type": "string", "minLength": 1},
+    "changed_scopes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "surfaces": {"type": "array", "items": {"type": "string"}},
+    "states": {"type": "array", "items": {"type": "string"}},
+    "transitions": {"type": "array", "items": {"type": "string"}},
+    "test_paths": {"type": "array", "items": {"type": "string"}},
+    "evidence_paths": {"type": "array", "items": {"type": "string"}},
+    "no_surface_impact_reason": {"type": "string"}
+  },
+  "additionalProperties": false
+}

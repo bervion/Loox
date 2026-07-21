@@ -25,6 +25,8 @@ let project = Project(
     packages: [
         .remote(url: "https://github.com/firebase/firebase-ios-sdk",
                 requirement: .exact("12.16.0")),
+        .remote(url: "https://github.com/pointfreeco/swift-snapshot-testing",
+                requirement: .exact("1.19.2")),
     ],
     settings: .settings(
         base: [
@@ -297,6 +299,29 @@ let project = Project(
             resources: ["VaultifyTests/Fixtures/**"],
             dependencies: [.target(name: "Vaultify")]
         ),
+        .target(
+            name: "VaultifySnapshotTests",
+            destinations: [.iPhone],
+            product: .unitTests,
+            bundleId: "com.bervion.vaultify.snapshot-tests",
+            deploymentTargets: .iOS("17.3"),
+            infoPlist: .default,
+            sources: ["VaultifySnapshotTests/**"],
+            dependencies: [
+                .target(name: "Vaultify"),
+                .package(product: "SnapshotTesting"),
+            ]
+        ),
+        .target(
+            name: "VaultifyUITests",
+            destinations: [.iPhone],
+            product: .uiTests,
+            bundleId: "com.bervion.vaultify.ui-tests",
+            deploymentTargets: .iOS("17.3"),
+            infoPlist: .default,
+            sources: ["VaultifyUITests/**"],
+            dependencies: [.target(name: "Vaultify")]
+        ),
     ],
     schemes: [
         // Additive dev-only scheme: same app, but the run action loads the local
@@ -314,6 +339,17 @@ let project = Project(
                 executable: "Vaultify",
                 options: .options(storeKitConfigurationPath: "Loox.storekit")
             )
+        ),
+        .scheme(
+            name: "Vaultify-Quality",
+            shared: true,
+            buildAction: .buildAction(targets: ["Vaultify"]),
+            testAction: .targets([
+                "VaultifyTests",
+                "VaultifySnapshotTests",
+                "VaultifyUITests",
+            ]),
+            runAction: .runAction(executable: "Vaultify")
         ),
     ]
 )
