@@ -48,14 +48,40 @@ enum AuthError: Error, LocalizedError {
     /// Auto-locks (timeout/background) keep the frictionless Face ID auto-prompt.
     private(set) var deliberatelyLocked = false
 
+    #if DEBUG
+    private var uiTestCredential: (password: String, key: [UInt8])?
+    #endif
+
     let settings: SettingsStore
 
-    init(settings: SettingsStore) {
+    init(
+        settings: SettingsStore,
+        uiTestConfiguration: UITestConfiguration = .disabled,
+        persistentKeyMaterialEnabled: Bool = true
+    ) {
         self.settings = settings
+        #if DEBUG
+        if uiTestConfiguration.isEnabled {
+            let credential = (UITestConfiguration.fixturePassword, UITestConfiguration.fixtureKey)
+            uiTestCredential = credential
+            vaultKey = SecureBytes(credential.1)
+            state = .unlocked
+            return
+        }
+        #endif
+        guard persistentKeyMaterialEnabled else {
+            state = .onboarding
+            return
+        }
         state = VaultKeyBundle.exists ? .locked : .onboarding
     }
 
-    var biometricEnrolled: Bool { BiometricKeyStore.isEnrolled }
+    var biometricEnrolled: Bool {
+        #if DEBUG
+        if uiTestCredential != nil { return false }
+        #endif
+        return BiometricKeyStore.isEnrolled
+    }
 
     // MARK: Create
 
@@ -83,6 +109,13 @@ enum AuthError: Error, LocalizedError {
     // MARK: Unlock
 
     func unlock(password: String) async throws {
+        #if DEBUG
+        if let credential = uiTestCredential {
+            guard password == credential.password else { throw AuthError.wrongPassword }
+            adoptUnlocked(key: credential.key, publishSharedSession: false)
+            return
+        }
+        #endif
         guard let bundle = VaultKeyBundle.load() else {
             state = .onboarding
             throw AuthError.noVault
@@ -154,6 +187,9 @@ enum AuthError: Error, LocalizedError {
         state = .locked
         // Locking the app revokes the Safari extension's unlocked session too —
         // the two share one lock lifecycle.
+        #if DEBUG
+        if uiTestCredential != nil { return }
+        #endif
         ExtensionSessionStore.clear()
     }
 
@@ -173,11 +209,12 @@ enum AuthError: Error, LocalizedError {
 
     /// Adopt a freshly-derived Vault Key and transition to unlocked. Internal so
     /// `VaultSession+Recovery` can reuse it across files.
-    func adoptUnlocked(key: [UInt8]) {
+    func adoptUnlocked(key: [UInt8], publishSharedSession: Bool = true) {
         vaultKey = SecureBytes(key)
         state = .unlocked
         lastActivity = .now
         deliberatelyLocked = false
+        guard publishSharedSession else { return }
         migrateBiometricKeyToSharedGroupIfNeeded(key: key)
         // An unlocked app also unlocks the Safari extension (same window, same
         // 15-minute cap; "immediate" writes nothing). Seeded AFTER the biometric

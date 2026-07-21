@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "imported_from": "docs/app-feature-map-ui-ux.md",
+  "imported_at": "2026-07-20",
+  "surfaces": [
+    {
+      "surface_id": "SURF-ONB-001",
+      "name": "Onboarding flow",
+      "kind": "flow",
+      "entry_points": ["first launch", "sync from another device"],
+      "source_refs": ["Vaultify/Features/Onboarding/OnboardingFlow.swift", "docs/app-feature-map-ui-ux.md"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-LOCK-001",
+      "name": "Vault lock screen",
+      "kind": "screen",
+      "entry_points": ["cold launch with configured vault", "explicit lock", "foreground after auto-lock"],
+      "source_refs": ["Vaultify/Features/Unlock/LockScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-HOME-001",
+      "name": "Home dashboard",
+      "kind": "screen",
+      "entry_points": ["Home tab", "successful unlock"],
+      "source_refs": ["Vaultify/Features/Home/HomeScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-ITEMS-001",
+      "name": "Items organization",
+      "kind": "screen",
+      "entry_points": ["Items tab"],
+      "source_refs": ["Vaultify/Features/Items/ItemsScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-SEARCH-001",
+      "name": "Vault search",
+      "kind": "screen",
+      "entry_points": ["Search tab", "Home search action"],
+      "source_refs": ["Vaultify/Features/Search/SearchScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-WATCH-001",
+      "name": "Watchtower dashboard",
+      "kind": "screen",
+      "entry_points": ["Watchtower tab", "Home quick action"],
+      "source_refs": ["Vaultify/Features/Watchtower/WatchtowerScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-DETAIL-001",
+      "name": "Item detail",
+      "kind": "screen",
+      "entry_points": ["item row", "search result", "Watchtower finding"],
+      "source_refs": ["Vaultify/Features/ItemDetail/ItemDetailScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-EDITOR-001",
+      "name": "Item editor",
+      "kind": "sheet",
+      "entry_points": ["add item", "edit item", "otpauth deep link"],
+      "source_refs": ["Vaultify/Features/ItemEditor/ItemEditorScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-SETTINGS-001",
+      "name": "Settings",
+      "kind": "sheet",
+      "entry_points": ["Home settings action"],
+      "source_refs": ["Vaultify/Features/Settings/SettingsScreen.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-AUTOFILL-001",
+      "name": "AutoFill credential provider",
+      "kind": "extension",
+      "entry_points": ["iOS credential request", "passkey registration or assertion"],
+      "source_refs": ["VaultifyAutoFill/CredentialProviderViewController.swift", "VaultifyAutoFill/UnlockGate.swift"],
+      "verification_status": "known",
+      "evidence_ids": []
+    },
+    {
+      "surface_id": "SURF-SAFARI-001",
+      "name": "Safari web extension",
+      "kind": "extension",
+      "entry_points": ["Safari extension popup", "supported HTTPS form"],
+      "source_refs": ["VaultifySafari/Resources/manifest.json", "VaultifySafari/Resources/popup.html"],
+      "verification_status": "known",
+      "evidence_ids": []
+    }
+  ]
+}

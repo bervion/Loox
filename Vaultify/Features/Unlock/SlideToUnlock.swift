@@ -8,6 +8,7 @@ struct SlideToUnlock: View {
     let onComplete: () -> Void
 
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var offsetX: CGFloat = 0
     @State private var completed = false
 
@@ -26,13 +27,17 @@ struct SlideToUnlock: View {
 
                 Text(label)
                     .vaultType(.subhead).fontWeight(.medium)
-                    .themedForeground(.secondary)
+                    .themedForeground(.primary)
                     .frame(maxWidth: .infinity)
                     .opacity(1 - progress * 1.4)
 
                 // Sliding knob (accent fill + arrow — a deliberate action control).
                 ZStack {
-                    Circle().fill(Color(rgb: theme.accent))
+                    Circle()
+                        .fill(Color(rgb: theme.accent))
+                        .overlay {
+                            Circle().stroke(Color(rgb: theme.primaryText), lineWidth: 2)
+                        }
                     PolarisIcon(Icons.arrowRight, size: 20)
                         .foregroundStyle(Color(rgb: theme.accentForeground))
                 }
@@ -48,17 +53,41 @@ struct SlideToUnlock: View {
                         .onEnded { _ in
                             guard !completed else { return }
                             if offsetX >= maxX * 0.9 {
-                                completed = true
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { offsetX = maxX }
-                                Haptics.success()
-                                onComplete()
+                                complete(maxX: maxX)
                             } else {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offsetX = 0 }
+                                reset()
                             }
                         }
                 )
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(label))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("lock.slide")
+            .accessibilityAction { complete(maxX: maxX) }
         }
         .frame(height: height)
+    }
+
+    private func complete(maxX: CGFloat) {
+        guard !completed else { return }
+        completed = true
+        withAnimation(.vault(
+            .spring(response: 0.3, dampingFraction: 0.85),
+            reduceMotion: reduceMotion
+        )) {
+            offsetX = maxX
+        }
+        Haptics.success()
+        onComplete()
+    }
+
+    private func reset() {
+        withAnimation(.vault(
+            .spring(response: 0.3, dampingFraction: 0.8),
+            reduceMotion: reduceMotion
+        )) {
+            offsetX = 0
+        }
     }
 }

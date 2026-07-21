@@ -57,14 +57,16 @@ import SwiftUI
     var restoredDraft: DraftState?
 
     private let session: VaultSession
+    private let fileURL: URL
     /// Restore runs at most once per process launch. A warm re-lock (foreground
     /// inactivity / shake) leaves this store's live values intact, so re-applying the
     /// on-disk snapshot there would wrongly rewind the user; only a cold launch (fresh
     /// store, default values) should adopt the snapshot.
     private var hasRestored = false
 
-    init(session: VaultSession) {
+    init(session: VaultSession, fileURL: URL? = nil) {
         self.session = session
+        self.fileURL = fileURL ?? Self.productionFileURL
     }
 
     // MARK: Snapshot model
@@ -96,7 +98,7 @@ import SwiftUI
             draft: editorDraft)
         guard let plaintext = try? JSONEncoder().encode(snapshot),
               let sealed = try? AESGCM.seal(plaintext, key: key) else { return }
-        try? sealed.write(to: Self.fileURL, options: [.atomic, .completeFileProtection])
+        try? sealed.write(to: fileURL, options: [.atomic, .completeFileProtection])
     }
 
     /// Decrypt and apply the last snapshot. No-op when locked or when nothing was saved.
@@ -104,7 +106,7 @@ import SwiftUI
         guard !hasRestored else { return }
         hasRestored = true
         guard let key = session.vaultKey,
-              let sealed = try? Data(contentsOf: Self.fileURL),
+              let sealed = try? Data(contentsOf: fileURL),
               let plaintext = try? AESGCM.open(sealed, key: key),
               let snapshot = try? JSONDecoder().decode(Snapshot.self, from: plaintext) else { return }
         selectedTab = VaultTab(rawValue: snapshot.selectedTab) ?? .home
@@ -129,12 +131,12 @@ import SwiftUI
         watchtowerPath = NavigationPath()
         editorDraft = nil
         restoredDraft = nil
-        try? FileManager.default.removeItem(at: Self.fileURL)
+        try? FileManager.default.removeItem(at: fileURL)
     }
 
     // MARK: Helpers
 
-    private static let fileURL: URL = {
+    private static let productionFileURL: URL = {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return docs.appendingPathComponent("ui-state.enc")
     }()

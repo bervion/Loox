@@ -27,11 +27,14 @@ nonisolated struct QuickViewHistoryRow: Codable, Identifiable, Equatable, Sendab
     private static let account = "quick-view-history"
     /// Bounded so an unattended device can't grow this file unboundedly.
     private static let maxRows = 200
+    @ObservationIgnored private let persistenceEnabled: Bool
 
     private(set) var rows: [QuickViewHistoryRow] = []
 
-    init() {
-        if let data = try? KeychainStore.get(account: Self.account),
+    init(persistenceEnabled: Bool = true) {
+        self.persistenceEnabled = persistenceEnabled
+        if persistenceEnabled,
+           let data = try? KeychainStore.get(account: Self.account),
            let decoded = try? JSONDecoder().decode([QuickViewHistoryRow].self, from: data) {
             rows = decoded
         }
@@ -52,10 +55,13 @@ nonisolated struct QuickViewHistoryRow: Codable, Identifiable, Equatable, Sendab
 
     func wipe() {
         rows = []
-        KeychainStore.delete(account: Self.account)
+        if persistenceEnabled {
+            KeychainStore.delete(account: Self.account)
+        }
     }
 
     private func persist() {
+        guard persistenceEnabled else { return }
         if let data = try? JSONEncoder().encode(rows) {
             try? KeychainStore.set(data, account: Self.account)
         }

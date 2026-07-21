@@ -43,9 +43,21 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
     @ObservationIgnored private let escrow: ParticipantEscrowService
     private var refreshing = false
 
-    init(recipient: ApprovalRecipientService, escrow: ParticipantEscrowService) {
+    init(
+        recipient: ApprovalRecipientService,
+        escrow: ParticipantEscrowService,
+        defaults: UserDefaults = .standard
+    ) {
         self.recipient = recipient
         self.escrow = escrow
+        let recipientDeviceIDKey = "approval_recipient_device_id"
+        if let existing = defaults.string(forKey: recipientDeviceIDKey) {
+            self.recipientDeviceId = existing
+        } else {
+            let fresh = ApprovalConfig.opaqueName()
+            defaults.set(fresh, forKey: recipientDeviceIDKey)
+            self.recipientDeviceId = fresh
+        }
     }
 
     // MARK: Lookups (detail screen + lists)
@@ -501,11 +513,5 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
 
     /// Stable opaque per-install id for request metadata (not a secret) —
     /// resolved once at init so view bodies never write UserDefaults.
-    let recipientDeviceId: String = {
-        let key = "approval_recipient_device_id"
-        if let existing = UserDefaults.standard.string(forKey: key) { return existing }
-        let fresh = ApprovalConfig.opaqueName()
-        UserDefaults.standard.set(fresh, forKey: key)
-        return fresh
-    }()
+    let recipientDeviceId: String
 }

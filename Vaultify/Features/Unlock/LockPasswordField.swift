@@ -23,6 +23,8 @@ struct LockPasswordField: View {
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
                 }
                 SecureField("", text: $text)
+                    .accessibilityLabel(Text("Enter password"))
+                    .accessibilityIdentifier("lock.password")
                     .platformAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .platformTextContentType(.password)
@@ -72,5 +74,6 @@ struct LockPasswordField: View {
         .disabled(text.isEmpty || busy)
         .opacity(text.isEmpty ? 0.45 : 1)
         .accessibilityLabel(Text("Unlock"))
+        .accessibilityIdentifier("lock.submit")
     }
 }

@@ -53,6 +53,7 @@ final class AppNavigator {
                                 PolarisIcon(Icons.chevronLeft)
                             }
                             .accessibilityLabel(Text("Back"))
+                            .accessibilityIdentifier("nav.back")
                         }
                     }
                     .vaultNavigationDestinations()

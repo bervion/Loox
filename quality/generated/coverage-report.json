@@ -1,0 +1,64 @@
+{
+  "generated_at": "2026-07-20T19:45:43Z",
+  "generated_by": "scripts/quality/report.py",
+  "interpretation": "known records are imported inventory and are not verified coverage",
+  "schema_version": 1,
+  "source_digest": "be8e6cbed53566642fe716aaf2c671ad9d9704315a434e3c776efbf938cbce25",
+  "summary": {
+    "critical": {
+      "by_status": {
+        "blocked": 0,
+        "known": 20,
+        "stale": 0,
+        "verified": 0
+      },
+      "total": 20,
+      "verification_percent": 0.0,
+      "verified": 0
+    },
+    "journeys": {
+      "by_status": {
+        "blocked": 0,
+        "known": 3,
+        "stale": 0,
+        "verified": 0
+      },
+      "total": 3,
+      "verification_percent": 0.0,
+      "verified": 0
+    },
+    "states": {
+      "by_status": {
+        "blocked": 0,
+        "known": 20,
+        "stale": 0,
+        "verified": 0
+      },
+      "total": 20,
+      "verification_percent": 0.0,
+      "verified": 0
+    },
+    "surfaces": {
+      "by_status": {
+        "blocked": 0,
+        "known": 11,
+        "stale": 0,
+        "verified": 0
+      },
+      "total": 11,
+      "verification_percent": 0.0,
+      "verified": 0
+    },
+    "transitions": {
+      "by_status": {
+        "blocked": 0,
+        "known": 12,
+        "stale": 0,
+        "verified": 0
+      },
+      "total": 12,
+      "verification_percent": 0.0,
+      "verified": 0
+    }
+  }
+}

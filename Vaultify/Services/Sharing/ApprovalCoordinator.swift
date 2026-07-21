@@ -66,20 +66,26 @@ nonisolated struct RequestScanGate {
     /// re-present its sheet until the record's TTL expires. Persisted so a
     /// relaunch inside that TTL window can't re-present it either.
     private static let handledKey = "approval_handled_request_ids"
-    private var handledRequestIds: Set<String> =
-        Set(UserDefaults.standard.stringArray(forKey: handledKey) ?? [])
+    private var handledRequestIds: Set<String>
 
     private let settings: SettingsStore
     private let shareService: ApprovalShareService
+    private let defaults: UserDefaults
     private let singleFlight = SingleFlight()
     private var observers: [NSObjectProtocol] = []
     /// All reads/writes happen on the main actor (this class is @MainActor),
     /// so the gate needs no locking.
     private var scanGate = RequestScanGate()
 
-    init(settings: SettingsStore, shareService: ApprovalShareService) {
+    init(
+        settings: SettingsStore,
+        shareService: ApprovalShareService,
+        defaults: UserDefaults = .standard
+    ) {
         self.settings = settings
         self.shareService = shareService
+        self.defaults = defaults
+        self.handledRequestIds = Set(defaults.stringArray(forKey: Self.handledKey) ?? [])
         let center = NotificationCenter.default
         observers.append(center.addObserver(
             forName: .approvalRequestReceived, object: nil, queue: .main
@@ -184,10 +190,10 @@ nonisolated struct RequestScanGate {
         handledRequestIds.insert(requestId)
         // Bounded persist: ids only matter within the request TTL (~2 min),
         // so a small FIFO window is plenty.
-        var stored = UserDefaults.standard.stringArray(forKey: Self.handledKey) ?? []
+        var stored = defaults.stringArray(forKey: Self.handledKey) ?? []
         stored.append(requestId)
         if stored.count > 100 { stored.removeFirst(stored.count - 100) }
-        UserDefaults.standard.set(stored, forKey: Self.handledKey)
+        defaults.set(stored, forKey: Self.handledKey)
         pendingOwnerRequests.removeAll { $0.request.requestId == requestId }
     }
 

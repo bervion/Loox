@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {"fixture_id": "FIX-KDF-PASSWORD", "kind": "swift-test-factory", "path": "VaultifyTests/KdfMigrationTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic password and KDF migration states."},
+    {"fixture_id": "FIX-VAULT-POPULATED", "kind": "swift-test-factory", "path": "VaultifyTests/VaultRepositoryFolderTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic populated vault, folder and item arrangements."},
+    {"fixture_id": "FIX-PERSONA-ISOLATION", "kind": "swift-test-factory", "path": "VaultifyTests/PersonaIsolationTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic standard and strict-anonymous persona policies."},
+    {"fixture_id": "FIX-AUDIT-ISSUES", "kind": "swift-test-factory", "path": "VaultifyTests/AuditIntegrityRulesTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic Watchtower issue inputs."},
+    {"fixture_id": "FIX-SHARED-AUTHZ", "kind": "swift-test-factory", "path": "VaultifyTests/SharedAccessAuthorizerTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic field-capability and shared-access authorization states."},
+    {"fixture_id": "FIX-ITEM-WRITE", "kind": "swift-test-factory", "path": "VaultifyTests/VaultWriterSiteTitleTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic item edits persisted through the production writer."},
+    {"fixture_id": "FIX-AUTOFILL-SESSION", "kind": "swift-test-factory", "path": "VaultifyTests/ExtensionSessionStoreTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic locked, active and expired extension sessions."},
+    {"fixture_id": "FIX-UI-VAULT-CRITICAL", "kind": "ui-seed", "path": "Vaultify/App/UITestFixtures.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Debug-only in-memory vault seed for the edit, save, deliberate relock and password-unlock critical journey."},
+    {"fixture_id": "FIX-SAFARI-PAYLOAD", "kind": "swift-test-factory", "path": "VaultifyTests/WebExtensionFillPayloadTests.swift", "data_classification": "synthetic", "deterministic": true, "contains_secrets": false, "description": "Synthetic, field-scoped Safari fill payloads."}
+  ]
+}

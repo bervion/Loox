@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vaultify.local/quality/state.schema.json",
+  "title": "Vaultify surface state",
+  "type": "object",
+  "required": ["state_id", "surface_id", "name", "critical", "fixture_ids", "verification_status", "evidence_ids"],
+  "properties": {
+    "state_id": {"type": "string", "pattern": "^STATE-[A-Z0-9-]+$"},
+    "surface_id": {"type": "string", "pattern": "^SURF-[A-Z0-9]+-[0-9]{3}$"},
+    "name": {"type": "string", "minLength": 1},
+    "critical": {"type": "boolean"},
+    "fixture_ids": {"type": "array", "items": {"type": "string", "pattern": "^FIX-[A-Z0-9-]+$"}},
+    "verification_status": {"enum": ["known", "verified", "stale", "blocked"]},
+    "evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVID-[A-Z0-9-]+$"}}
+  },
+  "additionalProperties": false
+}

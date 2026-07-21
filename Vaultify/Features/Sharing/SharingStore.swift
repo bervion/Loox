@@ -85,11 +85,13 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
 /// management/revocation list. Persisted as JSON in UserDefaults (non-secret).
 @MainActor @Observable final class SharingStore {
     private static let key = "approval_item_share_records"
+    @ObservationIgnored private let defaults: UserDefaults
 
     private(set) var shares: [ItemShareRecord]
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: Self.key),
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        if let data = defaults.data(forKey: Self.key),
            let decoded = try? JSONDecoder().decode([ItemShareRecord].self, from: data) {
             shares = decoded
         } else {
@@ -175,7 +177,7 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
 
     private func persist() {
         if let data = try? JSONEncoder().encode(shares) {
-            UserDefaults.standard.set(data, forKey: Self.key)
+            defaults.set(data, forKey: Self.key)
         }
     }
 }

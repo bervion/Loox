@@ -1,0 +1,81 @@
+appId: com.bervion.vaultify
+name: Vault edit, save, deliberate relock and password unlock
+tags:
+  - critical
+  - synthetic-fixture
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    arguments:
+      ui-testing: true
+      ui-test-fixture: vault-edit-save-relock
+      AppleLanguages: "(en)"
+      AppleLocale: en_US
+- extendedWaitUntil:
+    visible:
+      id: lock.slide
+    timeout: 10000
+- swipe:
+    start: 12%, 62%
+    end: 92%, 62%
+    duration: 800
+- tapOn:
+    id: lock.password
+- inputText: vaultify-ui-test-password
+- tapOn:
+    id: lock.submit
+- extendedWaitUntil:
+    visible:
+      id: vault.item.ui-test-login.all
+    timeout: 15000
+- tapOn:
+    id: vault.item.ui-test-login.all
+- tapOn:
+    id: item.detail.more
+- tapOn:
+    id: item.detail.edit
+- tapOn:
+    id: item.editor.title
+- eraseText
+- inputText: Acme Production
+- tapOn:
+    id: item.editor.save
+- assertVisible:
+    id: item.detail.title
+    text: Acme Production
+- tapOn:
+    id: nav.back
+- tapOn:
+    id: home.settings
+- scrollUntilVisible:
+    element:
+      id: settings.lock-now
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: settings.lock-now
+- extendedWaitUntil:
+    visible:
+      id: lock.slide
+    timeout: 10000
+# The quality lane is pinned to an iPhone portrait simulator. Starting at 12%
+# reaches the slider knob; the end point crosses the production 90% threshold.
+- swipe:
+    start: 12%, 62%
+    end: 92%, 62%
+    duration: 800
+- tapOn:
+    id: lock.password
+- inputText: vaultify-ui-test-password
+- tapOn:
+    id: lock.submit
+- extendedWaitUntil:
+    visible:
+      id: vault.item.ui-test-login.all
+    timeout: 10000
+- tapOn:
+    id: vault.item.ui-test-login.all
+- assertVisible:
+    id: item.detail.title
+    text: Acme Production

@@ -97,7 +97,11 @@ struct HomeHeaderBar: View {
                         .accessibilityLabel(Text("Add Item"))
 
                         // Settings — direct, no "more" indirection
-                        HeaderIconButton(Icons.settings, accessibilityLabel: "Settings") {
+                        HeaderIconButton(
+                            Icons.settings,
+                            accessibilityLabel: "Settings",
+                            accessibilityIdentifier: "home.settings"
+                        ) {
                             onSettings()
                         }
                     }

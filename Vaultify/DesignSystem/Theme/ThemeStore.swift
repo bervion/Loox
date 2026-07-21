@@ -10,6 +10,7 @@ import AppKit
 /// `ThemeSettings`, resolves the active `AppTheme`, and persists changes to the App
 /// Group. Pure/heavy work lives in `VaultifyCore` (`ThemePalette` / `ThemeReader`).
 @MainActor @Observable final class ThemeStore {
+    @ObservationIgnored private let persistChanges: Bool
     private(set) var settings: ThemeSettings
     private(set) var active: AppTheme
 
@@ -34,21 +35,30 @@ import AppKit
     /// `markAppearanceChosen()`.
     private(set) var forceLight: Bool
 
-    init(forceLight: Bool) {
-        var loaded = ThemeReader.load()
+    init(
+        forceLight: Bool,
+        settingsOverride: ThemeSettings? = nil,
+        systemIsDarkOverride: Bool? = nil,
+        persistChanges: Bool = true
+    ) {
+        self.persistChanges = persistChanges
+        var loaded = settingsOverride ?? ThemeReader.load()
         // Sanitize an invalid persisted combo: auto-night switches primary↔night by
         // light/dark, so the primary must be a LIGHT theme. A dark primary + auto-night
         // renders dark while the window color scheme follows the device → mismatched
         // (light-mode) system chrome on a dark theme. Make such a combo manual.
-        if loaded.autoNight != .off, Self.isDark(loaded.theme, in: loaded) {
+        if settingsOverride == nil,
+           loaded.autoNight != .off,
+           Self.isDark(loaded.theme, in: loaded) {
             loaded.autoNight = .off
             ThemeReader.save(loaded)
         }
         #if canImport(UIKit)
-        let dark = UITraitCollection.current.userInterfaceStyle == .dark
+        let detectedDark = UITraitCollection.current.userInterfaceStyle == .dark
         #elseif canImport(AppKit)
-        let dark = NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let detectedDark = NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         #endif
+        let dark = systemIsDarkOverride ?? detectedDark
         self.settings = loaded
         self.systemIsDark = dark
         self.forceLight = forceLight
@@ -137,7 +147,9 @@ import AppKit
         mutate(&next)
         guard next != settings else { return }
         settings = next
-        ThemeReader.save(next)
+        if persistChanges {
+            ThemeReader.save(next)
+        }
         recompute()
     }
 

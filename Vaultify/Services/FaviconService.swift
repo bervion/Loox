@@ -12,8 +12,8 @@ import Foundation
     @ObservationIgnored private var inFlight: Set<String> = []
     @ObservationIgnored private let cacheDir: URL
 
-    init() {
-        cacheDir = SharedConfig.containerURL.appending(path: "Favicons")
+    init(cacheDirectory: URL? = nil) {
+        cacheDir = cacheDirectory ?? SharedConfig.containerURL.appending(path: "Favicons")
         try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
     }
 

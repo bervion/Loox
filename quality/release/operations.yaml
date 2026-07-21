@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "status": "not-evaluated",
+  "release_id": null,
+  "release_notes_path": null,
+  "monitoring": {
+    "owner": "bervion",
+    "duration_hours": 24,
+    "metrics": [],
+    "alerts": [],
+    "incident_channel": null,
+    "rollback_or_fix_forward_runbook": "docs/runbooks/ci-release-operations.md"
+  },
+  "approved_by": null,
+  "approval_rationale": null
+}

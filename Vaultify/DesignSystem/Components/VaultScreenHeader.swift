@@ -278,22 +278,25 @@ struct HeaderIconButton: View {
     let icon: String
     let role: ThemeRole
     let accessibilityLabel: LocalizedStringResource
+    let accessibilityIdentifier: String?
     let action: () -> Void
 
     init(
         _ icon: String,
         role: ThemeRole = .iconPrimary,
         accessibilityLabel: LocalizedStringResource,
+        accessibilityIdentifier: String? = nil,
         action: @escaping () -> Void
     ) {
         self.icon = icon
         self.role = role
         self.accessibilityLabel = accessibilityLabel
+        self.accessibilityIdentifier = accessibilityIdentifier
         self.action = action
     }
 
-    var body: some View {
-        Button(action: action) {
+    @ViewBuilder var body: some View {
+        let button = Button(action: action) {
             // Frame + contentShape live INSIDE the label so the whole 44pt
             // area is hit-testable, not just the 24pt glyph (SwiftUI only taps
             // the label's content shape, ignoring a frame applied to the Button).
@@ -306,5 +309,10 @@ struct HeaderIconButton: View {
         // glyph in a gray push-button box (iOS's default is already borderless).
         .buttonStyle(.plain)
         .accessibilityLabel(Text(accessibilityLabel))
+        if let accessibilityIdentifier {
+            button.accessibilityIdentifier(accessibilityIdentifier)
+        } else {
+            button
+        }
     }
 }

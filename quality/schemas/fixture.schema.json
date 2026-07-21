@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vaultify.local/quality/fixture.schema.json",
+  "title": "Vaultify deterministic fixture",
+  "type": "object",
+  "required": ["fixture_id", "kind", "path", "data_classification", "deterministic", "contains_secrets", "description"],
+  "properties": {
+    "fixture_id": {"type": "string", "pattern": "^FIX-[A-Z0-9-]+$"},
+    "kind": {"enum": ["json-vector", "swift-test-factory", "ui-seed", "service-stub"]},
+    "path": {"type": "string", "minLength": 1},
+    "data_classification": {"const": "synthetic"},
+    "deterministic": {"const": true},
+    "contains_secrets": {"const": false},
+    "description": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

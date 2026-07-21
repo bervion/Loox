@@ -9,6 +9,9 @@ import UserNotifications
     // reach the store/session; the item seal/decrypt helpers stay private.
     let store: VaultStore
     let session: VaultSession
+    /// False for deterministic UI/snapshot composition so repository mutations
+    /// cannot reach credential identities, shared containers or notifications.
+    private let externalSideEffectsEnabled: Bool
 
     private(set) var items: [VaultItem] = []
     private(set) var trashed: [VaultItem] = []
@@ -22,9 +25,14 @@ import UserNotifications
     /// persona helpers follow.
     var forwardingInboxes: [ForwardingInbox] = []
 
-    init(store: VaultStore, session: VaultSession) {
+    init(
+        store: VaultStore,
+        session: VaultSession,
+        externalSideEffectsEnabled: Bool = true
+    ) {
         self.store = store
         self.session = session
+        self.externalSideEffectsEnabled = externalSideEffectsEnabled
     }
 
     var isEmpty: Bool { items.isEmpty && trashed.isEmpty && archived.isEmpty }
@@ -38,7 +46,9 @@ import UserNotifications
         personas = []
         aliases = []
         forwardingInboxes = []
-        CredentialIdentityService.clear()
+        if externalSideEffectsEnabled {
+            CredentialIdentityService.clear()
+        }
     }
 
     /// Load and decrypt all live records into the in-memory caches.
@@ -68,7 +78,9 @@ import UserNotifications
             SharedConfig.queuePasskeyQuarantineNotice(sites: migration.quarantinedSites)
         }
         passkeys = passkeyVault.all(key: key)
-        CredentialIdentityService.refresh(items: items, passkeys: passkeys)
+        if externalSideEffectsEnabled {
+            CredentialIdentityService.refresh(items: items, passkeys: passkeys)
+        }
         normalizeDefaultIdentity()
         // Seed-folder convergence runs ONLY after a remote pull: two locally-created
         // identical-looking folders are a deliberate user choice, but the same pair
@@ -338,6 +350,7 @@ import UserNotifications
     /// Key. Called on every reload, every active-persona switch, AND every Home
     /// Space selection change (see `HomeScreen`'s `onChange(of: selectedFolderId)`).
     func mirrorActivePersonaContext() {
+        guard externalSideEffectsEnabled else { return }
         let defaults = SharedConfig.sharedDefaults
         let persona = activePersona
         defaults.set(persona?.isolationPolicy.rawValue, forKey: SharedConfig.activePersonaPolicyKey)
@@ -376,7 +389,8 @@ import UserNotifications
         reload()
         noteLocalMutation()
         AnalyticsEngine.shared.log(.itemCreated(item.category))
-        if SettingsStore.isRotationRemindersEnabled() {
+        if externalSideEffectsEnabled,
+           SettingsStore.isRotationRemindersEnabled() {
             RotationNotificationService.shared.schedule(item: item, passwordChangedAt: record.passwordChangedAt)
         }
     }
@@ -410,7 +424,8 @@ import UserNotifications
         reload()
         noteLocalMutation()
         AnalyticsEngine.shared.log(.itemUpdated(item.category))
-        if SettingsStore.isRotationRemindersEnabled() {
+        if externalSideEffectsEnabled,
+           SettingsStore.isRotationRemindersEnabled() {
             RotationNotificationService.shared.schedule(
                 item: updated, passwordChangedAt: record.passwordChangedAt)
         }
@@ -463,7 +478,9 @@ import UserNotifications
         var updated = item
         updated.trashedAt = .now
         try update(updated)
-        RotationNotificationService.shared.cancel(itemID: item.id)
+        if externalSideEffectsEnabled {
+            RotationNotificationService.shared.cancel(itemID: item.id)
+        }
     }
 
     func restore(_ item: VaultItem) throws {
@@ -484,7 +501,9 @@ import UserNotifications
         reload()
         noteLocalMutation()
         AnalyticsEngine.shared.log(.itemDeleted(item.category))
-        RotationNotificationService.shared.cancel(itemID: item.id)
+        if externalSideEffectsEnabled {
+            RotationNotificationService.shared.cancel(itemID: item.id)
+        }
     }
 
     func deletePasskey(credentialID: Data) throws {

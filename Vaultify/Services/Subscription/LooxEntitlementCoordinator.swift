@@ -73,13 +73,16 @@ nonisolated enum RelayPrincipalWireIdentity {
 
     @ObservationIgnored private var inFlight: Task<Bool, Never>?
     @ObservationIgnored private var noStateStrikes = 0
+    @ObservationIgnored private let externalSideEffectsEnabled: Bool
 
     /// Production leases may persist locally (never synced); Sandbox leases
     /// are MEMORY-ONLY per contract (§1) — TestFlight re-attaches often by design.
     private static let leaseAccount = "loox-entitlement-leases-production"
 
-    init() {
-        if let data = try? KeychainStore.get(account: Self.leaseAccount),
+    init(externalSideEffectsEnabled: Bool = true) {
+        self.externalSideEffectsEnabled = externalSideEffectsEnabled
+        if externalSideEffectsEnabled,
+           let data = try? KeychainStore.get(account: Self.leaseAccount),
            let decoded = try? JSONDecoder().decode([String: Lease].self, from: data) {
             leases = decoded
             environment = "Production"
@@ -115,6 +118,7 @@ nonisolated enum RelayPrincipalWireIdentity {
     /// task; permanent failures give up silently (next trigger tries again).
     @discardableResult
     func attachNow() async -> Bool {
+        guard externalSideEffectsEnabled else { return false }
         if let running = inFlight { return await running.value }
         let task = Task<Bool, Never> { await performAttach() }
         inFlight = task
@@ -176,6 +180,7 @@ nonisolated enum RelayPrincipalWireIdentity {
     }
 
     private func persistLeasesIfProduction() {
+        guard externalSideEffectsEnabled else { return }
         guard environment == "Production" else {
             KeychainStore.delete(account: Self.leaseAccount)
             return

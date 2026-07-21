@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vaultify.local/quality/journey.schema.json",
+  "title": "Vaultify user journey",
+  "type": "object",
+  "required": ["journey_id", "name", "critical", "fixture_ids", "transition_ids", "verification_status", "evidence_ids"],
+  "properties": {
+    "journey_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "critical": {"type": "boolean"},
+    "fixture_ids": {"type": "array", "items": {"type": "string", "pattern": "^FIX-[A-Z0-9-]+$"}},
+    "transition_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^TRANS-[A-Z0-9-]+$"}},
+    "verification_status": {"enum": ["known", "verified", "stale", "blocked"]},
+    "evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVID-[A-Z0-9-]+$"}}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Bug report",
+  "description": "Report reproducible Vaultify behavior using synthetic data only.",
+  "title": "fix: ",
+  "labels": ["bug"],
+  "body": [
+    {"type": "dropdown", "id": "severity", "attributes": {"label": "Severity", "options": ["critical", "high", "medium", "low"]}, "validations": {"required": true}},
+    {"type": "textarea", "id": "affected", "attributes": {"label": "Affected quality IDs", "description": "List SurfaceIDs, StateIDs and TransitionIDs when known."}, "validations": {"required": true}},
+    {"type": "textarea", "id": "reproduction", "attributes": {"label": "Deterministic reproduction", "description": "Use synthetic values. Never paste vault contents, recovery keys or tokens."}, "validations": {"required": true}},
+    {"type": "textarea", "id": "expected", "attributes": {"label": "Expected and actual behavior"}, "validations": {"required": true}},
+    {"type": "textarea", "id": "environment", "attributes": {"label": "Environment", "description": "Commit, Xcode/iOS version, device class, language, theme and accessibility settings."}, "validations": {"required": true}}
+  ]
+}

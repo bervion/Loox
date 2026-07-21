@@ -44,7 +44,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
 
 /// Non-sensitive preference flags persisted in `UserDefaults`. No secrets here.
 @MainActor @Observable final class SettingsStore {
-    @ObservationIgnored private let defaults = UserDefaults.standard
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let mirrorToSharedConfig: Bool
 
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
     /// Whether the user has made an explicit appearance choice (onboarding's
@@ -146,7 +147,9 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         didSet {
             defaults.set(preferredLanguage, forKey: Key.language)
             // Mirror into the App Group so the AutoFill extension localizes against the same choice.
-            SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
+            if mirrorToSharedConfig {
+                SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
+            }
             appResourceLocale = appLocale(forCode: preferredLanguage)
             // Every UI path (iOS selection screen, Mac segmented picker) funnels
             // through this setter, so the language signal lives here, not per-view.
@@ -155,8 +158,10 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         }
     }
 
-    init() {
-        let d = UserDefaults.standard
+    init(defaults: UserDefaults = .standard, mirrorToSharedConfig: Bool = true) {
+        self.defaults = defaults
+        self.mirrorToSharedConfig = mirrorToSharedConfig
+        let d = defaults
         // Captured locally (not read back via `self.onboardingCompleted`): `@Observable`
         // accessors touch `self` as a whole, which Swift disallows before every stored
         // property has its first value.
@@ -187,7 +192,9 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         homeSectionOrder = d.stringArray(forKey: Key.homeSectionOrder) ?? []
         homeHiddenSections = d.stringArray(forKey: Key.homeHiddenSections) ?? []
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
-        SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
+        if mirrorToSharedConfig {
+            SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
+        }
         appResourceLocale = appLocale(forCode: preferredLanguage)
         mirrorAutoLock()
     }
@@ -197,6 +204,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// stays the app's source of truth). Tightening to "immediate" also revokes
     /// any live extension session — the stricter policy applies at once.
     private func mirrorAutoLock() {
+        guard mirrorToSharedConfig else { return }
         SharedConfig.sharedDefaults.set(autoLock.rawValue, forKey: SharedConfig.autoLockSecondsKey)
         if autoLock == .immediate {
             ExtensionSessionStore.clear()

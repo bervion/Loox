@@ -436,6 +436,7 @@ struct ItemEditorScreen: View {
     /// Bold title field on an elevated surface (adapts to light/dark for contrast).
     private var titleField: some View {
         TextField("Enter a title", text: $draft.title)
+            .accessibilityIdentifier("item.editor.title")
             .vaultType(.headline)
             .fontWeight(.bold)
             .themedForeground()
@@ -763,7 +764,13 @@ private struct EditorHeaderActions: View {
                 withAnimation { editMode?.wrappedValue = isEditing ? .inactive : .active }
             }
             #endif
-            HeaderIconButton(Icons.check, role: .accent, accessibilityLabel: "Save", action: save)
+            HeaderIconButton(
+                Icons.check,
+                role: .accent,
+                accessibilityLabel: "Save",
+                accessibilityIdentifier: "item.editor.save",
+                action: save
+            )
                 .disabled(!canSave)
                 .opacity(canSave ? 1 : 0.4)
         }
