@@ -20,7 +20,7 @@ env:
 jobs:
   quality-contract:
     name: Quality contract
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout candidate
@@ -39,7 +39,7 @@ jobs:
   unit-tests:
     name: Unit tests
     needs: quality-contract
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 45
     steps:
       - name: Checkout candidate
@@ -78,10 +78,20 @@ jobs:
             ${{ runner.temp }}/unit.xcresult
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Delete isolated simulator
+        if: always()
+        run: |
+          # Persistent-runner hygiene; orphans from cancelled jobs are swept
+          # by the next create-simulator.sh run.
+          set +e
+          xcrun simctl shutdown "$SIMULATOR_UDID"
+          xcrun simctl delete "$SIMULATOR_UDID"
+          exit 0
   snapshot-tests:
     name: Snapshot tests
     needs: quality-contract
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 35
     steps:
       - name: Checkout candidate
@@ -140,10 +150,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Delete isolated simulator
+        if: always()
+        run: |
+          # Persistent-runner hygiene; orphans from cancelled jobs are swept
+          # by the next create-simulator.sh run.
+          set +e
+          xcrun simctl shutdown "$SIMULATOR_UDID"
+          xcrun simctl delete "$SIMULATOR_UDID"
+          exit 0
+
   critical-ui:
     name: Critical UI journey
     needs: quality-contract
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 45
     steps:
       - name: Checkout candidate
@@ -194,10 +214,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Delete isolated simulator
+        if: always()
+        run: |
+          # Persistent-runner hygiene; orphans from cancelled jobs are swept
+          # by the next create-simulator.sh run.
+          set +e
+          xcrun simctl shutdown "$SIMULATOR_UDID"
+          xcrun simctl delete "$SIMULATOR_UDID"
+          exit 0
+
   ledger-evidence:
     name: Ledger evidence
     needs: quality-contract
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
@@ -222,7 +252,7 @@ jobs:
   test-evidence:
     name: Test evidence
     needs: [unit-tests, snapshot-tests, critical-ui]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
@@ -247,7 +277,7 @@ jobs:
   privacy-contract:
     name: Privacy contract
     needs: test-evidence
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
@@ -272,7 +302,7 @@ jobs:
   localization-contract:
     name: Localization contract
     needs: quality-contract
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
@@ -297,7 +327,7 @@ jobs:
   risk-disposition:
     name: Risk disposition
     needs: quality-contract
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
@@ -322,7 +352,7 @@ jobs:
   release-operations:
     name: Release operations
     needs: quality-contract
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout exact candidate

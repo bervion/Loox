@@ -1,10 +1,14 @@
 {
   "schema_version": 1,
   "task_id": "TASK-2026-0001",
-  "impact_type": "documentation",
-  "summary": "Record the proven pull-request check names in the CI runbook after the merged bootstrap canary, and prove the default-branch Trusted PR policy status on a docs-only pull request before the five contexts become required on main.",
+  "impact_type": "infrastructure",
+  "summary": "Move every CI and policy job to the dedicated self-hosted vaultify-ci runner instance because GitHub-hosted macOS minutes exceeded the plan quota, add per-job simulator deletion plus orphan sweeping for persistent-runner hygiene, and record the decision with its residual risk in the CI runbook.",
   "changed_scopes": [
     ".goclaw/pr-impact.yaml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/pr-notify.yml",
+    ".github/workflows/release-ios.yml",
+    "scripts/ci/create-simulator.sh",
     "docs/runbooks/ci-release-operations.md"
   ],
   "surfaces": [],
@@ -12,5 +16,5 @@
   "transitions": [],
   "test_paths": [],
   "evidence_paths": [],
-  "no_surface_impact_reason": "Documentation-only change; no app surface, state or transition is affected."
+  "no_surface_impact_reason": "CI infrastructure and documentation change only; no app surface, state or transition is affected."
 }

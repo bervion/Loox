@@ -1,3 +1,4 @@
 self-hosted-runner:
   labels:
     - vaultify-release
+    - vaultify-ci

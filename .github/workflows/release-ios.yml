@@ -19,7 +19,7 @@ env:
 jobs:
   release-preflight:
     name: Verify exact-commit release readiness
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     steps:
       - name: Checkout immutable tag without credentials
