@@ -18,7 +18,7 @@ jobs:
   trusted-policy:
     name: Trusted PR policy
     if: github.event.action != 'closed'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 10
     permissions:
       contents: read
@@ -109,7 +109,7 @@ jobs:
 
   notify-review-needed:
     if: github.event_name == 'pull_request_target' && github.event.action != 'closed'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     steps:
       - name: Notify Discord that bounded review is required
         env:
@@ -127,7 +127,7 @@ jobs:
 
   notify-merged:
     if: github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     steps:
       - name: Notify Discord that post-merge verification is required
         env:

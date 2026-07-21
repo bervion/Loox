@@ -47,6 +47,13 @@ print(device["identifier"])
 PY
 )"
 
+# Persistent-runner hygiene: per-run simulators from earlier cancelled or
+# crashed jobs would otherwise accumulate forever on a self-hosted host.
+while read -r orphan_udid; do
+  [[ -n "$orphan_udid" ]] || continue
+  xcrun simctl delete "$orphan_udid" >/dev/null || continue
+done < <(xcrun simctl list devices Shutdown | sed -n 's/.*Vaultify Quality[^(]*(\([0-9A-F-]\{36\}\)).*/\1/p')
+
 RUN_SUFFIX="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-${RANDOM}"
 SIMULATOR_NAME="Vaultify Quality $RUN_SUFFIX"
 SIMULATOR_UDID="$(xcrun simctl create "$SIMULATOR_NAME" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"

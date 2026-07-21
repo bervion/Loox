@@ -10,27 +10,33 @@ CI runs for pull requests to `main` and non-release pushes to `main`.
 
 | Job name | Host | Purpose |
 |---|---|---|
-| Trusted PR policy | `ubuntu-24.04` | Base-branch scanner over the untrusted API diff; exact-head status and owner gate |
-| Quality contract | `ubuntu-24.04` | Ledger, report, schema, diff and anti-cheating checks |
-| Unit tests | `macos-26` | XCTest and Swift Testing in `VaultifyTests` |
-| Snapshot tests | `macos-26` | Approved `VaultifySnapshotTests` comparisons |
-| Critical UI journey | `macos-26` | Native XCUITest followed by independent Maestro flow |
-| Ledger evidence | `ubuntu-24.04` | Emits the critical-ledger predicate for the exact SHA |
-| Test evidence | `ubuntu-24.04` | Aggregates hard dependencies on unit, snapshot, XCUITest and Maestro |
-| Privacy contract | `ubuntu-24.04` | Emits fail-closed until executable privacy receipts are promoted |
-| Localization contract | `ubuntu-24.04` | Checks non-empty EN/VI copy and verified accessibility cases |
-| Risk disposition | `ubuntu-24.04` | Rejects open critical/high or invalid dispositions |
-| Release operations | `ubuntu-24.04` | Checks release notes and owner-approved monitoring inputs |
+| Trusted PR policy | self-hosted `vaultify-ci` | Base-branch scanner over the untrusted API diff; exact-head status and owner gate |
+| Quality contract | self-hosted `vaultify-ci` | Ledger, report, schema, diff and anti-cheating checks |
+| Unit tests | self-hosted `vaultify-ci` | XCTest and Swift Testing in `VaultifyTests` |
+| Snapshot tests | self-hosted `vaultify-ci` | Approved `VaultifySnapshotTests` comparisons |
+| Critical UI journey | self-hosted `vaultify-ci` | Native XCUITest followed by independent Maestro flow |
+| Ledger evidence | self-hosted `vaultify-ci` | Emits the critical-ledger predicate for the exact SHA |
+| Test evidence | self-hosted `vaultify-ci` | Aggregates hard dependencies on unit, snapshot, XCUITest and Maestro |
+| Privacy contract | self-hosted `vaultify-ci` | Emits fail-closed until executable privacy receipts are promoted |
+| Localization contract | self-hosted `vaultify-ci` | Checks non-empty EN/VI copy and verified accessibility cases |
+| Risk disposition | self-hosted `vaultify-ci` | Rejects open critical/high or invalid dispositions |
+| Release operations | self-hosted `vaultify-ci` | Checks release notes and owner-approved monitoring inputs |
 
 The three macOS jobs require the quality contract and use Xcode 26.5, Tuist 4.200.1,
-iOS 26.5 and iPhone 17 Pro. Each job creates a fresh simulator. The macOS jobs run in
-parallel after the contract succeeds.
+iOS 26.5 and iPhone 17 Pro. Each job creates a fresh simulator, deletes it when the job
+ends, and `create-simulator.sh` sweeps orphans left by cancelled jobs. The jobs serialize
+on the single `vaultify-ci` runner instance; the per-pull-request concurrency group cancels
+superseded runs so the queue stays short.
 
-Pull-request CI jobs are secret-free and use GitHub-hosted runners. Checkout credentials are
-not persisted, and test jobs explicitly check out the PR head rather than the synthetic
-merge ref so receipts bind to the candidate SHA. Candidate code can run in these jobs, so signing certificates, App Store
-Connect credentials, match credentials and production tokens must never be added to this
-workflow.
+Pull-request CI jobs are secret-free and run on the dedicated self-hosted runner instance
+labeled `vaultify-ci` (owner decision, 2026-07-21: GitHub-hosted macOS minutes exceeded the
+plan quota). Checkout credentials are not persisted, and test jobs explicitly check out the
+PR head rather than the synthetic merge ref so receipts bind to the candidate SHA. Candidate
+code can run in these jobs, so signing certificates, App Store Connect credentials, match
+credentials and production tokens must never be added to this workflow. Residual risk to
+keep in view: candidate code now executes on the runner host itself, so `vaultify-ci` must
+remain a separate runner instance from `vaultify-release`, must never hold signing material,
+and any future third-party contribution model requires revisiting this decision.
 
 Artifacts are documented in [Quality validation](./quality-validation.md). The corresponding
 GitHub artifact names are `unit-test-receipt-<attempt>`,
