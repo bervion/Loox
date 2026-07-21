@@ -15,11 +15,14 @@ enum UITestFixtures {
         store: VaultStore,
         repository: VaultRepository
     ) throws {
-        guard configuration.fixture == .vaultEditSaveRelock else { return }
+        guard configuration.fixture == .vaultEditSaveRelock || configuration.fixture == .vaultPanicRestart else { return }
         guard let key = repository.session.vaultKey else { throw AuthError.locked }
 
         let fixedDate = Date(timeIntervalSince1970: 1_704_067_200)
         repository.reload()
+        // Relaunches reuse the already-seeded container — the panic-restart
+        // journey kills and restarts the app — so reseeding must not run twice.
+        if repository.items.contains(where: { $0.id == itemID }) { return }
 
         let folder = Folder(
             id: folderID,

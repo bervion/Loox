@@ -6,6 +6,7 @@
     {"state_id": "STATE-LOCK-BIOMETRIC", "surface_id": "SURF-LOCK-001", "name": "Biometric unlock", "critical": true, "fixture_ids": ["FIX-KDF-PASSWORD"], "verification_status": "known", "evidence_ids": []},
     {"state_id": "STATE-LOCK-PASSWORD", "surface_id": "SURF-LOCK-001", "name": "Password unlock", "critical": true, "fixture_ids": ["FIX-KDF-PASSWORD"], "verification_status": "known", "evidence_ids": []},
     {"state_id": "STATE-LOCK-ERROR", "surface_id": "SURF-LOCK-001", "name": "Unlock failure", "critical": true, "fixture_ids": ["FIX-KDF-PASSWORD"], "verification_status": "known", "evidence_ids": []},
+    {"state_id": "STATE-LOCK-DELIBERATE", "surface_id": "SURF-LOCK-001", "name": "Deliberate lock slide-to-confirm", "critical": true, "fixture_ids": ["FIX-UI-PANIC-RESTART"], "verification_status": "known", "evidence_ids": []},
     {"state_id": "STATE-HOME-EMPTY", "surface_id": "SURF-HOME-001", "name": "Empty vault", "critical": false, "fixture_ids": [], "verification_status": "known", "evidence_ids": []},
     {"state_id": "STATE-HOME-POPULATED", "surface_id": "SURF-HOME-001", "name": "Populated vault", "critical": false, "fixture_ids": ["FIX-VAULT-POPULATED"], "verification_status": "known", "evidence_ids": []},
     {"state_id": "STATE-ITEMS-ORGANIZED", "surface_id": "SURF-ITEMS-001", "name": "Spaces, categories and tags", "critical": false, "fixture_ids": ["FIX-VAULT-POPULATED"], "verification_status": "known", "evidence_ids": []},

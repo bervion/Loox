@@ -47,6 +47,11 @@ enum AuthError: Error, LocalizedError {
     /// instantly re-opened by the owner's face still being in front of the camera.
     /// Auto-locks (timeout/background) keep the frictionless Face ID auto-prompt.
     private(set) var deliberatelyLocked = false
+    /// `UserDefaults` key for the persisted deliberate-lock flag. The flag is
+    /// plain lock-state metadata — never key material — so `UserDefaults` is
+    /// the right store; the vault key itself stays keychain-guarded.
+    static let deliberateLockDefaultsKey = "deliberateLockPending"
+    private let defaults: UserDefaults
 
     #if DEBUG
     private var uiTestCredential: (password: String, key: [UInt8])?
@@ -57,15 +62,24 @@ enum AuthError: Error, LocalizedError {
     init(
         settings: SettingsStore,
         uiTestConfiguration: UITestConfiguration = .disabled,
-        persistentKeyMaterialEnabled: Bool = true
+        persistentKeyMaterialEnabled: Bool = true,
+        defaults: UserDefaults = .standard
     ) {
         self.settings = settings
+        self.defaults = defaults
         #if DEBUG
         if uiTestConfiguration.isEnabled {
             let credential = (UITestConfiguration.fixturePassword, UITestConfiguration.fixtureKey)
             uiTestCredential = credential
             vaultKey = SecureBytes(credential.1)
-            state = .unlocked
+            if defaults.bool(forKey: Self.deliberateLockDefaultsKey) {
+                // A relaunch after a deliberate lock comes back locked behind
+                // the slide gate, exactly like production.
+                deliberatelyLocked = true
+                state = .locked
+            } else {
+                state = .unlocked
+            }
             return
         }
         #endif
@@ -74,6 +88,11 @@ enum AuthError: Error, LocalizedError {
             return
         }
         state = VaultKeyBundle.exists ? .locked : .onboarding
+        if state == .locked {
+            // A force-quit must not demote a deliberate lock back to the
+            // frictionless biometric path.
+            deliberatelyLocked = defaults.bool(forKey: Self.deliberateLockDefaultsKey)
+        }
     }
 
     var biometricEnrolled: Bool {
@@ -184,6 +203,13 @@ enum AuthError: Error, LocalizedError {
         level2Key = nil
         backgroundedAt = nil
         deliberatelyLocked = deliberate
+        // Persisted flag (metadata only, never key material) so the slide
+        // requirement survives an app restart; auto-locks clear it.
+        if deliberate {
+            defaults.set(true, forKey: Self.deliberateLockDefaultsKey)
+        } else {
+            defaults.removeObject(forKey: Self.deliberateLockDefaultsKey)
+        }
         state = .locked
         // Locking the app revokes the Safari extension's unlocked session too —
         // the two share one lock lifecycle.
@@ -198,6 +224,7 @@ enum AuthError: Error, LocalizedError {
         vaultKey = nil
         level2Key = nil
         state = .onboarding
+        defaults.removeObject(forKey: Self.deliberateLockDefaultsKey)
         ExtensionSessionStore.clear()
     }
 
@@ -214,6 +241,7 @@ enum AuthError: Error, LocalizedError {
         state = .unlocked
         lastActivity = .now
         deliberatelyLocked = false
+        defaults.removeObject(forKey: Self.deliberateLockDefaultsKey)
         guard publishSharedSession else { return }
         migrateBiometricKeyToSharedGroupIfNeeded(key: key)
         // An unlocked app also unlocks the Safari extension (same window, same

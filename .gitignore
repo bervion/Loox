@@ -55,3 +55,6 @@ fastlane/api_key.json
 !.claude/agent-memory/
 .agentkit/
 .agents/
+
+# Compiled Python caches from the local quality tooling.
+__pycache__/
