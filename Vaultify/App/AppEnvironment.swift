@@ -289,8 +289,13 @@ import SwiftUI
                 try UITestFixtures.install(uiTestConfiguration, store: store, repository: repository)
                 // Exercise the declared critical journey from its real initial
                 // boundary: the fixture is present, but the user must unlock
-                // before any vault content becomes visible.
-                session.lock(deliberate: true)
+                // before any vault content becomes visible. The panic-restart
+                // fixture launches without this automatic lock — its test
+                // performs the deliberate lock through the real Settings
+                // control and verifies the state survives a relaunch.
+                if uiTestConfiguration.fixture == .vaultEditSaveRelock {
+                    session.lock(deliberate: true)
+                }
             } catch {
                 preconditionFailure("Unable to install deterministic UI-test fixture: \(error)")
             }

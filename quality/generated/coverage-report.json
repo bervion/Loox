@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-07-20T19:45:43Z",
+  "generated_at": "2026-07-21T12:29:25Z",
   "generated_by": "scripts/quality/report.py",
   "interpretation": "known records are imported inventory and are not verified coverage",
   "schema_version": 1,
-  "source_digest": "be8e6cbed53566642fe716aaf2c671ad9d9704315a434e3c776efbf938cbce25",
+  "source_digest": "5c845ac150d2152528787d3528e6522d591cb061022396764361b7d0a177c28e",
   "summary": {
     "critical": {
       "by_status": {
         "blocked": 0,
-        "known": 20,
+        "known": 21,
         "stale": 0,
         "verified": 0
       },
-      "total": 20,
+      "total": 21,
       "verification_percent": 0.0,
       "verified": 0
     },
@@ -30,11 +30,11 @@
     "states": {
       "by_status": {
         "blocked": 0,
-        "known": 20,
+        "known": 21,
         "stale": 0,
         "verified": 0
       },
-      "total": 20,
+      "total": 21,
       "verification_percent": 0.0,
       "verified": 0
     },

@@ -9,6 +9,10 @@ nonisolated struct UITestConfiguration: Equatable, Sendable {
     #if DEBUG
     enum Fixture: String, Equatable, Sendable {
         case vaultEditSaveRelock = "vault-edit-save-relock"
+        /// Same seeded vault, but launches without the automatic deliberate
+        /// lock: the test drives Settings "Lock Now" itself and then verifies
+        /// the slide-to-unlock requirement survives a kill and relaunch.
+        case vaultPanicRestart = "vault-panic-restart"
     }
 
     let fixture: Fixture?

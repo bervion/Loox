@@ -1,20 +1,29 @@
 {
   "schema_version": 1,
-  "task_id": "TASK-2026-0001",
-  "impact_type": "infrastructure",
-  "summary": "Move every CI and policy job to the dedicated self-hosted vaultify-ci runner instance because GitHub-hosted macOS minutes exceeded the plan quota, add per-job simulator deletion plus orphan sweeping for persistent-runner hygiene, and record the decision with its residual risk in the CI runbook.",
+  "task_id": "TASK-2026-0002",
+  "impact_type": "runtime",
+  "summary": "Persist the deliberate-lock flag so a force-quit and relaunch can no longer bypass the slide-to-confirm panic lock: VaultSession stores the metadata flag in UserDefaults, restores it on init, and clears it on successful unlock or vault reset. Adds the vault-panic-restart fixture and relaunch XCUITest plus seam unit tests.",
   "changed_scopes": [
     ".goclaw/pr-impact.yaml",
-    ".github/workflows/ci.yml",
-    ".github/workflows/pr-notify.yml",
-    ".github/workflows/release-ios.yml",
-    "scripts/ci/create-simulator.sh",
-    "docs/runbooks/ci-release-operations.md"
+    "Vaultify/Security/VaultSession.swift",
+    "Vaultify/App/UITestConfiguration.swift",
+    "Vaultify/App/UITestFixtures.swift",
+    "Vaultify/App/AppEnvironment.swift",
+    "VaultifyTests/VaultSessionPanicLockTests.swift",
+    "VaultifyUITests/VaultPanicRestartUITests.swift",
+    "quality/coverage-ledger/states.yaml",
+    "quality/fixture-registry.yaml"
   ],
-  "surfaces": [],
-  "states": [],
+  "surfaces": [
+    "SURF-LOCK-001"
+  ],
+  "states": [
+    "STATE-LOCK-DELIBERATE"
+  ],
   "transitions": [],
-  "test_paths": [],
-  "evidence_paths": [],
-  "no_surface_impact_reason": "CI infrastructure and documentation change only; no app surface, state or transition is affected."
+  "test_paths": [
+    "VaultifyTests/VaultSessionPanicLockTests.swift",
+    "VaultifyUITests/VaultPanicRestartUITests.swift"
+  ],
+  "evidence_paths": []
 }
