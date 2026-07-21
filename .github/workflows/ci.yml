@@ -121,6 +121,25 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Collect newly-taken snapshot renders
+        if: failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/failed-snapshot-renders"
+          if app_container="$(xcrun simctl get_app_container "$SIMULATOR_UDID" com.bervion.vaultify data)"; then
+            if [ -d "$app_container/tmp" ]; then
+              cp -R "$app_container/tmp/." "$RUNNER_TEMP/failed-snapshot-renders/"
+            fi
+          fi
+
+      - name: Upload newly-taken snapshot renders
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: failed-snapshot-renders-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/failed-snapshot-renders
+          if-no-files-found: warn
+          retention-days: 14
+
   critical-ui:
     name: Critical UI journey
     needs: quality-contract
