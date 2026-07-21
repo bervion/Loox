@@ -65,6 +65,12 @@ pull request and obtain one green canary run. Confirm these exact check names in
 The bootstrap PR that first installs `Trusted PR policy` cannot be protected by code that is
 not yet on the default branch; it requires manual owner review. After it lands, run a second
 green canary and only then require all five names on `main`.
+
+Rollout status: the merged bootstrap canary (PR #134, green run 29797704103) proved
+`Quality contract`, `Unit tests`, `Snapshot tests` and `Critical UI journey` under those
+exact names. `Trusted PR policy` executes from the default branch only, so it is proven by
+the first pull request opened after that merge; the five contexts become required on `main`
+once that status reports success on the candidate head.
 The required `Trusted PR policy` context is a commit status written by the trusted workflow
 to the verified PR head SHA; do not substitute the base-ref workflow conclusion.
 For a protected TCB change, approve the exact PR head and then re-run its existing
