@@ -1,29 +1,16 @@
 {
   "schema_version": 1,
-  "task_id": "TASK-2026-0002",
-  "impact_type": "runtime",
-  "summary": "Persist the deliberate-lock flag so a force-quit and relaunch can no longer bypass the slide-to-confirm panic lock: VaultSession stores the metadata flag in UserDefaults, restores it on init, and clears it on successful unlock or vault reset. Adds the vault-panic-restart fixture and relaunch XCUITest plus seam unit tests.",
+  "task_id": "TASK-2026-0003",
+  "impact_type": "infrastructure",
+  "summary": "Run the CI quality gates for pull requests into develop and pushes to develop, so the team's autonomous integration branch carries the same required checks as main.",
   "changed_scopes": [
     ".goclaw/pr-impact.yaml",
-    "Vaultify/Security/VaultSession.swift",
-    "Vaultify/App/UITestConfiguration.swift",
-    "Vaultify/App/UITestFixtures.swift",
-    "Vaultify/App/AppEnvironment.swift",
-    "VaultifyTests/VaultSessionPanicLockTests.swift",
-    "VaultifyUITests/VaultPanicRestartUITests.swift",
-    "quality/coverage-ledger/states.yaml",
-    "quality/fixture-registry.yaml"
+    ".github/workflows/ci.yml"
   ],
-  "surfaces": [
-    "SURF-LOCK-001"
-  ],
-  "states": [
-    "STATE-LOCK-DELIBERATE"
-  ],
+  "surfaces": [],
+  "states": [],
   "transitions": [],
-  "test_paths": [
-    "VaultifyTests/VaultSessionPanicLockTests.swift",
-    "VaultifyUITests/VaultPanicRestartUITests.swift"
-  ],
-  "evidence_paths": []
+  "test_paths": [],
+  "evidence_paths": [],
+  "no_surface_impact_reason": "CI trigger configuration only; no app surface, state or transition is affected."
 }
