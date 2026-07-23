@@ -55,6 +55,13 @@ import Foundation
             throw Failure.tooLarge
         }
 
+        // Breaker admission FIRST: with the worker already failing, the App
+        // Attest round-trips below would keep hammering the same dead edge
+        // before the guard ever ran.
+        guard capabilities?.allowRequest(.shareLink) ?? true else {
+            throw LooxLinkAPIError.capability(.active, retryAfter: nil)   // breaker open → "temporarily unavailable"
+        }
+
         // App Attest on real devices. Shadow phase (server ASSERTION_MODE
         // off/shadow): attest best-effort — a failure logs and the interim
         // token still authenticates, because the assertion isn't the auth
@@ -73,10 +80,6 @@ import Foundation
                 print("[LooxLink] attest failed (shadow mode, continuing with token): \(error)")
                 #endif
             }
-        }
-
-        guard capabilities?.allowRequest(.shareLink) ?? true else {
-            throw LooxLinkAPIError.capability(.active, retryAfter: nil)   // breaker open → "temporarily unavailable"
         }
         let response: LooxLinkCreateResponse
         do {

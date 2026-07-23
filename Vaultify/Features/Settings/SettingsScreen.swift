@@ -16,8 +16,9 @@ struct SettingsScreen: View {
     @State private var relayBlockErase = false
     @State private var confirmApprovalModeOff = false
 
-    /// One Online Features row: preference toggle + operator/runtime status.
-    /// The toggle mutates ONLY the user preference (INV-CAP-09).
+    /// One Online Features row: preference toggle + operator/runtime status
+    /// (dot + label, the iCloud+ idiom). The toggle mutates ONLY the user
+    /// preference (INV-CAP-09).
     private func onlineFeatureRow(_ id: CapabilityID, title: LocalizedStringKey,
                                   badge: SettingsIconBadge) -> some View {
         Toggle(isOn: Binding(
@@ -26,9 +27,12 @@ struct SettingsScreen: View {
             Label {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                    Text(verbatim: CapabilityStatusText.label(
-                        env.capabilities.availability(id, operation: .create)))
-                        .vaultType(.caption).themedForeground(.secondary)
+                    HStack(spacing: Space.s1) {
+                        CapabilityStatusDot(status: .resolve(id, store: env.capabilities), size: 6)
+                        Text(verbatim: CapabilityStatusText.label(
+                            env.capabilities.availability(id, operation: .create)))
+                            .vaultType(.caption).themedForeground(.secondary)
+                    }
                 }
             } icon: { badge }
         }
@@ -214,10 +218,24 @@ struct SettingsScreen: View {
         .navigationTitle("Settings")
         .platformNavigationBarTitleDisplayMode(.large)
         .analyticsScreen("settings")
+        // Screen-open health probe so the Online Features status rows reflect
+        // live service state, not the last cached verdict. Contextual and
+        // non-blocking (INV-CAP-02); the breaker inside `probe` rate-limits.
+        // Sequential on purpose — the store is MainActor state.
+        .task {
+            for id in [CapabilityID.privateEmail, .shareLink]
+            where env.capabilities.userPreference(id) {
+                await CapabilityHealthProbe.probe(id, store: env.capabilities)
+            }
+        }
         .alert(Text("Network needed"), isPresented: $relayBlockErase) {
-            Button("OK", role: .cancel) {}
+            Button("Cancel", role: .cancel) {}
+            // The relay being unreachable (or retired) must not make an erase
+            // permanently impossible — the fallback proceeds WITHOUT teardown
+            // after stating the consequence plainly.
+            Button("Erase Anyway", role: .destructive) { env.eraseEverything() }
         } message: {
-            Text("Connect to the internet so your private-email aliases can be turned off before erasing.")
+            Text("Connect to the internet so your private-email aliases can be turned off before erasing. If you erase now, active aliases keep forwarding until the service deletes them.")
         }
         .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
             Button("Erase Everything", role: .destructive) { eraseWithRelayTeardown() }

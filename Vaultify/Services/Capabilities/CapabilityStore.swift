@@ -24,6 +24,11 @@ import Foundation
     private(set) var modes: [CapabilityID: CapabilityServiceMode] = [:]
     private(set) var retryAfters: [CapabilityID: Int] = [:]
     private(set) var health: [CapabilityID: CapabilityHealth] = [:]
+    /// Observable mirror of the persisted per-capability preference. Reading
+    /// UserDefaults directly from views left every dependent surface (Settings
+    /// status line, membership tiles, share chooser) stale after a toggle —
+    /// defaults writes don't participate in @Observable tracking.
+    private(set) var preferences: [CapabilityID: Bool] = [:]
     private var breakers: [CapabilityID: CapabilityCircuitBreaker] = [:]
     /// Manifest per-operation overrides (narrow-only) + localized-copy keys.
     /// Session-scoped: re-applied when the cached manifest re-verifies.
@@ -41,16 +46,18 @@ import Foundation
             modes[id] = persistedMode(id) ?? .active   // bundled default: active
             health[id] = .unknown
             breakers[id] = CapabilityCircuitBreaker()
+            preferences[id] = defaults.object(forKey: prefKey(id)) as? Bool ?? true
         }
     }
 
     // MARK: User preference (independent axis — INV-CAP-09)
 
     func userPreference(_ id: CapabilityID) -> Bool {
-        defaults.object(forKey: prefKey(id)) as? Bool ?? true
+        preferences[id] ?? true
     }
 
     func setUserPreference(_ id: CapabilityID, enabled: Bool) {
+        preferences[id] = enabled
         defaults.set(enabled, forKey: prefKey(id))
     }
 

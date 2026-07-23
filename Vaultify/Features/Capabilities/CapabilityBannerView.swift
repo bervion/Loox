@@ -49,8 +49,15 @@ struct CapabilityBannerView: View {
 
     private var content: Content? {
         switch availability {
-        case .available, .disabledByUser:
-            return nil   // user-off is a Settings state, not a banner
+        case .available:
+            return nil
+        case .disabledByUser:
+            // The create affordances hide in this state — without this banner a
+            // subscriber arriving from the membership grid ("Off in Settings")
+            // would find an unexplained, stripped-down screen.
+            return Content(icon: Icons.settings,
+                           title: "Turned off in Settings",
+                           body: "Saved records stay visible. Turn this feature back on in Settings to use it again.")
         case .offline:
             return Content(icon: Icons.globe,
                            title: "No Internet Connection",

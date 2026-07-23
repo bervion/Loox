@@ -59,6 +59,12 @@ struct RootView: View {
                 // available — after reload so restored nav can resolve item ids.
                 env.uiState.restore()
                 env.syncNow()
+                // Same control-plane freshness nudge as the foreground path below —
+                // without it, a password unlock that never left `.active` (no
+                // scene-phase change) ran the whole session on stale documents.
+                if !env.uiTestConfiguration.isEnabled {
+                    Task { await env.controlPlaneRefresher.refreshIfNeeded(trigger: .launchAfterUnlock) }
+                }
             } else {
                 env.repository.clear()
                 // Shared projections hold decrypted values too — same lock
