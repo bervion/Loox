@@ -44,8 +44,11 @@ struct WelcomeLandingView: View {
                         Spacer(minLength: Space.s7)
 
                         // Left out of the fading `content` group so it keeps
-                        // performing through the launch burst.
-                        LooxCloudAnimationView(controller: launch)
+                        // performing through the launch burst. The flood target
+                        // is the screen diagonal — on iPad the logo-scaled bloom
+                        // alone can't cover the display (see `floodDiameter`).
+                        LooxCloudAnimationView(controller: launch,
+                                               floodDiameter: hypot(proxy.size.width, proxy.size.height) * 1.05)
                             .frame(width: logoSide, height: logoSide * 0.82)
 
                         landingContent(width: proxy.size.width)
