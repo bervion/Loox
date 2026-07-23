@@ -30,7 +30,9 @@ struct VaultSidebarList: View {
             }
 
             Section {
-                ForEach(VaultTab.allCases) { tab in
+                // No Search row: the sidebar's own search field (iPad-Settings
+                // idiom) IS the search entry at regular width.
+                ForEach(VaultTab.allCases.filter { $0 != .search }) { tab in
                     Label { Text(tab.accessibilityLabel) } icon: { PolarisIcon(tab.icon) }
                         .tag(UIStateStore.SidebarSelection.section(tab))
                 }

@@ -10,6 +10,9 @@ import SwiftUI
 struct VaultSidebarView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
+    /// Sidebar-integrated vault search (iPad-Settings idiom, owner 260723):
+    /// typing drives the Search detail live via `SearchEntry.query`.
+    @State private var sidebarSearch = ""
 
     var body: some View {
         @Bindable var uiState = uiState
@@ -24,7 +27,21 @@ struct VaultSidebarView: View {
                 get: { uiState.sidebarSelection },
                 set: { uiState.sidebarSelection = $0 ?? .section(.home) }
             ))
-            .navigationTitle("Loox")
+            // No brand title (owner 260723): like iPad Settings, the sidebar
+            // opens straight with the search field and the avatar row.
+            .navigationTitle("")
+            .searchable(text: $sidebarSearch,
+                        placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Search vault")
+            // Every keystroke re-targets the Search detail with the live query;
+            // `SearchScreen` consumes `.query` both on entry and in place.
+            .onChange(of: sidebarSearch) { _, query in
+                guard !query.isEmpty else { return }
+                uiState.searchEntry = .query(query)
+                if uiState.sidebarSelection != .section(.search) {
+                    uiState.sidebarSelection = .section(.search)
+                }
+            }
             // Apple-standard sidebar proportions (default collapses too narrow on macOS).
             .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 320)
             .toolbar(removing: .sidebarToggle)

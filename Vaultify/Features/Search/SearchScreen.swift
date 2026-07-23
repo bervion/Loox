@@ -60,6 +60,16 @@ struct SearchScreen: View {
         // too early; a background/return needs a re-raise) — they never re-seed the scope.
         .onAppear { handleEntry() }
         .analyticsScreen("search")
+        // Live re-targeting while ALREADY showing: the iPad sidebar's search
+        // field keeps sending `.query` per keystroke after the first one was
+        // consumed by `handleEntry` — apply it in place, keyboard stays down.
+        .onChange(of: uiState.searchEntry) { _, entry in
+            if case .query(let q) = entry {
+                search = q
+                suppressFocus = true
+                uiState.searchEntry = .normal
+            }
+        }
         .onChange(of: uiState.selectedTab) { _, tab in
             if tab == .search { requestSearchFocus() }
         }
