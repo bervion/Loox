@@ -214,15 +214,9 @@ struct SearchResultsList: View {
         // when the keyboard is dismissed, leaving a gap above the filter.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
-        // Tapping anywhere drops the keyboard; simultaneous so result rows still tap.
-        .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
-    }
-
-    private func dismissKeyboard() {
-        #if canImport(UIKit)
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        #endif
+        // Keyboard dismissal rides on scroll (`.scrollDismissesKeyboard`) only. A
+        // whole-surface `simultaneousGesture(TapGesture())` here used to cancel the
+        // List's own cell selection, so result rows never pushed their detail.
     }
 
     @ViewBuilder private var resultsContent: some View {
@@ -232,9 +226,11 @@ struct SearchResultsList: View {
             List {
                 if trimmed.isEmpty {
                     // Browse mode: smart sections per scope (by type / group / owner).
+                    // The section header already names the group, so the per-row Space
+                    // chip would repeat it on every row — three-line rows for nothing.
                     ForEach(browseSections) { section in
                         Section {
-                            ForEach(section.items) { VaultItemRowLink(item: $0, highlight: "") }
+                            ForEach(section.items) { VaultItemRowLink(item: $0, showSpace: false, highlight: "") }
                         } header: {
                             Text(section.title)
                         }
