@@ -34,7 +34,9 @@ struct VaultSidebarView: View {
         // Balanced: portrait keeps both columns on screen instead of sliding the
         // sidebar over the detail — matches the pinned-visible contract above.
         .navigationSplitViewStyle(.balanced)
-        .tint(Color.primary)
+        // No tint override (owner 260723): the sidebar renders the SYSTEM
+        // default — accent selection, sidebar material/Liquid Glass — instead
+        // of the custom primary-tinted look.
         .vaultShellBehaviors()
         // A size-class flip re-mounts this view. The compact tab shell only mutates
         // `selectedTab` (it never touches `sidebarSelection`), so reconcile on appear or a

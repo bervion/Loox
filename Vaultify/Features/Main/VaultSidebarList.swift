@@ -35,5 +35,8 @@ struct VaultSidebarList: View {
                     .tag(UIStateStore.SidebarSelection.profile)
             }
         }
+        // System sidebar appearance — Liquid Glass on iOS 26, translucent
+        // sidebar material earlier — never a custom-painted list.
+        .listStyle(.sidebar)
     }
 }
