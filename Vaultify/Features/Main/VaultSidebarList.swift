@@ -14,14 +14,18 @@ struct VaultSidebarList: View {
             // (avatar + name + subtitle). Selecting it opens Profile in the
             // detail column; Home drops its own identity card at regular width.
             Section {
-                HStack(spacing: Space.s3) {
-                    PersonaAvatarView(size: 40)
+                // A LABEL, not a free HStack: the label's icon column shares the
+                // system alignment guide with the section rows below, so the
+                // avatar's leading edge and the row's side insets match them.
+                Label {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(verbatim: PersonaDisplay.name(env))
                             .vaultType(.headline).themedForeground().lineLimit(1)
                         Text(verbatim: PersonaDisplay.subtitle(env))
                             .vaultType(.caption).themedForeground(.secondary).lineLimit(1)
                     }
+                } icon: {
+                    PersonaAvatarView(size: 40)
                 }
                 .padding(.vertical, Space.s1)
                 .tag(UIStateStore.SidebarSelection.profile)
