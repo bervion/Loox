@@ -15,8 +15,8 @@ struct ThemedProminentButtonStyle: ButtonStyle {
             // Disabled uses an OPAQUE gray fill, never `.opacity` — a translucent
             // CTA lets content scrolling behind a pinned button show through. Only
             // the momentary pressed state dims.
-            let bg: Color = isEnabled ? Color.primary : Color(.systemGray4)
-            let fg: Color = isEnabled ? Color(.systemBackground) : Color(.systemGray)
+            let bg: Color = isEnabled ? Color.primary : VaultColors.dynamic(light: 0xD1D1D6, dark: 0x3A3A3C)
+            let fg: Color = isEnabled ? Color.platformBackground : Color.platformSystemGray
             // Welcome-style pill: capsule ends, width hugging the content, centred
             // in the slot. `fixedSize` collapses call-site `maxWidth: .infinity`
             // labels back to their ideal width.
@@ -140,8 +140,8 @@ struct ThemedCompactButtonStyle: ButtonStyle {
             switch emphasis {
             case .prominent:
                 // Neutral primary (Apple-style), matching ThemedProminentButtonStyle.
-                let bg: Color = isEnabled ? Color.primary : Color(.systemGray4)
-                let fg: Color = isEnabled ? Color(.systemBackground) : Color(.systemGray)
+                let bg: Color = isEnabled ? Color.primary : VaultColors.dynamic(light: 0xD1D1D6, dark: 0x3A3A3C)
+                let fg: Color = isEnabled ? Color.platformBackground : Color.platformSystemGray
                 return (bg, fg)
             case .tinted:
                 // TEXT rank on a control fill — see ThemedTintedButtonStyle.
@@ -161,7 +161,7 @@ private struct ProminentButtonLoading: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(isLoading ? 0 : 1)
-            .overlay { if isLoading { ProgressView().tint(Color(.systemBackground)) } }
+            .overlay { if isLoading { ProgressView().tint(Color.platformBackground) } }
     }
 }
 

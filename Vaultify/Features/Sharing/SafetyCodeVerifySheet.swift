@@ -64,7 +64,7 @@ struct SafetyCodeVerifySheet: View {
             .padding(Space.gutter)
             .padding(.top, Space.s5)
         }
-        .presentationDetents([.medium, .large])
+        .platformPresentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .task(id: itemID) { await loadCode() }
     }

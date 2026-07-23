@@ -13,6 +13,9 @@ import SwiftUI
 /// filtered by the selected folder and renders only when non-empty.
 struct HomeScreen: View {
     @Environment(AppEnvironment.self) private var env
+    /// Regular width (iPad/Mac): the sidebar carries the persona avatar row
+    /// (Settings idiom), so Home drops its identity card there.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(UIStateStore.self) private var uiState
     // Present in the compact-iOS UIKit shell; nil on the iPad/Mac sidebar (which
     // navigates via its own SwiftUI stack). See `openItem`/`openSettingsScreen`.
@@ -156,8 +159,10 @@ struct HomeScreen: View {
                         scrollContent
                     }
                 }
+                // Pure cross-fade — the springy scale-and-fade re-composed both
+                // resident layers every frame and still hitched a beat on entry
+                // (owner 260723: keep it simple and smooth over fancy).
                 .opacity(isEditingLayout ? 0 : 1)
-                .scaleEffect(isEditingLayout ? 0.98 : 1)
                 .allowsHitTesting(!isEditingLayout)
                 .accessibilityHidden(isEditingLayout)
 
@@ -167,7 +172,6 @@ struct HomeScreen: View {
                 // animation (see HomeLayoutEditor).
                 HomeLayoutEditor()
                     .opacity(isEditingLayout ? 1 : 0)
-                    .scaleEffect(isEditingLayout ? 1 : 0.98)
                     .allowsHitTesting(isEditingLayout)
                     .accessibilityHidden(!isEditingLayout)
 
@@ -258,7 +262,8 @@ struct HomeScreen: View {
                     // Identity context line — a thin "acting as" strip pinned above the
                     // customizable band so which persona you're operating as is always
                     // visible (INV-R03). Never hidden or reordered (see `HomeSection`).
-                    profileRow
+                    // Regular width: the sidebar's avatar row carries this instead.
+                    if horizontalSizeClass != .regular { profileRow }
 
                     // Customizable protagonist band — order and visibility come from
                     // `SettingsStore` (edited via the header's layout editor). Each section
@@ -413,18 +418,9 @@ struct HomeScreen: View {
 
     // MARK: Profile row
 
-    /// Subtitle under the active persona name: its kind, plus that persona's own
-    /// email when resolvable. Uses the persona-scoped resolver so a strictAnonymous
-    /// persona never shows another identity's email (INV-R03).
-    private var personaSubtitle: String {
-        guard let persona = env.repository.activePersona else { return appString("Set up your identity") }
-        let kind = PersonaKindStyle.label(persona.kind)
-        // Kind + email, comma-joined (user-chosen format: "Cá nhân, email…").
-        if let email = env.repository.identityUsername(forPersona: persona), !email.isEmpty {
-            return "\(kind), \(email)"
-        }
-        return kind
-    }
+    /// Subtitle under the active persona name — shared with the sidebar's
+    /// avatar row (see `PersonaDisplay`).
+    private var personaSubtitle: String { PersonaDisplay.subtitle(env) }
 
     /// Identity card at the top of the scroll: avatar + active persona name + email
     /// on a white surface card. The user chose the card treatment over a thin strip —
@@ -455,21 +451,9 @@ struct HomeScreen: View {
         .accessibilityLabel(Text(verbatim: "\(env.repository.activePersona?.displayName ?? appString("Profile")), \(personaSubtitle)"))
     }
 
-    /// 44pt circular avatar — the stored photo in a plain circle, otherwise the
-    /// Loox dots mark (spark ringed by two static dot rings, theme-tinted).
-    /// The ACTIVE persona's own card — never another persona's (an anonymous
-    /// persona must not wear the personal photo).
-    @ViewBuilder private var profileAvatar: some View {
-        let avatarSize: CGFloat = 44
-        if let identity = env.repository.activeProfileItem,
-           let image = env.repository.avatarImage(for: identity.id) {
-            Image(platformImage: image).resizable().scaledToFill()
-                .frame(width: avatarSize, height: avatarSize)
-                .clipShape(Circle())
-        } else {
-            LooxDotsAvatar(size: avatarSize)
-        }
-    }
+    /// 44pt circular avatar — extracted to `PersonaAvatarView`, shared with the
+    /// iPad/Mac sidebar profile row.
+    private var profileAvatar: some View { PersonaAvatarView(size: 44) }
 
     // MARK: Quick actions
 
@@ -673,7 +657,7 @@ struct HomeScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 VaultHeaderScrollSpacer(scrolledUnder: $scrolledUnder)
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    profileRow
+                    if horizontalSizeClass != .regular { profileRow }
                     content()
                         .frame(maxWidth: .infinity)
                         .padding(.top, Space.s8)

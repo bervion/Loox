@@ -19,6 +19,7 @@
 
 import AVFoundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
 
 struct LooxMemojiPlayerView: UIViewRepresentable {
@@ -132,3 +133,21 @@ final class LooxPlayerLayerView: UIView {
         player.play()
     }
 }
+
+#else
+
+/// macOS stand-in: the Memoji clips are UIKit/AVPlayerLayer-hosted; the Mac
+/// slice renders the static poster frame instead (the brand loop stays
+/// coherent, just without the animated Memoji scenes).
+struct LooxMemojiPlayerView: View {
+    let resourceName: String
+    let restartKey: Int
+
+    var body: some View {
+        Image("\(resourceName)-poster")
+            .resizable()
+            .scaledToFill()
+    }
+}
+
+#endif

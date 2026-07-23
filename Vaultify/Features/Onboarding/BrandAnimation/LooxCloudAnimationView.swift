@@ -67,7 +67,7 @@ struct LooxCloudAnimationView: View {
                         let boost = floodDiameter.map { max(1, $0 / max(nativeFinal, 1)) } ?? 1
                         let side = bloom.diameter * scale * boost
                         ZStack {
-                            Circle().fill(Color(.systemBackground))
+                            Circle().fill(Color.platformBackground)
                             Circle()
                                 .fill(LinearGradient(colors: [.looxBlue, .looxDeep],
                                                      startPoint: .topLeading, endPoint: .bottomTrailing))

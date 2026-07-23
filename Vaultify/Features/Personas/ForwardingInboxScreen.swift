@@ -37,7 +37,7 @@ struct ForwardingInboxScreen: View {
         .navigationTitle(Text("Forwarding inboxes"))
         .alert("Add inbox", isPresented: $addingInbox) {
             TextField("Email", text: $newEmail)
-                .keyboardType(.emailAddress).textInputAutocapitalization(.never)
+                .platformKeyboardType(.emailAddress).platformAutocapitalization(.never)
             TextField("Label", text: $newLabel)
             Button("Cancel", role: .cancel) { newEmail = ""; newLabel = "" }
             Button("Save") { addInbox() }

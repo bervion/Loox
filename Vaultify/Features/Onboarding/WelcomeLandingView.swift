@@ -24,20 +24,31 @@ struct WelcomeLandingView: View {
     var onRestore: (() -> Void)?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @StateObject private var launch = LooxLaunchController()
     /// Text, CTA, and carousel step aside for the launch; the animation stays.
     @State private var contentHidden = false
+
+    /// Regular width (iPad/Mac): the landing breathes — larger brand mark and
+    /// wordmark, wider vertical rhythm, and a three-up centered card row
+    /// instead of the phone's peek carousel. Compact stays untouched.
+    private var isRegular: Bool { horizontalSizeClass == .regular }
 
     var body: some View {
         GeometryReader { proxy in
             // Brand mark scales with width but is capped so it never dominates a
             // wide screen; height is trimmed (0.82) to keep the stack compact.
-            let logoSide = min(proxy.size.width * 0.56, 252)
+            // Regular width scales off the SHORT side: landscape iPad is
+            // height-constrained, and the whole landing (logo → three cards)
+            // must fit without clipping the card row.
+            let logoSide = isRegular
+                ? min(max(min(proxy.size.width, proxy.size.height) * 0.28, 220), 330)
+                : min(proxy.size.width * 0.56, 252)
 
             ZStack {
                 // Plain white page (adaptive: black in dark mode). Also the color
                 // the launch bloom floods, so the hand-off is seamless.
-                Color(.systemBackground).ignoresSafeArea()
+                Color.platformBackground.ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -71,24 +82,24 @@ struct WelcomeLandingView: View {
         VStack(spacing: 0) {
             // Brand wordmark image (follows light/dark via the asset's
             // luminosity variants) — replaces the old text title.
-            BrandLogoMark(size: 30, shadowRadius: 0, shadowY: 0)
-                .padding(.top, Space.s5)
+            BrandLogoMark(size: isRegular ? 38 : 30, shadowRadius: 0, shadowY: 0)
+                .padding(.top, isRegular ? Space.s6 : Space.s5)
 
             startButton
-                .padding(.top, Space.s7)
+                .padding(.top, isRegular ? Space.s8 : Space.s7)
 
             Text(appString("The safest home for your passwords, passkeys, cards and notes."))
                 .vaultType(.callout)
                 .themedForeground(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.top, Space.s7)
+                .padding(.top, isRegular ? Space.s8 : Space.s7)
                 .padding(.horizontal, Space.s7)
 
             restoreLink
                 .padding(.top, Space.s3)
 
-            CapabilityCarousel(containerWidth: width)
-                .padding(.top, Space.s8)
+            CapabilityCarousel(containerWidth: width, isRegular: isRegular)
+                .padding(.top, isRegular ? Space.s6 : Space.s8)
         }
     }
 
@@ -102,7 +113,7 @@ struct WelcomeLandingView: View {
                 // Deliberate adaptive black/white pill (the demo look the user
                 // asked for): label sits on the primary fill, so it uses the
                 // background color rather than a themed text token.
-                .foregroundStyle(Color(.systemBackground))
+                .foregroundStyle(Color.platformBackground)
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
                 .background(Capsule().fill(Color.primary))
@@ -154,6 +165,9 @@ struct WelcomeLandingView: View {
 /// frame — the real illustrations are still in design) above a title and line.
 private struct CapabilityCarousel: View {
     let containerWidth: CGFloat
+    /// Regular width: all three cards fit — render a centered, airy row
+    /// instead of the phone's one-card peek carousel.
+    var isRegular: Bool = false
 
     private struct Slide: Identifiable {
         let id = UUID()
@@ -174,25 +188,44 @@ private struct CapabilityCarousel: View {
               detail: "Fast biometric access protected by the Secure Enclave.")
     ]
 
-    /// ~72% of the viewport (capped): one card per page, next card peeking in.
-    private var cardWidth: CGFloat { min(containerWidth * 0.72, 320) }
+    /// Compact: ~72% of the viewport (capped) — one card per page, next card
+    /// peeking in. Regular: three-up, sized so the row plus its generous
+    /// margins fills the width, capped for 13" so cards never balloon.
+    private var cardWidth: CGFloat {
+        if isRegular {
+            let available = containerWidth - 2 * Space.s10 - 2 * Space.s6
+            return min(available / 3, 320)
+        }
+        return min(containerWidth * 0.72, 320)
+    }
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Space.s4) {
+        if isRegular {
+            // All three cards on screen, centered — no scroll, no peek.
+            HStack(spacing: Space.s6) {
                 ForEach(slides) { slide in
                     CapabilitySlide(image: slide.image, title: slide.title, detail: slide.detail, width: cardWidth)
                 }
             }
-            // Equal-height cards: the row takes the tallest card's height and the
-            // shorter ones stretch to match (each card caps its height to the
-            // row via maxHeight). Locale-safe — the longest label sets the bar.
             .fixedSize(horizontal: false, vertical: true)
-            .scrollTargetLayout()
-            .padding(.horizontal, Space.gutter)
+            .frame(maxWidth: .infinity)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Space.s4) {
+                    ForEach(slides) { slide in
+                        CapabilitySlide(image: slide.image, title: slide.title, detail: slide.detail, width: cardWidth)
+                    }
+                }
+                // Equal-height cards: the row takes the tallest card's height and the
+                // shorter ones stretch to match (each card caps its height to the
+                // row via maxHeight). Locale-safe — the longest label sets the bar.
+                .fixedSize(horizontal: false, vertical: true)
+                .scrollTargetLayout()
+                .padding(.horizontal, Space.gutter)
+            }
+            .scrollTargetBehavior(.viewAligned)
+            .scrollClipDisabled()
         }
-        .scrollTargetBehavior(.viewAligned)
-        .scrollClipDisabled()
     }
 }
 

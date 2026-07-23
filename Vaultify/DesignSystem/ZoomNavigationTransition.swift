@@ -32,11 +32,16 @@ struct ZoomTransitionSource: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
+        // Zoom transitions are an iOS API family — macOS renders unmodified.
+        #if os(iOS)
         if #available(iOS 18.0, *), let namespace, !reduceMotion {
             content.matchedTransitionSource(id: id, in: namespace)
         } else {
             content
         }
+        #else
+        content
+        #endif
     }
 }
 
@@ -49,10 +54,15 @@ struct ZoomTransitionDestination: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
+        // Zoom transitions are an iOS API family — macOS renders unmodified.
+        #if os(iOS)
         if #available(iOS 18.0, *), let namespace, !reduceMotion {
             content.navigationTransition(.zoom(sourceID: id, in: namespace))
         } else {
             content
         }
+        #else
+        content
+        #endif
     }
 }

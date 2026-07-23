@@ -34,7 +34,7 @@ struct CodePromptSheet: View {
             }
             .overlay { if busy { ProgressView().controlSize(.large) } }
         }
-        .presentationDetents([.medium])
+        .platformPresentationDetents([.medium])
     }
 
     private func submit() async {

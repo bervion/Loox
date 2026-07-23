@@ -53,7 +53,7 @@ struct ItemTypePickerSheet: View {
             }
             .navigationTitle("")
             .platformNavigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .platformHiddenNavigationBarBackground()
             .toolbar {
                 ToolbarItem(placement: .platformTopBarLeading) {
                     // Icon-only toolbar button → iOS 26 gives it the circular
@@ -65,7 +65,7 @@ struct ItemTypePickerSheet: View {
                 }
             }
         }
-        .presentationDetents([.large])
+        .platformPresentationDetents([.large])
         .presentationDragIndicator(.hidden)
     }
 

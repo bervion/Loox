@@ -368,7 +368,7 @@ struct ItemEditorScreen: View {
                 Text("Check your connection and iCloud, then try again.")
             }
         }
-        .presentationDetents([.medium, .large])
+        .platformPresentationDetents([.medium, .large])
     }
 
     // MARK: Header pieces
