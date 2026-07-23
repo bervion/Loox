@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện trải nghiệm ứng dụng với các chỉ báo gói dịch vụ và trạng thái rõ ràng hơn, cùng cải tiến cho màn hình nhỏ và tiếng Việt. Bảo mật kho mật khẩu được tăng cường để phiên đã khóa luôn được giữ khóa, ngay cả khi buộc khởi động lại ứng dụng.
+Bản cập nhật này cải thiện trải nghiệm trên máy tính bảng với màn hình chào mừng tinh gọn hơn và bố cục nhất quán hơn trên màn hình lớn, giúp Loox dễ sử dụng hơn trên iPad.

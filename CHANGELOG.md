@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.39.0] - 2026-07-23
+
+### Added
+- iPad welcome landing polish and system-default sidebar (#169)
+- iPad standardization — permanent sidebar, readable-width flows, Mac-reusable width system (#168)
+
+
 ## [1.38.0] - 2026-07-23
 
 ### Added
