@@ -41,6 +41,10 @@ import SwiftUI
     enum SearchEntry: Equatable {
         case normal
         case browse(spaceId: String?)
+        /// Open Search pre-filled with a query (the Loox hub's stat tiles jump
+        /// into "show me those items"): results render immediately, keyboard
+        /// stays down so the list is what the user sees.
+        case query(String)
     }
     var searchEntry: SearchEntry = .normal
 

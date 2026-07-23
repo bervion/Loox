@@ -1,42 +1,44 @@
 import SwiftUI
 
-/// One tile of the Loox membership screen's feature grid (the iCloud+
-/// "Saved to iCloud" tile idiom): leading icon tile, feature title, and a live
-/// usage/status line. Either pushes a destination or performs an action
-/// (e.g. switching to the Watchtower tab).
+/// One gray tile inside a Loox hub section card (the iCloud+ "Saved to iCloud"
+/// tile idiom): a solid-tint icon badge, the feature title, and a short totals
+/// line with an optional live service-status dot. Tiles sit INSIDE a white
+/// section card, so they carry the fixed systemGray6-class fill themselves and
+/// no elevation of their own. Either pushes a destination or performs an
+/// action (e.g. switching to the Watchtower tab).
 struct LooxFeatureTile<Destination: View>: View {
     @Environment(AppEnvironment.self) private var env
     let title: LocalizedStringResource
     let icon: String
+    /// Solid badge tint (`SettingsBadgeTint` family) — the iCloud-style colored
+    /// icon square. White-on-tint is the documented fixed-tile exemption class.
+    let tint: Color
     /// Pre-localized usage/status line (built by the screen from live counts).
     let metric: String
-    /// Quota consumption 0…1 — renders the thin iCloud+-style bar. nil for
-    /// tiles without a countable quota (Watchtower, pre-launch metrics).
-    var progress: Double? = nil
     /// Live service dot for connected-service tiles; nil for local features.
     var status: CapabilityDisplayStatus? = nil
     private let destination: (() -> Destination)?
     private let action: (() -> Void)?
 
-    init(title: LocalizedStringResource, icon: String, metric: String,
-         progress: Double? = nil, status: CapabilityDisplayStatus? = nil,
+    init(title: LocalizedStringResource, icon: String, tint: Color, metric: String,
+         status: CapabilityDisplayStatus? = nil,
          @ViewBuilder destination: @escaping () -> Destination) {
         self.title = title
         self.icon = icon
+        self.tint = tint
         self.metric = metric
-        self.progress = progress
         self.status = status
         self.destination = destination
         self.action = nil
     }
 
-    init(title: LocalizedStringResource, icon: String, metric: String,
-         progress: Double? = nil, status: CapabilityDisplayStatus? = nil,
+    init(title: LocalizedStringResource, icon: String, tint: Color, metric: String,
+         status: CapabilityDisplayStatus? = nil,
          action: @escaping () -> Void) where Destination == EmptyView {
         self.title = title
         self.icon = icon
+        self.tint = tint
         self.metric = metric
-        self.progress = progress
         self.status = status
         self.destination = nil
         self.action = action
@@ -54,17 +56,14 @@ struct LooxFeatureTile<Destination: View>: View {
 
     private var label: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            ProfileRowTile(icon: icon)
-            VStack(alignment: .leading, spacing: Space.s1) {
+            SettingsIconBadge(icon: icon, tint: tint)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .vaultType(.subhead)
                     .fontWeight(.semibold)
                     .themedForeground()
                     .lineLimit(2, reservesSpace: true)
                     .multilineTextAlignment(.leading)
-                if let progress {
-                    TileQuotaBar(fraction: progress)
-                }
                 HStack(spacing: Space.s2) {
                     if let status {
                         CapabilityStatusDot(status: status)
@@ -79,14 +78,17 @@ struct LooxFeatureTile<Destination: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.s4)
-        .background(Color(rgb: env.theme.active.elevatedBackground))
-        .vaultCornerRadius(Radius.lg)
-        .elevation(.level1)
+        .background(Self.tileFill, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         .contentShape(.rect)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(title))
         .accessibilityValue(accessibilityValueText)
     }
+
+    /// Fixed systemGray6-class inner-tile pair (iCloud+ storage cards) — the
+    /// same documented fixed-tile class as the paywall's plan cards; a themed
+    /// role would repaint the grid on accent changes.
+    private static var tileFill: Color { VaultColors.dynamic(light: 0xF2F2F7, dark: 0x2C2C2E) }
 
     private var accessibilityValueText: Text {
         if let status {
@@ -99,8 +101,8 @@ struct LooxFeatureTile<Destination: View>: View {
 /// Thin quota bar in the iCloud+ storage idiom: a 4pt track with the used
 /// fraction filled accent; the fill warms to warning near the cap and to
 /// destructive when the quota is exhausted, so "almost out" is visible without
-/// reading a number.
-private struct TileQuotaBar: View {
+/// reading a number. Used by the hub's Plan-limits row and the quota screen.
+struct LooxQuotaBar: View {
     let fraction: Double
     @Environment(AppEnvironment.self) private var env
 
@@ -119,7 +121,7 @@ private struct TileQuotaBar: View {
             }
         }
         .frame(height: 4)
-        .accessibilityHidden(true)   // the metric text carries the numbers
+        .accessibilityHidden(true)   // the row's text carries the numbers
     }
 
     private var fillColor: Color {

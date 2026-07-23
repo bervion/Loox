@@ -12,6 +12,10 @@ import SwiftUI
 /// denominators appear only once purchases launch (`LooxMembership`).
 struct LooxHubScreen: View {
     @Environment(AppEnvironment.self) private var env
+    /// Profile/hub live on a full-screen navigator push COVERING the TabView —
+    /// tab-switching actions must pop back to root first or the switch happens
+    /// invisibly underneath (see `AppNavigator.push`).
+    @Environment(AppNavigator.self) private var navigator: AppNavigator?
     @State private var confirmApprovalOff = false
     @State private var showPaywall = false
 
@@ -23,7 +27,9 @@ struct LooxHubScreen: View {
             VStack(alignment: .leading, spacing: Space.s6) {
                 header
                 if env.entitlements.purchasesEnabled { planSection }
-                featureGrid
+                if showsQuotas { quotaCard }
+                savedSection
+                featuresSection
                 // Approval Mode stays a control (not a nav tile): app-wide flag,
                 // independent of iCloud vault sync (ADR-2).
                 ProfileGroupCard { approvalRow }
@@ -133,58 +139,150 @@ struct LooxHubScreen: View {
 
     // MARK: Feature grid
 
-    private var featureGrid: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text("Included with Loox")
-                .vaultType(.sectionLabel)
-                .themedForeground(.secondary)
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())],
-                      spacing: Space.s3) {
-                LooxFeatureTile(title: "Private Email", icon: Icons.mail,
-                                metric: serviceMetric(.privateEmail,
-                                                      usageMetric(retainedAliasCount, of: quotas.retainedAliases)),
-                                progress: serviceProgress(.privateEmail, retainedAliasCount, of: quotas.retainedAliases),
-                                status: serviceStatus(.privateEmail)) {
-                    PersonaAliasesScreen()
+    // MARK: Plan limits row (iCloud+ "Storage" row idiom)
+
+    /// White card row summarizing every quota: a thin bar at the HIGHEST
+    /// utilization across the countable quotas, pushing the per-quota detail.
+    private var quotaCard: some View {
+        ProfileGroupCard {
+            NavigationLink { LooxQuotaScreen() } label: {
+                HStack(spacing: Space.s3) {
+                    Text("Plan limits").vaultType(.body).themedForeground()
+                    Spacer(minLength: Space.s3)
+                    LooxQuotaBar(fraction: maxQuotaFraction)
+                        .frame(width: 96)
+                    PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                 }
-                LooxFeatureTile(title: "Share Links", icon: Icons.share,
-                                metric: serviceMetric(.shareLink,
-                                                      rollingMetric(linkCreates30d, of: quotas.linkCreates30d)),
-                                progress: serviceProgress(.shareLink, linkCreates30d, of: quotas.linkCreates30d),
-                                status: serviceStatus(.shareLink)) {
-                    NotificationsScreen()
-                }
-                // Quick View's user-facing name; its activity shares the
-                // notifications surface, so the tile lands there too.
-                LooxFeatureTile(title: "Open on Computer", icon: Icons.scanCode,
-                                metric: serviceMetric(.quickView,
-                                                      rollingMetric(quickViewCompletions30d, of: quotas.quickViewApprovals30d)),
-                                progress: serviceProgress(.quickView, quickViewCompletions30d, of: quotas.quickViewApprovals30d),
-                                status: serviceStatus(.quickView)) {
-                    NotificationsScreen()
-                }
-                LooxFeatureTile(title: "Profiles", icon: Icons.person,
-                                metric: usageMetric(env.repository.personas.count, of: quotas.personas),
-                                progress: quotaFraction(env.repository.personas.count, of: quotas.personas)) {
-                    PersonaSwitcherScreen()
-                }
-                LooxFeatureTile(title: "Sharing", icon: Icons.organization,
-                                metric: usageMetric(outgoingRecipientCount, of: quotas.outgoingRecipients),
-                                progress: quotaFraction(outgoingRecipientCount, of: quotas.outgoingRecipients)) {
-                    FamilyScreen()
-                }
-                // Watchtower owns its own NavigationStack (it is a tab root), so
-                // the tile switches tabs instead of pushing a nested stack.
-                LooxFeatureTile(title: "Watchtower", icon: Icons.watchtower,
-                                metric: watchtowerMetric,
-                                action: { env.uiState.selectedTab = .watchtower })
+                .padding(.horizontal, Space.s4)
+                .frame(minHeight: Metric.rowHeight)
+                .contentShape(.rect)
             }
-            if showsQuotas {
-                Text("Share Links and Open on Computer count the last 30 days.")
-                    .vaultType(.footnote)
-                    .themedForeground(.secondary)
-                    .padding(.top, Space.s1)
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// The most-consumed quota drives the summary bar — "how close am I to
+    /// hitting anything" is the question this row answers.
+    private var maxQuotaFraction: Double {
+        var fractions: [Double] = []
+        func add(_ used: Int, _ cap: Int?) {
+            if let cap, cap > 0 { fractions.append(Double(used) / Double(cap)) }
+        }
+        add(retainedAliasCount, quotas.retainedAliases)
+        add(linkCreates30d, quotas.linkCreates30d)
+        add(quickViewCompletions30d, quotas.quickViewApprovals30d)
+        add(outgoingRecipientCount, quotas.outgoingRecipients)
+        add(env.repository.personas.count, quotas.personas)
+        return fractions.max() ?? 0
+    }
+
+    // MARK: "Saved in Loox" (iCloud+ "Saved to iCloud" idiom — vault stats)
+
+    /// White card wrapping a gray tile grid of what the vault holds. Category
+    /// tiles jump to Search pre-filled with that category's operator, so the
+    /// count expands into the actual list.
+    private var savedSection: some View {
+        LooxHubSectionCard(title: "Saved in Loox",
+                           trailing: "See all",
+                           trailingAction: { switchTab(.items) }) {
+            categoryTile(.login, tint: SettingsBadgeTint.blue)
+            categoryTile(.note, tint: SettingsBadgeTint.orange)
+            categoryTile(.identity, tint: SettingsBadgeTint.purple)
+            categoryTile(.card, tint: SettingsBadgeTint.green)
+            LooxFeatureTile(title: "Passkey", icon: Icons.passkey, tint: SettingsBadgeTint.indigo,
+                            metric: appString("\(env.repository.passkeys.count) items"),
+                            action: { openSearch(query: "passkey") })
+            LooxFeatureTile(title: "Security Score", icon: Icons.watchtower, tint: SettingsBadgeTint.red,
+                            metric: securityScoreMetric,
+                            action: { switchTab(.watchtower) })
+        }
+        .task { loadScore() }
+    }
+
+    private func categoryTile(_ category: ItemCategory, tint: Color) -> some View {
+        LooxFeatureTile(title: category.title, icon: category.iconAsset, tint: tint,
+                        metric: appString("\(env.repository.count(forCategory: category)) items"),
+                        action: { openSearch(query: searchKeyword(for: category)) })
+    }
+
+    /// Canonical search-operator token per category (`SearchOperators` grammar,
+    /// matched case- and diacritic-insensitively in both app languages).
+    private func searchKeyword(for category: ItemCategory) -> String {
+        switch category {
+        case .login: "login"
+        case .note: "note"
+        case .card: "card"
+        case .identity: "identity"
+        case .sshKey: "ssh"
+        case .recoveryCodes: "recovery"
+        case .securityQuestions: "security"
+        case .custom: "custom"
+        }
+    }
+
+    /// Hand Search the query, then switch tabs — `SearchScreen.handleEntry`
+    /// consumes the entry when the tab lands (the Home "See all" pattern).
+    private func openSearch(query: String) {
+        env.uiState.searchEntry = .query(query)
+        switchTab(.search)
+    }
+
+    /// Pop the covering navigator stack, THEN flip the tab — in that order the
+    /// TabView is visible again the moment the selection changes.
+    private func switchTab(_ tab: VaultTab) {
+        navigator?.popToRoot()
+        env.uiState.selectedTab = tab
+    }
+
+    @State private var securityScore: Int?
+
+    private var securityScoreMetric: String {
+        securityScore.map { "\($0)" } ?? appString("Not audited yet")
+    }
+
+    private func loadScore() {
+        guard let key = env.session.vaultKey else { return }
+        let personaID = env.repository.activePersona?.id
+        securityScore = AuditReportStore(store: env.store).latest(personaID: personaID, key: key)?.score
+    }
+
+    // MARK: Features section (iCloud+ "iCloud+ Features" idiom — tier usage)
+
+    private var featuresSection: some View {
+        LooxHubSectionCard(title: featuresTitle) {
+            LooxFeatureTile(title: "Private Email", icon: Icons.mail, tint: SettingsBadgeTint.teal,
+                            metric: serviceMetric(.privateEmail,
+                                                  appString("\(retainedAliasCount) in use")),
+                            status: serviceStatus(.privateEmail)) {
+                PersonaAliasesScreen()
             }
+            LooxFeatureTile(title: "Share Links", icon: Icons.share, tint: SettingsBadgeTint.green,
+                            metric: serviceMetric(.shareLink,
+                                                  appString("\(linkCreates30d) in 30 days")),
+                            status: serviceStatus(.shareLink)) {
+                NotificationsScreen()
+            }
+            // Quick View's user-facing name; its activity shares the
+            // notifications surface, so the tile lands there too.
+            LooxFeatureTile(title: "Open on Computer", icon: Icons.scanCode, tint: SettingsBadgeTint.indigo,
+                            metric: serviceMetric(.quickView,
+                                                  appString("\(quickViewCompletions30d) in 30 days")),
+                            status: serviceStatus(.quickView)) {
+                NotificationsScreen()
+            }
+            LooxFeatureTile(title: "Sharing", icon: Icons.organization, tint: SettingsBadgeTint.orange,
+                            metric: appString("\(outgoingRecipientCount) in use")) {
+                FamilyScreen()
+            }
+            LooxFeatureTile(title: "Profiles", icon: Icons.person, tint: SettingsBadgeTint.blue,
+                            metric: appString("\(env.repository.personas.count) in use")) {
+                PersonaSwitcherScreen()
+            }
+            // Watchtower owns its own NavigationStack (it is a tab root), so
+            // the tile switches tabs instead of pushing a nested stack.
+            LooxFeatureTile(title: "Watchtower", icon: Icons.watchtower, tint: SettingsBadgeTint.green,
+                            metric: watchtowerMetric,
+                            action: { switchTab(.watchtower) })
         }
         // Screen-open health probe for the connected-service dots — contextual
         // and non-blocking (INV-CAP-02: never at startup, never per-action).
@@ -195,6 +293,16 @@ struct LooxHubScreen: View {
             where env.capabilities.userPreference(id) {
                 await CapabilityHealthProbe.probe(id, store: env.capabilities)
             }
+        }
+    }
+
+    /// Tier-aware section title: the paid feature roster belongs to the PLAN
+    /// ("Included with Loox Max"), not to the generic brand.
+    private var featuresTitle: LocalizedStringResource {
+        switch tier {
+        case .free: "Included with Loox"
+        case .plus: "Included with Loox+"
+        case .max: "Included with Loox Max"
         }
     }
 
@@ -210,18 +318,6 @@ struct LooxHubScreen: View {
     /// the feature went, or the hidden state reads as a broken plan.
     private func serviceMetric(_ id: CapabilityID, _ liveMetric: String) -> String {
         env.capabilities.userPreference(id) ? liveMetric : appString("Off in Settings")
-    }
-
-    private func serviceProgress(_ id: CapabilityID, _ used: Int, of cap: Int?) -> Double? {
-        guard env.capabilities.userPreference(id) else { return nil }
-        return quotaFraction(used, of: cap)
-    }
-
-    /// Quota fraction for the thin tile bar — only once quotas are real
-    /// (`showsQuotas`), and never for uncapped (nil) quotas.
-    private func quotaFraction(_ used: Int, of cap: Int?) -> Double? {
-        guard showsQuotas, let cap, cap > 0 else { return nil }
-        return Double(used) / Double(cap)
     }
 
     // MARK: Live usage counts (device-local, display-only)
@@ -263,27 +359,52 @@ struct LooxHubScreen: View {
         #endif
     }
 
-    /// Compact "3/10" with quotas visible (the tile's progress bar and title
-    /// carry the meaning; spelled-out copy truncated on small iPhones); a plain
-    /// "3 in use" before quotas launch.
-    private func usageMetric(_ used: Int, of cap: Int?) -> String {
-        if showsQuotas, let cap {
-            return "\(used)/\(cap)"
-        }
-        return appString("\(used) in use")
-    }
-
-    private func rollingMetric(_ used: Int, of cap: Int) -> String {
-        if showsQuotas {
-            return "\(used)/\(cap)"
-        }
-        return appString("\(used) in 30 days")
-    }
-
     private var watchtowerMetric: String {
         (!showsQuotas || quotas.fullWatchtower)
             ? appString("Full protection")
             : appString("Essentials")
+    }
+
+    // MARK: Section chrome (white card wrapping a gray tile grid)
+
+    /// iCloud+ section idiom: an elevated WHITE card that carries its own
+    /// header row (title + optional trailing action) and a two-column grid of
+    /// gray tiles inside — the tiles' fixed systemGray6 fill reads against the
+    /// card, not the screen background.
+    private struct LooxHubSectionCard<Tiles: View>: View {
+        @Environment(AppEnvironment.self) private var env
+        let title: LocalizedStringResource
+        var trailing: LocalizedStringResource? = nil
+        var trailingAction: (() -> Void)? = nil
+        @ViewBuilder let tiles: Tiles
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: Space.s3) {
+                HStack {
+                    Text(title).vaultType(.headline).themedForeground()
+                    Spacer(minLength: Space.s2)
+                    if let trailing, let trailingAction {
+                        Button(action: trailingAction) {
+                            HStack(spacing: Space.s1) {
+                                Text(trailing).vaultType(.subhead)
+                                PolarisIcon(Icons.chevronRight, size: 12)
+                            }
+                            .themedForeground(.secondary)
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())],
+                          spacing: Space.s3) {
+                    tiles
+                }
+            }
+            .padding(Space.s4)
+            .background(Color(rgb: env.theme.active.elevatedBackground))
+            .vaultCornerRadius(Radius.lg)
+            .elevation(.level1)
+        }
     }
 
     // MARK: Approval Mode

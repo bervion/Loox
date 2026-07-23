@@ -77,6 +77,14 @@ struct SearchScreen: View {
         case .browse(let spaceId):
             scope = env.repository.defaultSearchScope(currentSpaceId: spaceId)
             suppressFocus = true
+        case .query(let q):
+            // Widest scope the persona allows — the caller (hub stat tiles)
+            // asked about the whole vault, not the last-visited Space.
+            scope = env.repository.allSpacesSearchAllowed
+                ? .allSpaces
+                : env.repository.defaultSearchScope(currentSpaceId: nil)
+            search = q
+            suppressFocus = true
         case .normal:
             scope = env.repository.defaultSearchScope(currentSpaceId: nil)
             suppressFocus = false
