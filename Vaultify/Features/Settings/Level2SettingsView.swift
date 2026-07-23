@@ -30,15 +30,15 @@ struct Level2SettingsView: View {
 
             if hasLevel2 {
                 Section("Current password") {
-                    RevealableSecureField(title: "Current extra password", text: $current).listRowInsets(.init())
+                    RevealableSecureField(title: "Current extra password", text: $current, inList: true)
                 }
                 .listRowBackground(VaultColors.surface)
             }
 
             Section(hasLevel2 ? "New password" : "Set password") {
-                RevealableSecureField(title: "Extra password", text: $newPassword).listRowInsets(.init())
-                PasswordStrengthMeter(password: newPassword)
-                RevealableSecureField(title: "Confirm", text: $confirm).listRowInsets(.init())
+                RevealableSecureField(title: "Extra password", text: $newPassword, inList: true)
+                PasswordStrengthMeter(password: newPassword, emptyLabel: "Enter an extra password")
+                RevealableSecureField(title: "Confirm", text: $confirm, inList: true)
             }
             .listRowBackground(VaultColors.surface)
 
