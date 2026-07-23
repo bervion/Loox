@@ -16340,6 +16340,116 @@
           }
         }
       }
+    },
+    "Off in Settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tắt trong Cài đặt"
+          }
+        }
+      }
+    },
+    "Share Links and Open on Computer count the last 30 days." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liên kết chia sẻ và Mở trên máy tính tính theo 30 ngày gần nhất."
+          }
+        }
+      }
+    },
+    "Turned off in Settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang tắt trong Cài đặt"
+          }
+        }
+      }
+    },
+    "Saved records stay visible. Turn this feature back on in Settings to use it again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dữ liệu đã lưu vẫn hiển thị. Bật lại tính năng này trong Cài đặt để tiếp tục sử dụng."
+          }
+        }
+      }
+    },
+    "Private Email is turned off in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư đang tắt trong Cài đặt."
+          }
+        }
+      }
+    },
+    "Erase Anyway" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vẫn xóa"
+          }
+        }
+      }
+    },
+    "Connect to the internet so your private-email aliases can be turned off before erasing. If you erase now, active aliases keep forwarding until the service deletes them." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy kết nối internet để tắt các email riêng tư trước khi xóa. Nếu xóa ngay bây giờ, các địa chỉ đang hoạt động sẽ tiếp tục chuyển tiếp cho đến khi dịch vụ xóa chúng."
+          }
+        }
+      }
+    },
+    "Service available" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dịch vụ khả dụng"
+          }
+        }
+      }
+    },
+    "Service limited" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dịch vụ bị hạn chế"
+          }
+        }
+      }
+    },
+    "Service interrupted" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dịch vụ gián đoạn"
+          }
+        }
+      }
+    },
+    "Service off" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dịch vụ đang tắt"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
