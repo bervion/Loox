@@ -184,6 +184,17 @@ struct EditorFieldRow: View {
     /// Field-specific value placeholder (e.g. password → "Enter password") instead of a
     /// generic "Value", so the empty field hints what to type.
     private var valuePlaceholder: LocalizedStringKey {
+        // Security-question template fields carry generic `.text` kinds, so without a
+        // label match all four rows would hint the meaningless "Enter value". Matched
+        // via `CardTemplateLabel` so an edited-to-translation label still resolves.
+        if CardTemplateLabel.matches(field.label, english: "Question 1")
+            || CardTemplateLabel.matches(field.label, english: "Question 2") {
+            return "Enter question"
+        }
+        if CardTemplateLabel.matches(field.label, english: "Answer 1")
+            || CardTemplateLabel.matches(field.label, english: "Answer 2") {
+            return "Enter answer"
+        }
         switch field.kind {
         case .password: return "Enter password"
         case .username: return "Enter username"

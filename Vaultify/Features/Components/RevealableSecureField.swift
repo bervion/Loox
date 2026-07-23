@@ -9,6 +9,10 @@ struct RevealableSecureField: View {
     /// Elevated onboarding treatment: white surface + soft shadow + always-visible reveal
     /// (default keeps the flat control-fill look used inside Forms/lists elsewhere).
     var prominent: Bool = false
+    /// Inside a Form/List row the section card already provides the surface — the
+    /// field's own capsule background would sit on top of it and read as broken,
+    /// glued-together cards. `inList` drops the capsule and lets the row chrome win.
+    var inList: Bool = false
     @State private var reveal = false
     @FocusState private var focused: Bool
     @Environment(\.appTheme) private var theme
@@ -61,9 +65,10 @@ struct RevealableSecureField: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, Space.s3)
-        .padding(.vertical, Space.s3)
-        .background(Color(rgb: prominent ? theme.elevatedBackground : theme.controlBackground),
+        .padding(.horizontal, inList ? 0 : Space.s3)
+        .padding(.vertical, inList ? Space.s1 : Space.s3)
+        .background(inList ? Color.clear
+                           : Color(rgb: prominent ? theme.elevatedBackground : theme.controlBackground),
                     in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         .elevation(prominent ? .level2 : .level0)
     }

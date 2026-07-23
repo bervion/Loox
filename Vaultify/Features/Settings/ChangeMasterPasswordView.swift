@@ -25,16 +25,13 @@ struct ChangeMasterPasswordView: View {
                     .listRowBackground(Color.clear)
             }
             Section("Current password") {
-                RevealableSecureField(title: "Current master password", text: $current)
-                    .listRowInsets(.init())
+                RevealableSecureField(title: "Current master password", text: $current, inList: true)
             }
             .listRowBackground(VaultColors.surface)
             Section("New password") {
-                RevealableSecureField(title: "New password", text: $newPassword)
-                    .listRowInsets(.init())
+                RevealableSecureField(title: "New password", text: $newPassword, inList: true)
                 PasswordStrengthMeter(password: newPassword)
-                RevealableSecureField(title: "Confirm new password", text: $confirm)
-                    .listRowInsets(.init())
+                RevealableSecureField(title: "Confirm new password", text: $confirm, inList: true)
                 if !confirm.isEmpty && newPassword != confirm {
                     Text("Passwords don’t match")
                         .vaultType(.footnote)
