@@ -12,6 +12,12 @@ import SwiftUI
 
 struct LooxCloudAnimationView: View {
     @ObservedObject var controller: LooxLaunchController
+    /// Diameter the launch bloom must reach to flood the HOSTING screen. The
+    /// bloom's canvas math scales with this view's own (logo-sized, ~252pt-capped)
+    /// frame, so on iPad the un-boosted disc topped out around 1,200pt and never
+    /// covered the display — the crossfade hand-off happened in plain sight.
+    /// The host passes its screen diagonal; nil keeps the canvas-native size.
+    var floodDiameter: CGFloat? = nil
 
     var body: some View {
         TimelineView(.animation) { context in
@@ -54,6 +60,12 @@ struct LooxCloudAnimationView: View {
                     // background — it IS the destination screen.
                     let bloom = bloomState(at: now)
                     if bloom.diameter > 0 {
+                        // Coverage boost: proportionally inflate the whole flight
+                        // so the FINAL disc clears the host's diagonal — same
+                        // easing, same timing, just a larger destination.
+                        let nativeFinal = LooxLaunchResolver.bloomFinalDiameter * scale
+                        let boost = floodDiameter.map { max(1, $0 / max(nativeFinal, 1)) } ?? 1
+                        let side = bloom.diameter * scale * boost
                         ZStack {
                             Circle().fill(Color(.systemBackground))
                             Circle()
@@ -61,7 +73,7 @@ struct LooxCloudAnimationView: View {
                                                      startPoint: .topLeading, endPoint: .bottomTrailing))
                                 .opacity(bloom.gradientOpacity)
                         }
-                        .frame(width: bloom.diameter * scale, height: bloom.diameter * scale)
+                        .frame(width: side, height: side)
                         .position(canvasCenter)
                     }
                 }

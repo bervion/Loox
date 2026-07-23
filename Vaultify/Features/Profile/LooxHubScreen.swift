@@ -395,7 +395,10 @@ struct LooxHubScreen: View {
                         .buttonStyle(.plain)
                     }
                 }
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())],
+                // Adaptive columns: two-up on iPhone, three/four-up in a wide
+                // iPad detail column — fixed 2 columns bloated each tile past
+                // 400pt at regular width.
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 400), spacing: Space.s3)],
                           spacing: Space.s3) {
                     tiles
                 }

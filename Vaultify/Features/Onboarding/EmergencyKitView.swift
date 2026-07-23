@@ -61,6 +61,8 @@ struct EmergencyKitView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
+            // Regular width (iPad/Mac): centered form column, not a full-screen stretch.
+            .vaultContentWidth(.form)
         }
         // Onboarding concept: plain white page (the kit card carries its own surface).
         .background(Color(rgb: theme.background).ignoresSafeArea())
@@ -76,6 +78,9 @@ struct EmergencyKitView: View {
                     saveButton
                         .padding(.horizontal, Space.s6)
                         .padding(.bottom, Space.s4)
+                        // Pinned outside the clamped step column — clamp here
+                        // too so the save bar matches the form width on iPad.
+                        .vaultContentWidth(.form)
                 }
             }
         }

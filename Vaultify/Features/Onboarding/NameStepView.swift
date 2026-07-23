@@ -42,6 +42,8 @@ struct NameStepView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
+            // Regular width (iPad/Mac): centered form column, not a full-screen stretch.
+            .vaultContentWidth(.form)
         }
         // Onboarding concept: plain white page, gray grouped fields.
         .background(Color(rgb: theme.background).ignoresSafeArea())

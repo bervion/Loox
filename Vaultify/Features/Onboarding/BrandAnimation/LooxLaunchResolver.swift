@@ -158,12 +158,17 @@ enum LooxLaunchResolver {
     /// After the silence, one disc erupts from the dot. Its brand gradient
     /// dissolves into the theme background mid-flight, so by the time it
     /// fills the screen it already is the next scene.
+    /// Canvas-space diameter the bloom flight ends at — exposed so the view can
+    /// compute how much boost a larger host display needs (see
+    /// `LooxCloudAnimationView.floodDiameter`).
+    static let bloomFinalDiameter: CGFloat = 1950
+
     static func bloomState(elapsed e: TimeInterval) -> (diameter: CGFloat, gradientOpacity: Double) {
         guard e >= LooxLaunchTimeline.freezeEnd else { return (0, 1) }
         let pb = LooxEase.clamp01((e - LooxLaunchTimeline.freezeEnd) / (LooxLaunchTimeline.bloomEnd - LooxLaunchTimeline.freezeEnd))
         let ease = 1 - pow(1 - pb, 4)
         return (
-            CGFloat(LooxEase.lerp(contractedDiameter, 1950, ease)),
+            CGFloat(LooxEase.lerp(contractedDiameter, Double(bloomFinalDiameter), ease)),
             1 - LooxEase.smoothstep(0.25, 0.7, pb)
         )
     }

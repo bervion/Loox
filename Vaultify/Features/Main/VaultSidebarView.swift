@@ -13,7 +13,11 @@ struct VaultSidebarView: View {
 
     var body: some View {
         @Bindable var uiState = uiState
-        NavigationSplitView {
+        // Permanent sidebar (iPad-Settings idiom, owner 260723): visibility pinned
+        // to `.all` and the system toggle removed — the sidebar IS the navigation,
+        // never chrome to dismiss. Narrow multitasking widths don't fight this:
+        // compact width switches the whole shell to `MainTabView` upstream.
+        NavigationSplitView(columnVisibility: .constant(.all)) {
             // Bridge the non-optional model to the optional binding `List(selection:)` needs;
             // a nil clear (e.g. deselect) falls back to Home so the detail column is never empty.
             VaultSidebarList(selection: Binding(
@@ -23,9 +27,13 @@ struct VaultSidebarView: View {
             .navigationTitle("Loox")
             // Apple-standard sidebar proportions (default collapses too narrow on macOS).
             .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 320)
+            .toolbar(removing: .sidebarToggle)
         } detail: {
             detail(for: uiState.sidebarSelection)
         }
+        // Balanced: portrait keeps both columns on screen instead of sliding the
+        // sidebar over the detail — matches the pinned-visible contract above.
+        .navigationSplitViewStyle(.balanced)
         .tint(Color.primary)
         .vaultShellBehaviors()
         // A size-class flip re-mounts this view. The compact tab shell only mutates

@@ -53,7 +53,10 @@ struct OnboardingScrollingStep<Content: View>: View {
         GeometryReader { proxy in
             ScrollView {
                 content
-                    .frame(maxWidth: .infinity)
+                    // Regular width (iPad/Mac): every onboarding and lock step
+                    // reads as a centered form column instead of a layout
+                    // stretched across the full 1,000+pt screen. No-op on iPhone.
+                    .vaultContentWidth(.form)
                     .frame(minHeight: proxy.size.height)
             }
             .scrollBounceBehavior(.basedOnSize)
