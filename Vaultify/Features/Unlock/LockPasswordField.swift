@@ -50,7 +50,7 @@ struct LockPasswordField: View {
     private var loginButton: some View {
         // Neutral primary fill (Apple-style): black in light, white in dark —
         // matching the app's neutral CTAs; the glyph is the opposing background.
-        let onTint = Color(.systemBackground)
+        let onTint = Color.platformBackground
         let side: CGFloat = 36
         return Button(action: onSubmit) {
             ZStack {

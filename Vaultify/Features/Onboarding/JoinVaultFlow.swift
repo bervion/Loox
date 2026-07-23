@@ -35,10 +35,10 @@ struct JoinVaultFlow: View {
                 // are plain white (QR pairing, biometric); form screens use the
                 // grouped gray so white fields stay visible.
                 .background(canvasColor.ignoresSafeArea())
-                .navigationBarTitleDisplayMode(.inline)
+                .platformNavigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     if step != .biometric {
-                        ToolbarItem(placement: .topBarLeading) {
+                        ToolbarItem(placement: .platformTopBarLeading) {
                             Button(action: back) { Image(systemName: "chevron.backward") }
                                 .accessibilityLabel(Text("Back"))
                         }
@@ -208,15 +208,15 @@ struct RestoreMethodSheet: View {
             .toolbar {
                 // The system toolbar close (glass pill on iOS 26), tinted by the
                 // app's neutral default.
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .platformTopBarLeading) {
                     Button { dismiss() } label: { Image(systemName: "xmark") }
                         .accessibilityLabel(Text("Close"))
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
         }
         .tint(Color.primary)
-        .presentationDetents([.large])
+        .platformPresentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
 

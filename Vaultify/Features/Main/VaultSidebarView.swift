@@ -14,6 +14,16 @@ struct VaultSidebarView: View {
     /// typing drives the Search detail live via `SearchEntry.query`.
     @State private var sidebarSearch = ""
 
+    /// Always-visible field on iPad (`navigationBarDrawer` is iOS-only);
+    /// macOS uses the native sidebar placement, which is always visible too.
+    private static var sidebarSearchPlacement: SearchFieldPlacement {
+        #if os(macOS)
+        .sidebar
+        #else
+        .navigationBarDrawer(displayMode: .always)
+        #endif
+    }
+
     var body: some View {
         @Bindable var uiState = uiState
         // Permanent sidebar (iPad-Settings idiom, owner 260723): visibility pinned
@@ -31,7 +41,7 @@ struct VaultSidebarView: View {
             // opens straight with the search field and the avatar row.
             .navigationTitle("")
             .searchable(text: $sidebarSearch,
-                        placement: .navigationBarDrawer(displayMode: .always),
+                        placement: Self.sidebarSearchPlacement,
                         prompt: "Search vault")
             // Every keystroke re-targets the Search detail with the live query;
             // `SearchScreen` consumes `.query` both on entry and in place.

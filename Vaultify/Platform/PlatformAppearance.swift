@@ -55,3 +55,26 @@ import AppKit
         #endif
     }
 }
+
+// MARK: - Cross-platform system colors
+
+extension Color {
+    /// `UIColor.systemBackground` on iOS, the window background on macOS —
+    /// the adaptive plain page color the brand surfaces flood.
+    static var platformBackground: Color {
+        #if os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+        #else
+        Color(uiColor: .systemBackground)
+        #endif
+    }
+
+    /// `UIColor.systemGray` / `NSColor.systemGray`.
+    static var platformSystemGray: Color {
+        #if os(macOS)
+        Color(nsColor: .systemGray)
+        #else
+        Color(uiColor: .systemGray)
+        #endif
+    }
+}

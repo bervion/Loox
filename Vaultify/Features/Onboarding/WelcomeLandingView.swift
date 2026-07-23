@@ -48,7 +48,7 @@ struct WelcomeLandingView: View {
             ZStack {
                 // Plain white page (adaptive: black in dark mode). Also the color
                 // the launch bloom floods, so the hand-off is seamless.
-                Color(.systemBackground).ignoresSafeArea()
+                Color.platformBackground.ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -113,7 +113,7 @@ struct WelcomeLandingView: View {
                 // Deliberate adaptive black/white pill (the demo look the user
                 // asked for): label sits on the primary fill, so it uses the
                 // background color rather than a themed text token.
-                .foregroundStyle(Color(.systemBackground))
+                .foregroundStyle(Color.platformBackground)
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
                 .background(Capsule().fill(Color.primary))

@@ -120,7 +120,7 @@ struct AliasDetailScreen: View {
         }
         .alert("Change forwarding address", isPresented: $editingDestination) {
             TextField("Email", text: $destinationDraft)
-                .keyboardType(.emailAddress).textInputAutocapitalization(.never)
+                .platformKeyboardType(.emailAddress).platformAutocapitalization(.never)
             Button("Cancel", role: .cancel) {}
             Button("Save") { changeDestination() }
         } message: {

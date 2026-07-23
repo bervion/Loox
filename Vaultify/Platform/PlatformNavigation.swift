@@ -96,3 +96,33 @@ extension ToolbarItemPlacement {
         #endif
     }
 }
+
+/// Platform-neutral sheet detents: applied on iOS, a no-op on macOS (native
+/// macOS sheets have no detent API; they size to content).
+enum PlatformDetent { case medium, large }
+
+extension View {
+    @ViewBuilder
+    func platformPresentationDetents(_ detents: [PlatformDetent]) -> some View {
+        #if os(iOS)
+        presentationDetents(Set(detents.map { detent in
+            switch detent {
+            case .medium: PresentationDetent.medium
+            case .large: PresentationDetent.large
+            }
+        }))
+        #else
+        self
+        #endif
+    }
+
+    /// Hide the navigation bar's background (screens drawing their own chrome).
+    /// `.navigationBar` isn't a macOS toolbar placement — no-op there.
+    func platformHiddenNavigationBarBackground() -> some View {
+        #if os(iOS)
+        return toolbarBackground(.hidden, for: .navigationBar)
+        #else
+        return self
+        #endif
+    }
+}

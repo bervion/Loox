@@ -34,9 +34,9 @@ struct OnboardingFlow: View {
                 // Native nav chrome for the standard iOS back (to welcome).
                 NavigationStack {
                     CreateMasterPasswordView(onSubmit: createVault)
-                        .navigationBarTitleDisplayMode(.inline)
+                        .platformNavigationBarTitleDisplayMode(.inline)
                         .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
+                            ToolbarItem(placement: .platformTopBarLeading) {
                                 Button { step = .welcome } label: { Image(systemName: "chevron.backward") }
                                     .accessibilityLabel(Text("Back"))
                             }
@@ -121,9 +121,9 @@ struct OnboardingFlow: View {
                                         @ViewBuilder _ content: () -> Content) -> some View {
         NavigationStack {
             content()
-                .navigationBarTitleDisplayMode(.inline)
+                .platformNavigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
+                    ToolbarItem(placement: .platformTopBarLeading) {
                         Button(action: back) { Image(systemName: "chevron.backward") }
                             .accessibilityLabel(Text("Back"))
                     }
@@ -194,7 +194,7 @@ private struct OnboardingDoneStep: View {
     var body: some View {
         ZStack {
             // The color the launch bloom floods, so the hand-off is seamless.
-            Color(.systemBackground).ignoresSafeArea()
+            Color.platformBackground.ignoresSafeArea()
             OnboardingScrollingStep {
                 VStack(spacing: 0) {
                     Spacer(minLength: Space.s8)

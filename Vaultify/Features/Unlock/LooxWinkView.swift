@@ -30,7 +30,7 @@ struct LooxWinkView: View {
             // (title + subtitle sit below it) — start there and glide down.
             let startScale = 132 / side
             ZStack {
-                Color(.systemBackground).ignoresSafeArea()
+                Color.platformBackground.ignoresSafeArea()
                 LooxCloudAnimationView(controller: controller)
                     .frame(width: side, height: side * 0.82)
                     .scaleEffect(settled ? 1 : startScale)

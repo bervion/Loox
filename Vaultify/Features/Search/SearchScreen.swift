@@ -432,11 +432,18 @@ private struct SearchScopeBar: View {
 /// this compiles on any Xcode and the fix ships in CI/TestFlight builds too.
 private struct FlushSearchHeaderChrome: ViewModifier {
     @ViewBuilder func body(content: Content) -> some View {
+        // iOS-only by intent (the tab-bar search field exists there); macOS
+        // keeps its normal chrome — and `.navigationBar` isn't a macOS
+        // toolbar placement anyway.
+        #if os(iOS)
         if #available(iOS 26, *) {
             content.toolbar(.hidden, for: .navigationBar)
         } else {
             content
         }
+        #else
+        content
+        #endif
     }
 }
 

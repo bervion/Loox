@@ -10,12 +10,9 @@ import SwiftUI
 /// show/hide control interactive inside the active edit mode.
 struct HomeLayoutEditor: View {
     @Environment(AppEnvironment.self) private var env
-    /// Permanently ACTIVE: this view is resident in Home's ZStack at opacity 0
-    /// (see HomeScreen), so UIKit's editing layout — including its late,
-    /// non-animated passes that used to land as visible snaps — runs once at
-    /// launch while the editor is invisible. By the time the user opens edit
-    /// mode the handles are already laid out; the toggle animates opacity only.
-    @State private var editMode: EditMode = .active
+    // Edit mode lives in `ActiveEditModeIfAvailable` (bottom of file): iOS
+    // keeps the list permanently in `.active` edit mode; macOS has no
+    // `EditMode` and reorders without it.
 
     /// Height reserved at the top so the first row clears the floating header overlay —
     /// mirrors `VaultHeaderScrollSpacer`'s inset so the editor lines up with the feed.
@@ -42,12 +39,12 @@ struct HomeLayoutEditor: View {
                     .themedForeground(.secondary)
             }
         }
-        .listStyle(.insetGrouped)
+        .platformInsetGroupedListStyle()
         .scrollContentBackground(.hidden)
         .padding(.top, headerInset)
         // Binding (not a selection binding) keeps rows tappable and the
         // checkmark toggle working while the handles are up.
-        .environment(\.editMode, $editMode)
+        .modifier(ActiveEditModeIfAvailable())
     }
 
     private func row(_ section: HomeSection) -> some View {
@@ -125,4 +122,18 @@ private struct HomeSectionVisibilityToggleStyle: ToggleStyle {
         .frame(width: 22, height: 22)
         .animation(Motion.standard, value: on)
     }
+}
+
+/// Permanently-active edit mode where the platform has one. iOS: the resident
+/// editor pre-runs UIKit's editing layout at launch (see the header comment);
+/// macOS has no `EditMode` environment and `.onMove` works without it.
+private struct ActiveEditModeIfAvailable: ViewModifier {
+    #if os(iOS)
+    @State private var editMode: EditMode = .active
+    func body(content: Content) -> some View {
+        content.environment(\.editMode, $editMode)
+    }
+    #else
+    func body(content: Content) -> some View { content }
+    #endif
 }

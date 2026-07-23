@@ -128,7 +128,9 @@ struct HomeHeaderBar: View {
     /// under Reduce Transparency.
     @ViewBuilder private var doneButton: some View {
         #if compiler(>=6.2)
-        if #available(iOS 26, *), !reduceTransparency {
+        // Both platform clauses matter: a bare `iOS 26` check passes on macOS
+        // through the `*` clause and then trips the macOS-26 glass API.
+        if #available(iOS 26, macOS 26, *), !reduceTransparency {
             Button {
                 withAnimation(editModeAnimation) { isEditingLayout = false }
             } label: {

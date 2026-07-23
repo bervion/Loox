@@ -11,7 +11,9 @@
 
 import Combine
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 enum LooxLaunchPhase: Equatable {
     case idle
@@ -59,7 +61,9 @@ final class LooxLaunchController: ObservableObject {
 
 /// Impact taps aligned with the launch keyframes: acknowledge the press,
 /// mark the logo snapping back, punch the burst, and ease into the reveal.
+/// macOS has no impact haptics — the launch animation simply plays silent.
 enum LooxLaunchHaptics {
+    #if canImport(UIKit)
     static func play() {
         let soft = UIImpactFeedbackGenerator(style: .soft)
         let light = UIImpactFeedbackGenerator(style: .light)
@@ -86,4 +90,7 @@ enum LooxLaunchHaptics {
             }
         }
     }
+    #else
+    static func play() {}
+    #endif
 }
