@@ -10,6 +10,25 @@ struct VaultSidebarList: View {
 
     var body: some View {
         List(selection: $selection) {
+            // Persona avatar row at the very top — the iPad-Settings idiom
+            // (avatar + name + subtitle). Selecting it opens Profile in the
+            // detail column; Home drops its own identity card at regular width.
+            Section {
+                HStack(spacing: Space.s3) {
+                    PersonaAvatarView(size: 40)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(verbatim: PersonaDisplay.name(env))
+                            .vaultType(.headline).themedForeground().lineLimit(1)
+                        Text(verbatim: PersonaDisplay.subtitle(env))
+                            .vaultType(.caption).themedForeground(.secondary).lineLimit(1)
+                    }
+                }
+                .padding(.vertical, Space.s1)
+                .tag(UIStateStore.SidebarSelection.profile)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(verbatim: "\(PersonaDisplay.name(env)), \(PersonaDisplay.subtitle(env))"))
+            }
+
             Section {
                 ForEach(VaultTab.allCases) { tab in
                     Label { Text(tab.accessibilityLabel) } icon: { PolarisIcon(tab.icon) }
@@ -28,11 +47,6 @@ struct VaultSidebarList: View {
                 } header: {
                     Text("Spaces")
                 }
-            }
-
-            Section {
-                Label { Text("Profile") } icon: { PolarisIcon(Icons.person) }
-                    .tag(UIStateStore.SidebarSelection.profile)
             }
         }
         // System sidebar appearance — Liquid Glass on iOS 26, translucent

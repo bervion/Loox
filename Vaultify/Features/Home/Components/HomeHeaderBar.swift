@@ -118,7 +118,9 @@ struct HomeHeaderBar: View {
     /// The edit-mode transition — the app's low-bounce spring, collapsed to instant under
     /// Reduce Motion. Drives both the header choreography and Home's content cross-fade.
     private var editModeAnimation: Animation? {
-        reduceMotion ? nil : Motion.spring
+        // A short plain fade, not a spring: the toggle cross-fades two heavy
+        // resident layers, and the springy scale read as a hitch (owner 260723).
+        reduceMotion ? nil : .easeInOut(duration: 0.2)
     }
 
     /// Done — the native iOS Liquid-Glass button (iOS 26+) with a white check, sitting
