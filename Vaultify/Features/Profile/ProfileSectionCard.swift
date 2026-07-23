@@ -58,7 +58,10 @@ struct ProfileSectionCard: View {
             } else {
                 emptyState
             }
+            // Apple grouped-card divider: inset to the text's leading edge,
+            // running through to the trailing edge — never full-bleed left.
             Divider().background(Color(rgb: env.theme.active.separatorOpaque))
+                .padding(.leading, Space.s4)
             chooseRow
         }
         .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
@@ -69,7 +72,10 @@ struct ProfileSectionCard: View {
     @ViewBuilder private func fieldRows(_ item: VaultItem) -> some View {
         let fields = item.fields.filter { !$0.isEmpty }
         ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
-            if index > 0 { Divider().background(Color(rgb: env.theme.active.separatorOpaque)) }
+            if index > 0 {
+                Divider().background(Color(rgb: env.theme.active.separatorOpaque))
+                    .padding(.leading, Space.s4)
+            }
             ProfileCopyFieldRow(label: appLabel(field.label),
                                 value: field.value,
                                 protected: field.protected)
