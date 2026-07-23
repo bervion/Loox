@@ -141,25 +141,36 @@ struct LooxHubScreen: View {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())],
                       spacing: Space.s3) {
                 LooxFeatureTile(title: "Private Email", icon: Icons.mail,
-                                metric: usageMetric(retainedAliasCount, of: quotas.retainedAliases)) {
+                                metric: serviceMetric(.privateEmail,
+                                                      usageMetric(retainedAliasCount, of: quotas.retainedAliases)),
+                                progress: serviceProgress(.privateEmail, retainedAliasCount, of: quotas.retainedAliases),
+                                status: serviceStatus(.privateEmail)) {
                     PersonaAliasesScreen()
                 }
                 LooxFeatureTile(title: "Share Links", icon: Icons.share,
-                                metric: rollingMetric(linkCreates30d, of: quotas.linkCreates30d)) {
+                                metric: serviceMetric(.shareLink,
+                                                      rollingMetric(linkCreates30d, of: quotas.linkCreates30d)),
+                                progress: serviceProgress(.shareLink, linkCreates30d, of: quotas.linkCreates30d),
+                                status: serviceStatus(.shareLink)) {
                     NotificationsScreen()
                 }
                 // Quick View's user-facing name; its activity shares the
                 // notifications surface, so the tile lands there too.
                 LooxFeatureTile(title: "Open on Computer", icon: Icons.scanCode,
-                                metric: rollingMetric(quickViewCompletions30d, of: quotas.quickViewApprovals30d)) {
+                                metric: serviceMetric(.quickView,
+                                                      rollingMetric(quickViewCompletions30d, of: quotas.quickViewApprovals30d)),
+                                progress: serviceProgress(.quickView, quickViewCompletions30d, of: quotas.quickViewApprovals30d),
+                                status: serviceStatus(.quickView)) {
                     NotificationsScreen()
                 }
                 LooxFeatureTile(title: "Profiles", icon: Icons.person,
-                                metric: usageMetric(env.repository.personas.count, of: quotas.personas)) {
+                                metric: usageMetric(env.repository.personas.count, of: quotas.personas),
+                                progress: quotaFraction(env.repository.personas.count, of: quotas.personas)) {
                     PersonaSwitcherScreen()
                 }
                 LooxFeatureTile(title: "Sharing", icon: Icons.organization,
-                                metric: usageMetric(outgoingRecipientCount, of: quotas.outgoingRecipients)) {
+                                metric: usageMetric(outgoingRecipientCount, of: quotas.outgoingRecipients),
+                                progress: quotaFraction(outgoingRecipientCount, of: quotas.outgoingRecipients)) {
                     FamilyScreen()
                 }
                 // Watchtower owns its own NavigationStack (it is a tab root), so
@@ -168,7 +179,49 @@ struct LooxHubScreen: View {
                                 metric: watchtowerMetric,
                                 action: { env.uiState.selectedTab = .watchtower })
             }
+            if showsQuotas {
+                Text("Share Links and Open on Computer count the last 30 days.")
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+                    .padding(.top, Space.s1)
+            }
         }
+        // Screen-open health probe for the connected-service dots — contextual
+        // and non-blocking (INV-CAP-02: never at startup, never per-action).
+        // Sequential on purpose: the store is MainActor state, and the probes
+        // are quick ready-endpoint reads guarded by each service's breaker.
+        .task {
+            for id in [CapabilityID.privateEmail, .shareLink, .quickView]
+            where env.capabilities.userPreference(id) {
+                await CapabilityHealthProbe.probe(id, store: env.capabilities)
+            }
+        }
+    }
+
+    // MARK: Connected-service presentation (dot + off-state metric)
+
+    private func serviceStatus(_ id: CapabilityID) -> CapabilityDisplayStatus {
+        CapabilityDisplayStatus.resolve(id, store: env.capabilities)
+    }
+
+    /// Preference off ("ẩn tất cả liên quan"): every other surface hides, but the
+    /// membership overview keeps the tile with a gray dot and an explicit
+    /// "Off in Settings" line — a paying subscriber must be able to see WHERE
+    /// the feature went, or the hidden state reads as a broken plan.
+    private func serviceMetric(_ id: CapabilityID, _ liveMetric: String) -> String {
+        env.capabilities.userPreference(id) ? liveMetric : appString("Off in Settings")
+    }
+
+    private func serviceProgress(_ id: CapabilityID, _ used: Int, of cap: Int?) -> Double? {
+        guard env.capabilities.userPreference(id) else { return nil }
+        return quotaFraction(used, of: cap)
+    }
+
+    /// Quota fraction for the thin tile bar — only once quotas are real
+    /// (`showsQuotas`), and never for uncapped (nil) quotas.
+    private func quotaFraction(_ used: Int, of cap: Int?) -> Double? {
+        guard showsQuotas, let cap, cap > 0 else { return nil }
+        return Double(used) / Double(cap)
     }
 
     // MARK: Live usage counts (device-local, display-only)
@@ -210,17 +263,19 @@ struct LooxHubScreen: View {
         #endif
     }
 
-    /// "3 of 10 in use" with quotas visible; a plain "3 in use" before that.
+    /// Compact "3/10" with quotas visible (the tile's progress bar and title
+    /// carry the meaning; spelled-out copy truncated on small iPhones); a plain
+    /// "3 in use" before quotas launch.
     private func usageMetric(_ used: Int, of cap: Int?) -> String {
         if showsQuotas, let cap {
-            return appString("\(used) of \(cap) in use")
+            return "\(used)/\(cap)"
         }
         return appString("\(used) in use")
     }
 
     private func rollingMetric(_ used: Int, of cap: Int) -> String {
         if showsQuotas {
-            return appString("\(used) of \(cap) in 30 days")
+            return "\(used)/\(cap)"
         }
         return appString("\(used) in 30 days")
     }
