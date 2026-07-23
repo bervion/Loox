@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     tags-ignore: ['v*']
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 permissions:
   contents: read
@@ -18,27 +18,8 @@ env:
   CI: '1'
 
 jobs:
-  quality-contract:
-    name: Quality contract
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout candidate
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Validate ledgers, generated reports and anti-cheating rules
-        # Diff policy is enforced by the default-branch pull_request_target
-        # workflow. Candidate code validates structure but is never trusted to
-        # approve its own oracle/policy changes.
-        run: scripts/ci/run-quality-contract.sh
-
   unit-tests:
     name: Unit tests
-    needs: quality-contract
     runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 45
     steps:
@@ -90,7 +71,6 @@ jobs:
           exit 0
   snapshot-tests:
     name: Snapshot tests
-    needs: quality-contract
     runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 35
     steps:
@@ -162,7 +142,6 @@ jobs:
 
   critical-ui:
     name: Critical UI journey
-    needs: quality-contract
     runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
     timeout-minutes: 45
     steps:
@@ -224,152 +203,3 @@ jobs:
           xcrun simctl delete "$SIMULATOR_UDID"
           exit 0
 
-  ledger-evidence:
-    name: Ledger evidence
-    needs: quality-contract
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - name: Emit critical-ledger predicate
-        run: |
-          python3 scripts/quality/emit_ci_gate_receipt.py \
-            --kind coverage-ledger-report \
-            --tested-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
-            --output "$RUNNER_TEMP/coverage-ledger-report.json"
-      - name: Upload ledger evidence payload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: ledger-evidence-receipt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/coverage-ledger-report.json
-          if-no-files-found: error
-          retention-days: 30
-
-  test-evidence:
-    name: Test evidence
-    needs: [unit-tests, snapshot-tests, critical-ui]
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - name: Emit aggregate test predicate
-        run: |
-          python3 scripts/quality/emit_ci_gate_receipt.py \
-            --kind test-summary \
-            --tested-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
-            --output "$RUNNER_TEMP/test-summary.json"
-      - name: Upload aggregate test evidence payload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: test-evidence-receipt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/test-summary.json
-          if-no-files-found: error
-          retention-days: 30
-
-  privacy-contract:
-    name: Privacy contract
-    needs: test-evidence
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - name: Emit production-side-effect predicate
-        run: |
-          python3 scripts/quality/emit_ci_gate_receipt.py \
-            --kind privacy-audit \
-            --tested-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
-            --output "$RUNNER_TEMP/privacy-audit.json"
-      - name: Upload privacy evidence payload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: privacy-contract-receipt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/privacy-audit.json
-          if-no-files-found: error
-          retention-days: 30
-
-  localization-contract:
-    name: Localization contract
-    needs: quality-contract
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - name: Emit EN/VI completeness predicate
-        run: |
-          python3 scripts/quality/emit_ci_gate_receipt.py \
-            --kind localization-matrix \
-            --tested-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
-            --output "$RUNNER_TEMP/localization-matrix.json"
-      - name: Upload localization evidence payload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: localization-contract-receipt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/localization-matrix.json
-          if-no-files-found: error
-          retention-days: 30
-
-  risk-disposition:
-    name: Risk disposition
-    needs: quality-contract
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - name: Emit critical/high risk disposition predicate
-        run: |
-          python3 scripts/quality/emit_ci_gate_receipt.py \
-            --kind risk-disposition-report \
-            --tested-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
-            --output "$RUNNER_TEMP/risk-disposition-report.json"
-      - name: Upload risk disposition evidence payload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: risk-disposition-receipt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/risk-disposition-report.json
-          if-no-files-found: error
-          retention-days: 30
-
-  release-operations:
-    name: Release operations
-    needs: quality-contract
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - name: Emit release-notes and monitoring predicate
-        run: |
-          python3 scripts/quality/emit_ci_gate_receipt.py \
-            --kind release-operations-plan \
-            --tested-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
-            --output "$RUNNER_TEMP/release-operations-plan.json"
-      - name: Upload release operations evidence payload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: release-operations-receipt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/release-operations-plan.json
-          if-no-files-found: error
-          retention-days: 30

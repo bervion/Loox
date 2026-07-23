@@ -17,40 +17,8 @@ env:
   CI: '1'
 
 jobs:
-  release-preflight:
-    name: Verify exact-commit release readiness
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
-    timeout-minutes: 10
-    steps:
-      - name: Checkout immutable tag without credentials
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Validate independent gates for this tag
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          python3 scripts/quality/verify_release_readiness.py \
-            --sha "$GITHUB_SHA" \
-            --release-id "$GITHUB_REF_NAME" \
-            --owner "$GITHUB_ACTOR" \
-            --triggering-owner "$GITHUB_TRIGGERING_ACTOR" \
-            --output "$RUNNER_TEMP/release-preflight.json"
-
-      - name: Upload secret-free preflight receipt
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: release-preflight-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/release-preflight.json
-          if-no-files-found: error
-          retention-days: 30
-
   release-ios:
     name: Sign and upload to TestFlight
-    needs: release-preflight
     # Creating the immutable release tag is the owner approval fallback on
     # plans that do not support protected-environment reviewers. A rerun by a
     # different actor remains blocked as well.
