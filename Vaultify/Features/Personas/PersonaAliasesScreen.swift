@@ -143,22 +143,32 @@ struct PersonaAliasesScreen: View {
         .background(Color(rgb: env.theme.active.accentSoft), in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
+    /// Create affordances render only while creation can actually run — a
+    /// visible button that silently swallows the tap (the old `guardEmail`
+    /// early-return) reads as a broken screen. The banner above the list
+    /// explains WHY creation is gone in every non-available state.
+    private var canCreate: Bool {
+        env.capabilities.availability(.privateEmail, operation: .create) == .available
+    }
+
     @ViewBuilder private func personaAliasSection(_ persona: Persona) -> some View {
         Section("Reusable addresses") {
             ForEach(env.repository.reusableAliases(forPersona: persona.id)) { alias in
                 aliasRow(alias, subtitle: alias.label ?? persona.displayName)
             }
-            Button {
-                guardQuota { guardEmail(persona) { promptReusableLabel = true } }
-            } label: {
-                Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
-            }
-            .alert("New reusable address", isPresented: $promptReusableLabel) {
-                TextField("Label", text: $reusableLabelDraft)
-                Button("Cancel", role: .cancel) { reusableLabelDraft = "" }
-                Button("Save") { createReusable(persona) }
-            } message: {
-                Text("Optional label like “Clients”.")
+            if canCreate {
+                Button {
+                    guardQuota { guardEmail(persona) { promptReusableLabel = true } }
+                } label: {
+                    Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
+                }
+                .alert("New reusable address", isPresented: $promptReusableLabel) {
+                    TextField("Label", text: $reusableLabelDraft)
+                    Button("Cancel", role: .cancel) { reusableLabelDraft = "" }
+                    Button("Save") { createReusable(persona) }
+                } message: {
+                    Text("Optional label like “Clients”.")
+                }
             }
         }
         .listRowBackground(VaultColors.surface)
@@ -170,8 +180,10 @@ struct PersonaAliasesScreen: View {
             ForEach(perSite) { alias in
                 aliasRow(alias, subtitle: alias.boundDomain)
             }
-            Button { guardQuota { guardEmail(persona) { showingPerSiteEditor = true } } } label: {
-                Label { Text("Add site-specific address") } icon: { PolarisIcon(Icons.addCircle) }
+            if canCreate {
+                Button { guardQuota { guardEmail(persona) { showingPerSiteEditor = true } } } label: {
+                    Label { Text("Add site-specific address") } icon: { PolarisIcon(Icons.addCircle) }
+                }
             }
         }
         .listRowBackground(VaultColors.surface)
@@ -256,6 +268,13 @@ struct PersonaAliasesScreen: View {
     // MARK: Relay calls (busy + error surfaced; local state only changes on success)
 
     private func activate(_ alias: EmailAlias) {
+        // "Tap to activate" on a reserved alias is a growth mutation: with the
+        // feature off in Settings it must not reach the relay (the create
+        // buttons already hide; this row action is the remaining path).
+        guard env.capabilities.userPreference(.privateEmail) else {
+            errorMessage = appString("Private Email is turned off in Settings.")
+            return
+        }
         run(alias) { try await env.relay.activate(alias) }
     }
 

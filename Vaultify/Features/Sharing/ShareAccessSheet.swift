@@ -459,13 +459,23 @@ struct ShareAccessSheet: View {
 
     /// Entry chooser: a portable encrypted link vs the approval-based iCloud
     /// share. The quick link is listed first — it's the "just send it" path.
+    /// Share Links off in Settings → the Quick Link path disappears from the
+    /// chooser entirely (a listed-but-dead option is the confusion the
+    /// preference is meant to remove). Operator/outage states keep the row:
+    /// `QuickLinkView` explains those with their own copy.
+    private var quickLinkOffered: Bool {
+        env.capabilities.availability(.shareLink, operation: .create) != .disabledByUser
+    }
+
     private var chooseView: some View {
         Form {
             Section {
-                shareOptionRow(icon: Icons.globe,
-                               title: "Quick Link",
-                               subtitle: "Create an encrypted link that opens anywhere, no app needed. Expires automatically.") {
-                    step = .quickLink
+                if quickLinkOffered {
+                    shareOptionRow(icon: Icons.globe,
+                                   title: "Quick Link",
+                                   subtitle: "Create an encrypted link that opens anywhere, no app needed. Expires automatically.") {
+                        step = .quickLink
+                    }
                 }
                 shareOptionRow(icon: Icons.shield,
                                title: "Share with a Loox user",
@@ -474,7 +484,9 @@ struct ShareAccessSheet: View {
                     Task { await enter() }
                 }
             } footer: {
-                Text("A quick link is a one-time snapshot of the fields you pick. Sharing with a Loox user stays live and can require your approval for every use.")
+                if quickLinkOffered {
+                    Text("A quick link is a one-time snapshot of the fields you pick. Sharing with a Loox user stays live and can require your approval for every use.")
+                }
             }
             .listRowBackground(VaultColors.surface)
         }

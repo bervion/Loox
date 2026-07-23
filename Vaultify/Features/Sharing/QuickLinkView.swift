@@ -24,6 +24,9 @@ struct QuickLinkView: View {
     @State private var seeded = false
     /// Link pending the destructive revoke confirmation.
     @State private var revokeTarget: LooxLinkRecord?
+    /// Revoke failure shown as an alert — the config form (selections, expiry)
+    /// must survive a failed revoke, so this never routes through `step`.
+    @State private var revokeError: String?
     @State private var paywallContext: LooxPaywallContext?
 
     private var item: VaultItem? { env.repository.item(id: itemID) }
@@ -45,11 +48,19 @@ struct QuickLinkView: View {
             } message: {
                 Text("Anyone who has the link loses access immediately.")
             }
+            .alert(Text(verbatim: revokeError ?? ""), isPresented: revokeErrorBinding) {
+                Button("OK", role: .cancel) {}
+            }
     }
 
     private var revokeDialogBinding: Binding<Bool> {
         Binding(get: { revokeTarget != nil },
                 set: { if !$0 { revokeTarget = nil } })
+    }
+
+    private var revokeErrorBinding: Binding<Bool> {
+        Binding(get: { revokeError != nil },
+                set: { if !$0 { revokeError = nil } })
     }
 
     @ViewBuilder private var content: some View {
@@ -170,6 +181,13 @@ struct QuickLinkView: View {
                         .vaultType(.footnote).themedForeground(.secondary)
                         .frame(maxWidth: .infinity)
                         .listRowBackground(Color.clear)
+                case .disabledByUser:
+                    // Feature off by the user's own choice: no dead disabled
+                    // button — just the one line saying where it lives.
+                    Text(verbatim: shareStateFootnote(createState))
+                        .vaultType(.footnote).themedForeground(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
                 default:
                     createButton.disabled(true)
                     Text(verbatim: shareStateFootnote(createState))
@@ -251,7 +269,10 @@ struct QuickLinkView: View {
         do {
             try await env.looxLinks.revoke(record)
         } catch {
-            step = .failed(error.localizedDescription)
+            // Alert, not `step = .failed`: tearing down the whole form over a
+            // failed revoke threw away the user's field selection and expiry.
+            revokeError = error.localizedDescription
+            Haptics.error()
         }
         revokeTarget = nil
     }
