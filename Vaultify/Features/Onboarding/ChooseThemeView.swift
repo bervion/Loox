@@ -31,6 +31,8 @@ struct ChooseThemeView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
+            // Regular width (iPad/Mac): centered form column, not a full-screen stretch.
+            .vaultContentWidth(.form)
         }
         // Onboarding concept: plain white page (the preview cards carry their
         // own surfaces and selection rings).

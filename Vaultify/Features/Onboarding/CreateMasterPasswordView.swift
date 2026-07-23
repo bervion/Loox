@@ -55,6 +55,8 @@ struct CreateMasterPasswordView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Space.s6)
+            // Regular width (iPad/Mac): centered form column, not a full-screen stretch.
+            .vaultContentWidth(.form)
         }
         // Apple-Account look: a plain white page with GRAY capsule fields.
         .background(Color(rgb: theme.background).ignoresSafeArea())

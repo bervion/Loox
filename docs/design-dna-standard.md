@@ -100,6 +100,11 @@ A screen passes only if it renders correctly in ALL of:
 
 - **Widths**: iPhone SE (375pt) and Pro Max (430pt) — no truncated VI labels, no squeezed
   grids; if 4 don't fit, use 2×2; test with the LONGEST localized string, which is usually VI.
+- **Regular width (iPad, later Mac)**: iPad 11" (1180×820pt landscape) fullscreen and a
+  Split View pane — full-screen surfaces (onboarding, lock) clamp to a centered column via
+  `.vaultContentWidth(_:)` (form 560 / reading 640 / wide 960) instead of stretching iPhone
+  layouts; detail-column screens inside the sidebar shell span their pane like iPad Settings;
+  tile grids use adaptive columns, never a fixed count.
 - **Dynamic Type**: default, XL, and accessibility XXL — text scales without clipping;
   `minimumScaleFactor` only as a last resort and never below 0.7; layout reflows (grids →
   fewer columns) rather than shrinking text into illegibility.

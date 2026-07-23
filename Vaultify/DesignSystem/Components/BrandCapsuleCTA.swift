@@ -25,5 +25,8 @@ struct BrandCapsuleCTA: View {
         .animation(.easeInOut(duration: 0.2), value: enabled)
         .padding(.horizontal, Space.s6)
         .padding(.bottom, Space.s4)
+        // Some call sites pin this CTA outside the clamped step column — clamp
+        // here too so it can never render as a screen-spanning bar on iPad.
+        .vaultContentWidth(.form)
     }
 }
