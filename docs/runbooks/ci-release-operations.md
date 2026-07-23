@@ -10,8 +10,6 @@ CI runs for pull requests to `main` and non-release pushes to `main`.
 
 | Job name | Host | Purpose |
 |---|---|---|
-| Trusted PR policy | self-hosted `vaultify-ci` | Base-branch scanner over the untrusted API diff; exact-head status and owner gate |
-| Quality contract | self-hosted `vaultify-ci` | Ledger, report, schema, diff and anti-cheating checks |
 | Unit tests | self-hosted `vaultify-ci` | XCTest and Swift Testing in `VaultifyTests` |
 | Snapshot tests | self-hosted `vaultify-ci` | Approved `VaultifySnapshotTests` comparisons |
 | Critical UI journey | self-hosted `vaultify-ci` | Native XCUITest followed by independent Maestro flow |
@@ -45,54 +43,6 @@ GitHub artifact names are `unit-test-receipt-<attempt>`,
 `privacy-contract-receipt-<attempt>`, `localization-contract-receipt-<attempt>`,
 `risk-disposition-receipt-<attempt>` and `release-operations-receipt-<attempt>`.
 The manual recovery workflow emits `recovery-rehearsal-receipt-<attempt>`.
-
-## Agent review trust boundary
-
-Pull-request titles, bodies, diffs, comments and repository files are attacker-controlled.
-This workflow therefore does not send PR content to the general tool-capable GoClaw webhook.
-Discord receives only a no-mentions review-needed notification. Rex must be started by the
-owner through a bounded verification lane. Automatic Rex review remains release-blocked
-until the server provides and receipts all three controls: a read-only repository token,
-an allowlisted read-only tool set with no general shell/write capability, and an ephemeral
-per-PR workspace/memory scope. Prompt wording is not accepted as a substitute for those
-controls.
-
-## Required-check rollout
-
-Do not configure branch protection from unproven job names. First push this change as a
-pull request and obtain one green canary run. Confirm these exact check names in GitHub:
-
-- `Quality contract`;
-- `Trusted PR policy`;
-- `Unit tests`;
-- `Snapshot tests`;
-- `Critical UI journey`.
-
-The bootstrap PR that first installs `Trusted PR policy` cannot be protected by code that is
-not yet on the default branch; it requires manual owner review. After it lands, run a second
-green canary and only then require all five names on `main`.
-
-Rollout status: the merged bootstrap canary (PR #134, green run 29797704103) proved
-`Quality contract`, `Unit tests`, `Snapshot tests` and `Critical UI journey` under those
-exact names. `Trusted PR policy` executes from the default branch only, so it is proven by
-the first pull request opened after that merge; the five contexts become required on `main`
-once that status reports success on the candidate head.
-The required `Trusted PR policy` context is a commit status written by the trusted workflow
-to the verified PR head SHA; do not substitute the base-ref workflow conclusion.
-For a protected TCB change, approve the exact PR head and then re-run its existing
-`pull_request_target` policy run. Do not add `pull_request_review` to this privileged
-workflow: that event does not provide the same default-branch workflow trust boundary.
-
-On a personal private repository, same-repository contributor workflows can request
-`statuses: write` and post another status under the GitHub Actions App. Consequently,
-required check names are defense in depth, not the sole authorization boundary. The
-non-spoofable human boundary is a fresh `bervion` CODEOWNER approval: dismiss stale reviews,
-require code-owner review, require approval by someone other than the last pusher, enforce
-protection for admins, and require all conversations resolved. Do not claim the status itself
-is unforgeable until contributions are fork-only or a separately authenticated GitHub App
-owns the expected status source.
-Until then, the existing review rule remains the enforced branch gate and the missing
-required checks remain an explicit rollout gap.
 
 ## Release boundary
 
