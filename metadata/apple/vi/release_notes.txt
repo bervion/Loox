@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện độ ổn định khi chuyển sang chế độ chỉnh sửa ở màn hình chính, giúp thao tác mượt mà hơn.
+Bản cập nhật này cải thiện trải nghiệm ứng dụng với các chỉ báo gói dịch vụ và trạng thái rõ ràng hơn, cùng cải tiến cho màn hình nhỏ và tiếng Việt. Bảo mật kho mật khẩu được tăng cường để phiên đã khóa luôn được giữ khóa, ngay cả khi buộc khởi động lại ứng dụng.

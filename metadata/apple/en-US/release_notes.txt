@@ -1,1 +1,1 @@
-This update improves stability when switching to edit mode on the Home screen, making the transition smoother.
+This update refines the app experience with clearer plan and status indicators, plus improvements for smaller screens and Vietnamese text. Vault security has been strengthened so a locked session always stays locked, even after a forced app restart.

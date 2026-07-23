@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.38.0] - 2026-07-23
+
+### Added
+- iCloud-style plan quota tiles, service status dots, and offline-first capability hardening (#167)
+- production quality gates, deterministic UI-test seam and isolated CI/release workflows (#134)
+
+### Fixed
+- small-screen UI defects and Vietnamese localization audit (#166)
+- persist the deliberate lock so force-quit cannot bypass slide-to-confirm (#144)
+
+### Changed
+- retire the agent-governance layer, keep the test gates (#165)
+- run the quality gates for the develop integration branch (#145)
+- run all pull-request and policy jobs on the self-hosted vaultify-ci runner (#138)
+- record proven pull-request check names for the required-check rollout (#137)
+
+
 ## [1.37.4] - 2026-07-20
 
 ### Fixed
