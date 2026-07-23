@@ -215,13 +215,14 @@ struct EmergencyKitView: View {
         Button(action: presentExporter) {
             Text("Save Kit PDF")
                 .vaultType(.body).fontWeight(.medium)
-            // Full-width red capsule: the one required action on this screen
-            // earns the whole row, and red signals how critical it is. (Once
-            // saved, the pinned slot flips to Continue.)
-            .foregroundStyle(.white)
+            // Full-width accent capsule: this is the screen's one primary action.
+            // Red is reserved for destructive actions; a red "Save" read as a
+            // warning instead of the way forward. (Once saved, the pinned slot
+            // flips to Continue.)
+            .foregroundStyle(Color(rgb: theme.accentForeground))
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.s3)
-            .background(Color(rgb: theme.destructive), in: Capsule())
+            .background(Color(rgb: theme.accent), in: Capsule())
             .opacity(recoveryKey.isEmpty ? 0.6 : 1)
         }
         .buttonStyle(.plain)
