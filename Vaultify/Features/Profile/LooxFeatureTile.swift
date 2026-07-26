@@ -54,30 +54,43 @@ struct LooxFeatureTile<Destination: View>: View {
         }
     }
 
+    /// Badge column width — the metric line indents past it so it aligns with
+    /// the TITLE, the iCloud+ tile anatomy (icon + title inline, value under
+    /// the title, never a stacked icon-over-text pile). Computed because the
+    /// generic type can't hold static storage.
+    private var badgeWidth: CGFloat { 29 }
+
     private var label: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            SettingsIconBadge(icon: icon, tint: tint)
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            HStack(spacing: Space.s2) {
+                SettingsIconBadge(icon: icon, tint: tint)
                 Text(title)
                     .vaultType(.subhead)
                     .fontWeight(.semibold)
                     .themedForeground()
-                    .lineLimit(2, reservesSpace: true)
-                    .multilineTextAlignment(.leading)
-                HStack(spacing: Space.s2) {
-                    if let status {
-                        CapabilityStatusDot(status: status)
-                    }
-                    Text(verbatim: metric)
-                        .vaultType(.footnote)
-                        .themedForeground(.secondary)
-                        .monospacedDigit()
-                        .lineLimit(1)
-                }
+                    .lineLimit(1)
+                    // Long VI titles ("Mở trên máy tính") squeeze a step
+                    // instead of wrapping — one line keeps every tile the
+                    // same compact height, like the reference tiles.
+                    .minimumScaleFactor(0.8)
             }
+            HStack(spacing: Space.s2) {
+                if let status {
+                    CapabilityStatusDot(status: status)
+                }
+                Text(verbatim: metric)
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+            // The dot sits INSIDE the indent column so the metric text always
+            // starts flush with the title — and keeps its full width (the dot
+            // stealing text room truncated "0 trong 30 ngày").
+            .padding(.leading, badgeWidth + Space.s2 - (status != nil ? 6 + Space.s2 : 0))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Space.s4)
+        .padding(Space.s3)
         .background(Self.tileFill, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         .contentShape(.rect)
         .accessibilityElement(children: .ignore)

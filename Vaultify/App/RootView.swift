@@ -73,6 +73,14 @@ struct RootView: View {
                 env.sharedItems.wipe()
             }
         }
+        // Connectivity regained → push whatever was created or edited offline
+        // (items, Spaces, personas) without waiting for the next foreground.
+        // The sync coordinator dedupes, so a flappy network stays cheap.
+        .onChange(of: env.reachability.hasSatisfiedNetworkPath) { _, satisfied in
+            if satisfied, env.session.state == .unlocked {
+                env.syncNow()
+            }
+        }
         .onChange(of: env.settings.onboardingCompleted) { _, completed in
             // Safety net for onboarding paths that skip the ChooseTheme step (e.g.
             // restoring an existing vault via JoinVaultFlow) — release the

@@ -16520,6 +16520,46 @@
           }
         }
       }
+    },
+    "Show password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện mật khẩu"
+          }
+        }
+      }
+    },
+    "Hide password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ẩn mật khẩu"
+          }
+        }
+      }
+    },
+    "You need an internet connection to leave a share. You still have access until then." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn cần kết nối internet để rời chia sẻ. Bạn vẫn còn quyền truy cập cho đến khi đó."
+          }
+        }
+      }
+    },
+    "You need an internet connection to revoke access. The share stays active until then." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn cần kết nối internet để thu hồi quyền truy cập. Chia sẻ vẫn hoạt động cho đến khi đó."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
