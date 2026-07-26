@@ -260,8 +260,26 @@ import UIKit
     /// Leave a received share: deleting the zone from the SHARED database
     /// removes this participant's access server-side (the owner's copy is
     /// untouched); the TOFU pin is dropped with it.
+    ///
+    /// `modifyRecordZones` reports per-zone outcomes in `deleteResults` and does
+    /// NOT throw when an individual zone fails. Discarding that turned a failed
+    /// leave into a silent success: the pin was cleared anyway, so the next
+    /// refresh saw an unpinned zone, re-adopted it by TOFU, and the row came
+    /// back with nothing anywhere recording that the user had left.
     func leave(zoneID: CKRecordZone.ID) async throws {
-        _ = try await sharedDatabase.modifyRecordZones(saving: [], deleting: [zoneID])
+        let result = try await sharedDatabase.modifyRecordZones(saving: [], deleting: [zoneID])
+        if case .failure(let error) = result.deleteResults[zoneID] {
+            // A zone the server has already dropped is the outcome we wanted.
+            let code = (error as? CKError)?.code
+            guard code == .zoneNotFound || code == .userDeletedZone else {
+                ShareDiagnostics.log("LEAVE", "zone=\(zoneID.zoneName) failed=\(error)")
+                throw error
+            }
+        }
+        ShareDiagnostics.log("LEAVE", "zone=\(zoneID.zoneName) deleted")
+        // Only after the delete is known to have landed: the pin is the sole
+        // local record that this zone was ever seen, so dropping it on a failed
+        // delete is what makes the zone look brand new next time round.
         Self.clearPin(zoneID: zoneID)
     }
 
