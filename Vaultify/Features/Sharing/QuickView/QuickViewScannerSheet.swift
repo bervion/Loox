@@ -16,7 +16,7 @@ struct QuickViewScannerSheet: View {
                 }
                 VStack {
                     Spacer()
-                    Text("Point the camera at the code on your computer")
+                    Text("Point the camera at the code in your browser")
                         .font(.subheadline).foregroundStyle(.white)
                         .padding(.bottom, 28).shadow(radius: 4)
                 }

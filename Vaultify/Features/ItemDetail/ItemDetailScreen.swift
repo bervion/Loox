@@ -32,7 +32,7 @@ struct ItemDetailScreen: View {
     /// One-time trust interstitial for a shared item whose safety-code
     /// decision is still pending.
     @State private var showVerifySheet = false
-    /// "Open on Computer" (Loox Quick View) chooser sheet.
+    /// "Send to Browser" (Loox Quick View) chooser sheet.
     @State private var showQuickViewChooser = false
     /// Non-nil when the entry is tapped but blocked (e.g. guard2-only item) —
     /// shown as an explainer rather than a silently disabled control.
@@ -229,7 +229,7 @@ struct ItemDetailScreen: View {
                                 } else {
                                     showQuickViewChooser = true
                                 }
-                            } label: { Label("Open on Computer", image: "ic_globe") }
+                            } label: { Label("Send to Browser", image: "ic_globe") }
                         }
                         if let url = item.urlField?.value, !url.isEmpty {
                             ShareLink(item: url) {
@@ -289,7 +289,7 @@ struct ItemDetailScreen: View {
                     defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
             }
         }
-        .alert("Can't open on a computer", isPresented: quickViewBlockedAlert) {
+        .alert("Can't send to a browser", isPresented: quickViewBlockedAlert) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: quickViewBlockedReason ?? "")

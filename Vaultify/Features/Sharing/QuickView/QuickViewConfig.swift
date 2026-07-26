@@ -66,7 +66,7 @@ nonisolated enum QuickViewConfig {
     /// always sends the App Attest headers when it can and the prod worker
     /// rejects an upload that lacks a valid assertion. Client-side this flag
     /// only feeds `QuickViewExposureResolver`'s `assertionRequired` signal —
-    /// which is what makes the "Open on Computer" entry visible to GENERAL
+    /// which is what makes the "Send to Browser" entry visible to GENERAL
     /// (non-beta) users once `exposure = ga` (a general user under `ga` is gated
     /// on assertion being required, INV-QV-24). Keep it in lockstep with the
     /// server: while the server is still `shadow`, set this `false`.

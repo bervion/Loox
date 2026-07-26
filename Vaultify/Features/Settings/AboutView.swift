@@ -96,7 +96,7 @@ struct AboutView: View {
                         body: "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
             promiseCard(number: 2, tint: AboutInk.promiseTeal,
                         title: "Trust is verified, never assumed",
-                        body: "Share a password, pair a device, open on a computer. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")
+                        body: "Share a password, pair a device, open in a browser. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")
             promiseCard(number: 3, tint: AboutInk.promisePurple,
                         title: "You can always walk away",
                         body: "Export everything, anytime, in formats other apps read. Your Emergency Kit recovers your vault without us. A lock that only locks in is a cage. Loox is a door, and you hold the key.")

@@ -17,11 +17,11 @@ nonisolated enum QuickViewAPIError: Error, LocalizedError, Sendable {
         switch self {
         case .invalidResponse: appString("The Quick View service sent an unexpected response.")
         case .unauthorized: appString("This app couldn't prove it's a genuine Loox install. Try again later.")
-        case .payloadTooLarge: appString("This item is too large to open on a computer.")
-        case .sessionUnavailable: appString("Start again on the computer.")
-        case .capability(.maintenance, _): appString("Open on Computer is temporarily paused. Your vault continues to work normally.")
-        case .capability(.retired, _): appString("Open on Computer is no longer offered. Your saved vault items are unchanged.")
-        case .capability: appString("Open on Computer is temporarily unavailable. Your vault is not affected.")
+        case .payloadTooLarge: appString("This item is too large to send to a browser.")
+        case .sessionUnavailable: appString("Start again in the browser.")
+        case .capability(.maintenance, _): appString("Send to Browser is temporarily paused. Your vault continues to work normally.")
+        case .capability(.retired, _): appString("Send to Browser is no longer offered. Your saved vault items are unchanged.")
+        case .capability: appString("Send to Browser is temporarily unavailable. Your vault is not affected.")
         case .server(let status, let code): appString("Quick View service error (\(code ?? String(status))).")
         }
     }

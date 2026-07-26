@@ -2278,12 +2278,12 @@
         }
       }
     },
-    "Can't open on a computer": {
+    "Can't send to a browser": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không thể mở trên máy tính"
+            "value": "Không thể gửi sang trình duyệt"
           }
         }
       }
@@ -3173,12 +3173,12 @@
         }
       }
     },
-    "Connecting to your computer…": {
+    "Connecting to your browser…": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đang kết nối với máy tính của bạn…"
+            "value": "Đang kết nối với trình duyệt của bạn…"
           }
         }
       }
@@ -7292,12 +7292,12 @@
         }
       }
     },
-    "Make sure this matches the phrase shown on your computer.": {
+    "Make sure this matches the phrase shown in your browser.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đảm bảo cụm từ này khớp với cụm từ hiển thị trên máy tính của bạn."
+            "value": "Đảm bảo cụm từ này khớp với cụm từ hiển thị trên trình duyệt của bạn."
           }
         }
       }
@@ -8931,56 +8931,6 @@
         }
       }
     },
-    "Open on Computer": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mở trên máy tính"
-          }
-        }
-      }
-    },
-    "Open on Computer is no longer offered. Your saved vault items are unchanged.": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tính năng Mở trên máy tính không còn được cung cấp. Các mục đã lưu trong kho của bạn không thay đổi."
-          }
-        }
-      }
-    },
-    "Open on Computer is temporarily paused. Your vault continues to work normally.": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tính năng Mở trên máy tính đang tạm dừng. Kho của bạn vẫn hoạt động bình thường."
-          }
-        }
-      }
-    },
-    "Open on Computer is temporarily unavailable. Your vault is not affected.": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tính năng Mở trên máy tính tạm thời không khả dụng. Kho của bạn không bị ảnh hưởng."
-          }
-        }
-      }
-    },
-    "Open on Computer limit reached for these 30 days": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Đã hết lượt Mở trên máy tính trong 30 ngày"
-          }
-        }
-      }
-    },
     "Open security settings": {
       "localizations": {
         "vi": {
@@ -9404,12 +9354,12 @@
         }
       }
     },
-    "Password will be visible on this computer.": {
+    "Password will be visible in that browser.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu sẽ hiển thị trên máy tính này."
+            "value": "Mật khẩu sẽ hiển thị trên trình duyệt đó."
           }
         }
       }
@@ -9803,12 +9753,12 @@
         }
       }
     },
-    "Point the camera at the code on your computer": {
+    "Point the camera at the code in your browser": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hướng camera vào mã trên máy tính của bạn"
+            "value": "Hướng camera vào mã trên trình duyệt của bạn"
           }
         }
       }
@@ -9823,12 +9773,12 @@
         }
       }
     },
-    "Point your camera at the code shown on your computer.": {
+    "Point your camera at the code shown in your browser.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hướng camera vào mã hiển thị trên máy tính của bạn."
+            "value": "Hướng camera vào mã hiển thị trên trình duyệt của bạn."
           }
         }
       }
@@ -11674,6 +11624,56 @@
         }
       }
     },
+    "Send to Browser": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi sang trình duyệt"
+          }
+        }
+      }
+    },
+    "Send to Browser is no longer offered. Your saved vault items are unchanged.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tính năng Gửi sang trình duyệt không còn được cung cấp. Các mục đã lưu trong kho của bạn không thay đổi."
+          }
+        }
+      }
+    },
+    "Send to Browser is temporarily paused. Your vault continues to work normally.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tính năng Gửi sang trình duyệt đang tạm dừng. Kho của bạn vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
+    "Send to Browser is temporarily unavailable. Your vault is not affected.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tính năng Gửi sang trình duyệt tạm thời không khả dụng. Kho của bạn không bị ảnh hưởng."
+          }
+        }
+      }
+    },
+    "Send to Browser limit reached for these 30 days": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã hết lượt Gửi sang trình duyệt trong 30 ngày"
+          }
+        }
+      }
+    },
     "Send update now": {
       "localizations": {
         "vi": {
@@ -12110,12 +12110,12 @@
         }
       }
     },
-    "Share Links and Open on Computer count the last 30 days.": {
+    "Share Links and Send to Browser count the last 30 days.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Liên kết chia sẻ và Mở trên máy tính tính theo 30 ngày gần nhất."
+            "value": "Liên kết chia sẻ và Gửi sang trình duyệt tính theo 30 ngày gần nhất."
           }
         }
       }
@@ -12180,13 +12180,12 @@
         }
       }
     },
-    "Share a password, pair a device, open on a computer. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.": {
-      "comment": "About: promise 2 body.",
+    "Share a password, pair a device, open in a browser. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ mật khẩu, ghép nối thiết bị, mở trên máy tính. Mỗi lần trao tay đều buộc hai bên đối chiếu mã trước khi bất cứ thứ gì di chuyển. Một nghi thức nhỏ, có chủ đích. Bí mật xứng đáng được như vậy."
+            "value": "Chia sẻ mật khẩu, ghép nối thiết bị, mở trên trình duyệt. Mỗi lần trao tay đều buộc hai bên đối chiếu mã trước khi bất cứ thứ gì di chuyển. Một nghi thức nhỏ, có chủ đích. Bí mật xứng đáng được như vậy."
           }
         }
       }
@@ -12941,12 +12940,12 @@
         }
       }
     },
-    "Start again on the computer.": {
+    "Start again in the browser.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bắt đầu lại trên máy tính."
+            "value": "Bắt đầu lại trên trình duyệt."
           }
         }
       }
@@ -14289,12 +14288,12 @@
         }
       }
     },
-    "This item is too large to open on a computer.": {
+    "This item is too large to send to a browser.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mục này quá lớn để mở trên máy tính."
+            "value": "Mục này quá lớn để gửi sang trình duyệt."
           }
         }
       }
@@ -14866,12 +14865,12 @@
         }
       }
     },
-    "Type the code shown on your computer.": {
+    "Type the code shown in your browser.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập mã hiển thị trên máy tính của bạn."
+            "value": "Nhập mã hiển thị trên trình duyệt của bạn."
           }
         }
       }
@@ -15231,12 +15230,12 @@
         }
       }
     },
-    "Up to %lld share links and %lld computer approvals in any 30 days.": {
+    "Up to %lld share links and %lld browser approvals in any 30 days.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tối đa %lld liên kết chia sẻ và %lld lượt duyệt trên máy tính trong mỗi 30 ngày."
+            "value": "Tối đa %lld liên kết chia sẻ và %lld lượt duyệt qua trình duyệt trong mỗi 30 ngày."
           }
         }
       }

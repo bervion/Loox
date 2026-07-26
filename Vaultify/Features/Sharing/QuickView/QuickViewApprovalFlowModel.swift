@@ -71,7 +71,7 @@ import LocalAuthentication
         self.signerKeyset = signerKeyset
     }
 
-    private var genericErrorMessage: String { appString("Start again on the computer.") }
+    private var genericErrorMessage: String { appString("Start again in the browser.") }
 
     /// Classify an API failure for the capability store: verified operator
     /// state persists; infra failures feed the breaker; everything else means

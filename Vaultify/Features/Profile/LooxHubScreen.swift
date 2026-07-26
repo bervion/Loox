@@ -264,7 +264,7 @@ struct LooxHubScreen: View {
             }
             // Quick View's user-facing name; its activity shares the
             // notifications surface, so the tile lands there too.
-            LooxFeatureTile(title: "Open on Computer", icon: Icons.scanCode, tint: SettingsBadgeTint.indigo,
+            LooxFeatureTile(title: "Send to Browser", icon: Icons.scanCode, tint: SettingsBadgeTint.indigo,
                             metric: serviceMetric(.quickView,
                                                   appString("\(quickViewCompletions30d) in 30 days")),
                             status: serviceStatus(.quickView)) {

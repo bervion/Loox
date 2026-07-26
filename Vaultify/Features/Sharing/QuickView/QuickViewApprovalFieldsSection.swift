@@ -24,7 +24,7 @@ struct QuickViewApprovalFieldsSection: View {
             Text(verbatim: sas)
                 .font(.vaultCode(size: 22))
                 .themedForeground()
-            Text("Make sure this matches the phrase shown on your computer.")
+            Text("Make sure this matches the phrase shown in your browser.")
                 .vaultType(.footnote).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -88,7 +88,7 @@ struct QuickViewApprovalFieldsSection: View {
                 Text(appLabel(field.label)).vaultType(.body).themedForeground()
             }
             if field.kind == .password, isSelected.wrappedValue {
-                Text("Password will be visible on this computer.")
+                Text("Password will be visible in that browser.")
                     .vaultType(.footnote).themedForeground(.warning)
             }
         }
