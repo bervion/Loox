@@ -15,20 +15,18 @@ nonisolated enum LooxLinkConfig {
     static let defaultViewerBase = URL(string: "https://s.looxpassword.com")!
     #endif
 
-    /// App Attest register/assert flow. The Worker's register route is live
-    /// on staging + production (verified 260706: bogus challenge → 401
-    /// challenge_invalid, no longer the 404 catch-all) and create-share
-    /// verifies assertions in SHADOW mode (`ASSERTION_MODE=off` server-side:
-    /// verify + observe, interim token remains the auth).
+    /// App Attest register/assert flow. The Worker's register route is live on
+    /// staging + production, and create-share now ENFORCES assertions
+    /// (`ASSERTION_MODE=required` on both deploys).
     static let attestationEnabled = true
 
-    /// Fail-closed switch, flipped together with the server moving
-    /// `ASSERTION_MODE` to `required`: attestation failures then BLOCK the
-    /// create (C6 — no unauthenticated fallback). While the server is in
-    /// off/shadow mode, an attest failure only logs and the token path
-    /// proceeds — a register bug must not brick a flow the assertion isn't
-    /// even authenticating yet.
-    static let attestationRequired = false
+    /// Fail-closed switch, paired with the server's `ASSERTION_MODE`. The
+    /// server moved to `required`, so a create posted without a valid
+    /// assertion is a guaranteed 401 (C6 — there is no unauthenticated
+    /// fallback left to fall back to). Failing here instead surfaces the real
+    /// reason, and stops each attempt from burning a single-use Apple
+    /// attestation on a request the server will reject anyway.
+    static let attestationRequired = true
 
     /// Interim anti-abuse token (`X-Loox-App-Token`) — both staging and
     /// production Workers gate create on it until App Attest ships (C7).
