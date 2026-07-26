@@ -27,8 +27,16 @@ nonisolated enum RelayAttestation {
     // ECDSA over authData‖clientDataHash instead of Apple's actual
     // ECDSA-SHA256(authData‖clientDataHash) nonce). The reset is harmless and
     // left every device on a single freshly-registered key, so it stays.
-    private static let keyIdAccount = "loox-relay-app-attest-key-id-v2"
-    private static let registeredAccount = "loox-relay-app-attest-registered-v2"
+    /// Scoped to the relay host it registered against — the server resolves
+    /// attested keys per deploy environment, so staging state must never be
+    /// offered to production. The `-v2` accounts below are the flat, unscoped
+    /// predecessors; they are dropped when a fresh key is minted.
+    private static func keyStore(baseURL: URL) -> AppAttestKeyStore {
+        AppAttestKeyStore(
+            namespace: "loox-relay", apiBase: baseURL,
+            legacyAccounts: ["loox-relay-app-attest-key-id-v2",
+                             "loox-relay-app-attest-registered-v2"])
+    }
 
     struct Assertion { let keyId: String; let assertionB64: String }
 
@@ -44,7 +52,7 @@ nonisolated enum RelayAttestation {
         } catch let error as DCError where error.code == .invalidKey {
             // Reinstall/restore/env-mismatch: the stored key is dead. One fresh
             // key + re-register, then one more attempt — that's the budget.
-            resetKey()
+            keyStore(baseURL: baseURL).reset()
             return try await assertOnce(transcript: transcript, baseURL: baseURL)
         }
     }
@@ -59,17 +67,20 @@ nonisolated enum RelayAttestation {
     /// Key id of a key loox-relay has verified — registering with loox-relay
     /// first if this device hasn't yet (separate trust state from loox-link).
     private static func registeredKeyId(baseURL: URL) async throws -> String {
+        let store = keyStore(baseURL: baseURL)
         let keyId: String
-        if let stored = try? KeychainStore.get(account: keyIdAccount),
-           let s = String(data: stored, encoding: .utf8) {
-            keyId = s
+        if let stored = store.storedKeyId {
+            keyId = stored
         } else {
+            store.purgeLegacy()
             keyId = try await DCAppAttestService.shared.generateKey()
-            // Persist before anything else can fail — the key is unreachable
-            // without its id.
-            try KeychainStore.set(Data(keyId.utf8), account: keyIdAccount)
+            try store.persist(keyId: keyId)
         }
-        if (try? KeychainStore.get(account: registeredAccount)) == nil {
+        // The marker must name THIS key. A reinstall destroys the Enclave key
+        // but not the Keychain, so a bare "registered" flag would skip
+        // registration and sign every assertion with a key the server has
+        // never seen — the failure has no recovery path server-side.
+        if !store.isRegistered(keyId: keyId) {
             do {
                 try await register(keyId: keyId, baseURL: baseURL)
             } catch {
@@ -78,10 +89,10 @@ nonisolated enum RelayAttestation {
                 // 4xx), retrying would call attestKey on the same key and fail
                 // forever. Drop the key so the next attempt starts from a fresh
                 // generateKey instead of re-attesting a burned one.
-                resetKey()
+                store.reset()
                 throw error
             }
-            try KeychainStore.set(Data([1]), account: registeredAccount)
+            try store.markRegistered(keyId: keyId)
         }
         return keyId
     }
@@ -101,10 +112,6 @@ nonisolated enum RelayAttestation {
             challengeId: challenge.challengeId, keyId: keyId, baseURL: baseURL)
     }
 
-    private static func resetKey() {
-        KeychainStore.delete(account: keyIdAccount)
-        KeychainStore.delete(account: registeredAccount)
-    }
 
     private static func base64urlDecode(_ s: String) -> Data? {
         var t = s.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")

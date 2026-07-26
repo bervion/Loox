@@ -13,16 +13,16 @@ import Foundation
 /// a fresh key and re-attests, with a budget of one retry per call — never an
 /// endless generate→attest loop.
 nonisolated enum LooxLinkAttestation {
-    private static let keyIdAccount = "loox-link-app-attest-key-id"
+    /// Scoped to the backend host: the server resolves attested keys per deploy
+    /// environment, so staging state must never be offered to production.
+    private static let keyStore = AppAttestKeyStore(
+        namespace: "loox-link", apiBase: LooxLinkConfig.apiBase,
+        legacyAccounts: ["loox-link-app-attest-key-id", "loox-link-app-attest-registered"])
 
     /// The persisted App Attest key id (the exact `X-Loox-App-Attest-Key-Id`
     /// header string) — read by the entitlement attach flow to request the
     /// `attest_key_link` binding. nil until a key has been minted.
-    static var storedKeyId: String? {
-        guard let data = try? KeychainStore.get(account: keyIdAccount) else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-    private static let registeredAccount = "loox-link-app-attest-registered"
+    static var storedKeyId: String? { keyStore.storedKeyId }
 
     static var isSupported: Bool { DCAppAttestService.shared.isSupported }
 
@@ -89,16 +89,18 @@ nonisolated enum LooxLinkAttestation {
     /// Key id of a key the server has verified — registering first if needed.
     private static func registeredKeyId(api: LooxLinkAPIClient) async throws -> String {
         let keyId: String
-        if let stored = try? KeychainStore.get(account: keyIdAccount),
-           let s = String(data: stored, encoding: .utf8) {
-            keyId = s
+        if let stored = keyStore.storedKeyId {
+            keyId = stored
         } else {
+            keyStore.purgeLegacy()
             keyId = try await DCAppAttestService.shared.generateKey()
-            // Persist before anything else can fail — the key is unreachable
-            // without its id.
-            try KeychainStore.set(Data(keyId.utf8), account: keyIdAccount)
+            try keyStore.persist(keyId: keyId)
         }
-        if (try? KeychainStore.get(account: registeredAccount)) == nil {
+        // The marker must name THIS key. A reinstall destroys the Enclave key
+        // but not the Keychain, so a bare "registered" flag would skip
+        // registration and sign every assertion with a key the server has
+        // never seen — the failure has no recovery path server-side.
+        if !keyStore.isRegistered(keyId: keyId) {
             do {
                 try await register(api: api, keyId: keyId)
             } catch {
@@ -108,7 +110,7 @@ nonisolated enum LooxLinkAttestation {
                 resetKey()
                 throw error
             }
-            try KeychainStore.set(Data([1]), account: registeredAccount)
+            try keyStore.markRegistered(keyId: keyId)
         }
         return keyId
     }
@@ -126,8 +128,5 @@ nonisolated enum LooxLinkAttestation {
                                challengeId: challenge.challengeId, keyId: keyId)
     }
 
-    private static func resetKey() {
-        KeychainStore.delete(account: keyIdAccount)
-        KeychainStore.delete(account: registeredAccount)
-    }
+    private static func resetKey() { keyStore.reset() }
 }
