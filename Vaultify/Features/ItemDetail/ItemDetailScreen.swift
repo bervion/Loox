@@ -70,13 +70,16 @@ struct ItemDetailScreen: View {
     /// excluded outright: their values render only behind `SharedAccessGateView`
     /// (INV-01), and this overlay must not offer a copy path outside that gate.
     private func showsCopyPasswordCluster(_ item: VaultItem) -> Bool {
-        item.sharedOrigin == nil
+        // An extra-protected password is sealed ciphertext — the cluster would
+        // copy the raw payload, bypassing the reveal gate.
+        if item.passwordField?.isExtraProtected == true { return false }
+        return item.sharedOrigin == nil
             && item.category == .login
             && !(item.passwordField?.value.isEmpty ?? true)
     }
 
     private func copyPassword(_ item: VaultItem) {
-        guard let field = item.passwordField, !field.value.isEmpty else { return }
+        guard let field = item.passwordField, !field.value.isEmpty, !field.isExtraProtected else { return }
         env.clipboard.copy(field.value, label: field.label, sensitive: true)
         env.repository.markUsed(item)
     }

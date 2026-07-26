@@ -15,6 +15,10 @@ struct ProtectedFieldRow: View {
     @State private var showLevel2Prompt = false
     @State private var showCustomPrompt = false
     @State private var showLargeType = false
+    /// Removal asked while still locked — reveal first (prompting if needed),
+    /// then fall through to the confirmation below.
+    @State private var pendingRemoval = false
+    @State private var confirmRemoval = false
 
     private var scheme: SecretGuard.Scheme? { SecretGuard.scheme(of: field.value) }
     private var theme: AppTheme { env.theme.active }
@@ -39,14 +43,24 @@ struct ProtectedFieldRow: View {
         .onTapGesture { primaryTap() }
         .animation(.easeOut(duration: 0.18), value: copied)
         .sheet(isPresented: $showLevel2Prompt) {
-            CodePromptSheet(title: "Extra Password", message: "Enter your Level-2 password to reveal this field.",
-                            confirmLabel: "Reveal", onSubmit: unlockLevel2AndReveal)
+            CodePromptSheet(title: "Extra Password",
+                            message: "Enter your Extra Password to reveal this field.",
+                            confirmLabel: "Reveal", placeholder: "Extra Password",
+                            onSubmit: unlockLevel2AndReveal)
         }
         .sheet(isPresented: $showCustomPrompt) {
-            CodePromptSheet(title: "Field Code", message: "Enter this field's code to reveal it.",
-                            confirmLabel: "Reveal", onSubmit: revealCustom)
+            CodePromptSheet(title: "Custom code",
+                            message: "Enter this field's custom code to reveal it.",
+                            confirmLabel: "Reveal", placeholder: "Custom code",
+                            onSubmit: revealCustom)
         }
         .platformFullScreenCover(isPresented: $showLargeType) { LargeTypeView(text: plaintext ?? "") }
+        .confirmationDialog("Remove protection from this field?", isPresented: $confirmRemoval,
+                            titleVisibility: .visible) {
+            Button("Remove Protection", role: .destructive) { removeProtection() }
+        } message: {
+            Text("The value will be visible like a normal field.")
+        }
     }
 
     @ViewBuilder private var value: some View {
@@ -57,7 +71,12 @@ struct ProtectedFieldRow: View {
         } else {
             HStack(spacing: 6) {
                 PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
-                Text("Protected. Tap to reveal").vaultType(.subhead).themedForeground(.secondary)
+                // Name the secret up front — which prompt appears on tap must
+                // not be a surprise (Extra Password unlocks the session once;
+                // a custom code is asked every time).
+                Text(scheme == .custom ? "Protected. Reveal with custom code"
+                                       : "Protected. Reveal with Extra Password")
+                    .vaultType(.subhead).themedForeground(.secondary)
             }
         }
     }
@@ -66,11 +85,16 @@ struct ProtectedFieldRow: View {
         Menu {
             if plaintext == nil {
                 Button { primaryTap() } label: { Label("Reveal", image: Icons.reveal) }
+                // Unprotecting must not require FINDING the reveal first — ask
+                // for the secret here, then confirm.
+                Button(role: .destructive) { requestRemoval() } label: {
+                    Label("Remove Protection", image: Icons.lock)
+                }
             } else {
                 Button { copy() } label: { Label("Copy", image: Icons.copy) }
                 Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
                 Button { plaintext = nil } label: { Label("Conceal", image: Icons.hide) }
-                Button(role: .destructive) { removeProtection() } label: {
+                Button(role: .destructive) { requestRemoval() } label: {
                     Label("Remove Protection", image: Icons.lock)
                 }
             }
@@ -114,8 +138,10 @@ struct ProtectedFieldRow: View {
             // Crossing the Extra Protection boundary is a risky state (rule:
             // haptics vocabulary), distinct from the plain `.success` on copy.
             Haptics.warning()
+            finishPendingRemoval()
         } else {
             error = appString("Couldn’t decrypt this field.")
+            pendingRemoval = false
         }
     }
 
@@ -126,7 +152,7 @@ struct ProtectedFieldRow: View {
             revealLevel2(with: key.bytes)
             return nil
         } catch {
-            return appString("Incorrect Level-2 password.")
+            return (error as? AuthError)?.errorDescription ?? appString("Incorrect Extra Password.")
         }
     }
 
@@ -138,6 +164,7 @@ struct ProtectedFieldRow: View {
             // Crossing the Extra Protection boundary is a risky state (rule:
             // haptics vocabulary), distinct from the plain `.success` on copy.
             Haptics.warning()
+            finishPendingRemoval()
             return nil
         } catch {
             return appString("Incorrect code.")
@@ -151,6 +178,30 @@ struct ProtectedFieldRow: View {
         onUsed()
         copied = true
         Task { try? await Task.sleep(for: .seconds(1.2)); withAnimation { copied = false } }
+    }
+
+    /// Removal entry point from either menu state: with plaintext in hand go
+    /// straight to the confirmation; while locked, run the reveal ceremony
+    /// first (the secret still gates the write-back) and confirm on success.
+    private func requestRemoval() {
+        if plaintext != nil {
+            confirmRemoval = true
+        } else {
+            pendingRemoval = true
+            primaryTap()
+        }
+    }
+
+    /// A reveal that was started as a removal falls through to the confirmation.
+    /// Slight delay so the prompt sheet finishes dismissing first — presenting a
+    /// dialog while a sheet is mid-dismiss silently drops the dialog.
+    private func finishPendingRemoval() {
+        guard pendingRemoval else { return }
+        pendingRemoval = false
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            confirmRemoval = true
+        }
     }
 
     private func removeProtection() {

@@ -85,21 +85,26 @@ nonisolated struct VaultItem: Identifiable, Equatable, Codable, Sendable {
         fields.first { $0.kind == .username || $0.kind == .email }
     }
     var passwordField: DynamicField? { fields.first { $0.kind == .password } }
-    var totpField: DynamicField? { fields.first { $0.kind == .totp && !$0.value.isEmpty } }
+    /// The USABLE TOTP field — an extra-protected seed is sealed ciphertext, so
+    /// it can't drive live codes, QuickType OTP identities, or 2FA listings.
+    var totpField: DynamicField? { fields.first { $0.kind == .totp && !$0.value.isEmpty && !$0.isExtraProtected } }
     var urlField: DynamicField? { fields.first { $0.kind == .url } }
 
-    /// Subtitle shown in list rows (username/email/site, never the secret).
+    /// Subtitle shown in list rows (username/email/site, never the secret —
+    /// an extra-protected value is ciphertext and must not surface either).
     var subtitle: String? {
-        if let u = usernameField, !u.isEmpty { return u.value }
-        if let s = urlField, !s.isEmpty { return s.value }
+        if let u = usernameField, !u.isEmpty, !u.isExtraProtected { return u.value }
+        if let s = urlField, !s.isEmpty, !s.isExtraProtected { return s.value }
         return nil
     }
 
-    /// Lowercased text used for in-memory search. Excludes protected values;
-    /// includes tags so `#work` etc. are searchable.
+    /// Lowercased text used for in-memory search. Excludes protected and
+    /// extra-protected values; includes tags so `#work` etc. are searchable.
     var searchText: String {
         var parts = [title]
-        for field in fields where !field.protected && !field.isEmpty { parts.append(field.value) }
+        for field in fields where !field.protected && !field.isEmpty && !field.isExtraProtected {
+            parts.append(field.value)
+        }
         parts.append(contentsOf: tags)
         return parts.joined(separator: " ").lowercased()
     }

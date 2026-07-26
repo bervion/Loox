@@ -80,8 +80,14 @@ enum CredentialIdentityService {
         // One identity per website host, so a login with several websites is suggested
         // on every one of its domains.
         let ownedPasswordIdentities: [ASPasswordCredentialIdentity] = lastOwnedItems.flatMap { item -> [ASPasswordCredentialIdentity] in
-            guard item.passwordField?.value.isEmpty == false,
-                  let user = item.usernameField?.value, !user.isEmpty else { return [] }
+            // Extra-protected credentials can't fill (the value is sealed
+            // ciphertext), so a QuickType suggestion would be a dead end — and a
+            // sealed username would even surface ciphertext on the bar.
+            guard let passwordField = item.passwordField, !passwordField.value.isEmpty,
+                  !passwordField.isExtraProtected,
+                  let userField = item.usernameField, !userField.isEmpty,
+                  !userField.isExtraProtected else { return [] }
+            let user = userField.value
             return item.autofillHosts.map { host in
                 ASPasswordCredentialIdentity(
                     serviceIdentifier: ASCredentialServiceIdentifier(identifier: host, type: .domain),
@@ -140,8 +146,11 @@ enum CredentialIdentityService {
     @available(iOS 18, *)
     private static func oneTimeCodeIdentities(_ items: [VaultItem]) -> [ASOneTimeCodeCredentialIdentity] {
         items.flatMap { item -> [ASOneTimeCodeCredentialIdentity] in
+            // totpField already excludes sealed seeds; the label must not leak a
+            // sealed username's ciphertext either.
             guard item.totpField != nil else { return [] }
-            let user = item.usernameField?.value
+            let userField = item.usernameField
+            let user = (userField?.isExtraProtected == true) ? nil : userField?.value
             return item.autofillHosts.map { host in
                 let label = (user?.isEmpty == false) ? user! : (item.title.isEmpty ? host : item.title)
                 return ASOneTimeCodeCredentialIdentity(

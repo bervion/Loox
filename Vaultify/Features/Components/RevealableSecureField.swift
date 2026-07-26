@@ -13,6 +13,9 @@ struct RevealableSecureField: View {
     /// field's own capsule background would sit on top of it and read as broken,
     /// glued-together cards. `inList` drops the capsule and lets the row chrome win.
     var inList: Bool = false
+    /// Focus the field the moment it appears (single-field prompt sheets — the
+    /// user came here to type exactly this).
+    var autofocus: Bool = false
     @State private var reveal = false
     @FocusState private var focused: Bool
     @Environment(\.appTheme) private var theme
@@ -71,5 +74,6 @@ struct RevealableSecureField: View {
                            : Color(rgb: prominent ? theme.elevatedBackground : theme.controlBackground),
                     in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         .elevation(prominent ? .level2 : .level0)
+        .onAppear { if autofocus { focused = true } }
     }
 }

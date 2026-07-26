@@ -6,6 +6,9 @@ struct CodePromptSheet: View {
     let title: LocalizedStringResource
     var message: LocalizedStringResource?
     var confirmLabel: LocalizedStringResource = "Unlock"
+    /// Names the secret being asked for — "Extra Password" and "Custom code"
+    /// prompts must not both say "Code".
+    var placeholder: LocalizedStringKey = "Code"
     let onSubmit: (String) async -> String?
 
     @Environment(\.dismiss) private var dismiss
@@ -20,11 +23,16 @@ struct CodePromptSheet: View {
         }) {
             Form {
                 if let message {
-                    Section { Text(message.inAppLocalized).vaultType(.footnote).themedForeground(.secondary) }
-                    .listRowBackground(VaultColors.surface)
+                    // Framing copy, not content — a white pill here reads as a
+                    // second text field sitting above the real one.
+                    Section {
+                        Text(message.inAppLocalized).vaultType(.footnote).themedForeground(.secondary)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                    }
                 }
                 Section {
-                    RevealableSecureField(title: "Code", text: $code)
+                    RevealableSecureField(title: placeholder, text: $code, autofocus: true)
                         .listRowInsets(.init())
                         .submitLabel(.go)
                         .onSubmit { Task { await submit() } }

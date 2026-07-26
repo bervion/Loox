@@ -229,7 +229,12 @@ private struct MacSecuritySettingsPane: View {
                 NavigationLink {
                     Level2SettingsView()
                 } label: {
-                    Label { Text("Extra Protection") } icon: { PolarisIcon(Icons.lockFill) }
+                    LabeledContent {
+                        Text(env.session.hasLevel2 ? "On" : "Off")
+                            .themedForeground(.secondary)
+                    } label: {
+                        Label { Text("Extra Protection") } icon: { PolarisIcon(Icons.lockFill) }
+                    }
                 }
             }
 
