@@ -63,9 +63,26 @@ jobs:
       - name: Delete isolated simulator
         if: always()
         run: |
-          # Persistent-runner hygiene; orphans from cancelled jobs are swept
-          # by the next create-simulator.sh run.
+          # Persistent-runner hygiene. If the create step died before it could
+          # export the UDID, fall back to reclaiming by name in any state —
+          # this runner processes one job at a time, so every "Vaultify
+          # Quality" device is ours. Whatever slips through both paths is
+          # swept by the next create-simulator.sh run.
           set +e
-          xcrun simctl shutdown "$SIMULATOR_UDID"
-          xcrun simctl delete "$SIMULATOR_UDID"
+          if [ -n "$SIMULATOR_UDID" ]; then
+            xcrun simctl shutdown "$SIMULATOR_UDID"
+            xcrun simctl delete "$SIMULATOR_UDID"
+          else
+            xcrun simctl list devices --json | /usr/bin/python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          for devices in data.get("devices", {}).values():
+              for device in devices:
+                  if device.get("name", "").startswith("Vaultify Quality"):
+                      print(device["udid"])
+          ' | while read -r udid; do
+              xcrun simctl shutdown "$udid"
+              xcrun simctl delete "$udid"
+            done
+          fi
           exit 0
