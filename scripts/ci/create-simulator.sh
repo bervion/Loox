@@ -49,18 +49,39 @@ PY
 
 # Persistent-runner hygiene: per-run simulators from earlier cancelled or
 # crashed jobs would otherwise accumulate forever on a self-hosted host.
+# Select by name via JSON in EVERY state — `simctl list devices <term>`
+# filters by device name/UDID, not state, so a "Shutdown" term matches
+# nothing; cancelled jobs also leave sims Booted, which a state filter
+# would miss anyway. The runner processes one job at a time, so any
+# "Vaultify Quality" device visible here is an orphan.
 while read -r orphan_udid; do
   [[ -n "$orphan_udid" ]] || continue
-  xcrun simctl delete "$orphan_udid" >/dev/null || continue
-done < <(xcrun simctl list devices Shutdown | sed -n 's/.*Vaultify Quality[^(]*(\([0-9A-F-]\{36\}\)).*/\1/p')
+  xcrun simctl shutdown "$orphan_udid" >/dev/null 2>&1 || true
+  xcrun simctl delete "$orphan_udid" >/dev/null 2>&1 || true
+done < <(
+  xcrun simctl list devices --json | /usr/bin/python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+for devices in data.get("devices", {}).values():
+    for device in devices:
+        if device.get("name", "").startswith("Vaultify Quality"):
+            print(device["udid"])
+'
+)
 
 RUN_SUFFIX="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-${RANDOM}"
 SIMULATOR_NAME="Vaultify Quality $RUN_SUFFIX"
 SIMULATOR_UDID="$(xcrun simctl create "$SIMULATOR_NAME" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
 
-xcrun simctl boot "$SIMULATOR_UDID"
-xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+# The device now exists — from here on, every failure path must leave a
+# trail the workflow's delete step can follow, or clean up itself.
+cleanup_on_failure() {
+  xcrun simctl delete "$SIMULATOR_UDID" >/dev/null 2>&1 || true
+}
+trap cleanup_on_failure ERR
 
+# Export BEFORE boot: a cancellation or boot failure in the window below
+# would otherwise leave a Booted device the delete step cannot name.
 if [[ -n "${GITHUB_ENV:-}" ]]; then
   {
     echo "SIMULATOR_UDID=$SIMULATOR_UDID"
@@ -68,5 +89,10 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
     echo "SIMULATOR_RUNTIME=$RUNTIME_ID"
   } >> "$GITHUB_ENV"
 fi
+
+xcrun simctl boot "$SIMULATOR_UDID"
+xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+
+trap - ERR
 
 printf '%s\n' "$SIMULATOR_UDID"
