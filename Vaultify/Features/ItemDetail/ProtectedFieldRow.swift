@@ -46,13 +46,13 @@ struct ProtectedFieldRow: View {
         .sheet(isPresented: $showLevel2Prompt) {
             CodePromptSheet(title: "Extra Password",
                             message: "Enter your Extra Password to reveal this field.",
-                            confirmLabel: "Reveal", placeholder: "Extra Password",
+                            placeholder: "Extra Password",
                             onSubmit: unlockLevel2AndReveal)
         }
         .sheet(isPresented: $showCustomPrompt) {
             CodePromptSheet(title: "Custom code",
                             message: "Enter this field's custom code to reveal it.",
-                            confirmLabel: "Reveal", placeholder: "Custom code",
+                            placeholder: "Custom code",
                             onSubmit: revealCustom)
         }
         .platformFullScreenCover(isPresented: $showLargeType) { LargeTypeView(text: plaintext ?? "") }
