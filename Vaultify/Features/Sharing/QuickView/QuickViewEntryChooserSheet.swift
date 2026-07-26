@@ -36,7 +36,12 @@ struct QuickViewEntryChooserSheet: View {
                 .listRowBackground(VaultColors.surface)
             }
         }
-        .sheet(isPresented: $showScanner) {
+        // Full screen, not a sheet: a camera viewfinder inset in a card with the
+        // parent showing behind it fights the one thing the screen is for, which
+        // is aiming. Framing a code on a monitor needs the whole viewport.
+        // `platformFullScreenCover`, not `fullScreenCover` — the latter does not
+        // exist on macOS, where the helper falls back to a sheet.
+        .platformFullScreenCover(isPresented: $showScanner) {
             QuickViewScannerSheet { code in startFlow(code: code) }
         }
         .sheet(isPresented: $showEnterCode) {

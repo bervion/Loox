@@ -36,6 +36,24 @@ nonisolated enum QuickViewHumanCode {
         return "\(cleaned[..<mid])-\(cleaned[mid...])"
     }
 
+    /// Display form for a field being typed into: uppercased, non-alphanumerics
+    /// dropped, capped at `length`, and the dash placed as soon as a fifth
+    /// symbol exists.
+    ///
+    /// `formatted` deliberately withholds the dash until the code is complete,
+    /// which reads as "nothing is happening" for seven of the eight keystrokes
+    /// and leaves the field looking nothing like the `XXXX-XXXX` printed on the
+    /// computer — the user cannot tell a half-typed code from a wrong one. The
+    /// cap matters too: `normalize` has no length limit, so a ninth character
+    /// used to be accepted silently and only surfaced as a validation failure
+    /// after Continue.
+    static func liveFormatted(_ raw: String) -> String {
+        let cleaned = String(normalize(raw).prefix(length))
+        guard cleaned.count > 4 else { return cleaned }
+        let mid = cleaned.index(cleaned.startIndex, offsetBy: 4)
+        return "\(cleaned[..<mid])-\(cleaned[mid...])"
+    }
+
     /// Charset + length + Luhn-mod-N checksum validity of a code (any dash/case).
     static func isValid(_ raw: String) -> Bool {
         let cleaned = Array(normalize(raw))
