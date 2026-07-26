@@ -392,7 +392,9 @@ struct ItemEditorScreen: View {
             }
             .padding(.horizontal, Space.s3)
             .padding(.vertical, Space.s2)
-            .background(VaultColors.fill,
+            // Same white pill as the detail header — the gray fill here read
+            // as a disabled control next to it.
+            .background(VaultColors.surface,
                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         }
         .buttonStyle(.plain)

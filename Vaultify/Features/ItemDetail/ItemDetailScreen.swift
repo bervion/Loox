@@ -125,7 +125,6 @@ struct ItemDetailScreen: View {
                 VStack(spacing: 18) {
                     header(item)
                     if item.sharedOrigin != nil { sharedBadge }
-                    organization(item)
                     if item.sharedOrigin == nil {
                         fieldsCard(item)
                     } else if needsVerification(item) {
@@ -140,6 +139,9 @@ struct ItemDetailScreen: View {
                         // (INV-01) — header/title above are Tier-1 metadata.
                         SharedAccessGateView(itemID: item.id) { fieldsCard(item) }
                     }
+                    // Tags read as footnotes to the content, so they follow the
+                    // fields card instead of sitting between it and the title.
+                    organization(item)
                     if item.sharedOrigin == nil {
                         ItemPasskeysSection(item: item)
                         sharingSection(item)
@@ -461,20 +463,24 @@ struct ItemDetailScreen: View {
         .padding(.vertical, Space.s1)
     }
 
-    /// Item tags. The Space now lives in the header pill, so this is tags-only.
+    /// Item tags, below the fields card. Accent-soft pills — hashtags carry the
+    /// link color the way they do everywhere else on the internet; the white
+    /// pill made them read as plain metadata.
     @ViewBuilder private func organization(_ item: VaultItem) -> some View {
         if !item.tags.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.s2) {
                     ForEach(item.tags, id: \.self) { tag in
                         HStack(spacing: 3) {
-                            PolarisIcon(Icons.hashtag, size: 11).themedForeground(.secondary)
+                            PolarisIcon(Icons.hashtag, size: 11)
+                                .foregroundStyle(Color(rgb: env.theme.active.accentText))
                             Text(tag).vaultType(.subhead)
+                                .foregroundStyle(Color(rgb: env.theme.active.accentText))
                         }
                         // Matches `FilterChip`'s pill padding (Space.s3/s2) for a
                         // consistent chip language across the app.
                         .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
-                        .background(VaultColors.surface, in: Capsule())
+                        .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
                     }
                 }
             }
