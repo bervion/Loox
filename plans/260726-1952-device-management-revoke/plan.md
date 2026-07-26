@@ -1,6 +1,6 @@
 # Device Management: full peer list + Log Out Device (remote self-sign-out)
 
-Status: implementing (260726)
+Status: implemented + verified on sim (260726); 882/882 tests, iOS + macOS + extension compile. Bonus fix: appString now resolves the in-app language (was silently device-language). Owner op outstanding: deploy OwnerDevice + DeviceRevocation to CloudKit Production.
 Owner ask: Devices shows only the current device despite other devices on the same iCloud account; want the full list, a per-device detail screen, and revoke → the other side force-logs-out (queued until it comes online if offline).
 Recon: workflow wf_484e54b5-b80 (registry map, CloudKit/lifecycle map, manage-devices UX patterns).
 
