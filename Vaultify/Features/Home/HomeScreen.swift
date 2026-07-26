@@ -466,27 +466,28 @@ struct HomeScreen: View {
         QuickActionsGroupCard(
             title: LocalizedStringResource("Quick Actions").inAppLocalized,
             subtitle: LocalizedStringResource("Jump straight to what you need").inAppLocalized,
+            // Short labels pair with short and long with long, so each row's
+            // side-by-side vs stacked decision (measured per row in
+            // `QuickActionsGroupCard`) degrades one row at a time.
             items: [
                 .init(icon: "dt_square_plus",
                       label: LocalizedStringResource("Add Item").inAppLocalized,
                       tint: QuickActionsGroupCard.addTint,
                       action: { showItemTypePicker = true }),
-                .init(icon: "dt_key",
-                      label: LocalizedStringResource("Generate Password").inAppLocalized,
-                      tint: QuickActionsGroupCard.generateTint,
-                      fullWidthWhenNarrow: true,
-                      action: { showGenerator = true }),
-                .init(icon: "dt_clock",
-                      label: LocalizedStringResource("2FA Codes").inAppLocalized,
-                      tint: QuickActionsGroupCard.totpTint,
-                      count: totpItems.count,
-                      fullWidthWhenNarrow: true,
-                      action: { showTotpList = true }),
                 .init(icon: "dt_shield_keyhole",
                       label: LocalizedStringResource("Security").inAppLocalized,
                       tint: QuickActionsGroupCard.securityTint,
                       count: watchtowerIssueCount,
                       action: { NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil) }),
+                .init(icon: "dt_key",
+                      label: LocalizedStringResource("Generate Password").inAppLocalized,
+                      tint: QuickActionsGroupCard.generateTint,
+                      action: { showGenerator = true }),
+                .init(icon: "dt_clock",
+                      label: LocalizedStringResource("2FA Codes").inAppLocalized,
+                      tint: QuickActionsGroupCard.totpTint,
+                      count: totpItems.count,
+                      action: { showTotpList = true }),
             ]
         )
     }

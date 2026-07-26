@@ -68,11 +68,12 @@ struct LooxFeatureTile<Destination: View>: View {
                     .vaultType(.subhead)
                     .fontWeight(.semibold)
                     .themedForeground()
-                    .lineLimit(1)
-                    // Long VI titles ("Mở trên máy tính") squeeze a step
-                    // instead of wrapping — one line keeps every tile the
-                    // same compact height, like the reference tiles.
-                    .minimumScaleFactor(0.8)
+                    // Long titles (VI "Gửi sang trình duyệt") WRAP at full size
+                    // instead of squeezing into a "…" line (owner 260726); the
+                    // HStack's center alignment keeps the badge vertically
+                    // centered against however many lines the title takes.
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
             }
             HStack(spacing: Space.s2) {
                 if let status {

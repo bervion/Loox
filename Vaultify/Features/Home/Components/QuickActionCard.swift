@@ -20,34 +20,25 @@ struct QuickActionsGroupCard: View {
         /// Per-type duotone hue (see the fixed palette on `QuickActionsGroupCard`).
         let tint: Color
         var count: Int? = nil
-        /// Long-label tiles ("Generate Password", "2FA Codes" + badge) get a
-        /// full-width row at compact width instead of squeezing into a half
-        /// tile; roomy layouts keep the 2×2.
-        var fullWidthWhenNarrow: Bool = false
         let action: () -> Void
         var id: String { icon }
     }
 
     let title: LocalizedStringResource
     let subtitle: LocalizedStringResource
-    /// Expects four items; laid out two per row (2×2).
+    /// Expects four items; laid out two per row (2×2). Pair short labels with
+    /// short and long with long — a row falls back to stacked full-width tiles
+    /// as ONE unit when its pair doesn't fit side by side.
     let items: [Item]
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// Chunk the items into rows of two for the even 2×2 grid.
     private var rows: [[Item]] {
         stride(from: 0, to: items.count, by: 2).map {
             Array(items[$0 ..< min($0 + 2, items.count)])
         }
-    }
-
-    /// Compact width uses the split layout only when some tile asked for a
-    /// full row; regular widths always keep the even 2×2.
-    private var usesNarrowLayout: Bool {
-        horizontalSizeClass != .regular && items.contains(where: \.fullWidthWhenNarrow)
     }
 
     var body: some View {
@@ -63,25 +54,21 @@ struct QuickActionsGroupCard: View {
 
             // NON-lazy rows: a fixed set of four tiles never needs cell recycling,
             // and explicit stacks keep tile identity stable across Home re-renders.
-            if usesNarrowLayout {
-                // Compact split (owner 260726): the short-label pair shares one
-                // grid row; the long-label tiles ("Generate Password",
-                // "2FA Codes" + count badge) each take a full-width row —
-                // half tiles scaled and truncated them on small phones.
-                VStack(spacing: Space.s3) {
-                    HStack(spacing: Space.s3) {
-                        ForEach(items.filter { !$0.fullWidthWhenNarrow }) { item in
-                            QuickActionTile(item: item, reduceMotion: reduceMotion)
-                        }
-                    }
-                    ForEach(items.filter(\.fullWidthWhenNarrow)) { item in
-                        QuickActionTile(item: item, reduceMotion: reduceMotion)
-                    }
-                }
-            } else {
-                VStack(spacing: Space.s3) {
-                    ForEach(rows.indices, id: \.self) { row in
+            // Each row MEASURES itself (owner 260726): the side-by-side pair wins
+            // whenever both labels render whole at the current width and Dynamic
+            // Type size (the tile labels refuse to shrink or truncate, so an
+            // overflowing pair genuinely doesn't fit); otherwise that row's tiles
+            // stack full-width. Big phones get the even 2×2, small phones and
+            // huge accessibility fonts degrade row by row.
+            VStack(spacing: Space.s3) {
+                ForEach(rows.indices, id: \.self) { row in
+                    ViewThatFits(in: .horizontal) {
                         HStack(spacing: Space.s3) {
+                            ForEach(rows[row]) { item in
+                                QuickActionTile(item: item, reduceMotion: reduceMotion)
+                            }
+                        }
+                        VStack(spacing: Space.s3) {
                             ForEach(rows[row]) { item in
                                 QuickActionTile(item: item, reduceMotion: reduceMotion)
                             }
@@ -134,9 +121,10 @@ private struct QuickActionTile: View {
                     .fontWeight(.semibold)
                     .themedForeground(.primary)
                     .lineLimit(1)
-                    // Backstop only — the longest label ("Tạo mật khẩu") fits a half-width
-                    // tile; DNA allows scale-down as a last resort, never below 0.7.
-                    .minimumScaleFactor(0.8)
+                    // Refuses to shrink or truncate — this is what makes the row's
+                    // `ViewThatFits` honest: a pair only renders side by side when
+                    // both labels fit whole, so no scale-down backstop is needed.
+                    .fixedSize(horizontal: true, vertical: false)
 
                 Spacer(minLength: 0)
 
