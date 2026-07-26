@@ -407,6 +407,16 @@
         }
       }
     },
+    "1 year": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 năm"
+          }
+        }
+      }
+    },
     "10 minutes": {
       "localizations": {
         "vi": {
@@ -444,6 +454,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "15 giây"
+          }
+        }
+      }
+    },
+    "180 days": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "180 ngày"
           }
         }
       }
@@ -515,6 +535,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "5 phút"
+          }
+        }
+      }
+    },
+    "60 days": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60 ngày"
           }
         }
       }
@@ -3997,6 +4027,16 @@
         }
       }
     },
+    "Custom reminder": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chu kỳ tùy chỉnh"
+          }
+        }
+      }
+    },
     "Customize Home": {
       "localizations": {
         "en": {
@@ -4009,6 +4049,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tùy chỉnh Trang chủ"
+          }
+        }
+      }
+    },
+    "Custom…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tùy chỉnh…"
           }
         }
       }
@@ -4083,6 +4133,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sáng cổ điển"
+          }
+        }
+      }
+    },
+    "Days": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số ngày"
           }
         }
       }
@@ -5977,6 +6037,16 @@
         }
       }
     },
+    "How many days between password changes.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số ngày giữa mỗi lần đổi mật khẩu."
+          }
+        }
+      }
+    },
     "How resistant your passwords are to guessing": {
       "localizations": {
         "vi": {
@@ -7042,6 +7112,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loox có thể điều chỉnh nhẹ màu bạn chọn để chữ và nút luôn dễ đọc."
+          }
+        }
+      }
+    },
+    "Loox reminds you to change this password when the time comes.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox sẽ nhắc bạn đổi mật khẩu này khi đến hạn."
           }
         }
       }

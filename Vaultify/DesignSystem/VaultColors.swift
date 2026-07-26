@@ -17,6 +17,13 @@ enum VaultColors {
         }
     }
 
+    /// Copy-flash confirmation: the brand blue (the capsule-CTA hue) with white
+    /// content. Deliberately NOT the theme accent — mono/graphite accents
+    /// resolve to pale fills whose WCAG on-color is near-black, which made the
+    /// flash read as a murky wash with black text.
+    static let copyFlash = dynamic(light: 0x0065F4, dark: 0x0065F4)
+    static let copyFlashText = Color.white
+
     static let strengthWeak = dynamic(light: 0xD72C0D, dark: 0xFF6B5B)
     static let strengthMedium = dynamic(light: 0xB98900, dark: 0xE3B341)
     static let strengthStrong = dynamic(light: 0x1A8B5E, dark: 0x34C789)

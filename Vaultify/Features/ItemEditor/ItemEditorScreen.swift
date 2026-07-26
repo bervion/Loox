@@ -181,7 +181,11 @@ struct ItemEditorScreen: View {
                 }
                 .listRowBackground(VaultColors.surface)
 
-                RotationReminderSection(rotateDays: $draft.rotateDays)
+                // Rotation only means something for items that actually carry a
+                // password — an identity or note has nothing to rotate.
+                if draft.fields.contains(where: { $0.kind == .password && !$0.isEmpty }) {
+                    RotationReminderSection(rotateDays: $draft.rotateDays)
+                }
             }
             // Dismiss the keyboard on scroll. (A Form-level `.onTapGesture` was removed: it
             // swallowed taps on in-row Buttons — e.g. "Add Website" — so their action never
@@ -708,34 +712,88 @@ struct ItemEditorScreen: View {
 
 // MARK: - Rotation reminder picker
 
-/// Segmented-style Picker for the per-item rotation cadence.
-/// Cadence options: 0 = off, 15 / 30 / 90 days.
+/// Per-item rotation cadence: presets plus a free custom day count. Shown only
+/// for password-bearing items (gated at the call site).
+///
+/// The clock-with-arrow system glyph is a deliberate owner-requested exception
+/// to the Polaris-only icon rule — Polaris ships no "time to rotate" mark.
 private struct RotationReminderSection: View {
     @Binding var rotateDays: Int
 
-    private let options: [(label: LocalizedStringResource, value: Int)] = [
+    @State private var showCustom = false
+    @State private var customText = ""
+
+    private static let presets: [(label: LocalizedStringResource, value: Int)] = [
         ("Off", 0),
         ("15 days", 15),
         ("30 days", 30),
+        ("60 days", 60),
         ("90 days", 90),
+        ("180 days", 180),
+        ("1 year", 365),
     ]
+
+    private var isPreset: Bool { Self.presets.contains { $0.value == rotateDays } }
+
+    private var currentLabel: String {
+        Self.presets.first { $0.value == rotateDays }
+            .map { String(localized: $0.label.inAppLocalized) }
+            ?? appString("\(rotateDays) days")
+    }
 
     var body: some View {
         Section {
-            Picker(selection: $rotateDays) {
-                ForEach(options, id: \.value) { option in
-                    Text(option.label).tag(option.value)
-                }
-            } label: {
+            HStack {
                 Label {
                     Text("Rotation reminder")
                 } icon: {
-                    PolarisIcon("ic_refresh")
+                    Image(systemName: "clock.arrow.circlepath")
                 }
+                Spacer()
+                Menu {
+                    Picker("", selection: $rotateDays) {
+                        ForEach(Self.presets, id: \.value) { option in
+                            Text(option.label).tag(option.value)
+                        }
+                        // A custom cadence stays visible (and checked) instead of
+                        // silently snapping back to a preset.
+                        if !isPreset {
+                            Text("\(rotateDays) days").tag(rotateDays)
+                        }
+                    }
+                    Divider()
+                    Button {
+                        customText = rotateDays > 0 ? String(rotateDays) : ""
+                        showCustom = true
+                    } label: {
+                        Label("Custom…", systemImage: "slider.horizontal.3")
+                    }
+                } label: {
+                    Text(verbatim: currentLabel)
+                        .themedForeground(.secondary)
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
             }
-            .pickerStyle(.menu)
+        } footer: {
+            if rotateDays > 0 {
+                Text("Loox reminds you to change this password when the time comes.")
+            }
         }
         .listRowBackground(VaultColors.surface)
+        .alert("Custom reminder", isPresented: $showCustom) {
+            TextField("Days", text: $customText)
+                .platformKeyboardType(.numberPad)
+            Button("Set") {
+                if let days = Int(customText.trimmingCharacters(in: .whitespaces)),
+                   (1...3650).contains(days) {
+                    rotateDays = days
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("How many days between password changes.")
+        }
     }
 }
 

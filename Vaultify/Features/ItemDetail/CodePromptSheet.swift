@@ -32,8 +32,9 @@ struct CodePromptSheet: View {
                     }
                 }
                 Section {
-                    RevealableSecureField(title: placeholder, text: $code, autofocus: true)
-                        .listRowInsets(.init())
+                    // `inList` — the section card already provides the surface; the
+                    // field's own gray capsule inside it read as a broken control.
+                    RevealableSecureField(title: placeholder, text: $code, inList: true, autofocus: true)
                         .submitLabel(.go)
                         .onSubmit { Task { await submit() } }
                 }

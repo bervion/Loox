@@ -128,8 +128,7 @@ struct ProtectFieldSheet: View {
         if scheme == .level2 {
             if hasLevel2 && !level2Unlocked {
                 Section {
-                    RevealableSecureField(title: "Extra Password", text: $level2Password)
-                        .listRowInsets(.init())
+                    RevealableSecureField(title: "Extra Password", text: $level2Password, inList: true)
                 } footer: {
                     Text("Enter it once to unlock extra protection for this session.")
                 }
@@ -143,8 +142,8 @@ struct ProtectFieldSheet: View {
             }
         } else {
             Section {
-                RevealableSecureField(title: "Code", text: $customCode).listRowInsets(.init())
-                RevealableSecureField(title: "Confirm code", text: $confirmCode).listRowInsets(.init())
+                RevealableSecureField(title: "Code", text: $customCode, inList: true)
+                RevealableSecureField(title: "Confirm code", text: $confirmCode, inList: true)
             } footer: {
                 Text("Only this code can reveal the field. If you forget it, the field cannot be recovered.")
             }

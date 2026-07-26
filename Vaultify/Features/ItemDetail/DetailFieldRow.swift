@@ -60,6 +60,11 @@ struct DetailFieldRow: View {
         PrivateEmailMatch.resolve(kind: field.kind, value: field.value, repository: env.repository)
     }
 
+    /// Notes opt out of tap-to-copy: a long note is for READING (and its links
+    /// for tapping) — accidental flashes on every touch made it unusable.
+    /// Copy stays one step away in the row menu.
+    private var tapCopies: Bool { field.kind != .multiline }
+
     private var normalBody: some View {
         let match = privateEmailMatch
         return HStack(spacing: 12) {
@@ -67,7 +72,7 @@ struct DetailFieldRow: View {
                 HStack(spacing: 6) {
                     fieldLabelText(field.label)
                         .vaultType(.caption).fontWeight(.medium)
-                        .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accentText))
+                        .foregroundStyle(copied ? VaultColors.copyFlashText.opacity(0.85) : theme.color(.accentText))
                     if match != nil {
                         PrivateEmailBadge(onAccentBackground: copied)
                     }
@@ -81,9 +86,11 @@ struct DetailFieldRow: View {
                 // Value already renders alias text (Controlled Reveal doesn't
                 // apply here — the field isn't secret) — copy() below still
                 // always copies `field.value`, i.e. the alias, never the
-                // forwards-to destination shown on this line.
-                if let match, !copied {
+                // forwards-to destination shown on this line. Transparent (not
+                // removed) during the flash so the row height never jumps.
+                if let match {
                     PrivateEmailForwardsToLine(match: match, showsStatusText: false)
+                        .opacity(copied ? 0 : 1)
                 }
             }
             Spacer(minLength: 8)
@@ -92,10 +99,10 @@ struct DetailFieldRow: View {
         .padding(.horizontal, Space.s4)
         .padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(copied ? theme.color(.accent) : Color.clear)
-        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
+        .background(copied ? VaultColors.copyFlash : Color.clear)
+        .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.primary))
         .contentShape(.rect)
-        .onTapGesture { copy() }
+        .onTapGesture { if tapCopies { copy() } }
         .animation(.easeOut(duration: 0.18), value: copied)
         .platformFullScreenCover(isPresented: $showLargeType) {
             // For a TOTP field, drive the grid live from the secret + show a header ring.
@@ -107,52 +114,68 @@ struct DetailFieldRow: View {
         }
     }
 
+    /// The value keeps its layout during the copy flash — it turns transparent
+    /// and "Copied" overlays it, so multi-line fields never collapse and the
+    /// row height stays rock steady through the animation.
     @ViewBuilder private var valueView: some View {
-        if copied {
-            Text(copiedFeedbackText).vaultType(.body)
-        } else {
-            switch field.kind {
-            case .totp:
-                TOTPCodeView(secret: field.value)
-            case .url:
-                // Website → SF, scheme greyed, domain/path in accent, tail-truncated.
-                Text(urlColored(field.value)).vaultType(.body)
-                    .lineLimit(1).truncationMode(.tail)
-            case .monospace where isCardNumber:
-                // Grouped display only — storage (`field.value`) stays digits-only;
-                // `GlyphResolveText` resolves the FORMATTED string so a revealed card
-                // number reads in its real 4-4-4-4 (or Amex 4-6-5) grouping.
-                let formatted = PaymentCard.formattedForDisplay(field.value)
+        valueContent
+            .opacity(copied ? 0 : 1)
+            .overlay(alignment: .topLeading) {
+                if copied {
+                    // Own-size layout: the overlay must not inherit the value's
+                    // width, or a short value truncates "Copied" to "Co…".
+                    Text(copiedFeedbackText).vaultType(.body)
+                        .foregroundStyle(VaultColors.copyFlashText)
+                        .fixedSize()
+                }
+            }
+    }
+
+    @ViewBuilder private var valueContent: some View {
+        switch field.kind {
+        case .totp:
+            TOTPCodeView(secret: field.value)
+        case .url:
+            // Website → SF, scheme greyed, domain/path in accent, tail-truncated.
+            Text(urlColored(field.value)).vaultType(.body)
+                .lineLimit(1).truncationMode(.tail)
+        case .multiline:
+            // Notes render their Markdown (headings, lists, emphasis, links).
+            MarkdownNoteText(text: field.value)
+        case .monospace where isCardNumber:
+            // Grouped display only — storage (`field.value`) stays digits-only;
+            // `GlyphResolveText` resolves the FORMATTED string so a revealed card
+            // number reads in its real 4-4-4-4 (or Amex 4-6-5) grouping.
+            let formatted = PaymentCard.formattedForDisplay(field.value)
+            if revealed {
+                GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                    .textSelection(.enabled)
+            } else {
+                GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                    .textSelection(.disabled)
+            }
+        default:
+            // Mono is for SECRETS only (user rule): passwords and protected
+            // values keep MonoLisa; usernames, emails, aliases, and notes
+            // read in SF like the rest of the app.
+            let valueFont: Font = isSecret ? .vaultCode() : VaultType.body.font
+            if isSecret {
+                // Controlled Reveal: glyphs resolve in place left-to-right
+                // instead of a whole-field crossfade between two views.
+                // `.textSelection` takes a concrete (non-uniform) type per
+                // branch, so the enabled/disabled cases can't share a ternary.
                 if revealed {
-                    GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                    GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
                         .textSelection(.enabled)
                 } else {
-                    GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
+                    GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
                         .textSelection(.disabled)
                 }
-            default:
-                // Mono is for SECRETS only (user rule): passwords and protected
-                // values keep MonoLisa; usernames, emails, aliases, and notes
-                // read in SF like the rest of the app.
-                let valueFont: Font = isSecret ? .vaultCode() : VaultType.body.font
-                if isSecret {
-                    // Controlled Reveal: glyphs resolve in place left-to-right
-                    // instead of a whole-field crossfade between two views.
-                    // `.textSelection` takes a concrete (non-uniform) type per
-                    // branch, so the enabled/disabled cases can't share a ternary.
-                    if revealed {
-                        GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
-                            .textSelection(.enabled)
-                    } else {
-                        GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
-                            .textSelection(.disabled)
-                    }
-                } else {
-                    Text(field.value)
-                        .font(valueFont)
-                        .lineLimit(field.kind == .multiline ? nil : 1)
-                        .textSelection(.enabled)
-                }
+            } else {
+                Text(field.value)
+                    .font(valueFont)
+                    .lineLimit(1)
+                    .textSelection(.enabled)
             }
         }
     }
@@ -164,9 +187,14 @@ struct DetailFieldRow: View {
         appString("Copied")
     }
 
+    /// No standalone copy glyph — the whole row copies on tap and the flash is
+    /// the feedback; the menu keeps an explicit Copy. The badge stays mounted
+    /// during the flash so the trailing cluster never shifts. Notes carry no
+    /// menu at all: they're for reading and text selection, and their value
+    /// lives in the editor.
     @ViewBuilder private var trailing: some View {
         HStack(spacing: 10) {
-            if !copied, field.kind == .password, !field.value.isEmpty {
+            if field.kind == .password, !field.value.isEmpty {
                 strengthBadge
             }
             if field.kind == .totp {
@@ -175,18 +203,16 @@ struct DetailFieldRow: View {
                                   period: 30, onAccent: copied)
                 }
             }
-            // Copy feedback glyph: clipboard morphs to clipboard-check on copy —
-            // an at-a-glance affordance in addition to the row's accent flash.
-            CopyMorphIcon(copied: copied)
-                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
-            menu
+            if field.kind != .multiline {
+                menu
+            }
         }
     }
 
     private var strengthBadge: some View {
         let strength = PasswordStrength.evaluate(field.value)
         return HStack(spacing: 5) {
-            Text(strength.title).vaultType(.subhead).foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
+            Text(strength.title).vaultType(.subhead).foregroundStyle(copied ? VaultColors.copyFlashText.opacity(0.85) : theme.color(.secondary))
             Circle().fill(VaultColors.strength(strength)).frame(width: 9, height: 9)
         }
     }
@@ -213,9 +239,9 @@ struct DetailFieldRow: View {
             }
         } label: {
             PolarisIcon("ic_menu_horizontal", size: 17)
-                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
+                .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
                 .frame(width: 30, height: 30)
-                .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
+                .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))
                 // Invisible padded hit area: the visual circle stays 30pt, the
                 // tappable region meets the 44pt minimum (rule 6).
                 .frame(width: Metric.hitMin, height: Metric.hitMin)

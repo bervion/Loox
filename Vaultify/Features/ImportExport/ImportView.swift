@@ -39,8 +39,7 @@ struct ImportView: View {
 
             if let encryptedData {
                 Section("Encrypted backup") {
-                    RevealableSecureField(title: "Backup password", text: $passphrase)
-                        .listRowInsets(.init())
+                    RevealableSecureField(title: "Backup password", text: $passphrase, inList: true)
                     Button("Decrypt") { Task { await decrypt(encryptedData) } }
                         .disabled(passphrase.isEmpty || working)
                 }

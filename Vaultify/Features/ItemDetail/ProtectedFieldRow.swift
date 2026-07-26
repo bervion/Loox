@@ -15,10 +15,11 @@ struct ProtectedFieldRow: View {
     @State private var showLevel2Prompt = false
     @State private var showCustomPrompt = false
     @State private var showLargeType = false
-    /// Removal asked while still locked — reveal first (prompting if needed),
-    /// then fall through to the confirmation below.
-    @State private var pendingRemoval = false
     @State private var confirmRemoval = false
+
+    /// Extra-protection teal — the same trailing-wash language as the passkey
+    /// rows' purple, on its own hue so the two never read as one feature.
+    private static let guardTeal = Color(rgb: 0x14B8A6)
 
     private var scheme: SecretGuard.Scheme? { SecretGuard.scheme(of: field.value) }
     private var theme: AppTheme { env.theme.active }
@@ -28,17 +29,17 @@ struct ProtectedFieldRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
                     .vaultType(.caption).fontWeight(.medium)
-                    .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
+                    .foregroundStyle(copied ? VaultColors.copyFlashText.opacity(0.85) : theme.color(.accent))
                 value
-                if let error { Text(error).vaultType(.caption).foregroundStyle(copied ? theme.color(.onAccent) : VaultColors.strengthWeak) }
+                if let error { Text(error).vaultType(.caption).foregroundStyle(copied ? VaultColors.copyFlashText : VaultColors.strengthWeak) }
             }
             Spacer(minLength: 8)
             trailing
         }
         .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(copied ? theme.color(.accent) : Color.clear)
-        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
+        .background(rowBackground)
+        .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.primary))
         .contentShape(.rect)
         .onTapGesture { primaryTap() }
         .animation(.easeOut(duration: 0.18), value: copied)
@@ -63,55 +64,73 @@ struct ProtectedFieldRow: View {
         }
     }
 
-    @ViewBuilder private var value: some View {
+    /// The passkey rows' trailing-wash treatment on the extra-protection teal —
+    /// the standing "this row is special" marker; the copy flash overrides it.
+    @ViewBuilder private var rowBackground: some View {
         if copied {
-            Text("Copied").vaultType(.body)
-        } else if let plaintext {
-            Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
+            VaultColors.copyFlash
         } else {
-            HStack(spacing: 6) {
-                PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
+            LinearGradient(colors: [.clear, Self.guardTeal.opacity(0.22)],
+                           startPoint: .center, endPoint: .trailing)
+        }
+    }
+
+    /// Same keep-the-size flash as `DetailFieldRow`: the value goes transparent
+    /// and "Copied" overlays it, so a long revealed value never collapses the row.
+    @ViewBuilder private var value: some View {
+        Group {
+            if let plaintext {
+                Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
+            } else {
                 // Name the secret up front — which prompt appears on tap must
                 // not be a surprise (Extra Password unlocks the session once;
-                // a custom code is asked every time).
+                // a custom code is asked every time). The trailing glyph carries
+                // the lock; a second one here read unbalanced.
                 Text(scheme == .custom ? "Protected. Reveal with custom code"
                                        : "Protected. Reveal with Extra Password")
                     .vaultType(.subhead).themedForeground(.secondary)
             }
         }
+        .opacity(copied ? 0 : 1)
+        .overlay(alignment: .topLeading) {
+            if copied {
+                Text("Copied").vaultType(.body)
+                    .foregroundStyle(VaultColors.copyFlashText)
+                    .fixedSize()
+            }
+        }
     }
 
-    private var trailing: some View {
-        Menu {
-            if plaintext == nil {
-                Button { primaryTap() } label: { Label("Reveal", image: Icons.reveal) }
-                // Unprotecting must not require FINDING the reveal first — ask
-                // for the secret here, then confirm.
-                Button(role: .destructive) { requestRemoval() } label: {
-                    Label("Remove Protection", image: Icons.lock)
-                }
-            } else {
+    /// Locked: a plain teal lock glyph, mirroring the passkey rows' trailing
+    /// mark — the whole row is the reveal control, so a menu would only repeat
+    /// it. Revealed: the "•••" menu with the value actions.
+    @ViewBuilder private var trailing: some View {
+        if plaintext == nil {
+            PolarisIcon(Icons.lockFill, size: 22)
+                .foregroundStyle(copied ? VaultColors.copyFlashText : Self.guardTeal)
+        } else {
+            Menu {
                 Button { copy() } label: { Label("Copy", image: Icons.copy) }
                 Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
                 Button { plaintext = nil } label: { Label("Conceal", image: Icons.hide) }
-                Button(role: .destructive) { requestRemoval() } label: {
+                Button(role: .destructive) { confirmRemoval = true } label: {
                     Label("Remove Protection", image: Icons.lock)
                 }
+            } label: {
+                PolarisIcon("ic_menu_horizontal", size: 17)
+                    .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
+                    .frame(width: 30, height: 30)
+                    .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))
+                    // Invisible padded hit area: the visual circle stays 30pt, the
+                    // tappable region meets the 44pt minimum (rule 6).
+                    .frame(width: Metric.hitMin, height: Metric.hitMin)
+                    .contentShape(Rectangle())
             }
-        } label: {
-            PolarisIcon("ic_menu_horizontal", size: 17)
-                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
-                .frame(width: 30, height: 30)
-                .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
-                // Invisible padded hit area: the visual circle stays 30pt, the
-                // tappable region meets the 44pt minimum (rule 6).
-                .frame(width: Metric.hitMin, height: Metric.hitMin)
-                .contentShape(Rectangle())
+            // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
         }
-        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
     }
 
     private func primaryTap() {
@@ -138,10 +157,8 @@ struct ProtectedFieldRow: View {
             // Crossing the Extra Protection boundary is a risky state (rule:
             // haptics vocabulary), distinct from the plain `.success` on copy.
             Haptics.warning()
-            finishPendingRemoval()
         } else {
             error = appString("Couldn’t decrypt this field.")
-            pendingRemoval = false
         }
     }
 
@@ -164,7 +181,6 @@ struct ProtectedFieldRow: View {
             // Crossing the Extra Protection boundary is a risky state (rule:
             // haptics vocabulary), distinct from the plain `.success` on copy.
             Haptics.warning()
-            finishPendingRemoval()
             return nil
         } catch {
             return appString("Incorrect code.")
@@ -178,30 +194,6 @@ struct ProtectedFieldRow: View {
         onUsed()
         copied = true
         Task { try? await Task.sleep(for: .seconds(1.2)); withAnimation { copied = false } }
-    }
-
-    /// Removal entry point from either menu state: with plaintext in hand go
-    /// straight to the confirmation; while locked, run the reveal ceremony
-    /// first (the secret still gates the write-back) and confirm on success.
-    private func requestRemoval() {
-        if plaintext != nil {
-            confirmRemoval = true
-        } else {
-            pendingRemoval = true
-            primaryTap()
-        }
-    }
-
-    /// A reveal that was started as a removal falls through to the confirmation.
-    /// Slight delay so the prompt sheet finishes dismissing first — presenting a
-    /// dialog while a sheet is mid-dismiss silently drops the dialog.
-    private func finishPendingRemoval() {
-        guard pendingRemoval else { return }
-        pendingRemoval = false
-        Task {
-            try? await Task.sleep(for: .milliseconds(450))
-            confirmRemoval = true
-        }
     }
 
     private func removeProtection() {

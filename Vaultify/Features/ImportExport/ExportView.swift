@@ -36,8 +36,8 @@ struct ExportView: View {
 
             if mode == .encrypted {
                 Section {
-                    RevealableSecureField(title: "Password", text: $passphrase).listRowInsets(.init())
-                    RevealableSecureField(title: "Confirm", text: $confirm).listRowInsets(.init())
+                    RevealableSecureField(title: "Password", text: $passphrase, inList: true)
+                    RevealableSecureField(title: "Confirm", text: $confirm, inList: true)
                 } header: {
                     Text("Backup password")
                 } footer: {
