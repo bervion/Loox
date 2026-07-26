@@ -95,9 +95,23 @@ import Foundation
         // "restore with recovery key" finding no synced vault. The escrow
         // write ensures its own zone and is fingerprint-cheap when unchanged.
         await escrow.pushRecoveryEnvelopeIfNeeded()
+        // A remote sign-out marker for THIS device (delivered by the pull above)
+        // outranks everything else: stop participating in the registry — a publish
+        // here would resurrect the row the owner just removed — and hand off to
+        // the app-level local erase (`AppEnvironment.handleRemoteSignOut`).
+        if deviceRegistry.isSelfRevoked {
+            NotificationCenter.default.post(name: .vaultRemoteSignOut, object: nil)
+            return
+        }
         if case .success = cloudSync.status {
             await pushService.ensureSubscribedIfNeeded()
             await deviceRegistry.publish()
         }
     }
+}
+
+extension Notification.Name {
+    /// Posted by `SyncCoordinator` when a `DeviceRevocation` marker for THIS device
+    /// arrives: another device asked this one to sign out (see `DeviceRegistryService`).
+    static let vaultRemoteSignOut = Notification.Name("vaultRemoteSignOut")
 }

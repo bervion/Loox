@@ -91,6 +91,18 @@ struct RootView: View {
                 env.syncNow()
             }
         }
+        // Another device asked this one to sign out (Profile › Devices › Log Out
+        // Device) — the marker arrives with any sync, including a silent push.
+        .onReceive(NotificationCenter.default.publisher(for: .vaultRemoteSignOut)) { _ in
+            env.handleRemoteSignOut()
+        }
+        .alert("This device was signed out", isPresented: Binding(
+            get: { env.remoteSignOutNotice },
+            set: { env.remoteSignOutNotice = $0 })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Another device removed this device from the vault. Loox data on this device was erased. Your items remain in the vault.")
+        }
         .onChange(of: env.settings.onboardingCompleted) { _, completed in
             // Safety net for onboarding paths that skip the ChooseTheme step (e.g.
             // restoring an existing vault via JoinVaultFlow) — release the

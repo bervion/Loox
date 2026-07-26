@@ -277,9 +277,11 @@ struct DeviceRow: View {
             }
             Spacer(minLength: Space.s2)
             if device.isCurrent { activeBadge }
+            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
         }
         .padding(.horizontal, Space.s4)
         .frame(minHeight: Metric.rowHeight)
+        .contentShape(.rect)
     }
 
     /// The marketing model name ("iPhone 16 Pro Max") rather than `device.name`, which is
@@ -321,7 +323,10 @@ struct ProfileDevicesCard: View {
             Text("Devices").vaultType(.sectionLabel).themedForeground(.secondary)
             ProfileGroupCard {
                 ForEach(Array(devices.enumerated()), id: \.element.id) { index, device in
-                    DeviceRow(device: device)
+                    NavigationLink { DeviceDetailScreen(device: device) } label: {
+                        DeviceRow(device: device)
+                    }
+                    .buttonStyle(.plain)
                     if index < devices.count - 1 { ProfileRowDivider() }
                 }
             }
@@ -332,11 +337,15 @@ struct ProfileDevicesCard: View {
             }
         }
         .task { await load() }
+        // A sign-out issued from the detail screen filters that device out at once.
+        .onReceive(NotificationCenter.default.publisher(for: .vaultDevicesChanged)) { _ in
+            Task { await load() }
+        }
     }
 
     private func load() async {
         let service = DeviceRegistryService(settings: env.settings)
-        // Show this device immediately (no network), then publish + refresh from CloudKit.
+        // Show this device immediately (no network), then publish + refresh the mirror.
         if devices.isEmpty { devices = [service.thisDevice] }
         await service.publish()
         let fetched = await service.fetchDevices()

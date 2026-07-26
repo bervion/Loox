@@ -332,6 +332,33 @@ import SwiftUI
         Task { [approvalShare] in await approvalShare.revokeAllOwned() }
         // Rendezvous inbox dies with the vault (descriptor + subscription).
         Task { [inviteInbox] in await inviteInbox.disarm() }
+        eraseLocalState()
+    }
+
+    /// One-shot flag: RootView presents the "this device was signed out" alert once
+    /// the erase below lands the user on onboarding.
+    var remoteSignOutNotice = false
+    private var remoteSignOutHandled = false
+
+    /// A remote "Log Out Device" marker was found for THIS device (see
+    /// `DeviceRegistryService`): erase LOCAL state only — the vault lives on in
+    /// iCloud and on the owner's other devices, so none of `eraseEverything`'s
+    /// remote teardown may run — retire this device's registry identity so a
+    /// future re-pair isn't wiped by the same marker, and land on onboarding.
+    func handleRemoteSignOut() {
+        guard !remoteSignOutHandled else { return }
+        remoteSignOutHandled = true
+        // Best-effort: remove our registry row while credentials still work.
+        let registry = DeviceRegistryService(settings: settings)
+        Task { await registry.deleteOwnRecord() }
+        eraseLocalState()
+        DeviceRegistryService.resetIdentityAfterRemoteSignOut()
+        remoteSignOutNotice = true
+    }
+
+    /// The device-local portion of a vault erase — shared by Settings → Erase Vault
+    /// (which also tears down the remote copy) and a remote sign-out (which must not).
+    private func eraseLocalState() {
         sharingStore.wipe()
         // Quick-link revoke tokens die with the vault; the links themselves
         // expire server-side (we can't revoke without the tokens anyway).
@@ -355,6 +382,7 @@ import SwiftUI
         // with the "Vault" zone that eraseRemote() drops (no extra remote call).
         RelayPrincipalEscrowService.clearLocalCache()
         SharedZoneSubscriptionService.clearLocalFlag()
+        DeviceRegistryMirror.clear()
         settings.approvalModeEnabled = false
         settings.iCloudSyncEnabled = false
         repository.clear()
