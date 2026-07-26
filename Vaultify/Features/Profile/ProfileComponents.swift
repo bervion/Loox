@@ -56,10 +56,22 @@ enum ProfileTileStyle {
 struct ProfileRowTile: View {
     @Environment(AppEnvironment.self) private var env
     private let style: ProfileTileStyle
+    /// Per-call optical size for template-asset glyphs. The 18pt default fits
+    /// square-ish art (fa_users); tall NARROW glyphs (the device icons — a phone
+    /// is ~3:4) render visually smaller at the same point size and pass a larger
+    /// value to sit at the same optical weight in the 30pt tile.
+    private let assetGlyphOverride: CGFloat?
 
     /// Original call shape — a Polaris asset name.
-    init(icon: String) { self.style = .polaris(icon) }
-    init(style: ProfileTileStyle) { self.style = style }
+    init(icon: String) {
+        self.style = .polaris(icon)
+        self.assetGlyphOverride = nil
+    }
+
+    init(style: ProfileTileStyle, assetGlyphSize: CGFloat? = nil) {
+        self.style = style
+        self.assetGlyphOverride = assetGlyphSize
+    }
 
     var body: some View {
         Group {
@@ -117,7 +129,7 @@ struct ProfileRowTile: View {
         case .templateAsset(let name):
             // `PolarisIcon` is a generic template-vector renderer (name + size), not literally
             // limited to the Polaris SVG set — reused as-is for the FontAwesome device glyphs.
-            PolarisIcon(name, size: Self.assetGlyphSize)
+            PolarisIcon(name, size: assetGlyphOverride ?? Self.assetGlyphSize)
         }
     }
 
@@ -246,9 +258,12 @@ struct DeviceRow: View {
 
     var body: some View {
         HStack(spacing: Space.s3) {
+            // 22pt, not the 18pt default: the FA device glyphs are tall and narrow
+            // (a phone is ~3:4), so at 18 they read a size class smaller than the
+            // square glyphs in the neighboring tiles.
             ProfileRowTile(style: .plain(
                 .templateAsset(DeviceIconMapping.icon(forModel: device.model)),
-                ProfileBadgeTint.deviceHex))
+                ProfileBadgeTint.deviceHex), assetGlyphSize: 22)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: title).vaultType(.body).themedForeground().lineLimit(1)
                 Text(verbatim: subtitle).vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
