@@ -440,7 +440,10 @@ private struct JoinByRecoveryView: View {
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
         #if os(iOS)
-        .sheet(isPresented: $showScanner) {
+        // Full screen: aiming at a recovery QR needs the whole viewport, and a
+        // card-sized viewfinder with the form showing behind it reads as a
+        // preview rather than a camera.
+        .platformFullScreenCover(isPresented: $showScanner) {
             RecoveryScannerSheet { scanned in
                 recoveryKey = scanned
                 showScanner = false

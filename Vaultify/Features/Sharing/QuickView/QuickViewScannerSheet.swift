@@ -23,7 +23,10 @@ struct QuickViewScannerSheet: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.black)
-            .ignoresSafeArea(edges: .top)
+            // Presented full screen, so the preview runs edge to edge behind the
+            // nav bar and the home indicator rather than stopping at a safe-area
+            // line that reads as a letterbox.
+            .ignoresSafeArea()
             .navigationTitle("Scan Code")
             // Camera preview is always dark — keep the nav chrome legible
             // over it regardless of the app theme.

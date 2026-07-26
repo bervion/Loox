@@ -79,7 +79,10 @@ struct SyncSettingsView: View {
         .themedFormBackground()
         .navigationTitle("iCloud Sync")
         .platformNavigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showPairSheet) { PairDeviceSheet() }
+        // Full screen: the flow opens straight into the camera, and a viewfinder
+        // inset in a card fights the aiming it exists for. The scaffold carries
+        // its own Cancel, so losing drag-to-dismiss costs no way out.
+        .platformFullScreenCover(isPresented: $showPairSheet) { PairDeviceSheet() }
     }
 
     #if DEBUG

@@ -184,6 +184,32 @@ final class QuickViewFlowTests: XCTestCase {
         XCTAssertEqual(QuickViewHumanCode.formatted(code), "\(code.prefix(4))-\(code.suffix(4))")
     }
 
+    /// `liveFormatted` drives what the user sees on every keystroke, so the
+    /// dash placement, the uppercasing and the cap are all load-bearing:
+    /// `formatted` withholds the dash until the code is complete and cannot
+    /// stand in for any of this.
+    func testLiveFormattedShapesInputWhileTyping() {
+        // Dash appears at the fifth symbol, not at the eighth.
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted("2B3C"), "2B3C")
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted("2B3C4"), "2B3C-4")
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted("2B3C4D7F"), "2B3C-4D7F")
+
+        // Lower case is lifted regardless of the keyboard's shift state, which
+        // a `textInputAutocapitalization` hint alone does not guarantee.
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted("2b3c4d7f"), "2B3C-4D7F")
+
+        // A dash already present must not produce a second one.
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted("2B3C-4D7F"), "2B3C-4D7F")
+
+        // Capped: a ninth symbol is dropped rather than accepted and rejected
+        // later at Continue.
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted("2B3C4D7FX"), "2B3C-4D7F")
+
+        // Separators a human might type or paste are not part of the code.
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted("2b3c 4d7f"), "2B3C-4D7F")
+        XCTAssertEqual(QuickViewHumanCode.liveFormatted(""), "")
+    }
+
     func testHumanCodeRejectsTamperedCharacter() {
         let code = try! XCTUnwrap(QuickViewHumanCode.appendingChecksum(to: "2B3C4D7"))
         var chars = Array(code)
