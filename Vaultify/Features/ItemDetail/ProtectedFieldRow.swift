@@ -122,9 +122,13 @@ struct ProtectedFieldRow: View {
                     .frame(width: 30, height: 30)
                     .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))
                     // Invisible padded hit area: the visual circle stays 30pt, the
-                    // tappable region meets the 44pt minimum (rule 6).
+                    // tappable region meets the 44pt minimum (rule 6). The negative
+                    // trailing padding cancels the hit frame's invisible slice so the
+                    // VISIBLE circle sits at the row inset — flush with the locked
+                    // state's lock glyph instead of 7pt further in.
                     .frame(width: Metric.hitMin, height: Metric.hitMin)
                     .contentShape(Rectangle())
+                    .padding(.trailing, -(Metric.hitMin - 30) / 2)
             }
             // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
             .menuStyle(.button)
