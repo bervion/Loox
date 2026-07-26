@@ -177,6 +177,11 @@ import CloudKit
             case self.inboxRecordType: self.applyInbox(record)
             case self.auditReportRecordType: self.applyAuditReport(record)
             case self.findingStateRecordType: self.applyFindingState(record)
+            // Device registry + sign-out markers: mirrored locally so the
+            // Devices list and the remote sign-out check need no CKQuery.
+            case DeviceRegistryService.recordType,
+                 DeviceRegistryService.revocationRecordType:
+                DeviceRegistryMirror.apply(record)
             // Key-escrow records share the zone but aren't vault data.
             default: break
             }

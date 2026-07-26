@@ -64,15 +64,24 @@ struct LooxFeatureTile<Destination: View>: View {
         VStack(alignment: .leading, spacing: Space.s2) {
             HStack(spacing: Space.s2) {
                 SettingsIconBadge(icon: icon, tint: tint)
-                Text(title)
-                    .vaultType(.subhead)
-                    .fontWeight(.semibold)
-                    .themedForeground()
-                    .lineLimit(1)
-                    // Long VI titles ("Mở trên máy tính") squeeze a step
-                    // instead of wrapping — one line keeps every tile the
-                    // same compact height, like the reference tiles.
-                    .minimumScaleFactor(0.8)
+                // Long titles (VI "Gửi sang trình duyệt") WRAP at full size
+                // instead of squeezing into a "…" line, and every tile sizes its
+                // title block to the same TWO-line height (owner 260726: cards in
+                // one grid must match) — the hidden two-line template sets the
+                // height at the current Dynamic Type size, and the real title
+                // centers inside it whether it takes one line or two.
+                ZStack(alignment: .leading) {
+                    Text(verbatim: " \n ")
+                        .vaultType(.subhead)
+                        .fontWeight(.semibold)
+                        .hidden()
+                    Text(title)
+                        .vaultType(.subhead)
+                        .fontWeight(.semibold)
+                        .themedForeground()
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
+                }
             }
             HStack(spacing: Space.s2) {
                 if let status {

@@ -18,7 +18,10 @@ struct DevicesScreen: View {
             VStack(alignment: .leading, spacing: Space.s3) {
                 ProfileGroupCard {
                     ForEach(Array(devices.enumerated()), id: \.element.id) { index, device in
-                        DeviceRow(device: device)
+                        NavigationLink { DeviceDetailScreen(device: device) } label: {
+                            DeviceRow(device: device)
+                        }
+                        .buttonStyle(.plain)
                         if index < devices.count - 1 { ProfileRowDivider() }
                     }
                 }

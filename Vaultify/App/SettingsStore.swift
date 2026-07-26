@@ -195,7 +195,12 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         if mirrorToSharedConfig {
             SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
         }
-        appResourceLocale = appLocale(forCode: preferredLanguage)
+        // Deterministic under XCTest: the host app's persisted language choice must
+        // not leak into string assertions (appString now genuinely follows
+        // `appResourceLocale`, so a VI host would fail every EN expectation).
+        appResourceLocale = CloudSyncService.isHostingUnitTests
+            ? Locale(identifier: "en")
+            : appLocale(forCode: preferredLanguage)
         mirrorAutoLock()
     }
 

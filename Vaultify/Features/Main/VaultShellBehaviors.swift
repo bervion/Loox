@@ -44,9 +44,6 @@ struct VaultShellBehaviors: ViewModifier {
             .onDisappear { shakeDetector.stop() }
             .onChange(of: env.settings.shakeToLock) { _, _ in updateShakeDetector() }
             .onChange(of: scenePhase) { _, _ in updateShakeDetector() }
-            .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToSearch)) { _ in
-                uiState.selectedTab = .search
-            }
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
                 uiState.selectedTab = .watchtower
             }

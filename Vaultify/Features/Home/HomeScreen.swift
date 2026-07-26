@@ -431,7 +431,7 @@ struct HomeScreen: View {
             HStack(spacing: Space.s3) {
                 profileAvatar
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: env.repository.activePersona?.displayName ?? appString("Profile"))
+                    Text(verbatim: PersonaDisplay.name(env))
                         .vaultType(.headline).themedForeground().lineLimit(1)
                     Text(verbatim: personaSubtitle)
                         .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
@@ -448,7 +448,7 @@ struct HomeScreen: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(verbatim: "\(env.repository.activePersona?.displayName ?? appString("Profile")), \(personaSubtitle)"))
+        .accessibilityLabel(Text(verbatim: "\(PersonaDisplay.name(env)), \(personaSubtitle)"))
     }
 
     /// 44pt circular avatar — extracted to `PersonaAvatarView`, shared with the
@@ -466,27 +466,28 @@ struct HomeScreen: View {
         QuickActionsGroupCard(
             title: LocalizedStringResource("Quick Actions").inAppLocalized,
             subtitle: LocalizedStringResource("Jump straight to what you need").inAppLocalized,
+            // Short labels pair with short and long with long, so each row's
+            // side-by-side vs stacked decision (measured per row in
+            // `QuickActionsGroupCard`) degrades one row at a time.
             items: [
                 .init(icon: "dt_square_plus",
                       label: LocalizedStringResource("Add Item").inAppLocalized,
                       tint: QuickActionsGroupCard.addTint,
                       action: { showItemTypePicker = true }),
-                .init(icon: "dt_key",
-                      label: LocalizedStringResource("Generate Password").inAppLocalized,
-                      tint: QuickActionsGroupCard.generateTint,
-                      fullWidthWhenNarrow: true,
-                      action: { showGenerator = true }),
-                .init(icon: "dt_clock",
-                      label: LocalizedStringResource("2FA Codes").inAppLocalized,
-                      tint: QuickActionsGroupCard.totpTint,
-                      count: totpItems.count,
-                      fullWidthWhenNarrow: true,
-                      action: { showTotpList = true }),
                 .init(icon: "dt_shield_keyhole",
                       label: LocalizedStringResource("Security").inAppLocalized,
                       tint: QuickActionsGroupCard.securityTint,
                       count: watchtowerIssueCount,
                       action: { NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil) }),
+                .init(icon: "dt_key",
+                      label: LocalizedStringResource("Generate Password").inAppLocalized,
+                      tint: QuickActionsGroupCard.generateTint,
+                      action: { showGenerator = true }),
+                .init(icon: "dt_clock",
+                      label: LocalizedStringResource("2FA Codes").inAppLocalized,
+                      tint: QuickActionsGroupCard.totpTint,
+                      count: totpItems.count,
+                      action: { showTotpList = true }),
             ]
         )
     }
@@ -632,12 +633,12 @@ struct HomeScreen: View {
         }
     }
 
-    /// Open the full item list: switch to Search seeded with the Home Space filter and no
-    /// keyboard (browse), NOT a fresh search. A plain Search-tab tap still resets to All
-    /// Spaces + keyboard (see `UIStateStore.SearchEntry`).
+    /// Open the full item list as a REAL push (Back returns right here), scoped
+    /// to the current Home Space — not a tab jump into Search.
     private func openAllItemsList() {
-        uiState.searchEntry = .browse(spaceId: selectedFolderId)
-        NotificationCenter.default.post(name: .vaultSwitchToSearch, object: nil)
+        let route = VaultRoute.filtered(ItemFilter(spaceId: selectedFolderId))
+        if let navigator { navigator.push { vaultRouteDestination(route) } }
+        else { uiState.homePath.append(route) }
     }
 
     /// Selected Space name, or the localized "All Spaces" fallback (nil filter).
@@ -872,8 +873,6 @@ struct HomeScreen: View {
 // MARK: - Tab-switch notifications
 
 extension Notification.Name {
-    /// Posted by Home to ask MainTabView to switch to the Search tab.
-    static let vaultSwitchToSearch = Notification.Name("vaultSwitchToSearch")
     /// Posted by Home quick-action to switch to the Watchtower tab.
     static let vaultSwitchToWatchtower = Notification.Name("vaultSwitchToWatchtower")
     /// Posted by the Spaces sheet to switch to the Items tab (spaces management).

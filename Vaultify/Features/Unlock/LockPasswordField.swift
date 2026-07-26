@@ -53,14 +53,16 @@ struct LockPasswordField: View {
     }
 
     private var loginButton: some View {
-        // Neutral primary fill (Apple-style): black in light, white in dark —
-        // matching the app's neutral CTAs; the glyph is the opposing background.
-        let onTint = Color.platformBackground
+        // Neutral primary fill (Apple-style): black in light, white in dark.
+        // THEME tokens, not `Color.primary`/system background — those follow the
+        // SYSTEM scheme, and inside a sheet whose surface follows the APP theme
+        // they can land near the surface color (a washed-out "disabled" button).
+        let onTint = Color(rgb: env.theme.active.background)
         let side: CGFloat = 36
         return Button(action: onSubmit) {
             ZStack {
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .fill(Color.primary)
+                    .fill(Color(rgb: env.theme.active.primaryText))
                 if busy {
                     ProgressView()
                         .controlSize(.small)

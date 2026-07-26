@@ -179,8 +179,8 @@ struct LooxHubScreen: View {
     // MARK: "Saved in Loox" (iCloud+ "Saved to iCloud" idiom — vault stats)
 
     /// White card wrapping a gray tile grid of what the vault holds. Category
-    /// tiles jump to Search pre-filled with that category's operator, so the
-    /// count expands into the actual list.
+    /// and passkey tiles PUSH their item list right here (Back returns to the
+    /// hub) — no tab jump.
     private var savedSection: some View {
         LooxHubSectionCard(title: "Saved in Loox",
                            trailing: "See all",
@@ -191,7 +191,7 @@ struct LooxHubScreen: View {
             categoryTile(.card, tint: SettingsBadgeTint.green)
             LooxFeatureTile(title: "Passkey", icon: Icons.passkey, tint: SettingsBadgeTint.indigo,
                             metric: appString("\(env.repository.passkeys.count) items"),
-                            action: { openSearch(query: "passkey") })
+                            destination: { FilteredItemsScreen(filter: ItemFilter(passkeysOnly: true)) })
             LooxFeatureTile(title: "Security Score", icon: Icons.watchtower, tint: SettingsBadgeTint.red,
                             metric: securityScoreMetric,
                             action: { switchTab(.watchtower) })
@@ -202,29 +202,7 @@ struct LooxHubScreen: View {
     private func categoryTile(_ category: ItemCategory, tint: Color) -> some View {
         LooxFeatureTile(title: category.title, icon: category.iconAsset, tint: tint,
                         metric: appString("\(env.repository.count(forCategory: category)) items"),
-                        action: { openSearch(query: searchKeyword(for: category)) })
-    }
-
-    /// Canonical search-operator token per category (`SearchOperators` grammar,
-    /// matched case- and diacritic-insensitively in both app languages).
-    private func searchKeyword(for category: ItemCategory) -> String {
-        switch category {
-        case .login: "login"
-        case .note: "note"
-        case .card: "card"
-        case .identity: "identity"
-        case .sshKey: "ssh"
-        case .recoveryCodes: "recovery"
-        case .securityQuestions: "security"
-        case .custom: "custom"
-        }
-    }
-
-    /// Hand Search the query, then switch tabs — `SearchScreen.handleEntry`
-    /// consumes the entry when the tab lands (the Home "See all" pattern).
-    private func openSearch(query: String) {
-        env.uiState.searchEntry = .query(query)
-        switchTab(.search)
+                        destination: { vaultRouteDestination(.category(category)) })
     }
 
     /// Pop the covering navigator stack, THEN flip the tab — in that order the

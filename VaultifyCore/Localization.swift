@@ -31,7 +31,14 @@ extension LocalizedStringResource {
 /// Resolve a literal UI string against the in-app language rather than the
 /// device locale. Use for runtime strings (errors, prompts) built outside SwiftUI.
 nonisolated func appString(_ key: String.LocalizationValue) -> String {
-    String(localized: key, locale: appResourceLocale)
+    // Through a `LocalizedStringResource` with an explicit `.locale` (the same
+    // mechanism as `inAppLocalized`/`appLabel` below): `String(localized:locale:)`'s
+    // `locale:` only drives FORMATTING, not table selection — the old direct call
+    // left every `appString` caller on the DEVICE language whenever the in-app
+    // language differed, producing mixed-language screens.
+    var resource = LocalizedStringResource(key)
+    resource.locale = appResourceLocale
+    return String(localized: resource)
 }
 
 /// Localize a stored field label (a runtime `String`) against the in-app language. Known

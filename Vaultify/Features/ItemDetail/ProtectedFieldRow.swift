@@ -29,7 +29,7 @@ struct ProtectedFieldRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
                     .vaultType(.caption).fontWeight(.medium)
-                    .foregroundStyle(copied ? VaultColors.copyFlashText.opacity(0.85) : theme.color(.accent))
+                    .foregroundStyle(copied ? VaultColors.copyFlashText.opacity(0.85) : theme.color(.accentText))
                 value
                 if let error { Text(error).vaultType(.caption).foregroundStyle(copied ? VaultColors.copyFlashText : VaultColors.strengthWeak) }
             }
@@ -65,13 +65,17 @@ struct ProtectedFieldRow: View {
     }
 
     /// The passkey rows' trailing-wash treatment on the extra-protection teal —
-    /// the standing "this row is special" marker; the copy flash overrides it.
+    /// but only while LOCKED: once revealed the row reads like any normal field
+    /// (the wash is a "something is sealed here" marker, not a permanent badge).
+    /// The copy flash overrides everything.
     @ViewBuilder private var rowBackground: some View {
         if copied {
             VaultColors.copyFlash
-        } else {
+        } else if plaintext == nil {
             LinearGradient(colors: [.clear, Self.guardTeal.opacity(0.22)],
                            startPoint: .center, endPoint: .trailing)
+        } else {
+            Color.clear
         }
     }
 
