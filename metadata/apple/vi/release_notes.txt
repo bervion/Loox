@@ -1,1 +1,1 @@
-Tính năng Bảo vệ Nâng cao giờ đây dễ thiết lập, xem lại và tắt hơn, cùng nhiều bản vá giúp dữ liệu trong kho lưu trữ luôn chính xác và an toàn. Bản cập nhật này cũng cải thiện việc quét mã bằng camera và làm mượt các hiệu ứng chuyển động trong ứng dụng.
+Tìm kiếm giờ chỉ theo từ khóa, cho kết quả nhanh và chính xác hơn, cùng danh sách lọc có thể nhấn vào để xem chi tiết đầy đủ. Thông báo lỗi ở Xem nhanh cũng rõ ràng và dễ hiểu hơn.

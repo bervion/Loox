@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.41.0] - 2026-07-26
+
+### Added
+- keyword-only Search, pushable filtered lists + detail polish (#178)
+
+### Changed
+- the stable Quick View error copy is now the browser wording (#177)
+
+
 ## [1.40.0] - 2026-07-26
 
 ### Added
