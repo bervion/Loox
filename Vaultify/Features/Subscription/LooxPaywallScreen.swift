@@ -23,7 +23,7 @@ enum LooxPaywallContext: String, Identifiable {
         case .personaLimit: "You've used every profile in your plan"
         case .aliasLimit: "You've used every email alias in your plan"
         case .linkQuota: "Share link limit reached for these 30 days"
-        case .quickViewQuota: "Open on Computer limit reached for these 30 days"
+        case .quickViewQuota: "Send to Browser limit reached for these 30 days"
         case .recipientLimit: "Your plan's sharing seats are all in use"
         case .watchtower: "Unlock the full Watchtower workflow"
         case .themes: "Unlock every accent and theme"

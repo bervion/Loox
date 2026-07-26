@@ -26,7 +26,9 @@ struct WatchtowerStrengthScreen: View {
     private func refresh() {
         let items = env.repository.activePersonaItems
         all = items.compactMap { item in
-            guard let password = item.passwordField?.value, !password.isEmpty else { return nil }
+            guard let field = item.passwordField, !field.value.isEmpty, !field.isExtraProtected
+            else { return nil }
+            let password = field.value
             return Entry(id: item.id,
                          title: item.title.isEmpty ? appString("Untitled") : item.title,
                          subtitle: item.subtitle,

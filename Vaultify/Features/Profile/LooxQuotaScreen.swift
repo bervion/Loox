@@ -25,7 +25,7 @@ struct LooxQuotaScreen: View {
                              cap: quotas.linkCreates30d)
                     ProfileRowDivider()
                     quotaRow(icon: Icons.scanCode, tint: SettingsBadgeTint.indigo,
-                             title: "Open on Computer", used: quickViewCompletions30d,
+                             title: "Send to Browser", used: quickViewCompletions30d,
                              cap: quotas.quickViewApprovals30d)
                     ProfileRowDivider()
                     quotaRow(icon: Icons.organization, tint: SettingsBadgeTint.orange,
@@ -36,7 +36,7 @@ struct LooxQuotaScreen: View {
                              title: "Profiles", used: env.repository.personas.count,
                              cap: quotas.personas)
                 }
-                Text("Share Links and Open on Computer count the last 30 days.")
+                Text("Share Links and Send to Browser count the last 30 days.")
                     .vaultType(.footnote)
                     .themedForeground(.secondary)
                     .padding(.horizontal, Space.s2)

@@ -28,14 +28,28 @@ nonisolated enum VaultBackup {
         }
     }
     struct EncryptedBackup: Codable { var version: Int; var salt: Data; var kdf: KdfParams; var sealed: Data }
+
+    /// The Level-2 Secret Key wrap from the Keychain bundle. Sealed field values
+    /// travel inside items, but without this wrap a restore on another device
+    /// could never open them again — even with the correct Extra Password. The
+    /// key stays wrapped (Argon2id from the Extra Password), so carrying it
+    /// grants nothing the password didn't already.
+    struct Level2Wrap: Codable {
+        var wrappedL2SK: Data
+        var salt: Data
+        var kdf: KdfParams
+    }
+
     struct EncryptedImport {
         var items: [(item: VaultItem, folderName: String?)]
         var passkeys: [PasskeySecret]
+        var level2: Level2Wrap?
     }
 
     private struct PortableVaultPayload: Codable {
         var items: [PortableItem]
         var passkeys: [PasskeySecret]?
+        var level2: Level2Wrap?
     }
 
     // MARK: CSV
@@ -90,11 +104,18 @@ nonisolated enum VaultBackup {
         var lines = ["name,username,password,url,notes,folder,tags"]
         for item in items {
             let folder = item.folderId.flatMap { folderNames[$0] } ?? ""
+            // Extra-protected values are sealed ciphertext — exporting the raw
+            // payload would be junk in every other password manager. A fixed
+            // ASCII marker keeps the row while flagging the gap.
+            func cell(_ field: DynamicField?) -> String {
+                guard let field, !field.value.isEmpty else { return "" }
+                return field.isExtraProtected ? "[protected]" : field.value
+            }
             let cells = [item.title,
-                         item.usernameField?.value ?? "",
-                         item.passwordField?.value ?? "",
-                         item.urlField?.value ?? "",
-                         item.firstField(of: .multiline)?.value ?? "",
+                         cell(item.usernameField),
+                         cell(item.passwordField),
+                         cell(item.urlField),
+                         cell(item.firstField(of: .multiline)),
                          folder,
                          item.tags.joined(separator: "; ")]
             lines.append(cells.map(escape).joined(separator: ","))
@@ -106,13 +127,15 @@ nonisolated enum VaultBackup {
 
     static func exportEncrypted(_ items: [VaultItem], folderNames: [String: String] = [:],
                                 passkeys: [PasskeySecret] = [],
+                                level2: Level2Wrap? = nil,
                                 passphrase: String) async throws -> Data {
         let portable = items.map {
             PortableItem(title: $0.title, category: $0.category.rawValue, fields: $0.fields,
                          tags: $0.tags, folderName: $0.folderId.flatMap { folderNames[$0] })
         }
         let json = try JSONEncoder().encode(PortableVaultPayload(items: portable,
-                                                                 passkeys: passkeys.isEmpty ? nil : passkeys))
+                                                                 passkeys: passkeys.isEmpty ? nil : passkeys,
+                                                                 level2: level2))
         let salt = KeyHierarchy.newSalt()
         let kdf = KdfParams.standard
         var kek = try await Task.detached(priority: .userInitiated) {
@@ -139,7 +162,7 @@ nonisolated enum VaultBackup {
             payload = decoded
         } else {
             payload = PortableVaultPayload(items: try JSONDecoder().decode([PortableItem].self, from: json),
-                                           passkeys: nil)
+                                           passkeys: nil, level2: nil)
         }
         let items = payload.items.map {
             (VaultItem(category: ItemCategory(rawValue: $0.category) ?? .custom,
@@ -149,7 +172,7 @@ nonisolated enum VaultBackup {
             try PasskeyEnvelope.validate(secret)
             return secret
         }
-        return EncryptedImport(items: items, passkeys: passkeys)
+        return EncryptedImport(items: items, passkeys: passkeys, level2: payload.level2)
     }
 
     // MARK: CSV helpers

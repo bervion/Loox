@@ -1,73 +1,308 @@
 import SwiftUI
 
-/// Set or change the app-wide Level-2 ("extra protection") password — a second
-/// password that gates the most sensitive fields (recovery codes, files…).
+/// Set, change, or turn off the Extra Password — the second password that keeps
+/// selected fields sealed even while the vault is unlocked. Styled like the
+/// onboarding password step (plain page, capsule fields, bottom CTA) with the
+/// Security swirl playing its one-shot dot reveal above the form.
 struct Level2SettingsView: View {
     @Environment(AppEnvironment.self) private var env
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private enum Mode { case setup, overview, change, turnOff }
+    @State private var mode: Mode = .setup
     @State private var current = ""
     @State private var newPassword = ""
     @State private var confirm = ""
     @State private var busy = false
     @State private var error: String?
+    @State private var confirmTurnOff = false
 
-    private var hasLevel2: Bool { env.session.hasLevel2 }
+    private var meetsLength: Bool { newPassword.count >= 6 }
+    private var matches: Bool { !confirm.isEmpty && newPassword == confirm }
+
     private var canSubmit: Bool {
-        newPassword.count >= 6 && newPassword == confirm && (!hasLevel2 || !current.isEmpty) && !busy
+        guard !busy else { return false }
+        switch mode {
+        case .setup: return meetsLength && matches
+        case .change: return !current.isEmpty && meetsLength && matches
+        case .turnOff: return !current.isEmpty
+        case .overview: return false
+        }
+    }
+
+    /// Level2-sealed fields and the items carrying them — the honest scope of a
+    /// turn-off. Custom-code fields don't depend on the Extra Password and are
+    /// never touched.
+    private var protectedTally: (fields: Int, items: Int) {
+        var fields = 0, items = 0
+        for item in env.repository.items {
+            let n = item.fields.filter {
+                $0.isExtraProtected && SecretGuard.scheme(of: $0.value) == .level2
+            }.count
+            if n > 0 { items += 1; fields += n }
+        }
+        return (fields, items)
     }
 
     var body: some View {
-        Form {
-            // Same banner chrome as Change Master Password — a raw Label with an
-            // accent icon read as a stray row, not the screen's framing note.
-            Section {
-                VaultInfoBanner(.info, icon: Icons.lockFill,
-                                text: "A second password for your most sensitive fields. Items can use this or their own code. If you forget it, those fields cannot be recovered.")
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-            }
-
-            if hasLevel2 {
-                Section("Current password") {
-                    RevealableSecureField(title: "Current extra password", text: $current, inList: true)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                header
+                content
+                if let error {
+                    Text(verbatim: error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
                 }
-                .listRowBackground(VaultColors.surface)
             }
-
-            Section(hasLevel2 ? "New password" : "Set password") {
-                RevealableSecureField(title: "Extra password", text: $newPassword, inList: true)
-                PasswordStrengthMeter(password: newPassword, emptyLabel: "Enter an extra password")
-                RevealableSecureField(title: "Confirm", text: $confirm, inList: true)
-            }
-            .listRowBackground(VaultColors.surface)
-
-            if let error {
-                Text(error).vaultType(.footnote)
-                    .foregroundStyle(env.theme.active.color(.destructive))
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Space.s6)
+            .vaultContentWidth(.form)
         }
-        .themedFormBackground()
+        // Same Apple-Account idiom as the master-password step: a plain page
+        // with capsule fields — also what the swirl's dot mask reads best on.
+        .background(Color(rgb: theme.background).ignoresSafeArea())
+        .scrollDismissesKeyboard(.immediately)
         .navigationTitle("Extra Protection")
         .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button(hasLevel2 ? "Change" : "Set") { Task { await submit() } }.disabled(!canSubmit)
+            if mode == .change || mode == .turnOff {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { switchTo(.overview) }
+                }
             }
         }
-        .overlay { if busy { ProgressView().controlSize(.large) } }
+        .safeAreaInset(edge: .bottom) {
+            if mode != .overview {
+                BrandCapsuleCTA(title: ctaTitle, enabled: canSubmit, busy: busy) {
+                    Task { await submit() }
+                }
+            }
+        }
+        .confirmationDialog("Turn off Extra Password?", isPresented: $confirmTurnOff,
+                            titleVisibility: .visible) {
+            Button("Turn Off and Unseal Fields", role: .destructive) {
+                Task { await turnOff() }
+            }
+        } message: {
+            Text("Every field protected with the Extra Password becomes visible like a normal field.")
+        }
+        .onAppear { mode = env.session.hasLevel2 ? .overview : .setup }
+        // A verify here (turn-off typed, then cancelled; fresh setup) must not
+        // leave every protected field one tap from visible across the app.
+        .onDisappear { env.session.clearLevel2Key() }
+        .analyticsScreen("extra_protection")
+    }
+
+    // MARK: Pieces
+
+    /// The Security swirl (one-shot dots radiating from the shield, then still)
+    /// + per-mode title and subtitle.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            LooxSwirlAnimationView(mode: .reveal,
+                                   centerIcon: "dt_shield_keyhole",
+                                   centerTint: env.theme.active.color(.accent))
+                .frame(width: 150, height: 150)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Space.s4)
+            Text(title)
+                .vaultType(.screenTitle)
+            subtitleText
+                .vaultType(.subhead).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var title: LocalizedStringKey {
+        switch mode {
+        case .setup: return "Set your Extra Password"
+        case .overview: return "Extra Protection is on"
+        case .change: return "Change Extra Password"
+        case .turnOff: return "Turn Off Extra Password"
+        }
+    }
+
+    @ViewBuilder private var subtitleText: some View {
+        switch mode {
+        case .setup:
+            Text("A second password that keeps chosen fields sealed even while the vault is unlocked.")
+        case .overview:
+            // Grammar branches by count — "1 fields in 1 items" is not a
+            // sentence this screen is allowed to show.
+            let tally = protectedTally
+            if tally.fields == 1 {
+                Text("One field is protected.")
+            } else if tally.fields > 1, tally.items == 1 {
+                Text("\(tally.fields) fields in one item are protected.")
+            } else if tally.fields > 1 {
+                Text("\(tally.fields) fields in \(tally.items) items are protected.")
+            } else {
+                Text("No fields are protected yet. Open an item and choose Protect from a field's menu.")
+            }
+        case .change:
+            Text("Enter your current Extra Password, then choose a new one. Protected fields stay sealed.")
+        case .turnOff:
+            let tally = protectedTally
+            if tally.fields == 1 {
+                Text("Enter your Extra Password. The protected field will return to normal visibility.")
+            } else if tally.fields > 1 {
+                Text("Enter your Extra Password. \(tally.fields) protected fields will return to normal visibility.")
+            } else {
+                Text("Nothing is protected right now. Turning off only removes the password.")
+            }
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch mode {
+        case .setup:
+            PasswordCreationGroup(password: $newPassword, confirm: $confirm,
+                                  passwordTitle: "Extra Password",
+                                  confirmTitle: "Confirm Extra Password")
+            if !confirm.isEmpty && !matches {
+                Text("Passwords don’t match")
+                    .vaultType(.caption).foregroundStyle(VaultColors.strengthWeak)
+            }
+            infoNote
+        case .overview:
+            actionList
+        case .change:
+            currentPasswordCapsule
+            PasswordCreationGroup(password: $newPassword, confirm: $confirm,
+                                  passwordTitle: "New Extra Password",
+                                  confirmTitle: "Confirm Extra Password")
+            if !confirm.isEmpty && !matches {
+                Text("Passwords don’t match")
+                    .vaultType(.caption).foregroundStyle(VaultColors.strengthWeak)
+            }
+        case .turnOff:
+            currentPasswordCapsule
+        }
+    }
+
+    /// The manage state's two actions, in one capsule group.
+    private var actionList: some View {
+        VStack(spacing: 0) {
+            actionRow("Change Extra Password", destructive: false) { switchTo(.change) }
+            Divider().padding(.leading, Space.s5)
+            actionRow("Turn Off Extra Password", destructive: true) { switchTo(.turnOff) }
+        }
+        .background(Color(rgb: theme.secondaryBackground),
+                    in: RoundedRectangle(cornerRadius: 27, style: .continuous))
+    }
+
+    private func actionRow(_ title: LocalizedStringKey, destructive: Bool,
+                           action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .vaultType(.body)
+                    .foregroundStyle(destructive ? env.theme.active.color(.destructive)
+                                                 : env.theme.active.color(.primary))
+                Spacer()
+                PolarisIcon(Icons.chevronRight, size: 14)
+                    .themedForeground(.iconSecondary)
+            }
+            .padding(.horizontal, Space.s5)
+            .frame(height: 54)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Single capsule row for the current password (change / turn-off modes).
+    private var currentPasswordCapsule: some View {
+        RevealableSecureField(title: "Current Extra Password", text: $current,
+                              inList: true, autofocus: true)
+            .padding(.horizontal, Space.s5)
+            .frame(height: 54)
+            .background(Color(rgb: theme.secondaryBackground),
+                        in: RoundedRectangle(cornerRadius: 27, style: .continuous))
+    }
+
+    /// Duotone info glyph + the no-recovery note, mirroring the master step.
+    private var infoNote: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Image("HandshakeDuotone")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 26, height: 26)
+            Text("Loox asks for it only when you reveal a protected field. If you forget it, protected fields cannot be recovered.")
+                .vaultType(.footnote).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, Space.s2)
+    }
+
+    private var ctaTitle: LocalizedStringKey {
+        switch mode {
+        case .setup: return "Set Extra Password"
+        case .change: return "Change Password"
+        case .turnOff: return "Turn Off Extra Password"
+        case .overview: return ""
+        }
+    }
+
+    // MARK: Actions
+
+    private func switchTo(_ newMode: Mode) {
+        error = nil
+        current = ""; newPassword = ""; confirm = ""
+        withAnimation(.vault(.spring(response: 0.4, dampingFraction: 0.85),
+                             reduceMotion: reduceMotion)) { mode = newMode }
     }
 
     private func submit() async {
+        guard canSubmit else { return }
         busy = true; error = nil
         do {
-            if hasLevel2 {
-                try await env.session.changeLevel2Password(current: current, new: newPassword)
-            } else {
+            switch mode {
+            case .setup:
                 try await env.session.setLevel2Password(newPassword)
+                Haptics.success()
+                switchTo(.overview)
+            case .change:
+                try await env.session.changeLevel2Password(current: current, new: newPassword)
+                Haptics.success()
+                switchTo(.overview)
+            case .turnOff:
+                // Prove the password BEFORE the destructive confirmation, so a
+                // typo surfaces here instead of aborting mid-dialog.
+                try await env.session.unlockLevel2(password: current)
+                confirmTurnOff = true
+            case .overview:
+                break
             }
+        } catch {
+            self.error = error.localizedDescription
+            Haptics.error()
+        }
+        busy = false
+    }
+
+    /// Decrypt every level2-sealed field back to plaintext, then drop the wrap.
+    /// The password was verified in `submit()`, so `level2Key` is present.
+    private func turnOff() async {
+        busy = true; error = nil
+        do {
+            guard let key = env.session.level2Key else { throw AuthError.locked }
+            try AnalyticsEngine.shared.runSuppressed {
+                for var item in env.repository.items {
+                    var touched = false
+                    for index in item.fields.indices
+                    where item.fields[index].isExtraProtected
+                        && SecretGuard.scheme(of: item.fields[index].value) == .level2 {
+                        item.fields[index].value = try SecretGuard.openLevel2(
+                            item.fields[index].value, l2Key: key.bytes)
+                        item.fields[index].guard2 = false
+                        touched = true
+                    }
+                    if touched { try env.repository.update(item) }
+                }
+            }
+            env.session.removeLevel2Wrap()
             Haptics.success()
-            dismiss()
+            switchTo(.setup)
         } catch {
             self.error = error.localizedDescription
             Haptics.error()

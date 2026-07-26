@@ -11,12 +11,11 @@ extension VaultRepository {
         activePersona?.isolationPolicy ?? .standard
     }
 
-    /// Best display username for an item: email, then a username field, then a name/text field.
+    /// Best display username for an item — one shared resolver with the
+    /// extension reader, so sealed (extra-protected) candidates are skipped in
+    /// both places instead of surfacing ciphertext.
     func username(from item: VaultItem) -> String? {
-        if let email = item.fields.first(where: { $0.kind == .email })?.value, !email.isEmpty { return email }
-        if let user = item.fields.first(where: { $0.kind == .username })?.value, !user.isEmpty { return user }
-        if let text = item.fields.first(where: { $0.kind == .text })?.value, !text.isEmpty { return text }
-        return nil
+        VaultReader.username(from: item)
     }
 
     /// The persona's own profile card (identity item), resolved via its
@@ -43,7 +42,8 @@ extension VaultRepository {
     func destinationEmail(for persona: Persona) -> String? {
         guard let card = profileItem(for: persona) else { return nil }
         return card.fields.first {
-            $0.kind == .email && $0.label != AliasWriteback.privateEmailLabel && !$0.value.isEmpty
+            $0.kind == .email && $0.label != AliasWriteback.privateEmailLabel
+                && !$0.value.isEmpty && !$0.isExtraProtected
         }?.value
     }
 

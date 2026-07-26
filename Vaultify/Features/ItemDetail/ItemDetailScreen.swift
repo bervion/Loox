@@ -32,7 +32,7 @@ struct ItemDetailScreen: View {
     /// One-time trust interstitial for a shared item whose safety-code
     /// decision is still pending.
     @State private var showVerifySheet = false
-    /// "Open on Computer" (Loox Quick View) chooser sheet.
+    /// "Send to Browser" (Loox Quick View) chooser sheet.
     @State private var showQuickViewChooser = false
     /// Non-nil when the entry is tapped but blocked (e.g. guard2-only item) —
     /// shown as an explainer rather than a silently disabled control.
@@ -70,13 +70,16 @@ struct ItemDetailScreen: View {
     /// excluded outright: their values render only behind `SharedAccessGateView`
     /// (INV-01), and this overlay must not offer a copy path outside that gate.
     private func showsCopyPasswordCluster(_ item: VaultItem) -> Bool {
-        item.sharedOrigin == nil
+        // An extra-protected password is sealed ciphertext — the cluster would
+        // copy the raw payload, bypassing the reveal gate.
+        if item.passwordField?.isExtraProtected == true { return false }
+        return item.sharedOrigin == nil
             && item.category == .login
             && !(item.passwordField?.value.isEmpty ?? true)
     }
 
     private func copyPassword(_ item: VaultItem) {
-        guard let field = item.passwordField, !field.value.isEmpty else { return }
+        guard let field = item.passwordField, !field.value.isEmpty, !field.isExtraProtected else { return }
         env.clipboard.copy(field.value, label: field.label, sensitive: true)
         env.repository.markUsed(item)
     }
@@ -122,7 +125,6 @@ struct ItemDetailScreen: View {
                 VStack(spacing: 18) {
                     header(item)
                     if item.sharedOrigin != nil { sharedBadge }
-                    organization(item)
                     if item.sharedOrigin == nil {
                         fieldsCard(item)
                     } else if needsVerification(item) {
@@ -137,6 +139,9 @@ struct ItemDetailScreen: View {
                         // (INV-01) — header/title above are Tier-1 metadata.
                         SharedAccessGateView(itemID: item.id) { fieldsCard(item) }
                     }
+                    // Tags read as footnotes to the content, so they follow the
+                    // fields card instead of sitting between it and the title.
+                    organization(item)
                     if item.sharedOrigin == nil {
                         ItemPasskeysSection(item: item)
                         sharingSection(item)
@@ -207,6 +212,16 @@ struct ItemDetailScreen: View {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
                             .accessibilityIdentifier("item.detail.edit")
+                        // Pin + favorite moved here from beside the Space pill —
+                        // the pill (Space + identity) needs the whole line.
+                        Button { env.repository.togglePin(item) } label: {
+                            Label(item.pinned ? "Unpin" : "Pin",
+                                  image: item.pinned ? Icons.pinFill : Icons.pin)
+                        }
+                        Button { try? env.repository.toggleFavorite(item) } label: {
+                            Label(item.favorite ? "Unfavorite" : "Favorite",
+                                  image: item.favorite ? Icons.starFill : Icons.star)
+                        }
                         if quickViewEntryVisible {
                             Button {
                                 if let reason = quickViewDisabledReason(for: item) {
@@ -214,7 +229,7 @@ struct ItemDetailScreen: View {
                                 } else {
                                     showQuickViewChooser = true
                                 }
-                            } label: { Label("Open on Computer", image: "ic_globe") }
+                            } label: { Label("Send to Browser", image: "ic_globe") }
                         }
                         if let url = item.urlField?.value, !url.isEmpty {
                             ShareLink(item: url) {
@@ -274,7 +289,7 @@ struct ItemDetailScreen: View {
                     defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
             }
         }
-        .alert("Can't open on a computer", isPresented: quickViewBlockedAlert) {
+        .alert("Can't send to a browser", isPresented: quickViewBlockedAlert) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: quickViewBlockedReason ?? "")
@@ -340,6 +355,11 @@ struct ItemDetailScreen: View {
         .onAppear {
             if let item { AnalyticsEngine.shared.log(.itemViewed(item.category)) }
         }
+        // The Extra Password unlock is scoped to THIS visit: leaving the item
+        // reseals every level2 field, so coming back always asks again. Sheets
+        // presented over the screen (protect, reveal, editor) don't trigger
+        // this — only actually navigating away does.
+        .onDisappear { env.session.clearLevel2Key() }
     }
 
     /// Gate before the confirm dialog: leaving is only real once iCloud says
@@ -408,16 +428,12 @@ struct ItemDetailScreen: View {
                                 in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                     Spacer(minLength: 8)
                 } else {
+                    // Space + owning identity in one pill. Pin/favorite moved to
+                    // the header "…" menu — this line can run long (two names)
+                    // and side controls would crowd it into truncation.
                     Button { showLocatedIn = true } label: {
                         HStack(spacing: Space.s2) {
-                            if let folder = folder(for: item) {
-                                FolderBadge(icon: folder.iconAsset, color: folder.color, size: 20)
-                                Text(folder.name)
-                                    .vaultType(.subhead).fontWeight(.semibold).themedForeground()
-                                    .lineLimit(1).truncationMode(.tail)
-                            } else {
-                                Text("No Space").vaultType(.subhead).themedForeground(.secondary)
-                            }
+                            SpaceIdentityLine(folder: folder(for: item))
                             PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
                         }
                         .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
@@ -426,9 +442,7 @@ struct ItemDetailScreen: View {
                     }
                     .buttonStyle(.plain)
 
-                    Spacer(minLength: 8)
-
-                    pinFavoriteControls(item)
+                    Spacer(minLength: 0)
                 }
             }
 
@@ -449,36 +463,24 @@ struct ItemDetailScreen: View {
         .padding(.vertical, Space.s1)
     }
 
-    /// Pin + favorite toggles, grouped with spacing — shown at the Space row's vertical center.
-    @ViewBuilder private func pinFavoriteControls(_ item: VaultItem) -> some View {
-        HStack(spacing: Space.s4) {
-            Button { env.repository.togglePin(item) } label: {
-                PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
-                    .foregroundStyle(item.pinned ? env.theme.active.color(.accentText) : env.theme.active.color(.secondary))
-            }
-            .buttonStyle(.plain)
-            Button { try? env.repository.toggleFavorite(item) } label: {
-                PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: Metric.iconUtility)
-                    .foregroundStyle(item.favorite ? VaultColors.favoriteStar : env.theme.active.color(.secondary))
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    /// Item tags. The Space now lives in the header pill, so this is tags-only.
+    /// Item tags, below the fields card. Accent-soft pills — hashtags carry the
+    /// link color the way they do everywhere else on the internet; the white
+    /// pill made them read as plain metadata.
     @ViewBuilder private func organization(_ item: VaultItem) -> some View {
         if !item.tags.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Space.s2) {
                     ForEach(item.tags, id: \.self) { tag in
                         HStack(spacing: 3) {
-                            PolarisIcon(Icons.hashtag, size: 11).themedForeground(.secondary)
+                            PolarisIcon(Icons.hashtag, size: 11)
+                                .foregroundStyle(Color(rgb: env.theme.active.accentText))
                             Text(tag).vaultType(.subhead)
+                                .foregroundStyle(Color(rgb: env.theme.active.accentText))
                         }
                         // Matches `FilterChip`'s pill padding (Space.s3/s2) for a
                         // consistent chip language across the app.
                         .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
-                        .background(VaultColors.surface, in: Capsule())
+                        .background(Color(rgb: env.theme.active.accentSoft), in: Capsule())
                     }
                 }
             }

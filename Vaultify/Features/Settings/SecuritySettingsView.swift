@@ -59,7 +59,14 @@ struct SecuritySettingsView: View {
                     Label { Text("Emergency Kit") } icon: { SettingsIconBadge(systemName: "cross.case.fill", tint: SettingsBadgeTint.red) }
                 }
                 NavigationLink { Level2SettingsView() } label: {
-                    Label { Text("Extra Protection") } icon: { SettingsIconBadge(systemName: "lock.shield.fill", tint: SettingsBadgeTint.gray) }
+                    LabeledContent {
+                        // Set/not-set at a glance — the screen behind decides
+                        // between the setup and manage forms on the same signal.
+                        Text(env.session.hasLevel2 ? "On" : "Off")
+                            .themedForeground(.secondary)
+                    } label: {
+                        Label { Text("Extra Protection") } icon: { SettingsIconBadge(systemName: "lock.shield.fill", tint: SettingsBadgeTint.gray) }
+                    }
                 }
             }
             .listRowBackground(VaultColors.surface)

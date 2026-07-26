@@ -31,10 +31,35 @@ extension VaultSession {
         do {
             l2sk = try await Self.unwrap(wrapped: wrapped, password: password, salt: Array(salt), params: kdf)
         } catch {
-            throw AuthError.wrongPassword
+            throw AuthError.wrongExtraPassword
         }
         defer { secureZero(&l2sk) }
         setLevel2Key(l2sk)
+    }
+
+    /// Turn Extra Protection off entirely. The caller must have already
+    /// unsealed every `.level2` field back to plaintext — after this the L2SK
+    /// is gone for good and any remaining sealed payload is unrecoverable.
+    func removeLevel2Wrap() {
+        guard var bundle = VaultKeyBundle.load() else { return }
+        bundle.wrappedL2SK = nil
+        bundle.l2Salt = nil
+        bundle.l2Kdf = nil
+        try? bundle.save()
+        clearLevel2Key()
+    }
+
+    /// Restore path: adopt a backup's Level-2 wrap when this device has none —
+    /// without it, restored level2-sealed fields could never be opened again.
+    /// Never overwrites an existing wrap (the local Extra Password keeps working;
+    /// fields sealed under a DIFFERENT L2SK stay unreadable either way, and
+    /// clobbering the local wrap would break this device's own sealed fields).
+    func adoptLevel2WrapIfAbsent(wrappedL2SK: Data, salt: Data, kdf: KdfParams) {
+        guard var bundle = VaultKeyBundle.load(), bundle.wrappedL2SK == nil else { return }
+        bundle.wrappedL2SK = wrappedL2SK
+        bundle.l2Salt = salt
+        bundle.l2Kdf = kdf
+        try? bundle.save()
     }
 
     /// Re-key the Level-2 password (verifies current, re-wraps the same L2SK).

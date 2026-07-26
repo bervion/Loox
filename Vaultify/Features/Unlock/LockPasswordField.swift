@@ -6,6 +6,9 @@ import SwiftUI
 struct LockPasswordField: View {
     @Binding var text: String
     var busy: Bool
+    /// Placeholder + accessibility name. The default fits the lock screen; the
+    /// Extra Password prompt names its own secret.
+    var title: LocalizedStringKey = "Enter password"
     /// Owned by the lock screen so the success choreography can dismiss the
     /// keyboard before the mark glides back to centre.
     var focus: FocusState<Bool>.Binding
@@ -20,12 +23,12 @@ struct LockPasswordField: View {
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     // Placeholder → SF; the typed value keeps MonoLisa below.
-                    Text("Enter password")
+                    Text(title)
                         .vaultType(.body)
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
                 }
                 SecureField("", text: $text)
-                    .accessibilityLabel(Text("Enter password"))
+                    .accessibilityLabel(Text(title))
                     .accessibilityIdentifier("lock.password")
                     .platformAutocapitalization(.never)
                     .autocorrectionDisabled()

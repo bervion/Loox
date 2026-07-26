@@ -20,7 +20,7 @@ struct QuickViewEnterCodeSheet: View {
     var body: some View {
         VaultSheetScaffold(title: "Enter Code") {
             VStack(spacing: Space.s5) {
-                Text("Type the code shown on your computer.")
+                Text("Type the code shown in your browser.")
                     .vaultType(.callout).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
 

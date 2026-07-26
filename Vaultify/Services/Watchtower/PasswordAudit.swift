@@ -41,8 +41,11 @@ nonisolated struct VaultHealth: Sendable {
 nonisolated enum PasswordAudit {
     static func analyze(_ items: [VaultItem]) -> VaultHealth {
         let withPasswords: [(VaultItem, String)] = items.compactMap { item in
-            guard let value = item.passwordField?.value, !value.isEmpty else { return nil }
-            return (item, value)
+            // Extra-protected passwords are sealed ciphertext — grading or breach-
+            // hashing the payload would produce nonsense results.
+            guard let field = item.passwordField, !field.value.isEmpty, !field.isExtraProtected
+            else { return nil }
+            return (item, field.value)
         }
 
         // 2FA analysis runs across all (non-trashed) login items regardless of password

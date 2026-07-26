@@ -36,8 +36,8 @@ struct ExportView: View {
 
             if mode == .encrypted {
                 Section {
-                    RevealableSecureField(title: "Password", text: $passphrase).listRowInsets(.init())
-                    RevealableSecureField(title: "Confirm", text: $confirm).listRowInsets(.init())
+                    RevealableSecureField(title: "Password", text: $passphrase, inList: true)
+                    RevealableSecureField(title: "Confirm", text: $confirm, inList: true)
                 } header: {
                     Text("Backup password")
                 } footer: {
@@ -113,8 +113,17 @@ struct ExportView: View {
                 if passkeys.count < env.repository.passkeys.count {
                     throw ExportError.passkeysUnavailable
                 }
+                // Carry the (still-wrapped) Level-2 key: sealed field values are
+                // in the items, and without the wrap a restore on a new device
+                // could never open them again.
+                let level2 = VaultKeyBundle.load().flatMap { bundle -> VaultBackup.Level2Wrap? in
+                    guard let wrapped = bundle.wrappedL2SK, let salt = bundle.l2Salt,
+                          let kdf = bundle.l2Kdf else { return nil }
+                    return VaultBackup.Level2Wrap(wrappedL2SK: wrapped, salt: salt, kdf: kdf)
+                }
                 let data = try await VaultBackup.exportEncrypted(items, folderNames: folderNames,
-                                                                 passkeys: passkeys, passphrase: passphrase)
+                                                                 passkeys: passkeys, level2: level2,
+                                                                 passphrase: passphrase)
                 exportURL = try write(data, name: "loox-backup.vaultify")
             } else {
                 exportURL = try write(Data(VaultBackup.makeCSV(items, folderNames: folderNames).utf8), name: "loox-export.csv")

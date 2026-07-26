@@ -10,12 +10,13 @@ private let biometricLog = Logger(subsystem: "com.bervion.vaultify", category: "
 private let kdfLog = Logger(subsystem: "com.bervion.vaultify", category: "kdf")
 
 enum AuthError: Error, LocalizedError {
-    case noVault, wrongPassword, locked, biometricFailed, recoveryFailed
+    case noVault, wrongPassword, wrongExtraPassword, locked, biometricFailed, recoveryFailed
 
     var errorDescription: String? {
         switch self {
         case .noVault: return appString("No vault found on this device.")
         case .wrongPassword: return appString("Incorrect master password.")
+        case .wrongExtraPassword: return appString("Incorrect Extra Password.")
         case .locked: return appString("The vault is locked.")
         case .biometricFailed: return appString("Biometric unlock failed.")
         case .recoveryFailed: return appString("That recovery key didn’t work.")
@@ -32,7 +33,10 @@ enum AuthError: Error, LocalizedError {
     /// Present iff unlocked. Read by the repository to seal/open item payloads.
     private(set) var vaultKey: SecureBytes?
     /// App-wide Level-2 Secret Key (extra protection). Present only after a
-    /// Level-2 unlock this session; cleared on lock.
+    /// Level-2 unlock, and deliberately short-lived: the surfaces that acquire
+    /// it (item detail, the Extra Protection screen) clear it when left, and
+    /// lock() clears it with everything else — protected fields must never
+    /// stay one tap from visible across the whole app.
     private(set) var level2Key: SecureBytes?
     /// Timestamp of last user activity — drives foreground inactivity auto-lock.
     var lastActivity: Date = .now
@@ -236,6 +240,10 @@ enum AuthError: Error, LocalizedError {
     /// Adopt the Level-2 Secret Key after a Level-2 unlock. Internal so
     /// `VaultSession+Level2` can set it across files.
     func setLevel2Key(_ bytes: [UInt8]) { level2Key = SecureBytes(bytes) }
+
+    /// Drop the in-memory Level-2 key (turn-off flow). Internal for the same
+    /// cross-file reason as `setLevel2Key`.
+    func clearLevel2Key() { level2Key = nil }
 
     func registerActivity() { lastActivity = .now }
 

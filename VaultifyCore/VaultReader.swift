@@ -39,12 +39,15 @@ enum VaultReader {
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
-    /// Best username/email for an item: email, then a username field, then a name/text field.
+    /// Best username/email for an item: email, then a username field, then a name/text
+    /// field. Extra-protected candidates are skipped — their value is ciphertext.
     nonisolated static func username(from item: VaultItem) -> String? {
-        if let email = item.fields.first(where: { $0.kind == .email })?.value, !email.isEmpty { return email }
-        if let user = item.fields.first(where: { $0.kind == .username })?.value, !user.isEmpty { return user }
-        if let text = item.fields.first(where: { $0.kind == .text })?.value, !text.isEmpty { return text }
-        return nil
+        func usable(_ kind: FieldKind) -> String? {
+            guard let field = item.fields.first(where: { $0.kind == kind }),
+                  !field.isEmpty, !field.isExtraProtected else { return nil }
+            return field.value
+        }
+        return usable(.email) ?? usable(.username) ?? usable(.text)
     }
 
     /// Resolve a single item by id from the shared store and extract its username.

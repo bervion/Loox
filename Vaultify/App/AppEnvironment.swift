@@ -63,7 +63,7 @@ import SwiftUI
     let domainRegistry: DomainRegistryClient
     /// Bounded local history for the notifications screen.
     let notificationHistory: NotificationHistoryStore
-    /// Quick View ("Open on Computer") device-local attempt history — minimal
+    /// Quick View ("Send to Browser") device-local attempt history — minimal
     /// rows only (item id + timestamp + result).
     let quickViewHistory: QuickViewHistoryStore
     /// Signed Quick View runtime session-signer endorsement client

@@ -50,9 +50,20 @@ private enum CredentialRow: Identifiable {
 
     var username: String? {
         switch self {
-        case .owned(let item): return item.usernameField?.value
+        case .owned(let item):
+            guard let field = item.usernameField, !field.isExtraProtected else { return nil }
+            return field.value
         case .shared(let entry): return entry.username
         }
+    }
+
+    /// True when the login's username or password is sealed under Extra
+    /// Protection — the extension can't produce plaintext, so the row shows
+    /// locked instead of filling raw ciphertext into the website.
+    var isSealedLogin: Bool {
+        guard case .owned(let item) = self else { return false }
+        return item.passwordField?.isExtraProtected == true
+            || item.usernameField?.isExtraProtected == true
     }
 
     var isShared: Bool { if case .shared = self { return true }; return false }
@@ -88,7 +99,9 @@ private enum CredentialRow: Identifiable {
 
     var credential: (user: String, password: String) {
         switch self {
-        case .owned(let item): return (item.usernameField?.value ?? "", item.passwordField?.value ?? "")
+        case .owned(let item):
+            guard !isSealedLogin else { return ("", "") }
+            return (item.usernameField?.value ?? "", item.passwordField?.value ?? "")
         case .shared(let entry): return (entry.username ?? "", entry.password ?? "")
         }
     }
@@ -203,6 +216,10 @@ private struct CredentialListView: View {
                     } else if row.isShared {
                         Text("Shared").font(.caption).foregroundStyle(.secondary)
                     }
+                    if row.isSealedLogin {
+                        Label("Extra Protection", systemImage: "lock.fill")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             .buttonStyle(.plain)
@@ -210,7 +227,8 @@ private struct CredentialListView: View {
             // fills instead of the primary username. Read-only vault access — the
             // extension makes NO relay network calls; provisioning stays in the app.
             .contextMenu {
-                if let item = row.ownedItem, let alias = item.privateEmailValue {
+                if let item = row.ownedItem, let alias = item.privateEmailValue,
+                   item.passwordField?.isExtraProtected != true {
                     Button {
                         onSelect(alias, item.passwordField?.value ?? "")
                     } label: {
@@ -236,6 +254,12 @@ private struct CredentialListView: View {
     }
 
     private func select(_ row: CredentialRow) {
+        // A sealed credential would fill raw `v2g:` ciphertext — explain
+        // instead. Revealing needs the Extra Password ceremony in the app.
+        if row.isSealedLogin {
+            fillBlockedMessage = appString("This login is behind Extra Protection. Open Loox to reveal it.")
+            return
+        }
         // Shared credentials pass the authoritative gate right before the
         // fill (INV-11): live grant check, fail-closed on every outcome that
         // isn't a verified match. Owned items fill directly as before.

@@ -28,7 +28,7 @@ struct QuickViewApprovalSheet: View {
     }
 
     var body: some View {
-        VaultSheetScaffold(title: "Open on Computer",
+        VaultSheetScaffold(title: "Send to Browser",
                            leading: { EmptyView() },
                            trailing: { if !isBusy { SheetDismissButton("Close") } }) {
             content
@@ -41,12 +41,12 @@ struct QuickViewApprovalSheet: View {
         case .idle:
             EmptyView()
         case .resolving:
-            progress(appString("Connecting to your computer…"))
+            progress(appString("Connecting to your browser…"))
         case .verified(let session):
             if let item {
                 approvalDetails(session: session, item: item)
             } else {
-                failed(appString("Start again on the computer."))
+                failed(appString("Start again in the browser."))
             }
         case .approving:
             progress(appString("Sending fields to your browser…"))

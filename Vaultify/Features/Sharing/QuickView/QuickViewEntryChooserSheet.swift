@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "Open on Computer" entry: Scan QR or Enter Code, then the approval sheet.
+/// "Send to Browser" entry: Scan QR or Enter Code, then the approval sheet.
 /// Both capture paths feed the SAME session client — only the input method
 /// differs.
 struct QuickViewEntryChooserSheet: View {
@@ -19,15 +19,15 @@ struct QuickViewEntryChooserSheet: View {
     }
 
     var body: some View {
-        VaultSheetScaffold(title: "Open on Computer") {
+        VaultSheetScaffold(title: "Send to Browser") {
             Form {
                 Section {
                     optionRow(icon: "ic_shopcodes", title: "Scan QR Code",
-                             subtitle: "Point your camera at the code shown on your computer.") {
+                             subtitle: "Point your camera at the code shown in your browser.") {
                         showScanner = true
                     }
                     optionRow(icon: "ic_text", title: "Enter Code",
-                             subtitle: "Type the code shown on your computer.") {
+                             subtitle: "Type the code shown in your browser.") {
                         showEnterCode = true
                     }
                 } footer: {

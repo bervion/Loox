@@ -18,6 +18,9 @@ struct ImportView: View {
     @State private var showPicker = false
     @State private var parsed: [ImportRow] = []
     @State private var parsedPasskeys: [PasskeySecret] = []
+    /// The backup's Level-2 wrap (if any) — adopted on import when this device
+    /// has none, so restored sealed fields stay openable with the Extra Password.
+    @State private var parsedLevel2: VaultBackup.Level2Wrap?
     @State private var encryptedData: Data?
     @State private var passphrase = ""
     @State private var error: String?
@@ -36,8 +39,7 @@ struct ImportView: View {
 
             if let encryptedData {
                 Section("Encrypted backup") {
-                    RevealableSecureField(title: "Backup password", text: $passphrase)
-                        .listRowInsets(.init())
+                    RevealableSecureField(title: "Backup password", text: $passphrase, inList: true)
                     Button("Decrypt") { Task { await decrypt(encryptedData) } }
                         .disabled(passphrase.isEmpty || working)
                 }
@@ -120,6 +122,7 @@ struct ImportView: View {
             let imported = try await VaultBackup.importEncryptedWithPasskeys(data, passphrase: passphrase)
             parsed = imported.items.map { ImportRow(item: $0.item, folderName: $0.folderName) }
             parsedPasskeys = imported.passkeys
+            parsedLevel2 = imported.level2
             encryptedData = nil
             if parsed.isEmpty && parsedPasskeys.isEmpty {
                 error = appString("Backup contained no records.")
@@ -161,6 +164,10 @@ struct ImportView: View {
                 // debounced push for it — imported credentials should reach
                 // CloudKit without waiting for the next foreground sync.
                 if !parsedPasskeys.isEmpty { env.repository.noteLocalMutation() }
+            }
+            if let level2 = parsedLevel2 {
+                env.session.adoptLevel2WrapIfAbsent(wrappedL2SK: level2.wrappedL2SK,
+                                                    salt: level2.salt, kdf: level2.kdf)
             }
             AnalyticsEngine.shared.log(.vaultImported(
                 countBucket: AnalyticsBucket.count(parsed.count + parsedPasskeys.count)))

@@ -19,6 +19,10 @@ case "$TEST_TARGET" in
     ;;
 esac
 
+# Persistent-runner hygiene: a cancelled run leaves its result bundle behind in
+# RUNNER_TEMP, and xcodebuild refuses to write over an existing one.
+rm -rf "$RESULT_BUNDLE" "$RESULT_BUNDLE.summary.json"
+
 set +e
 xcodebuild \
   -workspace Vaultify.xcworkspace \

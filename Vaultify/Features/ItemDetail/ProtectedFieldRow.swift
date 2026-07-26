@@ -15,6 +15,11 @@ struct ProtectedFieldRow: View {
     @State private var showLevel2Prompt = false
     @State private var showCustomPrompt = false
     @State private var showLargeType = false
+    @State private var confirmRemoval = false
+
+    /// Extra-protection teal — the same trailing-wash language as the passkey
+    /// rows' purple, on its own hue so the two never read as one feature.
+    private static let guardTeal = Color(rgb: 0x14B8A6)
 
     private var scheme: SecretGuard.Scheme? { SecretGuard.scheme(of: field.value) }
     private var theme: AppTheme { env.theme.active }
@@ -24,70 +29,112 @@ struct ProtectedFieldRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 fieldLabelText(field.label)
                     .vaultType(.caption).fontWeight(.medium)
-                    .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85) : theme.color(.accent))
+                    .foregroundStyle(copied ? VaultColors.copyFlashText.opacity(0.85) : theme.color(.accent))
                 value
-                if let error { Text(error).vaultType(.caption).foregroundStyle(copied ? theme.color(.onAccent) : VaultColors.strengthWeak) }
+                if let error { Text(error).vaultType(.caption).foregroundStyle(copied ? VaultColors.copyFlashText : VaultColors.strengthWeak) }
             }
             Spacer(minLength: 8)
             trailing
         }
         .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(copied ? theme.color(.accent) : Color.clear)
-        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
+        .background(rowBackground)
+        .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.primary))
         .contentShape(.rect)
         .onTapGesture { primaryTap() }
         .animation(.easeOut(duration: 0.18), value: copied)
         .sheet(isPresented: $showLevel2Prompt) {
-            CodePromptSheet(title: "Extra Password", message: "Enter your Level-2 password to reveal this field.",
-                            confirmLabel: "Reveal", onSubmit: unlockLevel2AndReveal)
+            CodePromptSheet(title: "Extra Password",
+                            message: "Enter your Extra Password to reveal this field.",
+                            placeholder: "Extra Password",
+                            onSubmit: unlockLevel2AndReveal)
         }
         .sheet(isPresented: $showCustomPrompt) {
-            CodePromptSheet(title: "Field Code", message: "Enter this field's code to reveal it.",
-                            confirmLabel: "Reveal", onSubmit: revealCustom)
+            CodePromptSheet(title: "Custom code",
+                            message: "Enter this field's custom code to reveal it.",
+                            placeholder: "Custom code",
+                            onSubmit: revealCustom)
         }
         .platformFullScreenCover(isPresented: $showLargeType) { LargeTypeView(text: plaintext ?? "") }
+        .confirmationDialog("Remove protection from this field?", isPresented: $confirmRemoval,
+                            titleVisibility: .visible) {
+            Button("Remove Protection", role: .destructive) { removeProtection() }
+        } message: {
+            Text("The value will be visible like a normal field.")
+        }
     }
 
-    @ViewBuilder private var value: some View {
+    /// The passkey rows' trailing-wash treatment on the extra-protection teal —
+    /// the standing "this row is special" marker; the copy flash overrides it.
+    @ViewBuilder private var rowBackground: some View {
         if copied {
-            Text("Copied").vaultType(.body)
-        } else if let plaintext {
-            Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
+            VaultColors.copyFlash
         } else {
-            HStack(spacing: 6) {
-                PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
-                Text("Protected. Tap to reveal").vaultType(.subhead).themedForeground(.secondary)
+            LinearGradient(colors: [.clear, Self.guardTeal.opacity(0.22)],
+                           startPoint: .center, endPoint: .trailing)
+        }
+    }
+
+    /// Same keep-the-size flash as `DetailFieldRow`: the value goes transparent
+    /// and "Copied" overlays it, so a long revealed value never collapses the row.
+    @ViewBuilder private var value: some View {
+        Group {
+            if let plaintext {
+                Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
+            } else {
+                // Name the secret up front — which prompt appears on tap must
+                // not be a surprise (the Extra Password unlocks for this item
+                // visit; a custom code is asked every time). The trailing glyph
+                // carries the lock; a second one here read unbalanced.
+                Text(scheme == .custom ? "Protected. Reveal with custom code"
+                                       : "Protected. Reveal with Extra Password")
+                    .vaultType(.subhead).themedForeground(.secondary)
+            }
+        }
+        .opacity(copied ? 0 : 1)
+        .overlay(alignment: .topLeading) {
+            if copied {
+                Text("Copied").vaultType(.body)
+                    .foregroundStyle(VaultColors.copyFlashText)
+                    .fixedSize()
             }
         }
     }
 
-    private var trailing: some View {
-        Menu {
-            if plaintext == nil {
-                Button { primaryTap() } label: { Label("Reveal", image: Icons.reveal) }
-            } else {
+    /// Locked: a plain teal lock glyph, mirroring the passkey rows' trailing
+    /// mark — the whole row is the reveal control, so a menu would only repeat
+    /// it. Revealed: the "•••" menu with the value actions.
+    @ViewBuilder private var trailing: some View {
+        if plaintext == nil {
+            PolarisIcon(Icons.lockFill, size: 22)
+                .foregroundStyle(copied ? VaultColors.copyFlashText : Self.guardTeal)
+        } else {
+            Menu {
                 Button { copy() } label: { Label("Copy", image: Icons.copy) }
                 Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
                 Button { plaintext = nil } label: { Label("Conceal", image: Icons.hide) }
-                Button(role: .destructive) { removeProtection() } label: {
+                Button(role: .destructive) { confirmRemoval = true } label: {
                     Label("Remove Protection", image: Icons.lock)
                 }
+            } label: {
+                PolarisIcon("ic_menu_horizontal", size: 17)
+                    .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
+                    .frame(width: 30, height: 30)
+                    .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))
+                    // Invisible padded hit area: the visual circle stays 30pt, the
+                    // tappable region meets the 44pt minimum (rule 6). The negative
+                    // trailing padding cancels the hit frame's invisible slice so the
+                    // VISIBLE circle sits at the row inset — flush with the locked
+                    // state's lock glyph instead of 7pt further in.
+                    .frame(width: Metric.hitMin, height: Metric.hitMin)
+                    .contentShape(Rectangle())
+                    .padding(.trailing, -(Metric.hitMin - 30) / 2)
             }
-        } label: {
-            PolarisIcon("ic_menu_horizontal", size: 17)
-                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
-                .frame(width: 30, height: 30)
-                .background(Circle().fill(copied ? theme.color(.onAccent).opacity(0.22) : VaultColors.fill))
-                // Invisible padded hit area: the visual circle stays 30pt, the
-                // tappable region meets the 44pt minimum (rule 6).
-                .frame(width: Metric.hitMin, height: Metric.hitMin)
-                .contentShape(Rectangle())
+            // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
         }
-        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
     }
 
     private func primaryTap() {
@@ -126,7 +173,7 @@ struct ProtectedFieldRow: View {
             revealLevel2(with: key.bytes)
             return nil
         } catch {
-            return appString("Incorrect Level-2 password.")
+            return (error as? AuthError)?.errorDescription ?? appString("Incorrect Extra Password.")
         }
     }
 

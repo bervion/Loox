@@ -23,8 +23,7 @@ struct LocatedInSheet: View {
                 Section {
                     HStack(spacing: Space.s3) {
                         if let folder {
-                            FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)
-                            Text(folder.name).themedForeground()
+                            SpaceIdentityLine(folder: folder, badgeSize: 30)
                         } else {
                             // Proportional radius matching FolderBadge/CategoryBadge's
                             // `size * 0.28` sibling convention at the same 30pt tile size.
