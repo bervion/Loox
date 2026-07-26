@@ -12,6 +12,8 @@ struct ShareRecipientDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var confirmRevoke = false
+    /// Realtime-action offline notice (revoking is only true once iCloud says so).
+    @State private var showRevokeOfflineNotice = false
     @State private var errorMessage: String?
     @State private var busy = false
     /// Loaded from the live grant; nil while fetching (capability editor hidden).
@@ -150,11 +152,21 @@ struct ShareRecipientDetailSheet: View {
     private var revokeSection: some View {
         Section {
             Button(role: .destructive) {
-                confirmRevoke = true
+                // Realtime CloudKit action: offline, explain instead of
+                // surfacing a raw iCloud error mid-flow.
+                if env.reachability.hasSatisfiedNetworkPath {
+                    confirmRevoke = true
+                } else {
+                    Haptics.warning()
+                    showRevokeOfflineNotice = true
+                }
             } label: {
                 Text("Revoke access").frame(maxWidth: .infinity)
             }
             .disabled(busy)
+            .onlineActionAppearance(online: env.reachability.hasSatisfiedNetworkPath)
+            .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
+                                 message: "You need an internet connection to revoke access. The share stays active until then.")
         }
         .listRowBackground(VaultColors.surface)
     }

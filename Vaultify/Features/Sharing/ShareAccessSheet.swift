@@ -49,6 +49,8 @@ struct ShareAccessSheet: View {
     @State private var pendingHandOver: (id: String, capability: FieldCapability)?
     /// Share pending the destructive revoke confirmation.
     @State private var revokeTarget: ItemShareRecord?
+    /// Realtime-action offline notice (revoking is only true once iCloud says so).
+    @State private var showRevokeOfflineNotice = false
     /// iMessage compose (recipient pre-filled) for the invite link.
     @State private var showMessageCompose = false
     /// A rendezvous drop reached the recipient's armed inbox — their device
@@ -132,6 +134,8 @@ struct ShareAccessSheet: View {
             // delivered shared values cannot be clawed back.
             Text("They can't request codes anymore. Values that were already shared stay on their device.")
         }
+        .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
+                             message: "You need an internet connection to revoke access. The share stays active until then.")
         // Hand-over confirmation (INV-08): the one honest moment to say a
         // delivered secret is not revocable by us.
         .confirmationDialog("Hand over this secret?", isPresented: handOverDialogBinding,
@@ -570,7 +574,14 @@ struct ShareAccessSheet: View {
                             }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
-                                    revokeTarget = share
+                                    // Realtime CloudKit action — offline, the
+                                    // swipe explains instead of erroring.
+                                    if env.reachability.hasSatisfiedNetworkPath {
+                                        revokeTarget = share
+                                    } else {
+                                        Haptics.warning()
+                                        showRevokeOfflineNotice = true
+                                    }
                                 } label: {
                                     Label("Revoke", image: Icons.trash)
                                 }

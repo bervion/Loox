@@ -21,6 +21,8 @@ struct ItemDetailScreen: View {
     @State private var showShareAccess = false
     @State private var confirmLeave = false
     @State private var leaveError: String?
+    /// Realtime-action offline notice (leaving needs iCloud to be true).
+    @State private var showLeaveOfflineNotice = false
     /// Per-recipient management sheet (V1.2 follow-up: multi-recipient shares).
     @State private var selectedShare: ItemShareRecord?
     /// Resume stepper (design 12b/12c) for a recipient still pending.
@@ -254,7 +256,7 @@ struct ItemDetailScreen: View {
             } else if item?.sharedOrigin != nil {
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
-                        Button(role: .destructive) { confirmLeave = true } label: {
+                        Button(role: .destructive) { requestLeave() } label: {
                             Label("Leave Share", image: Icons.trash)
                         }
                     } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
@@ -319,6 +321,8 @@ struct ItemDetailScreen: View {
         } message: {
             Text("You'll lose access to it. The owner can share with you again later.")
         }
+        .offlineActionNotice(isPresented: $showLeaveOfflineNotice,
+                             message: "You need an internet connection to leave a share. You still have access until then.")
         // A shared item that vanished (revoked while away, or after the
         // projection finished loading) has no screen to show — go back.
         .task(id: env.sharedItems.hasLoaded ? "loaded" : "loading") {
@@ -338,14 +342,31 @@ struct ItemDetailScreen: View {
         }
     }
 
+    /// Gate before the confirm dialog: leaving is only real once iCloud says
+    /// so — offline, the tap explains instead of walking into a CloudKit error.
+    private func requestLeave() {
+        if env.reachability.hasSatisfiedNetworkPath {
+            confirmLeave = true
+        } else {
+            Haptics.warning()
+            showLeaveOfflineNotice = true
+        }
+    }
+
     private func leaveShare() async {
         guard let vaultKey = env.session.vaultKey?.bytes else { return }
         do {
             try await env.sharedItems.leave(itemId: itemID, vaultKey: vaultKey)
             closeDetail()
         } catch {
-            // Swallowing this reads as "the button does nothing" — say why.
-            leaveError = error.localizedDescription
+            // Connection dropped between the gate and the operation: the
+            // friendly explanation, never the raw CloudKit error text.
+            if !env.reachability.hasSatisfiedNetworkPath {
+                leaveError = appString("You need an internet connection to leave a share. You still have access until then.")
+            } else {
+                // Swallowing this reads as "the button does nothing" — say why.
+                leaveError = error.localizedDescription
+            }
         }
     }
 
@@ -678,11 +699,14 @@ struct ItemDetailScreen: View {
     @ViewBuilder
     private func trashCard(_ item: VaultItem) -> some View {
         if item.sharedOrigin != nil {
-            // Shared projection: the only destructive action is leaving.
+            // Shared projection: the only destructive action is leaving —
+            // a realtime CloudKit operation, so it dims while offline and the
+            // tap explains instead of throwing a raw iCloud error.
             actionRow("Leave Share", icon: Icons.trash,
                       color: env.theme.active.color(.destructive)) {
-                confirmLeave = true
+                requestLeave()
             }
+            .onlineActionAppearance(online: env.reachability.hasSatisfiedNetworkPath)
         } else if item.isTrashed {
             VStack(spacing: Space.s3) {
                 actionRow("Restore", icon: Icons.refresh, color: env.theme.active.color(.success)) {
