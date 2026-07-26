@@ -466,7 +466,17 @@ import Foundation
     /// `shared` values remain with B (stated in the revoke confirm — H5).
     func revoke(zoneName: String, inviteRecordName: String? = nil) async throws {
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
-        _ = try await database.modifyRecordZones(saving: [], deleting: [zoneID])
+        // Per-zone outcomes live in `deleteResults`; a zone that failed to
+        // delete does NOT throw here. Swallowing that reported a revoke that
+        // never happened, leaving the recipient's mirror alive.
+        let result = try await database.modifyRecordZones(saving: [], deleting: [zoneID])
+        if case .failure(let error) = result.deleteResults[zoneID] {
+            let code = (error as? CKError)?.code
+            guard code == .zoneNotFound || code == .userDeletedZone else {
+                ShareDiagnostics.log("REVOKE", "zone=\(zoneName) failed=\(error)")
+                throw error
+            }
+        }
         // A dangling public invite record would keep resolving to a dead zone
         // for up to 7 days — delete it with the share it belonged to.
         if let inviteRecordName {
@@ -480,11 +490,27 @@ import Foundation
         Self.unregisterZone(zoneName)
     }
 
+    /// Every approval zone this account actually owns, read from the private
+    /// database rather than the device-local registry.
+    ///
+    /// `ownedZoneNames` is UserDefaults, so it dies with the app while the
+    /// zones live on in iCloud: a reinstalled owner was permanently blind to
+    /// its own shares and had nothing to revoke, while recipients kept seeing
+    /// them. The prefix filter is what keeps the vault zone out of reach —
+    /// only `apz-` names are ever returned here.
+    func ownedApprovalZoneNames() async throws -> [String] {
+        try await database.allRecordZones()
+            .map(\.zoneID.zoneName)
+            .filter { $0.hasPrefix(ApprovalConfig.zonePrefix) }
+    }
+
     /// Vault-erase cleanup: best-effort revoke of every share this owner
-    /// created (the printed registry is device-local; the zones must not
-    /// outlive the vault that sealed their content).
+    /// created — the zones must not outlive the vault that sealed their
+    /// content. Falls back to the local registry when the zone listing fails
+    /// (offline erase still revokes what this device knows about).
     func revokeAllOwned() async {
-        for zoneName in Self.ownedZoneNames {
+        let names = (try? await ownedApprovalZoneNames()) ?? Self.ownedZoneNames
+        for zoneName in Set(names).union(Self.ownedZoneNames) {
             try? await revoke(zoneName: zoneName)
         }
     }
