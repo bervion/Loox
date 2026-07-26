@@ -24,8 +24,15 @@ struct PersonaAvatarView: View {
 /// Display strings for the active persona, shared by every surface that shows
 /// the identity row (Home card, sidebar profile row).
 enum PersonaDisplay {
+    /// The PERSON's name, not the persona label: the identity card's title
+    /// ("Kiyo Chinh") when one is linked — the subtitle already carries the
+    /// persona kind, so the bold line can be the human. Falls back to the
+    /// persona's display name before an identity card exists.
     static func name(_ env: AppEnvironment) -> String {
-        env.repository.activePersona?.displayName ?? appString("Profile")
+        let title = env.repository.activeProfileItem?.title
+            .trimmingCharacters(in: .whitespaces)
+        if let title, !title.isEmpty { return title }
+        return env.repository.activePersona?.displayName ?? appString("Profile")
     }
 
     /// Kind + email, comma-joined (user-chosen format: "Cá nhân, email…").
