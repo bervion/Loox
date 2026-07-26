@@ -63,7 +63,7 @@ final class QuickViewClientTests: XCTestCase {
 
     func testSessionUnavailableErrorMessageIsGenericAndStable() {
         let message = QuickViewAPIError.sessionUnavailable.errorDescription
-        XCTAssertEqual(message, "Start again on the computer.")
+        XCTAssertEqual(message, "Start again in the browser.")
     }
 
     func testCapabilityErrorMessagesDoNotLeakOperatorDetail() {
