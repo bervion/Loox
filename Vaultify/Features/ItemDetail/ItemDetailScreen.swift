@@ -210,6 +210,16 @@ struct ItemDetailScreen: View {
                     Menu {
                         Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
                             .accessibilityIdentifier("item.detail.edit")
+                        // Pin + favorite moved here from beside the Space pill —
+                        // the pill (Space + identity) needs the whole line.
+                        Button { env.repository.togglePin(item) } label: {
+                            Label(item.pinned ? "Unpin" : "Pin",
+                                  image: item.pinned ? Icons.pinFill : Icons.pin)
+                        }
+                        Button { try? env.repository.toggleFavorite(item) } label: {
+                            Label(item.favorite ? "Unfavorite" : "Favorite",
+                                  image: item.favorite ? Icons.starFill : Icons.star)
+                        }
                         if quickViewEntryVisible {
                             Button {
                                 if let reason = quickViewDisabledReason(for: item) {
@@ -416,16 +426,12 @@ struct ItemDetailScreen: View {
                                 in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                     Spacer(minLength: 8)
                 } else {
+                    // Space + owning identity in one pill. Pin/favorite moved to
+                    // the header "…" menu — this line can run long (two names)
+                    // and side controls would crowd it into truncation.
                     Button { showLocatedIn = true } label: {
                         HStack(spacing: Space.s2) {
-                            if let folder = folder(for: item) {
-                                FolderBadge(icon: folder.iconAsset, color: folder.color, size: 20)
-                                Text(folder.name)
-                                    .vaultType(.subhead).fontWeight(.semibold).themedForeground()
-                                    .lineLimit(1).truncationMode(.tail)
-                            } else {
-                                Text("No Space").vaultType(.subhead).themedForeground(.secondary)
-                            }
+                            SpaceIdentityLine(folder: folder(for: item))
                             PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
                         }
                         .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
@@ -434,9 +440,7 @@ struct ItemDetailScreen: View {
                     }
                     .buttonStyle(.plain)
 
-                    Spacer(minLength: 8)
-
-                    pinFavoriteControls(item)
+                    Spacer(minLength: 0)
                 }
             }
 
@@ -455,22 +459,6 @@ struct ItemDetailScreen: View {
             }
         }
         .padding(.vertical, Space.s1)
-    }
-
-    /// Pin + favorite toggles, grouped with spacing — shown at the Space row's vertical center.
-    @ViewBuilder private func pinFavoriteControls(_ item: VaultItem) -> some View {
-        HStack(spacing: Space.s4) {
-            Button { env.repository.togglePin(item) } label: {
-                PolarisIcon(item.pinned ? Icons.pinFill : Icons.pin, size: 22)
-                    .foregroundStyle(item.pinned ? env.theme.active.color(.accentText) : env.theme.active.color(.secondary))
-            }
-            .buttonStyle(.plain)
-            Button { try? env.repository.toggleFavorite(item) } label: {
-                PolarisIcon(item.favorite ? Icons.starFill : Icons.star, size: Metric.iconUtility)
-                    .foregroundStyle(item.favorite ? VaultColors.favoriteStar : env.theme.active.color(.secondary))
-            }
-            .buttonStyle(.plain)
-        }
     }
 
     /// Item tags. The Space now lives in the header pill, so this is tags-only.

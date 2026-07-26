@@ -387,14 +387,7 @@ struct ItemEditorScreen: View {
             }
         } label: {
             HStack(spacing: Space.s2) {
-                if let folder = selectedFolder {
-                    FolderBadge(icon: folder.iconAsset, color: folder.color, size: 22)
-                    Text(folder.name)
-                        .vaultType(.subhead).fontWeight(.semibold).themedForeground()
-                        .lineLimit(1).truncationMode(.tail)
-                } else {
-                    Text("No Space").vaultType(.subhead).themedForeground(.secondary)
-                }
+                SpaceIdentityLine(folder: selectedFolder, badgeSize: 22)
                 PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
             }
             .padding(.horizontal, Space.s3)
