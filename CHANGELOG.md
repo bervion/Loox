@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.40.0] - 2026-07-26
+
+### Added
+- Extra Protection UX overhaul — setup, protect, reveal, turn off + ciphertext leak fixes (#176)
+- full-screen camera, warm-up cover, and live code formatting (#173)
+- continuous logo choreography across privacy, lock, and wink (#174)
+
+### Fixed
+- simulator janitor actually reclaims orphans (#175)
+- iPhone hub grid regression, password-form reveal UX, dead AutoFill row (#170)
+- leaving a share must prove the zone delete landed (#172)
+- scope App Attest key state per backend, bind marker to key id (#171)
+
+
 ## [1.39.0] - 2026-07-23
 
 ### Added

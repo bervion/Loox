@@ -1,1 +1,1 @@
-This update improves the tablet experience with a refined welcome screen and a more consistent layout across larger screens, making Loox easier to use on iPad.
+Extra Protection is now easier to set up, review, and turn off, with several under-the-hood fixes to keep your vault data accurate and secure. This update also improves camera scanning and smooths out visual transitions throughout the app.
