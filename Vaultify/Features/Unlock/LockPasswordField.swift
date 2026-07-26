@@ -6,10 +6,12 @@ import SwiftUI
 struct LockPasswordField: View {
     @Binding var text: String
     var busy: Bool
+    /// Owned by the lock screen so the success choreography can dismiss the
+    /// keyboard before the mark glides back to centre.
+    var focus: FocusState<Bool>.Binding
     let onSubmit: () -> Void
 
     @Environment(AppEnvironment.self) private var env
-    @FocusState private var focused: Bool
 
     var body: some View {
         HStack(spacing: Space.s2) {
@@ -29,7 +31,7 @@ struct LockPasswordField: View {
                     .autocorrectionDisabled()
                     .platformTextContentType(.password)
                     .font(.vaultCode())
-                    .focused($focused)
+                    .focused(focus)
                     .submitLabel(.go)
                     .onSubmit(onSubmit)
                     .foregroundStyle(Color(rgb: env.theme.active.primaryText))
@@ -44,7 +46,7 @@ struct LockPasswordField: View {
         .padding(.vertical, 6)
         .background(Color(rgb: env.theme.active.controlBackground),
                     in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .onAppear { focused = true }
+        .onAppear { focus.wrappedValue = true }
     }
 
     private var loginButton: some View {

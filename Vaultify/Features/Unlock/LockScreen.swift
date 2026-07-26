@@ -2,17 +2,22 @@ import SwiftUI
 
 /// Master-password / biometric unlock gate shown whenever the vault is locked.
 ///
-/// Two modes:
-/// - **Biometric** — logo only, centred, with a Face ID / Touch ID badge at its bottom-right
-///   corner (progress while authenticating, reverts on failure). After repeated failures it
-///   falls back to password entry.
-/// - **Password** — the logo eases up to make room for the password field (inline accent
-///   login arrow; the keyboard's Go key also submits) and a "Forgot password?" link pinned
-///   to the bottom of the screen.
+/// Choreography — the logo is the single continuous element between the launch
+/// screen, the privacy shield, this gate, and the unlock wink:
+/// - **Arrival** — the mark starts at the exact screen centre (where the launch
+///   screen and privacy shield leave it) and runs up into its resting spot as the
+///   title/subtitle fade in underneath.
+/// - **Biometric** — the Face ID / Touch ID glyph sits at the mark's heart (the
+///   sparkle's spot); tapping the mark retries. After repeated failures the
+///   password field animates in below.
+/// - **Password success** — the chrome (title, subtitle, field) is absorbed into
+///   the mark while it glides back to centre, handing off to the wink seamlessly.
 struct LockScreen: View {
     /// Fired on a successful unlock (biometric or password) so the parent can
-    /// play the memoji success wink before the vault appears.
-    var onUnlockSuccess: () -> Void = {}
+    /// play the memoji success wink before the vault appears. `fromCenter` is
+    /// true when the absorb choreography already returned the logo to the
+    /// screen centre (manual password path), so the wink starts there.
+    var onUnlockSuccess: (_ fromCenter: Bool) -> Void = { _ in }
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -33,6 +38,24 @@ struct LockScreen: View {
     @State private var busy = false
     @State private var error: String?
     @State private var showRecovery = false
+    @FocusState private var passwordFocused: Bool
+
+    // MARK: Choreography state
+
+    /// False while the mark rests at the screen centre (launch/privacy pose);
+    /// flips true to run it up into the resting spot as the chrome fades in.
+    /// Reset on every background so the return replays the arrival.
+    @State private var entered = false
+    /// Password-success absorb: the chrome collapses into the mark while the
+    /// group returns to centre, then the session flips underneath the wink.
+    @State private var absorbed = false
+    /// Measured height of everything below the logo — offsetting the group by
+    /// half of it puts the mark at the exact centre without hardcoding text
+    /// heights (Dynamic Type / locale safe).
+    @State private var chromeHeight: CGFloat = 0
+    @State private var chromeMeasured = false
+
+    private var chromeCollapsed: Bool { !entered || absorbed }
 
     /// Biometric attempts (auto-prompt + taps) before falling back to the password field.
     private let maxBioAttempts = 3
@@ -48,6 +71,12 @@ struct LockScreen: View {
     /// slide so the vault can't be instantly re-opened by the owner's face still being in
     /// front of the camera the moment they chose to lock it.
     private var requireSlide: Bool { env.session.deliberatelyLocked && !slideConfirmed }
+
+    /// The biometric glyph occupies the mark's heart only while biometrics are
+    /// the active affordance (never over the slide gate or during the absorb).
+    private var showsBioBadge: Bool {
+        mode == .biometric && !requireSlide && !absorbed
+    }
 
     /// Sub-header under the logo — names the biometric option when it's available,
     /// otherwise points straight at the password.
@@ -65,9 +94,9 @@ struct LockScreen: View {
 
     var body: some View {
         // Scroll-safe: at accessibility text sizes on an SE-width screen the fixed
-        // Spacer-centered stack below (logo + title/subtitle + password field/forgot
-        // link) can outgrow the screen and clip. `OnboardingScrollingStep` (shared with
-        // the onboarding flow) keeps the exact same Spacer-centered layout when it fits
+        // Spacer-centered stack below (logo + title/subtitle + password field) can
+        // outgrow the screen and clip. `OnboardingScrollingStep` (shared with the
+        // onboarding flow) keeps the exact same Spacer-centered layout when it fits
         // and only becomes a real ScrollView once it doesn't — so default text sizes
         // render byte-identical to the un-wrapped VStack, while AX-XXL gets a safety
         // net. Purely presentational: no change to biometric/slide/attempt logic below.
@@ -75,55 +104,18 @@ struct LockScreen: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                VStack(spacing: Space.s7) {
-                    VStack(spacing: Space.s4) {
-                        // Idle brand symbol — the six circles breathe in a "not
-                        // ready yet" (dimmed) state while waiting to authenticate;
-                        // on success RootView plays the memoji wink before the app.
-                        LooxLogoBreatheView(ready: false)
-                            .frame(width: 132, height: 132)
-                            .overlay(alignment: .bottomTrailing) {
-                                if mode == .biometric && !requireSlide {
-                                    BiometricBadge(authenticating: bioAuthenticating) {
-                                        triggerBiometric()
-                                    }
-                                    .offset(x: 6, y: 6)
-                                    .transition(.scale.combined(with: .opacity))
-                                }
-                            }
-
-                        VStack(spacing: Space.s2) {
-                            Text("Unlock your vault")
-                                .vaultType(.screenTitle)
-                            Text(subtitleText)
-                                .vaultType(.subhead)
-                                .themedForeground(.secondary)
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-
-                    if requireSlide {
-                        // Shake-locked → confirm by sliding before any Face ID prompt.
-                        SlideToUnlock { confirmSlide() }
-                            .transition(.opacity)
-                    } else if mode == .password {
-                        passwordSection
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
+                VStack(spacing: 0) {
+                    logoView
+                    chrome
                 }
+                // Half the chrome height re-centres the MARK (not the group) while
+                // the chrome is hidden — the launch/privacy pose. Hidden until the
+                // first measurement so the mark never flashes at the lifted spot.
+                .offset(y: chromeCollapsed ? chromeHeight / 2 : 0)
+                .opacity(chromeMeasured ? 1 : 0)
                 .padding(.horizontal, Space.s8)
 
                 Spacer()
-
-                // "Forgot password?" pinned to the bottom (password mode only). Keyboard
-                // avoidance lifts it just above the keyboard when the field is focused.
-                if mode == .password {
-                    Button("Forgot password?") { showRecovery = true }
-                        .vaultType(.footnote)
-                        .padding(.bottom, Space.s8)
-                        .transition(.opacity)
-                }
             }
         } // OnboardingScrollingStep
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -132,12 +124,25 @@ struct LockScreen: View {
         // making it visibly jump down at the launch hand-off. `.container` keeps keyboard
         // avoidance intact for password mode.
         .ignoresSafeArea(.container, edges: .vertical)
+        // "Forgot password?" floats at the bottom (password mode only) so its height
+        // never shifts the Spacer-centred group — the absorb lands the mark at the
+        // exact centre. Keyboard avoidance still lifts it just above the keyboard.
+        .overlay(alignment: .bottom) {
+            if mode == .password, !requireSlide {
+                Button("Forgot password?") { showRecovery = true }
+                    .vaultType(.footnote)
+                    .padding(.bottom, Space.s8)
+                    .opacity(absorbed ? 0 : 1)
+                    .transition(.opacity)
+            }
+        }
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
         .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: mode)
         .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: requireSlide)
         .sheet(isPresented: $showRecovery) { RecoveryView() }
         .analyticsScreen("lock")
         .onAppear {
+            playEntrance()
             // After a shake-lock, wait for the slide; otherwise auto-prompt as usual.
             guard !requireSlide else { return }
             if !canUseBiometrics { mode = .password }
@@ -147,7 +152,14 @@ struct LockScreen: View {
             switch phase {
             case .background:
                 didBackground = true
+                // Snap back (no animation — we're off-screen) to the centred pose
+                // so the switcher snapshot matches the privacy shield and the
+                // return to the foreground replays the run-up arrival.
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { entered = false }
             case .active:
+                playEntrance()
                 // Trigger on a genuine return from background OR on the first activation after
                 // a cold launch — but never on the `.inactive → .active` bounce the Face ID
                 // sheet closing produces (by then `didAutoPrompt` is already true).
@@ -163,15 +175,95 @@ struct LockScreen: View {
         }
     }
 
+    // MARK: - Pieces
+
+    /// The breathing mark. In biometric mode the Face ID / Touch ID glyph takes
+    /// the sparkle's spot at its heart, and the whole mark is the retry target.
+    private var logoView: some View {
+        LooxLogoBreatheView(ready: false, showSparkle: !showsBioBadge)
+            .frame(width: 132, height: 132)
+            .overlay {
+                if showsBioBadge {
+                    BiometricBadge(authenticating: bioAuthenticating) {
+                        triggerBiometric()
+                    }
+                    .transition(.opacity)
+                }
+            }
+    }
+
+    /// Everything below the mark — fades in on arrival and is absorbed into the
+    /// mark on password success. Measured as one block so the centring offset
+    /// tracks Dynamic Type and locale for free.
+    private var chrome: some View {
+        VStack(spacing: Space.s7) {
+            VStack(spacing: Space.s2) {
+                Text("Unlock your vault")
+                    .vaultType(.screenTitle)
+                Text(subtitleText)
+                    .vaultType(.subhead)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if requireSlide {
+                // Shake-locked → confirm by sliding before any Face ID prompt.
+                SlideToUnlock { confirmSlide() }
+                    .transition(.opacity)
+            } else if mode == .password {
+                passwordSection
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .padding(.top, Space.s4)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { height in
+            chromeHeight = height
+            chromeMeasured = true
+        }
+        .opacity(chromeCollapsed ? 0 : 1)
+        .scaleEffect(absorbed ? 0.35 : 1, anchor: .top)
+    }
+
     private var passwordSection: some View {
         VStack(spacing: Space.s2) {
-            LockPasswordField(text: $password, busy: busy) {
+            LockPasswordField(text: $password, busy: busy, focus: $passwordFocused) {
                 Task { await unlock() }
             }
             if let error {
                 Text(error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
             }
         }
+    }
+
+    // MARK: - Choreography
+
+    /// Run the mark up from the centre pose into its resting spot. A short beat
+    /// first, so the eye registers the centred (privacy/launch) frame it left.
+    private func playEntrance() {
+        guard !entered, !absorbed else { return }
+        if reduceMotion { entered = true; return }
+        // Mounting mid-background (Immediately auto-lock fires as the app leaves)
+        // would burn the run-up off-screen and resume on the resting pose — hold
+        // the centred pose instead; the `.active` scene-phase change replays it.
+        guard scenePhase != .background else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(200))
+            guard !entered, !absorbed, scenePhase != .background else { return }
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.85)) { entered = true }
+        }
+    }
+
+    /// Password-success absorb: dismiss the keyboard, pull the chrome into the
+    /// mark, and glide the mark back to the screen centre — then let the caller
+    /// flip the session so the wink picks up from exactly there.
+    private func playAbsorb() async {
+        guard !reduceMotion else { return }
+        passwordFocused = false
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) { absorbed = true }
+        try? await Task.sleep(for: .milliseconds(480))
     }
 
     // MARK: - Biometrics
@@ -203,7 +295,7 @@ struct LockScreen: View {
         do {
             try await env.session.unlockWithBiometrics()
             AnalyticsEngine.shared.log(.vaultUnlocked(method: "biometric"))
-            onUnlockSuccess()
+            onUnlockSuccess(false)
             // Success → session state flips to unlocked → this view is replaced.
         } catch {
             AnalyticsEngine.shared.log(.vaultUnlockFailed(method: "biometric"))
@@ -221,9 +313,11 @@ struct LockScreen: View {
         guard !password.isEmpty, !busy else { return }
         busy = true; error = nil
         do {
-            try await env.session.unlock(password: password)
+            // The absorb plays between "password proven" and the session flip, so
+            // the wink takes over from a mark already resting at the centre.
+            try await env.session.unlock(password: password) { await playAbsorb() }
             AnalyticsEngine.shared.log(.vaultUnlocked(method: "password"))
-            onUnlockSuccess()
+            onUnlockSuccess(!reduceMotion)
             password = ""
         } catch {
             AnalyticsEngine.shared.log(.vaultUnlockFailed(method: "password"))
