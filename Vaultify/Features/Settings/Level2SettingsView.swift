@@ -87,6 +87,9 @@ struct Level2SettingsView: View {
             Text("Every field protected with the Extra Password becomes visible like a normal field.")
         }
         .onAppear { mode = env.session.hasLevel2 ? .overview : .setup }
+        // A verify here (turn-off typed, then cancelled; fresh setup) must not
+        // leave every protected field one tap from visible across the app.
+        .onDisappear { env.session.clearLevel2Key() }
         .analyticsScreen("extra_protection")
     }
 

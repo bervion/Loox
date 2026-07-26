@@ -343,6 +343,11 @@ struct ItemDetailScreen: View {
         .onAppear {
             if let item { AnalyticsEngine.shared.log(.itemViewed(item.category)) }
         }
+        // The Extra Password unlock is scoped to THIS visit: leaving the item
+        // reseals every level2 field, so coming back always asks again. Sheets
+        // presented over the screen (protect, reveal, editor) don't trigger
+        // this — only actually navigating away does.
+        .onDisappear { env.session.clearLevel2Key() }
     }
 
     /// Gate before the confirm dialog: leaving is only real once iCloud says

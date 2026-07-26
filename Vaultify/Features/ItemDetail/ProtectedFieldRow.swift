@@ -83,9 +83,9 @@ struct ProtectedFieldRow: View {
                 Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
             } else {
                 // Name the secret up front — which prompt appears on tap must
-                // not be a surprise (Extra Password unlocks the session once;
-                // a custom code is asked every time). The trailing glyph carries
-                // the lock; a second one here read unbalanced.
+                // not be a surprise (the Extra Password unlocks for this item
+                // visit; a custom code is asked every time). The trailing glyph
+                // carries the lock; a second one here read unbalanced.
                 Text(scheme == .custom ? "Protected. Reveal with custom code"
                                        : "Protected. Reveal with Extra Password")
                     .vaultType(.subhead).themedForeground(.secondary)

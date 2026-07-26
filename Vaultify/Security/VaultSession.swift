@@ -33,7 +33,10 @@ enum AuthError: Error, LocalizedError {
     /// Present iff unlocked. Read by the repository to seal/open item payloads.
     private(set) var vaultKey: SecureBytes?
     /// App-wide Level-2 Secret Key (extra protection). Present only after a
-    /// Level-2 unlock this session; cleared on lock.
+    /// Level-2 unlock, and deliberately short-lived: the surfaces that acquire
+    /// it (item detail, the Extra Protection screen) clear it when left, and
+    /// lock() clears it with everything else — protected fields must never
+    /// stay one tap from visible across the whole app.
     private(set) var level2Key: SecureBytes?
     /// Timestamp of last user activity — drives foreground inactivity auto-lock.
     var lastActivity: Date = .now

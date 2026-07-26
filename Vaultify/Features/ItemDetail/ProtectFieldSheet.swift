@@ -55,7 +55,7 @@ struct ProtectFieldSheet: View {
                     optionCard(.level2,
                                title: "Extra Password",
                                subtitle: hasLevel2
-                                   ? "One password for all protected fields. Unlocks once per session."
+                                   ? "One password for all protected fields. Loox asks again when you leave the item."
                                    : "Not set up yet")
                     optionCard(.custom,
                                title: "Custom code",
@@ -130,7 +130,7 @@ struct ProtectFieldSheet: View {
                 Section {
                     RevealableSecureField(title: "Extra Password", text: $level2Password, inList: true)
                 } footer: {
-                    Text("Enter it once to unlock extra protection for this session.")
+                    Text("Enter it once to unlock protected fields while you view this item.")
                 }
                 .listRowBackground(VaultColors.surface)
             } else if hasLevel2 {
