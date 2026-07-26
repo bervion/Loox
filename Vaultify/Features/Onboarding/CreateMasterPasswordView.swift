@@ -16,13 +16,18 @@ struct CreateMasterPasswordView: View {
 
     @State private var password = ""
     @State private var confirm = ""
+    /// One reveal toggle for the WHOLE group — the eye shows both fields, so
+    /// the user can visually compare what they typed against the confirm row.
+    @State private var revealed = false
     @State private var busy = false
     @State private var error: String?
 
     private var meetsLength: Bool { password.count >= 8 }
     private var matches: Bool { !confirm.isEmpty && password == confirm }
     private var canSubmit: Bool { meetsLength && matches && !busy }
-    private var showConfirm: Bool { !password.isEmpty }
+    /// The confirm row stays once EITHER field holds text — clearing the first
+    /// field must never hide (and visually "swallow") a typed confirmation.
+    private var showConfirm: Bool { !password.isEmpty || !confirm.isEmpty }
 
     var body: some View {
         ScrollView {
@@ -67,9 +72,11 @@ struct CreateMasterPasswordView: View {
         .safeAreaInset(edge: .bottom) {
             BrandCapsuleCTA(enabled: canSubmit, busy: busy) { Task { await submit() } }
         }
-        // The CTA stays PINNED at the bottom — it must not ride up on the
-        // keyboard (the fields all sit in the top half of the screen).
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        // The keyboard COMPRESSES the scroll view (no `.ignoresSafeArea`): on
+        // small phones the confirm row sat under the keyboard with no way to
+        // see what you type. SwiftUI now auto-scrolls the focused field into
+        // view, and the CTA rides above the keyboard — submit without
+        // dismissing, the Apple sign-in behavior.
     }
 
     // MARK: Password group (grows the confirm row once typing starts)
@@ -77,10 +84,7 @@ struct CreateMasterPasswordView: View {
     private var passwordGroup: some View {
         VStack(spacing: 0) {
             HStack(spacing: Space.s3) {
-                SecureField("Loox Password", text: $password)
-                    .platformAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .platformTextContentType(.newPassword)
+                passwordInput("Loox Password", text: $password)
                 if showConfirm {
                     strengthRing
                         .transition(.scale.combined(with: .opacity))
@@ -91,19 +95,53 @@ struct CreateMasterPasswordView: View {
 
             if showConfirm {
                 Divider().padding(.leading, Space.s5)
-                SecureField("Confirm Loox Password", text: $confirm)
-                    .platformAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .platformTextContentType(.newPassword)
-                    .padding(.horizontal, Space.s5)
-                    .frame(height: 54)
-                    .transition(.opacity)
+                // The eye lives on the CONFIRM row (the first row already
+                // carries the strength ring — two glyphs there read cluttered)
+                // and still reveals BOTH fields.
+                HStack(spacing: Space.s3) {
+                    passwordInput("Confirm Loox Password", text: $confirm)
+                    revealButton
+                }
+                .padding(.horizontal, Space.s5)
+                .frame(height: 54)
+                .transition(.opacity)
             }
         }
         .background(Color(rgb: theme.secondaryBackground),
                     in: RoundedRectangle(cornerRadius: 27, style: .continuous))
         .animation(.vault(.spring(response: 0.4, dampingFraction: 0.85), reduceMotion: reduceMotion),
                    value: showConfirm)
+    }
+
+    /// Secure by default, plain text while the eye is on. `.newPassword` stays
+    /// on both variants so the system password tools keep working.
+    @ViewBuilder private func passwordInput(_ title: LocalizedStringKey,
+                                            text: Binding<String>) -> some View {
+        Group {
+            if revealed {
+                TextField(title, text: text)
+            } else {
+                SecureField(title, text: text)
+            }
+        }
+        .platformAutocapitalization(.never)
+        .autocorrectionDisabled()
+        .platformTextContentType(.newPassword)
+    }
+
+    /// The eye — reveals BOTH fields at once. Hit area padded to the 44pt
+    /// minimum without growing the row (contentShape only affects hit-testing).
+    private var revealButton: some View {
+        Button {
+            revealed.toggle()
+            Haptics.tap()
+        } label: {
+            PolarisIcon(revealed ? Icons.hide : Icons.reveal, size: Metric.iconInline)
+                .themedForeground(.secondary)
+                .contentShape(Rectangle().inset(by: -(Metric.hitMin - Metric.iconInline) / 2))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(revealed ? "Hide password" : "Show password"))
     }
 
     /// Password strength as a small progress ring (replaces the bar meter):

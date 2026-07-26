@@ -373,10 +373,20 @@ struct LooxHubScreen: View {
     /// card, not the screen background.
     private struct LooxHubSectionCard<Tiles: View>: View {
         @Environment(AppEnvironment.self) private var env
+        @Environment(\.horizontalSizeClass) private var horizontalSizeClass
         let title: LocalizedStringResource
         var trailing: LocalizedStringResource? = nil
         var trailingAction: (() -> Void)? = nil
         @ViewBuilder let tiles: Tiles
+
+        /// Compact keeps the approved two-up iPhone grid — an adaptive minimum
+        /// sized for iPad collapsed to ONE stacked column on phone widths.
+        /// Regular stays adaptive (3-4 across a wide detail pane).
+        private var columns: [GridItem] {
+            horizontalSizeClass == .regular
+                ? [GridItem(.adaptive(minimum: 200, maximum: 400), spacing: Space.s3)]
+                : [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())]
+        }
 
         var body: some View {
             VStack(alignment: .leading, spacing: Space.s3) {
@@ -395,11 +405,7 @@ struct LooxHubScreen: View {
                         .buttonStyle(.plain)
                     }
                 }
-                // Adaptive columns: two-up on iPhone, three/four-up in a wide
-                // iPad detail column — fixed 2 columns bloated each tile past
-                // 400pt at regular width.
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 400), spacing: Space.s3)],
-                          spacing: Space.s3) {
+                LazyVGrid(columns: columns, spacing: Space.s3) {
                     tiles
                 }
             }

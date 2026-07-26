@@ -72,13 +72,29 @@ struct SettingsScreen: View {
             })
     }
 
-    /// Ask iOS to turn Loox on as the AutoFill (password / passkey) provider. On iOS 18+
-    /// this shows the system turn-on prompt right in the app; earlier iOS deep-links to the
-    /// Settings AutoFill screen.
+    /// Ask iOS to turn Loox on as the AutoFill (password / passkey) provider.
+    ///
+    /// The iOS 18+ in-app prompt only ever APPEARS while the provider is off,
+    /// and the system suppresses it after earlier refusals — in both cases the
+    /// call returns immediately with no UI, which read as a dead row. The tap
+    /// must always land somewhere: already-enabled or suppressed-prompt paths
+    /// deep-link to the provider settings instead.
     private func setUpPasswordAutoFill() {
         Task {
+            let state = await ASCredentialIdentityStore.shared.state()
+            if state.isEnabled {
+                try? await ASSettingsHelper.openCredentialProviderAppSettings()
+                return
+            }
             if #available(iOS 18.0, *) {
-                _ = await ASSettingsHelper.requestToTurnOnCredentialProviderExtension()
+                let start = ContinuousClock.now
+                let turnedOn = await ASSettingsHelper.requestToTurnOnCredentialProviderExtension()
+                // An instant `false` means no sheet was shown (prompt quota
+                // exhausted) — fall back to Settings. A slow `false` means the
+                // user saw the sheet and declined; don't nag them twice.
+                if !turnedOn, ContinuousClock.now - start < .milliseconds(700) {
+                    try? await ASSettingsHelper.openCredentialProviderAppSettings()
+                }
             } else {
                 try? await ASSettingsHelper.openCredentialProviderAppSettings()
             }

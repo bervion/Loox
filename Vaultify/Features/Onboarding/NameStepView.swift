@@ -54,8 +54,9 @@ struct NameStepView: View {
         .safeAreaInset(edge: .bottom) {
             BrandCapsuleCTA(enabled: canSubmit) { onContinue(trimmedName, trimmedEmail) }
         }
-        // Pinned CTA — never rides up on the keyboard (fields sit high).
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        // Keyboard compresses the scroll view (same rationale as the password
+        // step): the focused field auto-scrolls into view on small phones and
+        // the CTA rides above the keyboard for one-tap submit.
         .onAppear { focus = .name }
     }
 

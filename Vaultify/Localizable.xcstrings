@@ -16520,6 +16520,26 @@
           }
         }
       }
+    },
+    "Show password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện mật khẩu"
+          }
+        }
+      }
+    },
+    "Hide password" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ẩn mật khẩu"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
