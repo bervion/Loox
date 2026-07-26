@@ -14131,6 +14131,12 @@
     },
     "This device": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device"
+          }
+        },
         "vi": {
           "stringUnit": {
             "state": "translated",

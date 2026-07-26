@@ -59,18 +59,24 @@ struct ProfileRowTile: View {
     /// Per-call optical size for template-asset glyphs. The 18pt default fits
     /// square-ish art (fa_users); tall NARROW glyphs (the device icons — a phone
     /// is ~3:4) render visually smaller at the same point size and pass a larger
-    /// value to sit at the same optical weight in the 30pt tile.
+    /// value to sit at the same optical weight in the tile.
     private let assetGlyphOverride: CGFloat?
+    /// The tile's side. Rows whose art should span their whole two-line text
+    /// block (the Devices list) pass a taller tile than the 30pt default.
+    private let tileSize: CGFloat
 
     /// Original call shape — a Polaris asset name.
     init(icon: String) {
         self.style = .polaris(icon)
         self.assetGlyphOverride = nil
+        self.tileSize = Metric.badgeTile
     }
 
-    init(style: ProfileTileStyle, assetGlyphSize: CGFloat? = nil) {
+    init(style: ProfileTileStyle, assetGlyphSize: CGFloat? = nil,
+         tileSize: CGFloat = Metric.badgeTile) {
         self.style = style
         self.assetGlyphOverride = assetGlyphSize
+        self.tileSize = tileSize
     }
 
     var body: some View {
@@ -83,19 +89,19 @@ struct ProfileRowTile: View {
                 // snapping it to a token would visually shift their tiles too.
                 PolarisIcon(icon, size: 18)
                     .themedForeground(.iconSecondary)
-                    .frame(width: Metric.badgeTile, height: Metric.badgeTile)
+                    .frame(width: tileSize, height: tileSize)
                     .background(VaultColors.fill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             case .system(let symbol):
                 // Profile-only SF Symbols: owner-approved exception to the Polaris-only rule (260715).
                 Image(systemName: symbol)
                     .font(.system(size: Self.sfGlyphSize, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: Metric.badgeTile, height: Metric.badgeTile)
+                    .frame(width: tileSize, height: tileSize)
                     .background(systemGrayTile, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
             case .colored(let source, let tint):
                 glyph(source)
                     .foregroundStyle(tint)
-                    .frame(width: Metric.badgeTile, height: Metric.badgeTile)
+                    .frame(width: tileSize, height: tileSize)
                     .background(whiteBadgeBackground)
             case .plain(let source, let tintHex):
                 // No fixed backdrop here (that's the point), so the tint must hold contrast
@@ -108,13 +114,13 @@ struct ProfileRowTile: View {
                 glyph(source)
                     .foregroundStyle(Color(rgb: RGBMath.ensureContrast(
                         tintHex, on: env.theme.active.elevatedBackground, floor: 3.0)))
-                    .frame(width: Metric.badgeTile, height: Metric.badgeTile)
+                    .frame(width: tileSize, height: tileSize)
             case .brandMark:
                 Image("BrandSymbol")
                     .resizable()
                     .scaledToFit()
                     .padding(Space.s1)
-                    .frame(width: Metric.badgeTile, height: Metric.badgeTile)
+                    .frame(width: tileSize, height: tileSize)
                     .background(whiteBadgeBackground)
             }
         }
@@ -258,12 +264,13 @@ struct DeviceRow: View {
 
     var body: some View {
         HStack(spacing: Space.s3) {
-            // 22pt, not the 18pt default: the FA device glyphs are tall and narrow
-            // (a phone is ~3:4), so at 18 they read a size class smaller than the
-            // square glyphs in the neighboring tiles.
+            // A 44pt tile so the device art spans the row's whole two-line text
+            // block (the Home avatar's size), with the glyph scaled up to match;
+            // the FA device glyphs are tall and narrow (a phone is ~3:4), so the
+            // glyph runs bigger than a square asset would at the same weight.
             ProfileRowTile(style: .plain(
                 .templateAsset(DeviceIconMapping.icon(forModel: device.model)),
-                ProfileBadgeTint.deviceHex), assetGlyphSize: 22)
+                ProfileBadgeTint.deviceHex), assetGlyphSize: 32, tileSize: 44)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: title).vaultType(.body).themedForeground().lineLimit(1)
                 Text(verbatim: subtitle).vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
