@@ -127,10 +127,14 @@ enum AuthError: Error, LocalizedError {
 
     // MARK: Unlock
 
-    func unlock(password: String) async throws {
+    /// `beforeAdopt` runs after the password is proven correct but before the
+    /// session flips to `.unlocked` — the lock screen uses it to play its
+    /// success choreography while the vault key never leaves this function.
+    func unlock(password: String, beforeAdopt: (() async -> Void)? = nil) async throws {
         #if DEBUG
         if let credential = uiTestCredential {
             guard password == credential.password else { throw AuthError.wrongPassword }
+            await beforeAdopt?()
             adoptUnlocked(key: credential.key, publishSharedSession: false)
             return
         }
@@ -154,6 +158,7 @@ enum AuthError: Error, LocalizedError {
         // KDF profile with the full app memory budget. Best-effort: unlock
         // proceeds regardless of the outcome.
         await migrateKdfProfileIfNeeded(bundle: bundle, key: keyBytes, password: password)
+        await beforeAdopt?()
         adoptUnlocked(key: keyBytes)
     }
 

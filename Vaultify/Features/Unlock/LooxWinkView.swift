@@ -8,6 +8,10 @@ import SwiftUI
 /// skips it under Reduce Motion.
 struct LooxWinkView: View {
     let onFinished: () -> Void
+    /// True when the lock screen's absorb already returned the mark to the
+    /// screen centre (manual password unlock) — start there instead of gliding
+    /// down from the biometric resting spot.
+    var startsCentered = false
     /// Total act length before the fade hand-off: ~0.3s of the logo, then the
     /// burst into the first cluster scene.
     var duration: TimeInterval = 1.3
@@ -35,7 +39,7 @@ struct LooxWinkView: View {
                     .frame(width: side, height: side * 0.82)
                     .scaleEffect(settled ? 1 : startScale)
                     .position(x: geo.size.width / 2,
-                              y: geo.size.height * (settled ? 0.5 : 0.42))
+                              y: geo.size.height * ((settled || startsCentered) ? 0.5 : 0.42))
             }
         }
         .opacity(visible ? 1 : 0)

@@ -11,6 +11,10 @@ struct RootView: View {
     /// Success flourish: the memoji wink shown over the freshly-unlocked app
     /// (set by the lock screen on a successful unlock, cleared when it ends).
     @State private var celebrateUnlock = false
+    /// True when the lock screen's absorb already centred the mark (manual
+    /// password unlock) — the wink then starts at the centre instead of gliding
+    /// down from the biometric resting spot.
+    @State private var celebrateFromCenter = false
 
     private enum Route: Equatable { case onboarding, locked, unlocked }
 
@@ -30,7 +34,12 @@ struct RootView: View {
                 // comparable exposure to the previous crossfade; "Immediately"
                 // auto-lock still swaps with no animation via withTransaction below).
                 // zIndex keeps the lock ABOVE the app during both overlaps.
-                LockScreen(onUnlockSuccess: { if !reduceMotion { celebrateUnlock = true } })
+                LockScreen(onUnlockSuccess: { fromCenter in
+                    if !reduceMotion {
+                        celebrateFromCenter = fromCenter
+                        celebrateUnlock = true
+                    }
+                })
                     .transition(.controlledReveal).zIndex(1)
             case .unlocked: AdaptiveRootView().transition(.identity)
             }
@@ -42,7 +51,8 @@ struct RootView: View {
             // Plays over the freshly-unlocked app, then hands off. Sits above
             // everything so it also masks the lock→vault reveal underneath.
             if celebrateUnlock {
-                LooxWinkView { celebrateUnlock = false }
+                LooxWinkView(onFinished: { celebrateUnlock = false },
+                             startsCentered: celebrateFromCenter)
                     .transition(.opacity)
                     .zIndex(2)
             }
@@ -172,8 +182,10 @@ private struct PrivacyShield: View {
     var body: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial).ignoresSafeArea()
+            // Same 132pt as the lock screen's mark, both dead-centre — the
+            // shield → lock hand-off reads as one continuous logo.
             LooxLogoBreatheView(ready: true)
-                .frame(width: 160, height: 160)
+                .frame(width: 132, height: 132)
         }
     }
 }
