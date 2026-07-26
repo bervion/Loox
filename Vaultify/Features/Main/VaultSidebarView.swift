@@ -116,7 +116,9 @@ struct VaultSidebarView: View {
                     .vaultNavigationDestinations()
             }
         case .profile:
-            NavigationStack { ProfileScreen() }
+            // Carries the shared destinations: the Loox hub pushes item lists
+            // (category/passkey) whose rows push item detail in this stack.
+            NavigationStack { ProfileScreen().vaultNavigationDestinations() }
         }
     }
 }

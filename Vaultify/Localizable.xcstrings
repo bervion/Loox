@@ -5478,6 +5478,38 @@
         }
       }
     },
+    "Filter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bộ lọc"
+          }
+        }
+      }
+    },
+    "Find items by name, field, or tag.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find items by name, field, or tag."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm theo tên, trường thông tin hoặc nhãn."
+          }
+        }
+      }
+    },
     "Find items by name, site, tag, or Space.": {
       "extractionState": "stale",
       "localizations": {

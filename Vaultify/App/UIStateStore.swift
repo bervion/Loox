@@ -34,16 +34,14 @@ import SwiftUI
     var sidebarSelection: SidebarSelection = .section(.home)
 
     /// How the Search surface should open on its NEXT activation. Ephemeral — deliberately
-    /// NOT part of the on-disk `Snapshot`: `.normal` (the Search tab) resets the scope to
-    /// its default (All Spaces) and raises the keyboard; `.browse` (Home "See all") seeds the
-    /// scope from the chosen Home Space and does NOT raise the keyboard. `SearchScreen`
-    /// consumes it back to `.normal` on entry, so a later plain tab tap is always normal.
+    /// NOT part of the on-disk `Snapshot`: `.normal` (a plain Search-tab tap) raises the
+    /// keyboard; `.query` pre-fills the field. `SearchScreen` consumes it back to `.normal`
+    /// on entry, so a later plain tab tap is always normal.
     enum SearchEntry: Equatable {
         case normal
-        case browse(spaceId: String?)
-        /// Open Search pre-filled with a query (the Loox hub's stat tiles jump
-        /// into "show me those items"): results render immediately, keyboard
-        /// stays down so the list is what the user sees.
+        /// Open Search pre-filled with a query (the iPad/Mac sidebar's search
+        /// field re-sends this per keystroke): results render immediately,
+        /// keyboard stays down so the list is what the user sees.
         case query(String)
     }
     var searchEntry: SearchEntry = .normal

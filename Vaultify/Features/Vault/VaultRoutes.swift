@@ -6,6 +6,7 @@ enum VaultRoute: Hashable, Codable {
     case folder(String?)            // nil = Unfiled
     case tag(String)
     case category(ItemCategory)
+    case filtered(ItemFilter)       // pushed browse list (space / passkey / keyword)
     case manageFolders
     case archive
     case recentlyDeleted
@@ -34,6 +35,7 @@ func vaultRouteDestination(_ route: VaultRoute) -> some View {
     case .folder(let id): FolderItemsScreen(folderId: id)
     case .tag(let tag): TagItemsScreen(tag: tag)
     case .category(let category): ItemListScreen(category: category)
+    case .filtered(let filter): FilteredItemsScreen(filter: filter)
     case .manageFolders: ManageFoldersScreen()
     case .archive: ArchiveScreen()
     case .recentlyDeleted: TrashScreen()
