@@ -14,6 +14,19 @@ struct VaultSidebarView: View {
     /// typing drives the Search detail live via `SearchEntry.query`.
     @State private var sidebarSearch = ""
 
+    // Quick Actions live in the sidebar at regular width (Home hides its own grid
+    // there), so this layout owns their sheets — anchored on the split view itself,
+    // not on a list row, so a selection change can't strand a presentation.
+    @State private var editorTarget: EditorTarget?
+    @State private var showItemTypePicker = false
+    @State private var pendingNewCategory: ItemCategory?
+    @State private var showGenerator = false
+    @State private var showTotpList = false
+    /// Cached Watchtower issue count for the Security row's badge — recomputed on
+    /// appear and when the item set changes, never per render (`PasswordAudit.analyze`
+    /// is far too costly for that). Mirrors `HomeScreen`'s own cache.
+    @State private var watchtowerIssueCount = 0
+
     /// Always-visible field on iPad (`navigationBarDrawer` is iOS-only);
     /// macOS uses the native sidebar placement, which is always visible too.
     private static var sidebarSearchPlacement: SearchFieldPlacement {
@@ -33,10 +46,18 @@ struct VaultSidebarView: View {
         NavigationSplitView(columnVisibility: .constant(.all)) {
             // Bridge the non-optional model to the optional binding `List(selection:)` needs;
             // a nil clear (e.g. deselect) falls back to Home so the detail column is never empty.
-            VaultSidebarList(selection: Binding(
-                get: { uiState.sidebarSelection },
-                set: { uiState.sidebarSelection = $0 ?? .section(.home) }
-            ))
+            VaultSidebarList(
+                selection: Binding(
+                    get: { uiState.sidebarSelection },
+                    set: { uiState.sidebarSelection = $0 ?? .section(.home) }
+                ),
+                watchtowerIssueCount: watchtowerIssueCount,
+                // Unfiltered: the sidebar is above the Home Space filter, so its
+                // count is the whole vault's 2FA logins.
+                totpCount: env.repository.totpItems(folder: nil).count,
+                onAddItem: { showItemTypePicker = true },
+                onGeneratePassword: { showGenerator = true },
+                onOpenTotpCodes: { showTotpList = true })
             // No brand title (owner 260723): like iPad Settings, the sidebar
             // opens straight with the search field and the avatar row.
             .navigationTitle("")
@@ -83,6 +104,29 @@ struct VaultSidebarView: View {
                 uiState.sidebarSelection = .section(tab)
             }
         }
+        // Quick Actions (see the state block above). Same flows Home's grid drives.
+        .task { recomputeWatchtowerCount() }
+        .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
+        .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+        // Item-type picker → present the editor once it finishes dismissing.
+        .sheet(isPresented: $showItemTypePicker, onDismiss: {
+            if let category = pendingNewCategory {
+                pendingNewCategory = nil
+                editorTarget = .new(category)
+            }
+        }) {
+            ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
+        }
+        .sheet(isPresented: $showGenerator) { GeneratorScreen() }
+        .sheet(isPresented: $showTotpList) { TotpListScreen() }
+    }
+
+    /// Security issues (weak + reused + missing 2FA) for the sidebar's Security badge.
+    /// Scoped to the ACTIVE persona, exactly like the Watchtower screen and Home's
+    /// cache, so badge and screen never disagree.
+    private func recomputeWatchtowerCount() {
+        let health = PasswordAudit.analyze(env.repository.activePersonaItems)
+        watchtowerIssueCount = health.weak.count + health.reused.count + health.missing2FA.count
     }
 
     /// Bring `sidebarSelection` back in step with live state when this layout (re)appears.
@@ -98,7 +142,7 @@ struct VaultSidebarView: View {
             if !env.repository.folders.contains(where: { $0.id == folderId }) {
                 uiState.sidebarSelection = .section(uiState.selectedTab)
             }
-        case .profile:
+        case .profile, .settings:
             break
         }
     }
@@ -119,6 +163,10 @@ struct VaultSidebarView: View {
             // Carries the shared destinations: the Loox hub pushes item lists
             // (category/passkey) whose rows push item detail in this stack.
             NavigationStack { ProfileScreen().vaultNavigationDestinations() }
+        case .settings:
+            // Settings drives its own `NavigationLink` children, so it only needs
+            // a stack — no shared route destinations.
+            NavigationStack { SettingsScreen() }
         }
     }
 }

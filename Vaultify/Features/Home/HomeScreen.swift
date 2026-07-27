@@ -315,7 +315,10 @@ struct HomeScreen: View {
         case .allItems:
             allItemsSection
         case .quickActions:
-            quickActionsGrid
+            // Regular width (iPad): the sidebar carries Quick Actions as its own
+            // section, so Home drops the grid there. Narrow multitasking collapses
+            // to compact — no sidebar — and the grid comes back with it.
+            if horizontalSizeClass != .regular { quickActionsGrid }
         }
     }
 

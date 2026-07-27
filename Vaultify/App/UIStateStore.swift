@@ -18,11 +18,12 @@ import SwiftUI
     }
 
     /// iPad/Mac sidebar selection. A section mirrors `selectedTab`; a space points at a
-    /// folder id; profile opens the profile/settings detail.
+    /// folder id; profile opens the persona detail; settings opens the settings detail.
     enum SidebarSelection: Hashable {
         case section(VaultTab)
         case space(String)
         case profile
+        case settings
     }
 
     var selectedTab: VaultTab = .home
