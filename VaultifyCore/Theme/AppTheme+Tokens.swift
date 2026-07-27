@@ -61,4 +61,22 @@ nonisolated extension AppTheme {
     var destructiveSoft: UInt32 { RGBMath.blend(destructive, background, isDark ? 0.82 : 0.90) }
     var successSoft: UInt32 { RGBMath.blend(success, background, isDark ? 0.82 : 0.90) }
     var warningSoft: UInt32 { RGBMath.blend(warning, background, isDark ? 0.82 : 0.90) }
+
+    // MARK: Status — text rank
+    /// TEXT-rank warning, the `accentText` idiom applied to the warning hue: the
+    /// stored `warning` is tuned as a FILL, so a glyph or label drawn in it can
+    /// sink into `warningSoft` (Day Classic measures 3.25:1 raw). Guarded on both
+    /// tinted surfaces it can sit on, at the same user-locked 3.0 floor
+    /// (AA-large / UI-component) as `accentText`; passing themes come through
+    /// byte-identical. Use for warning glyphs and warning text-link labels.
+    var warningText: UInt32 {
+        let onControl = RGBMath.ensureContrast(warning, on: controlBackground, floor: 3.0)
+        return RGBMath.ensureContrast(onControl, on: warningSoft, floor: 3.0)
+    }
+    /// TEXT-rank destructive, derived exactly like `warningText`. Use for
+    /// destructive glyphs and text-link labels; keep raw `destructive` for fills.
+    var destructiveText: UInt32 {
+        let onControl = RGBMath.ensureContrast(destructive, on: controlBackground, floor: 3.0)
+        return RGBMath.ensureContrast(onControl, on: destructiveSoft, floor: 3.0)
+    }
 }

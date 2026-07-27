@@ -14,7 +14,25 @@ struct EditorFieldRow: View {
     /// The card's Card Number value (if any), so the Security Code editor can resolve the
     /// CVV length from the sibling field's brand (Amex: 4 digits, else 3).
     var siblingCardNumber: String? = nil
+    /// Raises the editor's Extra Protection prompt. The locked row is the only
+    /// affordance for it after the first offer: the gate is declined by dismissing
+    /// a sheet, and the session key also drops whenever the app backgrounds, so
+    /// without a way back the row would be permanently locked behind copy that
+    /// tells you to unlock it.
+    var onRequestExtraProtectionUnlock: (() -> Void)? = nil
+    @Environment(AppEnvironment.self) private var env
     @FocusState private var valueFocused: Bool
+    /// Plaintext editing buffer for an Extra-Protection field while Level-2 is
+    /// unlocked. `nil` means "still sealed to this row" — either Level-2 is
+    /// locked, the payload belongs to a per-field custom code, or the open failed.
+    @State private var unsealed: String?
+    /// The plaintext and ciphertext this row opened with. AES-GCM uses a fresh
+    /// nonce per seal, so re-sealing an UNCHANGED value still produces different
+    /// bytes — which would make the editor think the item was edited the moment
+    /// anyone touched a protected field. Restoring the original ciphertext when
+    /// the text comes back to where it started keeps `hasChanges` honest.
+    @State private var openedPlaintext: String?
+    @State private var openedSealed: String?
     #if os(iOS)
     @Environment(\.editMode) private var editMode
     private var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
@@ -27,24 +45,148 @@ struct EditorFieldRow: View {
         // The field's kind is fixed at creation (chosen from the Add Field popup) — no
         // in-row type switcher or type icon. Just the (editable) label + the value.
         VStack(alignment: .leading, spacing: 6) {
+            labelEditor
+            valueEditor
+        }
+        .padding(.vertical, 2)
+        .onAppear { syncExtraProtection() }
+        // Level-2 can open (the editor's unlock sheet) or close (leaving the app
+        // clears the key) underneath this row.
+        .onChange(of: env.session.isLevel2Unlocked) { syncExtraProtection() }
+    }
+
+    /// The label follows the VALUE's lock state. Leaving it editable while the
+    /// value stayed sealed let a protected field be renamed by someone who could
+    /// not open it — the row said "locked" and behaved half-unlocked.
+    @ViewBuilder private var labelEditor: some View {
+        if isSealedToThisRow {
+            fieldLabelText(field.label)
+                .vaultType(.caption)
+                .themedForeground(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
             TextField("Label", text: localizedLabel)
                 .vaultType(.caption)
                 .themedForeground(.secondary)
                 .platformAutocapitalization(.words)
-            valueEditor
         }
-        .padding(.vertical, 2)
     }
 
     @ViewBuilder private var valueEditor: some View {
-        if field.isExtraProtected {
-            HStack(spacing: 6) {
-                PolarisIcon(Icons.lockFill, size: 14).themedForeground(.secondary)
-                Text("Protected. Manage in the item view").vaultType(.caption).themedForeground(.secondary)
+        if isSealedToThisRow {
+            let lockedRow = HStack(spacing: 6) {
+                PolarisIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
+                Text(lockedValueCopy).vaultType(.caption).themedForeground(.secondary)
             }
+            // Only an app-wide sealed field can be unlocked from here; a per-field
+            // custom code has no prompt on this screen, so that row stays inert.
+            if isLevel2Sealed, let onRequestExtraProtectionUnlock {
+                Button(action: onRequestExtraProtectionUnlock) {
+                    lockedRow.frame(minHeight: Metric.hitMin, alignment: .leading)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+            } else {
+                lockedRow
+            }
+        } else if extraProtectionOpen, let key = env.session.level2Key?.bytes {
+            protectedValueEditor(key: key)
         } else {
             kindEditor
         }
+    }
+
+    // MARK: Extra Protection
+
+    /// Whether this row can edit its own sealed value right now. Requires BOTH a
+    /// decrypted buffer and a live session key — the key can be dropped from
+    /// under the row (leaving the app clears it), and falling through to the
+    /// plain editor then would put raw ciphertext in a TextField.
+    private var extraProtectionOpen: Bool {
+        field.isExtraProtected && unsealed != nil && env.session.isLevel2Unlocked
+    }
+
+    /// Whether this row currently cannot open its own value.
+    private var isSealedToThisRow: Bool { field.isExtraProtected && !extraProtectionOpen }
+
+    /// Sealed under the app-wide Extra Password (as opposed to a per-field code).
+    private var isLevel2Sealed: Bool { SecretGuard.scheme(of: field.value) == .level2 }
+
+    /// A custom-code payload can only be handled where its code is asked for; the
+    /// app-wide Extra Password has an unlock right here in the editor.
+    private var lockedValueCopy: LocalizedStringKey {
+        isLevel2Sealed ? "Protected. Unlock with your Extra Password to edit"
+                       : "Protected. Manage in the item view"
+    }
+
+    /// Editable view of an Extra-Protection field while Level-2 is unlocked.
+    ///
+    /// The draft NEVER holds the plaintext: every keystroke re-seals into
+    /// `field.value` (AES-GCM only, no KDF, so this is microseconds). That keeps
+    /// the crash-restore snapshot and the save path honest — neither can leak a
+    /// value past the Extra Protection boundary, and there is no "forgot to
+    /// re-seal" window to get wrong.
+    private func protectedValueEditor(key: [UInt8]) -> some View {
+        let text = Binding<String>(
+            get: { unsealed ?? "" },
+            set: { newValue in
+                unsealed = newValue
+                // Back to the value we opened with: restore that exact ciphertext
+                // instead of minting a new nonce, so a look-but-don't-change visit
+                // does not register as an edit.
+                if newValue == openedPlaintext, let openedSealed {
+                    field.value = openedSealed
+                    return
+                }
+                // A seal failure would silently drop the edit, so keep the last
+                // good ciphertext rather than writing something unopenable.
+                if let sealed = try? SecretGuard.sealLevel2(newValue, l2Key: key) {
+                    field.value = sealed
+                }
+            })
+        let plain = (unsealed ?? "").isEmpty || valueFocused
+        return HStack(spacing: 6) {
+            ZStack(alignment: .leading) {
+                // Same controlled-reveal treatment as every other secret value in
+                // this editor: plaintext only while actively typing.
+                TextField(valuePlaceholder, text: text)
+                    .focused($valueFocused)
+                    .font((unsealed ?? "").isEmpty ? VaultType.body.font : .vaultCode())
+                    .platformAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .opacity(plain ? 1 : 0)
+                if !plain {
+                    Text(maskedValue)
+                        .font(.vaultCode())
+                        .themedForeground(.primary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .onTapGesture { valueFocused = true }
+                        .accessibilityHidden(true)
+                }
+            }
+            PolarisIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
+        }
+    }
+
+    /// Open (or re-seal) this row against the session's current Level-2 state.
+    /// A custom-code payload is never opened here — the session only ever holds
+    /// the app-wide key — and a failed open leaves the row locked rather than
+    /// offering an editor over a value nobody can read.
+    private func syncExtraProtection() {
+        guard field.isExtraProtected else { return }
+        guard let key = env.session.level2Key?.bytes, isLevel2Sealed,
+              let text = try? SecretGuard.openLevel2(field.value, l2Key: key) else {
+            unsealed = nil
+            openedPlaintext = nil
+            openedSealed = nil
+            return
+        }
+        guard unsealed == nil else { return }
+        unsealed = text
+        openedPlaintext = text
+        openedSealed = field.value
     }
 
     @ViewBuilder private var kindEditor: some View {

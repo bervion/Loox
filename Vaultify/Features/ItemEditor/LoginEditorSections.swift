@@ -11,6 +11,12 @@ struct LoginEditorSections: View {
     var onScanTOTP: (String) -> Void
     /// Present the attachment picker.
     var onAddAttachment: () -> Void
+    /// A swipe tried to delete a field this session cannot open. The editor owns
+    /// the explanation (one alert for both editors) rather than each section
+    /// growing its own.
+    var onProtectedDeleteBlocked: () -> Void = {}
+    /// Lets a locked Extra-Protection row re-raise the editor's unlock prompt.
+    var onRequestExtraProtectionUnlock: () -> Void = {}
     @Environment(AppEnvironment.self) private var env
     @State private var selectedPasskey: PasskeyInfo?
     /// Present the alias's management screen (pause/delete live there, not in
@@ -35,7 +41,8 @@ struct LoginEditorSections: View {
                 if let match = privateEmailMatch(for: field) {
                     attachedPrivateEmailRow(field: fieldBinding(field), match: match)
                 } else {
-                    EditorFieldRow(field: fieldBinding(field), onScanTOTP: { onScanTOTP(field.id) })
+                    EditorFieldRow(field: fieldBinding(field), onScanTOTP: { onScanTOTP(field.id) },
+                                   onRequestExtraProtectionUnlock: onRequestExtraProtectionUnlock)
                 }
             }
             .onMove { moveFields(from: $0, to: $1, in: credentialIndices) }
@@ -184,22 +191,13 @@ struct LoginEditorSections: View {
         .listRowSeparator(.hidden)
     }
 
-    /// Soft accent-tinted note box (mockup), not a bare caption over a divider.
+    /// The app's one tinted inline notice surface. It keeps the row's default
+    /// insets (unlike `.inList()`), so the banner sits INSIDE this section's card
+    /// exactly as the hand-rolled box it replaces did.
     private var privateEmailInfoNote: some View {
-        HStack(alignment: .top, spacing: Space.s2) {
-            PolarisIcon(Icons.info, size: 14)
-                .themedForeground(.accent)
-                .padding(.top, 1)
-            Text("Switching to your real email keeps the alias alive. Pause or delete it in Private Email.")
-                .vaultType(.footnote)
-                .themedForeground(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(Space.s3)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(rgb: env.theme.active.accentSoft).opacity(0.5))
-        .vaultCornerRadius(Radius.sm)
-        .listRowSeparator(.hidden)
+        VaultInfoBanner(.info, icon: Icons.info,
+                        text: "Switching to your real email keeps the alias alive. Pause or delete it in Private Email.")
+            .listRowSeparator(.hidden)
     }
 
     // MARK: Websites (multi)
@@ -207,7 +205,15 @@ struct LoginEditorSections: View {
     private var websitesSection: some View {
         Section("Websites") {
             ForEach(websiteFields) { field in
-                WebsiteFieldRow(field: fieldBinding(field))
+                // A sealed website goes through the shared row so it follows the
+                // same lock state as every other protected field. `WebsiteFieldRow`
+                // would put the raw `v2g:` payload in an editable text field.
+                if field.isExtraProtected {
+                    EditorFieldRow(field: fieldBinding(field),
+                                   onRequestExtraProtectionUnlock: onRequestExtraProtectionUnlock)
+                } else {
+                    WebsiteFieldRow(field: fieldBinding(field))
+                }
             }
             .onDelete { removeFields(at: $0, from: websiteIndices) }
             .onMove { moveFields(from: $0, to: $1, in: websiteIndices) }
@@ -227,7 +233,8 @@ struct LoginEditorSections: View {
     private var customSection: some View {
         Section("Custom Fields") {
             ForEach(customFields) { field in
-                EditorFieldRow(field: fieldBinding(field), onScanTOTP: { onScanTOTP(field.id) })
+                EditorFieldRow(field: fieldBinding(field), onScanTOTP: { onScanTOTP(field.id) },
+                                   onRequestExtraProtectionUnlock: onRequestExtraProtectionUnlock)
             }
             .onDelete { removeFields(at: $0, from: customIndices) }
             .onMove { moveFields(from: $0, to: $1, in: customIndices) }
@@ -261,8 +268,15 @@ struct LoginEditorSections: View {
     @ViewBuilder private var notesSection: some View {
         if let n = noteIndex {
             Section("Notes") {
-                TextField("Add a note", text: $draft.fields[n].value, axis: .vertical)
-                    .lineLimit(3...10)
+                // Same reason as the website rows: a sealed note must not land in
+                // a plain text field as its own ciphertext.
+                if draft.fields[n].isExtraProtected {
+                    EditorFieldRow(field: $draft.fields[n],
+                                   onRequestExtraProtectionUnlock: onRequestExtraProtectionUnlock)
+                } else {
+                    TextField("Add a note", text: $draft.fields[n].value, axis: .vertical)
+                        .lineLimit(3...10)
+                }
             }
             .listRowBackground(VaultColors.surface)
         }
@@ -316,8 +330,18 @@ struct LoginEditorSections: View {
 
     /// Delete rows at `offsets` (positions within a filtered section's index list) from
     /// `draft.fields`, removing high indices first so earlier removals don't shift them.
+    ///
+    /// The SINGLE gate for every swipe-delete in the Login editor: a field this
+    /// session cannot open must not be swiped away. Keeping the check here (rather
+    /// than at each `.onDelete`) is what stops a fourth call site from forgetting it.
     private func removeFields(at offsets: IndexSet, from section: [Int]) {
         let targets = offsets.map { section[$0] }.sorted(by: >)
+        guard !ExtraProtectionDelete.blocks(targets.map { draft.fields[$0] },
+                                            level2Key: env.session.level2Key?.bytes) else {
+            Haptics.warning()
+            onProtectedDeleteBlocked()
+            return
+        }
         for index in targets { draft.fields.remove(at: index) }
     }
 
@@ -349,5 +373,30 @@ struct LoginEditorSections: View {
             PolarisIcon(Icons.personLockFilled, size: 22).themedForeground(.secondary)
         }
         .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Swipe-delete gate for Extra Protection
+
+/// Whether a swipe-delete may proceed. Shared by both editors (Login sections and
+/// the flat field list) so the rule lives in one place.
+///
+/// A sealed field is destroyed by a swipe, and the value inside it is exactly the
+/// thing the person swiping cannot read. So it stays put while this session cannot
+/// open it: sealed under the app-wide Extra Password with Level-2 locked, or sealed
+/// under a per-field custom code (which the editor never holds — that one is
+/// unsealed from the item view, where its code is asked for).
+/// The test is a real open, not "the session holds some Level-2 key": after a
+/// restore that adopted a foreign wrap, a field sealed under the previous L2SK
+/// stays unreadable even though `level2Key` is set, and the row renders locked.
+/// Trusting the boolean there would let a swipe destroy exactly the value the
+/// person swiping cannot read.
+nonisolated enum ExtraProtectionDelete {
+    static func blocks(_ fields: [DynamicField], level2Key: [UInt8]?) -> Bool {
+        fields.contains { field in
+            guard field.isExtraProtected else { return false }
+            guard SecretGuard.scheme(of: field.value) == .level2, let level2Key else { return true }
+            return (try? SecretGuard.openLevel2(field.value, l2Key: level2Key)) == nil
+        }
     }
 }

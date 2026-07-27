@@ -1,24 +1,31 @@
 import SwiftUI
 
-/// The onboarding Continue button: a full-width capsule, brand blue when
-/// enabled, opaque spec-gray when disabled (#EFEFF0 / #BABABD — never
-/// translucent over content lifted by the keyboard). Optional busy spinner.
+/// The onboarding Continue button: a full-width capsule filled with the theme
+/// ACCENT — the button/action colour. The link hue (`accentText`) is reserved for
+/// hyperlinks and text-link buttons, so a pinned CTA never paints link blue. The
+/// label uses the WCAG-derived `accentForeground` pairing.
+///
+/// Disabled paints the OPAQUE control surface and the disabled-text token, never
+/// `.opacity` — this CTA is pinned over content that scrolls behind it, and a
+/// translucent bar would let that content bleed through. Optional busy spinner.
 struct BrandCapsuleCTA: View {
     var title: LocalizedStringKey = "Continue"
     var enabled: Bool = true
     var busy: Bool = false
     let action: () -> Void
 
+    @Environment(\.appTheme) private var theme
+
     var body: some View {
         Button(action: action) {
             Text(title)
                 .vaultType(.body).fontWeight(.medium)
-                .foregroundStyle(enabled ? .white : Color(rgb: 0xBABABD))
+                .foregroundStyle(Color(rgb: enabled ? theme.accentForeground : theme.textDisabled))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
-                .background(enabled ? Color(rgb: 0x0065F4) : Color(rgb: 0xEFEFF0),
+                .background(Color(rgb: enabled ? theme.accent : theme.controlBackground),
                             in: Capsule())
-                .prominentButtonLoading(busy)
+                .prominentButtonLoading(busy, tint: Color(rgb: theme.accentForeground))
         }
         .buttonStyle(SolidCapsuleButtonStyle())
         .disabled(!enabled || busy)

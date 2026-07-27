@@ -25,6 +25,7 @@ struct WelcomeLandingView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.appTheme) private var theme
     @StateObject private var launch = LooxLaunchController()
     /// Text, CTA, and carousel step aside for the launch; the animation stays.
     @State private var contentHidden = false
@@ -103,23 +104,29 @@ struct WelcomeLandingView: View {
         }
     }
 
-    // MARK: Primary CTA (black pill, matches the demo)
+    // MARK: Primary CTA (accent pill, hugging its label)
+
+    /// Idle until the launch burst starts; the burst disables the button for the
+    /// length of the hand-off, so the pill needs a real disabled appearance.
+    private var startEnabled: Bool { launch.phase == .idle }
 
     private var startButton: some View {
+        // The ONE deliberate exception to the full-width screen primary: this pill
+        // hugs its label so it reads as a focal control inside an airy centred
+        // stack, not a bar across the landing. Colour still follows the rule —
+        // accent is the button colour, and the disabled fill is opaque (never
+        // `.opacity`) so the animation behind it can't show through.
         Button(action: press) {
             Text(appString("Get started"))
                 .vaultType(.body)
                 .fontWeight(.medium)
-                // Deliberate adaptive black/white pill (the demo look the user
-                // asked for): label sits on the primary fill, so it uses the
-                // background color rather than a themed text token.
-                .foregroundStyle(Color.platformBackground)
+                .foregroundStyle(Color(rgb: startEnabled ? theme.accentForeground : theme.textDisabled))
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
-                .background(Capsule().fill(Color.primary))
+                .background(Capsule().fill(Color(rgb: startEnabled ? theme.accent : theme.controlBackground)))
         }
         .buttonStyle(.plain)
-        .disabled(launch.phase != .idle)
+        .disabled(!startEnabled)
         .accessibilityLabel(Text(appString("Get started")))
     }
 

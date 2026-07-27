@@ -13,7 +13,21 @@ nonisolated enum BiometricKeyStore {
     /// read the biometric-gated Vault Key. Must be team-prefixed (see `SharedConfig`).
     private static let accessGroup = SharedConfig.keychainAccessGroup
 
-    enum Failure: Error { case accessControl, store(OSStatus), cancelled, unavailable }
+    /// Why a biometric-gated read or write failed. The cases the failure POLICY
+    /// cares about are kept apart on purpose: a dismissed prompt must never read
+    /// as a rejected face (see `BiometricAuth.classify`).
+    enum Failure: Error {
+        case accessControl
+        case store(OSStatus)
+        /// The user dismissed the prompt. Not an authentication failure.
+        case cancelled
+        /// Biometry ran and rejected, or is locked out after repeated failures.
+        case denied
+        /// The item is gone: never provisioned, or `.biometryCurrentSet`
+        /// invalidated it because the enrolled biometrics changed.
+        case invalidated
+        case unavailable
+    }
 
     /// Whether a biometric-gated key is currently provisioned (no prompt shown).
     static var isEnrolled: Bool {
@@ -68,11 +82,20 @@ nonisolated enum BiometricKeyStore {
             DispatchQueue.global(qos: .userInitiated).async {
                 var result: AnyObject?
                 let status = SecItemCopyMatching(query as CFDictionary, &result)
-                if status == errSecSuccess, let data = result as? Data {
-                    continuation.resume(returning: Array(data))
-                } else if status == errSecUserCanceled || status == errSecAuthFailed {
+                switch status {
+                case errSecSuccess:
+                    if let data = result as? Data {
+                        continuation.resume(returning: Array(data))
+                    } else {
+                        continuation.resume(throwing: Failure.store(status))
+                    }
+                case errSecUserCanceled:
                     continuation.resume(throwing: Failure.cancelled)
-                } else {
+                case errSecAuthFailed:
+                    continuation.resume(throwing: Failure.denied)
+                case errSecItemNotFound:
+                    continuation.resume(throwing: Failure.invalidated)
+                default:
                     continuation.resume(throwing: Failure.store(status))
                 }
             }
@@ -90,5 +113,22 @@ nonisolated enum BiometricKeyStore {
         ExtensionSessionStore.clear()
         KeychainStore.delete(account: account, accessGroup: SharedConfig.legacyKeychainGroup)
         return KeychainStore.delete(account: account, accessGroup: accessGroup)
+    }
+}
+
+extension BiometricKeyStore.Failure: BiometricOutcomeReporting {
+    nonisolated var biometricOutcome: BiometricAuth.Outcome {
+        switch self {
+        case .cancelled: return .cancelled
+        case .denied: return .failed
+        // Nothing was attempted: the item is missing or the device cannot build
+        // the access control at all, so neither is evidence about a face.
+        case .invalidated, .unavailable, .accessControl: return .unavailable
+        // An unattributable Keychain status is read as a failure — the safe
+        // default for a security policy, and on the lock screen it advances the
+        // attempt count so the master-password fallback appears instead of a
+        // badge that keeps failing.
+        case .store: return .failed
+        }
     }
 }

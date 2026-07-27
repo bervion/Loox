@@ -166,16 +166,50 @@ enum AuthError: Error, LocalizedError {
         adoptUnlocked(key: keyBytes)
     }
 
+    /// Throws the underlying `BiometricKeyStore.Failure` unchanged so the caller
+    /// can tell the causes apart with `BiometricAuth.classify` — a dismissed
+    /// prompt, a rejected face, and an item invalidated by a biometrics change
+    /// each deserve a different lock-screen response, and the old blanket
+    /// `AuthError.biometricFailed` erased all three.
     func unlockWithBiometrics() async throws {
-        var keyBytes: [UInt8]
-        do {
-            keyBytes = try await BiometricKeyStore.retrieve(
-                reason: appString("Unlock your vault"))
-        } catch {
-            throw AuthError.biometricFailed
-        }
+        var keyBytes = try await BiometricKeyStore.retrieve(
+            reason: appString("Unlock your vault"))
         defer { secureZero(&keyBytes) }
         adoptUnlocked(key: keyBytes)
+    }
+
+    // MARK: Biometric failure policy
+
+    /// The single funnel for every biometric prompt raised while the vault is
+    /// already unlocked. Applies the app-wide policy (see `noteBiometricOutcome`)
+    /// and rethrows the original error so call sites can still classify it.
+    func requireBiometrics(reason: String) async throws {
+        do {
+            try await BiometricAuth.authenticate(reason: reason)
+        } catch {
+            noteBiometricOutcome(error)
+            throw error
+        }
+    }
+
+    /// Apply the biometric failure policy to an outcome observed anywhere in the
+    /// unlocked app: a face that was presented and rejected (or a biometry
+    /// lockout) means the person holding the phone may not be the owner, so the
+    /// vault locks. Dismissing the prompt, or biometry simply not being
+    /// available, proves nothing and must never lock.
+    ///
+    /// The lock is `deliberate: true` on purpose: the lock screen then demands a
+    /// slide before it will offer Face ID again, which is exactly the right
+    /// posture after a face was rejected — the camera is still pointed at
+    /// whoever just failed.
+    func noteBiometricOutcome(_ error: Error) {
+        guard state == .unlocked else { return }
+        switch BiometricAuth.classify(error) {
+        case .failed, .lockout:
+            lock(deliberate: true)
+        case .cancelled, .unavailable:
+            break
+        }
     }
 
     // MARK: Biometric enrolment
@@ -187,6 +221,12 @@ enum AuthError: Error, LocalizedError {
         // exercises Face ID, so the prompt would otherwise be deferred to the
         // first unlock.
         do {
+            // Deliberately NOT through `requireBiometrics`. Enrolment is not an
+            // identity check: the caller already holds the Vault Key, so a
+            // misread face proves nothing about who is holding the phone — it is
+            // just a failed setup step. Locking here would throw a user out of
+            // onboarding the moment they finish creating their vault. The throw
+            // below still means the key is never stored on a failed attempt.
             try await BiometricAuth.authenticate(reason: appString("Confirm to enable biometric unlock"))
         } catch {
             throw AuthError.biometricFailed
@@ -202,6 +242,9 @@ enum AuthError: Error, LocalizedError {
 
     func disableBiometricUnlock() {
         BiometricKeyStore.delete()
+        // Turning biometrics off must not leave a Face-ID-releasable Extra
+        // Protection key behind — the Extra Password stays the source of truth.
+        Level2BiometricKeyStore.delete()
         settings.biometricUnlockEnabled = false
     }
 
@@ -234,6 +277,9 @@ enum AuthError: Error, LocalizedError {
         level2Key = nil
         state = .onboarding
         defaults.removeObject(forKey: Self.deliberateLockDefaultsKey)
+        // The vault this key belonged to is gone. `lock()` deliberately keeps
+        // the item (surviving a lock is its whole point); a reset must not.
+        Level2BiometricKeyStore.delete()
         ExtensionSessionStore.clear()
     }
 
@@ -345,6 +391,10 @@ enum AuthError: Error, LocalizedError {
     func markBackgrounded(now: Date = .now) {
         guard state == .unlocked else { return }
         backgroundedAt = now
+        // Extra Protection is a per-visit gate, not a session-long one: leaving
+        // the app ends it even when the vault's own auto-lock window has not
+        // elapsed, so protected fields are never one tap from visible on return.
+        level2Key = nil
     }
 
     /// On returning to the foreground, lock if the time spent in the background met the
@@ -373,5 +423,24 @@ enum AuthError: Error, LocalizedError {
         try await Task.detached(priority: .userInitiated) {
             try KeyHierarchy.unwrap(wrapped: wrapped, passphrase: password, salt: salt, params: params)
         }.value
+    }
+}
+
+/// Lives here rather than beside the type because `BiometricOutcomeReporting` is
+/// declared in `VaultifyCore`, which also compiles into the extensions — and the
+/// Level-2 store is app-only. This is the file that owns the policy the mapping
+/// feeds, so the two read together.
+extension Level2BiometricKeyStore.Failure: BiometricOutcomeReporting {
+    nonisolated var biometricOutcome: BiometricAuth.Outcome {
+        switch self {
+        case .cancelled: return .cancelled
+        case .denied: return .failed
+        // Nothing was attempted: no item to release, or the device cannot build
+        // the access control at all.
+        case .notEnrolled, .accessControl: return .unavailable
+        // Unattributable Keychain status — same conservative reading as the
+        // Vault Key store: treat it as a failed identity check.
+        case .store: return .failed
+        }
     }
 }

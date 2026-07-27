@@ -17,14 +17,14 @@ struct ThemedProminentButtonStyle: ButtonStyle {
             // the momentary pressed state dims.
             let bg: Color = isEnabled ? Color.primary : VaultColors.dynamic(light: 0xD1D1D6, dark: 0x3A3A3C)
             let fg: Color = isEnabled ? Color.platformBackground : Color.platformSystemGray
-            // Welcome-style pill: capsule ends, width hugging the content, centred
-            // in the slot. `fixedSize` collapses call-site `maxWidth: .infinity`
-            // labels back to their ideal width.
+            // Capsule pill sized by the LABEL the call site hands in: a plain
+            // `Text` hugs its ideal width, while a label carrying
+            // `.frame(maxWidth: .infinity)` fills the slot as a screen primary.
+            // The trailing frame centres the hugging case.
             configuration.label
                 .vaultType(.body)
                 .fontWeight(.medium)
                 .foregroundStyle(fg)
-                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
                 .background(bg, in: Capsule())
@@ -50,12 +50,11 @@ struct ThemedTintedButtonStyle: ButtonStyle {
             // TEXT rank: `accentText` clears 4.5:1 on the soft fill, where the
             // raw fill-tuned accent sits as low as 3.05:1 on some presets.
             let fg = isEnabled ? theme.accentText : theme.textDisabled
-            // Same pill geometry as the prominent style (see above).
+            // Same label-driven pill geometry as the prominent style (see above).
             configuration.label
                 .vaultType(.body)
                 .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
-                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
                 .background(Color(rgb: theme.accentSoft), in: Capsule())
@@ -78,12 +77,11 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
             // Opaque muted fill when disabled (blend toward background), never `.opacity`.
             let bg = isEnabled ? theme.destructive : RGBMath.blend(theme.destructive, theme.background, 0.55)
             let fg = isEnabled ? RGBMath.onColor(theme.destructive) : RGBMath.blend(RGBMath.onColor(theme.destructive), bg, 0.4)
-            // Same pill geometry as the prominent style (see above).
+            // Same label-driven pill geometry as the prominent style (see above).
             configuration.label
                 .vaultType(.body)
                 .fontWeight(.medium)
                 .foregroundStyle(Color(rgb: fg))
-                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
                 .background(Color(rgb: bg), in: Capsule())
@@ -154,22 +152,25 @@ struct ThemedCompactButtonStyle: ButtonStyle {
 
 /// Shows a spinner over a button label while loading **without** changing the
 /// label's size — the label stays laid out (just hidden) so the button keeps its
-/// height and the tap doesn't make the control flick/resize. Spinner tint matches
-/// the prominent button's foreground (systemBackground on the neutral fill).
+/// height and the tap doesn't make the control flick/resize. The caller passes
+/// the fill's own foreground token so the spinner reads on whatever the button
+/// is painted with.
 private struct ProminentButtonLoading: ViewModifier {
     let isLoading: Bool
+    let tint: Color
     func body(content: Content) -> some View {
         content
             .opacity(isLoading ? 0 : 1)
-            .overlay { if isLoading { ProgressView().tint(Color.platformBackground) } }
+            .overlay { if isLoading { ProgressView().tint(tint) } }
     }
 }
 
 extension View {
     /// Hide a prominent button's label and overlay a spinner while `isLoading`,
-    /// preserving the button height (no resize flick on tap).
-    func prominentButtonLoading(_ isLoading: Bool) -> some View {
-        modifier(ProminentButtonLoading(isLoading: isLoading))
+    /// preserving the button height (no resize flick on tap). `tint` is the
+    /// button fill's foreground token.
+    func prominentButtonLoading(_ isLoading: Bool, tint: Color) -> some View {
+        modifier(ProminentButtonLoading(isLoading: isLoading, tint: tint))
     }
 }
 

@@ -62,6 +62,7 @@ struct QuickViewEntryChooserSheet: View {
     private func startFlow(code: String) {
         let model = QuickViewApprovalFlowModel(
             itemID: itemID, defaultSelectedFieldIDs: defaultSelectedFieldIDs,
+            vaultSession: env.session,
             repository: env.repository, history: env.quickViewHistory,
             capabilities: env.capabilities, signerKeyset: env.quickViewSignerKeyset)
         flow = model

@@ -66,13 +66,15 @@ struct CreateMasterPasswordView: View {
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
         .safeAreaInset(edge: .bottom) {
+            // ONLY the CTA ignores the keyboard: it holds the physical bottom
+            // edge instead of sliding up under the thumb mid-entry. The scroll
+            // view keeps its keyboard inset, so the focused field still gets
+            // scrolled into view — on a 4.7-inch phone the confirm row sits
+            // below the keyboard line, and this screen has too little content
+            // to scroll it back up by hand.
             BrandCapsuleCTA(enabled: canSubmit, busy: busy) { Task { await submit() } }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
         }
-        // The keyboard COMPRESSES the scroll view (no `.ignoresSafeArea`): on
-        // small phones the confirm row sat under the keyboard with no way to
-        // see what you type. SwiftUI now auto-scrolls the focused field into
-        // view, and the CTA rides above the keyboard — submit without
-        // dismissing, the Apple sign-in behavior.
     }
 
     /// Duotone info glyph + the no-reset note (replaces the amber warning card).

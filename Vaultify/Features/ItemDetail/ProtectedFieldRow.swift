@@ -62,6 +62,13 @@ struct ProtectedFieldRow: View {
         } message: {
             Text("The value will be visible like a normal field.")
         }
+        // Re-conceal when the session key goes away (backgrounding the app drops
+        // it). Clearing `level2Key` alone would not hide an ALREADY revealed
+        // value: the plaintext lives in this row's own state, which survives the
+        // trip, so the row would stay readable exactly where it matters.
+        .onChange(of: env.session.isLevel2Unlocked) { _, unlocked in
+            if !unlocked, scheme == .level2 { plaintext = nil }
+        }
     }
 
     /// The passkey rows' trailing-wash treatment on the extra-protection teal —
@@ -148,6 +155,8 @@ struct ProtectedFieldRow: View {
         case .level2:
             if let key = env.session.level2Key {
                 revealLevel2(with: key.bytes)
+            } else if env.session.isLevel2BiometricEnrolled {
+                Task { await revealLevel2WithBiometrics() }
             } else {
                 showLevel2Prompt = true
             }
@@ -167,6 +176,21 @@ struct ProtectedFieldRow: View {
             Haptics.warning()
         } else {
             error = appString("Couldn’t decrypt this field.")
+        }
+    }
+
+    /// Face ID shortcut for the app-wide Extra Password. Any failure falls back
+    /// to the typed prompt, so biometrics never become the only way in. The one
+    /// exception is a rejected face: that already locked the vault (app-wide
+    /// policy), and raising a prompt into a screen being torn down helps nobody.
+    private func revealLevel2WithBiometrics() async {
+        do {
+            try await env.session.unlockLevel2WithBiometrics()
+            guard let key = env.session.level2Key else { throw AuthError.locked }
+            revealLevel2(with: key.bytes)
+        } catch {
+            guard env.session.state == .unlocked else { return }
+            showLevel2Prompt = true
         }
     }
 

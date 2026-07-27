@@ -22,12 +22,13 @@ struct NotificationsSettingsView: View {
                     Label { Text("Notification permission") } icon: { PolarisIcon(Icons.notification) }
                 }
                 if authorizationStatus == .denied {
-                    VaultInfoBanner(.warning,
+                    // Denied is a blocked state with a remedy the user owns, not
+                    // a soft warning: reminders below cannot fire at all.
+                    VaultInfoBanner(.error,
                                     text: "Notifications are turned off for Loox in iOS Settings. Turn them back on to receive rotation reminders.",
                                     actionLabel: "Open Settings",
                                     action: openSystemSettings)
-                    .listRowInsets(EdgeInsets())
-                    .padding(.vertical, Space.s1)
+                    .inList()
                 }
             } footer: {
                 Text("Controlled by iOS. Loox only asks once, the first time you turn on a reminder below.")

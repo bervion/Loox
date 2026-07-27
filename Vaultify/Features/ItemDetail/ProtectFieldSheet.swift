@@ -19,14 +19,23 @@ struct ProtectFieldSheet: View {
     @State private var busy = false
     @State private var error: String?
     @State private var showLevel2Setup = false
+    /// Set once Face ID has failed or turned out to be unavailable: the typed
+    /// Extra Password field takes over IN PLACE, so the sheet never dead-ends.
+    @State private var biometricFallback = false
 
     private var hasLevel2: Bool { env.session.hasLevel2 }
     private var level2Unlocked: Bool { env.session.level2Key != nil }
 
+    /// The Extra Password is already set and this device can release its key with
+    /// biometrics, so protecting a field is a confirmation instead of a retype.
+    private var usesBiometrics: Bool {
+        env.session.isLevel2BiometricEnrolled && !biometricFallback
+    }
+
     private var canProtect: Bool {
         if busy { return false }
         switch scheme {
-        case .level2: return hasLevel2 && (level2Unlocked || !level2Password.isEmpty)
+        case .level2: return hasLevel2 && (level2Unlocked || usesBiometrics || !level2Password.isEmpty)
         case .custom: return customCode.count >= 4 && customCode == confirmCode
         }
     }
@@ -52,11 +61,7 @@ struct ProtectFieldSheet: View {
                 .listRowBackground(VaultColors.surface)
 
                 Section("Protect with") {
-                    optionCard(.level2,
-                               title: "Extra Password",
-                               subtitle: hasLevel2
-                                   ? "One password for all protected fields. Loox asks again when you leave the item."
-                                   : "Not set up yet")
+                    optionCard(.level2, title: "Extra Password", subtitle: level2Subtitle)
                     optionCard(.custom,
                                title: "Custom code",
                                subtitle: "A code just for this field. Asked every time you reveal it.")
@@ -73,7 +78,10 @@ struct ProtectFieldSheet: View {
         // sheet — on return the card flips to ready and Protect goes live.
         .sheet(isPresented: $showLevel2Setup) {
             NavigationStack {
-                Level2SettingsView()
+                // `retainsFreshKey`: the key minted in there is exactly what this
+                // sheet needs on return — clearing it on dismiss would throw away
+                // the thing the user just went and created.
+                Level2SettingsView(retainsFreshKey: true)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showLevel2Setup = false }
@@ -124,9 +132,20 @@ struct ProtectFieldSheet: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
+    /// The Extra Password card's supporting line. Names the biometric path when
+    /// this device has one, so the missing password field reads as "ready"
+    /// rather than as a broken form.
+    private var level2Subtitle: LocalizedStringKey {
+        guard hasLevel2 else { return "Not set up yet" }
+        guard usesBiometrics, !level2Unlocked else {
+            return "One password for all protected fields. Loox asks again when you leave the item."
+        }
+        return "Already set up. Unlock with \(BiometricAuth.displayName)."
+    }
+
     @ViewBuilder private var schemeInputs: some View {
         if scheme == .level2 {
-            if hasLevel2 && !level2Unlocked {
+            if hasLevel2 && !level2Unlocked && !usesBiometrics {
                 Section {
                     RevealableSecureField(title: "Extra Password", text: $level2Password, inList: true)
                 } footer: {
@@ -153,11 +172,18 @@ struct ProtectFieldSheet: View {
 
     private func protect() async {
         busy = true; error = nil
+        defer { busy = false }
         do {
             let sealed: String
             switch scheme {
             case .level2:
-                if !level2Unlocked { try await env.session.unlockLevel2(password: level2Password) }
+                if !level2Unlocked {
+                    if usesBiometrics {
+                        guard await unlockWithBiometrics() else { return }
+                    } else {
+                        try await env.session.unlockLevel2(password: level2Password)
+                    }
+                }
                 guard let key = env.session.level2Key else { throw AuthError.locked }
                 sealed = try SecretGuard.sealLevel2(field.value, l2Key: key.bytes)
             case .custom:
@@ -173,6 +199,21 @@ struct ProtectFieldSheet: View {
             self.error = (error as? AuthError)?.errorDescription ?? appString("Couldn’t protect this field.")
             Haptics.error()
         }
-        busy = false
+    }
+
+    /// Face ID path. Returns false when the key was NOT released; the sheet then
+    /// swaps the typed Extra Password field in IN PLACE instead of dead-ending.
+    /// A rejected face has already locked the vault (app-wide policy) and the
+    /// route swap tears this sheet down — nothing here fights that.
+    private func unlockWithBiometrics() async -> Bool {
+        do {
+            try await env.session.unlockLevel2WithBiometrics()
+            return true
+        } catch {
+            biometricFallback = true
+            self.error = appString("Enter your Extra Password instead.")
+            Haptics.warning()
+            return false
+        }
     }
 }

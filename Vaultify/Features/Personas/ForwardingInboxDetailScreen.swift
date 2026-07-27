@@ -16,9 +16,14 @@ struct ForwardingInboxDetailScreen: View {
     private var inbox: ForwardingInbox? {
         env.repository.forwardingInboxes.first { $0.id == inboxID }
     }
+    private var gate: PrivateEmailGate { PrivateEmailGate(env) }
 
     var body: some View {
         List {
+            // Inherits the parent's treatment: same banner, same explanation,
+            // same way back to Settings. The inbox itself stays readable and
+            // deletable in every state.
+            PrivateEmailBannerSection()
             if let inbox {
                 identitySection(inbox)
                 actionsSection(inbox)
@@ -61,30 +66,39 @@ struct ForwardingInboxDetailScreen: View {
         .listRowBackground(VaultColors.surface)
     }
 
+    /// Verification is a signed relay command, so the offer follows the gate
+    /// while the status row above keeps reporting what we know. Setting the
+    /// default is local and stays available. With neither on offer the section
+    /// itself goes away rather than leaving an empty card.
     @ViewBuilder private func actionsSection(_ inbox: ForwardingInbox) -> some View {
-        Section {
-            switch inbox.verificationStatus {
-            case .verified:
-                EmptyView()
-            case .pending:
-                Button { checkVerification(inbox) } label: {
-                    Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
+        let offersVerification = gate.allows(.mutate) && inbox.verificationStatus != .verified
+        if offersVerification || !inbox.isDefault {
+            Section {
+                if offersVerification {
+                    switch inbox.verificationStatus {
+                    case .verified:
+                        EmptyView()
+                    case .pending:
+                        Button { checkVerification(inbox) } label: {
+                            Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
+                        }
+                        Button { confirmEmail(inbox) } label: {
+                            Label { Text("Resend email") } icon: { PolarisIcon("ic_refresh") }
+                        }
+                    case .unverified, .revoked:
+                        Button { confirmEmail(inbox) } label: {
+                            Label { Text("Confirm email") } icon: { PolarisIcon(Icons.checkCircle) }
+                        }
+                    }
                 }
-                Button { confirmEmail(inbox) } label: {
-                    Label { Text("Resend email") } icon: { PolarisIcon("ic_refresh") }
-                }
-            case .unverified, .revoked:
-                Button { confirmEmail(inbox) } label: {
-                    Label { Text("Confirm email") } icon: { PolarisIcon(Icons.checkCircle) }
+                if !inbox.isDefault {
+                    Button { try? env.repository.setDefaultInbox(inbox) } label: {
+                        Label { Text("Set as default") } icon: { PolarisIcon(Icons.checkCircle) }
+                    }
                 }
             }
-            if !inbox.isDefault {
-                Button { try? env.repository.setDefaultInbox(inbox) } label: {
-                    Label { Text("Set as default") } icon: { PolarisIcon(Icons.checkCircle) }
-                }
-            }
+            .listRowBackground(VaultColors.surface)
         }
-        .listRowBackground(VaultColors.surface)
     }
 
     @ViewBuilder private func deleteSection(_ inbox: ForwardingInbox) -> some View {

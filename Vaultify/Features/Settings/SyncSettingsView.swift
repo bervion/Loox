@@ -44,8 +44,7 @@ struct SyncSettingsView: View {
                 Section {
                     VaultInfoBanner(.warning,
                                     text: "To use iCloud Sync, enable the iCloud capability (CloudKit) for the app target in Xcode and sign in to iCloud on this device.")
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                        .inList()
                 }
             }
 
