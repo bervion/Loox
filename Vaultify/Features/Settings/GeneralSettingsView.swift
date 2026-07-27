@@ -15,6 +15,7 @@ struct GeneralSettingsView: View {
         switch env.settings.preferredLanguage {
         case "en": "English"
         case "vi": "Tiếng Việt"
+        case "ja": "日本語"
         default: "System"
         }
     }
@@ -38,7 +39,8 @@ struct GeneralSettingsView: View {
                         title: "Language",
                         options: [.init(value: "system", label: "System"),
                                   .init(value: "en", label: "English"),
-                                  .init(value: "vi", label: "Tiếng Việt")],
+                                  .init(value: "vi", label: "Tiếng Việt"),
+                                  .init(value: "ja", label: "日本語")],
                         selection: $settings.preferredLanguage,
                         // Deferred + branded transition on the UIKit shell; the
                         // sidebar keeps the plain live apply.

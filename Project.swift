@@ -60,7 +60,7 @@ let project = Project(
                 "CFBundleDisplayName": "Loox",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
-                "CFBundleLocalizations": ["en", "vi"],
+                "CFBundleLocalizations": ["en", "vi", "ja"],
                 // MonoLisa — monospaced typeface for secrets/codes and detail values
                 // (bundled from Vaultify/Resources/Fonts via the Resources glob).
                 "UIAppFonts": [

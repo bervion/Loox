@@ -64,11 +64,20 @@ struct ProfileSectionCard: View {
                 .padding(.leading, Space.s4)
             chooseRow
         }
-        .background(VaultColors.surface, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .background(VaultColors.surface)
+        // CLIP, not just a background shape: a row's copy flash paints edge to edge, so
+        // without this the square flash overhangs the card's rounded corners.
+        .vaultCornerRadius(Radius.md)
     }
 
-    /// Each non-empty field as a tap-to-copy row (protected values stay masked; the tap copies
-    /// the real value and flashes the same accent feedback as the item-detail rows).
+    /// Each non-empty field, rendered by the SAME row the item-detail screen uses. This card
+    /// used to carry its own simplified copy row, which drifted: notes collapsed to one inline
+    /// line with no Markdown, and the flash used the theme accent instead of the app's fixed
+    /// copy-flash pair. Sharing the real row keeps identity fields rendering exactly like the
+    /// vault — Markdown notes, per-kind value treatment, reveal for protected values.
+    ///
+    /// `readOnly`: the card has its own Edit button, so the row's mutation affordances
+    /// ("Protect…") stay out; copy, reveal, and Large Type remain.
     @ViewBuilder private func fieldRows(_ item: VaultItem) -> some View {
         let fields = item.fields.filter { !$0.isEmpty }
         ForEach(Array(fields.enumerated()), id: \.element.id) { index, field in
@@ -76,9 +85,7 @@ struct ProfileSectionCard: View {
                 Divider().background(Color(rgb: env.theme.active.separatorOpaque))
                     .padding(.leading, Space.s4)
             }
-            ProfileCopyFieldRow(label: appLabel(field.label),
-                                value: field.value,
-                                protected: field.protected)
+            DetailFieldRow(field: field, category: item.category, readOnly: true)
         }
     }
 
@@ -128,56 +135,5 @@ struct ProfileSectionCard: View {
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
-    }
-}
-
-/// Tap-to-copy row with the SAME feedback vocabulary as the item-detail rows:
-/// accent flash, value line swaps to "Copied", the copy glyph morphs to a
-/// check, then everything settles back after 1.2 s. The clipboard service owns
-/// the haptic — the row never fires its own.
-private struct ProfileCopyFieldRow: View {
-    @Environment(AppEnvironment.self) private var env
-    let label: String
-    let value: String
-    let protected: Bool
-
-    @State private var copied = false
-    @State private var resetTask: Task<Void, Never>?
-
-    var body: some View {
-        let theme = env.theme.active
-        Button {
-            env.clipboard.copy(value, label: label)
-            copied = true
-            resetTask?.cancel()
-            resetTask = Task {
-                try? await Task.sleep(for: .seconds(1.2))
-                withAnimation(.easeOut(duration: 0.3)) { copied = false }
-            }
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: label)
-                        .vaultType(.caption)
-                        .foregroundStyle(copied ? theme.color(.onAccent).opacity(0.85)
-                                                : theme.color(.secondary))
-                    Text(verbatim: copied ? appString("Copied")
-                                          : (protected ? "••••••••" : value))
-                        .vaultType(.body)
-                        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
-                        .lineLimit(1)
-                }
-                Spacer()
-                CopyMorphIcon(copied: copied, size: 18)
-                    .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.secondary))
-            }
-            .padding(Space.s4)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .background(copied ? theme.color(.accent) : Color.clear)
-        .animation(.easeOut(duration: 0.18), value: copied)
-        .accessibilityLabel(Text(verbatim: label))
-        .accessibilityHint(Text("Double tap to copy"))
     }
 }

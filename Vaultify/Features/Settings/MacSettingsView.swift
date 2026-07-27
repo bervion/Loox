@@ -116,6 +116,7 @@ private struct MacGeneralSettingsPane: View {
                     Text("System").tag("system")
                     Text("English").tag("en")
                     Text("Tiếng Việt").tag("vi")
+                    Text("日本語").tag("ja")
                 } label: {
                     Label { Text("Language") } icon: { PolarisIcon(Icons.language) }
                 }

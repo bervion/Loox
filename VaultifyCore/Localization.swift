@@ -9,11 +9,12 @@ import Foundation
 /// shared model titles against the same locale.
 nonisolated(unsafe) var appResourceLocale: Locale = .autoupdatingCurrent
 
-/// Map a stored language code ("system" | "en" | "vi") to a `Locale`.
+/// Map a stored language code ("system" | "en" | "vi" | "ja") to a `Locale`.
 nonisolated func appLocale(forCode code: String) -> Locale {
     switch code {
     case "en": return Locale(identifier: "en")
     case "vi": return Locale(identifier: "vi")
+    case "ja": return Locale(identifier: "ja")
     default: return .autoupdatingCurrent
     }
 }
