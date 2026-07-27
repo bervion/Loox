@@ -43,6 +43,61 @@ nonisolated enum BiometricAuth {
         }
     }
 
+    // MARK: - Failure classification
+
+    /// How the app reads a biometric failure. This is the input to the app-wide
+    /// policy in `VaultSession.noteBiometricOutcome`: a rejected face locks the
+    /// vault, a dismissed prompt never does.
+    enum Outcome: Equatable {
+        /// The user dismissed the prompt, or chose the password fallback.
+        /// Never a security signal.
+        case cancelled
+        /// Biometry ran and rejected the presented face or finger, or the cause
+        /// could not be attributed.
+        case failed
+        /// Biometry is locked out until the device passcode is entered, so
+        /// retrying is guaranteed to fail.
+        case lockout
+        /// Biometry could not run at all: no sensor, nothing enrolled, or the
+        /// stored item was invalidated. Nothing was attempted, so no penalty.
+        case unavailable
+    }
+
+    /// Classify anything thrown by a biometric prompt or a biometric-gated
+    /// Keychain read.
+    ///
+    /// Unrecognised errors map to `.failed`. This feeds a security policy, and
+    /// the conservative reading of "something went wrong during an identity
+    /// check" is that identity was not established. The same choice also keeps
+    /// the master-password fallback reachable on the lock screen instead of
+    /// leaving a badge that can never succeed.
+    static func classify(_ error: Error) -> Outcome {
+        // Keychain failures already know their own meaning (and one of them
+        // lives in a target this file cannot see — see the protocol below).
+        if let reporting = error as? BiometricOutcomeReporting { return reporting.biometricOutcome }
+        guard let laError = error as? LAError else { return .failed }
+        switch laError.code {
+        case .userCancel, .systemCancel, .appCancel, .userFallback:
+            // `localizedFallbackTitle` is never set, so the system prompt shows
+            // its default "Enter Password" button. Tapping it is a deliberate
+            // choice of another route, not a rejected face.
+            return .cancelled
+        case .authenticationFailed:
+            return .failed
+        case .biometryLockout:
+            return .lockout
+        case .biometryNotAvailable, .biometryNotEnrolled, .invalidContext, .notInteractive,
+             .passcodeNotSet:
+            // The sensor never ran. `passcodeNotSet` belongs here for the same
+            // reason: biometry cannot be evaluated at all without a passcode,
+            // so treating it as a rejection would lock the vault over a device
+            // configuration the prompt never got to test.
+            return .unavailable
+        default:
+            return .failed
+        }
+    }
+
     /// Run an interactive biometric evaluation. This is what surfaces the system
     /// Face ID / Touch ID prompt AND the first-run NSFaceIDUsageDescription
     /// permission — adding a biometric Keychain item alone does neither.
@@ -59,4 +114,13 @@ nonisolated enum BiometricAuth {
             }
         }
     }
+}
+
+/// An error that already knows how the biometric policy should read it.
+///
+/// This exists so a store that only ships in the app target — `Level2BiometricKeyStore`
+/// — can be classified by `BiometricAuth.classify`, which also compiles into the
+/// AutoFill and Safari extensions and therefore cannot name that type.
+nonisolated protocol BiometricOutcomeReporting {
+    var biometricOutcome: BiometricAuth.Outcome { get }
 }

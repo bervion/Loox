@@ -36,6 +36,11 @@ struct MainTabView: View {
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     LegacyChipTabBar(selection: $uiState.selectedTab)
                 }
+                // The chip bar is chrome, not content: without this it lifts with
+                // the software keyboard (focus Search) and hovers mid-screen over
+                // the results. Each tab root owns a NavigationStack, so screen
+                // content keeps its own keyboard avoidance.
+                .ignoresSafeArea(.keyboard, edges: .bottom)
         }
     }
 

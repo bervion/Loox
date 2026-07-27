@@ -23,6 +23,7 @@ struct AliasDetailScreen: View {
     private var persona: Persona? {
         alias.flatMap { a in env.repository.personas.first { $0.id == a.personaId } }
     }
+    private var gate: PrivateEmailGate { PrivateEmailGate(env) }
 
     var body: some View {
         Group {
@@ -43,6 +44,10 @@ struct AliasDetailScreen: View {
         let address = AliasAddress.display(localPart: alias.localPart, status: alias.status,
                                            relayDomain: alias.emailDomain)
         List {
+            // Same banner as the Private Email root: this address stays fully
+            // readable, only the relay actions below change.
+            PrivateEmailBannerSection()
+
             Section("Address") {
                 Button {
                     env.clipboard.copy(address, label: appString("private email"), sensitive: false)
@@ -96,7 +101,7 @@ struct AliasDetailScreen: View {
             Section {
                 if alias.status == .reserved {
                     // Reserved means a prior activation didn't reach the relay — retry.
-                    Button { run { try await env.relay.activate(alias) } } label: {
+                    Button { activate(alias) } label: {
                         Label { Text("Activate") } icon: { PolarisIcon(Icons.checkCircle) }
                     }
                 }
@@ -166,6 +171,17 @@ struct AliasDetailScreen: View {
             return inboxTitle(fallback)
         }
         return appString("None")
+    }
+
+    /// Activating a reserved alias is a growth mutation, so it must not reach
+    /// the relay for a feature the user switched off — the same guard the
+    /// aliases list applies to the identical row action.
+    private func activate(_ alias: EmailAlias) {
+        if gate.isTurnedOffByUser {
+            errorMessage = appString("Private Email is turned off in Settings.")
+            return
+        }
+        run { try await env.relay.activate(alias) }
     }
 
     private func pick(_ inbox: ForwardingInbox, for alias: EmailAlias) {

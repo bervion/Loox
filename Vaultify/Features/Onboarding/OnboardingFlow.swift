@@ -211,13 +211,10 @@ private struct OnboardingDoneStep: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            Button(action: press) {
-                Text("Open Loox").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent).controlSize(.large)
-            .disabled(launch.phase != .idle)
-            .opacity(contentHidden ? 0 : 1)
-            .padding(.horizontal, Space.s6).padding(.bottom, Space.s4)
+            // Same pinned capsule as every other onboarding step; it steps aside
+            // with the rest of the content when the launch burst starts.
+            BrandCapsuleCTA(title: "Open Loox", enabled: launch.phase == .idle, action: press)
+                .opacity(contentHidden ? 0 : 1)
         }
     }
 

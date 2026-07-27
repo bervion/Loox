@@ -289,7 +289,10 @@ private struct JoinByQRView: View {
 
                 Group {
                     if let errorMessage {
-                        errorCard(errorMessage)
+                        // Runtime text (a pairing/network failure), so the verbatim
+                        // overload — the shared banner supplies the Polaris glyph,
+                        // the soft destructive fill, and readable body rank.
+                        VaultInfoBanner(.error, verbatimText: errorMessage)
                     } else {
                         Text("Waiting for your other device…")
                             .vaultType(.subhead).themedForeground(.secondary)
@@ -301,18 +304,18 @@ private struct JoinByQRView: View {
 
                 Spacer(minLength: Space.s6)
                 if errorMessage != nil {
-                    Button {
+                    // The accent capsule every other onboarding primary uses: the
+                    // create branch and this restore branch leave the same Welcome
+                    // screen, so they must not offer two different CTA ranks.
+                    BrandCapsuleCTA(title: "Start over") {
                         // A fresh session (new ephemeral key + pairing id) — the old QR is dead.
                         session = VaultKeyPairing.makeSession()
                         errorMessage = nil
                         startWaiting()
-                    } label: {
-                        Text("Start over").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.themedProminent)
-                    .controlSize(.large)
-                    .padding(.horizontal, Space.s6)
-                    .padding(.bottom, Space.s6)
+                    // The CTA carries its own horizontal inset and a Space.s4
+                    // bottom pad; this tops it up to the step's Space.s6 margin.
+                    .padding(.bottom, Space.s2)
                 }
             }
         }
@@ -340,23 +343,6 @@ private struct JoinByQRView: View {
             text[run.range].font = VaultType.subhead.font.weight(.semibold)
         }
         return text
-    }
-
-    /// Refined failure card: soft red surface, a circled X, and the message —
-    /// replaces the bare red error line.
-    private func errorCard(_ message: String) -> some View {
-        HStack(alignment: .center, spacing: Space.s3) {
-            Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(Color(rgb: env.theme.active.destructive))
-            Text(verbatim: message)
-                .vaultType(.footnote).themedForeground(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(Space.s4)
-        .background(Color(rgb: env.theme.active.destructiveSoft),
-                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
     private func startWaiting() {
@@ -422,23 +408,22 @@ private struct JoinByRecoveryView: View {
                 }
 
                 Spacer(minLength: Space.s6)
-                Button(action: submit) {
-                    Group {
-                        if busy { ProgressView() } else { Text("Continue") }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.themedProminent)
-                .controlSize(.large)
-                .disabled(recoveryKey.isEmpty || busy)
-                .padding(.horizontal, Space.s6)
-                .padding(.bottom, Space.s6)
             }
         }
         // Dismiss the keyboard on scroll or a tap outside the field (buttons/field
         // keep their own handling — children win over this gesture).
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
+        // One pinned CTA slot like every other onboarding step. `busy` is passed
+        // to the component instead of swapping the label for a spinner, so the
+        // button keeps its height and never resizes under the thumb on tap.
+        .safeAreaInset(edge: .bottom) {
+            // ONLY the CTA ignores the keyboard: it holds the bottom edge instead
+            // of sliding under the thumb while the recovery key is being typed.
+            // The scroll view stays keyboard-aware so the field is scrolled clear.
+            BrandCapsuleCTA(enabled: !recoveryKey.isEmpty, busy: busy, action: submit)
+                .ignoresSafeArea(.keyboard, edges: .bottom)
+        }
         #if os(iOS)
         // Full screen: aiming at a recovery QR needs the whole viewport, and a
         // card-sized viewfinder with the form showing behind it reads as a
@@ -510,8 +495,7 @@ private struct JoinByRecoveryView: View {
                 if busy {
                     ProgressView()
                 } else {
-                    Image(systemName: "arrow.down.doc")
-                        .font(.system(size: 26))
+                    PolarisIcon(Icons.importData, size: Metric.iconUtility)
                         .foregroundStyle(Color(rgb: env.theme.active.accent))
                     Text("Import from PDF")
                         .vaultType(.callout).fontWeight(.semibold).themedForeground(.primary)

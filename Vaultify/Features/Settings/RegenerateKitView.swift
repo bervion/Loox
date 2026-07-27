@@ -15,15 +15,23 @@ struct RegenerateKitView: View {
 
     var body: some View {
         Form {
-            // Same banner chrome as the other security subscreens — a raw Label
-            // with an accent icon read as a stray row, not the framing note.
+            // The list stays: Copy / Share / Save PDF / Regenerate are real
+            // action rows and read best with list chrome. Only the framing moves
+            // — the swirl header rides in a chrome-less first section so this
+            // screen opens like its two security siblings.
             Section {
+                header
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: Space.s4, trailing: 0))
+                    .listRowBackground(Color.clear)
+                // Same banner chrome as the other security subscreens — a raw Label
+                // with an accent icon read as a stray row, not the framing note.
                 VaultInfoBanner(.info, icon: Icons.shield, text: kitStatusText)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-            } footer: {
-                Text("The recovery key can restore your vault if you forget your master password.")
             }
+            // Two chrome-less rows in one section would otherwise be split by a
+            // hairline running across the empty page.
+            .listRowSeparator(.hidden)
 
             if !newKey.isEmpty {
                 Section {
@@ -36,8 +44,10 @@ struct RegenerateKitView: View {
                         Label { Text("Copy") } icon: { PolarisIcon(Icons.copy) }
                     }
                     ShareLink(item: newKey) { Label { Text("Share") } icon: { PolarisIcon(Icons.share) } }
+                    // Export glyph, not a shield: this row hands the kit to the
+                    // Files sheet, it doesn't say anything about protection.
                     Button(action: presentExporter) {
-                        Label { Text("Save Emergency Kit (PDF)") } icon: { PolarisIcon(Icons.shield) }
+                        Label { Text("Save Emergency Kit (PDF)") } icon: { PolarisIcon(Icons.exportData) }
                     }
                     if let exportError {
                         Text(exportError).vaultType(.footnote)
@@ -55,7 +65,11 @@ struct RegenerateKitView: View {
                 Button {
                     if env.session.hasRecoveryKit { confirmRegenerate = true } else { Task { await regenerate() } }
                 } label: {
-                    Label { Text(env.session.hasRecoveryKit ? "Regenerate Kit" : "Generate Kit") } icon: { PolarisIcon(Icons.refresh) }
+                    // `Icons.refresh` is the app's sync glyph — it read as
+                    // "fetch again", not "issue a new kit". A key for the first
+                    // issue, a replay arrow for a re-issue.
+                    Label { Text(env.session.hasRecoveryKit ? "Regenerate Kit" : "Generate Kit") }
+                        icon: { PolarisIcon(env.session.hasRecoveryKit ? Icons.replay : Icons.key) }
                 }
                 .disabled(busy)
                 if let generateError {
@@ -86,6 +100,26 @@ struct RegenerateKitView: View {
                 if case .success = result { Haptics.success() }
             }
         }
+    }
+
+    /// One-shot swirl reveal around a life ring (recovery, not protection),
+    /// then the title and subtitle — the shape the Extra Password and master
+    /// password screens use.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            LooxSwirlAnimationView(mode: .reveal,
+                                   centerIcon: "dt_life_ring",
+                                   centerTint: env.theme.active.color(.accent))
+                .frame(width: 150, height: 150)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Space.s4)
+            Text("Your Emergency Kit")
+                .vaultType(.screenTitle)
+            Text("The recovery key can restore your vault if you forget your master password.")
+                .vaultType(.subhead).themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var kitStatusText: LocalizedStringKey {

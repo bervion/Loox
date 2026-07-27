@@ -18,14 +18,23 @@ struct ForwardingInboxScreen: View {
     @State private var errorMessage: String?
     @State private var pendingDeleteInbox: ForwardingInbox?
 
+    private var gate: PrivateEmailGate { PrivateEmailGate(env) }
+
     var body: some View {
         List {
+            // Same capability state, same explanation as the Private Email root
+            // one level up. Saved inboxes below stay visible and manageable in
+            // every state — only the relay-touching actions gate.
+            PrivateEmailBannerSection()
+
             Section {
                 ForEach(env.repository.forwardingInboxes) { inbox in
                     inboxRow(inbox)
                 }
-                Button { addingInbox = true } label: {
-                    Label { Text("Add inbox") } icon: { PolarisIcon(Icons.addCircle) }
+                if gate.allows(.create) {
+                    Button { addingInbox = true } label: {
+                        Label { Text("Add inbox") } icon: { PolarisIcon(Icons.addCircle) }
+                    }
                 }
             } footer: {
                 Text("New addresses will forward here. Existing addresses keep their inbox until you update them.")
@@ -58,7 +67,19 @@ struct ForwardingInboxScreen: View {
         }
         // Auto-advance pending → verified: the user confirms on the web, so the
         // app must poll the result itself rather than wait for a manual tap.
-        .task(id: scenePhase) { await pollPendingVerifications() }
+        .task(id: pollTrigger) { await pollPendingVerifications() }
+    }
+
+    /// Restarts the poll when the scene wakes OR the capability becomes usable
+    /// again, so turning Private Email back on resumes verification without
+    /// leaving this screen.
+    private struct PollTrigger: Equatable {
+        let phase: ScenePhase
+        let enabled: Bool
+    }
+
+    private var pollTrigger: PollTrigger {
+        PollTrigger(phase: scenePhase, enabled: gate.allows(.mutate))
     }
 
     /// Poll the read-only status endpoint (~8s) while any inbox is pending and
@@ -66,7 +87,9 @@ struct ForwardingInboxScreen: View {
     /// (the task is cancelled on disappear / scene change). A 404 is an id/config
     /// issue, not "pending", so it's swallowed here rather than resetting state.
     private func pollPendingVerifications() async {
-        guard scenePhase == .active else { return }
+        // No background chatter with the relay for a feature that can't act:
+        // switched off in Settings, offline, or in an operator-blocked mode.
+        guard scenePhase == .active, gate.allows(.mutate) else { return }
         while !Task.isCancelled {
             let pending = env.repository.forwardingInboxes.filter {
                 $0.verificationStatus == .pending && $0.relayDestinationID != nil
@@ -81,7 +104,11 @@ struct ForwardingInboxScreen: View {
     /// an inbox that is no longer their resolved destination.
     @ViewBuilder private var pendingSection: some View {
         let pending = env.repository.aliasesNeedingRotation.count
-        if pending > 0 || rotating {
+        // The update itself is a relay round trip per address, so the OFFER
+        // hides while the relay can't be reached or the feature is off; the
+        // drift is still there when it comes back. A run already in flight
+        // keeps its progress row whatever the gate does mid-run.
+        if rotating || (gate.allows(.mutate) && pending > 0) {
             Section {
                 if rotating {
                     HStack(spacing: Space.s3) {
@@ -157,20 +184,24 @@ struct ForwardingInboxScreen: View {
         }
     }
 
+    /// Verification is a signed relay command, so the offer follows the gate —
+    /// the badge above keeps reporting the last known status either way.
     @ViewBuilder private func verificationMenuItems(_ inbox: ForwardingInbox) -> some View {
-        switch inbox.verificationStatus {
-        case .verified:
-            EmptyView()
-        case .pending:
-            Button { checkVerification(inbox) } label: {
-                Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
-            }
-            Button { confirmEmail(inbox) } label: {
-                Label { Text("Resend email") } icon: { PolarisIcon("ic_refresh") }
-            }
-        case .unverified, .revoked:
-            Button { confirmEmail(inbox) } label: {
-                Label { Text("Confirm email") } icon: { PolarisIcon(Icons.checkCircle) }
+        if gate.allows(.mutate) {
+            switch inbox.verificationStatus {
+            case .verified:
+                EmptyView()
+            case .pending:
+                Button { checkVerification(inbox) } label: {
+                    Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
+                }
+                Button { confirmEmail(inbox) } label: {
+                    Label { Text("Resend email") } icon: { PolarisIcon("ic_refresh") }
+                }
+            case .unverified, .revoked:
+                Button { confirmEmail(inbox) } label: {
+                    Label { Text("Confirm email") } icon: { PolarisIcon(Icons.checkCircle) }
+                }
             }
         }
     }

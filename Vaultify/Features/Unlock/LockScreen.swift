@@ -26,6 +26,11 @@ struct LockScreen: View {
     @State private var mode: Mode = .biometric
     @State private var bioAuthenticating = false
     @State private var bioFailCount = 0
+    /// Set once a biometric prompt has been dismissed (or could not run).
+    /// Dismissing costs no attempt, so the badge stays — but the password field
+    /// comes along with it, or the badge would be the only affordance left on
+    /// screen and a user who cancels would have no way in.
+    @State private var bioDismissed = false
     /// True once the app has actually gone to `.background` — so we only auto-prompt Face ID on
     /// a real return to the foreground, not on the `.inactive → .active` bounce the Face ID
     /// system sheet itself produces (which previously spammed prompts).
@@ -78,6 +83,13 @@ struct LockScreen: View {
         mode == .biometric && !requireSlide && !absorbed
     }
 
+    /// The password field belongs on screen in password mode, and also as soon
+    /// as a biometric prompt has been dismissed — `mode` stays `.biometric` in
+    /// that case so the badge remains one tap from a retry.
+    private var showsPasswordSection: Bool {
+        mode == .password || bioDismissed
+    }
+
     /// Sub-header under the logo — names the biometric option when it's available,
     /// otherwise points straight at the password.
     private var subtitleText: LocalizedStringKey {
@@ -128,7 +140,7 @@ struct LockScreen: View {
         // never shifts the Spacer-centred group — the absorb lands the mark at the
         // exact centre. Keyboard avoidance still lifts it just above the keyboard.
         .overlay(alignment: .bottom) {
-            if mode == .password, !requireSlide {
+            if showsPasswordSection, !requireSlide {
                 Button("Forgot password?") { showRecovery = true }
                     .vaultType(.footnote)
                     .padding(.bottom, Space.s8)
@@ -139,6 +151,7 @@ struct LockScreen: View {
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.background))
         .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: mode)
         .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: requireSlide)
+        .animation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion), value: bioDismissed)
         .sheet(isPresented: $showRecovery) { RecoveryView() }
         .analyticsScreen("lock")
         .onAppear {
@@ -211,7 +224,7 @@ struct LockScreen: View {
                 // Shake-locked → confirm by sliding before any Face ID prompt.
                 SlideToUnlock { confirmSlide() }
                     .transition(.opacity)
-            } else if mode == .password {
+            } else if showsPasswordSection {
                 passwordSection
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -298,13 +311,42 @@ struct LockScreen: View {
             onUnlockSuccess(false)
             // Success → session state flips to unlocked → this view is replaced.
         } catch {
-            AnalyticsEngine.shared.log(.vaultUnlockFailed(method: "biometric"))
-            bioFailCount += 1
-            Haptics.error()
-            if bioFailCount >= maxBioAttempts {
-                withAnimation(.vault(.spring(response: 0.5, dampingFraction: 0.85), reduceMotion: reduceMotion)) { mode = .password }
-            }
+            handleBiometricFailure(error)
         }
+    }
+
+    /// A biometric failure is not one thing. Only a rejected face or a lockout
+    /// is an attempt; a dismissed prompt costs nothing, and a key the system
+    /// invalidated is a dead affordance rather than a failure at all.
+    private func handleBiometricFailure(_ error: Error) {
+        // `.biometryCurrentSet` invalidates the stored key the moment the
+        // enrolled biometrics change. No retry can ever succeed, so retire the
+        // affordance instead of counting attempts against it.
+        if case BiometricKeyStore.Failure.invalidated = error {
+            env.session.disableBiometricUnlock()
+            showPasswordMode()
+            return
+        }
+        let outcome = BiometricAuth.classify(error)
+        guard outcome == .failed || outcome == .lockout else {
+            // Dismissed, or biometry could not run. Neither proves anything, so
+            // no attempt is burnt, no error haptic, and no failure analytics.
+            bioDismissed = true
+            return
+        }
+        AnalyticsEngine.shared.log(.vaultUnlockFailed(method: "biometric"))
+        bioFailCount += 1
+        Haptics.error()
+        // A lockout holds until the device passcode is entered, so any further
+        // prompt is guaranteed to fail — hand straight over to the password.
+        if outcome == .lockout || bioFailCount >= maxBioAttempts {
+            showPasswordMode()
+        }
+    }
+
+    private func showPasswordMode() {
+        withAnimation(.vault(.spring(response: 0.5, dampingFraction: 0.85),
+                             reduceMotion: reduceMotion)) { mode = .password }
     }
 
     // MARK: - Password

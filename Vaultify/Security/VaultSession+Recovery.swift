@@ -85,6 +85,10 @@ extension VaultSession {
     func resetVault() {
         VaultKeyBundle.wipe()
         BiometricKeyStore.delete()
+        // The Extra Protection key is destroyed alongside the Vault Key: the wrap
+        // it belonged to is being wiped, so a surviving Face-ID-releasable copy
+        // could only hand out a key with nothing left to open.
+        Level2BiometricKeyStore.delete()
         settings.biometricUnlockEnabled = false
         settings.onboardingCompleted = false
         lockToOnboarding()

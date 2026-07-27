@@ -50,7 +50,9 @@ struct AuditFullReportScreen: View {
                 }
 
                 if !payload.onlineChecksCompleted {
-                    VaultInfoBanner(.info, icon: Icons.shield,
+                    // Honest severity: part of the audit did not run, so this
+                    // report is incomplete. That is a caveat, not neutral info.
+                    VaultInfoBanner(.warning,
                                     text: "Known-leak checks did not complete in this audit. Run the audit again with an internet connection.")
                 }
             }

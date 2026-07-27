@@ -14,8 +14,7 @@ struct WatchtowerCategoryScreen: View {
             if let infoNote {
                 Section {
                     VaultInfoBanner(.info, icon: Icons.shield, text: infoNote)
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                        .inList()
                 }
             }
             ForEach(issues) { issue in

@@ -53,6 +53,7 @@ final class QuickViewFlowTests: XCTestCase {
         try repo.add(VaultItem(id: "item-1", category: .login, title: "Acme"))
         let history = QuickViewHistoryStore()
         let model = QuickViewApprovalFlowModel(itemID: "item-1", defaultSelectedFieldIDs: [],
+                                               vaultSession: VaultSession(settings: SettingsStore()),
                                                repository: repo, history: history)
         // Simulate a verified session (would normally come from a live resolve).
         model.state = .verified(.init(sessionID: "sess-1", sessionIDBytes: Data("sess-1".utf8),

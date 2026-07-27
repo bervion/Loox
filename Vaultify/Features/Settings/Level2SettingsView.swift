@@ -5,6 +5,12 @@ import SwiftUI
 /// onboarding password step (plain page, capsule fields, bottom CTA) with the
 /// Security swirl playing its one-shot dot reveal above the form.
 struct Level2SettingsView: View {
+    /// Presented as a nested SETUP sheet (from Protect Field), the caller needs
+    /// the key this screen just minted — clearing it on dismiss would throw away
+    /// the very thing the user came here to create. The standalone Settings entry
+    /// keeps clearing, so a verify-then-leave never arms the whole app.
+    var retainsFreshKey: Bool = false
+
     @Environment(AppEnvironment.self) private var env
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -17,6 +23,9 @@ struct Level2SettingsView: View {
     @State private var busy = false
     @State private var error: String?
     @State private var confirmTurnOff = false
+    /// True once THIS visit created the Extra Password (and therefore holds a
+    /// freshly minted key). A verification typed for change/turn-off never sets it.
+    @State private var didProvisionKey = false
 
     private var meetsLength: Bool { newPassword.count >= 6 }
     private var matches: Bool { !confirm.isEmpty && newPassword == confirm }
@@ -61,7 +70,11 @@ struct Level2SettingsView: View {
         // Same Apple-Account idiom as the master-password step: a plain page
         // with capsule fields — also what the swirl's dot mask reads best on.
         .background(Color(rgb: theme.background).ignoresSafeArea())
+        // Dismiss the keyboard on scroll or when an empty area is tapped, matching
+        // the onboarding password steps (field/button taps keep their own
+        // handling — children win over this gesture).
         .scrollDismissesKeyboard(.immediately)
+        .onTapGesture { PlatformAppearance.dismissKeyboard() }
         .navigationTitle("Extra Protection")
         .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -73,9 +86,15 @@ struct Level2SettingsView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if mode != .overview {
+                // ONLY the CTA ignores the keyboard: it holds the bottom edge
+                // instead of riding up under the thumb. The scroll view keeps its
+                // keyboard inset, which matters most here — change/turn-off
+                // autofocus their secure field, so the keyboard is up before the
+                // user touches anything and an un-inset field would be typed blind.
                 BrandCapsuleCTA(title: ctaTitle, enabled: canSubmit, busy: busy) {
                     Task { await submit() }
                 }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             }
         }
         .confirmationDialog("Turn off Extra Password?", isPresented: $confirmTurnOff,
@@ -87,9 +106,13 @@ struct Level2SettingsView: View {
             Text("Every field protected with the Extra Password becomes visible like a normal field.")
         }
         .onAppear { mode = env.session.hasLevel2 ? .overview : .setup }
-        // A verify here (turn-off typed, then cancelled; fresh setup) must not
-        // leave every protected field one tap from visible across the app.
-        .onDisappear { env.session.clearLevel2Key() }
+        // A verify here (turn-off typed, then cancelled) must not leave every
+        // protected field one tap from visible across the app. The one exception
+        // is a nested setup sheet: its caller is waiting for the key it minted.
+        .onDisappear {
+            guard !(retainsFreshKey && didProvisionKey) else { return }
+            env.session.clearLevel2Key()
+        }
         .analyticsScreen("extra_protection")
     }
 
@@ -153,12 +176,15 @@ struct Level2SettingsView: View {
         }
     }
 
+    /// Field titles stay PLAIN ("Password", not "Extra Password"): the screen
+    /// title and subtitle above already establish which password this form is
+    /// for, and repeating it on every row read as three different secrets.
     @ViewBuilder private var content: some View {
         switch mode {
         case .setup:
             PasswordCreationGroup(password: $newPassword, confirm: $confirm,
-                                  passwordTitle: "Extra Password",
-                                  confirmTitle: "Confirm Extra Password")
+                                  passwordTitle: "Password",
+                                  confirmTitle: "Re-enter password")
             if !confirm.isEmpty && !matches {
                 Text("Passwords don’t match")
                     .vaultType(.caption).foregroundStyle(VaultColors.strengthWeak)
@@ -169,8 +195,8 @@ struct Level2SettingsView: View {
         case .change:
             currentPasswordCapsule
             PasswordCreationGroup(password: $newPassword, confirm: $confirm,
-                                  passwordTitle: "New Extra Password",
-                                  confirmTitle: "Confirm Extra Password")
+                                  passwordTitle: "New password",
+                                  confirmTitle: "Re-enter password")
             if !confirm.isEmpty && !matches {
                 Text("Passwords don’t match")
                     .vaultType(.caption).foregroundStyle(VaultColors.strengthWeak)
@@ -212,7 +238,7 @@ struct Level2SettingsView: View {
 
     /// Single capsule row for the current password (change / turn-off modes).
     private var currentPasswordCapsule: some View {
-        RevealableSecureField(title: "Current Extra Password", text: $current,
+        RevealableSecureField(title: "Current password", text: $current,
                               inList: true, autofocus: true)
             .padding(.horizontal, Space.s5)
             .frame(height: 54)
@@ -234,10 +260,12 @@ struct Level2SettingsView: View {
         .padding(.top, Space.s2)
     }
 
+    /// Setup and change both end a password FORM, so their button is the form's
+    /// plain confirm. Turn-off is a destructive action rather than a form, so it
+    /// keeps naming what it destroys.
     private var ctaTitle: LocalizedStringKey {
         switch mode {
-        case .setup: return "Set Extra Password"
-        case .change: return "Change Password"
+        case .setup, .change: return "Confirm password"
         case .turnOff: return "Turn Off Extra Password"
         case .overview: return ""
         }
@@ -259,6 +287,8 @@ struct Level2SettingsView: View {
             switch mode {
             case .setup:
                 try await env.session.setLevel2Password(newPassword)
+                // The key this just minted is what a nested caller is waiting for.
+                didProvisionKey = true
                 Haptics.success()
                 switchTo(.overview)
             case .change:
@@ -301,6 +331,8 @@ struct Level2SettingsView: View {
                 }
             }
             env.session.removeLevel2Wrap()
+            // The wrap is gone, so there is no minted key left to hand back.
+            didProvisionKey = false
             Haptics.success()
             switchTo(.setup)
         } catch {

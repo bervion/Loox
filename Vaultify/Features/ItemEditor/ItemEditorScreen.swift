@@ -32,6 +32,13 @@ struct ItemEditorScreen: View {
     @State private var aliasMissingEmail = false
     @State private var aliasError = false
     @State private var showEmailSuggestions = false
+    // Extra Protection gate. The prompt is offered ONCE per editor visit
+    // (`didOfferExtraProtection`) — declining it is an answer, not something to
+    // ask again on every redraw.
+    @State private var showExtraProtectionPrompt = false
+    @State private var didOfferExtraProtection = false
+    @State private var didUnlockExtraProtection = false
+    @State private var blockedProtectedDelete = false
 
     init(target: EditorTarget, preselectedFolderId: String? = nil) {
         self.target = target
@@ -113,7 +120,9 @@ struct ItemEditorScreen: View {
                     LoginEditorSections(
                         draft: $draft,
                         onScanTOTP: { scanningFieldID = $0 },
-                        onAddAttachment: { showAttachmentPicker = true })
+                        onAddAttachment: { showAttachmentPicker = true },
+                        onProtectedDeleteBlocked: { blockedProtectedDelete = true },
+                        onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)
                 } else {
                     Section("Fields") {
                         // Scan Card: only offered for the Card template, and only where
@@ -141,9 +150,12 @@ struct ItemEditorScreen: View {
                             EditorFieldRow(field: $field,
                                            onScanTOTP: { scanningFieldID = field.id },
                                            category: draft.category,
-                                           siblingCardNumber: cardNumberFieldValue)
+                                           siblingCardNumber: cardNumberFieldValue,
+                                           onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)
                         }
-                        .onDelete { draft.fields.remove(atOffsets: $0) }
+                        // Mirrors `LoginEditorSections.removeFields` — the same
+                        // gate, because the same swipe destroys the same value.
+                        .onDelete { removeFields(at: $0) }
                         .onMove { draft.fields.move(fromOffsets: $0, toOffset: $1) }
 
                         Menu {
@@ -214,13 +226,36 @@ struct ItemEditorScreen: View {
                 didApplyDefaultFolder = true
                 captureDraftForRestore()
             }
+            // Not `.onAppear`: the gate raises a prompt (a nested sheet, or the
+            // system biometric sheet) and doing that mid-presentation of this
+            // editor is how nested sheets get dropped.
+            .task { requestExtraProtectionUnlock() }
             // Keep the restorable snapshot in sync so a kill mid-edit can resume this draft
             // (sealed under the Vault Key when the app backgrounds). Cleared on dismiss.
             .onChange(of: draft) { captureDraftForRestore() }
-            .onDisappear { uiState.editorDraft = nil }
+            .onDisappear {
+                uiState.editorDraft = nil
+                // Extra Protection stays a per-visit gate: an unlock this editor
+                // asked for ends with this editor. A key the item view already
+                // held is left alone — it is not ours to revoke.
+                if didUnlockExtraProtection { env.session.clearLevel2Key() }
+            }
             .interactiveDismissDisabled(hasChanges)
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Discard", role: .destructive) { dismiss() }
+            }
+            // Dismissible on purpose: declining leaves the protected fields
+            // locked and the rest of the item fully editable.
+            .sheet(isPresented: $showExtraProtectionPrompt) {
+                CodePromptSheet(title: "Extra Password",
+                                message: "Enter your Extra Password to edit this item’s protected fields.",
+                                placeholder: "Extra Password",
+                                onSubmit: unlockExtraProtection)
+            }
+            .alert(Text("Protected field"), isPresented: $blockedProtectedDelete) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Unlock Extra Protection to remove this field, or remove its protection in the item view first.")
             }
             .sheet(item: Binding(get: { generatingFieldID.map { GeneratorRequest(id: $0) } },
                                  set: { generatingFieldID = $0?.id })) { request in
@@ -620,6 +655,71 @@ struct ItemEditorScreen: View {
         original.fields.append(note)
     }
 
+    // MARK: Extra Protection
+
+    /// Ask for the Extra Password once, when this item carries fields sealed under
+    /// it. Face ID does the asking where it is enrolled; otherwise (and whenever
+    /// it does not release the key) the typed prompt does.
+    ///
+    /// Only the app-wide scheme is offered: a per-field custom code is not
+    /// something this screen can ask for, so its fields simply stay locked.
+    private func requestExtraProtectionUnlock() {
+        guard !didOfferExtraProtection, hasSealedLevel2Field,
+              !env.session.isLevel2Unlocked else { return }
+        didOfferExtraProtection = true
+        guard env.session.isLevel2BiometricEnrolled else {
+            showExtraProtectionPrompt = true
+            return
+        }
+        Task {
+            do {
+                try await env.session.unlockLevel2WithBiometrics()
+                didUnlockExtraProtection = true
+            } catch {
+                // A rejected face has already locked the vault (app-wide policy)
+                // and this editor is being torn down with it — only offer the
+                // typed password while the session is still open.
+                guard env.session.state == .unlocked else { return }
+                showExtraProtectionPrompt = true
+            }
+        }
+    }
+
+    /// Re-raise the gate from a locked row. Clears the once-per-visit latch first:
+    /// the key can go away under a still-open editor (backgrounding the app drops
+    /// it), and the user can decline the first offer and change their mind.
+    private func reofferExtraProtectionUnlock() {
+        didOfferExtraProtection = false
+        requestExtraProtectionUnlock()
+    }
+
+    /// Whether anything here is sealed under the app-wide Extra Password.
+    private var hasSealedLevel2Field: Bool {
+        draft.fields.contains { $0.isExtraProtected && SecretGuard.scheme(of: $0.value) == .level2 }
+    }
+
+    private func unlockExtraProtection(_ password: String) async -> String? {
+        do {
+            try await env.session.unlockLevel2(password: password)
+            didUnlockExtraProtection = true
+            return nil
+        } catch {
+            return (error as? AuthError)?.errorDescription ?? appString("Incorrect Extra Password.")
+        }
+    }
+
+    /// The flat editor's single delete choke point, mirroring the Login editor's:
+    /// a field this session cannot open must not be swiped away.
+    private func removeFields(at offsets: IndexSet) {
+        guard !ExtraProtectionDelete.blocks(offsets.map { draft.fields[$0] },
+                                            level2Key: env.session.level2Key?.bytes) else {
+            Haptics.warning()
+            blockedProtectedDelete = true
+            return
+        }
+        draft.fields.remove(atOffsets: offsets)
+    }
+
     /// Stash the in-progress draft for cross-launch restoration. Only when there's
     /// something worth resuming (a saveable new item, or any edit of an existing one),
     /// so a freshly-opened empty "new item" editor isn't re-presented on relaunch.
@@ -640,7 +740,11 @@ struct ItemEditorScreen: View {
                let host = FaviconService.host(from: url.value) {
                 draft.title = host
             } else if let user = draft.fields.first(where: {
-                ($0.kind == .username || $0.kind == .email) && !$0.isEmpty && !$0.protected
+                // `isExtraProtected` too: a sealed username holds a `v2g:` payload,
+                // and the title is plaintext metadata that lists, search and sync
+                // all read.
+                ($0.kind == .username || $0.kind == .email)
+                    && !$0.isEmpty && !$0.protected && !$0.isExtraProtected
             }) {
                 draft.title = user.value
             } else {

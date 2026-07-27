@@ -37,7 +37,10 @@ struct SharedAccessGateView<Content: View>: View {
                 // Auto-recheck already happens via `gateKey` below (it
                 // includes reachability); `Try Again` is the manual twin.
                 VStack(spacing: Space.s2) {
-                    VaultInfoBanner(.warning, icon: Icons.globe,
+                    // Offline is a neutral infrastructure state that clears on
+                    // its own, the same rank the capability banners give it —
+                    // nothing is wrong with the item or the vault.
+                    VaultInfoBanner(.info, icon: Icons.globe,
                                     title: "You're offline",
                                     text: "You need an internet connection to view this shared item. Its secrets stay sealed until access is verified.",
                                     actionLabel: "Try again") {

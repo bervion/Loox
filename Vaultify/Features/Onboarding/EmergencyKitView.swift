@@ -4,8 +4,8 @@ import UniformTypeIdentifiers
 /// Shows the generated recovery key once and requires the user to SAVE the Emergency Kit
 /// PDF before continuing — it is the only way to recover a forgotten master password / set
 /// up a new device. The key rides in a branded Emergency Kit card (tap to copy, Share chip
-/// in the header); the blue Save action exports the PDF, and the black Continue button stays
-/// hidden behind an amber "must save" warning until the save succeeds.
+/// in the header). One pinned CTA drives the step: it exports the PDF, then flips to
+/// Continue once the save succeeds.
 struct EmergencyKitView: View {
     let recoveryKey: String
     /// Printed on the kit ("Created for …" + iCloud reminder). Threaded from the name step.
@@ -68,19 +68,20 @@ struct EmergencyKitView: View {
         .background(Color(rgb: theme.background).ignoresSafeArea())
         // One pinned CTA slot like every other onboarding step: Save until the
         // PDF is actually saved, then Continue (a checkbox can't prove the key
-        // was kept; a successful file save can).
+        // was kept; a successful file save can). BOTH states use the same
+        // component, so the label swap never changes the button's colour,
+        // height, or position under the thumb.
         .safeAreaInset(edge: .bottom) {
             Group {
                 if savedPDF {
                     BrandCapsuleCTA(action: onContinue)
                         .transition(.opacity)
                 } else {
-                    saveButton
-                        .padding(.horizontal, Space.s6)
-                        .padding(.bottom, Space.s4)
-                        // Pinned outside the clamped step column — clamp here
-                        // too so the save bar matches the form width on iPad.
-                        .vaultContentWidth(.form)
+                    // Red is reserved for destructive actions; a red "Save" read
+                    // as a warning instead of the way forward.
+                    BrandCapsuleCTA(title: "Save Kit PDF",
+                                    enabled: !recoveryKey.isEmpty,
+                                    action: presentExporter)
                 }
             }
         }
@@ -212,26 +213,6 @@ struct EmergencyKitView: View {
                 .multilineTextAlignment(.center)
                 .themedForeground(.primary)
         }
-    }
-
-    // MARK: Save action (brand blue) — reveals Continue on success
-
-    private var saveButton: some View {
-        Button(action: presentExporter) {
-            Text("Save Kit PDF")
-                .vaultType(.body).fontWeight(.medium)
-            // Full-width accent capsule: this is the screen's one primary action.
-            // Red is reserved for destructive actions; a red "Save" read as a
-            // warning instead of the way forward. (Once saved, the pinned slot
-            // flips to Continue.)
-            .foregroundStyle(Color(rgb: theme.accentForeground))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Space.s3)
-            .background(Color(rgb: theme.accent), in: Capsule())
-            .opacity(recoveryKey.isEmpty ? 0.6 : 1)
-        }
-        .buttonStyle(.plain)
-        .disabled(recoveryKey.isEmpty)
     }
 
     /// Quiet duotone note (matches the info notes elsewhere) shown until the

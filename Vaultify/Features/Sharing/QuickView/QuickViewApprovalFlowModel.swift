@@ -1,6 +1,5 @@
 import CryptoKit
 import Foundation
-import LocalAuthentication
 
 /// Owner-side Quick View ceremony state machine: resolve the scanned/typed
 /// code → verify the signed session envelope → show the SAS for the owner to
@@ -47,6 +46,13 @@ import LocalAuthentication
 
     let itemID: String
     private let api: QuickViewAPIClient
+    /// Owns the biometric failure policy: the ceremony's Face ID prompt runs
+    /// through it, so a rejected face locks the vault here exactly as it does
+    /// everywhere else in the unlocked app.
+    /// Named `vaultSession`, not `session`: `approve()` binds the verified
+    /// QuickView session to a local `session`, and a matching name there would
+    /// shadow this one at exactly the call that must not be shadowed.
+    private let vaultSession: VaultSession
     private let repository: VaultRepository
     private let history: QuickViewHistoryStore
     /// Optional-capability breaker sink (INV-CAP-03: one per service, never
@@ -59,11 +65,13 @@ import LocalAuthentication
     /// EVERY session fail verification, never a silent trust bypass.
     weak var signerKeyset: QuickViewSignerKeysetClient?
 
-    init(itemID: String, defaultSelectedFieldIDs: Set<String>, repository: VaultRepository,
+    init(itemID: String, defaultSelectedFieldIDs: Set<String>, vaultSession: VaultSession,
+        repository: VaultRepository,
         history: QuickViewHistoryStore, api: QuickViewAPIClient = QuickViewAPIClient(),
         capabilities: CapabilityStore? = nil, signerKeyset: QuickViewSignerKeysetClient? = nil) {
         self.itemID = itemID
         self.selectedFieldIDs = defaultSelectedFieldIDs
+        self.vaultSession = vaultSession
         self.repository = repository
         self.history = history
         self.api = api
@@ -168,7 +176,7 @@ import LocalAuthentication
                 state = .error(genericErrorMessage)
                 return
             }
-            try await BiometricAuth.authenticate(
+            try await vaultSession.requireBiometrics(
                 reason: appString("Approve sending fields to your browser"))
             guard let freshItem = repository.item(id: itemID) else {
                 state = .error(genericErrorMessage)
@@ -240,8 +248,10 @@ import LocalAuthentication
 
             history.record(itemID: itemID, result: .completed)
             state = .done
-        } catch let error as LAError where error.code == .userCancel || error.code == .systemCancel
-            || error.code == .appCancel {
+        } catch let error where BiometricAuth.classify(error) == .cancelled {
+            // `classify` also reads the "Enter Password" fallback as a dismissal,
+            // which the hand-rolled LAError check here used to miss and record
+            // as a failure.
             history.record(itemID: itemID, result: .cancelled)
             state = .idle
         } catch {

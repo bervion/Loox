@@ -19,21 +19,15 @@ struct PersonaAliasesScreen: View {
     @State private var paywallContext: LooxPaywallContext?
 
     private var persona: Persona? { env.repository.activePersona }
+    private var gate: PrivateEmailGate { PrivateEmailGate(env) }
 
     var body: some View {
         List {
             // Contextual capability state (offline ≠ outage ≠ maintenance ≠
             // disabled ≠ retired). Local records below stay visible in EVERY
             // state — only network-dependent actions gate.
-            let createState = env.capabilities.availability(.privateEmail, operation: .create)
-            if createState != .available {
-                Section {
-                    CapabilityBannerView(availability: createState,
-                                         messageKey: env.capabilities.messageKeys[.privateEmail]) { probe() }
-                }
-                .listRowBackground(Color.clear)
-            }
-            if case .retired = createState {
+            PrivateEmailBannerSection()
+            if case .retired = gate.bannerState {
                 Section {
                     NavigationLink { AffectedAccountsScreen() } label: {
                         Label { Text("Review affected accounts") } icon: { PolarisIcon(Icons.archive) }
@@ -43,7 +37,7 @@ struct PersonaAliasesScreen: View {
             }
 
             Section {
-                warningBanner
+                receiveOnlyBanner
             }
             .listRowBackground(Color.clear)
             // Full row width: with the default list insets the banner's own
@@ -78,13 +72,18 @@ struct PersonaAliasesScreen: View {
             // registry lands AFTER first render — otherwise the picker would
             // stay invisible until the next launch.
             let _ = env.domainRegistry.appliedRevision
-            AliasDomainPickerSection(domainID: $defaultDomainID,
-                                     footer: "New private addresses use this domain.")
-                .listRowBackground(VaultColors.surface)
+            // Hidden with the create affordances: a picker that says "New
+            // private addresses use this domain" while nothing can be created
+            // contradicts the banner above it.
+            if canCreate {
+                AliasDomainPickerSection(domainID: $defaultDomainID,
+                                         footer: "New private addresses use this domain.")
+                    .listRowBackground(VaultColors.surface)
+            }
         }
         .navigationTitle(Text("Private Email"))
         // Non-blocking, contextual — never at app startup (INV-CAP-02).
-        .task { probe() }
+        .task { await gate.refresh() }
         .sheet(isPresented: $showingPerSiteEditor) {
             if let persona { AliasEditorSheet(persona: persona, onCreated: { activate($0) }) }
         }
@@ -128,28 +127,21 @@ struct PersonaAliasesScreen: View {
         }
     }
 
-    private var warningBanner: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Label { Text("Mail sent to an active alias forwards to your inbox. Receive-only.") }
-                icon: { PolarisIcon(Icons.mail) }
-                .vaultType(.subhead)
-                .themedForeground(.primary)
-            Text("Replies from your destination inbox may reveal your real email address.")
-                .vaultType(.footnote)
-                .themedForeground(.secondary)
-        }
-        .padding(Space.s4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(rgb: env.theme.active.accentSoft), in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+    /// Standing privacy caution about how forwarding works. It reads as a
+    /// WARNING, not as neutral accent context: on the info tint it was visually
+    /// identical to the capability banner above it, so a blocked state stacked
+    /// two matching accent cards and stopped reading as an alert.
+    private var receiveOnlyBanner: some View {
+        VaultInfoBanner(.warning, icon: Icons.mail,
+                        title: "Mail sent to an active alias forwards to your inbox. Receive-only.",
+                        text: "Replies from your destination inbox may reveal your real email address.")
     }
 
     /// Create affordances render only while creation can actually run — a
     /// visible button that silently swallows the tap (the old `guardEmail`
     /// early-return) reads as a broken screen. The banner above the list
     /// explains WHY creation is gone in every non-available state.
-    private var canCreate: Bool {
-        env.capabilities.availability(.privateEmail, operation: .create) == .available
-    }
+    private var canCreate: Bool { gate.allows(.create) }
 
     @ViewBuilder private func personaAliasSection(_ persona: Persona) -> some View {
         Section("Reusable addresses") {
@@ -237,21 +229,11 @@ struct PersonaAliasesScreen: View {
         }
     }
 
-    private func probe() {
-        Task {
-            await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities)
-            // Contextual nudge only — the centralized refresher is the authoritative
-            // freshness path (INV-CP-01); this screen no longer gates control-plane
-            // freshness. Deduped/backoff-aware, so it can't hammer the endpoints.
-            await env.controlPlaneRefresher.refreshNow()
-        }
-    }
-
     /// Aliases forward to a real inbox — require one (default inbox or profile
     /// email) before creating. Creation also gates on capability availability
     /// (the banner above explains why when it's blocked).
     private func guardEmail(_ persona: Persona, _ create: () -> Void) {
-        guard env.capabilities.availability(.privateEmail, operation: .create) == .available else { return }
+        guard canCreate else { return }
         if env.repository.newAliasDestination(for: persona) == nil { missingEmail = true }
         else { create() }
     }
@@ -271,7 +253,7 @@ struct PersonaAliasesScreen: View {
         // "Tap to activate" on a reserved alias is a growth mutation: with the
         // feature off in Settings it must not reach the relay (the create
         // buttons already hide; this row action is the remaining path).
-        guard env.capabilities.userPreference(.privateEmail) else {
+        if gate.isTurnedOffByUser {
             errorMessage = appString("Private Email is turned off in Settings.")
             return
         }
@@ -311,5 +293,85 @@ struct PersonaAliasesScreen: View {
 
     private var deleteBinding: Binding<Bool> {
         Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })
+    }
+}
+
+/// One answer to "can Private Email act right now", shared by every screen of
+/// the feature (aliases, alias detail, forwarding inboxes, inbox detail) so the
+/// banner and the affordances it explains can never disagree.
+///
+/// It governs RELAY-TOUCHING actions only. Local reads are never gated
+/// (INV-CAP-05): saved addresses and inboxes stay visible and manageable in
+/// every state, so a banner here is always additive.
+struct PrivateEmailGate {
+    private let env: AppEnvironment
+
+    init(_ env: AppEnvironment) { self.env = env }
+
+    /// The state the banner explains. Creation is the first operation class the
+    /// backend gates, so it is the earliest signal a screen can surface.
+    var bannerState: CapabilityAvailability { availability(.create) }
+
+    var messageKey: String? { env.capabilities.messageKeys[.privateEmail] }
+
+    /// The switched-off case specifically — the one state the user can fix.
+    var isTurnedOffByUser: Bool { !env.capabilities.userPreference(.privateEmail) }
+
+    func availability(_ operation: CapabilityOperation) -> CapabilityAvailability {
+        env.capabilities.availability(.privateEmail, operation: operation)
+    }
+
+    func allows(_ operation: CapabilityOperation) -> Bool {
+        availability(operation) == .available
+    }
+
+    /// Contextual, non-blocking refresh — on screen open or a banner retry,
+    /// never at app startup (INV-CAP-02).
+    ///
+    /// The relay health probe is skipped while the user has the feature switched
+    /// off: `.disabledByUser` short-circuits before health is consulted, so the
+    /// request could not change what the screen renders. The control-plane
+    /// refresh stays unconditional — it is how the app learns the OPERATOR
+    /// state, and it is deduped and backoff-aware.
+    func refresh() async {
+        if !isTurnedOffByUser {
+            await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities)
+        }
+        await env.controlPlaneRefresher.refreshNow()
+    }
+}
+
+/// The Private Email capability banner as a list section, so every screen of
+/// the feature explains a blocked state identically and offers the same way
+/// out. Renders nothing while the feature is available.
+struct PrivateEmailBannerSection: View {
+    @Environment(AppEnvironment.self) private var env
+    /// Nil on the iPad/Mac sidebar, where screens navigate through SwiftUI
+    /// paths instead; `push` is a no-op there.
+    @Environment(AppNavigator.self) private var navigator: AppNavigator?
+
+    var body: some View {
+        let gate = PrivateEmailGate(env)
+        if gate.bannerState != .available {
+            Section {
+                CapabilityBannerView(availability: gate.bannerState,
+                                     messageKey: gate.messageKey,
+                                     onOpenSettings: openSettings,
+                                     onRetry: { Task { await gate.refresh() } })
+            }
+            .listRowBackground(Color.clear)
+            // Full row width, matching the cards below (the default list insets
+            // render the banner's own rounded background narrower).
+            .listRowInsets(EdgeInsets())
+        }
+    }
+
+    /// "Open Settings" is offered only where it can actually go there: the
+    /// compact-iOS shell pushes Settings full-screen (the shared value route is
+    /// registered on the Home stack and would not resolve from here). Nil on the
+    /// iPad/Mac sidebar, so the banner shows no dead affordance.
+    private var openSettings: (() -> Void)? {
+        guard let navigator else { return nil }
+        return { navigator.push { SettingsScreen() } }
     }
 }

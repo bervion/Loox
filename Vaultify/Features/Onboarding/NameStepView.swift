@@ -52,11 +52,14 @@ struct NameStepView: View {
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { dismissKeyboard() }
         .safeAreaInset(edge: .bottom) {
+            // ONLY the CTA ignores the keyboard (same rationale as the password
+            // step): it holds the bottom edge instead of shifting under the thumb
+            // mid-typing, while the scroll view stays keyboard-aware so the
+            // autofocused field is still scrolled clear. The email field's Return
+            // key submits directly, so the pinned button is not the only way on.
             BrandCapsuleCTA(enabled: canSubmit) { onContinue(trimmedName, trimmedEmail) }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
         }
-        // Keyboard compresses the scroll view (same rationale as the password
-        // step): the focused field auto-scrolls into view on small phones and
-        // the CTA rides above the keyboard for one-tap submit.
         .onAppear { focus = .name }
     }
 

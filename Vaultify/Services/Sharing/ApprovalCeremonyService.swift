@@ -75,8 +75,10 @@ import UIKit
         let zoneID = CKRecordZone.ID(zoneName: pending.zoneName)
         state = .authenticating
         do {
-            // 1. User presence. Face ID/passcode via the existing helper.
-            try await BiometricAuth.authenticate(
+            // 1. User presence, through the session's failure policy: a rejected
+            // face locks the vault, and `ceremonyConditionsHold` below then
+            // takes the ordinary abort path.
+            try await session.requireBiometrics(
                 reason: appString("Approve a verification-code request"))
             guard ceremonyConditionsHold else { return abort(request, zoneID: zoneID) }
 
@@ -150,6 +152,11 @@ import UIKit
             state = .finished(.approved)
         } catch is CancellationError {
             abort(request, zoneID: zoneID)
+        } catch let error where BiometricAuth.classify(error) == .cancelled {
+            // The owner dismissed the prompt. That is an abandoned ceremony, not
+            // a fault — the same abort the sheet-close path takes, rather than
+            // the generic failure message.
+            abort(request, zoneID: zoneID)
         } catch {
             // The nonce may already be burnt — tell the requester to stop
             // waiting (their retry supersedes this request, Phase 6).
@@ -170,7 +177,7 @@ import UIKit
         let zoneID = CKRecordZone.ID(zoneName: pending.zoneName)
         state = .authenticating
         do {
-            try await BiometricAuth.authenticate(
+            try await session.requireBiometrics(
                 reason: appString("Approve a sign-in request"))
             guard ceremonyConditionsHold else { return abort(request, zoneID: zoneID) }
             _ = try await shareService.verifyInbound(request, zoneID: zoneID, nowUnixMs: nowUnixMs)
@@ -206,6 +213,9 @@ import UIKit
                                            nowUnixMs: nowUnixMs)
             state = .finished(.approved)
         } catch is CancellationError {
+            abort(request, zoneID: zoneID)
+        } catch let error where BiometricAuth.classify(error) == .cancelled {
+            // Dismissed prompt — abandoned, not faulty. Same as `approve`.
             abort(request, zoneID: zoneID)
         } catch {
             state = .failed(error.localizedDescription)
