@@ -19,10 +19,12 @@ struct ItemDetailScreen: View {
     @State private var showLocatedIn = false
     @State private var showLastIdentityBlock = false
     @State private var showShareAccess = false
-    @State private var confirmLeave = false
-    @State private var leaveError: String?
+    @State fileprivate var confirmLeave = false
+    @State fileprivate var leaveError: String?
+    /// Server refused the leave — offer the device-local removal instead.
+    @State fileprivate var offerLocalRemoval = false
     /// Realtime-action offline notice (leaving needs iCloud to be true).
-    @State private var showLeaveOfflineNotice = false
+    @State fileprivate var showLeaveOfflineNotice = false
     /// Per-recipient management sheet (V1.2 follow-up: multi-recipient shares).
     @State private var selectedShare: ItemShareRecord?
     /// Resume stepper (design 12b/12c) for a recipient still pending.
@@ -49,7 +51,7 @@ struct ItemDetailScreen: View {
                 set: { if !$0 { quickViewBlockedReason = nil } })
     }
 
-    private var leaveErrorAlert: Binding<Bool> {
+    fileprivate var leaveErrorAlert: Binding<Bool> {
         Binding(get: { leaveError != nil },
                 set: { if !$0 { leaveError = nil } })
     }
@@ -317,22 +319,7 @@ struct ItemDetailScreen: View {
         } message: {
             Text("This is your only identity. Add another before removing this one.")
         }
-        .alert("Couldn't leave the share", isPresented: leaveErrorAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(verbatim: leaveError ?? "")
-        }
-        .confirmationDialog("Leave this share?", isPresented: $confirmLeave,
-                            titleVisibility: .visible) {
-            Button("Leave Share", role: .destructive) {
-                Haptics.error()
-                Task { await leaveShare() }
-            }
-        } message: {
-            Text("You'll lose access to it. The owner can share with you again later.")
-        }
-        .offlineActionNotice(isPresented: $showLeaveOfflineNotice,
-                             message: "You need an internet connection to leave a share. You still have access until then.")
+        .modifier(LeaveShareDialogs(screen: self))
         // A shared item that vanished (revoked while away, or after the
         // projection finished loading) has no screen to show — go back.
         .task(id: env.sharedItems.hasLoaded ? "loaded" : "loading") {
@@ -368,7 +355,7 @@ struct ItemDetailScreen: View {
         }
     }
 
-    private func leaveShare() async {
+    fileprivate func leaveShare() async {
         guard let vaultKey = env.session.vaultKey?.bytes else { return }
         do {
             try await env.sharedItems.leave(itemId: itemID, vaultKey: vaultKey)
@@ -379,10 +366,23 @@ struct ItemDetailScreen: View {
             if !env.reachability.hasSatisfiedNetworkPath {
                 leaveError = appString("You need an internet connection to leave a share. You still have access until then.")
             } else {
-                // Swallowing this reads as "the button does nothing" — say why.
-                leaveError = error.localizedDescription
+                // The server refused, and no wording of a retry can change
+                // that: the owner may be gone, or the zone stranded by an
+                // older build. Offer the local exit instead of a dead end —
+                // a raw CloudKit string here is both unreadable and useless.
+                ShareDiagnostics.log("LEAVE", "server refused: \(error)")
+                offerLocalRemoval = true
             }
         }
+    }
+
+    /// Last resort when the server will not release the share. Honest in the
+    /// dialog about what it cannot do: participation is untouched, so the owner
+    /// still sees this account and the same invite would bring the item back.
+    fileprivate func removeShareLocally() async {
+        guard let vaultKey = env.session.vaultKey?.bytes else { return }
+        await env.sharedItems.forgetLocally(itemId: itemID, vaultKey: vaultKey)
+        closeDetail()
     }
 
     /// Persist a single field change (e.g. protect / remove protection).
@@ -752,5 +752,45 @@ struct ItemDetailScreen: View {
         return Text(appString("Created \(created), modified \(modified)"))
             .vaultType(.caption).themedForeground(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, Space.s1)
+    }
+}
+
+
+/// The leave-a-share dialog group, lifted out of `ItemDetailScreen.body`.
+///
+/// Not a stylistic split: `body` on this screen carries enough chained
+/// modifiers that adding the local-removal dialog tipped Swift's expression
+/// type-checker past its time budget and the file stopped compiling. Each
+/// dialog stays exactly what it was.
+private struct LeaveShareDialogs: ViewModifier {
+    let screen: ItemDetailScreen
+
+    func body(content: Content) -> some View {
+        content
+            .alert("Couldn't leave the share", isPresented: screen.leaveErrorAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(verbatim: screen.leaveError ?? "")
+            }
+            .confirmationDialog("Remove it from this iPhone?",
+                                isPresented: screen.$offerLocalRemoval,
+                                titleVisibility: .visible) {
+                Button("Remove From This iPhone", role: .destructive) {
+                    Task { await screen.removeShareLocally() }
+                }
+            } message: {
+                Text("iCloud would not release this share, so it can only be removed here. The owner still has you on their list, and accepting their invite again would bring it back.")
+            }
+            .confirmationDialog("Leave this share?", isPresented: screen.$confirmLeave,
+                                titleVisibility: .visible) {
+                Button("Leave Share", role: .destructive) {
+                    Haptics.error()
+                    Task { await screen.leaveShare() }
+                }
+            } message: {
+                Text("You'll lose access to it. The owner can share with you again later.")
+            }
+            .offlineActionNotice(isPresented: screen.$showLeaveOfflineNotice,
+                                 message: "You need an internet connection to leave a share. You still have access until then.")
     }
 }

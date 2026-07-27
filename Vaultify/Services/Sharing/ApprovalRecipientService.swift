@@ -270,20 +270,47 @@ import UIKit
     /// leave into a silent success: the pin was cleared anyway, so the next
     /// refresh saw an unpinned zone, re-adopted it by TOFU, and the row came
     /// back with nothing anywhere recording that the user had left.
+    /// A participant leaves by deleting the CKShare RECORD, not the zone.
+    ///
+    /// Deleting the zone is the OWNER's move, on their private database. A
+    /// participant attempting it on the shared database is refused outright —
+    /// CloudKit answers "Zone delete not allowed" — so the previous
+    /// implementation could never succeed and left people permanently stuck in
+    /// a share they had asked to leave. These shares are zone-wide
+    /// (`CKShare(recordZoneID:)`), so the share record sits at the reserved
+    /// name `CKRecordNameZoneWideShare` inside the zone.
     func leave(zoneID: CKRecordZone.ID) async throws {
-        let result = try await sharedDatabase.modifyRecordZones(saving: [], deleting: [zoneID])
-        if case .failure(let error) = result.deleteResults[zoneID] {
-            // A zone the server has already dropped is the outcome we wanted.
-            let code = (error as? CKError)?.code
-            guard code == .zoneNotFound || code == .userDeletedZone else {
-                ShareDiagnostics.log("LEAVE", "zone=\(zoneID.zoneName) failed=\(error)")
-                throw error
-            }
+        let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: zoneID)
+        do {
+            _ = try await sharedDatabase.deleteRecord(withID: shareID)
+        } catch let error as CKError
+            where error.code == .unknownItem || error.code == .zoneNotFound
+                || error.code == .userDeletedZone {
+            // Already gone server-side — the outcome we wanted.
+            ShareDiagnostics.log("LEAVE", "zone=\(zoneID.zoneName) already absent")
         }
-        ShareDiagnostics.log("LEAVE", "zone=\(zoneID.zoneName) deleted")
+        ShareDiagnostics.log("LEAVE", "zone=\(zoneID.zoneName) share record deleted")
         // Only after the delete is known to have landed: the pin is the sole
         // local record that this zone was ever seen, so dropping it on a failed
         // delete is what makes the zone look brand new next time round.
+        Self.clearPin(zoneID: zoneID)
+    }
+
+    /// Forget a share on THIS device only, without asking the server.
+    ///
+    /// The escape hatch for a share whose server-side state cannot be resolved
+    /// from here: a zone stranded by an older build, an owner who is unreachable
+    /// or has stopped using the app, an account that can no longer act on the
+    /// record. Leaving would otherwise be impossible and the item would sit in
+    /// the list forever with no way out.
+    ///
+    /// Honest about what it does NOT do: server-side participation is untouched,
+    /// so the owner still lists this account as a participant and re-accepting
+    /// the same invite brings the item back. What it does guarantee is local:
+    /// dropping the pin removes the only local record of the zone, and the
+    /// projection is rebuilt from the accepted zones on the next refresh.
+    func forgetLocally(zoneID: CKRecordZone.ID) {
+        ShareDiagnostics.log("LEAVE", "zone=\(zoneID.zoneName) forgotten locally")
         Self.clearPin(zoneID: zoneID)
     }
 

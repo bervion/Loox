@@ -118,6 +118,20 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
     func leave(itemId: String, vaultKey: [UInt8]) async throws {
         guard let origin = item(id: itemId)?.sharedOrigin else { return }
         try await recipient.leave(zoneID: Self.zoneID(for: origin))
+        await dropLocally(itemId: itemId, origin: origin, vaultKey: vaultKey)
+    }
+
+    /// Remove a share from THIS device when the server cannot be made to agree.
+    /// Same local teardown as `leave`, minus the server call — see
+    /// `ApprovalRecipientService.forgetLocally` for what this deliberately does
+    /// not accomplish.
+    func forgetLocally(itemId: String, vaultKey: [UInt8]) async {
+        guard let origin = item(id: itemId)?.sharedOrigin else { return }
+        recipient.forgetLocally(zoneID: Self.zoneID(for: origin))
+        await dropLocally(itemId: itemId, origin: origin, vaultKey: vaultKey)
+    }
+
+    private func dropLocally(itemId: String, origin: SharedOrigin, vaultKey: [UInt8]) async {
         // Optimistic local removal: a concurrent shell refresh would make the
         // follow-up refresh below a single-flight no-op, leaving the departed
         // item on screen until the next trigger. Server truth already changed.

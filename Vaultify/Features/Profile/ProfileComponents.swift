@@ -299,13 +299,22 @@ struct DeviceRow: View {
         return formatter.localizedString(for: device.lastSeenAt, relativeTo: .now)
     }
 
+    /// One line, always. The Vietnamese label ("Đang hoạt động") is more than
+    /// twice the English one, so on a 375-414pt phone it wrapped inside the
+    /// capsule and pushed the pill to two lines beside a full-width model name.
+    /// The badge is a fixed chip: it never wraps, and it never gives up its
+    /// width — the model name above it truncates instead, which is the right
+    /// thing to lose since the same row already says "This device".
     private var activeBadge: some View {
         Text("Active")
             .vaultType(.caption)
             .themedForeground(.success)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, Space.s2)
             .padding(.vertical, 3)
             .background(env.theme.active.color(.success).opacity(0.14), in: Capsule())
+            .layoutPriority(1)
     }
 }
 

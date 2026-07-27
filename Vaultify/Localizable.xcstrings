@@ -11226,12 +11226,32 @@
         }
       }
     },
+    "Remove From This iPhone": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gỡ khỏi iPhone này"
+          }
+        }
+      }
+    },
     "Remove Protection": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "Bỏ bảo vệ"
+          }
+        }
+      }
+    },
+    "Remove it from this iPhone?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gỡ khỏi iPhone này?"
           }
         }
       }
@@ -17883,6 +17903,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đồng bộ iCloud cần bật khả năng iCloud trong Xcode."
+          }
+        }
+      }
+    },
+    "iCloud would not release this share, so it can only be removed here. The owner still has you on their list, and accepting their invite again would bring it back.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud không gỡ được chia sẻ này, nên chỉ có thể gỡ tại đây. Chủ sở hữu vẫn còn bạn trong danh sách của họ, và nếu bạn chấp nhận lại lời mời thì mục này sẽ quay lại."
           }
         }
       }
