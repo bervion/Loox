@@ -1,1 +1,1 @@
-Search is now keyword-only for faster, more precise results, with filtered lists you can tap into for full details. Quick View error messages are now clearer and easier to understand.
+This update improves layout consistency across the app, refines the onboarding experience, and lets you unlock Level 2 security with Face ID for faster, more secure access.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.41.1] - 2026-07-27
+
+### Fixed
+- anchor bottom CTAs, unify onboarding accent, unlock Level-2 with Face ID (#179)
+
+
 ## [1.41.0] - 2026-07-26
 
 ### Added
