@@ -1,8 +1,17 @@
 # Phase 02 — App-side share correctness
 
 **Depends on:** nothing. Required under **both** decision options.
-**Why:** without this, "supports all vault item types" is false at the source — sharing a card
-today is a three-tap trap that ends in a blank page, and no amount of page work fixes it.
+**Why:** the defaults make five categories look unshareable, and nothing stops an empty
+approval from burning a quota.
+
+> **Correction (260727).** An earlier draft of this phase said sharing was *broken* for six
+> categories and that "supports all item types" was false at the source. That was wrong.
+> `QuickViewApprovalFieldsSection.swift:48-60` renders a toggle for **every** shareable field
+> of **every** category, so a card is fully shareable — the owner just has to tick the rows,
+> because `defaultSelectedFieldIDs` pre-ticks only 4 of the 12 `FieldKind` cases. The real
+> defects are the poor defaults and the missing empty-selection guard on Approve
+> (`QuickViewApprovalSheet.swift:87-92`, no `.disabled`). See [`app-parity.md`](app-parity.md).
+> This is a UX fix, not a rescue — scope and priority drop accordingly.
 
 ---
 

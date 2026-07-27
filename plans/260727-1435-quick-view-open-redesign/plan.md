@@ -1,6 +1,9 @@
 # Quick View `/open` page redesign
 
-**Status:** BLOCKED on one input — the contract decision (phase-00).
+**Status:** UNBLOCKED. Contract decision = **Option A** (additive wire metadata). The four open
+questions are answered in [decisions.md](decisions.md) — sharer name yes (with an anonymity
+guard), `/open` goes multilingual with a header language picker, the app's Polaris icons get
+imported as an inline SVG sprite, and **timers do not change**.
 The visual design **has since been retrieved**: see [design-spec.md](design-spec.md), extracted
 from `~/Downloads/Loox Password Website Design/Loox Website.dc.html` (`isQuick` block, lines
 626–844) and `i18n.js`. It resolves most of `design-pending.md`; what it does NOT cover is
@@ -46,13 +49,22 @@ on the answer.
 
 ---
 
-## 2. The other blocker — the visual design file
+## 2. The visual design — retrieved
 
-**The visual design file could not be retrieved.** Nothing in this plan invents the user's
-design. Every decision that belongs to the design file is tagged `[DESIGN-PENDING]` in the
-phase files and listed in `design-pending.md`. Phases 01–06 are behaviour, structure and
-security work that hold under any visual treatment; phase-07 is the visual layer and cannot
-start until the file arrives.
+[`design-spec.md`](design-spec.md) carries the tokens, the waiting/expired/approved layouts,
+the per-field menu actions and the EN copy, extracted from the prototype. It resolves most of
+`design-pending.md`; the `[DESIGN-PENDING]` tags still standing in the phase files are the ones
+it genuinely does not answer.
+
+What the prototype does **not** cover, and phase-05 must therefore design in its language:
+the seven non-Login categories, the markdown note, dark mode, and the empty state for an
+approval that arrives with zero fields — which today is the *default* outcome for six of the
+eight categories (phase-02).
+
+Two things in the prototype are behaviour rather than styling and are treated as proposals,
+not requirements: the "Generate a new code" action on expiry (phase-04 must verify the Worker
+allows minting a session from the page), and its 90-second QR life, which is **rejected** —
+see [decisions.md](decisions.md) §4.
 
 ---
 
@@ -60,20 +72,27 @@ start until the file arrives.
 
 | # | Phase | Depends on | Blocking input |
 |---|---|---|---|
-| 00 | [Decision: the contract gap](phase-00-decision-contract-gap.md) | — | **user decision** |
+| 00 | [Decision: the contract gap](phase-00-decision-contract-gap.md) | — | ✅ decided: **A** |
 | 01 | [Correctness and regression guards](phase-01-correctness-guards.md) | — | none, start now |
 | 02 | [App-side share correctness](phase-02-app-share-correctness.md) | — | none, required either way |
-| 03 | [Wire metadata: category + title + multiline](phase-03-wire-metadata.md) | 00 = A | decision A |
+| 03 | [Wire metadata: category + title + sharer + multiline](phase-03-wire-metadata.md) | 00 | ✅ unblocked |
 | 04 | [States, copy, and the expired path](phase-04-states-and-copy.md) | 01 | none |
-| 05 | [Field presentation, all 8 categories](phase-05-field-presentation.md) | 01, 04; 03 if A | partly decision |
+| 05 | [Field presentation, all 8 categories](phase-05-field-presentation.md) | 01, 03, 04 | ✅ unblocked |
 | 06 | [Markdown safe-subset renderer](phase-06-markdown-renderer.md) | 01, 05 | none |
-| 07 | [Visual tokens, accessibility, responsive](phase-07-tokens-a11y-responsive.md) | 04, 05, 06 | **design file** |
+| 07 | [Visual tokens, accessibility, responsive](phase-07-tokens-a11y-responsive.md) | 04, 05, 06 | ✅ [design-spec.md](design-spec.md) |
 | 08 | [Localization strings EN + VI](phase-08-localization-strings.md) | 02, 04, 05, 06 | none |
+| 09 | Language picker + runtime i18n on `/open` | 04, 08 | none — see [decisions.md](decisions.md) §2 |
+| 10 | Polaris icon sprite imported from the app | 05 | none — see [decisions.md](decisions.md) §3 |
 
 Recommended order: **01 → 02 → 00 (decide) → 03 → 04 → 05 → 06 → 07 → 08.**
 Phase 01 and 02 are shipping bug fixes and should not wait on the decision or the design.
 
 Supporting documents:
+- [`app-parity.md`](app-parity.md) — **the app's detail screen and Motion tokens are the source
+  of truth for behaviour and animation**; the prototype is a visual reference only. Also carries
+  a correction to the phase-02 severity claim.
+- [`design-spec.md`](design-spec.md) — tokens, layouts and EN copy extracted from the prototype.
+- [`decisions.md`](decisions.md) — the four settled questions.
 - [`design-pending.md`](design-pending.md) — every placeholder awaiting the design file.
 - [`out-of-scope.md`](out-of-scope.md) — the QR ban and the other hard exclusions.
 
@@ -133,10 +152,15 @@ with CSS only, and never change the canvas backing size from JS. Full detail in
 
 ## 6. Open questions
 
-1. **Decision A or B** (phase-00). Everything else is downstream.
-2. Should the item title be opt-out per approval, or always sent? Product call.
-3. Does `/open` get a Vietnamese UI, or stay English chrome around owner-language labels?
-4. Does the design want the category icon? The page ships no icon set and Polaris SVGs would
-   need inlining.
-5. Should the page flag a "partial share" when the field set is obviously incomplete for its
-   category? Only possible under Decision A.
+All five are answered — see [decisions.md](decisions.md).
+
+1. ✅ **Decision A**, additive wire metadata.
+2. ✅ Title always sent. The **sharer's name** is sent too, from `Persona.displayName`, but
+   suppressed for pseudonymous/anonymous/strict-isolation personas — see decisions §1. That
+   guard is a correctness requirement, not a preference.
+3. ✅ `/open` is multilingual with a header language picker (phase-09). Field labels stay in
+   the owner's language; they are payload data, not chrome.
+4. ✅ Category icons come from the app's Polaris set as an inline SVG sprite (phase-10).
+5. ⏳ Still open: flag a "partial share" when a category's field set is obviously incomplete.
+   Now possible under A. Worth deciding once phase-02 makes empty shares impossible — it may
+   become unnecessary.
