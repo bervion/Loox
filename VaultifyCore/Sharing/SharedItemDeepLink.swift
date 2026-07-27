@@ -1,10 +1,16 @@
 import Foundation
 
-/// Codec for the `vaultify://shared-item/<id>` deep link. Used by the AutoFill
-/// extension (which has no CloudKit entitlement, so it cannot run the
-/// request/response ceremony itself) to hand a "Request code" tap back to the
-/// containing app, which already has `ItemDetailScreen`'s Request control for
-/// `askEachTime` TOTP capabilities.
+/// Codec for the `vaultify://shared-item/<id>` deep link. Hands a shared item
+/// from the AutoFill extension back to the containing app, where
+/// `ItemDetailScreen` has the full Request control for `askEachTime` TOTP.
+///
+/// This used to be the ONLY route, on the grounds that the extension had no
+/// CloudKit entitlement — which was never true of the entitlements file, only
+/// of the missing compile flag that made every CloudKit path there fail closed.
+/// The extension now runs the request/response ceremony itself, so this link is
+/// the deliberate ESCAPE HATCH rather than the default: following it ends the
+/// AutoFill session (iOS offers no way to resume one), so it is offered only
+/// when the user chooses it.
 nonisolated enum SharedItemDeepLink {
     private static let scheme = "vaultify"
     private static let host = "shared-item"

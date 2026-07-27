@@ -7,7 +7,7 @@ import UIKit
 
 /// Recipient-side (B) transport: publish the participant profile into the
 /// accepted shared zone, read the owner's grant (TOFU-pinning the owner key
-/// after the fingerprint ceremony), send signed requests, and fetch verified
+/// on first sight), send signed requests, and fetch verified
 /// responses. Ephemeral request keys live ONLY in the caller's memory —
 /// this service never persists them.
 @MainActor final class ApprovalRecipientService {
@@ -26,9 +26,11 @@ import UIKit
             case .noAcceptedZone:
                 return appString("Nothing has been shared with this account yet.")
             case .grantMissing:
-                // Normal state while the owner hasn't confirmed the
-                // fingerprint yet — the grant only exists after that.
-                return appString("The owner hasn't finished setting up this share yet. Ask them to open the item and confirm the code with you.")
+                // Normal state while the owner hasn't authorized the share
+                // yet — the grant only exists after that. The recipient has
+                // nothing to do here but wait, so the copy no longer sends
+                // them to compare a code with anyone.
+                return appString("The owner hasn't finished setting up this share yet. Ask them to finish sharing the item.")
             case .verifyFailed(let reason):
                 // The specific failed check is appended verbatim — it names a
                 // kernel invariant (e.g. badGrantSignature, ownerKeyUnpinned),
@@ -198,7 +200,7 @@ import UIKit
         return zones.count
     }
 
-    // MARK: Owner-key pin (TOFU after the one-time fingerprint compare)
+    // MARK: Owner-key pin (TOFU on first sight, reject on change)
 
     /// Pin key includes the zone OWNER name — two different owners could
     /// otherwise collide on an (opaque but attacker-visible) zone name.
@@ -210,8 +212,10 @@ import UIKit
         try? KeychainStore.get(account: pinAccount(zoneID: zoneID))
     }
 
-    /// Called by the Phase-6 fingerprint-confirm step. Pin once; a later
-    /// grant with a different owner key is rejected, not re-pinned.
+    /// Pin once, on first sight of the zone's owner key. A later grant
+    /// carrying a different owner key is rejected, never re-pinned — that
+    /// rejection, not any human comparison, is what excludes a substituted
+    /// key, and it needs nobody's attention.
     static func pinOwnerKey(_ key: Data, zoneID: CKRecordZone.ID) throws {
         try KeychainStore.set(key, account: pinAccount(zoneID: zoneID))
     }
@@ -222,11 +226,11 @@ import UIKit
         KeychainStore.delete(account: verificationAccount(zoneID: zoneID))
     }
 
-    // MARK: Owner-key verification marker (human decision beside the pin)
+    // MARK: Trust decision marker (the human fact beside the pin)
 
-    /// Storage account for the recipient's safety-code decision, parallel to
-    /// `pinAccount` — same owner+zone scoping, same Keychain protection
-    /// class and lifecycle, never synced.
+    /// Storage account for the recipient's trust decision about this zone's
+    /// sender, parallel to `pinAccount` — same owner+zone scoping, same
+    /// Keychain protection class and lifecycle, never synced.
     private static func verificationAccount(zoneID: CKRecordZone.ID) -> String {
         "approval_owner_key_verification_\(zoneID.ownerName)_\(zoneID.zoneName)"
     }
@@ -245,12 +249,12 @@ import UIKit
         try? setOwnerKeyVerificationOrThrow(state, zoneID: zoneID)
     }
 
-    /// Throwing variant for the fresh-pin path: the `pending` marker must
-    /// land BEFORE the pin, and a failed marker write must abort the pin,
-    /// so a post-gate pin can never exist without an explicit decision
-    /// state. The legacy backfill reads a marker-less pin as pre-gate and
-    /// grandfathers it to `confirmed` — which must never happen for a
-    /// share nobody actually decided on.
+    /// Throwing variant for the fresh-pin path: the decision marker must land
+    /// BEFORE the pin, and a failed marker write must abort the pin, so a pin
+    /// can never exist without a decision state beside it. The backfill reads
+    /// a marker-less pin as one from before decisions were recorded and
+    /// grandfathers it — which must never happen to a zone this build pinned
+    /// itself.
     static func setOwnerKeyVerificationOrThrow(_ state: OwnerKeyVerification,
                                                zoneID: CKRecordZone.ID) throws {
         try KeychainStore.set(Data(state.rawValue.utf8),
@@ -285,8 +289,8 @@ import UIKit
 
     // MARK: Grant + shared fields
 
-    /// Fetch and verify ONE specific grant by id. Before the pin exists
-    /// (pre-fingerprint) the grant is returned for DISPLAY/ceremony purposes
+    /// Fetch and verify ONE specific grant by id. Before the pin exists the
+    /// grant is returned for DISPLAY purposes
     /// only — callers must not decrypt or request against an unpinned grant.
     func fetchGrant(zoneID: CKRecordZone.ID, grantId: String,
                     nowUnixMs: Int64) async throws -> AccessGrant {
@@ -369,8 +373,8 @@ import UIKit
     /// ADR-3). Unknown/mismatched blobs are skipped, never guessed at.
     func fetchSharedFieldValues(grant: AccessGrant, identity: ParticipantIdentity,
                                 zoneID: CKRecordZone.ID) async throws -> [String: Data] {
-        // Decryption requires the completed fingerprint ceremony (TOFU pin) —
-        // the "display only" pre-pin grant must not unlock values.
+        // Decryption requires the pinned owner key — the "display only"
+        // pre-pin grant must not unlock values.
         guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }
@@ -473,7 +477,7 @@ import UIKit
     /// Build, sign, and save an `askEachTime` request.
     func sendRequest(grant: AccessGrant, fieldId: String, deviceId: String,
                      zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws -> PendingRequest {
-        // Requests are only sent against a fingerprint-confirmed owner.
+        // Requests are only sent against the pinned owner key.
         guard Self.pinnedOwnerKey(zoneID: zoneID) == grant.ownerSigningPubKey else {
             throw Failure.verifyFailed(.ownerKeyUnpinned)
         }

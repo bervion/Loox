@@ -31,6 +31,13 @@ nonisolated enum Metric {
     static let badgeTile: CGFloat = 30
     /// Icon-picker grid tile (`IconColorPicker`'s curated-icon grid cell).
     static let iconPickerTile: CGFloat = 50
+
+    /// Circular person avatar in a list row (Family member rows). Distinct from
+    /// `iconTile`: this is a filled circle sized around an initial, and the row
+    /// separator inset is derived from it, so the two must move together.
+    static let avatarRow: CGFloat = 36
+    /// The oversized circular avatar an empty state centres on.
+    static let avatarHero: CGFloat = 92
 }
 
 /// Floating icon-only tab bar layout (Design System: Threads-style minimal bar).

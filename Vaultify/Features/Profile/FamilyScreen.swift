@@ -5,13 +5,18 @@ private struct FamilyMember: Identifiable {
     let label: String            // recipient email (owner-local; never leaves this device)
     let shares: [ItemShareRecord]
     var id: String { label }
+
+    var activeCount: Int { shares.filter { $0.status == .active }.count }
+    var pendingCount: Int { shares.count - activeCount }
 }
 
-/// Family — the people you share vault items with, grouped from `SharingStore`. A members
-/// list; tap a person to see and manage (or revoke) what they can access. "Share a Space"
-/// (`ShareSpaceSheet`) fans a whole Space's eligible logins out to one member in a single
-/// ceremony (Family full-group sharing, phase A3); individual items can still be shared
-/// via each item's own Share sheet, and both paths populate this same members list.
+/// Family — the people you share vault items with, grouped from `SharingStore`.
+///
+/// There is no membership entity behind this screen and there does not need to
+/// be: a person exists here because you shared something with them. The invite
+/// IS the relationship. What the screen has to do is make that legible, which
+/// means offering a way to START a relationship ("Invite someone") rather than
+/// only ever listing the side effects of item sharing.
 struct FamilyScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var showShareSpace = false
@@ -36,7 +41,7 @@ struct FamilyScreen: View {
                                 Rectangle()
                                     .fill(Color(rgb: env.theme.active.separator))
                                     .frame(height: 0.5)
-                                    .padding(.leading, Space.s4 + 36 + Space.s3)
+                                    .padding(.leading, Space.s4 + Metric.avatarRow + Space.s3)
                             }
                         }
                     }
@@ -50,13 +55,14 @@ struct FamilyScreen: View {
         .sheet(isPresented: $showShareSpace) { ShareSpaceSheet() }
     }
 
-    /// Sole primary action on this screen (action-hierarchy rule) — fans a
-    /// whole Space out to one member in a single ceremony (`ShareSpaceSheet`).
+    /// Sole primary action on this screen (action-hierarchy rule). It fans a
+    /// whole Space out to one person in a single ceremony, which is also the
+    /// only way to reach someone from here rather than from an item.
     private var shareSpaceButton: some View {
         Button { showShareSpace = true } label: {
             HStack(spacing: Space.s2) {
                 PolarisIcon(Icons.share, size: Metric.iconInline)
-                Text("Share a Space")
+                Text("Invite someone")
             }
             .frame(maxWidth: .infinity)
         }
@@ -64,17 +70,26 @@ struct FamilyScreen: View {
     }
 
     private func memberRow(_ member: FamilyMember) -> some View {
-        NavigationLink { FamilyMemberScreen(label: member.label, shares: member.shares) } label: {
+        NavigationLink { FamilyMemberScreen(label: member.label) } label: {
             HStack(spacing: Space.s3) {
                 ZStack {
-                    Circle().fill(Color(rgb: env.theme.active.accentSoft)).frame(width: 36, height: 36)
+                    Circle().fill(Color(rgb: env.theme.active.accentSoft))
+                        .frame(width: Metric.avatarRow, height: Metric.avatarRow)
                     Text(verbatim: initial(member.label))
                         .vaultType(.subhead).themedForeground(.accentText)
                 }
-                Text(verbatim: member.label).vaultType(.body).themedForeground().lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: member.label).vaultType(.body).themedForeground().lineLimit(1)
+                    // A bare count read as an unread badge and silently mixed
+                    // pending invites into the total. Name the unit, and keep
+                    // "waiting" separate from "they can use this".
+                    Text(subtitle(member))
+                        .vaultType(.subhead).themedForeground(.secondary)
+                        .lineLimit(1)
+                }
                 Spacer(minLength: Space.s2)
-                Text(verbatim: "\(member.shares.count)").themedForeground(.secondary)
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                PolarisIcon(Icons.chevronRight, size: Metric.iconCompact)
+                    .themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)
             .frame(minHeight: Metric.rowHeight)
@@ -83,15 +98,23 @@ struct FamilyScreen: View {
         .buttonStyle(.plain)
     }
 
+    private func subtitle(_ member: FamilyMember) -> LocalizedStringResource {
+        if member.activeCount == 0 { return "Waiting to accept" }
+        if member.pendingCount == 0 { return "\(member.activeCount) shared" }
+        return "\(member.activeCount) shared, \(member.pendingCount) waiting"
+    }
+
     private var emptyState: some View {
         VStack(spacing: Space.s4) {
             ZStack {
-                Circle().fill(Color(rgb: env.theme.active.accentSoft)).frame(width: 92, height: 92)
-                PolarisIcon(Icons.organization, size: 40).themedForeground(.accent)
+                Circle().fill(Color(rgb: env.theme.active.accentSoft))
+                    .frame(width: Metric.avatarHero, height: Metric.avatarHero)
+                PolarisIcon(Icons.organization, size: Metric.iconTileLarge)
+                    .themedForeground(.accent)
             }
             VStack(spacing: Space.s2) {
                 Text("No one yet").vaultType(.headline).themedForeground()
-                Text("Share an item, or share a whole Space above, and they'll appear here.")
+                Text("Invite someone above, or share a single item from the item itself. Either way they show up here.")
                     .vaultType(.callout).themedForeground(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 320)
@@ -107,25 +130,38 @@ struct FamilyScreen: View {
     }
 }
 
-/// One family member's shared items — each row opens the recipient/share detail (manage
-/// capabilities, push updates, or revoke) via the existing `ShareRecipientDetailSheet`.
+/// One person's shared items. Each row opens the share detail (manage what they
+/// can use, push an update, or revoke just that item).
 private struct FamilyMemberScreen: View {
     let label: String
-    let shares: [ItemShareRecord]
     @Environment(AppEnvironment.self) private var env
     @State private var selectedShare: ItemShareRecord?
+    @State private var resumeShare: ItemShareRecord?
+
+    /// Derived from the observed store on every render, never captured at push
+    /// time: revoking inside the detail sheet mutates the store, and a snapshot
+    /// taken by the parent list would keep showing rows whose share is gone —
+    /// tapping one would open a detail sheet for a record that no longer exists.
+    private var shares: [ItemShareRecord] {
+        env.sharingStore.shares(forRecipient: label)
+            .sorted { itemTitle($0).localizedCaseInsensitiveCompare(itemTitle($1)) == .orderedAscending }
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: Space.s5) {
-                ProfileGroupCard {
-                    ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
-                        shareRow(share)
-                        if index < shares.count - 1 {
-                            Rectangle()
-                                .fill(Color(rgb: env.theme.active.separator))
-                                .frame(height: 0.5)
-                                .padding(.leading, Space.s4)
+                if shares.isEmpty {
+                    emptyState
+                } else {
+                    ProfileGroupCard {
+                        ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
+                            shareRow(share)
+                            if index < shares.count - 1 {
+                                Rectangle()
+                                    .fill(Color(rgb: env.theme.active.separator))
+                                    .frame(height: 0.5)
+                                    .padding(.leading, Space.s4 + Metric.iconTile + Space.s3)
+                            }
                         }
                     }
                 }
@@ -136,19 +172,31 @@ private struct FamilyMemberScreen: View {
         .navigationTitle(label)
         .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedShare) { ShareRecipientDetailSheet(share: $0) }
+        .sheet(item: $resumeShare) { ShareResumeStepperSheet(share: $0) }
     }
 
     private func shareRow(_ share: ItemShareRecord) -> some View {
-        Button { selectedShare = share } label: {
+        Button {
+            // Same routing rule the item screen uses: an unfinished share needs
+            // the resume surface, not the manage surface, which for a pending
+            // record shows only info and Revoke and so dead-ends.
+            if share.status == .active { selectedShare = share } else { resumeShare = share }
+        } label: {
             HStack(spacing: Space.s3) {
+                // Received items used to render with no type at all here; the
+                // category avatar is what tells a Secure Note from a login.
+                PolarisIcon(categoryIcon(share), size: Metric.iconTile)
+                    .themedForeground(.iconSecondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: itemTitle(share)).vaultType(.body).themedForeground().lineLimit(1)
-                    Text(statusText(share.status))
+                    Text(ShareStepper.detailSubtitle(for: share.status))
                         .vaultType(.subhead)
                         .themedForeground(share.status == .active ? .success : .secondary)
+                        .lineLimit(1)
                 }
                 Spacer(minLength: Space.s2)
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                PolarisIcon(Icons.chevronRight, size: Metric.iconCompact)
+                    .themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)
             .frame(minHeight: Metric.rowHeight)
@@ -157,12 +205,24 @@ private struct FamilyMemberScreen: View {
         .buttonStyle(.plain)
     }
 
+    private var emptyState: some View {
+        VStack(spacing: Space.s2) {
+            Text("Nothing shared").vaultType(.headline).themedForeground()
+            Text("You revoked everything you had shared with this person.")
+                .vaultType(.callout).themedForeground(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, Space.s8)
+    }
+
     private func itemTitle(_ share: ItemShareRecord) -> String {
         if let title = env.repository.item(id: share.itemId)?.title, !title.isEmpty { return title }
         return appString("an item")
     }
 
-    private func statusText(_ status: ShareLifecycle) -> LocalizedStringResource {
-        status == .active ? "Active" : "Pending"
+    private func categoryIcon(_ share: ItemShareRecord) -> String {
+        env.repository.item(id: share.itemId)?.category.avatarIcon ?? Icons.lock
     }
 }

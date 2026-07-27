@@ -68,31 +68,18 @@ struct QuickLinkView: View {
         case .config:
             configForm
         case .creating:
-            VStack(spacing: Space.s4) {
-                ProgressView()
-                Text("Encrypting and creating your link…")
-                    .vaultType(.callout).themedForeground(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Waiting, failure and success are three states of ONE flow: they
+            // share the top-anchored, left-aligned silhouette with the action on
+            // the bottom edge, so nothing jumps and no state reads as grey copy
+            // floating mid-screen.
+            VaultStatusScreen(title: "Encrypting and creating your link…", busy: true)
         case .result(let link):
             QuickLinkResultView(link: link) { step = .config }
         case .failed(let message):
-            VStack(spacing: Space.s4) {
-                PolarisIcon(Icons.alert, size: Metric.iconTile)
-                    .themedForeground(.destructive)
-                Text(verbatim: message)
-                    .vaultType(.callout).themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-                Button {
-                    step = .config
-                } label: {
-                    Text("Try again")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.themedProminent)
-            }
-            .padding(Space.gutter)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VaultStatusScreen(icon: Icons.alert, tint: .destructive,
+                              title: "Something went wrong",
+                              message: .verbatim(message),
+                              primary: .init(title: "Try again") { step = .config })
         }
     }
 
@@ -128,7 +115,7 @@ struct QuickLinkView: View {
             } footer: {
                 Text(oneTime
                      ? "The link disappears the first time it's opened. If nobody opens it, it expires on its own after 24 hours. The viewer asks for a tap first, so link previews can't use it up."
-                     : "Everything is encrypted on this iPhone. The server stores only ciphertext; the decryption key travels inside the link and is never sent to any server.")
+                     : "Everything is encrypted on this iPhone. The server only ever holds the locked version, and the key that opens it travels inside the link, never to any server.")
             }
             .listRowBackground(VaultColors.surface)
 
@@ -234,7 +221,9 @@ struct QuickLinkView: View {
         case .retired:
             return appString("Share Links are no longer offered. Your saved vault items are unchanged.")
         case .disabledByUser:
-            return appString("Share Links are turned off in Settings.")
+            // Name the feature the way this sheet names it, not the way
+            // Settings does, so the message matches the title above it.
+            return appString("Quick Link is turned off in Settings.")
         default:
             return appString("Share Links are temporarily unavailable. Your vault is not affected.")
         }

@@ -46,19 +46,38 @@ import UIKit
         #endif
     }
 
+    /// The share finished on its own — informational, no action needed.
+    func notifyShareActive(record: ItemShareRecord) {
+        guard !isAppActive else { return }
+        post(identifier: "share-active-\(record.zoneName)",
+             title: appString("Your share is active"),
+             body: appString("They can use the fields you chose."),
+             zoneName: record.zoneName)
+    }
+
+    /// Fallback path only: the share is ready but could not be finished without
+    /// the owner (locked vault, or a scope this device never recorded).
     func notifyReadyForCeremony(record: ItemShareRecord) {
+        post(identifier: "share-ready-\(record.zoneName)",
+             title: appString("They accepted your invite"),
+             body: appString("Open Loox to finish setting up the share."),
+             zoneName: record.zoneName)
+    }
+
+    /// Never put the item title, the recipient's address, codes, or any secret
+    /// in lock-screen visible text. The recipient label used to be printed here
+    /// on the grounds that it is device-local data — but that is an argument
+    /// about STORAGE, and a banner is visible to anyone holding the phone, so
+    /// it also disclosed who this person shares credentials with.
+    private func post(identifier: String, title: String, body: String, zoneName: String) {
         let content = UNMutableNotificationContent()
-        // Privacy line: the recipient label is device-local data (it never
-        // leaves this device). Never put the item title, codes, or any secret
-        // in lock-screen visible text.
-        content.title = appString("They accepted your invite")
-        content.body = appString("\(record.recipientLabel) accepted. Tap to finish setting up the share.")
+        content.title = title
+        content.body = body
         content.sound = .default
-        content.userInfo = [Self.zoneNameUserInfoKey: record.zoneName]
+        content.userInfo = [Self.zoneNameUserInfoKey: zoneName]
         // Stable per-share identifier: a re-fire replaces the pending banner
         // instead of stacking duplicates in Notification Center.
-        let request = UNNotificationRequest(identifier: "share-ready-\(record.zoneName)",
-                                            content: content,
+        let request = UNNotificationRequest(identifier: identifier, content: content,
                                             trigger: nil)
         center.add(request) { _ in
             // Best-effort: in-app surfaces remain the authoritative signal.

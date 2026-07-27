@@ -79,28 +79,27 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
     }
 
     /// The recipient's trust decision for the zone behind a projected item.
-    /// A missing marker reads as `pending` (fail closed): content published
-    /// under a pin nobody has confirmed or explicitly skipped must not be
-    /// usable. Single source of truth for every gate surface (item detail,
-    /// request entry, AutoFill cache build).
+    /// A missing marker reads as `pending` (fail closed): content nobody has
+    /// agreed to receive must not reach AutoFill. Single source of truth for
+    /// every surface that asks whether this share was decided on.
     func verification(forItem id: String) -> OwnerKeyVerification {
         guard let origin = item(id: id)?.sharedOrigin else { return .pending }
         return ApprovalRecipientService.ownerKeyVerification(zoneID: Self.zoneID(for: origin))
             ?? .pending
     }
 
-    /// Persist the user's one-time safety-code decision and immediately
-    /// re-feed the AutoFill cache so a confirmed or skipped share becomes
-    /// usable in the extension without waiting for the next projection
-    /// refresh. Terminal states stick — an earlier decision is never
-    /// overwritten, and `pending` cannot be recorded through this API.
+    /// Persist a trust decision and immediately re-feed the AutoFill cache so
+    /// a newly decided share becomes usable in the extension without waiting
+    /// for the next projection refresh. Monotonic: only a decision that says
+    /// strictly more than the stored one is written, so completing the
+    /// optional code comparison upgrades an accepted share while nothing can
+    /// downgrade a comparison that was actually performed.
     func recordVerification(_ decision: OwnerKeyVerification, forItem id: String,
                             vaultKey: [UInt8]?) {
-        guard decision.isDecided, let origin = item(id: id)?.sharedOrigin else { return }
+        guard let origin = item(id: id)?.sharedOrigin else { return }
         let zoneID = Self.zoneID(for: origin)
-        guard ApprovalRecipientService.ownerKeyVerification(zoneID: zoneID)?.isDecided != true else {
-            return
-        }
+        let stored = ApprovalRecipientService.ownerKeyVerification(zoneID: zoneID)
+        guard decision.supersedes(stored) else { return }
         ApprovalRecipientService.setOwnerKeyVerification(decision, zoneID: zoneID)
         guard let vaultKey else { return }
         let cacheEntries = buildCacheEntries()
@@ -205,8 +204,8 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
             return // Offline — keep whatever we already show.
         }
         // Legacy markers must exist BEFORE any new pin below can land —
-        // ordering inside this one function guarantees a pre-gate share is
-        // never mistaken for a fresh `pending` one.
+        // ordering inside this one function guarantees a share pinned before
+        // decisions were recorded is never mistaken for a fresh one.
         Self.backfillVerificationMarkers(zones: zones)
         var built: [VaultItem] = []
         var builtGrants: [String: AccessGrant] = [:]
@@ -226,18 +225,32 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
                 // store, not re-pinned.
                 if let firstGrant = liveGrants.first,
                    ApprovalRecipientService.pinnedOwnerKey(zoneID: zoneID) == nil {
-                    // A fresh pin freezes the key but trusts no one yet:
-                    // the human decision (compare the safety code, or
-                    // explicitly skip) is recorded separately and gates
-                    // all use of the content. The `pending` marker lands
-                    // BEFORE the pin, and a failed marker write aborts the
-                    // pin, so a pin can never exist without a decision
-                    // state — the legacy backfill would otherwise mistake
-                    // it for a pre-gate share and grandfather it to
-                    // `confirmed`. A marker without a pin is harmless: the
-                    // pin retries next refresh and `pending` fails closed.
+                    // The pin freezes the key; the marker beside it records
+                    // that a person agreed to this sender. That agreement
+                    // already happened: this zone is only in the shared
+                    // database because this account accepted its CKShare,
+                    // and acceptance shows the sender's CloudKit identity.
+                    //
+                    // That holds for BOTH acceptance routes, which is what
+                    // makes this safe: the in-app invite prompt names the
+                    // sender before it will call `container.accept`, and the
+                    // native route (`userDidAcceptCloudKitShareWith`, reached
+                    // when iOS handles a raw CKShare URL) only fires after the
+                    // system's own share sheet has shown the owner's identity
+                    // and the user tapped it. Neither route can join a zone
+                    // silently, so there is no path where a decided marker
+                    // outruns a human.
+                    //
+                    // So first sight is a decided sight, and nothing has to
+                    // interrogate the user again before they can use what
+                    // they said yes to. The marker lands BEFORE the pin and
+                    // a failed write aborts the pin, so a pin can never
+                    // exist without a decision state; a marker without a pin
+                    // is harmless (the pin retries next refresh). A missing
+                    // marker still reads as `pending` and stays out of
+                    // AutoFill — the fail-closed direction is unchanged.
                     try ApprovalRecipientService.setOwnerKeyVerificationOrThrow(
-                        .pending, zoneID: zoneID)
+                        .accepted, zoneID: zoneID)
                     try ApprovalRecipientService.pinOwnerKey(
                         firstGrant.ownerSigningPubKey, zoneID: zoneID)
                 }
@@ -329,11 +342,12 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
     }
 
     /// Flattened AutoFill cache entries for the CURRENT projection state.
-    /// Zones whose safety-code decision is still pending are withheld:
-    /// shared content must not be usable through AutoFill (QuickType or the
-    /// extension) before the one-time trust decision — otherwise a
-    /// credential could be used without the interstitial ever appearing.
-    /// The item stays visible in-app with its verify affordance.
+    /// Zones with no recorded trust decision are withheld: anyone who knows
+    /// your iCloud address can push a share at you, and QuickType offering an
+    /// attacker-authored "bank.com" login is the thing that has to be
+    /// impossible. Everything a person agreed to receive passes; the rest
+    /// stays visible in-app, where it can only be read deliberately, with the
+    /// safety-code affordance offering a way to decide.
     private func buildCacheEntries() -> [SharedCredentialEntry] {
         items.compactMap { item -> SharedCredentialEntry? in
             guard let grant = grants[item.id],
@@ -465,7 +479,14 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         }
         let updatedAt = display.map { Date(timeIntervalSince1970: Double($0.updatedAtUnixMs) / 1000) }
             ?? Date(timeIntervalSince1970: Double(grant.createdAtUnixMs) / 1000)
-        var item = VaultItem(id: origin.itemID, category: .login,
+        // A shared Secure Note, card, or SSH key must arrive as itself: the
+        // category drives the avatar glyph, the type line, and every list
+        // subtitle. `.login` is the fallback for senders (and Tier-0
+        // placeholders) that carry no category, matching how these items
+        // rendered before the envelope could describe one.
+        let categoryRaw: String? = display?.category
+        let category = categoryRaw.flatMap(ItemCategory.init(rawValue:)) ?? .login
+        var item = VaultItem(id: origin.itemID, category: category,
                              title: display?.title.isEmpty == false
                                 ? display!.title : appString("Shared item"),
                              fields: fields,

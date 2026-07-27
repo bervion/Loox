@@ -50,9 +50,13 @@ struct SyncSettingsView: View {
 
             if env.settings.iCloudSyncEnabled {
                 Section {
+                    // Sync runs on its own; this is the manual nudge, so it takes
+                    // the quiet inline rank. A bare Form button would inherit the
+                    // app-wide primary tint and read as a static label.
                     Button { env.syncNow() } label: {
                         Label { Text("Sync Now") } icon: { Image(systemName: "arrow.clockwise.icloud") }
                     }
+                    .buttonStyle(.themedCompact)
                     .disabled(env.cloudSync.status == .syncing)
                     statusRow
                 }
@@ -60,9 +64,14 @@ struct SyncSettingsView: View {
 
                 if CloudSyncService.isConfigured {
                     Section {
+                        // The one filled action on this screen: pairing is the
+                        // real destination here, syncing is upkeep.
                         Button { showPairSheet = true } label: {
-                            Label { Text("Pair New Device") } icon: { PolarisIcon(Icons.scanCode) }
+                            Label { Text("Pair New Device") } icon: {
+                                PolarisIcon(Icons.scanCode, size: Metric.iconCompact)
+                            }
                         }
+                        .buttonStyle(.themedCompactProminent)
                         .disabled(env.session.state != .unlocked)
                     } footer: {
                         Text("Scan the QR code on a new iPhone, iPad, or Mac to give it access to this vault. The key transfers end-to-end encrypted.")

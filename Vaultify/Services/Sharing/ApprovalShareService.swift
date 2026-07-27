@@ -105,6 +105,13 @@ import Foundation
     /// acceptance-resume re-publishes it), producing phantom "code requested"
     /// notifications before any request exists. Static, localized copy via
     /// the notification localization keys — no item/account/code.
+    ///
+    /// The same record type carries BOTH request kinds (a verification code
+    /// and a shared-passkey sign-in), so this copy must name neither: wording
+    /// it for codes sent the owner to a code screen for a passkey request.
+    /// The keys resolve against the bundle in the DEVICE language at delivery
+    /// time, so this text cannot follow the in-app language toggle — keep it
+    /// short and kind-neutral rather than trying to make it.
     private func saveOwnerAlertSubscription(zoneID: CKRecordZone.ID) async throws {
         let subscriptionID = ApprovalConfig.requestSubscriptionID(zoneName: zoneID.zoneName)
         // Drop any previously deployed zone-wide subscription under this id

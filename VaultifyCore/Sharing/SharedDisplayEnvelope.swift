@@ -19,6 +19,14 @@ nonisolated struct SharedDisplayEnvelope: Codable, Sendable, Equatable {
 
     var title: String
     var websiteHost: String?
+    /// `ItemCategory` rawValue, so a shared Secure Note or SSH key renders as
+    /// itself on the recipient's device instead of a fabricated login.
+    /// Optional — envelopes from senders that predate this field decode fine
+    /// and fall back to the historical login rendering. Deliberately a raw
+    /// `String` rather than the enum: a category a newer sender knows and this
+    /// build does not must degrade to the fallback, never fail the whole
+    /// envelope decode and cost the recipient their title and host too.
+    var category: String? = nil
     var updatedAtUnixMs: Int64
     /// Monotonic per-grant revision — recipients ignore an older revision
     /// arriving after a newer one (out-of-order CloudKit delivery).

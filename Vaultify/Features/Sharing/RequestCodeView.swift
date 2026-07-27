@@ -198,9 +198,11 @@ struct RequestCodeView: View {
             case .rejected:
                 outcome("Request declined", icon: Icons.shieldAlert)
             case .interrupted:
-                outcome("Approval was interrupted. Request again", icon: Icons.info)
+                // The outcome line states what happened; what to do next is the
+                // button's job, so the sentence never duplicates its label.
+                outcome("Approval was interrupted", icon: Icons.info)
             case .expired:
-                outcome("The code expired. Request again", icon: Icons.info)
+                outcome("The code expired", icon: Icons.info)
             case .failed(let message):
                 Text(verbatim: message).vaultType(.footnote).themedForeground(.destructive)
             }
@@ -235,14 +237,23 @@ struct RequestCodeView: View {
         }
     }
 
-    private func requestButton(title: LocalizedStringKey) -> some View {
-        Button {
+    /// The one "ask the owner" affordance, in two ranks. It is the filled
+    /// primary wherever nothing is pending (idle, every terminal outcome), and
+    /// drops to the quiet rank while a request is still live — superseding an
+    /// ask that may still land is an escape hatch, not the expected next step.
+    @ViewBuilder
+    private func requestButton(title: LocalizedStringKey, quiet: Bool = false) -> some View {
+        let button = Button {
             startRequest()
         } label: {
             Label { Text(title) } icon: { PolarisIcon(Icons.shield, size: Metric.iconInline) }
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.themedProminent)
+        if quiet {
+            button.buttonStyle(.themedTinted)
+        } else {
+            button.buttonStyle(.themedProminent)
+        }
     }
 
     private func waitingView(showSlowHint: Bool) -> some View {
@@ -259,9 +270,10 @@ struct RequestCodeView: View {
             if showSlowHint {
                 Text("This is taking longer than usual.")
                     .vaultType(.footnote).themedForeground(.secondary)
-                Button("Request Again") {
-                    startRequest()
-                }
+                // Same builder, same choke point, same label as the terminal
+                // ask: the slow hint offers ONE more attempt, not a second
+                // parallel action competing with the one still in flight.
+                requestButton(title: "Request Again", quiet: true)
             }
         }
     }

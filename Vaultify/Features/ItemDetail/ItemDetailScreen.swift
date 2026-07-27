@@ -29,8 +29,8 @@ struct ItemDetailScreen: View {
     @State private var resumeShare: ItemShareRecord?
     /// Safety code for a shared item (optional out-of-band comparison).
     @State private var safetyCode: String?
-    /// One-time trust interstitial for a shared item whose safety-code
-    /// decision is still pending.
+    /// Optional safety-code comparison, opened from the card below. Never
+    /// presented automatically.
     @State private var showVerifySheet = false
     /// "Send to Browser" (Loox Quick View) chooser sheet.
     @State private var showQuickViewChooser = false
@@ -127,16 +127,13 @@ struct ItemDetailScreen: View {
                     if item.sharedOrigin != nil { sharedBadge }
                     if item.sharedOrigin == nil {
                         fieldsCard(item)
-                    } else if needsVerification(item) {
-                        // The one-time trust decision comes before any use:
-                        // value rows (and request controls inside them) are
-                        // not even built until the user confirms the safety
-                        // code or explicitly skips — dismissing the sheet
-                        // decides nothing and this card re-prompts.
-                        verifyPromptCard
                     } else {
                         // Shared VALUES render only after live authorization
                         // (INV-01) — header/title above are Tier-1 metadata.
+                        // Nothing else stands between the user and a share
+                        // they accepted: the sender was named at accept time,
+                        // so re-interrogating them here would question a
+                        // decision they already made.
                         SharedAccessGateView(itemID: item.id) { fieldsCard(item) }
                     }
                     // Tags read as footnotes to the content, so they follow the
@@ -147,9 +144,7 @@ struct ItemDetailScreen: View {
                         sharingSection(item)
                     } else {
                         SharedItemPasskeysSection(itemID: item.id)
-                        // Manual re-check surface for decided shares; while
-                        // pending, the interstitial is the code's one home.
-                        if !needsVerification(item) { safetyCodeCard }
+                        safetyCodeSection
                     }
                     // Progressive disclosure: a live owned item shows no destructive
                     // card here at all (Move to Trash lives in the "…" menu). Trashed
@@ -537,9 +532,7 @@ struct ItemDetailScreen: View {
                         Text("Verification code")
                             .vaultType(.caption).fontWeight(.medium)
                             .foregroundStyle(env.theme.active.color(.accentText))
-                        RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId,
-                                        verificationPending: needsVerification(item),
-                                        onVerificationRequired: { showVerifySheet = true })
+                        RequestCodeView(model: model, deviceId: env.sharedItems.recipientDeviceId)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Space.s4)
@@ -558,36 +551,6 @@ struct ItemDetailScreen: View {
         .elevation(.level1)
     }
 
-    /// True while the recipient has not yet confirmed or explicitly skipped
-    /// the safety-code compare for this share. Tier-0 items (device not
-    /// authorized) keep their own gate message instead — there is no
-    /// content a decision could unlock. Reads the Keychain-backed marker
-    /// live; deciding in the sheet triggers a re-render via sheet state.
-    private func needsVerification(_ item: VaultItem) -> Bool {
-        guard let origin = item.sharedOrigin, origin.deviceAuthorized else { return false }
-        return env.sharedItems.verification(forItem: item.id) == .pending
-    }
-
-    /// Interstitial entry card shown in place of the value rows while the
-    /// trust decision is pending.
-    private var verifyPromptCard: some View {
-        VStack(spacing: Space.s3) {
-            PolarisIcon(Icons.shield, size: Metric.iconTile).themedForeground(.accent)
-            Text("Check the safety code with the owner before you use this shared item.")
-                .vaultType(.callout).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-            Button { showVerifySheet = true } label: {
-                Text("Verify this share").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(Space.s6)
-        .background(VaultColors.surface)
-        .vaultCornerRadius(Radius.lg)
-        .elevation(.level1)
-    }
-
     /// Origin banner for a shared projection (read-only semantics up front) — a
     /// flat tinted banner, not another stroked card competing with the fields card.
     private var sharedBadge: some View {
@@ -595,23 +558,66 @@ struct ItemDetailScreen: View {
                          text: "Shared with you. You can use what's listed here, but not edit it.")
     }
 
-    /// Discreet verification affordance — matches the code on the owner's
-    /// activation screen (optional out-of-band comparison).
-    @ViewBuilder private var safetyCodeCard: some View {
+    /// Optional out-of-band check, always available and never in the way. The
+    /// code copies from here so it can be sent over whatever channel the two
+    /// people already use, and the footnote says what the current decision
+    /// actually bought — including the one case that still holds content back
+    /// from AutoFill, so a withheld share explains itself instead of silently
+    /// never appearing there.
+    @ViewBuilder private var safetyCodeSection: some View {
         if let safetyCode {
-            VStack(alignment: .leading, spacing: Space.s1) {
-                Text("Safety code").vaultType(.sectionLabel).themedForeground(.secondary)
-                Text(verbatim: safetyCode)
-                    .font(.vaultCode(size: 17))
-                    .monospacedDigit()
-                    .themedForeground()
-                Text("Compare with the code on the owner's device to verify the connection.")
+            VStack(alignment: .leading, spacing: Space.s2) {
+                HStack(alignment: .top, spacing: Space.s3) {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("Safety code").vaultType(.sectionLabel).themedForeground(.secondary)
+                        Text(verbatim: safetyCode)
+                            .font(.vaultCode(size: 17))
+                            .monospacedDigit()
+                            .themedForeground()
+                            .textSelection(.enabled)
+                    }
+                    Spacer(minLength: Space.s2)
+                    Button {
+                        // ClipboardService owns the confirmation haptic.
+                        env.clipboard.copy(safetyCode, label: appString("Safety code"),
+                                           sensitive: false)
+                    } label: {
+                        PolarisIcon(Icons.copy, size: Metric.iconInline)
+                            .themedForeground(.accentText)
+                            .frame(width: Metric.hitMin, height: Metric.hitMin)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Copy code"))
+                }
+                Text(safetyCodeExplanation)
                     .vaultType(.footnote).themedForeground(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button { showVerifySheet = true } label: {
+                    Text("Compare safety code")
+                        .vaultType(.body).fontWeight(.medium)
+                        .themedForeground(.accentText)
+                        .frame(maxWidth: .infinity, minHeight: Metric.hitMin, alignment: .leading)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
             }
-            .padding(Space.s3)
+            .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(VaultColors.surface)
             .vaultCornerRadius(Radius.md)
+        }
+    }
+
+    /// What the recorded decision means for this share, in the user's terms.
+    private var safetyCodeExplanation: LocalizedStringKey {
+        switch env.sharedItems.verification(forItem: itemID) {
+        case .confirmed:
+            return "You confirmed this code with the owner."
+        case .pending:
+            return "AutoFill will not offer this share until you decide about it here."
+        case .accepted, .skipped:
+            return "Compare with the code on the owner's device to verify the connection."
         }
     }
 

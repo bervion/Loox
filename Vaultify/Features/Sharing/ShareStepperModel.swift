@@ -31,11 +31,14 @@ enum ShareStepper {
                     ? "They accepted the invitation."
                     : "They haven't opened the invitation yet. Nudge them below.",
                 state: acceptedOrLater ? .done : .current),
+            // Their device publishes the key the share is sealed to. Nothing is
+            // asked of the owner here — the scope was set when the invite was
+            // created, so this finishes on its own once the key arrives.
             ShareStepperStep(
-                id: 3, title: "Confirm safety code together",
+                id: 3, title: "Setting up on their device",
                 subtitle: active
-                    ? "Confirmed."
-                    : "You'll compare a short code before anything is handed over.",
+                    ? "Done."
+                    : "Finishes by itself once their device is ready.",
                 state: active ? .done : (readyOrLater ? .current : .todo)),
             ShareStepperStep(
                 id: 4, title: "Access active",
@@ -50,7 +53,7 @@ enum ShareStepper {
         switch status {
         case .inviteSent: "Invite sent. Waiting to accept"
         case .accepted: "Accepted. Finishing on their device"
-        case .readyForCeremony: "Ready to confirm"
+        case .readyForCeremony: "Finishing setup"
         case .active: "Active"
         }
     }

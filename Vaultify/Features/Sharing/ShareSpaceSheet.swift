@@ -4,16 +4,14 @@ import SwiftUI
 /// "Share a Space" ceremony (Family full-group sharing, phase A3 stage 2):
 /// pick a recipient and one of the active persona's Spaces, run the SAME
 /// trust ceremony `ShareAccessSheet` uses (`createShare` → wait for the
-/// participant profile → `TrustFingerprintView` → resolve
+/// participant profile → publish (no owner step) → resolve
 /// `SharedGrantComposer.RecipientProfile` + `DeviceScope`) exactly ONCE, then
 /// fan the Space's eligible logins out to that member in one
 /// `SpaceShareMembershipExecutor.reconcile` call.
 ///
 /// Deliberately does NOT reimplement any of the ceremony's crypto/transport:
 /// every CloudKit call routes through the same `ApprovalShareService` the
-/// single-item sheet calls, the fingerprint code comes from the same
-/// `TrustFingerprint.code`, and the confirmation screen IS
-/// `TrustFingerprintView` (not a fork). The one deliberate behavior change
+/// single-item sheet calls. The one deliberate behavior change
 /// from the single-item sheet is zone reuse: `ShareAccessSheet` dedupes only
 /// within ONE item's pending shares, so sharing N different items to the same
 /// recipient mints N zones; a Space share reuses ONE zone per (active
@@ -29,9 +27,6 @@ struct ShareSpaceSheet: View {
         case config
         case creating
         case waiting(zoneID: CKRecordZone.ID, shareURL: URL?)
-        case fingerprint(zoneID: CKRecordZone.ID, code: String,
-                         profile: (participantPubKey: Data, deviceSigningKeys: [Data],
-                                   deviceHPKEDirectory: [DeviceHPKEDirectoryEntry], createdAtUnixMs: Int64))
         case publishing
         case result(SpaceShareMembershipExecutor.Summary)
         case failed(String)
@@ -120,24 +115,22 @@ struct ShareSpaceSheet: View {
     @ViewBuilder private var content: some View {
         switch step {
         case .checking:
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            // The prerequisite probe resolves in a blink, so copy here would
+            // only flash: the spinner takes the glyph slot alone and the state
+            // keeps the same silhouette as everything that follows it.
+            VaultStatusScreen(busy: true)
         case .blocked(let blocker):
             blockedView(blocker)
         case .config:
             configForm
         case .creating:
-            VStack(spacing: Space.s4) {
-                ProgressView()
-                Text("Setting up encrypted approval transport…")
-                    .vaultType(.callout).themedForeground(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Same title as the fan-out step: to the user this is one operation,
+            // and the body names which half of it is running.
+            VaultStatusScreen(title: "Sharing your Space…",
+                              message: .key("Setting up encrypted approval transport…"),
+                              busy: true)
         case .waiting(_, let shareURL):
             waitingView(shareURL: shareURL)
-        case .fingerprint(_, let code, _):
-            TrustFingerprintView(code: code, recipientLabel: recipientEmail) {
-                Task { await confirmFingerprintAndFanOut() }
-            }
         case .publishing:
             publishingView
         case .result(let summary):
@@ -158,22 +151,23 @@ struct ShareSpaceSheet: View {
     }
 
     private func blockedView(_ blocker: ApprovalPrerequisites.Blocker) -> some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.info, size: Metric.iconTile).themedForeground(.warning)
-            Text(blocker == .iCloudUnavailable
-                 ? "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync."
-                 : "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access.")
-                .vaultType(.callout).themedForeground(.secondary).multilineTextAlignment(.center)
-            Button {
+        // The title names the missing prerequisite so the body can explain it
+        // instead of carrying the whole state on secondary copy.
+        let title: LocalizedStringKey = blocker == .iCloudUnavailable
+            ? "Sign in to iCloud"
+            : "Notification permission"
+        let detail: LocalizedStringKey = blocker == .iCloudUnavailable
+            ? "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync."
+            : "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access."
+        return VaultStatusScreen(
+            icon: Icons.info,
+            tint: .warning,
+            title: title,
+            message: .key(detail),
+            primary: .init(title: "Check again") {
                 step = .checking
                 Task { await checkPrerequisites() }
-            } label: {
-                Text("Check again").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-        }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            })
     }
 
     // MARK: Config (pick Space + recipient)
@@ -215,7 +209,14 @@ struct ShareSpaceSheet: View {
                 } header: {
                     Text("What's shared")
                 } footer: {
-                    Text("This shares usernames, passwords, email addresses, and websites for every eligible login currently in this Space.")
+                    // Zero eligible logins is policy, not a bug: the safelist
+                    // only ever hands over logins, so say that where the count
+                    // and the dead CTA are visible.
+                    if eligibleCount == 0 {
+                        Text("Only logins can be shared, so nothing in this Space qualifies yet.")
+                    } else {
+                        Text("This shares usernames, passwords, email addresses, and websites for every eligible login currently in this Space.")
+                    }
                 }
                 .listRowBackground(VaultColors.surface)
 
@@ -286,15 +287,16 @@ struct ShareSpaceSheet: View {
     /// retry (Loox-to-Loox rendezvous tier): the Messages/ShareLink nudge
     /// below remains the primary delivery path either way.
     private func pollForProfile(zoneName: String) async {
-        guard let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw else { return }
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         var delay: Duration = .seconds(3)
         for _ in 0..<24 { // ≈ 2.5 minutes at the capped interval
             guard !Task.isCancelled else { return }
             if let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) {
-                let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
-                                                 participantPubKey: profile.participantPubKey)
-                step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
+                // Their key is here and the owner already chose the Space and
+                // the recipient — the fan-out's field scope is derived by
+                // `SpaceShareSafelist`, not by a human, so there is nothing
+                // left to ask. Publish straight through.
+                await confirmedProfile(zoneID: zoneID, profile: profile)
                 return
             }
             if await env.approvalShare.participantAccepted(zoneID: zoneID) {
@@ -307,17 +309,14 @@ struct ShareSpaceSheet: View {
     }
 
     private func checkProfileNow() async {
-        guard case .waiting(let zoneID, _) = step,
-              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw else { return }
+        guard case .waiting(let zoneID, _) = step else { return }
         guard let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) else {
             if await env.approvalShare.participantAccepted(zoneID: zoneID) {
                 participantHasAccepted = true
             }
             return
         }
-        let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
-                                         participantPubKey: profile.participantPubKey)
-        step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
+        await confirmedProfile(zoneID: zoneID, profile: profile)
     }
 
     private func waitingView(shareURL: URL?) -> some View {
@@ -388,10 +387,15 @@ struct ShareSpaceSheet: View {
         }
     }
 
-    private func confirmFingerprintAndFanOut() async {
-        guard case .fingerprint(let zoneID, _, let profile) = step else { return }
-        // Acceptance is proven — GC the invite link the same way
-        // ShareAccessSheet.confirmFingerprintAndPublish does.
+    /// The recipient's key has landed: freeze it as the fan-out's recipient
+    /// context and publish. No owner step in between — the Space and the
+    /// recipient were chosen at create time, and the per-item field scope is
+    /// derived by `SpaceShareSafelist` rather than by a human.
+    private func confirmedProfile(zoneID: CKRecordZone.ID,
+                                  profile: (participantPubKey: Data, deviceSigningKeys: [Data],
+                                            deviceHPKEDirectory: [DeviceHPKEDirectoryEntry],
+                                            createdAtUnixMs: Int64)) async {
+        // Acceptance is proven — GC the invite link now.
         if let pendingInviteRecordName {
             await env.inviteLinks.deleteInvite(recordName: pendingInviteRecordName)
             self.pendingInviteRecordName = nil
@@ -432,12 +436,9 @@ struct ShareSpaceSheet: View {
     }
 
     private var publishingView: some View {
-        VStack(spacing: Space.s4) {
-            ProgressView()
-            Text("Sharing your Space…").vaultType(.callout).themedForeground(.secondary)
-            Text("\(eligibleCount) items").vaultType(.footnote).themedForeground(.tertiary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VaultStatusScreen(title: "Sharing your Space…",
+                          message: .key("\(eligibleCount) items"),
+                          busy: true)
     }
 
     // MARK: Result
@@ -495,7 +496,7 @@ struct ShareSpaceSheet: View {
 
     private func countRow(label: LocalizedStringResource, value: Int) -> some View {
         HStack {
-            Text(label).themedForeground(.secondary)
+            Text(label.inAppLocalized).themedForeground(.secondary)
             Spacer()
             Text(verbatim: "\(value)").themedForeground()
         }
@@ -525,22 +526,23 @@ struct ShareSpaceSheet: View {
         return (title?.isEmpty == false ? title! : appString("an item"))
     }
 
+    /// `message` is a service error the caller already resolved, so it goes in
+    /// the verbatim slot rather than the catalog.
     private func failedView(_ message: String) -> some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.alert, size: Metric.iconTile).themedForeground(.destructive)
-            Text(verbatim: message).vaultType(.callout).themedForeground(.secondary).multilineTextAlignment(.center)
-            Button {
+        // Retry resumes the fan-out once the ceremony is done; before that the
+        // only way forward is back to the picker.
+        let actionTitle: LocalizedStringKey = resolvedRecipient != nil ? "Retry" : "Try again"
+        return VaultStatusScreen(
+            icon: Icons.alert,
+            tint: .destructive,
+            title: "Something went wrong",
+            message: .verbatim(message),
+            primary: .init(title: actionTitle) {
                 if resolvedRecipient != nil {
                     Task { await publishFanOut() }
                 } else {
                     step = .config
                 }
-            } label: {
-                Text(resolvedRecipient != nil ? "Retry" : "Try again").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-        }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            })
     }
 }

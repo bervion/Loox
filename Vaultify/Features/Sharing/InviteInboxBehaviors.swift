@@ -1,5 +1,30 @@
 import SwiftUI
 
+/// One voice for both acceptance paths (universal link and rendezvous inbox):
+/// name the CloudKit-authenticated sender, or say plainly that it could not be
+/// confirmed. An accepted share writes into AutoFill, so the recipient has to
+/// see WHO is behind it before deciding — and a missing identity is stated,
+/// never papered over with an invented name.
+enum InvitePrompt {
+    static func title(sender: String?) -> Text {
+        guard let sender else { return Text("Accept this share invitation") }
+        return Text("\(sender) wants to share with you")
+    }
+
+    static func message(sender: String?) -> Text {
+        guard sender != nil else {
+            return Text("Loox could not confirm who sent this invitation. Accept only if you were expecting it.")
+        }
+        return Text("This name comes from their iCloud account. Accept to add the shared item to your vault.")
+    }
+
+    /// Compact form for list rows, where the full prompt does not fit.
+    static func senderLine(sender: String?) -> Text {
+        guard let sender else { return Text("Sender not confirmed") }
+        return Text("From \(sender)")
+    }
+}
+
 /// Quick-path alert over `InviteInboxCoordinator`'s queue, attached to the
 /// unlocked shell. Reconcile triggers (launch, foreground, push-hint) live
 /// here because the shell is the reliable lifecycle anchor; the queue and
@@ -35,11 +60,12 @@ struct InviteInboxBehaviors: ViewModifier {
             .onChange(of: env.inviteInboxCoordinator.alertsSuppressed) { _, suppressed in
                 if !suppressed { presentNextIfIdle() }
             }
-            .alert("Share invitation", isPresented: invitePresented, presenting: presentedInvite) { invite in
+            .alert(InvitePrompt.title(sender: presentedSender),
+                   isPresented: invitePresented, presenting: presentedInvite) { invite in
                 Button("Not now", role: .cancel) { finish(invite, accept: false) }
                 Button("Accept") { finish(invite, accept: true) }
-            } message: { _ in
-                Text("Someone shared an item with you in Loox Password. Accept to add it to your list.")
+            } message: { invite in
+                InvitePrompt.message(sender: env.inviteInboxCoordinator.senderName(for: invite))
             }
             .alert("Couldn't accept the invitation",
                    isPresented: Binding(get: { acceptError != nil },
@@ -48,6 +74,12 @@ struct InviteInboxBehaviors: ViewModifier {
             } message: {
                 Text(verbatim: acceptError ?? "")
             }
+    }
+
+    /// The alert title is built outside the `presenting:` closure, so the
+    /// sender has to be looked up here too.
+    private var presentedSender: String? {
+        presentedInvite.flatMap { env.inviteInboxCoordinator.senderName(for: $0) }
     }
 
     private var invitePresented: Binding<Bool> {

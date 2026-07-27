@@ -60,6 +60,45 @@ final class SharedItemsProjectionTests: XCTestCase {
         XCTAssertNil(item.fields.first { $0.kind == .url })
     }
 
+    func testBuildItemCarriesTheSendersCategory() throws {
+        // A shared Secure Note must not arrive as a login: the category drives
+        // the avatar glyph and the type line on the recipient's screen.
+        let grant = try makeGrant(capabilities: ["f": .value(.shared)])
+        var display = SharedDisplayEnvelope(title: "Recovery notes",
+                                            updatedAtUnixMs: nowMs, revision: 1)
+        display.category = ItemCategory.note.rawValue
+        let item = SharedItemsProjection.buildItem(origin: origin, grant: grant,
+                                                   display: display,
+                                                   values: ["f": Data("body".utf8)])
+        XCTAssertEqual(item.category, .note)
+    }
+
+    func testBuildItemFallsBackToLoginForMissingOrUnknownCategory() throws {
+        // Senders that predate the field, and a category only a newer build
+        // knows, both degrade to the historical rendering rather than losing
+        // the item.
+        let grant = try makeGrant(capabilities: ["f": .value(.shared)])
+        var display = SharedDisplayEnvelope(title: "X", updatedAtUnixMs: nowMs, revision: 1)
+        XCTAssertEqual(SharedItemsProjection.buildItem(origin: origin, grant: grant,
+                                                       display: display, values: [:]).category,
+                       .login)
+        display.category = "hologram"
+        XCTAssertEqual(SharedItemsProjection.buildItem(origin: origin, grant: grant,
+                                                       display: display, values: [:]).category,
+                       .login)
+    }
+
+    func testDisplayEnvelopeWithoutCategoryStillDecodes() throws {
+        // Wire compatibility: an envelope encoded before the field existed
+        // must decode unchanged, with no category.
+        let legacy = Data("""
+        {"title":"GitHub","websiteHost":"github.com","updatedAtUnixMs":1,"revision":2}
+        """.utf8)
+        let decoded = try JSONDecoder().decode(SharedDisplayEnvelope.self, from: legacy)
+        XCTAssertNil(decoded.category)
+        XCTAssertEqual(decoded.title, "GitHub")
+    }
+
     func testOwnedItemEncodingUnchangedBySharedOriginAddition() throws {
         // Owned items never carry an origin — the synthesized Codable must
         // omit the key entirely so sync/backup blobs stay byte-compatible.

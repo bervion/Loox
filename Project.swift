@@ -226,6 +226,15 @@ let project = Project(
                 "SWIFT_OBJC_BRIDGING_HEADER": "VaultifyAutoFill/VaultifyAutoFill-Bridging-Header.h",
                 "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
                 "SWIFT_EMIT_LOC_STRINGS": "YES",
+                // The extension carries the same iCloud container as the app
+                // (see VaultifyAutoFill.entitlements), so it needs the same
+                // compile flag: VaultifyCore's CloudKit paths are `#if`-gated on
+                // it. Without it `SharedGrantLiveCheck` returns .unavailable and
+                // `PasskeyApprovalTransport` throws .notConfigured before any
+                // network call, so every shared-item fill and every ask-each-time
+                // passkey fails. Settings are per-target — `$(inherited)` reads
+                // the PROJECT base, it does not inherit from the app target.
+                "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "$(inherited) VAULTIFY_ICLOUD",
                 "TARGETED_DEVICE_FAMILY": "1",
                 "SKIP_INSTALL": "YES",
                 "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks",

@@ -107,12 +107,13 @@ enum CredentialIdentityService {
         }
         let passkeyIdentities = lastPasskeys.map { $0.credentialIdentity() }
         // Shared passkey slots (capability v2): identity registration is
-        // metadata-only, allowed for BOTH modes (user decision 260705 —
-        // askEachTime taps route into the approval ceremony). Tier-0 items
-        // never reach the cache, so unapproved devices register nothing.
+        // metadata-only and covers BOTH usable modes (user decision 260705 —
+        // askEachTime taps route into the owner-approval ceremony in the
+        // extension). Tier-0 items never reach the cache, so unapproved
+        // devices register nothing.
         let sharedPasskeyIdentities: [ASPasskeyCredentialIdentity] = lastSharedEntries
             .flatMap { entry in
-                (entry.passkeys ?? []).map { slot in
+                (entry.passkeys ?? []).filter(Self.canCompleteAssertion).map { slot in
                     ASPasskeyCredentialIdentity(
                         relyingPartyIdentifier: slot.relyingParty,
                         userName: slot.userName,
@@ -139,6 +140,24 @@ enum CredentialIdentityService {
             if !secondary.isEmpty {
                 try? await store.saveCredentialIdentities(secondary)
             }
+        }
+    }
+
+    /// Whether tapping this shared slot on the QuickType bar can actually
+    /// finish a sign-in. Suggesting one that cannot is the same dead end an
+    /// Extra-Protected login would be: the OS offers the credential, the user
+    /// taps it, and the sheet can only show an error.
+    ///
+    /// Hand-over needs the delivered private key to sign locally — a slot
+    /// whose key never arrived (a projection built before the blob landed, or
+    /// a share downgraded since) has nothing to sign with. Ask-each-time
+    /// needs nothing local by design: the owner signs it. A slot with no
+    /// capability grants nothing at all.
+    private static func canCompleteAssertion(_ slot: SharedPasskeyEntry) -> Bool {
+        switch slot.mode {
+        case .shared: return slot.privateKeyRaw != nil
+        case .askEachTime: return true
+        case .none: return false
         }
     }
 

@@ -19,7 +19,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ đang yêu cầu mã xác thực hiện tại cho %2$@."
+            "value": "%1$@ đang yêu cầu mã xác minh hiện tại cho %2$@."
           }
         }
       }
@@ -30,6 +30,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ đang yêu cầu đăng nhập bằng passkey được chia sẻ cho %2$@."
+          }
+        }
+      }
+    },
+    "%1$lld shared, %2$lld waiting": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chia sẻ %1$lld mục, %2$lld đang chờ"
           }
         }
       }
@@ -99,7 +109,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ đang yêu cầu mã xác thực hiện tại cho %2$@."
+            "value": "%1$@ đang yêu cầu mã xác minh hiện tại cho %2$@."
           }
         }
       }
@@ -118,6 +128,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ đang yêu cầu đăng nhập bằng passkey được chia sẻ cho %2$@."
+          }
+        }
+      }
+    },
+    "%@ wants to share with you": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ muốn chia sẻ với bạn"
           }
         }
       }
@@ -373,6 +393,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld mục dùng chung mật khẩu"
+          }
+        }
+      }
+    },
+    "%lld shared": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chia sẻ %lld mục"
+          }
+        }
+      }
+    },
+    "%lld shared, %lld waiting": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chia sẻ %1$lld mục, %2$lld đang chờ"
           }
         }
       }
@@ -712,6 +752,35 @@
         }
       }
     },
+    "About %lld seconds left": {
+      "comment": "Countdown while waiting for the item owner to approve a shared request.",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "About 1 second left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "About %lld seconds left"
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Còn khoảng %lld giây"
+          }
+        }
+      }
+    },
     "About %llds remaining": {
       "extractionState": "stale",
       "localizations": {
@@ -756,6 +825,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chấp nhận"
+          }
+        }
+      }
+    },
+    "Accept this share invitation": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chấp nhận lời mời chia sẻ này"
           }
         }
       }
@@ -1391,6 +1470,16 @@
         }
       }
     },
+    "Almost done. Finish setting up so they can use this item.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sắp xong. Hoàn tất thiết lập để họ dùng được mục này."
+          }
+        }
+      }
+    },
     "Already set up. Unlock with %@.": {
       "localizations": {
         "vi": {
@@ -1644,6 +1733,22 @@
         }
       }
     },
+    "Approval was interrupted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approval was interrupted"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phê duyệt bị gián đoạn"
+          }
+        }
+      }
+    },
     "Approval was interrupted. Ask them to request again.": {
       "localizations": {
         "en": {
@@ -1656,22 +1761,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Phê duyệt bị gián đoạn. Hãy nhờ họ gửi lại yêu cầu."
-          }
-        }
-      }
-    },
-    "Approval was interrupted. Request again": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Approval was interrupted. Request again"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Phê duyệt bị gián đoạn. Hãy yêu cầu lại"
           }
         }
       }
@@ -1829,6 +1918,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nhờ %@ đọc mã hiển thị trên thiết bị của họ. Chỉ xác nhận khi hai mã trùng khớp hoàn toàn. Đây là cách chứng minh bạn đang chia sẻ đúng người."
+          }
+        }
+      }
+    },
+    "Ask Again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask Again"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hỏi lại"
           }
         }
       }
@@ -2065,6 +2170,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tự động điền"
+          }
+        }
+      }
+    },
+    "AutoFill will not offer this share until you decide about it here.": {
+      "comment": "State line for a received share nobody has decided on: its content stays out of AutoFill.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động điền sẽ chưa dùng chia sẻ này cho đến khi bạn quyết định tại đây."
           }
         }
       }
@@ -2316,6 +2432,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đang tính điểm"
+          }
+        }
+      }
+    },
+    "Can't read what they can use right now. Check your connection and reopen this screen.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện chưa đọc được họ dùng được những gì. Kiểm tra kết nối rồi mở lại màn hình này."
           }
         }
       }
@@ -3016,6 +3142,17 @@
         }
       }
     },
+    "Compare safety code": {
+      "comment": "Opens the optional out-of-band safety-code comparison for a received share.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đối chiếu mã an toàn"
+          }
+        }
+      }
+    },
     "Compare this code": {
       "extractionState": "stale",
       "localizations": {
@@ -3351,6 +3488,17 @@
         }
       }
     },
+    "Copy code": {
+      "comment": "Copies the share safety code so it can be sent over another channel.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép mã"
+          }
+        }
+      }
+    },
     "Couldn't accept the invitation": {
       "localizations": {
         "en": {
@@ -3404,6 +3552,38 @@
         }
       }
     },
+    "Couldn't load this share. It may have been revoked, or you may be offline.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load this share. It may have been revoked, or you may be offline."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không tải được chia sẻ này. Có thể nó đã bị thu hồi, hoặc bạn đang ngoại tuyến."
+          }
+        }
+      }
+    },
+    "Couldn't reach iCloud. Check your connection.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't reach iCloud. Check your connection."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không kết nối được iCloud. Hãy kiểm tra kết nối mạng."
+          }
+        }
+      }
+    },
     "Couldn't reach the owner right now.": {
       "localizations": {
         "vi": {
@@ -3420,6 +3600,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hiện không thể xác minh quyền truy cập."
+          }
+        }
+      }
+    },
+    "Couldn't verify access right now. Check your connection.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't verify access right now. Check your connection."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện chưa xác minh được quyền truy cập. Hãy kiểm tra kết nối mạng."
           }
         }
       }
@@ -4527,6 +4723,16 @@
         }
       }
     },
+    "Done.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xong."
+          }
+        }
+      }
+    },
     "Double tap to copy": {
       "localizations": {
         "vi": {
@@ -5276,12 +5482,12 @@
         }
       }
     },
-    "Everything is encrypted on this iPhone. The server stores only ciphertext; the decryption key travels inside the link and is never sent to any server.": {
+    "Everything is encrypted on this iPhone. The server only ever holds the locked version, and the key that opens it travels inside the link, never to any server.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi thứ được mã hóa ngay trên iPhone này. Máy chủ chỉ lưu bản mã; khóa giải mã nằm trong liên kết và không bao giờ được gửi tới máy chủ."
+            "value": "Mọi thứ được mã hóa ngay trên iPhone này. Máy chủ chỉ giữ bản đã khóa, còn chìa khóa mở nó nằm trong liên kết và không bao giờ được gửi tới máy chủ."
           }
         }
       }
@@ -5328,8 +5534,26 @@
       }
     },
     "Expires in %lld seconds": {
-      "comment": "Quick View session countdown — %lld is the remaining whole seconds.",
+      "comment": "Quick View session countdown — %lld is the remaining whole seconds. The countdown passes through 1, so English needs both plural forms; Vietnamese has no grammatical plural.",
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Expires in %lld second"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Expires in %lld seconds"
+                }
+              }
+            }
+          }
+        },
         "vi": {
           "stringUnit": {
             "state": "translated",
@@ -5625,6 +5849,36 @@
         }
       }
     },
+    "Finish Setting Up": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoàn tất thiết lập"
+          }
+        }
+      }
+    },
+    "Finishes by itself once their device is ready.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sẽ tự hoàn tất khi máy của họ sẵn sàng."
+          }
+        }
+      }
+    },
+    "Finishing setup": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang hoàn tất thiết lập"
+          }
+        }
+      }
+    },
     "First %lld days free, then %@ each year. Auto-renews until canceled. Cancel anytime in Settings.": {
       "localizations": {
         "vi": {
@@ -5814,6 +6068,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Từ"
+          }
+        }
+      }
+    },
+    "From %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Từ %@"
           }
         }
       }
@@ -6616,6 +6880,26 @@
         }
       }
     },
+    "Invite someone": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mời người khác"
+          }
+        }
+      }
+    },
+    "Invite someone above, or share a single item from the item itself. Either way they show up here.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mời người khác ở trên, hoặc chia sẻ từng mục ngay tại mục đó. Cách nào họ cũng xuất hiện ở đây."
+          }
+        }
+      }
+    },
     "Isolated": {
       "comment": "Persona isolation policy.",
       "localizations": {
@@ -6639,6 +6923,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mã này phải trùng với mã trên màn hình của họ."
+          }
+        }
+      }
+    },
+    "Item": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục"
           }
         }
       }
@@ -7301,6 +7595,16 @@
         }
       }
     },
+    "Loox could not confirm who sent this invitation. Accept only if you were expecting it.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox không xác nhận được ai đã gửi lời mời này. Chỉ chấp nhận nếu bạn đang chờ lời mời đó."
+          }
+        }
+      }
+    },
     "Loox may adjust the selected color slightly to keep text and controls readable.": {
       "extractionState": "stale",
       "localizations": {
@@ -7743,7 +8047,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phần lớn nhóm này đã được chia sẻ. Một vài mục chưa gửi được. Các mục đã chia sẻ trước đó không bị ảnh hưởng."
+            "value": "Phần lớn Nhóm này đã được chia sẻ. Một vài mục chưa gửi được. Các mục đã chia sẻ trước đó không bị ảnh hưởng."
           }
         }
       }
@@ -8270,7 +8574,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có nhóm nào"
+            "value": "Chưa có Nhóm nào"
           }
         }
       }
@@ -8302,6 +8606,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chủ sở hữu chưa phản hồi. Thử lại sau một lát nhé."
+          }
+        }
+      }
+    },
+    "No answer from the owner. They may not have Loox open.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No answer from the owner. They may not have Loox open."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu chưa trả lời. Có thể họ chưa mở Loox."
           }
         }
       }
@@ -8682,6 +9002,23 @@
         }
       }
     },
+    "Not shared": {
+      "comment": "Shared-passkey row subtitle: this slot grants nothing.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not shared"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không được chia sẻ"
+          }
+        }
+      }
+    },
     "Not verified": {
       "localizations": {
         "vi": {
@@ -8768,6 +9105,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Không có gì được gửi tới máy chủ. Kho của bạn không bao giờ rời thiết bị ở dạng chưa mã hóa."
+          }
+        }
+      }
+    },
+    "Nothing shared": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa chia sẻ gì"
           }
         }
       }
@@ -9065,6 +9412,22 @@
         }
       }
     },
+    "Only logins can be shared, so nothing in this Space qualifies yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only logins can be shared, so nothing in this Space qualifies yet."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉ mục đăng nhập mới chia sẻ được, nên chưa có mục nào trong Nhóm này đủ điều kiện."
+          }
+        }
+      }
+    },
     "Only the fields you picked were shared, once.": {
       "localizations": {
         "vi": {
@@ -9080,7 +9443,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chỉ các trường bạn chọn được đưa vào. Mã một lần và giá trị bảo vệ nâng cao không bao giờ được chia sẻ qua liên kết."
+            "value": "Chỉ các trường bạn chọn được đưa vào. Mã một lần và giá trị được bảo vệ bằng Mật khẩu cấp 2 không bao giờ được chia sẻ qua liên kết."
           }
         }
       }
@@ -9139,6 +9502,16 @@
         }
       }
     },
+    "Open Loox to finish setting up the share.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở Loox để hoàn tất thiết lập chia sẻ."
+          }
+        }
+      }
+    },
     "Open Settings": {
       "localizations": {
         "vi": {
@@ -9177,6 +9550,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mở trang web"
+          }
+        }
+      }
+    },
+    "Opening Loox ends this fill, so you would have to start it again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening Loox ends this fill, so you would have to start it again."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở Loox sẽ kết thúc lần điền này, bạn sẽ phải bắt đầu lại."
           }
         }
       }
@@ -9329,6 +9718,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chủ sở hữu"
+          }
+        }
+      }
+    },
+    "Owner approves each sign-in": {
+      "comment": "Shared-passkey row subtitle: askEachTime mode.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Owner approves each sign-in"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu duyệt mỗi lần đăng nhập"
           }
         }
       }
@@ -10439,6 +10845,16 @@
         }
       }
     },
+    "Quick Link is turned off in Settings.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết nhanh đang tắt trong Cài đặt."
+          }
+        }
+      }
+    },
     "Quick Look": {
       "localizations": {
         "vi": {
@@ -10497,6 +10913,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nhập lại mật khẩu"
+          }
+        }
+      }
+    },
+    "Ready in AutoFill": {
+      "comment": "Shared-passkey row subtitle: hand-over mode, usable from the AutoFill suggestions.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready in AutoFill"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sẵn sàng trong tự động điền"
           }
         }
       }
@@ -11961,6 +12394,16 @@
         }
       }
     },
+    "Sender not confirmed": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa xác nhận người gửi"
+          }
+        }
+      }
+    },
     "Sending encrypted key…": {
       "localizations": {
         "vi": {
@@ -12220,6 +12663,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đang thiết lập kênh phê duyệt mã hóa…"
+          }
+        }
+      }
+    },
+    "Setting up on their device": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang thiết lập trên máy của họ"
           }
         }
       }
@@ -12567,6 +13020,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chia sẻ mục này"
+          }
+        }
+      }
+    },
+    "Share with": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ với"
           }
         }
       }
@@ -12926,6 +13389,22 @@
         }
       }
     },
+    "Sign in to iCloud": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to iCloud"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đăng nhập iCloud"
+          }
+        }
+      }
+    },
     "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync.": {
       "localizations": {
         "en": {
@@ -12970,6 +13449,32 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đăng nhập bằng passkey"
+          }
+        }
+      }
+    },
+    "Sign in with a shared passkey from the AutoFill suggestions on the website. The private key stays with the owner, so it never opens here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with a shared passkey from the AutoFill suggestions on the website. The private key stays with the owner, so it never opens here."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hãy đăng nhập bằng passkey được chia sẻ từ gợi ý tự động điền trên website. Khóa riêng vẫn nằm ở chủ sở hữu nên không bao giờ mở ra tại đây."
+          }
+        }
+      }
+    },
+    "Sign-in approved": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã phê duyệt đăng nhập"
           }
         }
       }
@@ -13300,6 +13805,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ngừng nhắc về phát hiện này"
+          }
+        }
+      }
+    },
+    "Stop sharing": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ngừng chia sẻ"
+          }
+        }
+      }
+    },
+    "Stop sharing this item": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ngừng chia sẻ mục này"
+          }
+        }
+      }
+    },
+    "Stop sharing this item?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ngừng chia sẻ mục này?"
           }
         }
       }
@@ -13694,18 +14229,34 @@
         }
       }
     },
-    "The code expired. Request again": {
+    "The code expired": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The code expired. Request again"
+            "value": "The code expired"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã đã hết hạn. Hãy yêu cầu lại"
+            "value": "Mã đã hết hạn"
+          }
+        }
+      }
+    },
+    "The code expired.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code expired."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã đã hết hạn."
           }
         }
       }
@@ -13762,6 +14313,22 @@
         }
       }
     },
+    "The owner declined this request.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The owner declined this request."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu đã từ chối yêu cầu này."
+          }
+        }
+      }
+    },
     "The owner declined this sign-in.": {
       "localizations": {
         "vi": {
@@ -13778,6 +14345,33 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chủ sở hữu đã thu hồi quyền truy cập mục này."
+          }
+        }
+      }
+    },
+    "The owner has to open Loox and approve with Face ID. Nothing is filled until they do.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The owner has to open Loox and approve with Face ID. Nothing is filled until they do."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu cần mở Loox và phê duyệt bằng Face ID. Chưa có gì được điền cho tới khi họ duyệt."
+          }
+        }
+      }
+    },
+    "The owner hasn't finished setting up this share yet. Ask them to finish sharing the item.": {
+      "comment": "Shown to a recipient whose accepted zone has no grant published yet.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu chưa hoàn tất thiết lập chia sẻ này. Hãy nhờ họ hoàn tất việc chia sẻ mục đó."
           }
         }
       }
@@ -13808,6 +14402,22 @@
         }
       }
     },
+    "The owner started to approve, then Loox closed on their device.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The owner started to approve, then Loox closed on their device."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chủ sở hữu đã bắt đầu phê duyệt rồi Loox trên máy họ bị đóng."
+          }
+        }
+      }
+    },
     "The owner stopped sharing this item.": {
       "localizations": {
         "en": {
@@ -13820,6 +14430,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chủ sở hữu đã ngừng chia sẻ mục này."
+          }
+        }
+      }
+    },
+    "The owner's answer couldn't be verified.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The owner's answer couldn't be verified."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không xác minh được câu trả lời của chủ sở hữu."
           }
         }
       }
@@ -13922,6 +14548,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hiện chưa lấy được mã an toàn. Hãy thử lại sau, hoặc dùng chia sẻ mà không xác minh."
+          }
+        }
+      }
+    },
+    "The safety code isn't available right now. Try again later.": {
+      "comment": "Shown on the optional comparison sheet when the safety code could not be derived.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện chưa lấy được mã an toàn. Hãy thử lại sau."
           }
         }
       }
@@ -14047,6 +14684,16 @@
         }
       }
     },
+    "Their device has not finished setting up yet.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Máy của họ chưa thiết lập xong."
+          }
+        }
+      }
+    },
     "Their device was notified automatically too. The Messages link below is just a backup.": {
       "localizations": {
         "vi": {
@@ -14167,12 +14814,32 @@
         }
       }
     },
+    "They can finish this one sign-in. The passkey itself never left your device.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ có thể hoàn tất lần đăng nhập này. Passkey vẫn nằm nguyên trên máy của bạn."
+          }
+        }
+      }
+    },
     "They can now use every shared login in this Space. Manage or revoke access anytime from Family.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "Họ có thể dùng mọi mục đăng nhập đã chia sẻ trong Nhóm này. Bạn có thể quản lý hoặc thu hồi quyền truy cập bất cứ lúc nào từ Gia đình."
+          }
+        }
+      }
+    },
+    "They can use the fields you chose.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ có thể dùng những trường bạn đã chọn."
           }
         }
       }
@@ -14213,6 +14880,22 @@
         }
       }
     },
+    "They have to open Loox and approve with Face ID.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They have to open Loox and approve with Face ID."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ cần mở Loox và phê duyệt bằng Face ID."
+          }
+        }
+      }
+    },
     "They haven't accepted the invitation yet.": {
       "localizations": {
         "en": {
@@ -14239,6 +14922,16 @@
         }
       }
     },
+    "They lose access to this item. Anything else you shared with them stays. Values already handed over stay on their device.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Họ sẽ mất quyền truy cập mục này. Những mục khác bạn đã chia sẻ với họ vẫn giữ nguyên. Giá trị đã giao hẳn vẫn nằm trên máy của họ."
+          }
+        }
+      }
+    },
     "They now see what you allowed. You can change or revoke access anytime from this item.": {
       "localizations": {
         "en": {
@@ -14255,18 +14948,18 @@
         }
       }
     },
-    "They received a one-time code. It expires with the current window; nothing else was shared.": {
+    "They received a one-time code. It expires with the current window. Nothing else was shared.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "They received a one-time code. It expires with the current window; nothing else was shared."
+            "value": "They received a one-time code. It expires with the current window. Nothing else was shared."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ đã nhận một mã dùng một lần. Mã hết hạn theo chu kỳ hiện tại; không có gì khác được chia sẻ."
+            "value": "Họ đã nhận một mã dùng một lần. Mã hết hạn theo chu kỳ hiện tại. Không có gì khác được chia sẻ."
           }
         }
       }
@@ -14385,6 +15078,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mã này không còn khả dụng."
+          }
+        }
+      }
+    },
+    "This code isn't shared with you anymore.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This code isn't shared with you anymore."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã này không còn được chia sẻ với bạn."
           }
         }
       }
@@ -14714,6 +15423,16 @@
         }
       }
     },
+    "This name comes from their iCloud account. Accept to add the shared item to your vault.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tên này lấy từ tài khoản iCloud của họ. Chấp nhận để thêm mục được chia sẻ vào kho của bạn."
+          }
+        }
+      }
+    },
     "This pairing code needs a newer app version.": {
       "localizations": {
         "vi": {
@@ -14730,6 +15449,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Passkey này không còn khả dụng."
+          }
+        }
+      }
+    },
+    "This passkey isn't shared with you anymore.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This passkey isn't shared with you anymore."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passkey này không còn được chia sẻ với bạn."
           }
         }
       }
@@ -15355,6 +16090,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mở khóa Loox ở cửa sổ chính để thay đổi cài đặt."
+          }
+        }
+      }
+    },
+    "Unlock Loox, then try again.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở khóa Loox rồi thử lại."
           }
         }
       }
@@ -16134,6 +16879,16 @@
         }
       }
     },
+    "Waiting to accept": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang chờ chấp nhận"
+          }
+        }
+      }
+    },
     "Want to start fresh?": {
       "localizations": {
         "vi": {
@@ -16390,6 +17145,22 @@
         }
       }
     },
+    "When a sign-in needs approval, the owner has to have Loox open to answer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When a sign-in needs approval, the owner has to have Loox open to answer."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi một lần đăng nhập cần phê duyệt, chủ sở hữu phải đang mở Loox để trả lời."
+          }
+        }
+      }
+    },
     "When automatic updates are off, your edits reach this person only when you tap Send Update Now.": {
       "localizations": {
         "vi": {
@@ -16530,6 +17301,17 @@
         }
       }
     },
+    "You confirmed this code with the owner.": {
+      "comment": "State line under a received share's safety code once the codes were compared and matched.",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn đã xác nhận mã này với chủ sở hữu."
+          }
+        }
+      }
+    },
     "You have walked the whole queue.": {
       "localizations": {
         "vi": {
@@ -16599,6 +17381,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bạn cần ít nhất một danh tính."
+          }
+        }
+      }
+    },
+    "You revoked everything you had shared with this person.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn đã thu hồi mọi thứ từng chia sẻ với người này."
           }
         }
       }
@@ -16835,6 +17627,16 @@
         }
       }
     },
+    "Your share is active": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ của bạn đã hoạt động"
+          }
+        }
+      }
+    },
     "Your vault is empty": {
       "comment": "A description of the empty state of the vault.",
       "isCommentAutoGenerated": true,
@@ -16966,17 +17768,18 @@
       }
     },
     "approval.push.body": {
+      "comment": "Push alert for an approval request. The same record type carries both verification-code and shared-passkey sign-in requests, so this must not name either kind.",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Someone is asking for a verification code. Open Loox to review."
+            "value": "Someone is waiting for your approval. Open Loox to review."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Có người đang xin mã xác minh. Mở Loox để xem xét."
+            "value": "Có người đang chờ bạn phê duyệt. Mở Loox để xem xét."
           }
         }
       }
@@ -17042,6 +17845,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hiện chưa kết nối được iCloud. Hãy kiểm tra kết nối mạng và đăng nhập iCloud rồi thử lại."
+          }
+        }
+      }
+    },
+    "iCloud sharing isn't available in this version of Loox.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud sharing isn't available in this version of Loox."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phiên bản Loox này chưa hỗ trợ chia sẻ qua iCloud."
           }
         }
       }
