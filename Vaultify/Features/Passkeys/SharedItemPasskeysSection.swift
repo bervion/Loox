@@ -32,8 +32,27 @@ struct SharedItemPasskeysSection: View {
                 // Same card treatment as the other detail-screen cards — elevation
                 // over a raw black/white stroke, tracking the live theme.
                 .elevation(.level1)
+                // The rows carry no action on purpose, so the screen has to say
+                // where a shared passkey IS used. Without this the section reads
+                // as a broken control next to the TOTP section's live Request
+                // button, and the recipient keeps tapping a row that cannot do
+                // anything: the private key never comes into the app.
+                usageNote
             }
         }
+    }
+
+    @ViewBuilder
+    private var usageNote: some View {
+        VStack(alignment: .leading, spacing: Space.s1) {
+            Text("Sign in with a shared passkey from the AutoFill suggestions on the website. The private key stays with the owner, so it never opens here.")
+            if passkeys.contains(where: { $0.mode == .askEachTime }) {
+                Text("When a sign-in needs approval, the owner has to have Loox open to answer.")
+            }
+        }
+        .vaultType(.footnote)
+        .themedForeground(.secondary)
+        .padding(.horizontal, Space.s1)
     }
 
     private func row(_ passkey: SharedPasskeyDisplay) -> some View {
@@ -55,11 +74,14 @@ struct SharedItemPasskeysSection: View {
         )
     }
 
+    /// Names WHERE the passkey works, not just whether it is on — "Ready to
+    /// use" on a row that does nothing when tapped is what made this section
+    /// read as broken.
     private func modeLabel(_ mode: PasskeyFieldCapability) -> LocalizedStringKey {
         switch mode {
-        case .shared: "Ready to use"
-        case .askEachTime: "Ask owner each time"
-        case .none: "Off"
+        case .shared: "Ready in AutoFill"
+        case .askEachTime: "Owner approves each sign-in"
+        case .none: "Not shared"
         }
     }
 

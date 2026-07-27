@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Unlock then pick a login to fill (or create a new one). Items whose website matches the
 /// requesting app/site are shown first. Unlock is handled by the shared `UnlockGate`.
@@ -75,11 +76,6 @@ private enum CredentialRow: Identifiable {
         return nil
     }
 
-    var sharedItemID: String? {
-        if case .shared(let entry) = self { return entry.itemID }
-        return nil
-    }
-
     var sharedEntry: SharedCredentialEntry? {
         if case .shared(let entry) = self { return entry }
         return nil
@@ -130,6 +126,9 @@ private struct CredentialListView: View {
     /// Non-nil while the pre-fill live grant check runs (INV-11).
     @State private var verifyingRowID: String?
     @State private var fillBlockedMessage: String?
+    /// The shared askEachTime TOTP ceremony, run in a sheet OVER this picker
+    /// so the fill session survives it.
+    @State private var codeRequest: SharedCodeRequest?
 
     var body: some View {
         Group {
@@ -141,6 +140,11 @@ private struct CredentialListView: View {
                isPresented: Binding(get: { fillBlockedMessage != nil },
                                     set: { if !$0 { fillBlockedMessage = nil } })) {
             Button("OK", role: .cancel) {}
+        }
+        .sheet(item: $codeRequest) { request in
+            RequestSharedCodeView(entry: request.entry, fieldId: request.fieldId,
+                                  onClose: { codeRequest = nil },
+                                  onOpenApp: { openInApp(itemID: request.entry.itemID) })
         }
         .task {
             guard !loaded else { return }
@@ -237,12 +241,14 @@ private struct CredentialListView: View {
                 }
             }
             Spacer()
-            // Extensions have no CloudKit entitlement, so the request/response ceremony
-            // can't run here — hand off to the app, which already has the Request
-            // control on this shared item's detail screen (ItemDetailScreen).
-            if row.sharedTOTPFieldId != nil, let itemID = row.sharedItemID {
+            // The extension carries the same iCloud container as the app, so the
+            // request/response ceremony runs HERE. Deep-linking out used to end
+            // the fill session (`onCancel` completes the request with a cancel
+            // error and iOS gives no way to resume it), which meant copying a
+            // ~30s code in another app and finding your way back by hand.
+            if let fieldId = row.sharedTOTPFieldId, let entry = row.sharedEntry {
                 Button {
-                    requestCode(itemID: itemID)
+                    codeRequest = SharedCodeRequest(entry: entry, fieldId: fieldId)
                 } label: {
                     Label("Request code", systemImage: "arrow.up.right.square")
                         .labelStyle(.iconOnly)
@@ -289,9 +295,235 @@ private struct CredentialListView: View {
         onSelect(credential.user, credential.password)
     }
 
-    private func requestCode(itemID: String) {
+    /// The explicit escape hatch, never the default: leaving for the app ENDS
+    /// this fill session, so it only happens when the user asks for it.
+    private func openInApp(itemID: String) {
         guard let url = SharedItemDeepLink.url(itemID: itemID) else { return }
+        codeRequest = nil
         openURL(url)
         onCancel()
+    }
+}
+
+/// One pending shared-TOTP ceremony. Identified by the item so tapping the
+/// same row twice reuses the sheet instead of stacking a second request.
+private struct SharedCodeRequest: Identifiable {
+    let entry: SharedCredentialEntry
+    let fieldId: String
+    var id: String { entry.itemID }
+}
+
+/// The recipient's ask-and-wait ceremony for one shared `askEachTime` TOTP
+/// field, run inside the AutoFill extension.
+///
+/// Closing this sheet returns to the credential picker with the fill session
+/// intact — the user can copy the code into the site's 2FA box and still fill
+/// the username and password from the row behind it.
+private struct RequestSharedCodeView: View {
+    let entry: SharedCredentialEntry
+    let fieldId: String
+    let onClose: () -> Void
+    let onOpenApp: () -> Void
+
+    private enum Phase {
+        case idle
+        case requesting
+        case waiting
+        case delivered(code: String, periodEndUnixMs: Int64)
+        case failed(message: String, retryable: Bool)
+    }
+
+    @State private var phase: Phase = .idle
+    @State private var task: Task<Void, Never>?
+    @State private var secondsLeft = 0
+    @State private var copied = false
+
+    /// How long the owner has to answer before this gives up
+    /// (`SharedAccessTimingPolicy.extensionPollingBudget`).
+    private static let budgetSeconds =
+        Int(SharedAccessTimingPolicy.standard.extensionPollingBudget.components.seconds)
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    content
+                } footer: {
+                    // States the real constraint on the OTHER device up front,
+                    // so a timeout reads as "they never got to it" instead of
+                    // a broken feature. Redundant once the code is here.
+                    if showsOwnerNote {
+                        Text("The owner has to open Loox and approve with Face ID. Nothing is filled until they do.")
+                    }
+                }
+                Section {
+                    Button("Open Loox") { onOpenApp() }
+                } footer: {
+                    Text("Opening Loox ends this fill, so you would have to start it again.")
+                }
+            }
+            .navigationTitle(Text(verbatim: entry.title.isEmpty
+                                  ? appString("Request code") : entry.title))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { task?.cancel(); onClose() }
+                }
+            }
+        }
+        .task(id: isWaiting) { await runCountdown() }
+        .onDisappear { task?.cancel() }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch phase {
+        case .idle:
+            Button(action: start) {
+                HStack { Spacer(); Text("Request Code").bold(); Spacer() }
+            }
+        case .requesting:
+            HStack(spacing: 8) { ProgressView(); Text("Sending request…") }
+        case .waiting:
+            VStack(spacing: 12) {
+                ProgressView()
+                Text("Waiting for the owner to approve…").font(.footnote)
+                if secondsLeft > 0 {
+                    Text("About \(secondsLeft) seconds left")
+                        .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+                }
+                Button("Cancel", role: .cancel) { task?.cancel(); phase = .idle }
+                    .buttonStyle(.bordered)
+            }
+            .frame(maxWidth: .infinity)
+        case let .delivered(code, periodEndUnixMs):
+            DeliveredCodeView(code: code, periodEndUnixMs: periodEndUnixMs,
+                              copied: $copied, onExpired: {
+                                  phase = .failed(message: appString("The code expired."),
+                                                  retryable: true)
+                              })
+        case let .failed(message, retryable):
+            VStack(spacing: 12) {
+                Text(verbatim: message)
+                    .font(.footnote).foregroundStyle(.red).multilineTextAlignment(.center)
+                if retryable {
+                    Button("Request Again", action: start).buttonStyle(.borderedProminent)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var isWaiting: Bool { if case .waiting = phase { return true }; return false }
+
+    private var showsOwnerNote: Bool { if case .delivered = phase { return false }; return true }
+
+    private func start() {
+        task?.cancel()
+        copied = false
+        phase = .requesting
+        task = Task {
+            do {
+                let ticket = try await SharedTOTPApprovalTransport.submitRequest(
+                    zoneName: entry.zoneName, ownerName: entry.ownerName,
+                    expectedGrantId: entry.grantId, fieldId: fieldId)
+                phase = .waiting
+                let payload = try await SharedTOTPApprovalTransport.awaitApproval(ticket)
+                phase = .delivered(code: payload.code,
+                                   periodEndUnixMs: payload.periodEndUnixMs)
+            } catch is CancellationError {
+                phase = .idle
+            } catch {
+                let outcome = Self.outcome(for: error)
+                phase = .failed(message: outcome.message, retryable: outcome.retryable)
+            }
+        }
+    }
+
+    /// Names the actual cause. Only `.rejected` and `.interrupted` mean the
+    /// owner saw the request; everything else failed before or after their
+    /// device was involved, so none of them may imply a decision was made.
+    private static func outcome(for error: any Error) -> (message: String, retryable: Bool) {
+        switch error {
+        case SharedTOTPApprovalTransport.Failure.rejected:
+            return (appString("The owner declined this request."), true)
+        case SharedTOTPApprovalTransport.Failure.interrupted:
+            return (appString("The owner started to approve, then Loox closed on their device."), true)
+        case SharedTOTPApprovalTransport.Failure.timedOut:
+            return (appString("No answer from the owner. They may not have Loox open."), true)
+        case SharedTOTPApprovalTransport.Failure.grantUnavailable:
+            return (appString("Couldn't load this share. It may have been revoked, or you may be offline."), true)
+        case SharedTOTPApprovalTransport.Failure.capabilityNotGranted:
+            return (appString("This code isn't shared with you anymore."), false)
+        case SharedTOTPApprovalTransport.Failure.invalidResponse:
+            return (appString("The owner's answer couldn't be verified."), true)
+        case SharedTOTPApprovalTransport.Failure.notConfigured:
+            return (appString("iCloud sharing isn't available in this version of Loox."), false)
+        default:
+            return (appString("Couldn't reach iCloud. Check your connection."), true)
+        }
+    }
+
+    /// Display-only clock for the wait; the transport owns the real deadline.
+    private func runCountdown() async {
+        guard isWaiting else { return }
+        var remaining = Self.budgetSeconds
+        while isWaiting, remaining > 0 {
+            secondsLeft = remaining
+            do { try await Task.sleep(for: .seconds(1)) } catch { return }
+            remaining -= 1
+        }
+        secondsLeft = 0
+    }
+}
+
+/// The delivered code with a copy control and an ADVISORY countdown — the
+/// site's own clock is the final authority. The code is never persisted, and
+/// the clipboard copy expires with the code's window so a 2FA secret does not
+/// outlive its usefulness on the pasteboard.
+private struct DeliveredCodeView: View {
+    let code: String
+    let periodEndUnixMs: Int64
+    @Binding var copied: Bool
+    let onExpired: () -> Void
+
+    @State private var remainingSeconds = 0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(verbatim: code)
+                    .font(.title2).bold().monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Spacer()
+                // Bare numeral plus the SI symbol for seconds — no wording to
+                // translate, and it stays legible next to the code.
+                Text(verbatim: "\(remainingSeconds)s").font(.footnote)
+                    .foregroundStyle(.secondary).monospacedDigit()
+            }
+            Button(copied ? "Copied" : "Copy", action: copy)
+                .buttonStyle(.borderedProminent)
+            Text("Use it now. It expires with the current window.")
+                .font(.footnote).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .task { await tick() }
+    }
+
+    private func copy() {
+        let expiry = Date(timeIntervalSince1970: TimeInterval(periodEndUnixMs) / 1000)
+        UIPasteboard.general.setItems([["public.utf8-plain-text": code]],
+                                      options: [.expirationDate: expiry])
+        copied = true
+    }
+
+    private func tick() async {
+        while !Task.isCancelled {
+            let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
+            let remaining = max(0, periodEndUnixMs - nowMs)
+            remainingSeconds = Int(remaining / 1000)
+            if remaining <= 0 { onExpired(); return }
+            do { try await Task.sleep(for: .seconds(1)) } catch { return }
+        }
     }
 }

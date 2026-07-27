@@ -34,8 +34,24 @@ nonisolated struct VaultDevice: Identifiable, Sendable {
     static let recordType = "OwnerDevice"
     static let revocationRecordType = "DeviceRevocation"
 
+    enum Failure: Error, LocalizedError {
+        /// The target resolves to this very device. Writing the marker would
+        /// sign the user out of the phone in their hand.
+        case cannotSignOutSelf
+
+        var errorDescription: String? {
+            switch self {
+            case .cannotSignOutSelf:
+                return appString("This is the device you're using. Sign out from the device you want to remove.")
+            }
+        }
+    }
+
     private let settings: SettingsStore
-    private let deviceID = OwnerDeviceIdentity.resolve()
+    /// Re-read per use, never frozen at init: this service is constructed at
+    /// launch, including background wakes while the phone is locked, when the
+    /// id is temporarily unreadable. nil means "not knowable right now".
+    private var deviceID: String? { OwnerDeviceIdentity.current() }
     // Lazy: created only when a network call actually runs (never under tests / when sync is
     // off), so `CKContainer.init` can't trap on an unprovisioned build.
     private lazy var container = CKContainer(identifier: "iCloud.com.bervion.vaultify")
@@ -51,14 +67,19 @@ nonisolated struct VaultDevice: Identifiable, Sendable {
     }
 
     /// This device — always available with no network (the list falls back to it).
+    /// An empty id means the registry identity was not readable at this moment;
+    /// the row still renders (the user is looking at an unlocked screen, so this
+    /// is rare) but nothing that writes to the registry will act on it.
     var thisDevice: VaultDevice {
-        VaultDevice(id: deviceID, name: Self.deviceName(), model: Self.deviceModel(),
+        VaultDevice(id: deviceID ?? "", name: Self.deviceName(), model: Self.deviceModel(),
                     lastSeenAt: .now, appVersion: Self.appVersion(), isCurrent: true)
     }
 
     /// Upsert this device's record (best-effort). Silently retried next time on failure.
     func publish() async {
-        guard canRun else { return }
+        // No id, no publish. Publishing under an unresolved identity is exactly
+        // how duplicate "devices" appeared in the list.
+        guard canRun, let deviceID else { return }
         let recordID = CKRecord.ID(recordName: "owner-device-\(deviceID)", zoneID: zone.zoneID)
         let record = CKRecord(recordType: Self.recordType, recordID: recordID)
         record["deviceID"] = deviceID as CKRecordValue
@@ -107,11 +128,15 @@ nonisolated struct VaultDevice: Identifiable, Sendable {
     /// best-effort publish) — a sign-out the owner believes happened must not silently
     /// not exist.
     func logOut(deviceID target: String) async throws {
+        // Signing THIS device out from its own row is not what the control
+        // means, and the id may be a stale one this install used to publish
+        // under — either way the marker would wipe the device it was tapped on.
+        guard !target.isEmpty, target != deviceID else { throw Failure.cannotSignOutSelf }
         let recordID = CKRecord.ID(recordName: "revoke-\(target)", zoneID: zone.zoneID)
         let record = CKRecord(recordType: Self.revocationRecordType, recordID: recordID)
         record["deviceID"] = target as CKRecordValue
         record["revokedAt"] = Date.now as CKRecordValue
-        record["byDeviceID"] = deviceID as CKRecordValue
+        record["byDeviceID"] = (deviceID ?? "") as CKRecordValue
         _ = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
         // Hide it locally right away; peers learn through the delta pull.
         DeviceRegistryMirror.markRevoked(target)
@@ -119,11 +144,19 @@ nonisolated struct VaultDevice: Identifiable, Sendable {
 
     /// Whether THIS device has been signed out remotely (marker seen by the delta
     /// pull). Mirror-only — no extra network round-trip per sync.
-    var isSelfRevoked: Bool { DeviceRegistryMirror.isRevoked(deviceID) }
+    ///
+    /// Fails SAFE when the id is unreadable: honoring a sign-out erases local
+    /// state, so an uncertain identity must never trigger it. The check runs
+    /// again on the next unlocked pass, when the answer is trustworthy.
+    var isSelfRevoked: Bool {
+        guard let deviceID else { return false }
+        return DeviceRegistryMirror.isRevoked(deviceID)
+    }
 
     /// Best-effort removal of this device's own registry record — called while
     /// executing a remote sign-out, before local state is erased.
     func deleteOwnRecord() async {
+        guard let deviceID else { return }
         let recordID = CKRecord.ID(recordName: "owner-device-\(deviceID)", zoneID: zone.zoneID)
         _ = try? await database.modifyRecords(saving: [], deleting: [recordID])
     }
@@ -187,13 +220,43 @@ nonisolated struct VaultDevice: Identifiable, Sendable {
 nonisolated enum OwnerDeviceIdentity {
     private static let account = "owner_device_id_v1"
 
-    static func resolve() -> String {
+    /// This device's registry id, or nil when it cannot be established RIGHT NOW.
+    ///
+    /// The distinction that matters: `KeychainStore.get` returns nil only for
+    /// "no such item", and THROWS for everything else. Keychain items here are
+    /// `WhenUnlockedThisDeviceOnly`, so a background wake while the phone is
+    /// locked (a silent sync or share-acceptance push) throws
+    /// `errSecInteractionNotAllowed` — the id exists and is simply unreadable.
+    ///
+    /// Collapsing both cases with `try?` and minting on nil is what produced
+    /// ghost devices: every locked background wake invented a new id, published
+    /// it as a brand-new device, and could not even persist it (the write is
+    /// blocked for the same reason), so the next wake invented another. It also
+    /// made signing a device out dangerous — the row the user tapped could be
+    /// carrying their REAL id while the running session held a ghost, so the
+    /// revocation landed on themselves and the device signed itself out on the
+    /// next unlock.
+    ///
+    /// Returning nil instead means callers do nothing rather than something
+    /// wrong. A read failure is transient; the next unlocked pass resolves it.
+    static func current() -> String? {
         let group = SharedConfig.keychainAccessGroup
-        if let existing = try? KeychainStore.get(account: account, accessGroup: group), existing.count == 16 {
-            return existing.hexString
+        do {
+            if let existing = try KeychainStore.get(account: account, accessGroup: group),
+               existing.count == 16 {
+                return existing.hexString
+            }
+        } catch {
+            return nil
         }
+        // Genuinely absent (first launch). Mint one, but only claim it if it
+        // persisted — an id that cannot be stored is a ghost by another name.
         let fresh = CryptoRandom.data(16)
-        try? KeychainStore.set(fresh, account: account, accessGroup: group)
+        do {
+            try KeychainStore.set(fresh, account: account, accessGroup: group)
+        } catch {
+            return nil
+        }
         return fresh.hexString
     }
 

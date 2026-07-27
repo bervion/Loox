@@ -25,6 +25,9 @@ struct ShareRecipientDetailSheet: View {
     @State private var editingDeviceScope: DeviceScope = .multi
     /// Passkey hand-over awaiting the irreversibility confirmation (INV-08).
     @State private var pendingHandOver: (id: String, capability: FieldCapability)?
+    /// The live grant could not be read (offline, throttled). Distinct from
+    /// "still loading" so the sheet never implies the share grants nothing.
+    @State private var grantUnavailable = false
 
     private var item: VaultItem? { env.repository.item(id: share.itemId) }
     private var zoneID: CKRecordZone.ID { CKRecordZone.ID(zoneName: share.zoneName) }
@@ -48,11 +51,13 @@ struct ShareRecipientDetailSheet: View {
             }
         }
         .task { await loadGrant() }
-        .confirmationDialog("Revoke access?", isPresented: $confirmRevoke,
+        .confirmationDialog("Stop sharing this item?", isPresented: $confirmRevoke,
                             titleVisibility: .visible) {
-            Button("Revoke access", role: .destructive) { Task { await revoke() } }
+            Button("Stop sharing", role: .destructive) { Task { await revoke() } }
         } message: {
-            Text("They can't request codes anymore. Values that were already shared stay on their device.")
+            // Honest about BOTH the scope and the limit: only this item goes
+            // away, and anything already handed over cannot be pulled back.
+            Text("They lose access to this item. Anything else you shared with them stays. Values already handed over stay on their device.")
         }
         .alert("Something went wrong", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -76,6 +81,23 @@ struct ShareRecipientDetailSheet: View {
 
     private var infoSection: some View {
         Section {
+            // The sheet is reached from a PERSON as well as from an item, so it
+            // has to name the item it is about. Reached from the item screen the
+            // identity used to be implicit; reached from Family nothing on
+            // screen said which of several shared items was being configured.
+            if let item {
+                LabeledContent {
+                    Text(verbatim: item.title.isEmpty ? appString("Untitled") : item.title)
+                        .themedForeground(.secondary)
+                        .lineLimit(1).truncationMode(.middle)
+                } label: {
+                    Label {
+                        Text("Item")
+                    } icon: {
+                        PolarisIcon(item.category.avatarIcon, size: Metric.iconInline)
+                    }
+                }
+            }
             LabeledContent("Recipient") {
                 Text(verbatim: share.recipientLabel)
                     .themedForeground(.secondary)
@@ -113,6 +135,7 @@ struct ShareRecipientDetailSheet: View {
                 if busy { ProgressView().frame(maxWidth: .infinity) }
                 else { Text("Send update now").frame(maxWidth: .infinity) }
             }
+            .buttonStyle(.themedTinted)
             .disabled(busy)
         } footer: {
             Text("When automatic updates are off, your edits reach this person only when you tap Send Update Now.")
@@ -121,7 +144,14 @@ struct ShareRecipientDetailSheet: View {
     }
 
     @ViewBuilder private var capabilitySection: some View {
-        if let item, capabilities != nil {
+        if grantUnavailable {
+            Section {
+                VaultInfoBanner(.warning,
+                                text: "Can't read what they can use right now. Check your connection and reopen this screen.")
+                    .inList()
+            }
+            .listRowBackground(Color.clear)
+        } else if let item, capabilities != nil {
             Section {
                 ForEach(item.fields) { field in
                     FieldCapabilityRow(field: field, capability: binding(for: field))
@@ -139,6 +169,7 @@ struct ShareRecipientDetailSheet: View {
                     if busy { ProgressView().frame(maxWidth: .infinity) }
                     else { Text("Apply changes").frame(maxWidth: .infinity) }
                 }
+                .buttonStyle(.themedProminent)
                 .disabled(busy)
             } header: {
                 Text("What they can use")
@@ -161,8 +192,9 @@ struct ShareRecipientDetailSheet: View {
                     showRevokeOfflineNotice = true
                 }
             } label: {
-                Text("Revoke access").frame(maxWidth: .infinity)
+                Text("Stop sharing this item").frame(maxWidth: .infinity)
             }
+            .buttonStyle(.themedDestructive)
             .disabled(busy)
             .onlineActionAppearance(online: env.reachability.hasSatisfiedNetworkPath)
             .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
@@ -186,12 +218,21 @@ struct ShareRecipientDetailSheet: View {
     // MARK: Actions
 
     /// Seed the capability editor from the LIVE grant (never a local guess).
+    ///
+    /// A failure here used to return silently, and because the editor is hidden
+    /// while `capabilities` is nil, an offline or throttled owner saw a sheet
+    /// that looked like the share granted nothing at all, with Revoke as the
+    /// only control. Say what happened instead.
     private func loadGrant() async {
-        guard share.fingerprintConfirmed, let item,
-              let grant = try? await env.approvalShare.fetchGrantFresh(
+        guard share.fingerprintConfirmed, let item else { return }
+        grantUnavailable = false
+        guard let grant = try? await env.approvalShare.fetchGrantFresh(
                   zoneID: zoneID, forItemId: item.id,
                   nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
-        else { return }
+        else {
+            grantUnavailable = true
+            return
+        }
         loadedGrant = grant
         // Preserve the live grant's device scope on any republish (INV-04).
         editingDeviceScope = grant.allowedDeviceKeyBindings.isEmpty ? .multi : .single
@@ -261,16 +302,37 @@ struct ShareRecipientDetailSheet: View {
         }
     }
 
+    /// Whether this share is the only thing left in its zone. A zone holds one
+    /// item-share per grant, and a Space fan-out deliberately puts many items
+    /// into ONE zone per person — so the zone may only be torn down when this
+    /// is the last item in it.
+    private var isLastShareInZone: Bool {
+        env.sharingStore.shares.filter { $0.zoneName == share.zoneName }.count <= 1
+    }
+
+    /// Revoke THIS item only.
+    ///
+    /// This used to call `revoke(zoneName:)`, which deletes the whole record
+    /// zone, so revoking one item silently revoked every other item shared with
+    /// the same person — while the dialog promised only that they could no
+    /// longer request codes. The per-grant API already existed and was already
+    /// used by the Space fan-out; it just was never adopted here.
     private func revoke() async {
         busy = true
         defer { busy = false }
         do {
-            try await env.approvalShare.revoke(zoneName: share.zoneName,
-                                               inviteRecordName: share.inviteRecordName)
-            if let dropRecordName = share.dropRecordName {
-                await env.inviteLinks.deleteInvite(recordName: dropRecordName)
+            if isLastShareInZone {
+                // Nothing else lives here: drop the zone so the recipient loses
+                // the share entirely and the invite artifacts are GC'd.
+                try await env.approvalShare.revoke(zoneName: share.zoneName,
+                                                   inviteRecordName: share.inviteRecordName)
+                if let dropRecordName = share.dropRecordName {
+                    await env.inviteLinks.deleteInvite(recordName: dropRecordName)
+                }
+            } else if let grantId = share.grantId {
+                try await env.approvalShare.revokeGrant(grantId, zoneID: zoneID)
             }
-            env.sharingStore.remove(zoneName: share.zoneName)
+            env.sharingStore.remove(zoneName: share.zoneName, itemId: share.itemId)
             dismiss()
         } catch {
             errorMessage = error.localizedDescription

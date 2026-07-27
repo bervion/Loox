@@ -30,9 +30,6 @@ struct ShareAccessSheet: View {
         // `shareURL` = pretty invite link (UI); `rawShareURL` = the CKShare
         // URL the rendezvous envelope needs (drop retries while waiting).
         case waiting(zoneID: CKRecordZone.ID, shareURL: URL?, rawShareURL: URL?)
-        case fingerprint(zoneID: CKRecordZone.ID, code: String,
-                         profile: (participantPubKey: Data, deviceSigningKeys: [Data],
-                                   deviceHPKEDirectory: [DeviceHPKEDirectoryEntry], createdAtUnixMs: Int64))
         case publishing
         case done
         case failed(String)
@@ -218,10 +215,6 @@ struct ShareAccessSheet: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .waiting(_, let shareURL, _):
             waitingView(shareURL: shareURL)
-        case .fingerprint(_, let code, _):
-            TrustFingerprintView(code: code, recipientLabel: recipientEmail) {
-                Task { await confirmFingerprintAndPublish() }
-            }
         case .done:
             doneView
         case .failed(let message):
@@ -246,10 +239,33 @@ struct ShareAccessSheet: View {
 
     // MARK: Steps
 
+    /// The unfinished share this sheet is resuming, if any.
+    private var resumingRecord: ItemShareRecord? {
+        guard resumeEmail != nil else { return nil }
+        return env.sharingStore.shares(forItem: itemID).first {
+            !$0.fingerprintConfirmed && $0.recipientLabel == normalizedEmail
+        }
+    }
+
     private func enter() async {
         if let blocker = await ApprovalPrerequisites.check() {
             step = .blocked(blocker)
             return
+        }
+        // Resuming: replay the scope the owner already chose. It is frozen on
+        // the record at create time precisely so this sheet never asks twice —
+        // and `allowMultipleDevices` MUST come from the record, because the
+        // in-memory default is the more permissive one and would silently widen
+        // a single-device share.
+        if let record = resumingRecord, let planned = record.plannedCapabilities {
+            if capabilities.isEmpty { capabilities = planned }
+            allowMultipleDevices = record.plannedAllowMultipleDevices ?? true
+            // The recipient's key has already landed: there is nothing left for
+            // the owner to decide, so finish instead of showing the form again.
+            if record.status == .readyForCeremony {
+                await activate(record: record)
+                return
+            }
         }
         if capabilities.isEmpty, let item {
             // Least exposure by default: everything Off until the owner opts in.
@@ -277,13 +293,23 @@ struct ShareAccessSheet: View {
         step = .creating
         pollExhausted = false
         do {
-            // Resume path (review H2): an unfinished share to the SAME
-            // recipient reuses its zone instead of littering a new one.
+            // Reuse this recipient's existing zone, scoped to the active
+            // persona (INV-R03), instead of minting a new one per item. Sharing
+            // a second item to someone already connected used to mean a whole
+            // new CKShare, a new accept, and a new profile publish — even though
+            // their key was already on file. With the zone reused, the profile
+            // is found on the first poll tick and the share completes at once.
+            let existingZoneName = SpaceShareZoneDedupe.existingZoneName(
+                recipientShares: env.sharingStore.shares(forRecipient: normalizedEmail),
+                activePersonaItemIds: Set(env.repository.activePersonaItems.map(\.id)))
+            // Carried separately: the invite artifacts to supersede belong to
+            // THIS item's unfinished attempt, not to the shared zone.
             let pending = env.sharingStore.shares(forItem: itemID).first {
                 !$0.fingerprintConfirmed && $0.recipientLabel == normalizedEmail
             }
             let setup = try await env.approvalShare.createShare(
-                recipientEmail: normalizedEmail, existingZoneName: pending?.zoneName)
+                recipientEmail: normalizedEmail,
+                existingZoneName: existingZoneName ?? pending?.zoneName)
             // Pretty invite link (invite.looxpassword.com) — opens the app
             // directly on the recipient's phone instead of Safari/iCloud.
             // Fall back to the raw CKShare URL if minting fails (offline).
@@ -315,12 +341,18 @@ struct ShareAccessSheet: View {
             // grant exists — the accept push must be receivable. The pending
             // record below keeps that state accounted for.
             env.settings.approvalModeEnabled = true
+            // Freeze the owner's scope onto the record. This tap IS the
+            // authorization; the seal has to wait for the recipient's key, but
+            // the decision does not, so it is replayed by `ShareActivationService`
+            // rather than re-collected from the owner.
             env.sharingStore.upsert(ItemShareRecord(
                 itemId: itemID, zoneName: setup.zoneID.zoneName,
                 recipientLabel: normalizedEmail, grantId: nil,
                 createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
                 fingerprintConfirmed: false, inviteRecordName: inviteRecordName,
-                dropRecordName: dropRecordName))
+                dropRecordName: dropRecordName,
+                plannedCapabilities: capabilities,
+                plannedAllowMultipleDevices: allowMultipleDevices))
             step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL,
                             rawShareURL: setup.shareURL)
         } catch {
@@ -351,7 +383,6 @@ struct ShareAccessSheet: View {
     /// once, gentle backoff, bounded — the ceremony can also be finished
     /// later by reopening the sheet (the pending record resumes it).
     private func pollForProfile(zoneName: String) async {
-        guard let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw else { return }
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         var delay: Duration = .seconds(3)
         // Short budget on purpose: the silent acceptance push (plus the hint
@@ -361,9 +392,7 @@ struct ShareAccessSheet: View {
             guard !Task.isCancelled else { return }
             if let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) {
                 env.sharingStore.updateStatus(zoneName: zoneName, to: .readyForCeremony)
-                let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
-                                                 participantPubKey: profile.participantPubKey)
-                step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
+                await activateCurrentShare(zoneName: zoneName, profile: profile)
                 return
             }
             // Every tick: re-check CKShare acceptance (a cheap single-record
@@ -393,9 +422,7 @@ struct ShareAccessSheet: View {
     /// can fire this on every push while the sheet is open, and once the
     /// ceremony has left `.waiting` a check must stay read-only.
     private func checkProfileNow() async {
-        guard case .waiting(let zoneID, _, _) = step,
-              let ownerKey = try? DeviceSigningIdentity.loadOrCreate().publicKeyRaw
-        else { return }
+        guard case .waiting(let zoneID, _, _) = step else { return }
         await retryAutoInviteIfNeeded()
         guard let profile = try? await env.approvalShare.fetchParticipantProfile(zoneID: zoneID) else {
             // No profile yet, but they may already have accepted — reflect that.
@@ -405,57 +432,42 @@ struct ShareAccessSheet: View {
             return
         }
         env.sharingStore.updateStatus(zoneName: zoneID.zoneName, to: .readyForCeremony)
-        let code = TrustFingerprint.code(ownerSigningPubKey: ownerKey,
-                                         participantPubKey: profile.participantPubKey)
-        step = .fingerprint(zoneID: zoneID, code: code, profile: profile)
+        await activateCurrentShare(zoneName: zoneID.zoneName, profile: profile)
     }
 
-    private func confirmFingerprintAndPublish() async {
-        guard case .fingerprint(let zoneID, _, let profile) = step else { return }
-        guard let item else {
-            step = .failed(appString("This item no longer exists."))
-            return
-        }
+    /// Finish the share now that the recipient's key is here. There is no second
+    /// owner decision: the scope was authorized at create time and is replayed
+    /// from the record, so this publishes straight through to `.done`.
+    private func activateCurrentShare(zoneName: String,
+                                      profile: ShareActivationService.ParticipantProfile) async {
+        guard let record = env.sharingStore.shares(forItem: itemID)
+            .first(where: { $0.zoneName == zoneName }) else { return }
         step = .publishing
-        do {
-            let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
-            // Single-device seals to the recipient's first-enrolled device;
-            // the composer fails loudly if that device isn't published yet
-            // (INV-04, never falls back to the synced key). Passkeys + display
-            // metadata are assembled identically to the edit path via the
-            // shared composer so the two can never drift.
-            let deviceScope: DeviceScope = allowMultipleDevices ? .multi : .single
-            let grant = try await SharedGrantComposer.publish(
-                service: env.approvalShare, store: env.store, item: item,
-                capabilities: capabilities, itemPasskeys: itemPasskeys,
-                vaultKey: env.session.vaultKey,
-                profile: SharedGrantComposer.RecipientProfile(
-                    participantPubKey: profile.participantPubKey,
-                    deviceSigningKeys: profile.deviceSigningKeys,
-                    deviceHPKEDirectory: profile.deviceHPKEDirectory),
-                deviceScope: deviceScope, epoch: 1, zoneID: zoneID, nowUnixMs: nowUnixMs)
-            // Acceptance is proven — the public invite artifacts have served
-            // their purpose; delete them now (owner is the only principal
-            // who can — public-db records are creator-delete only).
-            let pendingRecord = env.sharingStore.shares(forItem: item.id)
-                .first { $0.zoneName == zoneID.zoneName }
-            if let inviteRecordName = pendingRecord?.inviteRecordName {
-                await env.inviteLinks.deleteInvite(recordName: inviteRecordName)
-            }
-            if let dropRecordName = pendingRecord?.dropRecordName {
-                await env.inviteLinks.deleteInvite(recordName: dropRecordName)
-            }
-            // The names are CARRIED into the active record: deleteInvite is
-            // best-effort, and revoke retries the GC with these same names.
-            env.sharingStore.upsert(ItemShareRecord(
-                itemId: item.id, zoneName: zoneID.zoneName,
-                recipientLabel: recipientEmail, grantId: grant.id,
-                createdAtUnixMs: nowUnixMs, fingerprintConfirmed: true,
-                inviteRecordName: pendingRecord?.inviteRecordName,
-                dropRecordName: pendingRecord?.dropRecordName))
+        await apply(await env.shareActivation.activate(record: record, profile: profile))
+    }
+
+    /// Resume entry where the profile already landed: fetch it, then publish.
+    private func activate(record: ItemShareRecord) async {
+        step = .publishing
+        await apply(await env.shareActivation.activate(record: record))
+    }
+
+    private func apply(_ outcome: ShareActivationService.Outcome) async {
+        switch outcome {
+        case .activated:
             step = .done
-        } catch {
-            step = .failed(error.localizedDescription)
+        case .needsUnlock:
+            step = .failed(appString("Unlock Loox, then try again."))
+        case .needsOwnerScope:
+            // A share created before the scope was persisted: the owner is the
+            // only source for it, so fall back to the config form.
+            step = .config
+        case .notReady:
+            // The profile went away between the fetch and the publish — go back
+            // to waiting rather than reporting a failure that isn't one.
+            step = .config
+        case .failed(let message):
+            step = .failed(message)
         }
     }
 
@@ -520,8 +532,51 @@ struct ShareAccessSheet: View {
         .buttonStyle(.plain)
     }
 
+    /// People this owner already shares with, under the ACTIVE persona only.
+    ///
+    /// Persona scope matters: zone reuse is persona-scoped by design, so
+    /// offering someone whose only zone belongs to another persona would
+    /// silently mint a new zone and put the recipient through a fresh accept —
+    /// exactly the friction the picker exists to remove. Excludes anyone
+    /// already on this item.
+    private var suggestedRecipients: [String] {
+        let personaItemIds = Set(env.repository.activePersonaItems.map(\.id))
+        let alreadyOnThisItem = Set(env.sharingStore.shares(forItem: itemID).map(\.recipientLabel))
+        let labels = env.sharingStore.shares
+            .filter { personaItemIds.contains($0.itemId) }
+            .map(\.recipientLabel)
+            .filter { !alreadyOnThisItem.contains($0) }
+        return Array(Set(labels)).sorted()
+    }
+
     private var configForm: some View {
         Form {
+            if !suggestedRecipients.isEmpty {
+                Section {
+                    ForEach(suggestedRecipients, id: \.self) { label in
+                        Button {
+                            recipientEmail = label
+                        } label: {
+                            HStack(spacing: Space.s3) {
+                                Text(verbatim: label)
+                                    .vaultType(.body).themedForeground(.primary)
+                                Spacer(minLength: Space.s2)
+                                if normalizedEmail == label {
+                                    PolarisIcon(Icons.check, size: Metric.iconInline)
+                                        .themedForeground(.accentText)
+                                }
+                            }
+                            .frame(minHeight: Metric.hitMin)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text("Share with")
+                }
+                .listRowBackground(VaultColors.surface)
+            }
+
             Section {
                 TextField("Recipient's iCloud email", text: $recipientEmail)
                     .platformKeyboardType(.emailAddress)

@@ -20,6 +20,9 @@ import Foundation
     private let shareService: ApprovalShareService
     private let settings: SettingsStore
     private let notifier: ShareStatusNotifier
+    /// Finishes a ready share without the owner: the scope was authorized at
+    /// create time, so a profile landing is enough to publish.
+    private let activation: ShareActivationService
     private let singleFlight = SingleFlight()
     private var observers: [NSObjectProtocol] = []
     /// One best-effort pass per process lifetime that installs the silent
@@ -28,11 +31,13 @@ import Foundation
     private var subscriptionsBackfilled = false
 
     init(store: SharingStore, shareService: ApprovalShareService,
-         settings: SettingsStore, notifier: ShareStatusNotifier) {
+         settings: SettingsStore, notifier: ShareStatusNotifier,
+         activation: ShareActivationService) {
         self.store = store
         self.shareService = shareService
         self.settings = settings
         self.notifier = notifier
+        self.activation = activation
         // The recipient's device published its profile (silent push): resolve
         // the new status now instead of waiting for the next foreground pass.
         observers.append(NotificationCenter.default.addObserver(
@@ -81,12 +86,26 @@ import Foundation
             let next = await resolveStatus(zoneID: zoneID)
             ShareDiagnostics.log("OWNER", "share \(record.zoneName) → \(next)")
             store.updateStatus(zoneName: record.zoneName, to: next)
-            // Surface the one transition that needs the owner's hands (the
-            // fingerprint ceremony) when it lands while the app is not
-            // frontmost — typically via the background silent push.
-            if ShareStatusNotifier.shouldNotify(previous: previous, next: next,
-                                                appActive: notifier.isAppActive) {
-                notifier.notifyReadyForCeremony(record: record)
+            guard next == .readyForCeremony else { continue }
+            // The recipient's key has landed, and the owner already authorized
+            // the scope when they created the invite — so finish the share here
+            // rather than sending them back into the sheet to re-state a
+            // decision they have already made.
+            switch await activation.activate(record: record) {
+            case .activated:
+                notifier.notifyShareActive(record: record)
+            case .needsUnlock, .needsOwnerScope, .failed:
+                // Locked vault (sealing needs the live key), a record written
+                // before scope was persisted, or a transient publish failure —
+                // all resolve with the owner present, so fall back to the
+                // banner that brings them in. `.readyForCeremony` stays
+                // persisted, and the next unlock retries.
+                if ShareStatusNotifier.shouldNotify(previous: previous, next: next,
+                                                    appActive: notifier.isAppActive) {
+                    notifier.notifyReadyForCeremony(record: record)
+                }
+            case .notReady:
+                break
             }
         }
     }

@@ -40,15 +40,27 @@ struct RegenerateKitView: View {
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Space.s2)
+                    // Three ways to keep the key, ranked rather than stacked as
+                    // equals: the PDF is the kit artifact this screen is named
+                    // after, so it carries the fill and the other two stay
+                    // quiet. Bare Form buttons would inherit the app-wide
+                    // primary tint and read as static labels.
                     Button { env.clipboard.copy(newKey, label: appString("recovery key")) } label: {
-                        Label { Text("Copy") } icon: { PolarisIcon(Icons.copy) }
+                        Label { Text("Copy") } icon: { PolarisIcon(Icons.copy, size: Metric.iconCompact) }
                     }
-                    ShareLink(item: newKey) { Label { Text("Share") } icon: { PolarisIcon(Icons.share) } }
+                    .buttonStyle(.themedCompact)
+                    ShareLink(item: newKey) {
+                        Label { Text("Share") } icon: { PolarisIcon(Icons.share, size: Metric.iconCompact) }
+                    }
+                    .buttonStyle(.themedCompact)
                     // Export glyph, not a shield: this row hands the kit to the
                     // Files sheet, it doesn't say anything about protection.
                     Button(action: presentExporter) {
-                        Label { Text("Save Emergency Kit (PDF)") } icon: { PolarisIcon(Icons.exportData) }
+                        Label { Text("Save Emergency Kit (PDF)") } icon: {
+                            PolarisIcon(Icons.exportData, size: Metric.iconCompact)
+                        }
                     }
+                    .buttonStyle(.themedCompactProminent)
                     if let exportError {
                         Text(exportError).vaultType(.footnote)
                             .foregroundStyle(env.theme.active.color(.destructive))
@@ -62,16 +74,7 @@ struct RegenerateKitView: View {
             }
 
             Section {
-                Button {
-                    if env.session.hasRecoveryKit { confirmRegenerate = true } else { Task { await regenerate() } }
-                } label: {
-                    // `Icons.refresh` is the app's sync glyph — it read as
-                    // "fetch again", not "issue a new kit". A key for the first
-                    // issue, a replay arrow for a re-issue.
-                    Label { Text(env.session.hasRecoveryKit ? "Regenerate Kit" : "Generate Kit") }
-                        icon: { PolarisIcon(env.session.hasRecoveryKit ? Icons.replay : Icons.key) }
-                }
-                .disabled(busy)
+                issueKitButton
                 if let generateError {
                     Text(generateError).vaultType(.footnote)
                         .foregroundStyle(env.theme.active.color(.destructive))
@@ -99,6 +102,30 @@ struct RegenerateKitView: View {
                 exportError = nil
                 if case .success = result { Haptics.success() }
             }
+        }
+    }
+
+    /// Issue (or re-issue) the kit. Its rank is state-dependent: it is the
+    /// screen's one filled primary until a fresh key is on screen, then it steps
+    /// back to the quiet rank, because at that moment keeping the key that was
+    /// just shown outranks replacing it.
+    @ViewBuilder private var issueKitButton: some View {
+        let button = Button {
+            if env.session.hasRecoveryKit { confirmRegenerate = true } else { Task { await regenerate() } }
+        } label: {
+            // `Icons.refresh` is the app's sync glyph — it read as
+            // "fetch again", not "issue a new kit". A key for the first
+            // issue, a replay arrow for a re-issue.
+            Label { Text(env.session.hasRecoveryKit ? "Regenerate Kit" : "Generate Kit") }
+                icon: { PolarisIcon(env.session.hasRecoveryKit ? Icons.replay : Icons.key,
+                                    size: Metric.iconInline) }
+                .frame(maxWidth: .infinity)
+        }
+        .disabled(busy)
+        if newKey.isEmpty {
+            button.buttonStyle(.themedProminent)
+        } else {
+            button.buttonStyle(.themedTinted)
         }
     }
 

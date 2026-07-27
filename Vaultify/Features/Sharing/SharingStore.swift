@@ -66,6 +66,27 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
     /// NOT space-managed: the blanket Space flow must never touch a grant the
     /// owner configured per item.
     var spaceManaged: Bool? = nil
+    /// The owner's field selection, frozen when the invite was created.
+    ///
+    /// The grant cannot be SEALED until the recipient publishes their key, but
+    /// the owner's INTENT is settled the moment they tap Create — so it is
+    /// persisted here and replayed when the ceremony finishes, instead of being
+    /// re-collected. Without this the sheet's ephemeral `@State` was the only
+    /// copy: dismissing (which the waiting screen actively invites) discarded it
+    /// and forced the owner to re-pick every field on resume.
+    ///
+    /// Exposure: field ids and capability MODES only, alongside the recipient
+    /// email already stored here. No field values, no key material.
+    /// nil = a record written before this field existed, or a Space fan-out
+    /// share whose capabilities are derived by `SpaceShareSafelist`.
+    var plannedCapabilities: [String: FieldCapability]? = nil
+    /// Device scope frozen with the selection above. nil = predates the field.
+    ///
+    /// Persisted for a security reason, not just convenience: the sheet's
+    /// in-memory default is `true` (multi-device), so a share the owner
+    /// deliberately scoped to a SINGLE device silently resumed as multi-device
+    /// — the resumed default was strictly more permissive than what they chose.
+    var plannedAllowMultipleDevices: Bool? = nil
 
     var isAutoUpdate: Bool { autoUpdate ?? true }
 

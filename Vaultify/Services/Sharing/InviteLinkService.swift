@@ -97,17 +97,61 @@ import Foundation
             saving: [], deleting: [CKRecord.ID(recordName: recordName)])
     }
 
-    // MARK: Recipient side — universal link → CKShare metadata → accept
+    // MARK: Recipient side — universal link → sender identity → accept
 
     /// True when this URL is one of ours (used by the scene routing).
     nonisolated static func isInviteLink(_ url: URL) -> Bool {
         url.host == host && url.path.hasPrefix("/i/")
     }
 
-    /// Resolve and accept: token → public record → decrypt with the fragment
-    /// key → REAL CKShare URL → fetch share metadata → accept. Never
-    /// fabricates metadata — the CloudKit acceptance contract stays intact.
-    func acceptInvite(from url: URL) async throws {
+    /// What the recipient needs in order to DECIDE, before anything is joined.
+    /// The fetched metadata is deliberately not carried across the decision:
+    /// `acceptShare` fetches it again, so a share revoked or expired while the
+    /// prompt was on screen still fails closed at accept time.
+    nonisolated struct ResolvedInvite: Sendable {
+        let shareURL: URL
+        /// The CloudKit-authenticated owner's name, or the verified address
+        /// their account is discoverable by. nil when CloudKit exposes
+        /// neither — callers must say so plainly, never invent an identity.
+        let senderDisplayName: String?
+    }
+
+    /// Resolve only: token → public record → decrypt with the fragment key →
+    /// REAL CKShare URL → share metadata, for the sender identity. Nothing is
+    /// accepted here, so a tapped link can no longer join a stranger's share
+    /// on its own.
+    func resolveInvite(from url: URL) async throws -> ResolvedInvite {
+        let shareURL = try await resolveShareURL(fromInviteLink: url)
+        let metadata = try await fetchShareMetadata(shareURL: shareURL)
+        return ResolvedInvite(shareURL: shareURL,
+                              senderDisplayName: Self.displayName(of: metadata.ownerIdentity))
+    }
+
+    /// The sender behind a raw CKShare URL — the rendezvous tier's envelope
+    /// carries the URL and opaque participant ids, never a human name.
+    /// Best-effort: nil on any failure, so an offline pass still queues the
+    /// invite and the prompt says the sender could not be confirmed.
+    func resolveSenderName(shareURL: URL) async -> String? {
+        guard let metadata = try? await fetchShareMetadata(shareURL: shareURL) else { return nil }
+        return Self.displayName(of: metadata.ownerIdentity)
+    }
+
+    /// The only sender identity worth showing: CloudKit-authenticated, never
+    /// a string the sender typed. Full name first, then the verified address
+    /// the account is discoverable by.
+    private static func displayName(of identity: CKUserIdentity) -> String? {
+        if let components = identity.nameComponents {
+            let formatted = PersonNameComponentsFormatter
+                .localizedString(from: components, style: .default)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !formatted.isEmpty { return formatted }
+        }
+        if let email = identity.lookupInfo?.emailAddress, !email.isEmpty { return email }
+        if let phone = identity.lookupInfo?.phoneNumber, !phone.isEmpty { return phone }
+        return nil
+    }
+
+    private func resolveShareURL(fromInviteLink url: URL) async throws -> URL {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               Self.isInviteLink(url) else { throw Failure.malformedLink }
         let token = url.lastPathComponent
@@ -131,8 +175,7 @@ import Foundation
               let shareURL = URL(string: payload.shareURL) else {
             throw Failure.notFoundOrExpired
         }
-
-        try await acceptShare(url: shareURL)
+        return shareURL
     }
 
     /// CloudKit acceptance contract (U7): URL → CKShare.Metadata → accept —

@@ -248,7 +248,10 @@ struct LooxHubScreen: View {
                             status: serviceStatus(.quickView)) {
                 NotificationsScreen()
             }
-            LooxFeatureTile(title: "Sharing", icon: Icons.organization, tint: SettingsBadgeTint.orange,
+            // Same name as the Profile row and the screen's own title: one
+            // feature carries one name, or the user cannot tell whether
+            // "Sharing" and "Family" are two different places.
+            LooxFeatureTile(title: "Family", icon: Icons.organization, tint: SettingsBadgeTint.orange,
                             metric: appString("\(outgoingRecipientCount) in use")) {
                 FamilyScreen()
             }

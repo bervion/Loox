@@ -179,14 +179,26 @@ struct ShareResumeStepperSheet: View {
                 .buttonStyle(.themedProminent)
 
             case .readyForCeremony:
+                // Their key has landed and the scope was authorized when the
+                // invite was created, so finishing needs no further decision —
+                // it runs by itself on unlock/foreground. This state is reached
+                // only when that could not complete (vault was locked, a
+                // transient publish failure, or a share created before scope was
+                // persisted), so the primary is a plain retry.
+                Text("Almost done. Finish setting up so they can use this item.")
+                    .vaultType(.footnote).themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
                 Button {
-                    continueShare = true
+                    Task { await finishNow() }
                 } label: {
-                    Text("Continue to Activate")
-                        .frame(maxWidth: .infinity)
+                    if busy {
+                        ProgressView().frame(maxWidth: .infinity)
+                    } else {
+                        Text("Finish Setting Up").frame(maxWidth: .infinity)
+                    }
                 }
                 .buttonStyle(.themedProminent)
-                checkNowButton
+                .disabled(busy)
 
             case .accepted:
                 // They already accepted — re-sending the invite would be
@@ -222,6 +234,28 @@ struct ShareResumeStepperSheet: View {
         }
         .buttonStyle(.themedTinted)
         .disabled(busy)
+    }
+
+    /// Retry the activation that could not run unattended. Falls back to the
+    /// config sheet only when the record predates persisted scope, since then
+    /// the owner genuinely is the only source for it.
+    private func finishNow() async {
+        busy = true
+        defer { busy = false }
+        errorMessage = nil
+        noticeMessage = nil
+        switch await env.shareActivation.activate(record: liveShare) {
+        case .activated:
+            break
+        case .needsOwnerScope:
+            continueShare = true
+        case .needsUnlock:
+            errorMessage = appString("Unlock Loox, then try again.")
+        case .notReady:
+            noticeMessage = appString("Their device has not finished setting up yet.")
+        case .failed(let message):
+            errorMessage = message
+        }
     }
 
     /// Idempotent — re-mints/re-fetches the SAME CKShare URL (no new zone,

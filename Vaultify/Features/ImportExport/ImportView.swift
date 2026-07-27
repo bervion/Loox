@@ -29,9 +29,17 @@ struct ImportView: View {
     var body: some View {
         Form {
             Section {
+                // Quiet rank on purpose: this row stays on screen next to the
+                // Decrypt / Import primaries, so it must never be a second
+                // filled CTA. A bare Form button would inherit the app-wide
+                // primary tint and read as a static label instead of a control.
                 Button { showPicker = true } label: {
-                    Label { Text("Choose File…") } icon: { PolarisIcon(Icons.importData) }
+                    Label { Text("Choose File…") } icon: {
+                        PolarisIcon(Icons.importData, size: Metric.iconInline)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.themedTinted)
             } footer: {
                 Text("Supports CSV exports and Loox encrypted backups (.vaultify).")
             }
@@ -40,8 +48,13 @@ struct ImportView: View {
             if let encryptedData {
                 Section("Encrypted backup") {
                     RevealableSecureField(title: "Backup password", text: $passphrase, inList: true)
-                    Button("Decrypt") { Task { await decrypt(encryptedData) } }
-                        .disabled(passphrase.isEmpty || working)
+                    // The primary for this state: the preview (and its Import
+                    // primary) only exists once the backup is open.
+                    Button { Task { await decrypt(encryptedData) } } label: {
+                        Text("Decrypt").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.themedProminent)
+                    .disabled(passphrase.isEmpty || working)
                 }
                 .listRowBackground(VaultColors.surface)
             }

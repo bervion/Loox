@@ -41,7 +41,7 @@ struct QuickViewApprovalSheet: View {
         case .idle:
             EmptyView()
         case .resolving:
-            progress(appString("Connecting to your browser…"))
+            progress("Connecting to your browser…")
         case .verified(let session):
             if let item {
                 approvalDetails(session: session, item: item)
@@ -49,7 +49,7 @@ struct QuickViewApprovalSheet: View {
                 failed(appString("Start again in the browser."))
             }
         case .approving:
-            progress(appString("Sending fields to your browser…"))
+            progress("Sending fields to your browser…")
         case .done:
             finished
         case .error(let message):
@@ -91,13 +91,23 @@ struct QuickViewApprovalSheet: View {
                     .buttonStyle(.themedProminent)
                     .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
 
+                    // Destructive TEXT rank, never a second filled control: the
+                    // abort is the quiet action against Approve, but a roleless
+                    // Button inherits the app-wide `.tint(Color.primary)` and
+                    // loses both its hue and its shape — the one control that
+                    // stops a mismatched session would end up the least visible
+                    // thing on a security screen.
                     Button(role: .destructive) {
                         flow.abortSASMismatch()
                         dismiss()
                     } label: {
                         Text("They don't match")
-                            .frame(maxWidth: .infinity)
+                            .vaultType(.body).fontWeight(.medium)
+                            .themedForeground(.destructive)
+                            .frame(maxWidth: .infinity, minHeight: Metric.hitMin)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(Space.gutter)
@@ -106,47 +116,31 @@ struct QuickViewApprovalSheet: View {
 
     // MARK: - Terminal states
 
-    private func progress(_ message: String) -> some View {
-        VStack(spacing: Space.s4) {
-            ProgressView()
-            Text(verbatim: message).vaultType(.callout).themedForeground(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    /// The waiting copy is the TITLE, not a grey paragraph: it is the only line on
+    /// screen, so it has to carry the rank.
+    private func progress(_ title: LocalizedStringKey) -> some View {
+        VaultStatusScreen(title: title, busy: true)
     }
 
     private var finished: some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.shield, size: Metric.iconTileLarge).themedForeground(.success)
-            Text("Sent to your browser").vaultType(.section).themedForeground()
-            Text("Only the fields you picked were shared, once.")
-                .vaultType(.callout).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-            Button {
-                onFinished()
-                dismiss()
-            } label: {
-                Text("Done").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-        }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VaultStatusScreen(icon: Icons.shield, tint: .success,
+                          title: "Sent to your browser",
+                          message: .key("Only the fields you picked were shared, once."),
+                          primary: .init(title: "Done") {
+                              onFinished()
+                              dismiss()
+                          })
     }
 
+    /// `message` is a runtime string the flow already localized, so it goes in
+    /// verbatim under a titled failure.
     private func failed(_ message: String) -> some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.alert, size: Metric.iconTile).themedForeground(.destructive)
-            Text(verbatim: message).vaultType(.callout).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-            Button {
-                onFinished()
-                dismiss()
-            } label: {
-                Text("Close").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-        }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VaultStatusScreen(icon: Icons.alert, tint: .destructive,
+                          title: "Something went wrong",
+                          message: .verbatim(message),
+                          primary: .init(title: "Close") {
+                              onFinished()
+                              dismiss()
+                          })
     }
 }

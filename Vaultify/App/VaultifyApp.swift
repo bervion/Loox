@@ -10,6 +10,11 @@ struct VaultifyApp: App {
     @State private var env: AppEnvironment
     /// Localized failure from an invite universal link (expired/invalid).
     @State private var inviteError: String?
+    /// Resolved but NOT accepted. Tapping a link must never join a stranger's
+    /// share by itself: an accepted share publishes this device's participant
+    /// identity into someone else's zone and lands in AutoFill, so the
+    /// recipient sees who is sharing and decides here.
+    @State private var pendingInvite: InviteLinkService.ResolvedInvite?
     /// Acceptance succeeded — tell the user where to look (the accept itself
     /// is silent/native by design; silence reads as "nothing happened").
     @State private var inviteAccepted = false
@@ -65,17 +70,44 @@ struct VaultifyApp: App {
 
     /// One path for warm-tap and cold-launch invite links; the buffer is
     /// cleared here so a handled link can't be re-processed by the drain.
+    /// Resolution only — a dead or malformed link still fails closed, and a
+    /// live one waits for the explicit confirmation below.
     private func handleInviteLink(_ url: URL) {
+        // A prompt already on screen must not have its share swapped out from
+        // under the name the user is reading. Re-buffer instead of clobbering;
+        // the cold-launch drain picks it up.
+        guard pendingInvite == nil else {
+            PendingInviteLink.url = url
+            return
+        }
         guard !inviteInFlight else { return }
         inviteInFlight = true
         PendingInviteLink.url = nil
         Task {
             defer { inviteInFlight = false }
             do {
-                try await env.inviteLinks.acceptInvite(from: url)
+                pendingInvite = try await env.inviteLinks.resolveInvite(from: url)
+            } catch { inviteError = error.localizedDescription }
+        }
+    }
+
+    /// The user said yes with the sender named in front of them.
+    private func acceptPendingInvite(_ invite: InviteLinkService.ResolvedInvite) {
+        guard !inviteInFlight else { return }
+        inviteInFlight = true
+        Task {
+            defer { inviteInFlight = false }
+            do {
+                try await env.inviteLinks.acceptShare(url: invite.shareURL)
                 inviteAccepted = true
             } catch { inviteError = error.localizedDescription }
         }
+    }
+
+    private var invitePrompt: Binding<Bool> {
+        Binding(get: { pendingInvite != nil },
+                // Swipe/system dismissal counts as declining: nothing joined.
+                set: { if !$0 { pendingInvite = nil } })
     }
 
     private var rootContent: some View {
@@ -95,8 +127,9 @@ struct VaultifyApp: App {
                     }
                 }
                 // Universal Link: share-invite (invite.looxpassword.com/i/<token>#k=…).
-                // Resolve + accept in background; the unlocked shell picks the
-                // acceptance up via the standard breadcrumb/resume flow.
+                // Resolve in background, confirm with the user, then accept;
+                // the unlocked shell picks the acceptance up via the standard
+                // breadcrumb/resume flow.
                 // Invite links arrive via the scene delegate (a custom scene
                 // delegate takes over NSUserActivity delivery from SwiftUI).
                 .onReceive(NotificationCenter.default.publisher(for: .inviteLinkReceived)) { note in
@@ -111,6 +144,14 @@ struct VaultifyApp: App {
                         tier: env.entitlements.tier,
                         language: env.settings.preferredLanguage,
                         iCloudSyncEnabled: env.settings.iCloudSyncEnabled)
+                }
+                // Nothing is joined until this is answered.
+                .alert(InvitePrompt.title(sender: pendingInvite?.senderDisplayName),
+                       isPresented: invitePrompt, presenting: pendingInvite) { invite in
+                    Button("Not now", role: .cancel) { pendingInvite = nil }
+                    Button("Accept") { acceptPendingInvite(invite) }
+                } message: { invite in
+                    InvitePrompt.message(sender: invite.senderDisplayName)
                 }
                 // A dead/expired invite link must say so — silence here reads
                 // as "the app is broken" and gets blamed on the sender.

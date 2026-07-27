@@ -50,6 +50,22 @@ struct ThemedTintedButtonStyle: ButtonStyle {
             // TEXT rank: `accentText` clears 4.5:1 on the soft fill, where the
             // raw fill-tuned accent sits as low as 3.05:1 on some presets.
             let fg = isEnabled ? theme.accentText : theme.textDisabled
+            // The fill has to change with state too. It used to be `accentSoft`
+            // unconditionally, so enabled and disabled were the SAME pixels —
+            // and on the two neutral accents (graphite, mono) `accentSoft`
+            // computes to ~#D1D1D3, which is the disabled PROMINENT fill
+            // (#D1D1D6). An enabled secondary CTA was literally the disabled
+            // swatch. Disabled now paints the same opaque control surface the
+            // prominent style uses, never `.opacity` (this rank also sits over
+            // scrolling content).
+            let bg: Color = isEnabled
+                ? Color(rgb: theme.accentSoft)
+                : VaultColors.dynamic(light: 0xD1D1D6, dark: 0x3A3A3C)
+            // Hairline in the contrast-guarded TEXT hue. On the five chromatic
+            // accents the soft fill already reads as a control; on the neutral
+            // two it does not, and no fill tweak can fix that because their
+            // accent IS gray. The border is what keeps the tinted rank legible
+            // as a CONTROL across all seven presets.
             // Same label-driven pill geometry as the prominent style (see above).
             configuration.label
                 .vaultType(.body)
@@ -57,7 +73,13 @@ struct ThemedTintedButtonStyle: ButtonStyle {
                 .foregroundStyle(Color(rgb: fg))
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
-                .background(Color(rgb: theme.accentSoft), in: Capsule())
+                .background(bg, in: Capsule())
+                .overlay {
+                    if isEnabled {
+                        Capsule().strokeBorder(Color(rgb: theme.accentText).opacity(0.28),
+                                               lineWidth: 1)
+                    }
+                }
                 .opacity(configuration.isPressed ? 0.85 : 1)
                 .frame(maxWidth: .infinity)
         }

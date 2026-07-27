@@ -120,12 +120,16 @@ struct NotificationsScreen: View {
         Circle().fill(env.theme.active.color(.success)).frame(width: 8, height: 8)
     }
 
+    /// Accepting from this row is the decision, so the row itself has to carry
+    /// the CloudKit-authenticated sender — never just "Share invitation".
     private func inviteRow(_ invite: InviteEnvelope) -> some View {
         HStack(spacing: Space.s3) {
             pendingDot
             PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accentText)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Share invitation").vaultType(.body).themedForeground()
+                InvitePrompt.senderLine(sender: env.inviteInboxCoordinator.senderName(for: invite))
+                    .vaultType(.body).themedForeground()
+                    .lineLimit(1).truncationMode(.tail)
                 Text(Date(timeIntervalSince1970: Double(invite.createdAtUnixMs) / 1000)
                     .formatted(date: .abbreviated, time: .shortened))
                     .vaultType(.footnote).themedForeground(.secondary)

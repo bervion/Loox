@@ -45,6 +45,9 @@ import SwiftUI
     /// Off-sheet refresh of outgoing share lifecycle (foreground/unlock), so an
     /// acceptance landing after the waiting sheet closed still advances status.
     let ownerShareRefresher: OwnerShareRefresher
+    /// Publishes the grant once the recipient's profile lands, replaying the
+    /// scope the owner froze at create time (no second owner pass).
+    let shareActivation: ShareActivationService
     /// Loox Link quick shares: encrypted snapshot links (key in URL fragment).
     let looxLinks: LooxLinkService
     /// Layer-A network-path precondition for the shared-vault access gate
@@ -214,17 +217,24 @@ import SwiftUI
             shareService: approvalShare,
             defaults: settingsDefaults
         )
-        self.ownerShareRefresher = OwnerShareRefresher(
-            store: sharingStore, shareService: approvalShare, settings: settings,
-            notifier: ShareStatusNotifier())
-        self.approvalCeremony = ApprovalCeremonyService(session: session,
-                                                        repository: repository,
-                                                        shareService: approvalShare,
-                                                        store: store)
         let approvalRecipient = ApprovalRecipientService()
         let participantEscrow = ParticipantEscrowService()
         let inviteLinks = InviteLinkService()
         let inviteInbox = InviteInboxService()
+        // Built before the refresher: the refresher finishes a share the moment
+        // the recipient's profile lands, so it needs the activator in hand.
+        let shareActivation = ShareActivationService(
+            sharingStore: sharingStore, shareService: approvalShare,
+            repository: repository, session: session, store: store,
+            inviteLinks: inviteLinks)
+        self.shareActivation = shareActivation
+        self.ownerShareRefresher = OwnerShareRefresher(
+            store: sharingStore, shareService: approvalShare, settings: settings,
+            notifier: ShareStatusNotifier(), activation: shareActivation)
+        self.approvalCeremony = ApprovalCeremonyService(session: session,
+                                                        repository: repository,
+                                                        shareService: approvalShare,
+                                                        store: store)
         self.approvalRecipient = approvalRecipient
         self.participantEscrow = participantEscrow
         self.inviteLinks = inviteLinks

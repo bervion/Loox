@@ -6,10 +6,24 @@ import Foundation
 /// and an invite leaves the queue only on a user response.
 @MainActor @Observable final class InviteInboxCoordinator {
     private(set) var pendingInvites: [InviteEnvelope] = []
+    /// CloudKit-authenticated sender per invite (inviteID → display name).
+    /// The envelope carries only opaque participant ids, so the human name is
+    /// resolved from the share metadata BEFORE the invite is queued: no accept
+    /// prompt may appear without either an identity or an honest "not
+    /// confirmed" line.
+    private(set) var senderNames: [String: String] = [:]
     /// True while the notifications screen is frontmost — the shell alert
     /// stands down so the same invite isn't presented twice at once.
     var alertsSuppressed = false
     private var reconciling = false
+
+    /// Invites already written to history. Deliberately NOT the inbox's `seen`
+    /// set: `seen` means the user answered, and a swipe-dismissed alert must
+    /// stay unanswered so it re-presents. Without a durable record here, every
+    /// launch rediscovers an ignored invite and logs another "received" row
+    /// until it evicts the real history.
+    private static let loggedReceivedKey = "invite_inbox_logged_received_ids_v1"
+    private static let loggedReceivedCap = 200
 
     @ObservationIgnored private let settings: SettingsStore
     @ObservationIgnored private let session: VaultSession
@@ -44,17 +58,36 @@ import Foundation
         guard !discovered.isEmpty else { return }
         let queued = Set(pendingInvites.map(\.inviteID))
         let fresh = discovered.filter { !queued.contains($0.inviteID) }
+        // Retry the identity for anything still unnamed, already queued or
+        // not: an invite discovered while offline must not stay stuck on
+        // "sender not confirmed" for the rest of the launch.
+        for envelope in discovered where senderNames[envelope.inviteID] == nil {
+            if let url = URL(string: envelope.shareURL),
+               let name = await links.resolveSenderName(shareURL: url) {
+                senderNames[envelope.inviteID] = name
+            }
+        }
+        for envelope in fresh {
+            if recordReceivedOnce(envelope.inviteID) {
+                history?.log(.inviteReceived, label: senderNames[envelope.inviteID])
+            }
+        }
+        // Queued only once the identity lookup settled, so the alert this
+        // triggers can already name the sender.
         pendingInvites.append(contentsOf: fresh)
-        for _ in fresh { history?.log(.inviteReceived) }
     }
+
+    /// The sender to show for an invite, nil when CloudKit gave us no name.
+    func senderName(for invite: InviteEnvelope) -> String? { senderNames[invite.inviteID] }
 
     /// "Not now": burn the dedup id, drop from the queue — never re-prompted.
     func dismiss(_ invite: InviteEnvelope) {
         inbox.markSeen(inviteID: invite.inviteID)
         if pendingInvites.contains(where: { $0.inviteID == invite.inviteID }) {
-            history?.log(.inviteDismissed)
+            history?.log(.inviteDismissed, label: senderNames[invite.inviteID])
         }
         pendingInvites.removeAll { $0.inviteID == invite.inviteID }
+        senderNames[invite.inviteID] = nil
     }
 
     /// Accept: run the U7-cross-checked CloudKit acceptance, and burn the
@@ -73,6 +106,20 @@ import Foundation
             expectedRecipientParticipantID: invite.recipientParticipantID)
         inbox.markSeen(inviteID: invite.inviteID)
         pendingInvites.removeAll { $0.inviteID == invite.inviteID }
-        history?.log(.inviteAccepted)
+        history?.log(.inviteAccepted, label: senderNames[invite.inviteID])
+        senderNames[invite.inviteID] = nil
+    }
+
+    /// True the first time this invite is written to history, false ever
+    /// after. FIFO-capped: the oldest ids belong to long-expired drops.
+    private func recordReceivedOnce(_ inviteID: String) -> Bool {
+        var logged = UserDefaults.standard.stringArray(forKey: Self.loggedReceivedKey) ?? []
+        guard !logged.contains(inviteID) else { return false }
+        logged.append(inviteID)
+        if logged.count > Self.loggedReceivedCap {
+            logged.removeFirst(logged.count - Self.loggedReceivedCap)
+        }
+        UserDefaults.standard.set(logged, forKey: Self.loggedReceivedKey)
+        return true
     }
 }

@@ -133,6 +133,11 @@ struct DeviceDetailScreen: View {
             Haptics.warning()
             NotificationCenter.default.post(name: .vaultDevicesChanged, object: nil)
             dismiss()
+        } catch let failure as DeviceRegistryService.Failure {
+            // A refusal the registry made deliberately — say what it was, rather
+            // than blaming the network for a decision the app took.
+            self.error = failure.errorDescription
+            Haptics.error()
         } catch {
             self.error = appString("Couldn’t log out the device. Check your connection and try again.")
             Haptics.error()

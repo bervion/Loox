@@ -316,23 +316,38 @@ Banner bo tròn accent nhạt (KHÔNG đỏ — đỏ dành cho destructive): **
 ## 13. Chia sẻ (Sharing)
 
 ### 13.1 Share Access sheet (chủ sở hữu, mở từ nút Share trên detail)
-**Máy trạng thái 9 bước:**
-1. **Choose**: 2 lựa chọn — **Quick Link** (globe: "encrypted link that opens anywhere — no app needed. Expires automatically.") vs **Share with a Loox user** (shield: "Approval-based access over iCloud").
-2. **Checking**: spinner kiểm tra điều kiện.
-3. **Blocked**: fail-closed — chưa đăng nhập iCloud, hoặc chưa cấp quyền notification (2 thông điệp khác nhau) + nút **Check Again**.
-4. **Config** (form chính):
-   - Field email người nhận (footer: gắn với tài khoản iCloud).
-   - **"What they can use"** — mỗi field 1 row phân quyền: field thường → Toggle bật/tắt; **TOTP** → menu *Off / Ask each time / "Hand over secret…"*; **passkey** → menu *Off / Ask each time / "Hand over key…"*; field extra-protected & attachment → mờ 50% "not shareable".
-   - Toggle **"Allow use on multiple devices"** (mặc định ON; OFF = chỉ thiết bị đầu tiên của người nhận dùng được).
-   - **"Shared with N"** — list share hiện có + trạng thái ("Invite sent" / "Accepted — finishing" / "Ready to confirm" / "Active"); **swipe-to-revoke**.
-   - Nút **Create Share** (disable đến khi email hợp lệ + ≥1 quyền).
-5. **Creating/Publishing**: spinner "Setting up encrypted approval transport…".
-6. **Waiting**: spinner "Waiting for them to accept…" + hướng dẫn gửi link; biến thể: đã accept ("finishing setup on their device…") / đã tự notify máy người nhận / chờ lâu ("tap Check Now"). Nút: **Send via Messages** (compose iMessage điền sẵn) / Share Another Way / Check Now.
-7. **Fingerprint**: màn **"Ready to activate"** — mã an toàn mono lớn, yêu cầu so khớp với mã trên máy người nhận → nút **Activate Sharing**.
-8. **Done**: shield xanh "Access shared".
-9. **Failed**: icon đỏ + thông điệp + Try Again.
 
-**Dialog quan trọng:** "Revoke access?" (giá trị đã giao không rút lại được — trung thực về forward-secrecy); **"Hand over this secret/passkey?"** → nút đỏ "Hand Over — Can't Be Taken Back" (bàn giao là vĩnh viễn).
+**Nguyên tắc: chủ sở hữu chỉ quyết định MỘT lần.** Phạm vi chia sẻ được đóng băng vào
+`ItemShareRecord` (`plannedCapabilities` + `plannedAllowMultipleDevices`) ngay khi bấm Create.
+Grant chỉ niêm phong được sau khi có khoá công khai của bên nhận, nhưng đó là ràng buộc của
+crypto chứ không phải của người dùng — nên `ShareActivationService` phát grant tự động khi khoá
+tới, cả trong sheet lẫn ngoài sheet (`OwnerShareRefresher`). Không còn bước cấu hình lần hai.
+
+**Máy trạng thái 8 bước:**
+1. **Choose**: 2 lựa chọn — **Quick Link** vs **Share with a Loox user**.
+2. **Checking**: spinner kiểm tra điều kiện.
+3. **Blocked**: fail-closed — chưa đăng nhập iCloud hoặc chưa cấp quyền notification + **Check Again**.
+4. **Config** (form chính):
+   - Section **"Share with"** *(chỉ hiện khi đã có người)* — danh sách người từng chia sẻ trong
+     persona đang hoạt động, chạm để điền; lọc theo persona vì việc tái dùng zone là
+     persona-scoped (`SpaceShareZoneDedupe`), đề xuất sai persona sẽ âm thầm đẻ zone mới.
+   - Field email người nhận (footer: gắn với tài khoản iCloud).
+   - **"What they can use"** — field thường → Toggle; **TOTP** → *Off / Ask each time / Hand over secret…*;
+     **passkey** → *Off / Ask each time / Hand over key…*; field extra-protected & attachment → "not shareable".
+   - Toggle **"Allow use on multiple devices"** (mặc định ON).
+   - **"Shared with N"** + swipe-to-revoke.
+   - Nút **Create Share** (disable đến khi email hợp lệ + ≥1 quyền).
+5. **Creating**: spinner. Tái dùng zone của người nhận nếu đã có → bên nhận không phải accept lại.
+6. **Waiting**: "Waiting for them to accept…" + Nudge via Messages / Share invite link / Check now.
+7. **Publishing → Done**: khi profile của bên nhận tới, grant phát **tự động**, không hỏi gì thêm.
+8. **Failed**: `VaultStatusScreen` + Try Again.
+
+Màn **"Ready to activate"** (so mã an toàn) đã **bị xoá** cùng `TrustFingerprintView`: nó yêu cầu
+so mã với máy bên kia, trong khi mã bên nhận suy ra từ grant và grant chỉ tồn tại SAU khi chủ sở
+hữu bấm Activate — tại thời điểm hỏi, bên nhận chưa có mã nào. Xem 13.3 cho cơ chế thay thế.
+
+**Dialog quan trọng:** "Stop sharing this item?" (chỉ mục này, các mục khác giữ nguyên; giá trị đã
+giao không rút lại được); **"Hand over this secret/passkey?"** → "Hand Over — Can't Be Taken Back".
 
 ### 13.2 Quick Link (link mã hoá cho bất kỳ ai)
 - **Config**: toggle từng field (preview che "••••••••" với secret; TOTP & extra-protected không bao giờ chia sẻ được) + Toggle **One-time link** (OFF → Picker hạn: 5/10/15/30 phút, 1h, 24h, 7 ngày, 30 ngày; footer copy khác nhau cho one-time vs có hạn) + **Active links** (ngày tạo + badge "One-time" + hạn còn lại; swipe revoke + dialog "Anyone who has the link loses access immediately."; footnote "chỉ revoke được từ máy này").
@@ -340,8 +355,24 @@ Banner bo tròn accent nhạt (KHÔNG đỏ — đỏ dành cho destructive): **
 - **Result** (nơi duy nhất key giải mã tồn tại): check xanh "Link ready" + URL rút gọn giữa + cảnh báo phạm vi + dòng hạn ("disappears after it's opened once" vàng, hoặc "Expires …") + **Copy Link** / Share Link / **Shorten Link** *(khi backend cấp token)* / Done. Shorten lỗi → "Short links are temporarily unavailable" (share vẫn thành công).
 
 ### 13.3 Nhận chia sẻ (recipient)
-- **Notifications** (chuông trên Home): trống → "No notifications"; có → sections: **Share invitations** (chấm xanh + "Not Now"/"Accept") · **Approval requests** (chevron → sheet phê duyệt) · **Shares you sent** (trạng thái + tap resume) · **Recent** (lịch sử).
-- Alert nhanh toàn cục "Share invitation" (Accept / Not Now) khi có lời mời mới.
+
+**Quyết định tin cậy nằm ở bước ACCEPT, kèm danh tính người gửi.** Trước đây link universal
+được accept **im lặng, không xác nhận gì**, còn bên nhận không thấy tên người gửi ở đâu cả — dòng
+lời mời chỉ ghi "Share invitation" + thời gian. Nay cả hai đường (link của Loox và rendezvous)
+đều resolve `CKShare.Metadata.ownerIdentity` (vốn đã được fetch rồi vứt đi) và hiện
+"*<người gửi>* muốn chia sẻ với bạn" trước khi gọi `container.accept`. Không resolve được tên thì
+nói thẳng là chưa xác nhận được, và vẫn bắt buộc chạm để đồng ý.
+
+Hệ quả: `OwnerKeyVerification` có thêm case `.accepted` — accept đã là "người dùng đồng ý với
+người gửi này", nên lần pin đầu ghi `.accepted` thay vì `.pending`, và **bức tường so mã chặn
+lần dùng đầu đã bị gỡ**. Giữ nguyên: marker thiếu vẫn đọc là `.pending` và không vào AutoFill
+(fail-closed), pin vẫn **từ chối** khoá đổi thay vì pin lại (mạnh hơn so mã tay và miễn phí), và
+quyết định chỉ đi LÊN theo `supersedes` nên marker tự động không bao giờ ghi đè việc ai đó thật
+sự đã so mã. So mã an toàn còn lại dạng **tuỳ chọn, không chặn, kèm nút sao chép**.
+
+- **Notifications** (chuông trên Home): dòng lời mời hiện **tên người gửi**; sections **Share
+  invitations** · **Approval requests** · **Shares you sent** · **Recent**.
+- Alert nhanh toàn cục khi có lời mời mới, cùng câu chữ với đường link (dùng chung `InvitePrompt`).
 - **Shared with Me** (trong Items): trống → "Nothing shared with you yet"; có → list item mở detail chuẩn (bản read-only, xem mục 9 + 9.4).
 - **Request Code row** (field TOTP dạng ask-each-time trong detail): *idle* → nút "Request Code" → *requesting* (spinner) → *waiting* (spinner + **"Match code: NNNNN"** khớp mã trên máy chủ sở hữu; chờ lâu → "This is taking longer than usual." + Request Again) → *approved* (mã tap-to-copy + vòng 30s + menu Copy/Large Type + "Use it now — it expires with the current window.") / *rejected* ("Request declined") / *interrupted* / *expired* / *failed*. Trạng thái cuối luôn có "Request Again".
 
@@ -351,7 +382,27 @@ Banner bo tròn accent nhạt (KHÔNG đỏ — đỏ dành cho destructive): **
 - *Finished*: approved → "Code sent" (tự đóng 1.5s) / rejected → "Request rejected". *Failed* → thông điệp + Close. Không đóng được sheet khi đang xử lý.
 
 ### 13.5 Quản lý người nhận (Share Details sheet)
-Info (Recipient/Status/ngày) + chế độ cập nhật ("Update automatically" toggle + "Send Update Now") + chỉnh quyền trên grant sống (+ "Apply Changes") + **Revoke Access** (đỏ, dialog).
+Info (**Item** kèm icon category + Recipient/Status/ngày) + chế độ cập nhật ("Update automatically"
++ "Send update now") + chỉnh quyền trên grant sống (+ "Apply changes") + **Stop sharing this item**.
+
+- Sheet **nêu tên mục**: nó mở được từ cả một MỤC lẫn một NGƯỜI, và khi mở từ Family thì trước đây
+  không có gì trên màn nói đang cấu hình mục nào.
+- **Thu hồi theo từng mục**: trước đây gọi `revoke(zoneName:)` = xoá cả zone, nên thu hồi 1 mục
+  kéo theo **mọi mục khác** đã chia sẻ với người đó, trong khi dialog chỉ nói họ hết xin được mã.
+  Nay dùng `revokeGrant` + `remove(zoneName:itemId:)`, chỉ xoá zone khi đó là mục cuối cùng.
+- Không đọc được grant sống (offline/throttle) → banner cảnh báo, thay vì sheet trông như share
+  chẳng cấp quyền gì với mỗi nút Revoke.
+
+### 13.7 Family (Profile → Family, hub tile cùng tên)
+Không có thực thể "nhóm gia đình" trong code: thành viên là phép gom `SharingStore.shares` theo
+người nhận — **lời mời CHÍNH LÀ quan hệ**, không có gì để "tham gia" trước. Màn hình vì thế có
+hành động **"Invite someone"** làm primary duy nhất, thay vì chỉ liệt kê hệ quả của việc chia sẻ.
+
+- Row người: avatar chữ cái + email + phụ đề tách bạch "đã chia sẻ" và "đang chờ" (trước là một
+  con số trần, đọc như badge chưa đọc và gộp cả lời mời chưa accept).
+- Màn chi tiết người: danh sách **vault item** đọc trực tiếp từ store (trước là snapshot chụp lúc
+  push, revoke xong quay lại vẫn thấy row đã mất), kèm icon category; row đang chờ mở
+  `ShareResumeStepperSheet`, row active mở `ShareRecipientDetailSheet`; có empty state.
 
 ### 13.6 "Open on Computer" (Quick View — giao field 1 lần cho trình duyệt)
 - **Chooser**: "Scan QR Code" / "Enter Code" (footer "You'll pick exactly what to share on the next screen.").

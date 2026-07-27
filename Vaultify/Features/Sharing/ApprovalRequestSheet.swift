@@ -82,72 +82,55 @@ struct ApprovalRequestSheet: View {
 
     // MARK: Request details + actions
 
+    /// Action hierarchy: Approve is the single filled primary (the expected
+    /// path); Reject is the quiet secondary so it never competes.
     private var requestDetails: some View {
-        VStack(spacing: Space.s5) {
-            PolarisIcon(Icons.shield, size: Metric.iconTileLarge)
-                .themedForeground(.accent)
-            VStack(spacing: Space.s2) {
-                Text(isPasskeyRequest ? "Sign-in requested" : "Code requested")
-                    .vaultType(.section).themedForeground()
-                if isPasskeyRequest {
-                    if let requesterLabel {
-                        Text("\(requesterLabel) is asking to sign in with the shared passkey for \(itemTitle).")
-                            .vaultType(.callout).themedForeground(.secondary)
-                            .multilineTextAlignment(.center)
-                    } else {
-                        Text("Someone you shared with is asking to sign in with the shared passkey for \(itemTitle).")
-                            .vaultType(.callout).themedForeground(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                } else if let requesterLabel {
-                    Text("\(requesterLabel) is asking for the current verification code for \(itemTitle).")
-                        .vaultType(.callout).themedForeground(.secondary)
-                        .multilineTextAlignment(.center)
-                } else {
-                    Text("Someone you shared with is asking for the current verification code for \(itemTitle).")
-                        .vaultType(.callout).themedForeground(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
-            VStack(spacing: Space.s2) {
-                Text("Request code")
-                    .vaultType(.sectionLabel).themedForeground(.secondary)
-                Text(verbatim: requestCode)
-                    .font(.vaultCode(size: 24))
-                    .monospacedDigit()
-                    .themedForeground()
-                Text("It should match the code on their screen.")
-                    .vaultType(.footnote).themedForeground(.secondary)
-            }
-            .padding(Space.s4)
-            .frame(maxWidth: .infinity)
-            .background(VaultColors.surface)
-            .vaultCornerRadius(Radius.md)
+        VaultStatusScreen(
+            icon: Icons.shield,
+            title: isPasskeyRequest ? "Sign-in requested" : "Code requested",
+            message: .key(requestExplanation),
+            feature: { requestCodeCard },
+            primary: .init(title: "Approve with Face ID") {
+                Task { await ceremony.approve(pending) }
+            },
+            secondary: .init(title: "Reject") {
+                Task { await ceremony.reject(pending) }
+            })
+    }
 
-            // Action hierarchy: Approve is the single filled primary (the
-            // expected path); Reject is the quiet secondary — same tap
-            // target height, softer tinted style so it never competes.
-            VStack(spacing: Space.s3) {
-                Button {
-                    Task { await ceremony.approve(pending) }
-                } label: {
-                    Text("Approve with Face ID")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.themedProminent)
-                Button {
-                    Task {
-                        await ceremony.reject(pending)
-                    }
-                } label: {
-                    Text("Reject")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.themedTinted)
+    /// Passkey vs code, named requester vs not — four separate sentences so
+    /// each locale can put the name where its grammar wants it.
+    private var requestExplanation: LocalizedStringKey {
+        if isPasskeyRequest {
+            if let requesterLabel {
+                return "\(requesterLabel) is asking to sign in with the shared passkey for \(itemTitle)."
             }
+            return "Someone you shared with is asking to sign in with the shared passkey for \(itemTitle)."
         }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if let requesterLabel {
+            return "\(requesterLabel) is asking for the current verification code for \(itemTitle)."
+        }
+        return "Someone you shared with is asking for the current verification code for \(itemTitle)."
+    }
+
+    /// Centred inside the left-aligned status layout on purpose: the digits are
+    /// what both people hold side by side.
+    private var requestCodeCard: some View {
+        VStack(spacing: Space.s2) {
+            Text("Request code")
+                .vaultType(.sectionLabel).themedForeground(.secondary)
+            Text(verbatim: requestCode)
+                .font(.vaultCode(size: 24))
+                .monospacedDigit()
+                .themedForeground()
+            Text("It should match the code on their screen.")
+                .vaultType(.footnote).themedForeground(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity)
+        .background(VaultColors.surface)
+        .vaultCornerRadius(Radius.md)
     }
 
     /// Design 9c: rather than send the current TOTP code (which may have
@@ -160,67 +143,57 @@ struct ApprovalRequestSheet: View {
             let remainingMs = max(0, boundaryUnixMs - Int64(context.date.timeIntervalSince1970 * 1000))
             let remainingSeconds = Int((remainingMs + 999) / 1000)
             let period = Int(periodSeconds)
-            VStack(spacing: Space.s4) {
-                ProgressView()
-                Text("Preparing a fresh verification code…")
-                    .vaultType(.section).themedForeground()
-                    .multilineTextAlignment(.center)
-                if let requesterLabel {
-                    Text("Loox waits for the next \(period)-second window so \(requesterLabel) gets a full-life code. The old one is never sent.")
-                        .vaultType(.callout).themedForeground(.secondary)
-                        .multilineTextAlignment(.center)
-                } else {
-                    Text("Loox waits for the next \(period)-second window so they get a full-life code. The old one is never sent.")
-                        .vaultType(.callout).themedForeground(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                HStack(spacing: Space.s2) {
-                    CountdownRing(remaining: min(remainingSeconds, period), period: period)
-                    Text("New window in \(remainingSeconds)s")
-                        .vaultType(.footnote).fontWeight(.semibold).themedForeground(.warning)
-                }
-                .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
-                .background(VaultColors.surface, in: Capsule())
-                Text("This sheet stays open while the code is being issued.")
-                    .vaultType(.footnote).themedForeground(.tertiary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(Space.gutter)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VaultStatusScreen(
+                title: "Preparing a fresh verification code…",
+                message: .key(freshWindowExplanation(period: period)),
+                busy: true,
+                feature: {
+                    VStack(alignment: .leading, spacing: Space.s3) {
+                        HStack(spacing: Space.s2) {
+                            CountdownRing(remaining: min(remainingSeconds, period), period: period)
+                            Text("New window in \(remainingSeconds)s")
+                                .vaultType(.footnote).fontWeight(.semibold).themedForeground(.warning)
+                        }
+                        .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+                        .background(VaultColors.surface, in: Capsule())
+                        Text("This sheet stays open while the code is being issued.")
+                            .vaultType(.footnote).themedForeground(.tertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                })
         }
+    }
+
+    private func freshWindowExplanation(period: Int) -> LocalizedStringKey {
+        if let requesterLabel {
+            return "Loox waits for the next \(period)-second window so \(requesterLabel) gets a full-life code. The old one is never sent."
+        }
+        return "Loox waits for the next \(period)-second window so they get a full-life code. The old one is never sent."
     }
 
     private func progress(_ message: LocalizedStringKey) -> some View {
-        VStack(spacing: Space.s4) {
-            ProgressView()
-            Text(message)
-                .vaultType(.callout).themedForeground(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VaultStatusScreen(title: message, busy: true)
     }
 
     private func finished(_ decision: ApprovalDecision) -> some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(decision == .approved ? Icons.shield : Icons.shieldAlert,
-                        size: Metric.iconTileLarge)
-                .themedForeground(decision == .approved ? .success : .secondary)
-            Text(decision == .approved ? "Code sent" : "Request rejected")
-                .vaultType(.section).themedForeground()
-            if decision == .approved {
-                Text("They received a one-time code. It expires with the current window; nothing else was shared.")
-                    .vaultType(.callout).themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            Button {
+        let approved = decision == .approved
+        // What was approved decides the wording: a passkey request hands over a
+        // single signed sign-in, never a code.
+        let title: LocalizedStringKey = approved
+            ? (isPasskeyRequest ? "Sign-in approved" : "Code sent")
+            : "Request rejected"
+        let approvedMessage: LocalizedStringKey = isPasskeyRequest
+            ? "They can finish this one sign-in. The passkey itself never left your device."
+            : "They received a one-time code. It expires with the current window. Nothing else was shared."
+        return VaultStatusScreen(
+            icon: approved ? Icons.shield : Icons.shieldAlert,
+            tint: approved ? .success : .secondary,
+            title: title,
+            message: approved ? .key(approvedMessage) : nil,
+            primary: .init(title: "Done") {
                 onFinished()
                 dismiss()
-            } label: {
-                Text("Done").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-        }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            })
         // The ceremony is over — a parked sheet only resurfaces stale UI
         // later, so close it by itself after the outcome is readable.
         .task {
@@ -234,21 +207,14 @@ struct ApprovalRequestSheet: View {
     }
 
     private func failed(_ message: String) -> some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.alert, size: Metric.iconTile)
-                .themedForeground(.destructive)
-            Text(verbatim: message)
-                .vaultType(.callout).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-            Button {
-                onFinished()
-                dismiss()
-            } label: {
-                Text("Close").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-        }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The service message is already localized, so it stays verbatim under
+        // a titled headline instead of standing alone as grey body copy.
+        VaultStatusScreen(icon: Icons.alert, tint: .destructive,
+                          title: "Something went wrong",
+                          message: .verbatim(message),
+                          primary: .init(title: "Close") {
+                              onFinished()
+                              dismiss()
+                          })
     }
 }

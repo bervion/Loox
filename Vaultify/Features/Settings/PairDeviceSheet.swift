@@ -8,6 +8,7 @@ import SwiftUI
 /// iPhone (pairing approval needs a camera — the Mac is usually the NEW device).
 struct PairDeviceSheet: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.dismiss) private var dismiss
 
     private enum Phase: Equatable {
         case scanning
@@ -46,66 +47,34 @@ struct PairDeviceSheet: View {
             }
             .background(.black)
             #else
-            statusLayout(icon: Icons.scanCode, tint: VaultColors.accent,
-                         title: "Scan on iPhone",
-                         detail: "Open Loox on your iPhone (Settings → iCloud Sync → Pair New Device) to scan the new device’s code.")
+            VaultStatusScreen(icon: Icons.scanCode,
+                              title: "Scan on iPhone",
+                              message: .key("Open Loox on your iPhone (Settings → iCloud Sync → Pair New Device) to scan the new device’s code."))
             #endif
         case .confirm(let qrPayload):
-            confirmView(qrPayload: qrPayload)
+            // Explicit approval gate: sealing the Vault Key to a scanned key is the
+            // single most security-sensitive action in the app — never do it silently
+            // off a scan. Cancel returns to the scanner so a mis-scan can be redone
+            // without reopening the sheet.
+            VaultStatusScreen(icon: Icons.personLockFilled,
+                              title: "Add this device to your vault?",
+                              message: .key("Your vault key will be sent end-to-end encrypted to the device showing this code. Only approve a device that belongs to you."),
+                              primary: .init(title: "Approve") { approve(qrPayload: qrPayload) },
+                              secondary: .init(title: "Cancel") { phase = .scanning })
         case .publishing:
-            VStack(spacing: Space.s4) {
-                ProgressView()
-                Text("Sending encrypted key…").vaultType(.subhead).themedForeground(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VaultStatusScreen(title: "Sending encrypted key…", busy: true)
         case .done:
-            statusLayout(icon: Icons.checkCircle, tint: VaultColors.strengthStrong,
-                         title: "Device Paired",
-                         detail: "Continue on your new device. It will finish setting up and download your vault.")
+            VaultStatusScreen(icon: Icons.checkCircle, tint: .success,
+                              title: "Device Paired",
+                              message: .key("Continue on your new device. It will finish setting up and download your vault."),
+                              primary: .init(title: "Done") { dismiss() })
         case .failed(let message):
-            VStack(spacing: Space.s4) {
-                PolarisIcon(Icons.shieldAlert, size: 48).foregroundStyle(VaultColors.strengthWeak)
-                Text(message)
-                    .vaultType(.subhead).themedForeground(.secondary)
-                    .multilineTextAlignment(.center)
-                Button { phase = .scanning } label: { Text("Try again") }
-                    .buttonStyle(.themedProminent)
-            }
-            .padding(Space.s6)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    /// Explicit approval gate: sealing the Vault Key to a scanned key is the single
-    /// most security-sensitive action in the app — never do it silently off a scan.
-    private func confirmView(qrPayload: String) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-            PolarisIcon(Icons.personLockFilled, size: 48).foregroundStyle(VaultColors.accent)
-            Text("Add this device to your vault?")
-                .vaultType(.screenTitle)
-                .multilineTextAlignment(.center)
-                .padding(.top, Space.s5)
-            Text("Your vault key will be sent end-to-end encrypted to the device showing this code. Only approve a device that belongs to you.")
-                .vaultType(.subhead).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.top, Space.s3)
-                .padding(.horizontal, Space.s6)
-            Spacer()
-            VStack(spacing: Space.s3) {
-                Button { approve(qrPayload: qrPayload) } label: {
-                    Text("Approve").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.themedProminent)
-                .controlSize(.large)
-                Button { phase = .scanning } label: {
-                    Text("Cancel").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-            }
-            .padding(.horizontal, Space.s6)
-            .padding(.bottom, Space.s6)
+            // The service error is already localized at the throw site, so it rides
+            // the verbatim slot rather than pretending to be a catalog key.
+            VaultStatusScreen(icon: Icons.shieldAlert, tint: .destructive,
+                              title: "Something went wrong",
+                              message: .verbatim(message),
+                              primary: .init(title: "Try again") { phase = .scanning })
         }
     }
 
@@ -128,19 +97,5 @@ struct PairDeviceSheet: View {
                 phase = .failed(error.localizedDescription)
             }
         }
-    }
-
-    private func statusLayout(icon: String, tint: Color,
-                              title: LocalizedStringResource,
-                              detail: LocalizedStringResource) -> some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(icon, size: 48).foregroundStyle(tint)
-            Text(title.inAppLocalized).vaultType(.screenTitle)
-            Text(detail.inAppLocalized)
-                .vaultType(.subhead).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(Space.s6)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
