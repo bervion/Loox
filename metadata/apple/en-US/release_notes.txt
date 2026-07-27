@@ -1,1 +1,1 @@
-This update improves layout consistency across the app, refines the onboarding experience, and lets you unlock Level 2 security with Face ID for faster, more secure access.
+Sharing is clearer and safer: each side makes one decision, identities are confirmed at accept, and shared passkeys now work as expected.

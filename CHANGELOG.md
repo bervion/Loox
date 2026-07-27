@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.42.0] - 2026-07-27
+
+### Added
+- one decision per side, identity at accept, and a usable shared passkey (#180)
+
+### Changed
+- update docs
+
+
 ## [1.41.1] - 2026-07-27
 
 ### Fixed

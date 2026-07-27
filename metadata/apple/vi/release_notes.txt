@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện bố cục hiển thị trong ứng dụng, tinh chỉnh trải nghiệm giới thiệu ban đầu, và cho phép mở khóa Bảo mật Cấp 2 bằng Face ID để truy cập nhanh và an toàn hơn.
+Chia sẻ rõ ràng và an toàn hơn: mỗi bên chỉ cần một quyết định, danh tính được xác nhận khi chấp nhận, và passkey dùng chung hoạt động đúng như mong đợi.
