@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.43.0] - 2026-07-27
+
+### Added
+- add Japanese, and align sidebar and identity rows with the vault (#182)
+- move Quick Actions into the sidebar and add a Settings row (#181)
+
+### Changed
+- update docs
+
+
 ## [1.42.0] - 2026-07-27
 
 ### Added

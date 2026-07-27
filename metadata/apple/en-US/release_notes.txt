@@ -1,1 +1,1 @@
-Sharing is clearer and safer: each side makes one decision, identities are confirmed at accept, and shared passkeys now work as expected.
+This update adds Japanese language support and refines the sidebar to match the vault's look and feel more closely.

@@ -1,1 +1,1 @@
-Chia sẻ rõ ràng và an toàn hơn: mỗi bên chỉ cần một quyết định, danh tính được xác nhận khi chấp nhận, và passkey dùng chung hoạt động đúng như mong đợi.
+Bản cập nhật này bổ sung hỗ trợ tiếng Nhật và tinh chỉnh thanh bên để đồng bộ hơn với giao diện của kho mật khẩu.
