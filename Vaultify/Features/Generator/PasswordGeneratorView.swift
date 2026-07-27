@@ -129,15 +129,18 @@ struct PasswordGeneratorView: View {
                     // then reverts with the `copied` state (~1.2s) — shared primitive
                     // so the copy affordance matches item detail's rows 1:1.
                     CopyMorphIcon(copied: copied, size: 18)
-                        .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.iconSecondary))
+                        .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.iconSecondary))
                 }
-                .foregroundStyle(copied ? theme.color(.onAccent) : theme.color(.primary))
+                // The app's fixed copy-flash pair, NOT the theme accent: copy feedback is
+                // one vocabulary everywhere (see `VaultColors.copyFlash`), and an accent
+                // whose `onAccent` resolves dark rendered this label black on the flash.
+                .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.primary))
                 .padding(.horizontal, Space.s4)
                 .padding(.vertical, Space.s3)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(copied ? theme.color(.accent) : Color.clear)
+                .background(copied ? VaultColors.copyFlash : Color.clear)
                 .vaultCornerRadius(Radius.md)
-                // Outlined box normally; the border is hidden under the accent
+                // Outlined box normally; the border is hidden under the copy
                 // flash while copied.
                 .overlay {
                     if !copied {

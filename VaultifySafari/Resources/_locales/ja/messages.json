@@ -1,0 +1,204 @@
+{
+  "extension_name": {
+    "message": "Loox",
+    "description": "Extension display name shown in Safari settings and the toolbar."
+  },
+  "extension_description": {
+    "message": "Loox の保管庫から ID とカードを入力します。",
+    "description": "Extension description shown in Safari extension settings."
+  },
+  "popup_title": {
+    "message": "Loox",
+    "description": "Popup heading."
+  },
+  "popup_status_locked": {
+    "message": "保管庫はロックされています",
+    "description": "Status shown while the vault is locked."
+  },
+  "popup_status_unlocked": {
+    "message": "保管庫のロックが解除されています",
+    "description": "Status shown when the vault is unlocked."
+  },
+  "popup_locked_hint": {
+    "message": "ロックを解除すると、このサイトのアイテムが表示されます。",
+    "description": "Hint under the locked status."
+  },
+  "popup_unlock_button": {
+    "message": "Face ID でロック解除",
+    "description": "Button that starts the Face ID unlock."
+  },
+  "popup_unlocking": {
+    "message": "Face ID を待っています",
+    "description": "Shown while the native Face ID prompt is up."
+  },
+  "popup_section_logins": {
+    "message": "ログイン",
+    "description": "Section heading for logins matching the active site."
+  },
+  "popup_section_identities": {
+    "message": "ID",
+    "description": "Section heading for identity items."
+  },
+  "popup_section_cards": {
+    "message": "カード",
+    "description": "Section heading for payment card items."
+  },
+  "popup_no_matches": {
+    "message": "このサイトのアイテムはまだありません。",
+    "description": "Shown when the unlocked vault has nothing to list."
+  },
+  "popup_unsupported_page": {
+    "message": "このページには対応していません。https のサイトを開いてください。",
+    "description": "Shown when the active tab is not an https page."
+  },
+  "popup_retry_button": {
+    "message": "もう一度試す",
+    "description": "Button that retries after an error."
+  },
+  "popup_error_generic": {
+    "message": "問題が発生しました。もう一度お試しください。",
+    "description": "Generic error message."
+  },
+  "popup_error_unreachable": {
+    "message": "アプリに接続できませんでした。もう一度お試しください。",
+    "description": "Shown when the native round-trip fails."
+  },
+  "popup_copy_button": {
+    "message": "コピー",
+    "description": "Copy button label on item rows."
+  },
+  "popup_copy_username_label": {
+    "message": "ユーザー名をコピー",
+    "description": "Accessibility label for the login row copy button."
+  },
+  "popup_copy_email_label": {
+    "message": "メールアドレスをコピー",
+    "description": "Accessibility label for the identity row copy button."
+  },
+  "popup_copied": {
+    "message": "コピーしました",
+    "description": "Feedback after a value was copied to the clipboard."
+  },
+  "popup_copy_failed": {
+    "message": "コピーできませんでした",
+    "description": "Feedback when a copy action fails."
+  },
+  "popup_card_ending": {
+    "message": "下 4 桁 $LAST4$",
+    "description": "Masked card subtitle showing only the last four digits.",
+    "placeholders": {
+      "last4": {
+        "content": "$1",
+        "example": "4242"
+      }
+    }
+  },
+  "popup_fill_button": {
+    "message": "入力",
+    "description": "Fill button label on identity and card rows."
+  },
+  "popup_fill_identity_label": {
+    "message": "このページの ID 欄に入力",
+    "description": "Accessibility label for the identity row fill button."
+  },
+  "popup_fill_card_label": {
+    "message": "このページのカード欄に入力",
+    "description": "Accessibility label for the card row fill button."
+  },
+  "popup_filling": {
+    "message": "入力しています",
+    "description": "Feedback while a fill is in progress."
+  },
+  "popup_fill_done": {
+    "message": "$COUNT$ 個の項目に入力しました",
+    "description": "Feedback after a fill, with the number of fields filled.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4"
+      }
+    }
+  },
+  "popup_fill_none": {
+    "message": "このページに一致する入力欄はありません",
+    "description": "Feedback when the page has no fields the item can fill."
+  },
+  "popup_fill_failed": {
+    "message": "入力できませんでした",
+    "description": "Feedback when a fill action fails."
+  },
+  "popup_generate_button": {
+    "message": "生成したパスワードを使う",
+    "description": "Button that fills a freshly generated strong password into the signup form's new-password fields."
+  },
+  "save_overlay_title": {
+    "message": "このログインを Loox に保存しますか。",
+    "description": "Heading of the in-page save prompt shown after a signup is submitted."
+  },
+  "save_overlay_title_label": {
+    "message": "タイトル",
+    "description": "Label of the editable item-title input in the save prompt."
+  },
+  "save_overlay_username_label": {
+    "message": "ユーザー名",
+    "description": "Label of the editable username input in the save prompt."
+  },
+  "save_overlay_save": {
+    "message": "保存",
+    "description": "Primary button of the save prompt: writes the new login to the vault."
+  },
+  "save_overlay_not_now": {
+    "message": "後で",
+    "description": "Button that dismisses the save prompt without saving."
+  },
+  "save_overlay_never": {
+    "message": "このサイトでは保存しない",
+    "description": "Button that dismisses the save prompt and stops offering it on this site."
+  },
+  "save_overlay_saved": {
+    "message": "Loox に保存しました",
+    "description": "Confirmation after the new login was written to the vault."
+  },
+  "save_overlay_duplicate": {
+    "message": "このサイトには保存済みです",
+    "description": "Shown when a login with the same site and username already exists."
+  },
+  "save_overlay_failed": {
+    "message": "保存できませんでした",
+    "description": "Shown when saving the new login fails."
+  },
+  "inline_menu_label": {
+    "message": "Loox の候補",
+    "description": "Accessibility label of the inline suggestion menu anchored to a focused identity or card field."
+  },
+  "inline_fill_item_label": {
+    "message": "$TITLE$ をこのページに入力",
+    "description": "Accessibility label of an inline menu row; fills the named item into the page.",
+    "placeholders": {
+      "title": {
+        "content": "$1",
+        "example": "Personal card"
+      }
+    }
+  },
+  "inline_open_app": {
+    "message": "Loox を開く",
+    "description": "Inline menu footer row that opens the Loox app for item management."
+  },
+  "inline_hide_site": {
+    "message": "このサイトでは表示しない",
+    "description": "Inline menu footer row that turns off the extension's in-page suggestions and save prompts for the current site."
+  },
+  "popup_hide_site_button": {
+    "message": "このサイトでは表示しない",
+    "description": "Popup footer button that turns off the extension's in-page suggestions and save prompts for the current site."
+  },
+  "popup_show_site_button": {
+    "message": "このサイトで表示する",
+    "description": "Popup footer button that turns the extension's in-page suggestions and save prompts back on for the current site."
+  },
+  "popup_site_hidden_hint": {
+    "message": "このサイトではページ内の候補と保存の確認をオフにしています。",
+    "description": "Popup footer hint shown while the current site is hidden; filling from the popup keeps working."
+  }
+}

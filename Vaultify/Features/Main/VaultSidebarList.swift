@@ -8,9 +8,9 @@ import SwiftUI
 /// while a sidebar is on screen and shows it again in compact multitasking, where
 /// there is no sidebar to carry them (see `HomeScreen.sectionView`).
 ///
-/// Row icons are white-filled SF Symbols on a tinted rounded badge
-/// (`SettingsIconBadge`), the iPad Settings idiom. This is a sidebar-only grant
-/// (owner 260727) — the tab bar and every other surface keep the Polaris set.
+/// Row icons are the FILLED Polaris glyphs — the same assets the tab bar shows for an
+/// active tab — rendered white on a tinted rounded badge (`SettingsIconBadge`), the iPad
+/// Settings idiom. Filled, not outline: an outline glyph goes muddy on a solid tile.
 struct VaultSidebarList: View {
     @Environment(AppEnvironment.self) private var env
     // Optional binding: `List(selection:)` single-selection expects `SelectionValue?`.
@@ -33,11 +33,14 @@ struct VaultSidebarList: View {
                 VaultSidebarProfileCard(isSelected: selection == .profile) {
                     selection = .profile
                 }
-                // The card IS the row's surface, so the list must paint nothing behind
-                // it, and its insets replace the standard row insets.
+                // The card IS the row's surface, so the list must paint nothing behind it.
+                // ZERO horizontal inset: the list already indents the row box itself, and
+                // that box is exactly where the search field and the selection capsules
+                // below sit. Any inset on top of it pushes the card inboard of both, which
+                // reads as a misaligned left edge down the sidebar.
                 .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: Space.s2, leading: Space.s2,
-                                          bottom: Space.s2, trailing: Space.s2))
+                .listRowInsets(EdgeInsets(top: Space.s1, leading: 0,
+                                          bottom: Space.s1, trailing: 0))
                 .listRowSeparator(.hidden)
             }
 
@@ -48,7 +51,10 @@ struct VaultSidebarList: View {
                     Label {
                         Text(tab.accessibilityLabel)
                     } icon: {
-                        SettingsIconBadge(systemName: Self.symbol(for: tab), tint: Self.tint(for: tab))
+                        // `iconSelected` — the FILLED Polaris variant the tab bar shows for
+                        // the active tab. A filled glyph is what reads on a solid badge, and
+                        // it keeps sidebar and tab bar visually the same set.
+                        SettingsIconBadge(icon: tab.iconSelected, tint: Self.tint(for: tab))
                     }
                     // Security carries the open-issue count Home's quick-action tile used
                     // to show. `.badge(0)` renders nothing, so a clean vault stays quiet.
@@ -63,11 +69,11 @@ struct VaultSidebarList: View {
                 // Security is deliberately absent: it is already a first-class
                 // destination one section above, and repeating it here would give the
                 // same target two rows.
-                actionRow("Add Item", symbol: "plus",
+                actionRow("Add Item", icon: Icons.add,
                           tint: SettingsBadgeTint.orange, action: onAddItem)
-                actionRow("Generate Password", symbol: "key.fill",
+                actionRow("Generate Password", icon: Icons.key,
                           tint: SettingsBadgeTint.teal, action: onGeneratePassword)
-                actionRow("2FA Codes", symbol: "123.rectangle.fill",
+                actionRow("2FA Codes", icon: Icons.clock,
                           tint: SettingsBadgeTint.purple, count: totpCount, action: onOpenTotpCodes)
             } header: {
                 Text(LocalizedStringResource("Quick Actions").inAppLocalized)
@@ -98,7 +104,7 @@ struct VaultSidebarList: View {
                 Label {
                     Text(LocalizedStringResource("Settings").inAppLocalized)
                 } icon: {
-                    SettingsIconBadge(systemName: "gearshape.fill", tint: SettingsBadgeTint.gray)
+                    SettingsIconBadge(icon: Icons.settingsFill, tint: SettingsBadgeTint.gray)
                 }
                 .tag(UIStateStore.SidebarSelection.settings)
             }
@@ -113,7 +119,7 @@ struct VaultSidebarList: View {
     /// the destination rows instead of picking up the system button tint.
     private func actionRow(
         _ title: LocalizedStringResource,
-        symbol: String,
+        icon: String,
         tint: Color,
         count: Int = 0,
         action: @escaping () -> Void
@@ -122,7 +128,7 @@ struct VaultSidebarList: View {
             Label {
                 Text(title.inAppLocalized)
             } icon: {
-                SettingsIconBadge(systemName: symbol, tint: tint)
+                SettingsIconBadge(icon: icon, tint: tint)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
@@ -132,17 +138,6 @@ struct VaultSidebarList: View {
     }
 
     // MARK: Per-section badge identities
-
-    /// SF Symbol per Vault section. Sidebar-only (see the type doc); the tab bar
-    /// keeps `VaultTab.icon`'s Polaris assets.
-    private static func symbol(for tab: VaultTab) -> String {
-        switch tab {
-        case .home: return "house.fill"
-        case .items: return "square.grid.2x2.fill"
-        case .watchtower: return "checkmark.shield.fill"
-        case .search: return "magnifyingglass"
-        }
-    }
 
     /// Fixed badge hues, distinct within the sidebar and stable across accent
     /// changes — these are identities, not state colours (see `SettingsBadgeTint`).

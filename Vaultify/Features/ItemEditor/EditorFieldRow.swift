@@ -475,7 +475,8 @@ private struct GenerateChipSurface: ViewModifier {
 nonisolated enum CardTemplateLabel {
     /// Languages the string catalog ships. A new app language must be added here so a
     /// label saved as that language's translation keeps matching.
-    private static let locales = [Locale(identifier: "en"), Locale(identifier: "vi")]
+    private static let locales = [Locale(identifier: "en"), Locale(identifier: "vi"),
+                                  Locale(identifier: "ja")]
 
     static func matches(_ stored: String, english: String) -> Bool {
         let trimmed = stored.trimmingCharacters(in: .whitespaces)

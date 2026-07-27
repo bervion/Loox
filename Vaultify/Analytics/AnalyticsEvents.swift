@@ -102,7 +102,7 @@ extension AnalyticsEvent {
 
     // MARK: Settings & data portability
 
-    /// `language`: "system" | "en" | "vi".
+    /// `language`: "system" | "en" | "vi" | "ja".
     static func languageChanged(_ language: String) -> AnalyticsEvent {
         AnalyticsEvent("language_changed", ["language": .string(language)])
     }
