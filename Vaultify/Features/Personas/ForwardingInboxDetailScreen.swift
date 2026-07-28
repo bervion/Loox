@@ -10,7 +10,7 @@ struct ForwardingInboxDetailScreen: View {
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
-    @State private var errorMessage: String?
+    @State private var verification = ForwardingInboxVerification()
     @State private var confirmDelete = false
 
     private var inbox: ForwardingInbox? {
@@ -33,9 +33,11 @@ struct ForwardingInboxDetailScreen: View {
             }
         }
         .navigationTitle(Text("Inbox"))
-        .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
+        // One surface for both answers: "we sent it" is as much a result as a
+        // failure, and a send that reported nothing looked like a dead button.
+        .alert(Text(verbatim: verification.outcome?.title ?? ""), isPresented: outcomeBinding) {
             Button("OK", role: .cancel) {}
-        } message: { Text(verbatim: errorMessage ?? "") }
+        } message: { Text(verbatim: verification.outcome?.body ?? "") }
         .confirmationDialog("Delete this inbox?", isPresented: $confirmDelete,
                             titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
@@ -79,16 +81,13 @@ struct ForwardingInboxDetailScreen: View {
                     case .verified:
                         EmptyView()
                     case .pending:
-                        Button { checkVerification(inbox) } label: {
-                            Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
+                        verificationRow(inbox, title: "Check verification",
+                                        icon: Icons.checkCircle, activity: .checking) {
+                            await verification.check(inbox, relay: env.relay)
                         }
-                        Button { confirmEmail(inbox) } label: {
-                            Label { Text("Resend email") } icon: { PolarisIcon("ic_refresh") }
-                        }
+                        resendRow(inbox, title: "Resend email")
                     case .unverified, .revoked:
-                        Button { confirmEmail(inbox) } label: {
-                            Label { Text("Confirm email") } icon: { PolarisIcon(Icons.checkCircle) }
-                        }
+                        resendRow(inbox, title: "Confirm email")
                     }
                 }
                 if !inbox.isDefault {
@@ -98,6 +97,43 @@ struct ForwardingInboxDetailScreen: View {
                 }
             }
             .listRowBackground(VaultColors.surface)
+        }
+    }
+
+    /// A verification action as a row that reports its own state: the glyph
+    /// becomes a spinner while the call runs, and the row is inert until it
+    /// finishes. Nothing here can be fired twice by an impatient second tap.
+    private func verificationRow(_ inbox: ForwardingInbox, title: LocalizedStringKey,
+                                 icon: String, activity: ForwardingInboxVerification.Activity,
+                                 run: @escaping () async -> Void) -> some View {
+        let busy = verification.isBusy(inbox) && verification.activity == activity
+        return Button { Task { await run() } } label: {
+            Label {
+                Text(title)
+            } icon: {
+                if busy { ProgressView().controlSize(.small) } else { PolarisIcon(icon) }
+            }
+        }
+        .disabled(verification.isBusy(inbox))
+    }
+
+    /// Sending is the metered one: each tap puts another email in the user's
+    /// inbox, so the row states how long the relay wants us to wait and refuses
+    /// to send until then.
+    @ViewBuilder private func resendRow(_ inbox: ForwardingInbox,
+                                        title: LocalizedStringKey) -> some View {
+        let wait = verification.resendWait(for: inbox)
+        if wait > 0 {
+            Label {
+                Text(verbatim: appString("You can send again in \(wait)s"))
+                    .themedForeground(.secondary)
+            } icon: {
+                PolarisIcon(Icons.clock).themedForeground(.secondary)
+            }
+        } else {
+            verificationRow(inbox, title: title, icon: Icons.refresh, activity: .sending) {
+                await verification.send(to: inbox, relay: env.relay)
+            }
         }
     }
 
@@ -124,33 +160,8 @@ struct ForwardingInboxDetailScreen: View {
         }
     }
 
-    private func confirmEmail(_ inbox: ForwardingInbox) {
-        Task {
-            do { _ = try await env.relay.beginDestinationVerification(inbox) }
-            catch let failure as RelayService.Failure {
-                errorMessage = failure.userMessage
-                Haptics.error()
-            } catch {
-                errorMessage = appString("Check your connection and iCloud, then try again.")
-                Haptics.error()
-            }
-        }
-    }
-
-    private func checkVerification(_ inbox: ForwardingInbox) {
-        Task {
-            do { _ = try await env.relay.refreshDestinationStatus(inbox) }
-            catch let failure as RelayService.Failure {
-                errorMessage = failure.userMessage
-                Haptics.error()
-            } catch {
-                errorMessage = appString("Check your connection and iCloud, then try again.")
-                Haptics.error()
-            }
-        }
-    }
-
-    private var errorBinding: Binding<Bool> {
-        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+    private var outcomeBinding: Binding<Bool> {
+        Binding(get: { verification.outcome != nil },
+                set: { if !$0 { verification.outcome = nil } })
     }
 }

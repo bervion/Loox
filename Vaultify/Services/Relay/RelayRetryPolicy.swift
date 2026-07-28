@@ -43,6 +43,38 @@ nonisolated enum RelayRetryPolicy {
 }
 
 extension RelayService.Failure {
+    /// Headline for a relay failure. Every screen used to title these alerts
+    /// "Couldn’t reach the relay" whatever went wrong, so a consent gate, an
+    /// announced maintenance window and a locked vault all announced themselves
+    /// as a connection problem — and the one sentence that told the user what to
+    /// actually do sat under a heading that contradicted it.
+    var userTitle: String {
+        switch self {
+        case .capabilityBlocked(.maintenance, _):
+            return appString("Under maintenance")
+        case .capabilityBlocked(.disabled, _):
+            return appString("Temporarily unavailable")
+        case .capabilityBlocked(.retired, _):
+            return appString("No longer offered")
+        case .vaultLocked:
+            return appString("Loox is locked")
+        case .missingDestination:
+            return appString("Add an email first")
+        case .network:
+            return appString("You’re offline")
+        case .rejected("unauthorized"):
+            return appString("Couldn’t verify this device")
+        case .rejected("destination_not_verified"):
+            return appString("Confirm your forwarding email")
+        case .rejected("rate_limited"), .rejected("capacity_reached"):
+            return appString("Too many requests")
+        case .rejected("alias_cap_reached"):
+            return appString("Address limit reached")
+        case .capabilityBlocked, .principalUnavailable, .rejected:
+            return appString("Couldn’t reach the relay")
+        }
+    }
+
     /// Human copy for a relay failure — backend vocabulary (nonce/epoch) never
     /// reaches the user; those are auto-retried before ever landing here.
     var userMessage: String {

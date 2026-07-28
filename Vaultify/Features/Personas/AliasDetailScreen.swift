@@ -10,6 +10,7 @@ struct AliasDetailScreen: View {
     let aliasID: String
 
     @State private var busy = false
+    @State private var errorTitle = ""
     @State private var errorMessage: String?
     @State private var confirmDelete = false
     @State private var confirmPause = false
@@ -35,7 +36,9 @@ struct AliasDetailScreen: View {
         }
         .navigationTitle(Text("Private Email"))
         .platformNavigationBarTitleDisplayMode(.inline)
-        .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
+        // Title follows the failure, so a consent gate or a maintenance window
+        // is not announced as a connection problem.
+        .alert(Text(verbatim: errorTitle), isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
         } message: { Text(verbatim: errorMessage ?? "") }
     }
@@ -178,6 +181,7 @@ struct AliasDetailScreen: View {
     /// aliases list applies to the identical row action.
     private func activate(_ alias: EmailAlias) {
         if gate.isTurnedOffByUser {
+            errorTitle = appString("Private Email is off")
             errorMessage = appString("Private Email is turned off in Settings.")
             return
         }
@@ -208,9 +212,11 @@ struct AliasDetailScreen: View {
             defer { busy = false }
             do { try await operation() }
             catch let failure as RelayService.Failure {
+                errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
                 Haptics.error()
             } catch {
+                errorTitle = appString("Couldn’t reach the relay")
                 errorMessage = appString("Check your connection and iCloud, then try again.")
                 Haptics.error()
             }
