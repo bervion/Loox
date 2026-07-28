@@ -27938,6 +27938,134 @@
           }
         }
       }
+    },
+    "Add your first item": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最初のアイテムを追加"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm mục đầu tiên"
+          }
+        }
+      }
+    },
+    "Logins, cards, notes, and passkeys all live here. Loox encrypts each one on this device.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン情報、カード、メモ、パスキーはすべてここにあります。Loox は各項目をこのデバイス上で暗号化します。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thông tin đăng nhập, thẻ, ghi chú và passkey đều nằm ở đây. Loox mã hóa từng mục ngay trên thiết bị này."
+          }
+        }
+      }
+    },
+    "Check your security": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セキュリティを確認"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra bảo mật"
+          }
+        }
+      }
+    },
+    "Loox reviews password strength, reuse, and known leaks, then walks you through the fixes.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox はパスワードの強度、使い回し、既知の漏洩を確認し、修正手順を案内します。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox xem xét độ mạnh mật khẩu, việc dùng lại và các vụ rò rỉ đã biết, rồi hướng dẫn bạn khắc phục."
+          }
+        }
+      }
+    },
+    "Everything stays on this device": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてこのデバイスに保存されます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi thứ đều ở lại thiết bị này"
+          }
+        }
+      }
+    },
+    "Your items are encrypted here and unlocked only by you. Turn on iCloud Sync in Settings when you want them on your other devices.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アイテムはここで暗号化され、ロックを解除できるのはあなただけです。ほかのデバイスでも使いたいときは、設定で iCloud 同期をオンにしてください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các mục của bạn được mã hóa tại đây và chỉ bạn mở khóa được. Bật Đồng bộ iCloud trong Cài đặt khi bạn muốn dùng trên thiết bị khác."
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次へ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp"
+          }
+        }
+      }
+    },
+    "Skip": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スキップ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ qua"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

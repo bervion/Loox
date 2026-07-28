@@ -66,6 +66,9 @@ import SwiftUI
     let domainRegistry: DomainRegistryClient
     /// Bounded local history for the notifications screen.
     let notificationHistory: NotificationHistoryStore
+    /// Runs the in-app guided tours (spotlight + tooltip). Inert while
+    /// `TutorialFeature.enabled` is false or every flow has been answered.
+    let tutorial: TutorialCoordinator
     /// Quick View ("Send to Browser") device-local attempt history — minimal
     /// rows only (item id + timestamp + result).
     let quickViewHistory: QuickViewHistoryStore
@@ -160,6 +163,7 @@ import SwiftUI
         self.sharingStore = SharingStore(defaults: settingsDefaults)
         self.looxLinks = LooxLinkService(persistenceEnabled: !testIsolationEnabled)
         self.notificationHistory = NotificationHistoryStore(defaults: settingsDefaults)
+        self.tutorial = TutorialCoordinator(store: TutorialStore(defaults: settingsDefaults))
         self.quickViewHistory = QuickViewHistoryStore(
             persistenceEnabled: !testIsolationEnabled
         )

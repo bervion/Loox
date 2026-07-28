@@ -25,6 +25,17 @@ extension AnalyticsEvent {
 
     static let tutorialBegin = AnalyticsEvent("tutorial_begin")
     static let tutorialComplete = AnalyticsEvent("tutorial_complete")
+
+    /// In-app guided tours (distinct from the onboarding pair above, which
+    /// covers vault setup). `flow` and `step` are fixed identifiers from the
+    /// flow definition — never screen titles or anything the user typed.
+    static func tutorialStepShown(flow: String, step: Int) -> AnalyticsEvent {
+        AnalyticsEvent("tutorial_step_shown", ["flow": .string(flow), "step_index": .int(step)])
+    }
+    /// `outcome`: "completed" | "skipped".
+    static func tutorialFlowEnded(flow: String, outcome: String) -> AnalyticsEvent {
+        AnalyticsEvent("tutorial_flow_ended", ["flow": .string(flow), "outcome": .string(outcome)])
+    }
     /// A fresh vault finished creation (master password set). The activation moment.
     static let vaultCreated = AnalyticsEvent("vault_created")
     /// An existing vault was restored during onboarding. `method`: "qr" | "recovery".
@@ -129,6 +140,8 @@ extension AnalyticsEvent {
         [
             .screenView("home"),
             .tutorialBegin, .tutorialComplete, .vaultCreated,
+            .tutorialStepShown(flow: "first-run", step: 0),
+            .tutorialFlowEnded(flow: "first-run", outcome: "completed"),
             .vaultRestored(method: "qr"),
             .vaultUnlocked(method: "biometric"), .vaultUnlockFailed(method: "password"),
             .itemCreated(.login), .itemUpdated(.note), .itemDeleted(.card), .itemViewed(.identity),

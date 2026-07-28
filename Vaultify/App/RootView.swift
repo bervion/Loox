@@ -41,7 +41,13 @@ struct RootView: View {
                     }
                 })
                     .transition(.controlledReveal).zIndex(1)
-            case .unlocked: AdaptiveRootView().transition(.identity)
+            case .unlocked:
+                // The tutorial host wraps the unlocked app only: it reads the
+                // anchors those screens publish, and staying inside this branch
+                // keeps every overlay off the lock screen and onboarding.
+                AdaptiveRootView()
+                    .tutorialHost(env.tutorial)
+                    .transition(.identity)
             }
 
             if obscured && env.settings.hideInAppSwitcher && route == .unlocked {

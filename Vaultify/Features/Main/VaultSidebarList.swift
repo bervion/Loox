@@ -60,6 +60,7 @@ struct VaultSidebarList: View {
                     // to show. `.badge(0)` renders nothing, so a clean vault stays quiet.
                     .badge(tab == .watchtower ? watchtowerIssueCount : 0)
                     .tag(UIStateStore.SidebarSelection.section(tab))
+                    .tutorialAnchorIfPresent(tab == .watchtower ? TutorialAnchorID.homeSecurity : nil)
                 }
             } header: {
                 Text(LocalizedStringResource("Vault").inAppLocalized)
@@ -70,7 +71,9 @@ struct VaultSidebarList: View {
                 // destination one section above, and repeating it here would give the
                 // same target two rows.
                 actionRow("Add Item", icon: Icons.add,
-                          tint: SettingsBadgeTint.orange, action: onAddItem)
+                          tint: SettingsBadgeTint.orange,
+                          tutorialAnchorID: TutorialAnchorID.homeAddItem,
+                          action: onAddItem)
                 actionRow("Generate Password", icon: Icons.key,
                           tint: SettingsBadgeTint.teal, action: onGeneratePassword)
                 actionRow("2FA Codes", icon: Icons.clock,
@@ -122,6 +125,7 @@ struct VaultSidebarList: View {
         icon: String,
         tint: Color,
         count: Int = 0,
+        tutorialAnchorID: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -135,6 +139,9 @@ struct VaultSidebarList: View {
         }
         .buttonStyle(.plain)
         .badge(count)
+        // At regular width Quick Actions live here instead of on Home, so the
+        // first-run tour spotlights these rows on iPad.
+        .tutorialAnchorIfPresent(tutorialAnchorID)
     }
 
     // MARK: Per-section badge identities
