@@ -44,4 +44,7 @@ enum TutorialAnchorID {
     static let homeSearch = "home.search"
     static let homeSecurity = "home.security"
     static let settingsAutoFill = "settings.autofill"
+    static let watchtowerScore = "watchtower.score"
+    static let watchtowerRunAudit = "watchtower.runAudit"
+    static let shareAccess = "item.shareAccess"
 }

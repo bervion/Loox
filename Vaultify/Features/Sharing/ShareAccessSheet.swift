@@ -108,6 +108,10 @@ struct ShareAccessSheet: View {
         VaultSheetScaffold(title: sheetTitle, trailing: { toolbarTrailing }) {
             content
         }
+        // Hosted here, not at the root: a sheet draws above the root overlay,
+        // so a tour about sharing has to live inside the sheet it explains.
+        .tutorialHost(env.tutorial, flowIDs: ["sharing"])
+        .task { env.tutorial.startIfNeeded(.sharing) }
         .task(id: pollingZoneName) {
             guard let zoneName = pollingZoneName else { return }
             await pollForProfile(zoneName: zoneName)

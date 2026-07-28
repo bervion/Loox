@@ -57,6 +57,11 @@ struct WatchtowerScreen: View {
 
     private var personaID: String? { env.repository.activePersona?.id }
 
+    private func startTourIfScoreIsShowing() {
+        guard !emptyVault, latestPayload != nil else { return }
+        env.tutorial.startIfNeeded(.watchtower)
+    }
+
     private var sections: AuditGroupSections? {
         let dismissed = dismissedFingerprints
         if let report = controller.lastRun {
@@ -151,7 +156,10 @@ struct WatchtowerScreen: View {
             .navigationDestination(for: WatchtowerCategory.self) { category in
                 categoryScreen(for: category).fullScreenPush()
             }
-            .task { reload(); autoAuditIfStale(); rescheduleAuditReminder() }
+            .task {
+                reload(); autoAuditIfStale(); rescheduleAuditReminder()
+                startTourIfScoreIsShowing()
+            }
             .analyticsScreen("watchtower")
             // Security audits the ACTIVE persona's vault — switching persona reloads.
             .onChange(of: env.repository.activePersona?.id) {
@@ -159,6 +167,10 @@ struct WatchtowerScreen: View {
                 reload()
                 autoAuditIfStale()
             }
+            // A first audit can land after this screen appeared, so the tour
+            // also arms when the score arrives — it explains that number, and
+            // pointing at a ring that says "not checked yet" explains nothing.
+            .onChange(of: latestPayload?.score) { startTourIfScoreIsShowing() }
             .onChange(of: env.repository.items.count) {
                 health = PasswordAudit.analyze(env.repository.activePersonaItems)
             }
@@ -313,6 +325,7 @@ struct WatchtowerScreen: View {
                             WatchtowerScoreRing(score: latestPayload.score, introKey: introKey)
                         }
                         .buttonStyle(.plain)
+                        .tutorialAnchor(TutorialAnchorID.watchtowerScore)
                         .accessibilityLabel(Text("Vault Health"))
                         .accessibilityHint(Text("Why this score"))
                     } else {
@@ -373,6 +386,7 @@ struct WatchtowerScreen: View {
             }
             .buttonStyle(.themedProminent)
             .padding(.horizontal, Space.gutter)
+            .tutorialAnchor(TutorialAnchorID.watchtowerRunAudit)
 
             if let sections, sections.actNowCount > 0 {
                 Button { openCategory(.fixQueue) } label: {

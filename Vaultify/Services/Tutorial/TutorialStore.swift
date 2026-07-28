@@ -35,8 +35,14 @@ nonisolated final class TutorialStore {
         defaults.set(state.rawValue, forKey: key(flowID))
     }
 
-    /// DEBUG affordance so the tours can be replayed while building them.
     func reset(_ flowID: String) {
         defaults.removeObject(forKey: key(flowID))
+    }
+
+    /// Forget every answer, so the tours run again from the start. Reachable
+    /// from Settings: someone who skipped a tour on day one, or who inherits a
+    /// vault set up by somebody else, has no other way back to it.
+    func resetAll() {
+        for id in TutorialFlow.allFlowIDs { reset(id) }
     }
 }

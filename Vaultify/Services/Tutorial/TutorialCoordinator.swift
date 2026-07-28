@@ -58,6 +58,14 @@ import SwiftUI
 
     func skip() { finish(.skipped) }
 
+    /// Clear every recorded answer so the tours play again. Any tour currently
+    /// on screen is dropped first — otherwise it would finish and immediately
+    /// re-record the state this just erased.
+    func replayAll() {
+        suspend()
+        store.resetAll()
+    }
+
     /// Ends the tour without recording an answer — for a flow interrupted by
     /// something outside the user's intent (an auto-lock, a push landing on
     /// another screen). It stays eligible to run again later.

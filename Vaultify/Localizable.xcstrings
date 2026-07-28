@@ -28066,6 +28066,310 @@
           }
         }
       }
+    },
+    "Your vault health score": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保管庫の健全性スコア"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Điểm sức khỏe kho của bạn"
+          }
+        }
+      }
+    },
+    "One number out of 1000, from password strength, reuse, known leaks, and how much two-factor protection you have. Tap it to see what moved it.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1000 点満点のスコアで、パスワードの強度、使い回し、既知の漏洩、2 要素保護の充実度から算出します。タップすると内訳を確認できます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một con số trên 1000, tính từ độ mạnh mật khẩu, việc dùng lại, các vụ rò rỉ đã biết và mức độ bảo vệ hai lớp. Chạm vào để xem điều gì đã tác động."
+          }
+        }
+      }
+    },
+    "Run a check anytime": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いつでも検査できます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra bất cứ lúc nào"
+          }
+        }
+      }
+    },
+    "Most checks run on this device. Leak checks send only the first five characters of a hashed password, never the password.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ほとんどの検査はこのデバイス上で実行されます。漏洩チェックで送信するのはハッシュ化したパスワードの先頭 5 文字のみで、パスワード自体は送信しません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hầu hết kiểm tra chạy ngay trên thiết bị này. Kiểm tra rò rỉ chỉ gửi năm ký tự đầu của mã băm mật khẩu, không bao giờ gửi mật khẩu."
+          }
+        }
+      }
+    },
+    "Sharing keeps you in control": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有しても主導権はあなたに"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ nhưng bạn vẫn nắm quyền"
+          }
+        }
+      }
+    },
+    "You choose which fields another person can use. Values you hand over are theirs to keep; the rest stays behind your approval.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "どのフィールドを相手が使えるかはあなたが選びます。引き渡した値は相手のものになり、それ以外はあなたの承認が必要なままです。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn chọn người kia được dùng những trường nào. Giá trị đã trao đi thì họ giữ được; phần còn lại vẫn cần bạn phê duyệt."
+          }
+        }
+      }
+    },
+    "Requests arrive as notifications": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リクエストは通知で届きます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu đến qua thông báo"
+          }
+        }
+      }
+    },
+    "When they need a field you kept under approval, Loox notifies you and you decide right then. Without notifications those requests never reach you.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "承認が必要なフィールドを相手が使いたいとき、Loox が通知し、その場であなたが判断します。通知がないとリクエストは届きません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi họ cần một trường bạn giữ ở chế độ phê duyệt, Loox sẽ thông báo và bạn quyết định ngay lúc đó. Không có thông báo thì yêu cầu sẽ không tới được bạn."
+          }
+        }
+      }
+    },
+    "Set up AutoFill": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動入力を設定"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thiết lập tự động điền"
+          }
+        }
+      }
+    },
+    "Once Loox is on, iOS offers your saved logins above the keyboard in other apps and Safari.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox をオンにすると、ほかのアプリや Safari でキーボードの上に保存済みのログイン情報が表示されます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi Loox được bật, iOS sẽ gợi ý thông tin đăng nhập đã lưu ngay trên bàn phím trong ứng dụng khác và Safari."
+          }
+        }
+      }
+    },
+    "Open Settings, then General, then AutoFill & Passwords.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「設定」→「一般」→「自動入力とパスワード」の順に開きます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở Cài đặt, chọn Cài đặt chung, rồi chọn Tự động điền và mật khẩu."
+          }
+        }
+      }
+    },
+    "Turn on AutoFill Passwords and Passcodes.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「パスワードとパスコードを自動入力」をオンにします。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bật Tự động điền mật khẩu và mật mã."
+          }
+        }
+      }
+    },
+    "Tick Loox in the provider list. Leave iCloud Passwords on if you still use it.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提供元リストで Loox にチェックを入れます。iCloud パスワードを使い続ける場合はオンのままで構いません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn Loox trong danh sách nguồn. Cứ để iCloud Passwords bật nếu bạn vẫn dùng."
+          }
+        }
+      }
+    },
+    "AutoFill & Passwords": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動入力とパスワード"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động điền và mật khẩu"
+          }
+        }
+      }
+    },
+    "AutoFill Passwords and Passcodes": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードとパスコードを自動入力"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động điền mật khẩu và mật mã"
+          }
+        }
+      }
+    },
+    "Later": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あとで"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Để sau"
+          }
+        }
+      }
+    },
+    "Show tutorials again": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チュートリアルをもう一度表示"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem lại hướng dẫn"
+          }
+        }
+      }
+    },
+    "Tutorials reset": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チュートリアルをリセットしました"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã đặt lại hướng dẫn"
+          }
+        }
+      }
+    },
+    "The guided tours will play again the next time you open those screens.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次にそれらの画面を開いたときに、ガイドが再び表示されます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các phần hướng dẫn sẽ chạy lại vào lần tới bạn mở những màn hình đó."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

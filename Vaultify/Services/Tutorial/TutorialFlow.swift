@@ -23,6 +23,15 @@ struct TutorialFlow: Identifiable {
 }
 
 extension TutorialFlow {
+    /// Every flow the app ships. Drives "Show tutorials again" in Settings, and
+    /// the test that keeps flow anchors honest.
+    static var all: [TutorialFlow] { [.firstRun, .watchtower, .sharing] }
+    static var allFlowIDs: [String] { all.map(\.id) }
+
+    /// Flows that run INSIDE a sheet and are therefore hosted there rather
+    /// than at the root, whose overlay a sheet would cover.
+    static let sheetHostedFlowIDs: Set<String> = ["sharing"]
+
     /// First unlock after onboarding: where things live, in three beats.
     static let firstRun = TutorialFlow(id: "first-run", steps: [
         TutorialStep(id: "add-item",
@@ -38,5 +47,29 @@ extension TutorialFlow {
         TutorialStep(id: "on-device",
                      title: "Everything stays on this device",
                      message: "Your items are encrypted here and unlocked only by you. Turn on iCloud Sync in Settings when you want them on your other devices."),
+    ])
+
+    /// First visit to Security: what the number means and where the work is.
+    static let watchtower = TutorialFlow(id: "watchtower", steps: [
+        TutorialStep(id: "score",
+                     anchor: TutorialAnchorID.watchtowerScore,
+                     shape: .circle,
+                     title: "Your vault health score",
+                     message: "One number out of 1000, from password strength, reuse, known leaks, and how much two-factor protection you have. Tap it to see what moved it."),
+        TutorialStep(id: "run-audit",
+                     anchor: TutorialAnchorID.watchtowerRunAudit,
+                     shape: .capsule,
+                     title: "Run a check anytime",
+                     message: "Most checks run on this device. Leak checks send only the first five characters of a hashed password, never the password."),
+    ])
+
+    /// First time the owner opens sharing on an item.
+    static let sharing = TutorialFlow(id: "sharing", steps: [
+        TutorialStep(id: "what",
+                     title: "Sharing keeps you in control",
+                     message: "You choose which fields another person can use. Values you hand over are theirs to keep; the rest stays behind your approval."),
+        TutorialStep(id: "approvals",
+                     title: "Requests arrive as notifications",
+                     message: "When they need a field you kept under approval, Loox notifies you and you decide right then. Without notifications those requests never reach you."),
     ])
 }

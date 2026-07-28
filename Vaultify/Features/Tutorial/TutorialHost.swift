@@ -4,11 +4,22 @@ import SwiftUI
 /// screens below publish, resolves the current step's anchor into this view's
 /// coordinate space, and hands the result to the pure overlay.
 ///
-/// Applied once, high in the unlocked hierarchy — a tour can then highlight
-/// anything on any tab without those screens knowing the tutorial exists
-/// beyond the `tutorialAnchor` tag they publish.
+/// A sheet is its own presentation, so an overlay hosted at the root is drawn
+/// BEHIND it. Any flow that runs inside a sheet therefore needs a host in that
+/// sheet — and each host declares which flows it serves, so exactly one of them
+/// ever draws.
 struct TutorialHost: ViewModifier {
     let coordinator: TutorialCoordinator
+    /// Flow ids this host is responsible for. `nil` means "anything that is not
+    /// claimed by a nested host" — the root's role.
+    let flowIDs: Set<String>?
+
+    private var step: TutorialStep? {
+        guard let flow = coordinator.flow else { return nil }
+        if let flowIDs, !flowIDs.contains(flow.id) { return nil }
+        if flowIDs == nil, TutorialFlow.sheetHostedFlowIDs.contains(flow.id) { return nil }
+        return coordinator.currentStep
+    }
 
     func body(content: Content) -> some View {
         content
@@ -17,7 +28,7 @@ struct TutorialHost: ViewModifier {
                 // drawing, extended under the safe area so the scrim reaches
                 // the status bar and home indicator.
                 GeometryReader { proxy in
-                    if let step = coordinator.currentStep {
+                    if let step {
                         TutorialSpotlightOverlay(
                             spotlight: step.anchor
                                 .flatMap { anchors[$0] }
@@ -41,8 +52,9 @@ struct TutorialHost: ViewModifier {
 }
 
 extension View {
-    /// Host tutorial overlays for everything below this point.
-    func tutorialHost(_ coordinator: TutorialCoordinator) -> some View {
-        modifier(TutorialHost(coordinator: coordinator))
+    /// Host tutorial overlays for everything below this point. Pass `flowIDs`
+    /// inside a sheet to host only the flows that belong to it.
+    func tutorialHost(_ coordinator: TutorialCoordinator, flowIDs: Set<String>? = nil) -> some View {
+        modifier(TutorialHost(coordinator: coordinator, flowIDs: flowIDs))
     }
 }

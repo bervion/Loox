@@ -108,16 +108,58 @@ final class TutorialFlowStateTests: XCTestCase {
         XCTAssertTrue(store.shouldPresent("a"), "reset is what lets a tour be replayed")
     }
 
-    /// The shipping flow's anchors must be ones a screen actually publishes,
+    /// Every shipping flow must reference anchors a screen actually publishes,
     /// or a step spotlights nothing.
-    func testFirstRunFlowOnlyReferencesKnownAnchors() {
+    func testShippingFlowsOnlyReferenceKnownAnchors() {
         let known: Set<String> = [TutorialAnchorID.homeAddItem,
                                   TutorialAnchorID.homeSearch,
                                   TutorialAnchorID.homeSecurity,
-                                  TutorialAnchorID.settingsAutoFill]
-        for step in TutorialFlow.firstRun.steps {
-            guard let anchor = step.anchor else { continue }
-            XCTAssertTrue(known.contains(anchor), "unknown anchor \(anchor)")
+                                  TutorialAnchorID.settingsAutoFill,
+                                  TutorialAnchorID.watchtowerScore,
+                                  TutorialAnchorID.watchtowerRunAudit,
+                                  TutorialAnchorID.shareAccess]
+        for flow in TutorialFlow.all {
+            for step in flow.steps {
+                guard let anchor = step.anchor else { continue }
+                XCTAssertTrue(known.contains(anchor), "unknown anchor \(anchor) in \(flow.id)")
+            }
         }
+    }
+
+    func testFlowIdsAreUniqueSoStatesCannotCollide() {
+        let ids = TutorialFlow.allFlowIDs
+        XCTAssertEqual(Set(ids).count, ids.count)
+    }
+
+    /// A flow that runs inside a sheet must be hosted there; the root host
+    /// skips it, so a mismatch means the tour draws behind the sheet.
+    func testSheetHostedFlowsAreRealFlows() {
+        for id in TutorialFlow.sheetHostedFlowIDs {
+            XCTAssertTrue(TutorialFlow.allFlowIDs.contains(id), "stale sheet-hosted id \(id)")
+        }
+    }
+
+    func testReplayAllBringsEveryTourBack() {
+        let coordinator = makeCoordinator()
+        let store = TutorialStore(defaults: defaults)
+        for id in TutorialFlow.allFlowIDs { store.mark(id, .completed) }
+        XCTAssertFalse(TutorialFlow.allFlowIDs.contains { store.shouldPresent($0) })
+
+        coordinator.replayAll()
+
+        XCTAssertTrue(TutorialFlow.allFlowIDs.allSatisfy { store.shouldPresent($0) })
+    }
+
+    /// Replaying while a tour is on screen must not let that tour finish and
+    /// immediately re-record the state the replay just cleared.
+    func testReplayWhileATourIsShowingDoesNotReRecordIt() {
+        let coordinator = makeCoordinator()
+        let store = TutorialStore(defaults: defaults)
+        coordinator.startIfNeeded(TutorialFlow.firstRun)
+
+        coordinator.replayAll()
+        coordinator.advance()
+
+        XCTAssertTrue(store.shouldPresent(TutorialFlow.firstRun.id))
     }
 }
