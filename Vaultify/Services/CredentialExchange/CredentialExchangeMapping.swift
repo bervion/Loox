@@ -45,7 +45,8 @@ nonisolated enum CredentialExchangeMapping {
     private static func importableItem(_ source: VaultItem) -> ASImportableItem? {
         switch source.category {
         case .login:
-            let user = source.usernameField?.value ?? ""
+            // Sealed usernames export as ciphertext noise — skip to a readable one.
+            let user = source.readableUsernameField?.value ?? ""
             let password = source.passwordField?.value ?? ""
             guard !user.isEmpty || !password.isEmpty else { return nil }
             let basic = ASImportableCredential.BasicAuthentication(
