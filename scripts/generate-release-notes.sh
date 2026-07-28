@@ -7,15 +7,15 @@
 #   RELEASE_VERSION  — version string (default: MARKETING_VERSION from pbxproj)
 #   RELEASE_CHANGES  — raw changelog (default: commits since last tag)
 #
-# Writes metadata/apple/<locale>/release_notes.txt for each app locale (en-US, vi).
+# Writes metadata/apple/<locale>/release_notes.txt for each app locale (en-US, vi, ja).
 # Falls back to localized templates if the Claude CLI is unavailable.
 
 set -e
 
 PBXPROJ="Vaultify.xcodeproj/project.pbxproj"
 METADATA_DIR="metadata/apple"
-# App locales (knownRegions: en, vi) → Apple App Store locale codes.
-LOCALES=("en:en-US" "vi:vi")
+# App locales → Apple App Store locale codes.
+LOCALES=("en:en-US" "vi:vi" "ja:ja")
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 log()     { echo -e "${BLUE}[notes]${NC} $1"; }
@@ -44,6 +44,7 @@ fallback_notes() {
     mkdir -p "${METADATA_DIR}/${APPLE}"
     case "${PAIR%%:*}" in
       vi) echo "Phiên bản ${VERSION}: Cải thiện hiệu suất và sửa lỗi." > "${METADATA_DIR}/${APPLE}/release_notes.txt" ;;
+      ja) echo "バージョン ${VERSION}: パフォーマンスの改善とバグ修正。" > "${METADATA_DIR}/${APPLE}/release_notes.txt" ;;
       *)  echo "Version ${VERSION}: Performance improvements and bug fixes." > "${METADATA_DIR}/${APPLE}/release_notes.txt" ;;
     esac
   done
@@ -60,13 +61,14 @@ App context:
 - Audience: privacy-conscious users. Markets: Vietnam primary, global secondary.
 
 Write release notes for version ${VERSION} based on the changes below.
-Generate one version each for English and Vietnamese.
+Generate one version each for English, Vietnamese, and Japanese.
 
 Rules:
 - Professional tone. No emoji. No technical jargon. No security claims that overpromise.
 - Focus on user benefits, not implementation details.
 - Max 400 chars per language.
-- Vietnamese must read natively, not like a translation.
+- Vietnamese and Japanese must read natively, not like translations.
+- Japanese uses the polite です/ます register.
 - If only bug fixes: one short sentence per language.
 - No competitor names, no trademarks, no prices, no ALL CAPS.
 
@@ -74,7 +76,7 @@ Changes:
 ${CHANGES}
 
 Respond with ONLY a JSON object (no markdown, no code fences):
-{\"en\": \"...\", \"vi\": \"...\"}"
+{\"en\": \"...\", \"vi\": \"...\", \"ja\": \"...\"}"
 
   local RESPONSE
   RESPONSE=$(echo "$PROMPT" | claude --print --model sonnet --output-format text 2>/dev/null || echo "")
@@ -87,7 +89,7 @@ Respond with ONLY a JSON object (no markdown, no code fences):
 save_from_json() {
   echo "$1" | python3 -c "
 import json, sys, os
-LOCALE_MAP = {'en': 'en-US', 'vi': 'vi'}
+LOCALE_MAP = {'en': 'en-US', 'vi': 'vi', 'ja': 'ja'}
 data = json.load(sys.stdin)
 for locale, note in data.items():
     apple = LOCALE_MAP.get(locale)

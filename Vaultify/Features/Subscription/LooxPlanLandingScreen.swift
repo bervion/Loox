@@ -109,7 +109,7 @@ struct LooxPlanLandingScreen: View {
                         appString("Every finding with the Fix Queue, history and reminders, not just the critical ones."))
                 planRow(Icons.share,
                         appString("Room for everyday sharing"),
-                        appString("Up to \(quotas.linkCreates30d) share links and \(quotas.quickViewApprovals30d) computer approvals in any 30 days."))
+                        appString("Up to \(quotas.linkCreates30d) share links and \(quotas.quickViewApprovals30d) browser approvals in any 30 days."))
                 planRow(Icons.person,
                         profilesTitle,
                         appString("Separate work, personal, and anything in between."))
