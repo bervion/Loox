@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện độ ổn định, giúp trải nghiệm mượt mà hơn trên iPhone và iPad.
+Bản cập nhật này cải thiện phần hướng dẫn trong ứng dụng và khắc phục lỗi khi xác nhận email riêng tư.

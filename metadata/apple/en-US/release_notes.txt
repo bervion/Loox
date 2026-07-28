@@ -1,1 +1,1 @@
-This update includes stability improvements for a smoother experience on iPhone and iPad.
+This update polishes the in-app tutorial and fixes an issue with confirming your private email address.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.43.2] - 2026-07-28
+
+### Fixed
+- tutorial spotlight, tour motion, and the private-email confirmation flow (#184)
+
+
 ## [1.43.1] - 2026-07-28
 
 ### Fixed
