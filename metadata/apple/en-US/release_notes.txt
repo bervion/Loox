@@ -1,1 +1,1 @@
-This update adds Japanese language support and refines the sidebar to match the vault's look and feel more closely.
+This update includes stability improvements for a smoother experience on iPhone and iPad.

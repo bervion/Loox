@@ -1,1 +1,1 @@
-Bản cập nhật này bổ sung hỗ trợ tiếng Nhật và tinh chỉnh thanh bên để đồng bộ hơn với giao diện của kho mật khẩu.
+Bản cập nhật này cải thiện độ ổn định, giúp trải nghiệm mượt mà hơn trên iPhone và iPad.

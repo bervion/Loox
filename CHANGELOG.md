@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.43.1] - 2026-07-28
+
+### Fixed
+- release hardening for the iOS and iPad launch (#183)
+
+### Changed
+- update gitignore
+
+
 ## [1.43.0] - 2026-07-27
 
 ### Added
