@@ -42,17 +42,13 @@ nonisolated struct SharedCredentialEntry: Codable, Sendable, Equatable {
         self.passkeys = passkeys
     }
 
-    /// Same host-matching heuristic as `VaultItem.matchesAutoFill` (subdomain/suffix
-    /// tolerant), applied to the single cached host instead of a multi-host list --
+    /// Same host-match rule as `VaultItem.matchesAutoFill` (`HostMatch.related`),
+    /// applied to the single cached host instead of a multi-host list --
     /// shared credentials only ever carry the one website the owner published.
     func matchesAutoFill(serviceIdentifiers: [String]) -> Bool {
         guard !serviceIdentifiers.isEmpty else { return true }
-        guard let host = websiteHost?.lowercased(), !host.isEmpty else { return false }
-        return serviceIdentifiers.contains { identifier in
-            let other = identifier.lowercased()
-            return host == other || host.hasSuffix(".\(other)")
-                || other.hasSuffix(".\(host)") || other.contains(host)
-        }
+        guard let host = websiteHost, !host.isEmpty else { return false }
+        return serviceIdentifiers.contains { HostMatch.related($0, host) }
     }
 }
 

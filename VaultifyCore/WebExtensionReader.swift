@@ -97,11 +97,7 @@ nonisolated enum WebExtensionReader {
     /// lends the phishing page legitimacy. Mirrors the conservative shape of
     /// `matchesRelyingParty`.
     static func hostMatches(_ host: String, item: VaultItem) -> Bool {
-        let page = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !page.isEmpty else { return false }
-        return item.autofillHosts.contains { stored in
-            page == stored || page.hasSuffix(".\(stored)") || stored.hasSuffix(".\(page)")
-        }
+        item.autofillHosts.contains { HostMatch.related(host, $0) }
     }
 
     // MARK: - Internals
