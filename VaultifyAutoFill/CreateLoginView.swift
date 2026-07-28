@@ -34,9 +34,9 @@ struct CreateLoginView: View {
 
     var body: some View {
         Form {
-            Section { TextField("Website", text: $site).textInputAutocapitalization(.never) }
+            Section { TextField("Website", text: $site).platformAutocapitalization(.never) }
                 header: { Text("Website") }
-            Section { TextField("Username", text: $username).textInputAutocapitalization(.never) }
+            Section { TextField("Username", text: $username).platformAutocapitalization(.never) }
                 header: { Text("Username") }
             Section {
                 HStack {
@@ -65,7 +65,7 @@ struct CreateLoginView: View {
             }
         }
         .navigationTitle("New login")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .task {
             spaces = VaultSpaceReader.activePersonaSpaces(store: store, vaultKey: vaultKey)
             folderId = VaultSpaceReader.defaultSpaceId(store: store, vaultKey: vaultKey)

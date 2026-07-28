@@ -140,9 +140,14 @@ let project = Project(
             dependencies: [
                 // Embed the iOS AutoFill extension only on iOS destinations — a single
                 // multiplatform target applies its dependency graph to the macOS slice
-                // too, and macOS cannot link an iOS-only appExtension. The macOS AutoFill
-                // extension is a separate target added in a later phase.
+                // too, and macOS cannot link an iOS-only appExtension.
                 .target(name: "VaultifyAutoFill", condition: .when([.ios])),
+                // The macOS counterpart. Same sources, separate target: an
+                // extension carries ONE Info.plist, and the capability set
+                // differs (macOS has no save/generate request types), where a
+                // wrong dictionary is a silent AutoFill failure at runtime
+                // rather than a build error.
+                .target(name: "VaultifyAutoFillMac", condition: .when([.macos])),
                 // Safari web extension (identity/card fill) — iOS-only appex,
                 // same reasoning as the AutoFill embed above.
                 .target(name: "VaultifySafari", condition: .when([.ios])),
@@ -246,6 +251,63 @@ let project = Project(
                 "TARGETED_DEVICE_FAMILY": "1,2",
                 "SKIP_INSTALL": "YES",
                 "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks",
+            ])
+        ),
+        // macOS AutoFill credential provider. Shares every source file with the
+        // iOS extension — the platform differences live in `#if canImport(UIKit)`
+        // branches inside them, chiefly the hosting controller (NSViewController
+        // + NSHostingController on this side).
+        .target(
+            name: "VaultifyAutoFillMac",
+            destinations: [.mac],
+            product: .appExtension,
+            bundleId: "com.bervion.vaultify.autofill",
+            deploymentTargets: .macOS("15.0"),
+            infoPlist: .extendingDefault(with: [
+                "CFBundleDisplayName": "Loox",
+                "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+                "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.authentication-services-credential-provider-ui",
+                    "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).CredentialProviderViewController",
+                    "NSExtensionAttributes": [
+                        // Deliberately narrower than iOS: passwords, passkeys and
+                        // one-time codes exist on macOS 15; the save/generate
+                        // capabilities do not, and advertising one the code cannot
+                        // serve breaks the whole provider rather than that feature.
+                        "ASCredentialProviderExtensionCapabilities": [
+                            "ProvidesPasswords": true,
+                            "ProvidesPasskeys": true,
+                            "SupportsConditionalPasskeyRegistration": true,
+                            "ProvidesOneTimeCodes": true,
+                        ],
+                    ],
+                ],
+            ]),
+            sources: ["VaultifyAutoFill/**", "VaultifyCore/**"],
+            resources: [
+                "Vaultify/Localizable.xcstrings",
+                "Vaultify/Resources/InfoPlist.xcstrings",
+                "Vaultify/Resources/eff_large_wordlist.txt",
+                "VaultifyCore/SharedAssets.xcassets",
+            ],
+            entitlements: "VaultifyAutoFillMac/VaultifyAutoFillMac.entitlements",
+            settings: .settings(base: [
+                "CODE_SIGN_STYLE": "Automatic",
+                "HEADER_SEARCH_PATHS": "$(SRCROOT)/VaultifyCore/CArgon2",
+                "SWIFT_OBJC_BRIDGING_HEADER": "VaultifyAutoFill/VaultifyAutoFill-Bridging-Header.h",
+                "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+                "SWIFT_EMIT_LOC_STRINGS": "YES",
+                // Same reason as the iOS extension: VaultifyCore's CloudKit
+                // paths are `#if`-gated on this flag, and settings do not
+                // inherit from the app target.
+                "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "$(inherited) VAULTIFY_ICLOUD",
+                "SKIP_INSTALL": "YES",
+                // A macOS appex sits deeper in the bundle than an iOS one
+                // (Contents/PlugIns/…), so the hop back to the host's
+                // Frameworks directory is four levels, not two.
+                "LD_RUNPATH_SEARCH_PATHS":
+                    "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks",
             ])
         ),
         // Safari web extension: MV3 web bundle + native message handler. Safari

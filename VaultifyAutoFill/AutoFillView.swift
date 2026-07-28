@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// Unlock then pick a login to fill (or create a new one). Items whose website matches the
 /// requesting app/site are shown first. Unlock is handled by the shared `UnlockGate`.
@@ -364,7 +363,7 @@ private struct RequestSharedCodeView: View {
             }
             .navigationTitle(Text(verbatim: entry.title.isEmpty
                                   ? appString("Request code") : entry.title))
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { task?.cancel(); onClose() }
@@ -511,9 +510,10 @@ private struct DeliveredCodeView: View {
     }
 
     private func copy() {
-        let expiry = Date(timeIntervalSince1970: TimeInterval(periodEndUnixMs) / 1000)
-        UIPasteboard.general.setItems([["public.utf8-plain-text": code]],
-                                      options: [.expirationDate: expiry])
+        // Clears itself when this code's window closes, so a copied OTP never
+        // outlives the code it belongs to.
+        let remaining = TimeInterval(max(0, periodEndUnixMs - Int64(Date().timeIntervalSince1970 * 1000))) / 1000
+        PlatformPasteboard.copySensitive(code, clearAfter: remaining)
         copied = true
     }
 
