@@ -9,6 +9,7 @@ struct PersonaAliasesScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var showingPerSiteEditor = false
     @State private var busyAliasID: String?
+    @State private var errorTitle = ""
     @State private var errorMessage: String?
     @State private var missingEmail = false
     @State private var pendingPause: EmailAlias?
@@ -35,6 +36,8 @@ struct PersonaAliasesScreen: View {
                 }
                 .listRowBackground(VaultColors.surface)
             }
+
+            verificationBanner
 
             Section {
                 receiveOnlyBanner
@@ -105,7 +108,9 @@ struct PersonaAliasesScreen: View {
         } message: { _ in
             Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
         }
-        .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
+        // Title follows the failure: a consent gate and an outage are different
+        // problems with different fixes, and a shared heading hid that.
+        .alert(Text(verbatim: errorTitle), isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: errorMessage ?? "")
@@ -128,6 +133,28 @@ struct PersonaAliasesScreen: View {
             paywallContext = .aliasLimit
         } else {
             proceed()
+        }
+    }
+
+    /// The one prerequisite, said out loud. Creating an address while the
+    /// destination is unconfirmed fails at the relay, and the screen used to
+    /// carry no hint that a confirmation was outstanding — so the failure
+    /// arrived as a surprise, worded like a network problem. Tapping it goes to
+    /// the inbox that needs confirming, where the send button lives.
+    @ViewBuilder private var verificationBanner: some View {
+        if let inbox = gate.unverifiedDestination {
+            Section {
+                NavigationLink {
+                    ForwardingInboxDetailScreen(inboxID: inbox.id)
+                } label: {
+                    VaultInfoBanner(
+                        .warning, icon: Icons.mail,
+                        title: "Confirm your forwarding email",
+                        verbatimText: appString("Private addresses can’t forward to \(EmailMask.masked(inbox.email)) until you confirm it’s yours. It takes one tap and an email."))
+                }
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
         }
     }
 
@@ -258,6 +285,7 @@ struct PersonaAliasesScreen: View {
         // feature off in Settings it must not reach the relay (the create
         // buttons already hide; this row action is the remaining path).
         if gate.isTurnedOffByUser {
+            errorTitle = appString("Private Email is off")
             errorMessage = appString("Private Email is turned off in Settings.")
             return
         }
@@ -278,9 +306,11 @@ struct PersonaAliasesScreen: View {
             defer { busyAliasID = nil }
             do { try await operation() }
             catch let failure as RelayService.Failure {
+                errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
                 Haptics.error()
             } catch {
+                errorTitle = appString("Couldn’t reach the relay")
                 errorMessage = appString("Check your connection and iCloud, then try again.")
                 Haptics.error()
             }
@@ -327,6 +357,22 @@ struct PrivateEmailGate {
 
     func allows(_ operation: CapabilityOperation) -> Bool {
         availability(operation) == .available
+    }
+
+    /// The inbox a NEW private address would forward to, when the relay will
+    /// refuse to route to it until its owner confirms it. Nil once confirmed,
+    /// and nil while the server is not yet enforcing verification.
+    ///
+    /// This mirrors `RelayService.routedDestination` so the UI can say so BEFORE
+    /// the command is sent: the refusal is a consent gate the user can clear in
+    /// a minute, and discovering it as a failed create reads like an outage.
+    var unverifiedDestination: ForwardingInbox? {
+        guard RelayConfig.destinationRoutingRequiresVerification,
+              let persona = env.repository.activePersona,
+              let email = env.repository.newAliasDestination(for: persona),
+              let inbox = env.repository.forwardingInboxes.first(where: { $0.email == email })
+        else { return nil }
+        return inbox.verificationStatus == .verified ? nil : inbox
     }
 
     /// Contextual, non-blocking refresh — on screen open or a banner retry,

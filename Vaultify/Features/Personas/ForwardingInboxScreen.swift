@@ -15,8 +15,10 @@ struct ForwardingInboxScreen: View {
     @State private var rotating = false
     @State private var rotationDone = 0
     @State private var rotationTotal = 0
+    @State private var errorTitle = ""
     @State private var errorMessage: String?
     @State private var pendingDeleteInbox: ForwardingInbox?
+    @State private var verification = ForwardingInboxVerification()
 
     private var gate: PrivateEmailGate { PrivateEmailGate(env) }
 
@@ -53,9 +55,14 @@ struct ForwardingInboxScreen: View {
         } message: {
             Text("A real inbox your private addresses can forward to.")
         }
-        .alert(Text("Couldn’t reach the relay"), isPresented: errorBinding) {
+        .alert(Text(verbatim: errorTitle), isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
         } message: { Text(verbatim: errorMessage ?? "") }
+        // Verification reports through its own controller — success included, so
+        // a sent email is confirmed on screen and not just in the user's inbox.
+        .alert(Text(verbatim: verification.outcome?.title ?? ""), isPresented: outcomeBinding) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(verbatim: verification.outcome?.body ?? "") }
         .confirmationDialog("Delete this inbox?", isPresented: deleteInboxBinding,
                             titleVisibility: .visible, presenting: pendingDeleteInbox) { inbox in
             Button("Delete", role: .destructive) {
@@ -185,54 +192,54 @@ struct ForwardingInboxScreen: View {
     }
 
     /// Verification is a signed relay command, so the offer follows the gate —
-    /// the badge above keeps reporting the last known status either way.
+    /// the badge above keeps reporting the last known status either way. A menu
+    /// item cannot show progress, so both actions are disabled while one is in
+    /// flight and the send is withheld for as long as the relay asked; the
+    /// detail screen behind the row is where the state is legible.
     @ViewBuilder private func verificationMenuItems(_ inbox: ForwardingInbox) -> some View {
         if gate.allows(.mutate) {
+            let waiting = verification.resendWait(for: inbox)
             switch inbox.verificationStatus {
             case .verified:
                 EmptyView()
             case .pending:
-                Button { checkVerification(inbox) } label: {
+                Button {
+                    Task { await verification.check(inbox, relay: env.relay) }
+                } label: {
                     Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
                 }
-                Button { confirmEmail(inbox) } label: {
-                    Label { Text("Resend email") } icon: { PolarisIcon("ic_refresh") }
-                }
+                .disabled(verification.isBusy(inbox))
+                resendButton(inbox, title: "Resend email",
+                             icon: Icons.refresh, waiting: waiting)
             case .unverified, .revoked:
-                Button { confirmEmail(inbox) } label: {
-                    Label { Text("Confirm email") } icon: { PolarisIcon(Icons.checkCircle) }
-                }
+                resendButton(inbox, title: "Confirm email",
+                             icon: Icons.checkCircle, waiting: waiting)
             }
         }
     }
 
     /// Begin/resend verification: signs a kind-7 command over the exact email;
     /// the backend sends the confirm link. The user confirms on the web; we only
-    /// poll the result (never self-confirm).
-    private func confirmEmail(_ inbox: ForwardingInbox) {
-        Task {
-            do { _ = try await env.relay.beginDestinationVerification(inbox) }
-            catch let failure as RelayService.Failure {
-                errorMessage = failure.userMessage
-                Haptics.error()
-            } catch {
-                errorMessage = appString("Check your connection and iCloud, then try again.")
-                Haptics.error()
+    /// poll the result (never self-confirm). Each tap is one more email in
+    /// someone's inbox, so the controller — not this button — decides whether a
+    /// send may happen at all.
+    @ViewBuilder
+    private func resendButton(_ inbox: ForwardingInbox, title: LocalizedStringKey,
+                              icon: String, waiting: Int) -> some View {
+        Button {
+            Task { await verification.send(to: inbox, relay: env.relay) }
+        } label: {
+            // During the cooldown the row states the wait rather than
+            // disappearing: an item that vanishes reads as a broken menu, and
+            // the countdown is the answer to "why can't I send again".
+            if waiting > 0 {
+                Label { Text(verbatim: appString("Send again in \(waiting)s")) }
+                    icon: { PolarisIcon(Icons.clock) }
+            } else {
+                Label { Text(title) } icon: { PolarisIcon(icon) }
             }
         }
-    }
-
-    private func checkVerification(_ inbox: ForwardingInbox) {
-        Task {
-            do { _ = try await env.relay.refreshDestinationStatus(inbox) }
-            catch let failure as RelayService.Failure {
-                errorMessage = failure.userMessage
-                Haptics.error()
-            } catch {
-                errorMessage = appString("Check your connection and iCloud, then try again.")
-                Haptics.error()
-            }
-        }
+        .disabled(waiting > 0 || verification.isBusy(inbox))
     }
 
     private func subtitle(_ inbox: ForwardingInbox) -> String {
@@ -266,9 +273,11 @@ struct ForwardingInboxScreen: View {
                 }
             } catch let failure as RelayService.Failure {
                 // Finished aliases are checkpointed — the section re-offers the rest.
+                errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
                 Haptics.error()
             } catch {
+                errorTitle = appString("Couldn’t reach the relay")
                 errorMessage = appString("Check your connection and iCloud, then try again.")
                 Haptics.error()
             }
@@ -277,6 +286,11 @@ struct ForwardingInboxScreen: View {
 
     private var errorBinding: Binding<Bool> {
         Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+    }
+
+    private var outcomeBinding: Binding<Bool> {
+        Binding(get: { verification.outcome != nil },
+                set: { if !$0 { verification.outcome = nil } })
     }
 
     private var deleteInboxBinding: Binding<Bool> {

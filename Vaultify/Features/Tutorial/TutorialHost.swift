@@ -14,6 +14,8 @@ struct TutorialHost: ViewModifier {
     /// claimed by a nested host" — the root's role.
     let flowIDs: Set<String>?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var step: TutorialStep? {
         guard let flow = coordinator.flow else { return nil }
         if let flowIDs, !flowIDs.contains(flow.id) { return nil }
@@ -28,23 +30,32 @@ struct TutorialHost: ViewModifier {
                 // drawing, extended under the safe area so the scrim reaches
                 // the status bar and home indicator.
                 GeometryReader { proxy in
-                    if let step {
-                        TutorialSpotlightOverlay(
-                            spotlight: step.anchor
-                                .flatMap { anchors[$0] }
-                                .map { proxy[$0] },
-                            shape: step.shape,
-                            tooltip: TutorialTooltipContent(
-                                stepLabel: coordinator.stepLabel,
-                                title: String(localized: step.title.inAppLocalized),
-                                message: String(localized: step.message.inAppLocalized),
-                                primaryTitle: coordinator.isLastStep
-                                    ? appString("Done") : appString("Next"),
-                                skipTitle: coordinator.isLastStep ? nil : appString("Skip")),
-                            allowsInteractionInSpotlight: step.awaitsRealTap,
-                            onNext: { coordinator.advance() },
-                            onSkip: { coordinator.skip() })
+                    // The ZStack is what gives the overlay a stable slot to
+                    // transition in and out of: without it the tour also
+                    // VANISHES in one frame when it ends, which reads as a
+                    // glitch right after the user taps Done.
+                    ZStack {
+                        if let step {
+                            TutorialSpotlightOverlay(
+                                spotlight: step.anchor
+                                    .flatMap { anchors[$0] }
+                                    .map { proxy[$0] },
+                                shape: step.shape,
+                                tooltip: TutorialTooltipContent(
+                                    stepLabel: coordinator.stepLabel,
+                                    title: String(localized: step.title.inAppLocalized),
+                                    message: String(localized: step.message.inAppLocalized),
+                                    primaryTitle: coordinator.isLastStep
+                                        ? appString("Done") : appString("Next"),
+                                    skipTitle: coordinator.isLastStep ? nil : appString("Skip")),
+                                allowsInteractionInSpotlight: step.awaitsRealTap,
+                                onNext: { coordinator.advance() },
+                                onSkip: { coordinator.skip() })
+                                .transition(.opacity)
+                        }
                     }
+                    .animation(.vault(Motion.standard, reduceMotion: reduceMotion),
+                               value: step != nil)
                 }
                 .ignoresSafeArea()
             }
