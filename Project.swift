@@ -180,7 +180,10 @@ let project = Project(
         ),
         .target(
             name: "VaultifyAutoFill",
-            destinations: [.iPhone],
+            // Matches the app's device families: an iPad or Mac (Designed for
+            // iPad) install otherwise ships a vault with no AutoFill at all —
+            // the system credential picker simply never offers Loox there.
+            destinations: [.iPhone, .iPad],
             product: .appExtension,
             bundleId: "com.bervion.vaultify.autofill",
             deploymentTargets: .iOS("17.3"),
@@ -216,6 +219,9 @@ let project = Project(
             // generator's passphrase mode works (`Bundle.main` resolves to the .appex bundle).
             resources: [
                 "Vaultify/Localizable.xcstrings",
+                // Localizes the Face ID usage prompt (the extension's own
+                // Info.plist carries only the EN base string).
+                "Vaultify/Resources/InfoPlist.xcstrings",
                 "Vaultify/Resources/eff_large_wordlist.txt",
                 "VaultifyCore/SharedAssets.xcassets",
             ],
@@ -235,7 +241,9 @@ let project = Project(
                 // passkey fails. Settings are per-target — `$(inherited)` reads
                 // the PROJECT base, it does not inherit from the app target.
                 "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "$(inherited) VAULTIFY_ICLOUD",
-                "TARGETED_DEVICE_FAMILY": "1",
+                // iPhone + iPad, matching the app; an extension narrower than
+                // its host silently disables AutoFill on the wider device.
+                "TARGETED_DEVICE_FAMILY": "1,2",
                 "SKIP_INSTALL": "YES",
                 "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks",
             ])
@@ -279,6 +287,8 @@ let project = Project(
                 .folderReference(path: "VaultifySafari/Resources/_locales"),
                 .folderReference(path: "VaultifySafari/Resources/images"),
                 "Vaultify/Localizable.xcstrings",
+                // Localizes the Face ID usage prompt for the extension bundle.
+                "Vaultify/Resources/InfoPlist.xcstrings",
                 "VaultifyCore/SharedAssets.xcassets",
             ],
             entitlements: "VaultifySafari/VaultifySafari.entitlements",
