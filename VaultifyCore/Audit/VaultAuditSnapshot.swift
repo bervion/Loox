@@ -41,16 +41,22 @@ nonisolated struct VaultAuditSnapshot: Sendable {
                      passkeyItemIDs: Set<String> = [],
                      now: Date = .now) -> VaultAuditSnapshot {
         let auditItems = items.map { item in
-            VaultAuditItem(
+            // Extra-protected values are sealed ciphertext here: scoring one as
+            // a password would grade random-looking noise as "strong" and hide
+            // reuse across items. Sealed fields drop out of quality analysis;
+            // presence checks (2FA) keep counting the field's existence.
+            let password = item.passwordField.flatMap { $0.isExtraProtected ? nil : $0.value }
+            return VaultAuditItem(
                 id: item.id,
                 category: item.category,
                 title: item.title,
                 usernames: item.fields
-                    .filter { ($0.kind == .username || $0.kind == .email) && !$0.isEmpty }
+                    .filter { ($0.kind == .username || $0.kind == .email)
+                        && !$0.isEmpty && !$0.isExtraProtected }
                     .map(\.value),
-                password: item.passwordField?.value,
+                password: password,
                 totpSecret: item.totpField?.value,
-                hasTOTP: item.totpField != nil,
+                hasTOTP: item.fields.contains { $0.kind == .totp && !$0.isEmpty },
                 hasPasskey: passkeyItemIDs.contains(item.id),
                 rawURLs: item.fields.filter { $0.kind == .url && !$0.isEmpty }.map(\.value),
                 createdAt: item.createdAt,

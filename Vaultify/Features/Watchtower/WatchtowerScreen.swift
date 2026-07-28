@@ -69,9 +69,19 @@ struct WatchtowerScreen: View {
     }
 
     private var dismissedFingerprints: Set<String> {
-        Set(env.store.findingStates(personaID: personaID)
-            .filter { $0.value.status != FindingStatus.open.rawValue }
-            .map(\.key))
+        guard let key = env.session.vaultKey else { return [] }
+        let reportStore = AuditReportStore(store: env.store)
+        if let report = controller.lastRun {
+            return reportStore.hiddenFingerprints(for: report.findings,
+                                                  personaID: personaID, key: key)
+        }
+        if let latestPayload {
+            return reportStore.hiddenFingerprints(
+                fingerprints: latestPayload.findings.map { ($0.fingerprint, $0.ruleID) },
+                ruleVersions: latestPayload.ruleVersions,
+                personaID: personaID, key: key)
+        }
+        return []
     }
 
     /// Security only has something to say about credentials: login items (their
@@ -246,7 +256,7 @@ struct WatchtowerScreen: View {
         case .strength:
             WatchtowerStrengthScreen()
         case .audit:
-            VaultAuditFlowScreen(controller: controller)
+            VaultAuditFlowScreen(controller: controller, openCategory: openCategory)
         case .whyScore:
             if let latestPayload { WhyThisScoreScreen(payload: latestPayload) }
         case .fullReport:
