@@ -70,7 +70,7 @@ struct TutorialGuideSheet<Footer: View>: View {
             .monospacedDigit()
             .foregroundStyle(theme.color(.onAccent))
             .frame(width: 26, height: 26)
-            .background(Color(rgb: theme.accent), in: Circle())
+            .background(Color(rgb: theme.accentFill), in: Circle())
             .accessibilityHidden(true)
     }
 }

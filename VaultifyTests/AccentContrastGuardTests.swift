@@ -70,8 +70,11 @@ final class AccentContrastGuardTests: XCTestCase {
         for (name, base) in themes {
             for preset in AccentPreset.allCases {
                 let theme = base.recolored(accent: preset.rgb(isDark: base.isDark))
+                // Measured against the FILL a button paints, not the raw
+                // brand hue: a hue just under the floor is darkened minimally
+                // so its label can be white.
                 XCTAssertGreaterThanOrEqual(
-                    RGBMath.contrastRatio(theme.accentForeground, theme.accent), 3.0,
+                    RGBMath.contrastRatio(theme.accentForeground, theme.accentFill), 3.0,
                     "\(name)/\(preset) onAccent")
             }
         }

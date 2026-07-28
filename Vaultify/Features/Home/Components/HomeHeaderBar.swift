@@ -159,9 +159,9 @@ struct HomeHeaderBar: View {
             withAnimation(editModeAnimation) { isEditingLayout = false }
         } label: {
             PolarisIcon(Icons.check, size: Metric.iconUtility)
-                .foregroundStyle(.white)
+                .foregroundStyle(env.theme.active.color(.onAccent))
                 .frame(width: Metric.hitMin, height: Metric.hitMin)
-                .background(Circle().fill(env.theme.active.color(.accent)))
+                .background(Circle().fill(env.theme.active.color(.accentFill)))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

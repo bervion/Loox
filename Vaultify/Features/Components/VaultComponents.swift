@@ -39,7 +39,7 @@ struct FilterChip: View {
             }
             .padding(.horizontal, Space.s3)
             .padding(.vertical, Space.s2)
-            .background(isSelected ? theme.color(.accent) : VaultColors.surface,
+            .background(isSelected ? theme.color(.accentFill) : VaultColors.surface,
                         in: Capsule())
             .foregroundStyle(isSelected ? theme.color(.onAccent) : theme.color(.primary))
         }

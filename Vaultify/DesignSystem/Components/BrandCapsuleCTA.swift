@@ -23,7 +23,7 @@ struct BrandCapsuleCTA: View {
                 .foregroundStyle(Color(rgb: enabled ? theme.accentForeground : theme.textDisabled))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
-                .background(Color(rgb: enabled ? theme.accent : theme.controlBackground),
+                .background(Color(rgb: enabled ? theme.accentFill : theme.controlBackground),
                             in: Capsule())
                 .prominentButtonLoading(busy, tint: Color(rgb: theme.accentForeground))
         }

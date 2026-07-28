@@ -39,6 +39,31 @@ nonisolated enum RGBMath {
         contrastRatio(0xFFFFFF, background) >= 3.0 ? 0xFFFFFF : 0x000000
     }
 
+    /// The accent as a **filled control's background**.
+    ///
+    /// A saturated brand hue can land just under the 3:1 floor white needs —
+    /// the default blue `#009DFF` measures 2.89 — and `onAccent` then answers
+    /// black, which is not what a coloured iOS button looks like. Rather than
+    /// print dark text on a vivid fill, darken the fill by the minimum that
+    /// lets white pass.
+    ///
+    /// The darkening is budgeted (`maxDarken`) because the same question has a
+    /// different answer for genuinely light tints: a mint teal, a light-gray
+    /// graphite, or the white "mono" accent would have to lose their identity
+    /// to carry white, and black on them is both readable and intended. Those
+    /// exceed the budget and come back untouched, paired with black.
+    static func controlFill(_ accent: UInt32, floor: Double = 3.0,
+                            maxDarken: Double = 0.12) -> UInt32 {
+        guard contrastRatio(0xFFFFFF, accent) < floor else { return accent }
+        var lo = 0.0, hi = 1.0
+        for _ in 0..<12 {
+            let mid = (lo + hi) / 2
+            if contrastRatio(0xFFFFFF, blend(accent, 0x000000, mid)) >= floor { hi = mid }
+            else { lo = mid }
+        }
+        return hi <= maxDarken ? blend(accent, 0x000000, hi) : accent
+    }
+
     /// Smallest adjustment of `color` that clears `floor` contrast against
     /// `background` — the Controlled Contrast guard. NON-DESTRUCTIVE by
     /// contract: a color that already passes is returned byte-identical, so

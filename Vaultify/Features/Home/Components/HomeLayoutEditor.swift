@@ -109,13 +109,11 @@ private struct HomeSectionVisibilityToggleStyle: ToggleStyle {
                 .strokeBorder(Color(rgb: env.theme.active.separatorOpaque), lineWidth: 1.5)
                 .opacity(on ? 0 : 1)
             Circle()
-                .fill(env.theme.active.color(.accent))
+                .fill(env.theme.active.color(.accentFill))
                 .opacity(on ? 1 : 0)
                 .overlay {
-                    // Force white (not `.onAccent`, which resolves dark on lighter accents) so
-                    // the tick matches the header Done button.
                     PolarisIcon(Icons.check, size: 13)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(env.theme.active.color(.onAccent))
                         .opacity(on ? 1 : 0)
                 }
         }

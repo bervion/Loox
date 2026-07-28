@@ -123,7 +123,7 @@ struct WelcomeLandingView: View {
                 .foregroundStyle(Color(rgb: startEnabled ? theme.accentForeground : theme.textDisabled))
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
-                .background(Capsule().fill(Color(rgb: startEnabled ? theme.accent : theme.controlBackground)))
+                .background(Capsule().fill(Color(rgb: startEnabled ? theme.accentFill : theme.controlBackground)))
         }
         .buttonStyle(.plain)
         .disabled(!startEnabled)

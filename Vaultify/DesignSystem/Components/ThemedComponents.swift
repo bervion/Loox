@@ -11,9 +11,11 @@ enum ThemeRole {
     case primary, secondary, tertiary, disabled
     // Icons (Design System icon roles)
     case iconPrimary, iconSecondary, iconDisabled
-    // Accent + status. `accent` is FILL rank; `accentText` is the same hue
-    // guarded to 4.5:1 on tinted surfaces (links, tinted-button labels).
-    case accent, accentText, accentSoft, onAccent
+    // Accent + status. `accent` is the raw brand hue (icons, rings, strokes);
+    // `accentFill` is what a FILLED control paints so its `onAccent` label
+    // reads white; `accentText` is the same hue guarded to 4.5:1 on tinted
+    // surfaces (links, tinted-button labels).
+    case accent, accentFill, accentText, accentSoft, onAccent
     case destructive, onDestructive, success, warning
 }
 
@@ -43,6 +45,7 @@ extension AppTheme {
         case .iconSecondary: return Color(rgb: iconSecondary)
         case .iconDisabled: return Color(rgb: iconDisabled)
         case .accent: return Color(rgb: accent)
+        case .accentFill: return Color(rgb: accentFill)
         case .accentText: return Color(rgb: accentText)
         case .accentSoft: return Color(rgb: accentSoft)
         case .onAccent: return Color(rgb: accentForeground)

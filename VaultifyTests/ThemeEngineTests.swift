@@ -83,7 +83,7 @@ final class ThemeEngineTests: XCTestCase {
     func testBuiltinAccentForegroundMeetsWCAGAA() {
         for theme in BuiltinTheme.allCases {
             let p = BuiltinThemes.palette(theme)
-            let ratio = RGBMath.contrastRatio(p.accentForeground, p.accent)
+            let ratio = RGBMath.contrastRatio(p.accentForeground, p.accentFill)
             XCTAssertGreaterThanOrEqual(ratio, onAccentMinContrast, "\(theme) on-accent contrast \(ratio) < AA-large")
         }
     }
@@ -98,9 +98,39 @@ final class ThemeEngineTests: XCTestCase {
                 // Measure against the GUARDED fill (t.accent): the contrast
                 // pipeline may pull a bright brand hue to the 3:1 floor, and
                 // the foreground is derived from that adjusted fill.
-                let ratio = RGBMath.contrastRatio(t.accentForeground, t.accent)
+                let ratio = RGBMath.contrastRatio(t.accentForeground, t.accentFill)
                 XCTAssertGreaterThanOrEqual(ratio, onAccentMinContrast, "\(preset) \(isDark ? "dark" : "light") on-accent contrast \(ratio) < AA-large")
             }
+        }
+    }
+
+    /// The brand blue measures 2.89:1 against white — just under the floor — so
+    /// the old max-contrast answer was BLACK text on a vivid blue button. The
+    /// fill now darkens by the minimum that lets white pass, and the darkening
+    /// is small enough to stay the same colour to the eye.
+    func testSaturatedAccentCarriesWhiteByDarkeningItsFillSlightly() {
+        // The shipping default: the Day palette keeps the brand blue as-is
+        // (only `recolored` runs the shape guard), and that is the theme whose
+        // buttons printed black.
+        let theme = BuiltinThemes.palette(.day)
+        XCTAssertEqual(theme.accent, 0x009DFF)
+
+        XCTAssertEqual(theme.accentForeground, 0xFFFFFF, "a vivid blue button must not print black")
+        XCTAssertNotEqual(theme.accentFill, theme.accent, "the fill had to move for white to pass")
+        XCTAssertGreaterThanOrEqual(RGBMath.contrastRatio(0xFFFFFF, theme.accentFill), 3.0)
+        // Imperceptible shift: the brand hue survives the adjustment.
+        XCTAssertLessThan(RGBMath.contrastRatio(theme.accentFill, theme.accent), 1.05)
+    }
+
+    /// A genuinely light accent cannot carry white without losing its identity
+    /// — the white "mono" accent would have to become gray. Those keep black
+    /// text on the untouched hue instead.
+    func testLightAccentKeepsBlackTextAndAnUntouchedFill() {
+        for accent: UInt32 in [0xFFFFFF, 0x2FD0BF, 0xAEAEB2] {
+            let theme = BuiltinThemes.night.recolored(accent: accent)
+            XCTAssertEqual(theme.accentFill, accent, "a light accent must not be darkened away")
+            XCTAssertEqual(theme.accentForeground, 0x000000)
+            XCTAssertGreaterThanOrEqual(RGBMath.contrastRatio(theme.accentForeground, theme.accentFill), 3.0)
         }
     }
 

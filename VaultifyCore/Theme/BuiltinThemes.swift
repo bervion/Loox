@@ -12,9 +12,11 @@ nonisolated enum BuiltinThemes {
         case .nightTinted: base = nightTinted
         }
         // Derive the on-accent foreground from the accent by real WCAG contrast so every
-        // theme's filled controls (buttons / selected chips) keep legible text. Single
-        // source of truth — the literal `accentForeground` below is just a placeholder.
-        base.accentForeground = RGBMath.onAccent(base.accent)
+        // theme's filled controls (buttons / selected chips) keep legible text. Paired with
+        // `accentFill`, not the raw accent: a fill nudged darker to carry white must be what
+        // the foreground is measured against. Single source of truth — the literal
+        // `accentForeground` below is just a placeholder.
+        base.accentForeground = RGBMath.onAccent(RGBMath.controlFill(base.accent))
         // Brand pairing (see AppTheme.recolored): brand blue -> brand link blue.
         base.linkAccent = (base.accent == 0x009DFF) ? 0x0065F4 : nil
         return base
