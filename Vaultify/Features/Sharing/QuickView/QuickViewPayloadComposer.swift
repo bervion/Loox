@@ -22,7 +22,18 @@ nonisolated struct QuickViewPayloadField: Codable, Sendable, Equatable {
 
 nonisolated struct QuickViewPayload: Codable, Sendable, Equatable {
     var version: Int = 1
+    /// The item's own name, so the viewer can say WHICH login/card/note this
+    /// is. Without it every category but login/note rendered as an anonymous
+    /// note. Additive and optional: an older viewer ignores it.
+    var title: String?
+    /// Item category (`login|card|note|identity|…`) — drives the viewer's icon
+    /// and field grouping. Same additive/optional contract as `title`.
+    var category: String?
     var fields: [QuickViewPayloadField]
+
+    enum CodingKeys: String, CodingKey {
+        case version, title, category, fields
+    }
 }
 
 /// Assembles the FINAL ordered field array for one Quick View approval:
@@ -91,7 +102,12 @@ enum QuickViewPayloadComposer {
         // AAD binds this exact ordered array — freeze here; callers must not
         // reorder the result afterward.
         let hash = QuickViewFieldManifest.hash(orderedFields: fields)
-        let payload = QuickViewPayload(fields: fields.map(wireField))
+        // Title/category ride inside the same sealed plaintext as the values,
+        // so they inherit the payload's AES-GCM integrity; the structural
+        // manifest hash stays field-only (its job is the approval UI contract).
+        let payload = QuickViewPayload(title: item.title.isEmpty ? nil : item.title,
+                                       category: item.category.rawValue,
+                                       fields: fields.map(wireField))
         let plaintext = try JSONEncoder().encode(payload)
         return Result(orderedFields: fields, fieldManifestHash: hash, payloadPlaintext: plaintext)
     }
