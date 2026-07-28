@@ -87,8 +87,11 @@ extension VaultRepository {
 
     /// Delete a folder. Member items are reassigned to Unfiled (folderId = nil,
     /// re-sealed) — never deleted. The folder itself gets a tombstone for sync.
+    /// Archived and trashed members reassign too: they outlive the folder, and a
+    /// dangling folderId would make them invisible on every persona-scoped
+    /// surface once restored or unarchived.
     func deleteFolder(_ folder: Folder) throws {
-        for item in items where item.folderId == folder.id {
+        for item in (items + archived + trashed) where item.folderId == folder.id {
             var moved = item
             moved.folderId = nil
             try update(moved)

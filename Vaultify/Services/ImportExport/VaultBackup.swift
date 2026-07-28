@@ -10,14 +10,17 @@ nonisolated enum VaultBackup {
         var tags: [String]
         /// Folder by NAME (ids aren't portable across vaults); resolved on import.
         var folderName: String?
+        /// Archived items travel in the backup (they are vault content) and
+        /// restore back into the Archive instead of surfacing as live items.
+        var archived: Bool
 
         init(title: String, category: String, fields: [DynamicField],
-             tags: [String] = [], folderName: String? = nil) {
+             tags: [String] = [], folderName: String? = nil, archived: Bool = false) {
             self.title = title; self.category = category; self.fields = fields
-            self.tags = tags; self.folderName = folderName
+            self.tags = tags; self.folderName = folderName; self.archived = archived
         }
 
-        /// Back-compat decode: backups written before folders/tags lack these keys.
+        /// Back-compat decode: backups written before folders/tags/archive lack these keys.
         init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             title = try c.decode(String.self, forKey: .title)
@@ -25,6 +28,7 @@ nonisolated enum VaultBackup {
             fields = try c.decode([DynamicField].self, forKey: .fields)
             tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
             folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
+            archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
         }
     }
     struct EncryptedBackup: Codable { var version: Int; var salt: Data; var kdf: KdfParams; var sealed: Data }
@@ -131,7 +135,8 @@ nonisolated enum VaultBackup {
                                 passphrase: String) async throws -> Data {
         let portable = items.map {
             PortableItem(title: $0.title, category: $0.category.rawValue, fields: $0.fields,
-                         tags: $0.tags, folderName: $0.folderId.flatMap { folderNames[$0] })
+                         tags: $0.tags, folderName: $0.folderId.flatMap { folderNames[$0] },
+                         archived: $0.archived)
         }
         let json = try JSONEncoder().encode(PortableVaultPayload(items: portable,
                                                                  passkeys: passkeys.isEmpty ? nil : passkeys,
@@ -166,7 +171,8 @@ nonisolated enum VaultBackup {
         }
         let items = payload.items.map {
             (VaultItem(category: ItemCategory(rawValue: $0.category) ?? .custom,
-                       title: $0.title, fields: $0.fields, tags: $0.tags), $0.folderName)
+                       title: $0.title, fields: $0.fields, tags: $0.tags,
+                       archived: $0.archived), $0.folderName)
         }
         let passkeys = try (payload.passkeys ?? []).map { secret in
             try PasskeyEnvelope.validate(secret)
