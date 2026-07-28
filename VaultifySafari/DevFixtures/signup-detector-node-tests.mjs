@@ -242,6 +242,11 @@ assert.ok(submitTextMatches("Đăng ký ngay"));
 assert.ok(submitTextMatches("Sign Up Free"));
 assert.ok(!submitTextMatches("Sign in"));
 assert.ok(!submitTextMatches("Đăng nhập"));
+// Japanese submit labels: 新規登録 creates an account, ログイン must not.
+assert.ok(submitTextMatches("新規登録"));
+assert.ok(submitTextMatches("会員登録"));
+assert.ok(submitTextMatches("アカウントを作成"));
+assert.ok(!submitTextMatches("ログイン"));
 
 // Descriptor results never carry a value slot (API shape guard).
 {

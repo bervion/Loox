@@ -36,25 +36,28 @@
   // a given name; search boxes match almost anything).
   // `[\s_-]*` between words because attribute text mixes spaces, dashes, and
   // underscores freely ("card_number", "so-dien-thoai", "Name on card").
-  const EXCLUDE = /(user[\s_-]*name|\blogin\b|dang[\s_-]*nhap|tai[\s_-]*khoan|account|password|mat[\s_-]*khau|search|tim[\s_-]*kiem|\botp\b|captcha)/;
+  // Japanese labels carry no spaces and survive `normalize` unchanged, so they
+  // are matched as plain substrings. ユーザー名 must be excluded BEFORE the
+  // identity rules see its 名.
+  const EXCLUDE = /(user[\s_-]*name|\blogin\b|dang[\s_-]*nhap|tai[\s_-]*khoan|account|password|mat[\s_-]*khau|search|tim[\s_-]*kiem|\botp\b|captcha|ユーザー?名|ユーザー?id|ログイン|アカウント|パスワード|検索|認証コード)/;
 
   // Tier 3: ordered keyword rules on normalized (lowercased, diacritics
   // stripped) attribute text. Order is load-bearing: card rules run before
   // identity rules ("cardholder name" must not read as a plain name field)
   // and email before address ("email address").
   const TEXT_RULES = [
-    { key: "ccName", re: /(card[\s_-]*holder|holder[\s_-]*name|name[\s_-]*on[\s_-]*card|chu[\s_-]*the|ten[\s_-]*(tren|in)[\s_-]*the)/ },
-    { key: "ccNumber", re: /(card[\s_-]*(number|num|no)\b|cc[\s_-]*num|\bpan\b|so[\s_-]*the)/ },
-    { key: "ccCsc", re: /(\bcvc\b|\bcvv\b|\bcsc\b|\bcid\b|security[\s_-]*code|ma[\s_-]*bao[\s_-]*mat|ma[\s_-]*an[\s_-]*ninh)/ },
-    { key: "ccExpMonth", re: /(exp\w*[\s_-]*month|thang[\s_-]*het[\s_-]*han|exp[\s_-]*mm\b)/ },
-    { key: "ccExpYear", re: /(exp\w*[\s_-]*year|nam[\s_-]*het[\s_-]*han|exp[\s_-]*yy(yy)?\b)/ },
-    { key: "ccExp", re: /(expir|exp[\s_-]+date|\bexp\b|valid[\s_-]*(thru|through|until)|het[\s_-]*han|mm[\s_-]*[/-][\s_-]*yy)/ },
-    { key: "email", re: /(e[\s_-]*mail|thu[\s_-]*dien[\s_-]*tu)/ },
-    { key: "phone", re: /(phone|mobile|\btel\b|dien[\s_-]*thoai|\bsdt\b|di[\s_-]*dong)/ },
-    { key: "address", re: /(address|\bstreet\b|dia[\s_-]*chi)/ },
-    { key: "fullName", re: /(full[\s_-]*name|your[\s_-]*name|ho[\s_-]*va[\s_-]*ten|ho[\s_-]*ten)/ },
-    { key: "givenName", re: /(first[\s_-]*name|given[\s_-]*name|\bforename\b)/ },
-    { key: "familyName", re: /(last[\s_-]*name|family[\s_-]*name|surname)/ },
+    { key: "ccName", re: /(card[\s_-]*holder|holder[\s_-]*name|name[\s_-]*on[\s_-]*card|chu[\s_-]*the|ten[\s_-]*(tren|in)[\s_-]*the|カード名義|名義人?)/ },
+    { key: "ccNumber", re: /(card[\s_-]*(number|num|no)\b|cc[\s_-]*num|\bpan\b|so[\s_-]*the|カード番号)/ },
+    { key: "ccCsc", re: /(\bcvc\b|\bcvv\b|\bcsc\b|\bcid\b|security[\s_-]*code|ma[\s_-]*bao[\s_-]*mat|ma[\s_-]*an[\s_-]*ninh|セキュリティコード)/ },
+    { key: "ccExpMonth", re: /(exp\w*[\s_-]*month|thang[\s_-]*het[\s_-]*han|exp[\s_-]*mm\b|有効期限[\s_-]*月)/ },
+    { key: "ccExpYear", re: /(exp\w*[\s_-]*year|nam[\s_-]*het[\s_-]*han|exp[\s_-]*yy(yy)?\b|有効期限[\s_-]*年)/ },
+    { key: "ccExp", re: /(expir|exp[\s_-]+date|\bexp\b|valid[\s_-]*(thru|through|until)|het[\s_-]*han|mm[\s_-]*[/-][\s_-]*yy|有効期限)/ },
+    { key: "email", re: /(e[\s_-]*mail|thu[\s_-]*dien[\s_-]*tu|メールアドレス|メール|電子メール)/ },
+    { key: "phone", re: /(phone|mobile|\btel\b|dien[\s_-]*thoai|\bsdt\b|di[\s_-]*dong|電話番号|電話|携帯)/ },
+    { key: "address", re: /(address|\bstreet\b|dia[\s_-]*chi|住所|番地)/ },
+    { key: "fullName", re: /(full[\s_-]*name|your[\s_-]*name|ho[\s_-]*va[\s_-]*ten|ho[\s_-]*ten|氏名|姓名|お名前|名前|フルネーム)/ },
+    { key: "givenName", re: /(first[\s_-]*name|given[\s_-]*name|\bforename\b|下の名前|名(?![前義称字人])|メイ)/ },
+    { key: "familyName", re: /(last[\s_-]*name|family[\s_-]*name|surname|苗字|名字|姓|セイ)/ },
   ];
 
   // Vietnamese single-word labels ("Họ", "Tên") are too short for substring
@@ -80,7 +83,12 @@
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d");
+      .replace(/đ/g, "d")
+      // The NFD pass above also splits Japanese dakuten (ド → ト + U+3099),
+      // which is outside the Latin combining range stripped above and would
+      // survive as a decomposed pair that never matches a composed literal
+      // like "カード番号" — recompose so the JA tables match.
+      .normalize("NFC");
   }
 
   function autocompleteKey(descriptor) {

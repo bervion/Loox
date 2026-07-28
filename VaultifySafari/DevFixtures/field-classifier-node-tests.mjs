@@ -128,4 +128,26 @@ assert.equal(keyOf(d({ tag: "select", name: "email" })), null, "selects only car
   assert.ok(!("value" in results[0]), "classification output must not have a value slot");
 }
 
+// --- Japanese labels (no spaces, no diacritics to strip) ---
+{
+  assert.equal(keyOf(d({ label: "メールアドレス" })), "email");
+  assert.equal(keyOf(d({ label: "電話番号" })), "phone");
+  assert.equal(keyOf(d({ label: "住所" })), "address");
+  assert.equal(keyOf(d({ label: "お名前" })), "fullName");
+  assert.equal(keyOf(d({ label: "氏名" })), "fullName");
+  assert.equal(keyOf(d({ label: "姓" })), "familyName");
+  assert.equal(keyOf(d({ label: "名字" })), "familyName");
+  assert.equal(keyOf(d({ label: "名" })), "givenName");
+  assert.equal(keyOf(d({ label: "カード番号" })), "ccNumber");
+  assert.equal(keyOf(d({ label: "カード名義" })), "ccName");
+  assert.equal(keyOf(d({ label: "セキュリティコード" })), "ccCsc");
+  assert.equal(keyOf(d({ label: "有効期限" })), "ccExp");
+  assert.equal(keyOf(d({ label: "有効期限 月" })), "ccExpMonth");
+  // Credentials are never identity fill targets: ユーザー名 carries 名 and
+  // would otherwise read as a given name.
+  assert.equal(keyOf(d({ label: "ユーザー名" })), null);
+  assert.equal(keyOf(d({ label: "パスワード" })), null);
+  assert.equal(keyOf(d({ label: "検索" })), null);
+}
+
 console.log("field-classifier node tests: all assertions passed");
