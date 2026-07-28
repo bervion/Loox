@@ -250,7 +250,7 @@ struct QuickLinkView: View {
                 oneTime: oneTime)
             step = .result(link)
         } catch {
-            step = .failed(error.localizedDescription)
+            step = .failed(SharingErrorMessage.text(for: error))
         }
     }
 
@@ -260,7 +260,7 @@ struct QuickLinkView: View {
         } catch {
             // Alert, not `step = .failed`: tearing down the whole form over a
             // failed revoke threw away the user's field selection and expiry.
-            revokeError = error.localizedDescription
+            revokeError = SharingErrorMessage.text(for: error)
             Haptics.error()
         }
         revokeTarget = nil

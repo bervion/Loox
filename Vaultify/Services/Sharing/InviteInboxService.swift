@@ -62,7 +62,10 @@ import Foundation
             // this is the first place notification permission can be asked —
             // the alert push IS the auto-invite tier. Arm proceeds even when
             // denied (reconcile-on-open still works, pushes just won't show).
-            _ = await ApprovalPrerequisites.check()
+            // `check()` itself no longer prompts, so fire the request here.
+            if await ApprovalPrerequisites.check() == .notificationsNotAsked {
+                _ = await ApprovalPrerequisites.requestNotificationPermission()
+            }
             let userID = try await container.userRecordID()
             let inboxID = Self.storedOrNewInboxID()
 
