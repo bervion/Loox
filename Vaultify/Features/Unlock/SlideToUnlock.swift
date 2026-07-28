@@ -34,7 +34,7 @@ struct SlideToUnlock: View {
                 // Sliding knob (accent fill + arrow — a deliberate action control).
                 ZStack {
                     Circle()
-                        .fill(Color(rgb: theme.accent))
+                        .fill(Color(rgb: theme.accentFill))
                         .overlay {
                             Circle().stroke(Color(rgb: theme.primaryText), lineWidth: 2)
                         }

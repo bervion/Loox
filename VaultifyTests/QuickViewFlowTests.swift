@@ -46,6 +46,17 @@ final class QuickViewFlowTests: XCTestCase {
         XCTAssertEqual(QuickViewExposureProvider.currentExposure(manifestExposure: .ga), .beta)
     }
 
+    /// The shipping path: the operator's manifest says `ga` and the server
+    /// enforces assertions, so an ordinary App Store user — not in the beta
+    /// cohort — sees the entry. This is the one combination the other cases
+    /// deliberately fail closed on, so it is worth pinning explicitly.
+    func testGeneralAudienceSeesEntryUnderGAWithAssertionsRequired() {
+        UserDefaults.standard.removeObject(forKey: QuickViewExposureProvider.debugOverrideKey)
+        XCTAssertTrue(QuickViewConfig.assertionRequired,
+                      "client flag must track the server's ASSERTION_MODE")
+        XCTAssertTrue(QuickViewExposureProvider.entryVisible(manifestExposure: .ga, isBetaCohort: false))
+    }
+
     // MARK: - SAS mismatch — abort only, no bypass
 
     func testAbortSASMismatchResetsToIdleAndRecordsCancelled() throws {

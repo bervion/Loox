@@ -57,6 +57,11 @@ struct WatchtowerScreen: View {
 
     private var personaID: String? { env.repository.activePersona?.id }
 
+    private func startTourIfScoreIsShowing() {
+        guard !emptyVault, latestPayload != nil else { return }
+        env.tutorial.startIfNeeded(.watchtower)
+    }
+
     private var sections: AuditGroupSections? {
         let dismissed = dismissedFingerprints
         if let report = controller.lastRun {
@@ -69,9 +74,19 @@ struct WatchtowerScreen: View {
     }
 
     private var dismissedFingerprints: Set<String> {
-        Set(env.store.findingStates(personaID: personaID)
-            .filter { $0.value.status != FindingStatus.open.rawValue }
-            .map(\.key))
+        guard let key = env.session.vaultKey else { return [] }
+        let reportStore = AuditReportStore(store: env.store)
+        if let report = controller.lastRun {
+            return reportStore.hiddenFingerprints(for: report.findings,
+                                                  personaID: personaID, key: key)
+        }
+        if let latestPayload {
+            return reportStore.hiddenFingerprints(
+                fingerprints: latestPayload.findings.map { ($0.fingerprint, $0.ruleID) },
+                ruleVersions: latestPayload.ruleVersions,
+                personaID: personaID, key: key)
+        }
+        return []
     }
 
     /// Security only has something to say about credentials: login items (their
@@ -141,7 +156,10 @@ struct WatchtowerScreen: View {
             .navigationDestination(for: WatchtowerCategory.self) { category in
                 categoryScreen(for: category).fullScreenPush()
             }
-            .task { reload(); autoAuditIfStale(); rescheduleAuditReminder() }
+            .task {
+                reload(); autoAuditIfStale(); rescheduleAuditReminder()
+                startTourIfScoreIsShowing()
+            }
             .analyticsScreen("watchtower")
             // Security audits the ACTIVE persona's vault — switching persona reloads.
             .onChange(of: env.repository.activePersona?.id) {
@@ -149,6 +167,10 @@ struct WatchtowerScreen: View {
                 reload()
                 autoAuditIfStale()
             }
+            // A first audit can land after this screen appeared, so the tour
+            // also arms when the score arrives — it explains that number, and
+            // pointing at a ring that says "not checked yet" explains nothing.
+            .onChange(of: latestPayload?.score) { startTourIfScoreIsShowing() }
             .onChange(of: env.repository.items.count) {
                 health = PasswordAudit.analyze(env.repository.activePersonaItems)
             }
@@ -246,7 +268,7 @@ struct WatchtowerScreen: View {
         case .strength:
             WatchtowerStrengthScreen()
         case .audit:
-            VaultAuditFlowScreen(controller: controller)
+            VaultAuditFlowScreen(controller: controller, openCategory: openCategory)
         case .whyScore:
             if let latestPayload { WhyThisScoreScreen(payload: latestPayload) }
         case .fullReport:
@@ -303,6 +325,7 @@ struct WatchtowerScreen: View {
                             WatchtowerScoreRing(score: latestPayload.score, introKey: introKey)
                         }
                         .buttonStyle(.plain)
+                        .tutorialAnchor(TutorialAnchorID.watchtowerScore)
                         .accessibilityLabel(Text("Vault Health"))
                         .accessibilityHint(Text("Why this score"))
                     } else {
@@ -363,6 +386,7 @@ struct WatchtowerScreen: View {
             }
             .buttonStyle(.themedProminent)
             .padding(.horizontal, Space.gutter)
+            .tutorialAnchor(TutorialAnchorID.watchtowerRunAudit)
 
             if let sections, sections.actNowCount > 0 {
                 Button { openCategory(.fixQueue) } label: {

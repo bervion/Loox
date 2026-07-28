@@ -70,6 +70,7 @@ notes:
 	@chmod +x scripts/generate-release-notes.sh && ./scripts/generate-release-notes.sh notes
 	@echo "── en-US ──"; cat metadata/apple/en-US/release_notes.txt 2>/dev/null; echo ""
 	@echo "── vi ──";    cat metadata/apple/vi/release_notes.txt 2>/dev/null; echo ""
+	@echo "── ja ──";    cat metadata/apple/ja/release_notes.txt 2>/dev/null; echo ""
 
 # ── Signing (fastlane match) ──
 match-setup:

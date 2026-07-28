@@ -7,7 +7,7 @@
 //
 // Tiered evidence, strongest first:
 //   1  autocomplete="new-password" (authoritative WHATWG token)
-//   3  single password field + signup/change submit label (EN + VI)
+//   3  single password field + signup/change submit label (EN + VI + JA)
 //   4  two or more password fields in one form (new password being set)
 //
 // Only VISIBLE password fields count: hidden honeypot inputs (anti-bot traps
@@ -24,16 +24,17 @@
   "use strict";
 
   // Submit labels that mark account creation. Diacritics are stripped by
-  // normalize(), so one table covers "Đăng ký" and "dang ky". "sign up" is
+  // normalize(), so one table covers "Đăng ký" and "dang ky"; Japanese
+  // labels carry no spaces and match as plain substrings. "sign up" is
   // deliberately narrow: it must never match "sign in" / "đăng nhập".
-  const SIGNUP_SUBMIT_RE = /(sign[\s_-]*up|register|create[\s_-]*(an[\s_-]*|your[\s_-]*|new[\s_-]*|my[\s_-]*)?account|join[\s_-]*now|dang[\s_-]*ky|tao[\s_-]*tai[\s_-]*khoan)/;
-  const CHANGE_SUBMIT_RE = /((change|update|reset)[\s_-]*(my[\s_-]*|your[\s_-]*)?password|(doi|thay[\s_-]*doi|cap[\s_-]*nhat|dat[\s_-]*lai)[\s_-]*mat[\s_-]*khau)/;
+  const SIGNUP_SUBMIT_RE = /(sign[\s_-]*up|register|create[\s_-]*(an[\s_-]*|your[\s_-]*|new[\s_-]*|my[\s_-]*)?account|join[\s_-]*now|dang[\s_-]*ky|tao[\s_-]*tai[\s_-]*khoan|新規登録|会員登録|アカウント(を)?作成|登録する)/;
+  const CHANGE_SUBMIT_RE = /((change|update|reset)[\s_-]*(my[\s_-]*|your[\s_-]*)?password|(doi|thay[\s_-]*doi|cap[\s_-]*nhat|dat[\s_-]*lai)[\s_-]*mat[\s_-]*khau|パスワードの?(変更|再設定|リセット))/;
   // Field-attribute evidence. "cu\b" (đổi "mật khẩu cũ") needs the boundary
   // so it never fires inside "của".
-  const CURRENT_RE = /((current|old|existing)[\s_-]*password|mat[\s_-]*khau[\s_-]*(hien[\s_-]*tai|cu\b))/;
-  const CONFIRM_RE = /(confirm|verif|re[\s_-]*type|re[\s_-]*enter|repeat|again|nhap[\s_-]*lai|xac[\s_-]*nhan)/;
-  const NEW_RE = /(new[\s_-]*password|mat[\s_-]*khau[\s_-]*moi)/;
-  const USER_FIELD_RE = /(user[\s_-]*name|e[\s_-]*mail|dang[\s_-]*nhap|tai[\s_-]*khoan)/;
+  const CURRENT_RE = /((current|old|existing)[\s_-]*password|mat[\s_-]*khau[\s_-]*(hien[\s_-]*tai|cu\b)|(現在|旧)の?パスワード)/;
+  const CONFIRM_RE = /(confirm|verif|re[\s_-]*type|re[\s_-]*enter|repeat|again|nhap[\s_-]*lai|xac[\s_-]*nhan|確認用?|再入力|もう一度)/;
+  const NEW_RE = /(new[\s_-]*password|mat[\s_-]*khau[\s_-]*moi|新しいパスワード|新パスワード)/;
+  const USER_FIELD_RE = /(user[\s_-]*name|e[\s_-]*mail|dang[\s_-]*nhap|tai[\s_-]*khoan|ユーザー?名|メールアドレス|アカウント)/;
 
   function normalize(text) {
     return globalThis.LooxFieldClassifier.normalize(text);

@@ -63,13 +63,50 @@ import Foundation
     /// the finding as `needsRecheck`), and an expired snooze reopens it.
     func effectiveStatus(of finding: AuditFinding, personaID: String?,
                          key: SecureBytes, now: Date = .now) -> FindingStatus {
-        guard let record = store.findingStates(personaID: personaID)[finding.fingerprint],
+        effectiveStatus(fingerprint: finding.fingerprint,
+                        currentRuleVersion: finding.ruleVersion,
+                        personaID: personaID, key: key, now: now)
+    }
+
+    func effectiveStatus(fingerprint: String, currentRuleVersion: Int, personaID: String?,
+                         key: SecureBytes, now: Date = .now) -> FindingStatus {
+        guard let record = store.findingStates(personaID: personaID)[fingerprint],
               let payload = try? FindingStatePayload.open(record.sealed, key: key) else {
             return .open
         }
-        if payload.ruleVersion < finding.ruleVersion { return .needsRecheck }
+        if payload.ruleVersion < currentRuleVersion { return .needsRecheck }
         if let snoozedUntil = payload.snoozedUntil, snoozedUntil <= now { return .open }
         return payload.status
+    }
+
+    /// Fingerprints a stored decision still HIDES from the given findings —
+    /// dismissed or snoozed-with-time-remaining under an unchanged rule
+    /// version. Every Watchtower surface filters through this instead of the
+    /// plaintext status column, so an expired snooze or a bumped rule
+    /// resurfaces the finding no matter what that column still says.
+    func hiddenFingerprints(for findings: [AuditFinding], personaID: String?,
+                            key: SecureBytes, now: Date = .now) -> Set<String> {
+        Set(findings.filter {
+            hides(effectiveStatus(of: $0, personaID: personaID, key: key, now: now))
+        }.map(\.fingerprint))
+    }
+
+    /// Pair variant for surfaces holding digests or queued findings, which
+    /// carry no `ruleVersion` of their own — the report's per-rule map supplies
+    /// it (a rule absent from the map compares as 0 → never a false recheck).
+    func hiddenFingerprints(fingerprints: [(fingerprint: String, ruleID: String)],
+                            ruleVersions: [String: Int],
+                            personaID: String?, key: SecureBytes,
+                            now: Date = .now) -> Set<String> {
+        Set(fingerprints.filter { pair in
+            hides(effectiveStatus(fingerprint: pair.fingerprint,
+                                  currentRuleVersion: ruleVersions[pair.ruleID] ?? 0,
+                                  personaID: personaID, key: key, now: now))
+        }.map(\.fingerprint))
+    }
+
+    private nonisolated func hides(_ status: FindingStatus) -> Bool {
+        status != .open && status != .needsRecheck
     }
 
     /// Cross-run derivation for history/diff screens: fingerprints present in

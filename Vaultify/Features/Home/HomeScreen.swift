@@ -200,7 +200,13 @@ struct HomeScreen: View {
             .vaultNavigationDestinations()
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen().fullScreenPush() }
             .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen().fullScreenPush() }
-            .task { recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace() }
+            .task {
+                recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace()
+                // First unlocked look at Home is where the tour makes sense —
+                // the vault exists and its own surfaces are on screen. Repeat
+                // visits self-suppress once the flow has been answered.
+                env.tutorial.startIfNeeded(.firstRun)
+            }
             .analyticsScreen("home")
             // Remember the Home Space across launches (per identity; device-local, not synced).
             // Also re-mirror into the App Group so the AutoFill extension defaults a
@@ -476,11 +482,13 @@ struct HomeScreen: View {
                 .init(icon: "dt_square_plus",
                       label: LocalizedStringResource("Add Item").inAppLocalized,
                       tint: QuickActionsGroupCard.addTint,
+                      tutorialAnchorID: TutorialAnchorID.homeAddItem,
                       action: { showItemTypePicker = true }),
                 .init(icon: "dt_shield_keyhole",
                       label: LocalizedStringResource("Security").inAppLocalized,
                       tint: QuickActionsGroupCard.securityTint,
                       count: watchtowerIssueCount,
+                      tutorialAnchorID: TutorialAnchorID.homeSecurity,
                       action: { NotificationCenter.default.post(name: .vaultSwitchToWatchtower, object: nil) }),
                 .init(icon: "dt_key",
                       label: LocalizedStringResource("Generate Password").inAppLocalized,

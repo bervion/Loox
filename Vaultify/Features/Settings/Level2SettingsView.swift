@@ -1,5 +1,16 @@
 import SwiftUI
 
+/// Turn-off could complete its writes and still find sealed fields (an item the
+/// repository refused to rewrite, or a field sealed under a different key).
+/// Destroying the wrap then would make that ciphertext permanent, so the flow
+/// aborts with this instead — the Extra Password stays on and usable.
+private enum Level2TurnOffError: LocalizedError {
+    case sealedFieldsRemain
+    var errorDescription: String? {
+        appString("Some protected fields could not be unlocked, so the Extra Password was kept on. Try again.")
+    }
+}
+
 /// Set, change, or turn off the Extra Password — the second password that keeps
 /// selected fields sealed even while the vault is unlocked. Styled like the
 /// onboarding password step (plain page, capsule fields, bottom CTA) with the
@@ -312,23 +323,26 @@ struct Level2SettingsView: View {
 
     /// Decrypt every level2-sealed field back to plaintext, then drop the wrap.
     /// The password was verified in `submit()`, so `level2Key` is present.
+    ///
+    /// Order is load-bearing: a read-only preflight unseals every field across
+    /// live, archived, AND trashed items in memory first; writes happen only
+    /// after the whole preflight succeeded; and the wrap key is destroyed only
+    /// after a re-scan confirms no level2 ciphertext remains. An abort at any
+    /// point leaves the key intact, and a retry skips already-unsealed fields,
+    /// so a crash mid-way can never strand unrecoverable ciphertext.
     private func turnOff() async {
         busy = true; error = nil
         do {
             guard let key = env.session.level2Key else { throw AuthError.locked }
+            // Shared projections are the owner's sealed payload, not ours to rewrite.
+            let ownItems = { (env.repository.items + env.repository.archived + env.repository.trashed)
+                .filter { $0.sharedOrigin == nil && !$0.id.hasPrefix("shared::") } }
+            let unsealed = try Level2Disable.unsealed(ownItems(), l2Key: key.bytes)
             try AnalyticsEngine.shared.runSuppressed {
-                for var item in env.repository.items {
-                    var touched = false
-                    for index in item.fields.indices
-                    where item.fields[index].isExtraProtected
-                        && SecretGuard.scheme(of: item.fields[index].value) == .level2 {
-                        item.fields[index].value = try SecretGuard.openLevel2(
-                            item.fields[index].value, l2Key: key.bytes)
-                        item.fields[index].guard2 = false
-                        touched = true
-                    }
-                    if touched { try env.repository.update(item) }
-                }
+                for item in unsealed { try env.repository.update(item) }
+            }
+            guard !Level2Disable.hasSealedLeftovers(ownItems()) else {
+                throw Level2TurnOffError.sealedFieldsRemain
             }
             env.session.removeLevel2Wrap()
             // The wrap is gone, so there is no minted key left to hand back.
@@ -340,5 +354,40 @@ struct Level2SettingsView: View {
             Haptics.error()
         }
         busy = false
+    }
+}
+
+/// Pure steps of the Extra Password turn-off transaction, split out so the
+/// abort-before-write guarantee can be proven in unit tests without a store.
+nonisolated enum Level2Disable {
+    /// Preflight: every level2-sealed field across the given items, unsealed in
+    /// memory. Throws on the FIRST failure — the caller must not have written
+    /// anything yet, so an abort here leaves the vault untouched.
+    static func unsealed(_ items: [VaultItem], l2Key: [UInt8]) throws -> [VaultItem] {
+        var out: [VaultItem] = []
+        for var item in items {
+            var touched = false
+            for index in item.fields.indices
+            where item.fields[index].isExtraProtected
+                && SecretGuard.scheme(of: item.fields[index].value) == .level2 {
+                item.fields[index].value = try SecretGuard.openLevel2(
+                    item.fields[index].value, l2Key: l2Key)
+                item.fields[index].guard2 = false
+                touched = true
+            }
+            if touched { out.append(item) }
+        }
+        return out
+    }
+
+    /// Post-write check: true while any level2 ciphertext survives. The wrap key
+    /// must not be destroyed as long as this returns true — that ciphertext
+    /// would become permanently unreadable.
+    static func hasSealedLeftovers(_ items: [VaultItem]) -> Bool {
+        items.contains { item in
+            item.fields.contains {
+                $0.isExtraProtected && SecretGuard.scheme(of: $0.value) == .level2
+            }
+        }
     }
 }

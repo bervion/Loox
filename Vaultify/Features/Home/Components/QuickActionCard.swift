@@ -20,6 +20,9 @@ struct QuickActionsGroupCard: View {
         /// Per-type duotone hue (see the fixed palette on `QuickActionsGroupCard`).
         let tint: Color
         var count: Int? = nil
+        /// Publishes this tile's frame for a tutorial spotlight (see
+        /// `TutorialAnchorID`). Nil for tiles no tour points at.
+        var tutorialAnchorID: String? = nil
         let action: () -> Void
         var id: String { icon }
     }
@@ -141,6 +144,7 @@ private struct QuickActionTile: View {
         }
         .buttonStyle(QuickActionPressStyle(reduceMotion: reduceMotion))
         .accessibilityLabel(accessibilityText)
+        .tutorialAnchorIfPresent(item.tutorialAnchorID)
     }
 
     /// Label plus the live count, so VoiceOver reads "2FA Codes, 5" rather than dropping it.

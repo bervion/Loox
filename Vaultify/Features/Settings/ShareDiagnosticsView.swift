@@ -59,6 +59,20 @@ struct ShareDiagnosticsView: View {
             .listRowBackground(VaultColors.surface)
 
             Section {
+                Button("Publish capability manifest mirror") {
+                    Task { await publishManifestMirror() }
+                }
+                .disabled(working)
+            } header: {
+                Text("Capability manifest")
+            } footer: {
+                Text("Copies the verified primary manifest into the CloudKit public database so the "
+                     + "secondary source serves identical bytes. Verification runs first, so a bad "
+                     + "primary is never mirrored.")
+            }
+            .listRowBackground(VaultColors.surface)
+
+            Section {
                 Text(text.isEmpty ? "No diagnostics yet." : text)
                     .font(.system(.caption2, design: .monospaced))
                     .textSelection(.enabled)
@@ -114,6 +128,21 @@ struct ShareDiagnosticsView: View {
         defer { working = false }
         owned = (try? await env.approvalShare.ownedApprovalZoneNames()) ?? []
         accepted = (try? await env.approvalRecipient.acceptedApprovalZones()) ?? []
+        reload()
+    }
+
+    /// Operator action: refresh the CloudKit public-DB mirror of the signed
+    /// capability manifest. Without this the documented second source never
+    /// gets populated, so a primary outage takes the manifest down with it.
+    private func publishManifestMirror() async {
+        working = true
+        defer { working = false }
+        do {
+            try await env.capabilityManifest.publishSecondaryMirror()
+            ShareDiagnostics.log("MANIFEST", "secondary mirror published")
+        } catch {
+            ShareDiagnostics.log("MANIFEST", "mirror publish failed=\(error)")
+        }
         reload()
     }
 

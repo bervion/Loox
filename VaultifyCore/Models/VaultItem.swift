@@ -84,6 +84,12 @@ nonisolated struct VaultItem: Identifiable, Equatable, Codable, Sendable {
     var usernameField: DynamicField? {
         fields.first { $0.kind == .username || $0.kind == .email }
     }
+    /// `usernameField` for display/export surfaces: an extra-protected value is
+    /// sealed ciphertext, so surfacing it would print `v2g:…` noise — skip to
+    /// the first readable candidate instead.
+    var readableUsernameField: DynamicField? {
+        fields.first { ($0.kind == .username || $0.kind == .email) && !$0.isExtraProtected }
+    }
     var passwordField: DynamicField? { fields.first { $0.kind == .password } }
     /// The USABLE TOTP field — an extra-protected seed is sealed ciphertext, so
     /// it can't drive live codes, QuickType OTP identities, or 2FA listings.

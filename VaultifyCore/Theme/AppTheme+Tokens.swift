@@ -32,6 +32,14 @@ nonisolated extension AppTheme {
     var accentSoft: UInt32 { RGBMath.blend(selection, accent, 0.15) }
     /// Deepened accent for pressed filled controls.
     var accentPress: UInt32 { RGBMath.blend(accent, 0x000000, 0.16) }
+    /// The accent as a FILLED CONTROL's background, paired with
+    /// `accentForeground`. Identical to `accent` for every preset that already
+    /// carries white; a hue that sits just under the floor (the brand blue
+    /// measures 2.89:1) is darkened by the minimum that lets white pass, so a
+    /// filled button reads white-on-colour instead of black-on-colour. Use it
+    /// wherever the accent is PAINTED behind a label — `accent` itself stays
+    /// the untouched brand hue for text, icons, rings, and strokes.
+    var accentFill: UInt32 { RGBMath.controlFill(accent) }
     /// TEXT-rank accent (Controlled Contrast): the accent hue is tuned as a
     /// FILL — several presets sit at 3.0-4.4:1 as text on soft/control fills,
     /// below the 4.5:1 normal-text floor. This variant is the same hue nudged

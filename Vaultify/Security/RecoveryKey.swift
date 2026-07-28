@@ -15,9 +15,19 @@ nonisolated enum RecoveryKey {
             .joined(separator: "-")
     }
 
-    /// Strip separators/whitespace and upper-case for comparison/derivation.
+    /// Strip separators/whitespace, upper-case, and map Crockford confusables
+    /// (I/L→1, O→0) for comparison/derivation. Mapping instead of dropping:
+    /// someone reading `1` off the printed kit as `I` typed the RIGHT character
+    /// by Crockford's own rules — silently deleting it would shift every later
+    /// character and reject a correctly transcribed key.
     static func normalize(_ input: String) -> String {
-        String(input.uppercased().filter { alphabet.contains($0) })
+        String(input.uppercased().map { char -> Character in
+            switch char {
+            case "I", "L": "1"
+            case "O": "0"
+            default: char
+            }
+        }.filter { alphabet.contains($0) })
     }
 
     private static func base32(_ data: [UInt8]) -> String {

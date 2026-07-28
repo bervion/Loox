@@ -54,9 +54,17 @@ async function copyToClipboard(value) {
 
 function showError(reply) {
   const code = reply && reply.error ? String(reply.error) : "";
-  const message = code.startsWith("native:")
-    ? t("popup_error_unreachable")
-    : t("popup_error_generic");
+  let message;
+  if (code === "unlockUnavailable") {
+    // Face ID has no key to release (never enrolled, or the enrolled set
+    // changed). Retrying here can never work — the app's password unlock is
+    // the only way back, and it re-provisions the shared key for us.
+    message = t("popup_error_unlock_unavailable");
+  } else if (code.startsWith("native:")) {
+    message = t("popup_error_unreachable");
+  } else {
+    message = t("popup_error_generic");
+  }
   document.getElementById("error-message").textContent = message;
   show("error");
 }

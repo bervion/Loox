@@ -431,6 +431,17 @@ nonisolated enum WebExtensionRouter {
         if case BiometricKeyStore.Failure.cancelled = error {
             return failure("unlockCancelled")
         }
+        // No biometric key to unlock WITH (never enrolled, or the enrolled set
+        // changed and `.biometryCurrentSet` invalidated the item). Retrying the
+        // prompt can never succeed, so the extension must say so and point at
+        // the app, whose master-password unlock re-provisions the shared key.
+        // A distinct code — not the generic failure the UI told users to retry.
+        if case BiometricKeyStore.Failure.invalidated = error {
+            return failure("unlockUnavailable")
+        }
+        if case BiometricKeyStore.Failure.unavailable = error {
+            return failure("unlockUnavailable")
+        }
         return failure("unlockFailed")
     }
 

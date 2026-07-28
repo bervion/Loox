@@ -7,6 +7,12 @@ struct VaultAuditFlowScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
     let controller: AuditRunController
+    /// Routes a result-screen destination (Fix Queue / full report) through the
+    /// owner's navigator. This screen may sit inside a UIKit shell push where a
+    /// value-based `NavigationLink` has no registered destination and taps
+    /// would silently do nothing — the owner knows how to navigate; this
+    /// screen must not guess.
+    let openCategory: (WatchtowerCategory) -> Void
 
     var body: some View {
         Group {
@@ -116,7 +122,8 @@ struct VaultAuditFlowScreen: View {
     @ViewBuilder
     private var result: some View {
         if let report = controller.lastRun {
-            AuditResultView(report: report, previousScore: controller.previousScore) {
+            AuditResultView(report: report, previousScore: controller.previousScore,
+                            openCategory: openCategory) {
                 controller.acknowledgeResult()
                 dismiss()
             }
@@ -136,6 +143,7 @@ private struct AuditResultView: View {
     @Environment(AppEnvironment.self) private var env
     let report: AuditReport
     let previousScore: Int?
+    let openCategory: (WatchtowerCategory) -> Void
     let done: () -> Void
 
     private var sections: AuditGroupSections {
@@ -143,9 +151,10 @@ private struct AuditResultView: View {
     }
 
     private var dismissedFingerprints: Set<String> {
-        Set(env.store.findingStates(personaID: env.repository.activePersona?.id)
-            .filter { $0.value.status != FindingStatus.open.rawValue }
-            .map(\.key))
+        guard let key = env.session.vaultKey else { return [] }
+        return AuditReportStore(store: env.store).hiddenFingerprints(
+            for: report.findings,
+            personaID: env.repository.activePersona?.id, key: key)
     }
 
     private var estimatedFixMinutes: Int {
@@ -210,7 +219,7 @@ private struct AuditResultView: View {
                 // Rank: with open issues the one next action is fixing them;
                 // Done demotes to the quiet secondary. With none, Done IS the action.
                 if sections.actNowCount > 0 {
-                    NavigationLink(value: WatchtowerCategory.fixQueue) {
+                    Button { openCategory(.fixQueue) } label: {
                         Text("Fix important issues").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.themedProminent)
@@ -226,7 +235,7 @@ private struct AuditResultView: View {
                     .buttonStyle(.themedProminent)
                 }
 
-                NavigationLink(value: WatchtowerCategory.fullReport) {
+                Button { openCategory(.fullReport) } label: {
                     HStack(spacing: Space.s1) {
                         Text("View full report").vaultType(.subhead)
                         PolarisIcon(Icons.chevronRight, size: 12)

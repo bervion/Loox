@@ -62,7 +62,7 @@ struct UnlockGate<Content: View>: View {
                 } else { unlockForm }
             }
             .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onCancel) }
             }
@@ -89,7 +89,7 @@ struct UnlockGate<Content: View>: View {
                 SecureField("Master password", text: $masterPassword)
                     .textContentType(.password).submitLabel(.go).onSubmit(unlockWithMaster)
                     .padding(.horizontal, 14).padding(.vertical, 12)
-                    .background(Color(.secondarySystemBackground),
+                    .background(Color.platformSystemGray5,
                                 in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 if let errorMessage {

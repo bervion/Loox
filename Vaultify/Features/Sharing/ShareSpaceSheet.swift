@@ -118,7 +118,7 @@ struct ShareSpaceSheet: View {
             // The prerequisite probe resolves in a blink, so copy here would
             // only flash: the spinner takes the glyph slot alone and the state
             // keeps the same silhouette as everything that follows it.
-            VaultStatusScreen(busy: true)
+            VaultStatusScreen(busySystemImage: "person.2", busy: true)
         case .blocked(let blocker):
             blockedView(blocker)
         case .config:
@@ -126,7 +126,8 @@ struct ShareSpaceSheet: View {
         case .creating:
             // Same title as the fan-out step: to the user this is one operation,
             // and the body names which half of it is running.
-            VaultStatusScreen(title: "Sharing your Space…",
+            VaultStatusScreen(busySystemImage: "person.2.badge.key",
+                              title: "Sharing your Space…",
                               message: .key("Setting up encrypted approval transport…"),
                               busy: true)
         case .waiting(_, let shareURL):
@@ -150,24 +151,27 @@ struct ShareSpaceSheet: View {
         }
     }
 
+    @ViewBuilder
     private func blockedView(_ blocker: ApprovalPrerequisites.Blocker) -> some View {
-        // The title names the missing prerequisite so the body can explain it
-        // instead of carrying the whole state on secondary copy.
-        let title: LocalizedStringKey = blocker == .iCloudUnavailable
-            ? "Sign in to iCloud"
-            : "Notification permission"
-        let detail: LocalizedStringKey = blocker == .iCloudUnavailable
-            ? "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync."
-            : "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access."
-        return VaultStatusScreen(
-            icon: Icons.info,
-            tint: .warning,
-            title: title,
-            message: .key(detail),
-            primary: .init(title: "Check again") {
+        switch blocker {
+        case .notificationsNotAsked, .notificationsDenied:
+            NotificationPermissionGateView(
+                explanation: "Loox uses notifications to deliver approval requests. When someone in this Space asks to use an item, the request appears as an alert on this device.",
+                denied: blocker == .notificationsDenied) {
                 step = .checking
                 Task { await checkPrerequisites() }
-            })
+            }
+        case .iCloudUnavailable:
+            VaultStatusScreen(
+                icon: Icons.info,
+                tint: .warning,
+                title: "Sign in to iCloud",
+                message: .key("Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync."),
+                primary: .init(title: "Check again") {
+                    step = .checking
+                    Task { await checkPrerequisites() }
+                })
+        }
     }
 
     // MARK: Config (pick Space + recipient)
@@ -278,7 +282,7 @@ struct ShareSpaceSheet: View {
             env.settings.approvalModeEnabled = true
             step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL)
         } catch {
-            step = .failed(error.localizedDescription)
+            step = .failed(SharingErrorMessage.text(for: error))
         }
     }
 
@@ -431,12 +435,13 @@ struct ShareSpaceSheet: View {
                 nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
             step = .result(summary)
         } catch {
-            step = .failed(error.localizedDescription)
+            step = .failed(SharingErrorMessage.text(for: error))
         }
     }
 
     private var publishingView: some View {
-        VaultStatusScreen(title: "Sharing your Space…",
+        VaultStatusScreen(busySystemImage: "person.2.badge.key",
+                          title: "Sharing your Space…",
                           message: .key("\(eligibleCount) items"),
                           busy: true)
     }

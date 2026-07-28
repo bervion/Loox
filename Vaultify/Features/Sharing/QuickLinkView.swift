@@ -72,7 +72,8 @@ struct QuickLinkView: View {
             // share the top-anchored, left-aligned silhouette with the action on
             // the bottom edge, so nothing jumps and no state reads as grey copy
             // floating mid-screen.
-            VaultStatusScreen(title: "Encrypting and creating your link…", busy: true)
+            VaultStatusScreen(busySystemImage: "link",
+                              title: "Encrypting and creating your link…", busy: true)
         case .result(let link):
             QuickLinkResultView(link: link) { step = .config }
         case .failed(let message):
@@ -250,7 +251,7 @@ struct QuickLinkView: View {
                 oneTime: oneTime)
             step = .result(link)
         } catch {
-            step = .failed(error.localizedDescription)
+            step = .failed(SharingErrorMessage.text(for: error))
         }
     }
 
@@ -260,7 +261,7 @@ struct QuickLinkView: View {
         } catch {
             // Alert, not `step = .failed`: tearing down the whole form over a
             // failed revoke threw away the user's field selection and expiry.
-            revokeError = error.localizedDescription
+            revokeError = SharingErrorMessage.text(for: error)
             Haptics.error()
         }
         revokeTarget = nil

@@ -422,7 +422,7 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         return SharedCredentialEntry(
             itemID: item.id, title: item.title,
             websiteHost: normalizedHost(item.urlField?.value),
-            username: item.usernameField?.value.isEmpty == false ? item.usernameField?.value : nil,
+            username: item.readableUsernameField?.value.isEmpty == false ? item.readableUsernameField?.value : nil,
             password: item.passwordField?.value.isEmpty == false ? item.passwordField?.value : nil,
             zoneName: origin.zoneName, ownerName: origin.ownerName, grantId: origin.grantId,
             askEachTimeTOTPFieldId: totpFieldId,

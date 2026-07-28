@@ -74,7 +74,7 @@ struct TotpCardView: View {
                     // (two GitHub logins would otherwise render identical cards).
                     // STRICTLY the username field — `item.subtitle` falls back to
                     // the website URL, which is noise on a code card (user rule).
-                    if let username = item.usernameField?.value, !username.isEmpty {
+                    if let username = item.readableUsernameField?.value, !username.isEmpty {
                         Text(username)
                             .vaultType(.caption)
                             .themedForeground(.tertiary)

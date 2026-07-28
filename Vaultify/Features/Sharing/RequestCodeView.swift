@@ -64,7 +64,7 @@ import SwiftUI
                                                     nowUnixMs: nowUnixMs)
             phase = .waiting(sinceUnixMs: nowUnixMs, showSlowHint: false)
         } catch {
-            phase = .failed(error.localizedDescription)
+            phase = .failed(SharingErrorMessage.text(for: error))
         }
     }
 
@@ -105,7 +105,7 @@ import SwiftUI
                 if case .verifyFailed = error,
                    self.pending?.request.requestId == currentId {
                     self.pending = nil
-                    phase = .failed(error.localizedDescription)
+                    phase = .failed(SharingErrorMessage.text(for: error))
                     return
                 }
                 // Other service failures (e.g. transient) fall through.

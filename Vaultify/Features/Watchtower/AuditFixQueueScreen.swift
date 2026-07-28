@@ -21,9 +21,11 @@ struct AuditFixQueueScreen: View {
     }
 
     private var dismissedFingerprints: Set<String> {
-        Set(env.store.findingStates(personaID: env.repository.activePersona?.id)
-            .filter { $0.value.status != FindingStatus.open.rawValue }
-            .map(\.key))
+        guard let key = env.session.vaultKey else { return [] }
+        return AuditReportStore(store: env.store).hiddenFingerprints(
+            fingerprints: findings.map { ($0.fingerprint, $0.ruleID) },
+            ruleVersions: ruleVersions,
+            personaID: env.repository.activePersona?.id, key: key)
     }
 
     var body: some View {

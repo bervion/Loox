@@ -70,6 +70,9 @@ struct NameStepView: View {
             TextField("Your name", text: $name)
                 .platformTextContentType(.name)
                 .platformAutocapitalization(.words)
+                // Names are exactly what autocorrect mangles ("Kiyo" → "Koyo");
+                // this seeds the identity item, so a silent rewrite sticks.
+                .autocorrectionDisabled()
                 .submitLabel(.next)
                 .focused($focus, equals: .name)
                 .onSubmit { focus = .email }

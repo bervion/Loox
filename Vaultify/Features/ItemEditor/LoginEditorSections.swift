@@ -19,6 +19,9 @@ struct LoginEditorSections: View {
     var onRequestExtraProtectionUnlock: () -> Void = {}
     @Environment(AppEnvironment.self) private var env
     @State private var selectedPasskey: PasskeyInfo?
+    /// The website row just created via "Add Website" — it claims keyboard focus
+    /// on appear so typing continues there, not in the previously focused field.
+    @State private var addedWebsiteFieldId: String?
     /// Present the alias's management screen (pause/delete live there, not in
     /// the editor — the editor only ever attaches/detaches a field).
     @State private var showManageAlias = false
@@ -212,14 +215,17 @@ struct LoginEditorSections: View {
                     EditorFieldRow(field: fieldBinding(field),
                                    onRequestExtraProtectionUnlock: onRequestExtraProtectionUnlock)
                 } else {
-                    WebsiteFieldRow(field: fieldBinding(field))
+                    WebsiteFieldRow(field: fieldBinding(field),
+                                    autoFocus: field.id == addedWebsiteFieldId)
                 }
             }
             .onDelete { removeFields(at: $0, from: websiteIndices) }
             .onMove { moveFields(from: $0, to: $1, in: websiteIndices) }
 
             Button {
-                draft.fields.append(DynamicField(label: "Website", kind: .url))
+                let field = DynamicField(label: "Website", kind: .url)
+                addedWebsiteFieldId = field.id
+                draft.fields.append(field)
             } label: {
                 actionRowLabel("Add Website", icon: Icons.addCircle)
             }

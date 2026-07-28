@@ -1,0 +1,165 @@
+import XCTest
+@testable import Vaultify
+
+/// The tutorial's state machine: when a tour may start, how it advances, and
+/// what each ending records. Presentation is not covered here — the overlay is
+/// a pure view driven entirely by this coordinator.
+@MainActor
+final class TutorialFlowStateTests: XCTestCase {
+
+    private var defaults: UserDefaults!
+    private var suiteName: String!
+
+    override func setUp() {
+        super.setUp()
+        suiteName = "tutorial.tests.\(UUID().uuidString)"
+        defaults = UserDefaults(suiteName: suiteName)
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suiteName)
+        defaults = nil
+        super.tearDown()
+    }
+
+    private func makeCoordinator() -> TutorialCoordinator {
+        TutorialCoordinator(store: TutorialStore(defaults: defaults))
+    }
+
+    private let flow = TutorialFlow(id: "test-flow", steps: [
+        TutorialStep(id: "one", title: "One", message: "First"),
+        TutorialStep(id: "two", title: "Two", message: "Second"),
+    ])
+
+    func testCompletingEveryStepEndsTheTourAndKeepsItFromReturning() {
+        let coordinator = makeCoordinator()
+
+        coordinator.startIfNeeded(flow)
+        XCTAssertEqual(coordinator.currentStep?.id, "one")
+        XCTAssertFalse(coordinator.isLastStep)
+
+        coordinator.advance()
+        XCTAssertEqual(coordinator.currentStep?.id, "two")
+        XCTAssertTrue(coordinator.isLastStep, "the closing step swaps Next for Done")
+
+        coordinator.advance()
+        XCTAssertNil(coordinator.currentStep, "past the last step the tour is over")
+
+        // A completed tour must not reappear on the next visit to the screen.
+        coordinator.startIfNeeded(flow)
+        XCTAssertNil(coordinator.currentStep)
+    }
+
+    func testSkippingIsAnAnswerAndIsNotAskedAgain() {
+        let coordinator = makeCoordinator()
+        coordinator.startIfNeeded(flow)
+
+        coordinator.skip()
+
+        XCTAssertNil(coordinator.currentStep)
+        coordinator.startIfNeeded(flow)
+        XCTAssertNil(coordinator.currentStep, "asking again after a no is nagging")
+    }
+
+    /// An interruption outside the user's intent (auto-lock, a push landing
+    /// elsewhere) must not spend the one chance the tour gets.
+    func testSuspendLeavesTheFlowEligible() {
+        let coordinator = makeCoordinator()
+        coordinator.startIfNeeded(flow)
+
+        coordinator.suspend()
+        XCTAssertNil(coordinator.currentStep)
+
+        coordinator.startIfNeeded(flow)
+        XCTAssertEqual(coordinator.currentStep?.id, "one")
+    }
+
+    func testStartIsIgnoredWhileAnotherFlowIsRunning() {
+        let coordinator = makeCoordinator()
+        let other = TutorialFlow(id: "other", steps: [
+            TutorialStep(id: "x", title: "X", message: "X"),
+        ])
+
+        coordinator.startIfNeeded(flow)
+        coordinator.startIfNeeded(other)
+
+        XCTAssertEqual(coordinator.currentStep?.id, "one",
+                       "two overlapping spotlights would fight over the screen")
+    }
+
+    func testStepLabelCountsFromOne() {
+        let coordinator = makeCoordinator()
+        coordinator.startIfNeeded(flow)
+
+        XCTAssertEqual(coordinator.stepLabel, String(format: appString("Step %lld of %lld"), 1, 2))
+    }
+
+    func testStoreDistinguishesCompletedFromSkippedAndUnanswered() {
+        let store = TutorialStore(defaults: defaults)
+
+        XCTAssertEqual(store.state(of: "a"), .notStarted)
+        XCTAssertTrue(store.shouldPresent("a"))
+
+        store.mark("a", .completed)
+        XCTAssertEqual(store.state(of: "a"), .completed)
+        XCTAssertFalse(store.shouldPresent("a"))
+
+        store.reset("a")
+        XCTAssertTrue(store.shouldPresent("a"), "reset is what lets a tour be replayed")
+    }
+
+    /// Every shipping flow must reference anchors a screen actually publishes,
+    /// or a step spotlights nothing.
+    func testShippingFlowsOnlyReferenceKnownAnchors() {
+        let known: Set<String> = [TutorialAnchorID.homeAddItem,
+                                  TutorialAnchorID.homeSearch,
+                                  TutorialAnchorID.homeSecurity,
+                                  TutorialAnchorID.settingsAutoFill,
+                                  TutorialAnchorID.watchtowerScore,
+                                  TutorialAnchorID.watchtowerRunAudit,
+                                  TutorialAnchorID.shareAccess]
+        for flow in TutorialFlow.all {
+            for step in flow.steps {
+                guard let anchor = step.anchor else { continue }
+                XCTAssertTrue(known.contains(anchor), "unknown anchor \(anchor) in \(flow.id)")
+            }
+        }
+    }
+
+    func testFlowIdsAreUniqueSoStatesCannotCollide() {
+        let ids = TutorialFlow.allFlowIDs
+        XCTAssertEqual(Set(ids).count, ids.count)
+    }
+
+    /// A flow that runs inside a sheet must be hosted there; the root host
+    /// skips it, so a mismatch means the tour draws behind the sheet.
+    func testSheetHostedFlowsAreRealFlows() {
+        for id in TutorialFlow.sheetHostedFlowIDs {
+            XCTAssertTrue(TutorialFlow.allFlowIDs.contains(id), "stale sheet-hosted id \(id)")
+        }
+    }
+
+    func testReplayAllBringsEveryTourBack() {
+        let coordinator = makeCoordinator()
+        let store = TutorialStore(defaults: defaults)
+        for id in TutorialFlow.allFlowIDs { store.mark(id, .completed) }
+        XCTAssertFalse(TutorialFlow.allFlowIDs.contains { store.shouldPresent($0) })
+
+        coordinator.replayAll()
+
+        XCTAssertTrue(TutorialFlow.allFlowIDs.allSatisfy { store.shouldPresent($0) })
+    }
+
+    /// Replaying while a tour is on screen must not let that tour finish and
+    /// immediately re-record the state the replay just cleared.
+    func testReplayWhileATourIsShowingDoesNotReRecordIt() {
+        let coordinator = makeCoordinator()
+        let store = TutorialStore(defaults: defaults)
+        coordinator.startIfNeeded(TutorialFlow.firstRun)
+
+        coordinator.replayAll()
+        coordinator.advance()
+
+        XCTAssertTrue(store.shouldPresent(TutorialFlow.firstRun.id))
+    }
+}

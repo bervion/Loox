@@ -233,7 +233,11 @@ struct DetailFieldRow: View {
             if field.kind == .url, let url = Self.normalized(field.value) {
                 Button { PlatformAppearance.open(url) } label: { Label("Open Website", image: Icons.globe) }
             }
-            if !field.value.isEmpty, !readOnly {
+            // An identity's email stays unprotectable (owner decision 260728):
+            // Profile, QuickType, and share surfaces all present that address,
+            // and a sealed one would render as ciphertext noise everywhere.
+            if !field.value.isEmpty, !readOnly,
+               !(category == .identity && field.kind == .email) {
                 Divider()
                 Button { showProtect = true } label: { Label("Protect…", image: Icons.lock) }
             }

@@ -112,7 +112,7 @@ struct InviteInboxBehaviors: ViewModifier {
             } catch {
                 // The invite stays queued (burn happens only on success) —
                 // after the error alert dismisses, it re-presents for retry.
-                acceptError = error.localizedDescription
+                acceptError = SharingErrorMessage.text(for: error)
             }
         }
     }

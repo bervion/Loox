@@ -1098,7 +1098,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu thứ hai cho những trường nhạy cảm nhất. Mỗi mục có thể dùng mật khẩu này hoặc mã riêng. Nếu quên, các trường đó không thể khôi phục."
+            "value": "Mật khẩu cấp 2 cho những trường nhạy cảm nhất. Mỗi mục có thể dùng mật khẩu này hoặc mã riêng. Nếu quên, các trường đó không thể khôi phục."
           }
         }
       }
@@ -1114,7 +1114,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu thứ hai giữ các trường bạn chọn luôn được niêm phong ngay cả khi kho đã mở khóa."
+            "value": "Mật khẩu cấp 2 giữ các trường bạn chọn luôn được niêm phong ngay cả khi kho đã mở khóa."
           }
         }
       }
@@ -1739,7 +1739,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この ID のプロフィールにメールアドレスを追加してください。エイリアスの転送先になります。"
+            "value": "このプロフィールにメールアドレスを追加してください。エイリアスの転送先になります。"
           }
         },
         "vi": {
@@ -1875,7 +1875,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この ID の保管庫に最初のアイテムを追加しましょう。"
+            "value": "このプロフィールの保管庫に最初のアイテムを追加しましょう。"
           }
         },
         "vi": {
@@ -3514,7 +3514,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "2 段階認証のバックアップコード"
+            "value": "2 要素認証のバックアップコード"
           }
         },
         "vi": {
@@ -3609,6 +3609,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dựa trên %lld mục"
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Based on %lld item"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Based on %lld items"
+                }
+              }
+            }
           }
         }
       }
@@ -3800,7 +3818,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この ID は削除できません"
+            "value": "このプロフィールは削除できません"
           }
         },
         "vi": {
@@ -4025,7 +4043,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID を変更"
+            "value": "プロフィールを変更"
           }
         },
         "vi": {
@@ -4519,7 +4537,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID を選択"
+            "value": "プロフィールを選択"
           }
         },
         "vi": {
@@ -6060,7 +6078,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID を作成"
+            "value": "プロフィールを作成"
           }
         },
         "vi": {
@@ -6181,7 +6199,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID を作成すると、あなたの情報をすばやく入力できます。"
+            "value": "プロフィールを作成すると、あなたの情報をすばやく入力できます。"
           }
         },
         "vi": {
@@ -6779,7 +6797,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "デフォルトの ID"
+            "value": "デフォルトのプロフィール"
           }
         },
         "vi": {
@@ -6938,7 +6956,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この ID を完全に削除しますか。"
+            "value": "このプロフィールを完全に削除しますか。"
           }
         },
         "vi": {
@@ -10009,7 +10027,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID"
+            "value": "プロフィール"
           }
         },
         "vi": {
@@ -10811,7 +10829,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID は少なくとも 1 つ必要です"
+            "value": "プロフィールは少なくとも 1 つ必要です"
           }
         },
         "vi": {
@@ -11852,7 +11870,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "エイリアス宛のメールはここに転送されます。変更すると、この ID のすべてのエイリアスの転送先が切り替わります。"
+            "value": "エイリアス宛のメールはここに転送されます。変更すると、このプロフィールのすべてのエイリアスの転送先が切り替わります。"
           }
         },
         "vi": {
@@ -11901,7 +11919,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "先に別の ID をデフォルトに設定してください。"
+            "value": "先に別のプロフィールをデフォルトに設定してください。"
           }
         },
         "vi": {
@@ -12588,7 +12606,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ほかの ID を提案したり検索したりすることはありません。"
+            "value": "ほかのプロフィールを提案したり検索したりすることはありません。"
           }
         },
         "vi": {
@@ -13159,7 +13177,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chủ sở hữu chưa phản hồi. Thử lại sau một lát nhé."
+            "value": "Chủ sở hữu chưa phản hồi. Hãy thử lại sau một lát."
           }
         }
       }
@@ -13245,7 +13263,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID はまだありません"
+            "value": "プロフィールはまだありません"
           }
         },
         "vi": {
@@ -15927,7 +15945,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この ID を優先しますが、ほかの ID も表示します。"
+            "value": "このプロフィールを優先しますが、ほかのプロフィールも表示します。"
           }
         },
         "vi": {
@@ -18391,7 +18409,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quét mã QR trên iPhone, iPad hoặc Mac mới để cấp quyền truy cập kho này. Khóa được truyền mã hóa đầu-cuối."
+            "value": "Quét mã QR trên iPhone, iPad hoặc Mac mới để cấp quyền truy cập kho này. Khóa được truyền mã hóa đầu cuối."
           }
         }
       }
@@ -19358,7 +19376,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID を設定"
+            "value": "プロフィールを設定"
           }
         },
         "vi": {
@@ -20935,7 +20953,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "古くなっています"
+            "value": "要更新"
           }
         },
         "vi": {
@@ -21358,7 +21376,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "候補と検索にほかの ID を含められます。"
+            "value": "候補と検索にほかのプロフィールを含められます。"
           }
         },
         "vi": {
@@ -22993,7 +23011,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この操作は、その ID のプライベートメールアドレスも完全に削除します。ログインやほかのアイテムはデフォルトの ID に移動します。"
+            "value": "この操作は、そのプロフィールのプライベートメールアドレスも完全に削除します。ログインやほかのアイテムはデフォルトのプロフィールに移動します。"
           }
         },
         "vi": {
@@ -23187,7 +23205,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この ID にはまだスペースがありません。作成するとアイテムを追加できます。"
+            "value": "このプロフィールにはまだスペースがありません。作成するとアイテムを追加できます。"
           }
         },
         "vi": {
@@ -23358,7 +23376,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "これはこの保管庫の ID となる Loox アカウントです。同期の設定やアクセスの復旧に必要になることがあるので、メールアドレスは大切に保管してください。"
+            "value": "これはこの保管庫のプロフィールとなる Loox アカウントです。同期の設定やアクセスの復旧に必要になることがあるので、メールアドレスは大切に保管してください。"
           }
         },
         "vi": {
@@ -23374,7 +23392,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "これは唯一の ID です。削除する前に別の ID を追加してください。"
+            "value": "これは唯一のプロフィールです。削除する前に別のプロフィールを追加してください。"
           }
         },
         "vi": {
@@ -26110,7 +26128,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox へようこそ。これがあなたの ID です。名前、メールアドレス、各種情報をフォームに自動入力します。すべてこのデバイス上で暗号化されたままです。いつでも編集や追加ができます。"
+            "value": "Loox へようこそ。これがあなたのプロフィールです。名前、メールアドレス、各種情報をフォームに自動入力します。すべてこのデバイス上で暗号化されたままです。いつでも編集や追加ができます。"
           }
         },
         "vi": {
@@ -26126,7 +26144,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "あなたの ID プロフィールを用意します。いつでも編集したり情報を追加したりできます。"
+            "value": "あなたのプロフィールを用意します。いつでも編集したり情報を追加したりできます。"
           }
         },
         "vi": {
@@ -26584,7 +26602,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID は少なくとも 1 つ必要です。"
+            "value": "プロフィールは少なくとも 1 つ必要です。"
           }
         },
         "vi": {
@@ -26791,7 +26809,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục được mã hóa đầu-cuối trước khi đồng bộ. iCloud không bao giờ thấy tiêu đề, mật khẩu hay ghi chú. Chi tiết tổ chức như biểu tượng nhóm, màu sắc và mốc thời gian đồng bộ dưới dạng siêu dữ liệu thông thường."
+            "value": "Các mục được mã hóa đầu cuối trước khi đồng bộ. iCloud không bao giờ thấy tiêu đề, mật khẩu hay ghi chú. Chi tiết tổ chức như biểu tượng nhóm, màu sắc và mốc thời gian đồng bộ dưới dạng siêu dữ liệu thông thường."
           }
         }
       }
@@ -27033,7 +27051,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa kho của bạn sẽ được gửi mã hóa đầu-cuối tới thiết bị đang hiển thị mã này. Chỉ phê duyệt thiết bị thuộc về bạn."
+            "value": "Khóa kho của bạn sẽ được gửi mã hóa đầu cuối tới thiết bị đang hiển thị mã này. Chỉ phê duyệt thiết bị thuộc về bạn."
           }
         }
       }
@@ -27670,7 +27688,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ と共有、%2$@ に開始"
+            "value": "%1$@ さんと共有、%2$@ に開始"
           }
         },
         "vi": {
@@ -27693,6 +27711,790 @@
           "stringUnit": {
             "state": "translated",
             "value": "＋ Tạo đăng nhập mới"
+          }
+        }
+      }
+    },
+    "Some protected fields could not be unlocked, so the Extra Password was kept on. Try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保護されたフィールドの一部をロック解除できなかったため、第 2 パスワードは有効のままです。もう一度お試しください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một số trường được bảo vệ không thể mở khóa, nên Mật khẩu cấp 2 vẫn được giữ bật. Hãy thử lại."
+          }
+        }
+      }
+    },
+    "Exports include your archived items. Recently Deleted is not included.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き出しにはアーカイブ済みの項目が含まれます。最近削除した項目は含まれません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bản xuất bao gồm cả các mục trong Lưu trữ. Không bao gồm Đã xóa gần đây."
+          }
+        }
+      }
+    },
+    "Allow Notifications": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知を許可"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cho phép thông báo"
+          }
+        }
+      }
+    },
+    "Loox uses notifications to deliver approval requests. When the person you shared with asks to use this item, the request appears as an alert on this device.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox は承認リクエストの通知に使用します。共有相手がこの項目の使用を求めると、このデバイスに通知が表示されます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox dùng thông báo để chuyển yêu cầu phê duyệt. Khi người được chia sẻ cần dùng mục này, yêu cầu sẽ hiện dưới dạng cảnh báo trên thiết bị này."
+          }
+        }
+      }
+    },
+    "Loox uses notifications to deliver approval requests. When someone in this Space asks to use an item, the request appears as an alert on this device.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox は承認リクエストの通知に使用します。このスペースの誰かが項目の使用を求めると、このデバイスに通知が表示されます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox dùng thông báo để chuyển yêu cầu phê duyệt. Khi có người trong Nhóm này cần dùng một mục, yêu cầu sẽ hiện dưới dạng cảnh báo trên thiết bị này."
+          }
+        }
+      }
+    },
+    "Something went wrong. Please try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "問題が発生しました。もう一度お試しください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xảy ra lỗi. Vui lòng thử lại."
+          }
+        }
+      }
+    },
+    "No connection. Check your network and try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続がありません。ネットワークを確認してもう一度お試しください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có kết nối. Kiểm tra mạng rồi thử lại."
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to continue.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "続けるには iCloud にサインインしてください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đăng nhập iCloud để tiếp tục."
+          }
+        }
+      }
+    },
+    "Your iCloud storage is full.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud ストレージがいっぱいです。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dung lượng iCloud của bạn đã đầy."
+          }
+        }
+      }
+    },
+    "iCloud is busy right now. Try again in a moment.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud が混み合っています。しばらくしてからお試しください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud đang bận. Hãy thử lại sau một lát."
+          }
+        }
+      }
+    },
+    "iCloud denied this request. Check that iCloud Drive is on for Loox.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud がこのリクエストを拒否しました。Loox の iCloud Drive がオンか確認してください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud đã từ chối yêu cầu này. Kiểm tra xem iCloud Drive đã bật cho Loox chưa."
+          }
+        }
+      }
+    },
+    "They need to verify their iCloud account before they can accept.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相手は承諾する前に iCloud アカウントの確認が必要です。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Người nhận cần xác minh tài khoản iCloud trước khi có thể chấp nhận."
+          }
+        }
+      }
+    },
+    "This share is no longer available.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この共有は利用できなくなりました。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục chia sẻ này không còn khả dụng."
+          }
+        }
+      }
+    },
+    "Something went wrong with iCloud. Please try again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud で問題が発生しました。もう一度お試しください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xảy ra lỗi với iCloud. Vui lòng thử lại."
+          }
+        }
+      }
+    },
+    "Add your first item": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最初のアイテムを追加"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm mục đầu tiên"
+          }
+        }
+      }
+    },
+    "Logins, cards, notes, and passkeys all live here. Loox encrypts each one on this device.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン情報、カード、メモ、パスキーはすべてここにあります。Loox は各項目をこのデバイス上で暗号化します。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thông tin đăng nhập, thẻ, ghi chú và passkey đều nằm ở đây. Loox mã hóa từng mục ngay trên thiết bị này."
+          }
+        }
+      }
+    },
+    "Check your security": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セキュリティを確認"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra bảo mật"
+          }
+        }
+      }
+    },
+    "Loox reviews password strength, reuse, and known leaks, then walks you through the fixes.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox はパスワードの強度、使い回し、既知の漏洩を確認し、修正手順を案内します。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox xem xét độ mạnh mật khẩu, việc dùng lại và các vụ rò rỉ đã biết, rồi hướng dẫn bạn khắc phục."
+          }
+        }
+      }
+    },
+    "Everything stays on this device": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてこのデバイスに保存されます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi thứ đều ở lại thiết bị này"
+          }
+        }
+      }
+    },
+    "Your items are encrypted here and unlocked only by you. Turn on iCloud Sync in Settings when you want them on your other devices.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アイテムはここで暗号化され、ロックを解除できるのはあなただけです。ほかのデバイスでも使いたいときは、設定で iCloud 同期をオンにしてください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các mục của bạn được mã hóa tại đây và chỉ bạn mở khóa được. Bật Đồng bộ iCloud trong Cài đặt khi bạn muốn dùng trên thiết bị khác."
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次へ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp"
+          }
+        }
+      }
+    },
+    "Skip": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スキップ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ qua"
+          }
+        }
+      }
+    },
+    "Your vault health score": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保管庫の健全性スコア"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Điểm sức khỏe kho của bạn"
+          }
+        }
+      }
+    },
+    "One number out of 1000, from password strength, reuse, known leaks, and how much two-factor protection you have. Tap it to see what moved it.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1000 点満点のスコアで、パスワードの強度、使い回し、既知の漏洩、2 要素保護の充実度から算出します。タップすると内訳を確認できます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một con số trên 1000, tính từ độ mạnh mật khẩu, việc dùng lại, các vụ rò rỉ đã biết và mức độ bảo vệ hai lớp. Chạm vào để xem điều gì đã tác động."
+          }
+        }
+      }
+    },
+    "Run a check anytime": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いつでも検査できます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra bất cứ lúc nào"
+          }
+        }
+      }
+    },
+    "Most checks run on this device. Leak checks send only the first five characters of a hashed password, never the password.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ほとんどの検査はこのデバイス上で実行されます。漏洩チェックで送信するのはハッシュ化したパスワードの先頭 5 文字のみで、パスワード自体は送信しません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hầu hết kiểm tra chạy ngay trên thiết bị này. Kiểm tra rò rỉ chỉ gửi năm ký tự đầu của mã băm mật khẩu, không bao giờ gửi mật khẩu."
+          }
+        }
+      }
+    },
+    "Sharing keeps you in control": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有しても主導権はあなたに"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ nhưng bạn vẫn nắm quyền"
+          }
+        }
+      }
+    },
+    "You choose which fields another person can use. Values you hand over are theirs to keep; the rest stays behind your approval.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "どのフィールドを相手が使えるかはあなたが選びます。引き渡した値は相手のものになり、それ以外はあなたの承認が必要なままです。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn chọn người kia được dùng những trường nào. Giá trị đã trao đi thì họ giữ được; phần còn lại vẫn cần bạn phê duyệt."
+          }
+        }
+      }
+    },
+    "Requests arrive as notifications": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リクエストは通知で届きます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu cầu đến qua thông báo"
+          }
+        }
+      }
+    },
+    "When they need a field you kept under approval, Loox notifies you and you decide right then. Without notifications those requests never reach you.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "承認が必要なフィールドを相手が使いたいとき、Loox が通知し、その場であなたが判断します。通知がないとリクエストは届きません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi họ cần một trường bạn giữ ở chế độ phê duyệt, Loox sẽ thông báo và bạn quyết định ngay lúc đó. Không có thông báo thì yêu cầu sẽ không tới được bạn."
+          }
+        }
+      }
+    },
+    "Set up AutoFill": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動入力を設定"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thiết lập tự động điền"
+          }
+        }
+      }
+    },
+    "Once Loox is on, iOS offers your saved logins above the keyboard in other apps and Safari.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox をオンにすると、ほかのアプリや Safari でキーボードの上に保存済みのログイン情報が表示されます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi Loox được bật, iOS sẽ gợi ý thông tin đăng nhập đã lưu ngay trên bàn phím trong ứng dụng khác và Safari."
+          }
+        }
+      }
+    },
+    "Open Settings, then General, then AutoFill & Passwords.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「設定」→「一般」→「自動入力とパスワード」の順に開きます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở Cài đặt, chọn Cài đặt chung, rồi chọn Tự động điền và mật khẩu."
+          }
+        }
+      }
+    },
+    "Turn on AutoFill Passwords and Passcodes.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「パスワードとパスコードを自動入力」をオンにします。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bật Tự động điền mật khẩu và mật mã."
+          }
+        }
+      }
+    },
+    "Tick Loox in the provider list. Leave iCloud Passwords on if you still use it.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提供元リストで Loox にチェックを入れます。iCloud パスワードを使い続ける場合はオンのままで構いません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn Loox trong danh sách nguồn. Cứ để iCloud Passwords bật nếu bạn vẫn dùng."
+          }
+        }
+      }
+    },
+    "AutoFill & Passwords": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動入力とパスワード"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động điền và mật khẩu"
+          }
+        }
+      }
+    },
+    "AutoFill Passwords and Passcodes": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードとパスコードを自動入力"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động điền mật khẩu và mật mã"
+          }
+        }
+      }
+    },
+    "Later": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あとで"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Để sau"
+          }
+        }
+      }
+    },
+    "Show tutorials again": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チュートリアルをもう一度表示"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem lại hướng dẫn"
+          }
+        }
+      }
+    },
+    "Tutorials reset": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チュートリアルをリセットしました"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã đặt lại hướng dẫn"
+          }
+        }
+      }
+    },
+    "The guided tours will play again the next time you open those screens.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次にそれらの画面を開いたときに、ガイドが再び表示されます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các phần hướng dẫn sẽ chạy lại vào lần tới bạn mở những màn hình đó."
+          }
+        }
+      }
+    },
+    "Open this on your computer": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この項目をパソコンで開く"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở mục này trên máy tính"
+          }
+        }
+      }
+    },
+    "Scan the code with your computer's browser and the fields you approve appear there. Nothing is typed, and nothing is stored on the page.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パソコンのブラウザでコードを読み取ると、承認したフィールドがそこに表示されます。入力の手間はなく、ページには何も保存されません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quét mã bằng trình duyệt trên máy tính, những trường bạn phê duyệt sẽ hiện ở đó. Không phải gõ tay, và trang không lưu lại gì."
+          }
+        }
+      }
+    },
+    "It closes by itself": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セッションは自動的に終了します"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phiên tự đóng"
+          }
+        }
+      }
+    },
+    "The session lasts minutes, not days. When it ends the page goes blank, and you can end it from here at any time.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セッションは数日ではなく数分です。終了するとページの内容は消え、いつでもここから終了できます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phiên chỉ kéo dài vài phút, không phải vài ngày. Khi kết thúc, trang sẽ trống, và bạn có thể kết thúc từ đây bất cứ lúc nào."
+          }
+        }
+      }
+    },
+    "A different address for each site": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイトごとに別のアドレス"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mỗi trang một địa chỉ riêng"
+          }
+        }
+      }
+    },
+    "Give a site its own address instead of your real one. Mail still reaches your inbox, and the site never learns where.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "実際のアドレスの代わりに、サイトごとに専用のアドレスを渡します。メールはあなたの受信箱に届き、サイトは宛先を知りません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cấp cho mỗi trang một địa chỉ riêng thay vì địa chỉ thật. Thư vẫn về hộp thư của bạn, còn trang đó không biết hộp thư nằm ở đâu."
+          }
+        }
+      }
+    },
+    "Turn one off and the mail stops": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オフにすればメールは止まります"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tắt một địa chỉ là thư ngừng tới"
+          }
+        }
+      }
+    },
+    "If an address starts getting spam, pause or delete it. That address stops forwarding; every other one keeps working.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あるアドレスに迷惑メールが届き始めたら、一時停止するか削除してください。そのアドレスの転送だけが止まり、ほかは動き続けます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nếu một địa chỉ bắt đầu nhận thư rác, hãy tạm dừng hoặc xóa nó. Địa chỉ đó ngừng chuyển tiếp, các địa chỉ khác vẫn hoạt động."
           }
         }
       }

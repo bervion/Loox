@@ -108,6 +108,10 @@ struct ShareAccessSheet: View {
         VaultSheetScaffold(title: sheetTitle, trailing: { toolbarTrailing }) {
             content
         }
+        // Hosted here, not at the root: a sheet draws above the root overlay,
+        // so a tour about sharing has to live inside the sheet it explains.
+        .tutorialHost(env.tutorial, flowIDs: ["sharing"])
+        .task { env.tutorial.startIfNeeded(.sharing) }
         .task(id: pollingZoneName) {
             guard let zoneName = pollingZoneName else { return }
             await pollForProfile(zoneName: zoneName)
@@ -163,7 +167,7 @@ struct ShareAccessSheet: View {
             }
             env.sharingStore.remove(zoneName: share.zoneName)
         } catch {
-            step = .failed(error.localizedDescription)
+            step = .failed(SharingErrorMessage.text(for: error))
         }
         revokeTarget = nil
     }
@@ -356,7 +360,7 @@ struct ShareAccessSheet: View {
             step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL,
                             rawShareURL: setup.shareURL)
         } catch {
-            step = .failed(error.localizedDescription)
+            step = .failed(SharingErrorMessage.text(for: error))
         }
     }
 
@@ -831,27 +835,36 @@ struct ShareAccessSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    @ViewBuilder
     private func blockedView(_ blocker: ApprovalPrerequisites.Blocker) -> some View {
-        VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.info, size: Metric.iconTile)
-                .themedForeground(.warning)
-            Text(blocker == .iCloudUnavailable
-                 ? "Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync."
-                 : "Approval requests need notifications. Allow notifications in Settings to share \"ask each time\" access.")
-                .vaultType(.callout).themedForeground(.secondary)
-                .multilineTextAlignment(.center)
-            // The gate result can change while the sheet is up (user flips
-            // the permission in Settings and comes back) — allow a re-check.
-            Button {
+        switch blocker {
+        case .notificationsNotAsked, .notificationsDenied:
+            NotificationPermissionGateView(
+                explanation: "Loox uses notifications to deliver approval requests. When the person you shared with asks to use this item, the request appears as an alert on this device.",
+                denied: blocker == .notificationsDenied) {
                 step = .checking
                 Task { await enter() }
-            } label: {
-                Text("Check again")
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.themedProminent)
+        case .iCloudUnavailable:
+            VStack(spacing: Space.s4) {
+                PolarisIcon(Icons.info, size: Metric.iconTile)
+                    .themedForeground(.warning)
+                Text("Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync.")
+                    .vaultType(.callout).themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                // The gate result can change while the sheet is up (user signs
+                // in and comes back) — allow a re-check.
+                Button {
+                    step = .checking
+                    Task { await enter() }
+                } label: {
+                    Text("Check again")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.themedProminent)
+            }
+            .padding(Space.gutter)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(Space.gutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

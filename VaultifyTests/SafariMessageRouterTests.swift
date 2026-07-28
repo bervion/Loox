@@ -131,10 +131,23 @@ final class SafariMessageRouterTests: XCTestCase {
         XCTAssertEqual(response["error"] as? String, "unlockCancelled")
     }
 
+    /// No biometric key exists to unlock with (never provisioned, or
+    /// `.biometryCurrentSet` invalidated it): retrying the prompt can never
+    /// succeed, so this reports separately from a failed attempt — the popup
+    /// tells the user to unlock in the app instead of offering "try again".
+    func testMissingBiometricKeyReportsUnlockUnavailable() async {
+        for failure: BiometricKeyStore.Failure in [.unavailable, .invalidated] {
+            let response = await WebExtensionRouter.route(
+                ["v": 1, "cmd": "listItems", "origin": "https://example.com"],
+                context: context(retrieveError: failure))
+            XCTAssertEqual(response["error"] as? String, "unlockUnavailable")
+        }
+    }
+
     func testListItemsUnlockFailureMapped() async {
         let response = await WebExtensionRouter.route(
             ["v": 1, "cmd": "listItems", "origin": "https://example.com"],
-            context: context(retrieveError: BiometricKeyStore.Failure.unavailable))
+            context: context(retrieveError: BiometricKeyStore.Failure.denied))
         XCTAssertEqual(response["error"] as? String, "unlockFailed")
     }
 

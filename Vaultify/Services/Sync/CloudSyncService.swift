@@ -117,6 +117,36 @@ import CloudKit
         return firstError
     }
 
+    /// One CloudKit modify operation caps out around 400 records / 2 MB. A big
+    /// batch (large import + first sync) would fail the whole call — and since
+    /// failures keep records dirty, the next sync retries the same oversized
+    /// batch, forever. Every plane therefore pushes through this wrapper:
+    /// bounded chunks, non-atomic saves so one rejected or oversized record
+    /// fails only itself, successes marked before the first error is rethrown
+    /// (the failed remainder stays dirty for the next run).
+    private static let pushChunkSize = 200
+
+    private func modifyInChunks(saving records: [CKRecord],
+                                markSuccess: (CKRecord.ID, CKRecord) -> Void) async throws {
+        var firstError: Error?
+        var start = 0
+        while start < records.count {
+            let chunk = Array(records[start ..< min(start + Self.pushChunkSize, records.count)])
+            start += Self.pushChunkSize
+            do {
+                let result = try await database.modifyRecords(
+                    saving: chunk, deleting: [], savePolicy: .changedKeys, atomically: false)
+                for (recordID, saveResult) in result.saveResults {
+                    switch saveResult {
+                    case .success(let saved): markSuccess(recordID, saved)
+                    case .failure(let error): firstError = firstError ?? error
+                    }
+                }
+            } catch { firstError = firstError ?? error }
+        }
+        if let firstError { throw firstError }
+    }
+
     private func pushItems() async throws {
         let dirty = store.allRecords().filter(\.dirty)
         guard !dirty.isEmpty else { return }
@@ -127,10 +157,8 @@ import CloudKit
             ($0.id, (updatedAt: $0.updatedAt, metaUpdatedAt: $0.metaUpdatedAt))
         })
         let records = dirty.map(ckRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.record(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.record(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markSynced(local, changeTag: saved.recordChangeTag,
                                  snapshotUpdatedAt: snapshot.updatedAt,
@@ -144,10 +172,8 @@ import CloudKit
         guard !dirty.isEmpty else { return }
         let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckFolderRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.folderRecord(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.folderRecord(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markFolderSynced(local, changeTag: saved.recordChangeTag,
                                        snapshotUpdatedAt: snapshot)
@@ -282,10 +308,8 @@ import CloudKit
         guard !dirty.isEmpty else { return }
         let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckPasskeyRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.passkeyRecord(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.passkeyRecord(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markPasskeySynced(local, changeTag: saved.recordChangeTag,
                                         snapshotUpdatedAt: snapshot)
@@ -330,10 +354,8 @@ import CloudKit
         guard !dirty.isEmpty else { return }
         let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckPersonaRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.personaRecord(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.personaRecord(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markPersonaSynced(local, changeTag: saved.recordChangeTag,
                                         snapshotUpdatedAt: snapshot)
@@ -371,10 +393,8 @@ import CloudKit
         guard !dirty.isEmpty else { return }
         let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckAliasRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.aliasRecord(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.aliasRecord(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markAliasSynced(local, changeTag: saved.recordChangeTag, snapshotUpdatedAt: snapshot)
             }
@@ -409,10 +429,8 @@ import CloudKit
         guard !dirty.isEmpty else { return }
         let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckInboxRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.inboxRecord(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.inboxRecord(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markInboxSynced(local, changeTag: saved.recordChangeTag, snapshotUpdatedAt: snapshot)
             }
@@ -449,10 +467,8 @@ import CloudKit
         guard !dirty.isEmpty else { return }
         let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckAuditReportRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.auditReportRecord(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.auditReportRecord(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markAuditReportSynced(local, changeTag: saved.recordChangeTag,
                                             snapshotUpdatedAt: snapshot)
@@ -491,10 +507,8 @@ import CloudKit
         guard !dirty.isEmpty else { return }
         let snapshots = Dictionary(uniqueKeysWithValues: dirty.map { ($0.id, $0.updatedAt) })
         let records = dirty.map(ckFindingStateRecord(from:))
-        let result = try await database.modifyRecords(saving: records, deleting: [], savePolicy: .changedKeys)
-        for (recordID, saveResult) in result.saveResults {
-            if case .success(let saved) = saveResult,
-               let local = store.findingStateRecord(id: recordID.recordName),
+        try await modifyInChunks(saving: records) { recordID, saved in
+            if let local = store.findingStateRecord(id: recordID.recordName),
                let snapshot = snapshots[recordID.recordName] {
                 store.markFindingStateSynced(local, changeTag: saved.recordChangeTag,
                                              snapshotUpdatedAt: snapshot)

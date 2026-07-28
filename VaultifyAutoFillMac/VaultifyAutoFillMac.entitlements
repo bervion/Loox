@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Every macOS app extension runs sandboxed; unlike iOS this is not optional. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Same shared container as the Mac app: the vault store and the wrapped
+	     key bundle live here, and the extension reads them directly. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.bervion.vaultify</string>
+	</array>
+	<key>com.apple.developer.authentication-services.autofill-credential-provider</key>
+	<true/>
+	<!-- Outbound network only. The sandbox blocks all traffic by default, and
+	     without this the CloudKit liveness check behind every shared-item fill
+	     and ask-each-time passkey fails closed. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.bervion.vaultify</string>
+	</array>
+	<!-- Shared keychain group holding the biometric-gated Vault Key, so Touch ID
+	     unlock in the extension reads the same item the app wrote. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.bervion.vaultify.shared</string>
+	</array>
+</dict>
+</plist>

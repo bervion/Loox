@@ -18,8 +18,7 @@ struct EmergencyKitInfo {
     var createdAt: Date
 
     /// Where to reach for help — printed under the kit instructions and shown on the
-    /// About page. Placeholder until a real support address is decided — single source
-    /// so it is trivial to change.
+    /// About page. Single source, so a future channel change touches one line.
     static let defaultSupportContact = "support@looxpassword.com"
     var supportContact: String = EmergencyKitInfo.defaultSupportContact
 

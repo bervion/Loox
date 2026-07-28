@@ -1,7 +1,11 @@
 import AuthenticationServices
 import SwiftUI
-import UIKit
 import os
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Diagnostic logger for the AutoFill extension. Filter in Console.app by the
 /// subsystem to trace which entry points iOS actually invokes. Non-sensitive
@@ -97,7 +101,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
 
     // MARK: Save & generate (iOS 26.2+ native AutoFill)
 
-    #if compiler(>=6.2)
+    // iOS-only: the save/generate request types ship in the iOS SDK; the macOS
+    // credential provider has no counterpart, so the whole block leaves the
+    // macOS slice (whose Info.plist likewise omits those capabilities).
+    #if os(iOS) && compiler(>=6.2)
     /// iOS asks to SAVE a credential the user just created on a web form (the native
     /// "Save password in Vaultify" sheet). We host a confirm-and-unlock UI, then seal it
     /// into the vault. iOS 26.2+ only; older iOS uses the manual "＋ Create new login" flow.
@@ -240,29 +247,51 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
 
     // MARK: Hosting & completion
 
+    /// Whether the host environment is currently dark. `ASCredentialProviderViewController`
+    /// is a UIViewController on iOS and an NSViewController on macOS, so the
+    /// appearance question has two different answers — the same split
+    /// `ThemeStore` already makes for the app.
+    private var hostIsDark: Bool {
+        #if canImport(UIKit)
+        traitCollection.userInterfaceStyle == .dark
+        #else
+        NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        #endif
+    }
+
     private func host(_ rootView: some View) {
         autofillLog.log("host: presenting SwiftUI content")
         // A flow can re-host (passkey → password fallback) — tear down the
         // previous hosting controller instead of stacking children.
         for child in children {
+            #if canImport(UIKit)
             child.willMove(toParent: nil)
             child.view.removeFromSuperview()
             child.removeFromParent()
+            #else
+            child.removeFromParent()
+            child.view.removeFromSuperview()
+            #endif
         }
         // Apply the user's theme (shared via the App Group) so the extension matches
         // the app: accent tint + light/dark. Static — no wallpaper/animation here.
         let theme = ThemePalette.resolve(
             ThemeReader.load(),
-            systemIsDark: traitCollection.userInterfaceStyle == .dark,
+            systemIsDark: hostIsDark,
             brightness: 1.0)
-        let hosting = UIHostingController(
-            rootView: rootView
-                .tint(Color(rgb: theme.accent))
-                .preferredColorScheme(theme.isDark ? .dark : .light)
-                // Resolve SwiftUI `Text("…")` literals against the in-app language (mirrored from
-                // the app via the App Group) — the environment locale selects the catalog table,
-                // which the bare literals otherwise read from the device locale.
-                .environment(\.locale, appResourceLocale))
+        let themed = rootView
+            .tint(Color(rgb: theme.accent))
+            .preferredColorScheme(theme.isDark ? .dark : .light)
+            // Resolve SwiftUI `Text("…")` literals against the in-app language (mirrored from
+            // the app via the App Group) — the environment locale selects the catalog table,
+            // which the bare literals otherwise read from the device locale.
+            .environment(\.locale, appResourceLocale)
+
+        #if canImport(UIKit)
+        let hosting = UIHostingController(rootView: themed)
+        #else
+        let hosting = NSHostingController(rootView: themed)
+        #endif
         addChild(hosting)
         hosting.view.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(hosting.view)
@@ -272,7 +301,9 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             hosting.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             hosting.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
+        #if canImport(UIKit)
         hosting.didMove(toParent: self)
+        #endif
     }
 
     private func complete(user: String, password: String) {

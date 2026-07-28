@@ -138,10 +138,7 @@ extension VaultItem {
         let hosts = autofillHosts
         guard !hosts.isEmpty else { return false }
         return serviceIdentifiers.contains { id in
-            let other = id.lowercased()
-            return hosts.contains { host in
-                host == other || host.hasSuffix(".\(other)") || other.hasSuffix(".\(host)") || other.contains(host)
-            }
+            hosts.contains { HostMatch.related(id, $0) }
         }
     }
 

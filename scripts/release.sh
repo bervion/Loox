@@ -107,7 +107,7 @@ RAW="## [$NEW_VERSION] - $TODAY\n"
 [ -n "$OTHER" ] && RAW="${RAW}\n### Changed${OTHER}\n"
 CHANGELOG_ENTRY=$(echo -e "$RAW")
 
-# ── Generate store release notes (EN/VI) ──
+# ── Generate store release notes (EN/VI/JA) ──
 log "Generating release notes..."
 export RELEASE_VERSION="$NEW_VERSION"
 export RELEASE_CHANGES="$CHANGELOG_ENTRY"
@@ -116,19 +116,22 @@ chmod +x scripts/generate-release-notes.sh
 
 NOTES_EN=$(cat metadata/apple/en-US/release_notes.txt 2>/dev/null || echo "")
 NOTES_VI=$(cat metadata/apple/vi/release_notes.txt 2>/dev/null || echo "")
+NOTES_JA=$(cat metadata/apple/ja/release_notes.txt 2>/dev/null || echo "")
 
 echo ""
 echo -e "${BLUE}═══ CHANGELOG ═══${NC}"; echo "$CHANGELOG_ENTRY"
 echo ""; echo -e "${BLUE}═══ NOTES (EN) ═══${NC}"; echo "$NOTES_EN"
-echo ""; echo -e "${BLUE}═══ NOTES (VI) ═══${NC}"; echo "$NOTES_VI"; echo ""
+echo ""; echo -e "${BLUE}═══ NOTES (VI) ═══${NC}"; echo "$NOTES_VI"
+echo ""; echo -e "${BLUE}═══ NOTES (JA) ═══${NC}"; echo "$NOTES_JA"; echo ""
 
 if [ "$RELEASE_YES" != "1" ] && [ -t 0 ]; then
   read -r -p "Accept release notes? [Y/n/edit]: " ACCEPT
   [ "$ACCEPT" = "n" ] && error "Release cancelled. Edit commits/notes and retry."
   if [ "$ACCEPT" = "edit" ]; then
-    ${EDITOR:-vim} metadata/apple/en-US/release_notes.txt metadata/apple/vi/release_notes.txt
+    ${EDITOR:-vim} metadata/apple/en-US/release_notes.txt metadata/apple/vi/release_notes.txt metadata/apple/ja/release_notes.txt
     NOTES_EN=$(cat metadata/apple/en-US/release_notes.txt 2>/dev/null || echo "")
     NOTES_VI=$(cat metadata/apple/vi/release_notes.txt 2>/dev/null || echo "")
+    NOTES_JA=$(cat metadata/apple/ja/release_notes.txt 2>/dev/null || echo "")
   fi
 fi
 
@@ -159,7 +162,9 @@ TAG_MESSAGE="v${NEW_VERSION}
 
 ${NOTES_EN}
 
-${NOTES_VI}"
+${NOTES_VI}
+
+${NOTES_JA}"
 git tag -a "v${NEW_VERSION}" -m "$TAG_MESSAGE"
 success "Tagged v${NEW_VERSION}"
 
@@ -183,6 +188,9 @@ ${NOTES_EN}
 
 **Tiếng Việt**
 ${NOTES_VI}
+
+**日本語**
+${NOTES_JA}
 
 </details>"
   gh release create "v${NEW_VERSION}" --title "Vaultify v${NEW_VERSION}" --notes "$RELEASE_BODY" --latest || warn "gh release failed (continuing)."

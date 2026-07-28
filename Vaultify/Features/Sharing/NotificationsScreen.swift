@@ -140,7 +140,7 @@ struct NotificationsScreen: View {
             Button("Accept") {
                 Task {
                     do { try await env.inviteInboxCoordinator.accept(invite) }
-                    catch { acceptError = error.localizedDescription }
+                    catch { acceptError = SharingErrorMessage.text(for: error) }
                 }
             }
             .buttonStyle(.themedCompactProminent)

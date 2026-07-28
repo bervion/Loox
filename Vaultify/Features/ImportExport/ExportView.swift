@@ -73,6 +73,8 @@ struct ExportView: View {
                     .buttonStyle(.themedProminent)
                     .disabled(!canExport || working)
                 }
+            } footer: {
+                Text("Exports include your archived items. Recently Deleted is not included.")
             }
             .listRowBackground(VaultColors.surface)
 
@@ -102,7 +104,10 @@ struct ExportView: View {
     private func generate() async {
         working = true; error = nil; exportURL = nil
         do {
-            let items = env.repository.items
+            // Archived items are still the user's data — an export that dropped
+            // them would read as complete and only reveal the loss at restore.
+            // Trash stays out: it is a pending delete, not vault content.
+            let items = env.repository.items + env.repository.archived
             let folderNames = Dictionary(env.repository.folders.map { ($0.id, $0.name) },
                                          uniquingKeysWith: { a, _ in a })
             if mode == .encrypted {

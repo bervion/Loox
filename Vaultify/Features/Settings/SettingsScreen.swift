@@ -12,6 +12,8 @@ struct SettingsRoute: Hashable, Codable {}
 struct SettingsScreen: View {
     @Environment(AppEnvironment.self) private var env
     @State private var confirmErase = false
+    @State private var showAutoFillGuide = false
+    @State private var showTutorialsReset = false
     @State private var erasing = false
     @State private var relayBlockErase = false
     @State private var confirmApprovalModeOff = false
@@ -128,9 +130,13 @@ struct SettingsScreen: View {
 
             // AutoFill
             Section {
-                Button(action: setUpPasswordAutoFill) {
+                // The guide runs first: iOS drops the user into Settings with
+                // no idea which of several similarly named rows to look for,
+                // which is where setup was abandoned. It ends by deep-linking.
+                Button { showAutoFillGuide = true } label: {
                     Label { Text("Set up password AutoFill") } icon: { SettingsIconBadge(systemName: "keyboard.fill", tint: SettingsBadgeTint.blue) }
                 }
+                .tutorialAnchor(TutorialAnchorID.settingsAutoFill)
                 Button(action: setUpVerificationCodes) {
                     Label { Text("Set up verification codes") } icon: { SettingsIconBadge(systemName: "123.rectangle.fill", tint: SettingsBadgeTint.teal) }
                 }
@@ -221,6 +227,14 @@ struct SettingsScreen: View {
             #endif
 
             Section {
+                // Someone who skipped the tours on day one, or who inherited a
+                // vault another person set up, has no other route back to them.
+                Button {
+                    env.tutorial.replayAll()
+                    showTutorialsReset = true
+                } label: {
+                    Label { Text("Show tutorials again") } icon: { SettingsIconBadge(systemName: "questionmark.circle.fill", tint: SettingsBadgeTint.teal) }
+                }
                 NavigationLink { AboutView() } label: {
                     Label { Text("About") } icon: { SettingsIconBadge(systemName: "info", tint: SettingsBadgeTint.gray) }
                 }
@@ -243,6 +257,14 @@ struct SettingsScreen: View {
             where env.capabilities.userPreference(id) {
                 await CapabilityHealthProbe.probe(id, store: env.capabilities)
             }
+        }
+        .alert(Text("Tutorials reset"), isPresented: $showTutorialsReset) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The guided tours will play again the next time you open those screens.")
+        }
+        .sheet(isPresented: $showAutoFillGuide) {
+            NavigationStack { AutoFillSetupGuide(openSettings: setUpPasswordAutoFill) }
         }
         .alert(Text("Network needed"), isPresented: $relayBlockErase) {
             Button("Cancel", role: .cancel) {}

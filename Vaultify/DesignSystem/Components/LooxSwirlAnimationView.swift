@@ -24,7 +24,13 @@ struct LooxSwirlAnimationView: View {
     /// `BrandSymbol` — lets the swirl front any icon (e.g. the security shield).
     /// `nil` keeps the brand mark.
     var centerIcon: String? = nil
-    /// Tint for a template `centerIcon` (ignored for the default brand mark).
+    /// SF Symbol at the centre instead of an asset — for loading states that
+    /// name the OPERATION rather than the brand ("link" while a share link is
+    /// being created), where Apple's own vocabulary is what the user already
+    /// reads elsewhere in the system.
+    var centerSystemImage: String? = nil
+    /// Tint for a template `centerIcon` / `centerSystemImage` (ignored for the
+    /// default brand mark).
     var centerTint: Color? = nil
 
     // Layout (fractions of the view's smaller dimension).
@@ -79,9 +85,15 @@ struct LooxSwirlAnimationView: View {
     }
 
     /// The glyph at the swirl's centre: a tinted template `centerIcon` when set,
-    /// otherwise the brand mark.
+    /// an SF Symbol when `centerSystemImage` names one, otherwise the brand mark.
     @ViewBuilder private var centerMark: some View {
-        if let centerIcon {
+        if let centerSystemImage {
+            Image(systemName: centerSystemImage)
+                .resizable()
+                .scaledToFit()
+                .fontWeight(.semibold)
+                .foregroundStyle(centerTint ?? .primary)
+        } else if let centerIcon {
             Image(centerIcon)
                 .renderingMode(.template)
                 .resizable()

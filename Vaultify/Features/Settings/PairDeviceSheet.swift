@@ -62,7 +62,8 @@ struct PairDeviceSheet: View {
                               primary: .init(title: "Approve") { approve(qrPayload: qrPayload) },
                               secondary: .init(title: "Cancel") { phase = .scanning })
         case .publishing:
-            VaultStatusScreen(title: "Sending encrypted key…", busy: true)
+            VaultStatusScreen(busySystemImage: "iphone.and.arrow.forward",
+                              title: "Sending encrypted key…", busy: true)
         case .done:
             VaultStatusScreen(icon: Icons.checkCircle, tint: .success,
                               title: "Device Paired",

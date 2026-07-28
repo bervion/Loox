@@ -69,8 +69,9 @@ nonisolated struct AppTheme: Sendable, Equatable {
         theme.checkmark = accent
         // White-preferred on-accent (iOS convention for coloured controls) so text/icons on
         // filled accent buttons read white on saturated accents (e.g. dark-mode blue), only
-        // falling back to black for genuinely light tints.
-        theme.accentForeground = RGBMath.onAccent(accent)
+        // falling back to black for genuinely light tints. Measured against `accentFill`,
+        // the colour those buttons actually paint.
+        theme.accentForeground = RGBMath.onAccent(RGBMath.controlFill(accent))
         let white: UInt32 = 0xFFFFFF
         theme.selection = RGBMath.blend(accent, isDark ? background : white, isDark ? 0.80 : 0.88)
         return theme

@@ -8,9 +8,10 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-Vaultify — private, offline, zero-backend password & passkey manager. SwiftUI, iPhone-only,
-iOS 17.3+. Three targets: the app (`com.bervion.vaultify`), an AutoFill Credential Provider
-extension (`com.bervion.vaultify.autofill`), and a Safari web extension
+Vaultify — private, offline, zero-backend password & passkey manager. SwiftUI, iPhone +
+iPad + a native macOS slice; iOS 17.3+ / macOS 15+. Four targets: the app (`com.bervion.vaultify`), an AutoFill Credential Provider
+extension for iOS (`VaultifyAutoFill`) and its macOS twin (`VaultifyAutoFillMac`, same
+sources and bundle id, its own Info.plist capabilities), and a Safari web extension
 (`com.bervion.vaultify.safari` — MV3 web bundle in `VaultifySafari/Resources/`). Team
 `WDNL2F75V7`. Shared code in `VaultifyCore/` compiles into **all** targets. See `README.md`
 and `docs/codebase-summary.md`.
@@ -51,7 +52,7 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
 
 ## Conventions
 
-- **Localization (MANDATORY)** — the app is multi-language (**EN + VI**) with an in-app
+- **Localization (MANDATORY)** — the app is multi-language (**EN + VI + JA**) with an in-app
   language toggle (`Localizable.xcstrings`). **Every screen and feature — old or new — must
   be fully localized; no hard-coded user-facing text.** When you add or change any UI string,
   add it to `Localizable.xcstrings` with **both** an English source and a **Vietnamese**
@@ -122,7 +123,7 @@ latency. For any future custom iOS-26 Liquid Glass API, guard with `#if compiler
 `#available(iOS 26, *)` and provide a material/solid fallback. Never glass on content cards/rows.
 
 **Before UI work:** verify light + dark + Reduce Transparency + Reduce Motion + increased contrast; no
-invisible text/icons after a theme switch; 44pt hit targets; new strings localized EN + VI.
+invisible text/icons after a theme switch; 44pt hit targets; new strings localized EN + VI + JA.
 
 ## Entitlements & capabilities (crash traps)
 

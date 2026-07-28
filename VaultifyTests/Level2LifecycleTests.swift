@@ -210,4 +210,65 @@ final class Level2LifecycleTests: XCTestCase {
 
         XCTAssertTrue(ExtraProtectionDelete.blocks(fields, level2Key: nil))
     }
+
+    // MARK: - Turn-off transaction (preflight → persist → verify)
+
+    private func item(_ id: String, fields: [DynamicField],
+                      archived: Bool = false, trashed: Bool = false) -> VaultItem {
+        var item = VaultItem(id: id, category: .login, title: id, fields: fields)
+        item.archived = archived
+        if trashed { item.trashedAt = Date(timeIntervalSince1970: 1) }
+        return item
+    }
+
+    func testUnsealedRewritesEveryLevel2FieldIncludingArchivedAndTrashed() throws {
+        let live = item("live", fields: [try sealedLevel2Field()])
+        let archived = item("archived", fields: [try sealedLevel2Field()], archived: true)
+        let trashed = item("trashed", fields: [try sealedLevel2Field()], trashed: true)
+        let untouched = item("plain", fields: [DynamicField(label: "U", kind: .username, value: "me")])
+
+        let out = try Level2Disable.unsealed([live, archived, trashed, untouched], l2Key: Self.key)
+
+        // Only items that actually carried a seal come back — and all of them do,
+        // regardless of live/archived/trashed placement.
+        XCTAssertEqual(Set(out.map(\.id)), ["live", "archived", "trashed"])
+        for rewritten in out {
+            XCTAssertEqual(rewritten.fields[0].value, "hunter2")
+            XCTAssertFalse(rewritten.fields[0].isExtraProtected)
+        }
+    }
+
+    func testUnsealedAbortsOnAForeignKeyWithoutPartialResults() throws {
+        // First item opens fine, second is sealed under a different L2SK — the
+        // preflight must throw (so the caller never starts writing), not return
+        // a half-converted batch.
+        let mine = item("mine", fields: [try sealedLevel2Field()])
+        let foreignField = DynamicField(
+            label: "Secret", kind: .password,
+            value: try SecretGuard.sealLevel2("other", l2Key: Self.foreignKey),
+            protected: true, guard2: true)
+        let foreign = item("foreign", fields: [foreignField])
+
+        XCTAssertThrowsError(try Level2Disable.unsealed([mine, foreign], l2Key: Self.key))
+    }
+
+    func testUnsealedIsIdempotentAcrossARetry() throws {
+        // A crash between persist and verify leaves some items already plaintext.
+        // The retry must skip them (no throw, no rewrite) and finish the rest.
+        let done = item("done", fields: [DynamicField(label: "Secret", kind: .password,
+                                                      value: "hunter2", protected: true)])
+        let pending = item("pending", fields: [try sealedLevel2Field()])
+
+        let out = try Level2Disable.unsealed([done, pending], l2Key: Self.key)
+
+        XCTAssertEqual(out.map(\.id), ["pending"])
+    }
+
+    func testLeftoverScanCatchesAnySurvivingCiphertext() throws {
+        let clean = item("clean", fields: [DynamicField(label: "U", kind: .username, value: "me")])
+        let sealed = item("sealed", fields: [try sealedLevel2Field()], trashed: true)
+
+        XCTAssertFalse(Level2Disable.hasSealedLeftovers([clean]))
+        XCTAssertTrue(Level2Disable.hasSealedLeftovers([clean, sealed]))
+    }
 }
