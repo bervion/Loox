@@ -4,7 +4,7 @@
     "description": "Extension display name shown in Safari settings and the toolbar."
   },
   "extension_description": {
-    "message": "Loox の保管庫から ID とカードを入力します。",
+    "message": "Loox の保管庫からプロフィールとカードを入力します。",
     "description": "Extension description shown in Safari extension settings."
   },
   "popup_title": {
@@ -36,7 +36,7 @@
     "description": "Section heading for logins matching the active site."
   },
   "popup_section_identities": {
-    "message": "ID",
+    "message": "プロフィール",
     "description": "Section heading for identity items."
   },
   "popup_section_cards": {
@@ -98,7 +98,7 @@
     "description": "Fill button label on identity and card rows."
   },
   "popup_fill_identity_label": {
-    "message": "このページの ID 欄に入力",
+    "message": "このページにプロフィール情報を入力",
     "description": "Accessibility label for the identity row fill button."
   },
   "popup_fill_card_label": {
@@ -200,5 +200,8 @@
   "popup_site_hidden_hint": {
     "message": "このサイトではページ内の候補と保存の確認をオフにしています。",
     "description": "Popup footer hint shown while the current site is hidden; filling from the popup keeps working."
+  },
+  "popup_error_unlock_unavailable": {
+    "message": "現在 Face ID では Loox のロックを解除できません。Loox アプリを開いてパスワードでロックを解除してから、もう一度お試しください。"
   }
 }
