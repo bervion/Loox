@@ -115,6 +115,10 @@ struct RootView: View {
         .onAppear {
             env.theme.systemColorSchemeChanged(colorScheme)
             env.theme.applyInterfaceStyle()
+            // Owner-reported: a device could render dark on a light theme until
+            // a manual dark→light toggle. Windows created after this pass never
+            // received the override — re-apply as each becomes visible.
+            PlatformAppearance.reapplyOnNewWindows { env.theme.applyInterfaceStyle() }
         }
     }
 
@@ -122,6 +126,10 @@ struct RootView: View {
         switch phase {
         case .active:
             obscured = false
+            // Belt to the window observer's braces: whatever attached or
+            // changed while inactive, the forced appearance is consistent the
+            // moment the app is frontmost again.
+            env.theme.applyInterfaceStyle()
             // Lock only if a *real* background stay met the auto-lock window. The Face ID
             // prompt drives `.inactive` (not `.background`), so its close doesn't lock here.
             env.session.lockIfBackgroundExpired()

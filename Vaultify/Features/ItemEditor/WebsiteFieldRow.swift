@@ -6,7 +6,12 @@ import SwiftUI
 /// "https://…" URL.
 struct WebsiteFieldRow: View {
     @Binding var field: DynamicField
+    /// True for a row the user just added via "Add Website" — the keyboard
+    /// focus must land HERE, not stay in whichever field held it before (typing
+    /// would otherwise keep appending to that field, e.g. the password).
+    var autoFocus: Bool = false
     @Environment(AppEnvironment.self) private var env
+    @FocusState private var focused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -17,6 +22,8 @@ struct WebsiteFieldRow: View {
                 .platformKeyboardType(.url)
                 .platformAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .focused($focused)
+                .onAppear { if autoFocus { focused = true } }
                 .overlay(alignment: .leading) {
                     if field.value.isEmpty {
                         Text(verbatim: "https://example.com")
