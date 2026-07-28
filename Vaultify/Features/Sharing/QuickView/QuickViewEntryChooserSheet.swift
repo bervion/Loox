@@ -57,6 +57,10 @@ struct QuickViewEntryChooserSheet: View {
         // and the owner can retry, same silent-failure posture as the other
         // signed-document clients.
         .task { await env.quickViewSignerKeyset.refresh() }
+        // Hosted here, not at the root: this is a sheet, and a root overlay
+        // would be drawn behind it.
+        .tutorialHost(env.tutorial, flowIDs: ["quick-view"])
+        .task { env.tutorial.startIfNeeded(.quickView) }
     }
 
     private func startFlow(code: String) {

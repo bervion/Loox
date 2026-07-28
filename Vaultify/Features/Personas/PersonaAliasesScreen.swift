@@ -83,7 +83,11 @@ struct PersonaAliasesScreen: View {
         }
         .navigationTitle(Text("Private Email"))
         // Non-blocking, contextual — never at app startup (INV-CAP-02).
-        .task { await gate.refresh() }
+        .task {
+            await gate.refresh()
+            // A pushed screen, so the root host covers it — no local host needed.
+            env.tutorial.startIfNeeded(.privateEmail)
+        }
         .sheet(isPresented: $showingPerSiteEditor) {
             if let persona { AliasEditorSheet(persona: persona, onCreated: { activate($0) }) }
         }

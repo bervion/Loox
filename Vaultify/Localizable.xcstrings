@@ -28370,6 +28370,134 @@
           }
         }
       }
+    },
+    "Open this on your computer": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この項目をパソコンで開く"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở mục này trên máy tính"
+          }
+        }
+      }
+    },
+    "Scan the code with your computer's browser and the fields you approve appear there. Nothing is typed, and nothing is stored on the page.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パソコンのブラウザでコードを読み取ると、承認したフィールドがそこに表示されます。入力の手間はなく、ページには何も保存されません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quét mã bằng trình duyệt trên máy tính, những trường bạn phê duyệt sẽ hiện ở đó. Không phải gõ tay, và trang không lưu lại gì."
+          }
+        }
+      }
+    },
+    "It closes by itself": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セッションは自動的に終了します"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phiên tự đóng"
+          }
+        }
+      }
+    },
+    "The session lasts minutes, not days. When it ends the page goes blank, and you can end it from here at any time.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セッションは数日ではなく数分です。終了するとページの内容は消え、いつでもここから終了できます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phiên chỉ kéo dài vài phút, không phải vài ngày. Khi kết thúc, trang sẽ trống, và bạn có thể kết thúc từ đây bất cứ lúc nào."
+          }
+        }
+      }
+    },
+    "A different address for each site": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイトごとに別のアドレス"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mỗi trang một địa chỉ riêng"
+          }
+        }
+      }
+    },
+    "Give a site its own address instead of your real one. Mail still reaches your inbox, and the site never learns where.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "実際のアドレスの代わりに、サイトごとに専用のアドレスを渡します。メールはあなたの受信箱に届き、サイトは宛先を知りません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cấp cho mỗi trang một địa chỉ riêng thay vì địa chỉ thật. Thư vẫn về hộp thư của bạn, còn trang đó không biết hộp thư nằm ở đâu."
+          }
+        }
+      }
+    },
+    "Turn one off and the mail stops": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オフにすればメールは止まります"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tắt một địa chỉ là thư ngừng tới"
+          }
+        }
+      }
+    },
+    "If an address starts getting spam, pause or delete it. That address stops forwarding; every other one keeps working.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あるアドレスに迷惑メールが届き始めたら、一時停止するか削除してください。そのアドレスの転送だけが止まり、ほかは動き続けます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nếu một địa chỉ bắt đầu nhận thư rác, hãy tạm dừng hoặc xóa nó. Địa chỉ đó ngừng chuyển tiếp, các địa chỉ khác vẫn hoạt động."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

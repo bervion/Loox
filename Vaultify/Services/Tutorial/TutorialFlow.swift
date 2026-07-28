@@ -25,12 +25,12 @@ struct TutorialFlow: Identifiable {
 extension TutorialFlow {
     /// Every flow the app ships. Drives "Show tutorials again" in Settings, and
     /// the test that keeps flow anchors honest.
-    static var all: [TutorialFlow] { [.firstRun, .watchtower, .sharing] }
+    static var all: [TutorialFlow] { [.firstRun, .watchtower, .sharing, .quickView, .privateEmail] }
     static var allFlowIDs: [String] { all.map(\.id) }
 
     /// Flows that run INSIDE a sheet and are therefore hosted there rather
     /// than at the root, whose overlay a sheet would cover.
-    static let sheetHostedFlowIDs: Set<String> = ["sharing"]
+    static let sheetHostedFlowIDs: Set<String> = ["sharing", "quick-view"]
 
     /// First unlock after onboarding: where things live, in three beats.
     static let firstRun = TutorialFlow(id: "first-run", steps: [
@@ -61,6 +61,26 @@ extension TutorialFlow {
                      shape: .capsule,
                      title: "Run a check anytime",
                      message: "Most checks run on this device. Leak checks send only the first five characters of a hashed password, never the password."),
+    ])
+
+    /// First time the owner sends an item to a browser.
+    static let quickView = TutorialFlow(id: "quick-view", steps: [
+        TutorialStep(id: "what",
+                     title: "Open this on your computer",
+                     message: "Scan the code with your computer's browser and the fields you approve appear there. Nothing is typed, and nothing is stored on the page."),
+        TutorialStep(id: "expiry",
+                     title: "It closes by itself",
+                     message: "The session lasts minutes, not days. When it ends the page goes blank, and you can end it from here at any time."),
+    ])
+
+    /// First visit to Private Email.
+    static let privateEmail = TutorialFlow(id: "private-email", steps: [
+        TutorialStep(id: "what",
+                     title: "A different address for each site",
+                     message: "Give a site its own address instead of your real one. Mail still reaches your inbox, and the site never learns where."),
+        TutorialStep(id: "control",
+                     title: "Turn one off and the mail stops",
+                     message: "If an address starts getting spam, pause or delete it. That address stops forwarding; every other one keeps working."),
     ])
 
     /// First time the owner opens sharing on an item.
