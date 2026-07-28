@@ -118,7 +118,7 @@ struct ShareSpaceSheet: View {
             // The prerequisite probe resolves in a blink, so copy here would
             // only flash: the spinner takes the glyph slot alone and the state
             // keeps the same silhouette as everything that follows it.
-            VaultStatusScreen(busy: true)
+            VaultStatusScreen(busySystemImage: "person.2", busy: true)
         case .blocked(let blocker):
             blockedView(blocker)
         case .config:
@@ -126,7 +126,8 @@ struct ShareSpaceSheet: View {
         case .creating:
             // Same title as the fan-out step: to the user this is one operation,
             // and the body names which half of it is running.
-            VaultStatusScreen(title: "Sharing your Space…",
+            VaultStatusScreen(busySystemImage: "person.2.badge.key",
+                              title: "Sharing your Space…",
                               message: .key("Setting up encrypted approval transport…"),
                               busy: true)
         case .waiting(_, let shareURL):
@@ -439,7 +440,8 @@ struct ShareSpaceSheet: View {
     }
 
     private var publishingView: some View {
-        VaultStatusScreen(title: "Sharing your Space…",
+        VaultStatusScreen(busySystemImage: "person.2.badge.key",
+                          title: "Sharing your Space…",
                           message: .key("\(eligibleCount) items"),
                           busy: true)
     }

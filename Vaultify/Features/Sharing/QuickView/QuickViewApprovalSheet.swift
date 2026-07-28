@@ -119,7 +119,7 @@ struct QuickViewApprovalSheet: View {
     /// The waiting copy is the TITLE, not a grey paragraph: it is the only line on
     /// screen, so it has to carry the rank.
     private func progress(_ title: LocalizedStringKey) -> some View {
-        VaultStatusScreen(title: title, busy: true)
+        VaultStatusScreen(busySystemImage: "desktopcomputer", title: title, busy: true)
     }
 
     private var finished: some View {

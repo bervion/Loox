@@ -72,7 +72,8 @@ struct QuickLinkView: View {
             // share the top-anchored, left-aligned silhouette with the action on
             // the bottom edge, so nothing jumps and no state reads as grey copy
             // floating mid-screen.
-            VaultStatusScreen(title: "Encrypting and creating your link…", busy: true)
+            VaultStatusScreen(busySystemImage: "link",
+                              title: "Encrypting and creating your link…", busy: true)
         case .result(let link):
             QuickLinkResultView(link: link) { step = .config }
         case .failed(let message):

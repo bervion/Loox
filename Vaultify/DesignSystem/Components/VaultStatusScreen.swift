@@ -33,6 +33,7 @@ import SwiftUI
 ///
 ///     VaultStatusScreen(title: "Sharing your Space", busy: true)
 struct VaultStatusScreen<Feature: View>: View {
+    @Environment(AppEnvironment.self) private var env
     /// A bottom-anchored action. `enabled: false` paints the opaque disabled
     /// surface (never `.opacity`) via `BrandCapsuleCTA`.
     struct Action {
@@ -65,8 +66,11 @@ struct VaultStatusScreen<Feature: View>: View {
         }
     }
 
-    /// Polaris asset name. Omit when `busy` — the spinner occupies the slot.
+    /// Polaris asset name. Omit when `busy` — the loading swirl occupies the slot.
     var icon: String?
+    /// SF Symbol shown inside the loading swirl, naming what is being waited
+    /// on (e.g. "link" while a share link is created). Nil keeps the brand mark.
+    var busySystemImage: String?
     var tint: ThemeRole = .accent
     var title: LocalizedStringKey?
     var message: Message?
@@ -99,12 +103,18 @@ struct VaultStatusScreen<Feature: View>: View {
     @ViewBuilder
     private var glyph: some View {
         if busy {
-            ProgressView()
-                .controlSize(.large)
-                // Match the glyph's optical box so a loading state and the
-                // outcome it resolves into don't shift the copy vertically.
-                .frame(width: Metric.iconTileLarge, height: Metric.iconTileLarge,
-                       alignment: .leading)
+            // The brand swirl rather than a system spinner: these waits are
+            // seconds of encryption and network, and the looping dots say the
+            // app is working on something of its own. The centre names the
+            // operation when the caller supplies a symbol.
+            LooxSwirlAnimationView(mode: .loop,
+                                   logoFraction: 0.30,
+                                   centerSystemImage: busySystemImage,
+                                   centerTint: Color(rgb: env.theme.active.accent))
+                // The swirl needs room for its rings; the static glyph slot
+                // would render them as a smudge.
+                .frame(width: 132, height: 132)
+                .accessibilityHidden(true)
         } else if let icon {
             PolarisIcon(icon, size: Metric.iconTileLarge)
                 .themedForeground(tint)
@@ -171,13 +181,15 @@ struct VaultStatusScreen<Feature: View>: View {
 extension VaultStatusScreen where Feature == EmptyView {
     /// The common case: glyph + copy + actions, no extra block.
     init(icon: String? = nil,
+         busySystemImage: String? = nil,
          tint: ThemeRole = .accent,
          title: LocalizedStringKey? = nil,
          message: Message? = nil,
          busy: Bool = false,
          primary: Action? = nil,
          secondary: Action? = nil) {
-        self.init(icon: icon, tint: tint, title: title, message: message, busy: busy,
+        self.init(icon: icon, busySystemImage: busySystemImage, tint: tint, title: title,
+                  message: message, busy: busy,
                   feature: { EmptyView() }, primary: primary, secondary: secondary)
     }
 }

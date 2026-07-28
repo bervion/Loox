@@ -144,6 +144,7 @@ struct ApprovalRequestSheet: View {
             let remainingSeconds = Int((remainingMs + 999) / 1000)
             let period = Int(periodSeconds)
             VaultStatusScreen(
+                busySystemImage: "clock.badge.checkmark",
                 title: "Preparing a fresh verification code…",
                 message: .key(freshWindowExplanation(period: period)),
                 busy: true,
@@ -172,7 +173,7 @@ struct ApprovalRequestSheet: View {
     }
 
     private func progress(_ message: LocalizedStringKey) -> some View {
-        VaultStatusScreen(title: message, busy: true)
+        VaultStatusScreen(busySystemImage: "checkmark.shield", title: message, busy: true)
     }
 
     private func finished(_ decision: ApprovalDecision) -> some View {
