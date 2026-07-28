@@ -30,7 +30,11 @@ struct ItemEditorScreen: View {
     @State private var creatingAlias = false
     @State private var pendingAliasID: String?
     @State private var aliasMissingEmail = false
-    @State private var aliasError = false
+    @State private var aliasErrorTitle = ""
+    @State private var aliasErrorMessage: String?
+    /// The inbox that still needs confirming, when that is what stands between
+    /// the user and their first private address.
+    @State private var aliasNeedsVerification: ForwardingInbox?
     @State private var showEmailSuggestions = false
     // Extra Protection gate. The prompt is offered ONCE per editor visit
     // (`didOfferExtraProtection`) — declining it is an answer, not something to
@@ -401,11 +405,18 @@ struct ItemEditorScreen: View {
             } message: {
                 Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
             }
-            .alert(Text("Couldn’t reach the relay"), isPresented: $aliasError) {
+            // Carries the failure's OWN title and copy. This alert used to be
+            // hardcoded to a connection problem, so the relay's consent gate —
+            // "confirm your forwarding email first" — reached the user as
+            // "check your connection", and no amount of retrying could fix it.
+            .alert(Text(verbatim: aliasErrorTitle), isPresented: aliasErrorBinding) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Check your connection and iCloud, then try again.")
+                Text(verbatim: aliasErrorMessage ?? "")
             }
+            // The confirmation gate is not an error: it is the feature's one
+            // setup step, so it opens the explainer instead of an alert.
+            .sheet(item: $aliasNeedsVerification) { PrivateEmailIntroSheet(inbox: $0) }
         }
         .platformPresentationDetents([.medium, .large])
     }
@@ -576,6 +587,13 @@ struct ItemEditorScreen: View {
             aliasMissingEmail = true
             return
         }
+        // Ask before sending: the relay will refuse to route to an unconfirmed
+        // inbox, and the refusal is a setup step the user can clear in a minute.
+        // Explaining it beats minting an alias that cannot forward.
+        if let unverified = PrivateEmailGate(env).unverifiedDestination {
+            aliasNeedsVerification = unverified
+            return
+        }
         creatingAlias = true
         let host = draft.autofillHost
         // An existing item's id is already stable — bind immediately instead of
@@ -596,11 +614,21 @@ struct ItemEditorScreen: View {
                     if isNew { pendingAliasID = id }
                     showEmailSuggestions = false   // filled — the sheet's job is done
                 }
+            } catch let failure as RelayService.Failure {
+                aliasErrorTitle = failure.userTitle
+                aliasErrorMessage = failure.userMessage
+                Haptics.error()
             } catch {
-                aliasError = true
+                aliasErrorTitle = appString("Couldn’t reach the relay")
+                aliasErrorMessage = appString("Check your connection and iCloud, then try again.")
                 Haptics.error()
             }
         }
+    }
+
+    private var aliasErrorBinding: Binding<Bool> {
+        Binding(get: { aliasErrorMessage != nil },
+                set: { if !$0 { aliasErrorMessage = nil } })
     }
 
     /// Fill a reused alias suggestion into the login's email field. An existing

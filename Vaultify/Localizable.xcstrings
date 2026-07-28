@@ -28498,6 +28498,438 @@
           }
         }
       }
+    },
+    "No longer offered": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提供を終了しました"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã ngừng cung cấp"
+          }
+        }
+      }
+    },
+    "Loox is locked": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox はロックされています"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox đang khóa"
+          }
+        }
+      }
+    },
+    "You’re offline": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オフラインです"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn đang ngoại tuyến"
+          }
+        }
+      }
+    },
+    "Couldn’t verify this device": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このデバイスを確認できませんでした"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không xác minh được thiết bị này"
+          }
+        }
+      }
+    },
+    "Confirm your forwarding email": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "転送先メールを確認してください"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xác nhận email nhận chuyển tiếp"
+          }
+        }
+      }
+    },
+    "Too many requests": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リクエストが多すぎます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quá nhiều yêu cầu"
+          }
+        }
+      }
+    },
+    "Address limit reached": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アドレスの上限に達しました"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã đạt giới hạn địa chỉ"
+          }
+        }
+      }
+    },
+    "Private Email is off": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プライベートメールはオフです"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email riêng tư đang tắt"
+          }
+        }
+      }
+    },
+    "Check your inbox": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受信トレイを確認してください"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra hộp thư"
+          }
+        }
+      }
+    },
+    "We sent a confirmation link to %@. Open it to finish setting up this forwarding address.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ に確認リンクを送信しました。リンクを開くと、この転送先の設定が完了します。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox đã gửi liên kết xác nhận tới %@. Mở liên kết đó để hoàn tất thiết lập địa chỉ nhận chuyển tiếp này."
+          }
+        }
+      }
+    },
+    "Confirmed": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認済み"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xác nhận"
+          }
+        }
+      }
+    },
+    "This address is verified. Private addresses can forward to it now.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアドレスは確認済みです。プライベートアドレスからの転送が可能になりました。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Địa chỉ này đã được xác minh. Các địa chỉ riêng tư có thể chuyển tiếp về đây."
+          }
+        }
+      }
+    },
+    "Not confirmed yet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まだ確認されていません"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa xác nhận"
+          }
+        }
+      }
+    },
+    "Open the confirmation link we emailed to %@, then check again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ に送信した確認リンクを開いてから、もう一度確認してください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở liên kết xác nhận Loox đã gửi tới %@, rồi kiểm tra lại."
+          }
+        }
+      }
+    },
+    "Each site gets its own address, so a leak at one of them never points at you.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイトごとに別のアドレスを使うので、1 か所の漏えいがあなたにたどり着くことはありません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mỗi trang có một địa chỉ riêng, nên một vụ rò rỉ ở trang đó không lần ra được bạn."
+          }
+        }
+      }
+    },
+    "Mail arrives as usual": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールはいつもどおり届きます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thư vẫn về như thường"
+          }
+        }
+      }
+    },
+    "Messages forward to your real inbox. Only you can see which address they came through.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールは実際の受信トレイに転送されます。どのアドレス経由かを知っているのはあなただけです。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thư được chuyển tiếp về hộp thư thật của bạn. Chỉ bạn biết thư đến qua địa chỉ nào."
+          }
+        }
+      }
+    },
+    "If an address starts getting spam, pause or delete it. Every other one keeps working.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "迷惑メールが届き始めたら、そのアドレスを一時停止するか削除します。ほかのアドレスはそのまま使えます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nếu một địa chỉ bắt đầu nhận thư rác, hãy tạm dừng hoặc xóa nó. Mọi địa chỉ khác vẫn hoạt động."
+          }
+        }
+      }
+    },
+    "One step first": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最初にひとつだけ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Còn một bước"
+          }
+        }
+      }
+    },
+    "Private addresses forward to %@. Confirm that inbox is yours and you can start creating addresses. You can manage all of this later in Private Email.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プライベートアドレスは %@ に転送されます。その受信トレイがご自身のものだと確認すれば、アドレスの作成を始められます。設定はあとから「プライベートメール」で管理できます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Địa chỉ riêng tư sẽ chuyển tiếp về %@. Xác nhận hộp thư đó là của bạn là có thể bắt đầu tạo địa chỉ. Bạn quản lý mọi thứ này sau ở mục Email riêng tư."
+          }
+        }
+      }
+    },
+    "Check confirmation": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認状況を見る"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra xác nhận"
+          }
+        }
+      }
+    },
+    "Send again in %llds": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒後に再送できます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi lại sau %lld giây"
+          }
+        }
+      }
+    },
+    "Send the email again": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールを再送する"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi lại email"
+          }
+        }
+      }
+    },
+    "Send confirmation email": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認メールを送る"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi email xác nhận"
+          }
+        }
+      }
+    },
+    "Already opened the link? Tap again to check.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リンクを開きましたか。もう一度タップして確認できます。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã mở liên kết rồi? Bấm lại để kiểm tra."
+          }
+        }
+      }
+    },
+    "You can send again in %llds": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒後に再送できます"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có thể gửi lại sau %lld giây"
+          }
+        }
+      }
+    },
+    "Private addresses can’t forward to %@ until you confirm it’s yours. It takes one tap and an email.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ がご自身のものだと確認するまで、プライベートアドレスはそこへ転送できません。タップ 1 回とメール 1 通で完了します。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Địa chỉ riêng tư chưa chuyển tiếp được về %@ cho tới khi bạn xác nhận đó là hộp thư của mình. Chỉ cần một lần bấm và một email."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
