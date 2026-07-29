@@ -153,6 +153,12 @@ let project = Project(
                 .target(name: "VaultifySafari", condition: .when([.ios])),
                 // GA4 without ad identifiers (see `packages` above). App only.
                 .package(product: "FirebaseAnalyticsCore"),
+                // Crash diagnostics (see `CrashReporter`). App only, for the
+                // same reason: an extension must never carry telemetry.
+                // dSYMs are uploaded by fastlane after the archive, NOT by an
+                // in-Xcode run script — the script's path is derived-data
+                // dependent and would silently stop symbolicating on the runner.
+                .package(product: "FirebaseCrashlytics"),
             ],
             settings: .settings(base: [
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "vaultify",

@@ -36,6 +36,19 @@ struct VaultifyApp: App {
         // `FirebaseAnalyticsProvider.bootstrapped`).
         if !uiTestConfiguration.isEnabled, !CloudSyncService.isHostingUnitTests {
             AnalyticsEngine.bootstrap()
+            // Must follow the engine: that call owns `FirebaseApp.configure()`,
+            // and the reporter attaches only once a Firebase app exists.
+            CrashReporter.bootstrap()
+        }
+    }
+
+    /// Fixed identifiers for the crash-key catalog — never a localized or
+    /// user-visible string.
+    private static func lockStateIdentifier(_ state: VaultSession.State) -> String {
+        switch state {
+        case .onboarding: return "onboarding"
+        case .locked: return "locked"
+        case .unlocked: return "unlocked"
         }
     }
 
@@ -87,7 +100,12 @@ struct VaultifyApp: App {
             defer { inviteInFlight = false }
             do {
                 pendingInvite = try await env.inviteLinks.resolveInvite(from: url)
-            } catch { inviteError = error.localizedDescription }
+            } catch {
+                inviteError = error.localizedDescription
+                // The category only: the caught error carries the share URL and
+                // the sender's account context (see `CrashReportFault`).
+                CrashReporter.shared.record(.inviteLinkResolveFailed)
+            }
         }
     }
 
@@ -100,7 +118,10 @@ struct VaultifyApp: App {
             do {
                 try await env.inviteLinks.acceptShare(url: invite.shareURL)
                 inviteAccepted = true
-            } catch { inviteError = error.localizedDescription }
+            } catch {
+                inviteError = error.localizedDescription
+                CrashReporter.shared.record(.inviteLinkAcceptFailed)
+            }
         }
     }
 
@@ -144,6 +165,14 @@ struct VaultifyApp: App {
                         tier: env.entitlements.tier,
                         language: env.settings.preferredLanguage,
                         iCloudSyncEnabled: env.settings.iCloudSyncEnabled)
+                    CrashReporter.shared.set(.appLanguage(env.settings.preferredLanguage))
+                    CrashReporter.shared.set(.iCloudSync(enabled: env.settings.iCloudSyncEnabled))
+                }
+                // Whether the vault was locked is the first thing a crash report
+                // has to answer, so the key tracks the live state rather than
+                // being sampled once at launch.
+                .onChange(of: env.session.state, initial: true) { _, state in
+                    CrashReporter.shared.set(.vaultLockState(Self.lockStateIdentifier(state)))
                 }
                 // Nothing is joined until this is answered.
                 .alert(InvitePrompt.title(sender: pendingInvite?.senderDisplayName),

@@ -97,6 +97,16 @@ struct GeneralSettingsView: View {
                 Text("Counts which features are used to help improve Loox. Never your vault contents, item names, websites, or search terms. Not linked to your identity.")
             }
             .listRowBackground(VaultColors.surface)
+
+            Section {
+                Toggle(isOn: $settings.crashReportingEnabled) {
+                    Label { Text("Send crash diagnostics") } icon: { SettingsIconBadge(systemName: "ladybug.fill", tint: SettingsBadgeTint.orange) }
+                }
+                .tint(switchTint)
+            } footer: {
+                Text("Sends a diagnostic report when Loox crashes, so the fault can be found and fixed. Reports carry the state of the app and the device, never your vault contents. Not linked to your identity.")
+            }
+            .listRowBackground(VaultColors.surface)
         }
         .themedFormBackground()
         .toggleStyle(.switch)
