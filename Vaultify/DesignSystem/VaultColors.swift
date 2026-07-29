@@ -31,6 +31,17 @@ enum VaultColors {
     /// and the detail header so the star reads the same everywhere.
     static let favoriteStar = Color(red: 1.0, green: 0.78, blue: 0.13)
 
+    /// Colour for a graded estimate. The five grades collapse onto the three strength colours
+    /// on purpose: the ring's FILL already carries the finer distinction, so giving `fair` and
+    /// `strong` their own hues would say the same thing twice and dilute red-means-fix-this.
+    static func strength(grade: PasswordGrade) -> Color {
+        switch grade {
+        case .veryWeak, .weak: return strengthWeak
+        case .fair: return strengthMedium
+        case .strong, .excellent: return strengthStrong
+        }
+    }
+
     static func strength(_ strength: PasswordStrength) -> Color {
         switch strength {
         case .weak: return strengthWeak
