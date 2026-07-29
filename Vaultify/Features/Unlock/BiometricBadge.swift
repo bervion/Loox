@@ -8,6 +8,9 @@ import SwiftUI
 /// Uses the system biometric SF Symbol (the recognised affordance) — Polaris ships no
 /// biometric glyph, so this is a deliberate exception to the Polaris-only icon rule.
 struct BiometricBadge: View {
+    /// Snapshotted by the lock screen: naming the biometry means probing the
+    /// biometry daemon, which must never happen inside a `body`.
+    let capability: BiometricCapability
     let authenticating: Bool
     let action: () -> Void
 
@@ -18,7 +21,7 @@ struct BiometricBadge: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Image(systemName: BiometricAuth.systemImage)
+                    Image(systemName: capability.systemImage)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 32, height: 32)
@@ -34,6 +37,6 @@ struct BiometricBadge: View {
         .buttonStyle(.plain)
         .disabled(authenticating)
         .animation(.easeInOut(duration: 0.2), value: authenticating)
-        .accessibilityLabel(Text("Unlock with \(BiometricAuth.displayName)"))
+        .accessibilityLabel(Text("Unlock with \(capability.displayName)"))
     }
 }

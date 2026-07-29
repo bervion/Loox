@@ -14,8 +14,22 @@ nonisolated enum BiometricAuth {
     static var isAvailable: Bool { biometryType() != .none }
 
     /// Human label for the available biometry ("Face ID" / "Touch ID").
-    static var displayName: String {
-        switch biometryType() {
+    static var displayName: String { displayName(for: biometryType()) }
+
+    /// Polaris icon best matching the available biometry.
+    static var iconAsset: String { iconAsset(for: biometryType()) }
+
+    /// SF Symbol for the available biometry — used for the lock-screen badge, where the
+    /// system glyph is the recognised affordance and Polaris ships no biometric equivalent.
+    static var systemImage: String { systemImage(for: biometryType()) }
+
+    // The naming is split from the probe on purpose: `biometryType()` is a
+    // synchronous round-trip to the biometry daemon, so a caller that needs
+    // several of these must probe ONCE and map the result (see
+    // `BiometricCapability`) rather than pay for a fresh `LAContext` per label.
+
+    static func displayName(for type: LABiometryType) -> String {
+        switch type {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
         case .opticID: return "Optic ID"
@@ -23,19 +37,16 @@ nonisolated enum BiometricAuth {
         }
     }
 
-    /// Polaris icon best matching the available biometry.
-    static var iconAsset: String {
-        switch biometryType() {
+    static func iconAsset(for type: LABiometryType) -> String {
+        switch type {
         case .faceID, .opticID: return "ic_person"
         case .touchID: return "ic_passkey"
         default: return "ic_lock"
         }
     }
 
-    /// SF Symbol for the available biometry — used for the lock-screen badge, where the
-    /// system glyph is the recognised affordance and Polaris ships no biometric equivalent.
-    static var systemImage: String {
-        switch biometryType() {
+    static func systemImage(for type: LABiometryType) -> String {
+        switch type {
         case .faceID: return "faceid"
         case .touchID: return "touchid"
         case .opticID: return "opticid"
@@ -113,6 +124,39 @@ nonisolated enum BiometricAuth {
                 else { cont.resume(throwing: error ?? LAError(.authenticationFailed)) }
             }
         }
+    }
+}
+
+/// Everything a screen needs to know about biometric unlock, captured once.
+///
+/// Both halves of the answer are synchronous IPC: `canEvaluatePolicy` talks to
+/// the biometry daemon and `isEnrolled` runs a `SecItemCopyMatching` against the
+/// keychain daemon. Both are cheap while warm and can take seconds right after a
+/// device wake, so a SwiftUI `body` must never call them — it reads a snapshot,
+/// and the owner re-probes whenever enrolment could have changed (any return to
+/// the foreground: biometrics can be re-enrolled while the app is backgrounded).
+nonisolated struct BiometricCapability: Equatable, Sendable {
+    /// The device has usable biometry hardware and something enrolled in it.
+    var isAvailable: Bool
+    /// A biometric-gated Vault Key is provisioned for this app.
+    var isEnrolled: Bool
+    var displayName: String
+    var systemImage: String
+
+    /// The safe pre-probe value: no badge, no auto-prompt, password only.
+    static let unavailable = BiometricCapability(
+        isAvailable: false,
+        isEnrolled: false,
+        displayName: BiometricAuth.displayName(for: .none),
+        systemImage: BiometricAuth.systemImage(for: .none))
+
+    /// Probe both daemons. Blocking — call it off the main actor.
+    static func probe() -> BiometricCapability {
+        let type = BiometricAuth.biometryType()
+        return BiometricCapability(isAvailable: type != .none,
+                                   isEnrolled: BiometricKeyStore.isEnrolled,
+                                   displayName: BiometricAuth.displayName(for: type),
+                                   systemImage: BiometricAuth.systemImage(for: type))
     }
 }
 

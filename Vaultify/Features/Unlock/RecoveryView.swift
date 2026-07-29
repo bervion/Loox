@@ -59,7 +59,7 @@ struct RecoveryView: View {
     /// Recovery-key input in the same prominent card as the password fields, with a key tile.
     private var recoveryKeyField: some View {
         HStack(alignment: .center, spacing: Space.s3) {
-            PolarisIcon(Icons.key, size: Metric.iconInline)
+            VaultIcon(Icons.key, size: Metric.iconInline)
                 .foregroundStyle(Color(rgb: theme.accent))
                 .frame(width: Metric.controlSmall, height: Metric.controlSmall)
                 .background(Color(rgb: theme.accentSoft),
