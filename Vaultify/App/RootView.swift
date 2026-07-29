@@ -118,6 +118,9 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in handleScenePhase(phase) }
         .onChange(of: colorScheme) { _, scheme in env.theme.systemColorSchemeChanged(scheme) }
+        // Above the UIKit navigation shell on purpose: pushing a detail screen must not
+        // disarm the panic gesture.
+        .shakeToLockMonitor()
         .onAppear {
             env.theme.systemColorSchemeChanged(colorScheme)
             env.theme.applyInterfaceStyle()
