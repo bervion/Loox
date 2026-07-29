@@ -63,7 +63,7 @@ final class IconCatalogTests: XCTestCase {
     func testPickerOffersBothFamilies() {
         let duotone = IconCatalog.allIcons.filter { !$0.isSystemSymbol }
         let symbols = IconCatalog.allIcons.filter(\.isSystemSymbol)
-        XCTAssertEqual(duotone.count, 71, "the offerable duotone set is 71 glyphs")
+        XCTAssertEqual(duotone.count, 170, "the offerable duotone set is 170 glyphs")
         XCTAssertGreaterThan(symbols.count, 200, "SF symbols are the addition, not a token gesture")
         // Duotone leads: it is the product's own language and stays the default.
         XCTAssertEqual(IconCatalog.sections.first?.icons.first?.name, "dt_folder")
