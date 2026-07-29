@@ -1,1 +1,1 @@
-Bản cập nhật này cải thiện phần hướng dẫn trong ứng dụng và khắc phục lỗi khi xác nhận email riêng tư.
+Bản cập nhật này làm mới bộ biểu tượng trong ứng dụng, cải thiện báo cáo sự cố để khắc phục lỗi nhanh hơn, tăng cường bảo mật khi mở khóa, và bổ sung chẩn đoán đồng bộ passkey. Mật khẩu và passkey của bạn vẫn được lưu trữ riêng tư hoàn toàn trên thiết bị.

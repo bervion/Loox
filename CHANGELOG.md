@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.44.0] - 2026-07-29
+
+### Added
+- SF icon system, crash reporting, unlock hardening, and passkey sync diagnostics (#185)
+
+
 ## [1.43.2] - 2026-07-28
 
 ### Fixed
