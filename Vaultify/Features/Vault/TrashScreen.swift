@@ -9,7 +9,7 @@ struct TrashScreen: View {
         Group {
             if env.repository.trashed.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("Trash is empty") } icon: { PolarisIcon(Icons.trash, size: 44) }
+                    Label { Text("Trash is empty") } icon: { VaultIcon(Icons.trash, size: 44) }
                 } description: {
                     Text("Items you trash appear here until permanently deleted.")
                 }
@@ -24,12 +24,12 @@ struct TrashScreen: View {
                         NavigationLink(value: item.id) { VaultItemRow(item: item) }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) { try? env.repository.delete(item) } label: {
-                                    Label("Delete", image: Icons.delete)
+                                    Label { Text("Delete") } icon: { VaultIcon(Icons.delete) }
                                 }
                             }
                             .swipeActions(edge: .leading) {
                                 Button { try? env.repository.restore(item) } label: {
-                                    Label("Restore", image: Icons.refresh)
+                                    Label { Text("Restore") } icon: { VaultIcon(Icons.refresh) }
                                 }
                                 .tint(VaultColors.strengthStrong)
                             }

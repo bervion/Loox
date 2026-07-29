@@ -77,7 +77,7 @@ struct PasswordCreationGroup: View {
             revealed.toggle()
             Haptics.tap()
         } label: {
-            PolarisIcon(revealed ? Icons.hide : Icons.reveal, size: Metric.iconInline)
+            VaultIcon(revealed ? Icons.hide : Icons.reveal, size: Metric.iconInline)
                 .themedForeground(.secondary)
                 .contentShape(Rectangle().inset(by: -(Metric.hitMin - Metric.iconInline) / 2))
         }

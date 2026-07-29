@@ -246,7 +246,7 @@ struct RequestCodeView: View {
         let button = Button {
             startRequest()
         } label: {
-            Label { Text(title) } icon: { PolarisIcon(Icons.shield, size: Metric.iconInline) }
+            Label { Text(title) } icon: { VaultIcon(Icons.shield, size: Metric.iconInline) }
                 .frame(maxWidth: .infinity)
         }
         if quiet {
@@ -280,7 +280,7 @@ struct RequestCodeView: View {
 
     private func outcome(_ text: LocalizedStringKey, icon: String) -> some View {
         HStack(spacing: Space.s2) {
-            PolarisIcon(icon, size: Metric.iconInline).themedForeground(.iconSecondary)
+            VaultIcon(icon, size: Metric.iconInline).themedForeground(.iconSecondary)
             Text(text).vaultType(.footnote).themedForeground(.secondary)
         }
     }
@@ -316,10 +316,10 @@ private struct ApprovedCodeView: View {
                 Spacer()
                 CountdownRing(remaining: remainingSeconds, period: 30)
                 Menu {
-                    Button { copy() } label: { Label("Copy", image: Icons.copy) }
-                    Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
+                    Button { copy() } label: { Label { Text("Copy") } icon: { VaultIcon(Icons.copy) } }
+                    Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon("ic_text") } }
                 } label: {
-                    PolarisIcon("ic_menu_horizontal", size: 17)
+                    VaultIcon("ic_menu_horizontal", size: 17)
                         .themedForeground(.secondary)
                         .frame(width: 30, height: 30)
                         .background(Circle().fill(VaultColors.fill))

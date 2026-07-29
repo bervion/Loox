@@ -15,7 +15,7 @@ struct SharedWithMeScreen: View {
             if env.sharedItems.items.isEmpty {
                 ContentUnavailableView {
                     Label { Text("Nothing shared with you yet") } icon: {
-                        PolarisIcon(Icons.shield, size: Metric.iconTileLarge)
+                        VaultIcon(Icons.shield, size: Metric.iconTileLarge)
                     }
                 } description: {
                     Text("When someone shares access with you, it appears here.")

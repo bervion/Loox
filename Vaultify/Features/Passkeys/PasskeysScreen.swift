@@ -19,7 +19,7 @@ struct PasskeysScreen: View {
                 Section {
                     ContentUnavailableView {
                         Label { Text("No passkeys yet") } icon: {
-                            PolarisIcon(Icons.passkey, size: Metric.iconTileLarge)
+                            VaultIcon(Icons.passkey, size: Metric.iconTileLarge)
                         }
                     } description: {
                         Text("Passkeys you create with Loox will appear here.")
@@ -56,7 +56,7 @@ struct PasskeysScreen: View {
                         .themedForeground(.secondary)
                 }
             } icon: {
-                PolarisIcon(Icons.alert).foregroundStyle(env.theme.active.color(.warning))
+                VaultIcon(Icons.alert).foregroundStyle(env.theme.active.color(.warning))
             }
             Button("Dismiss") {
                 SharedConfig.quarantinedPasskeySites = []
@@ -89,7 +89,7 @@ private struct PasskeyRow: View {
                     .themedForeground(.secondary)
             }
             Spacer(minLength: Space.s2)
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
         }
         .contentShape(.rect)
     }

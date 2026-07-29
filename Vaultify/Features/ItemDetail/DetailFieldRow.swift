@@ -219,19 +219,19 @@ struct DetailFieldRow: View {
 
     private var menu: some View {
         Menu {
-            Button { copy() } label: { Label("Copy", image: Icons.copy) }
-            Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
+            Button { copy() } label: { Label { Text("Copy") } icon: { VaultIcon(Icons.copy) } }
+            Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon("ic_text") } }
             // TOTP renders its code live — a Reveal toggle is meaningless there.
             if isSecret, field.kind != .totp {
                 Button {
                     withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { revealed.toggle() }
                     if revealed { onUsed() }
                 } label: {
-                    Label(revealed ? "Conceal" : "Reveal", image: revealed ? Icons.hide : Icons.reveal)
+                    Label { Text(revealed ? "Conceal" : "Reveal") } icon: { VaultIcon(revealed ? Icons.hide : Icons.reveal) }
                 }
             }
             if field.kind == .url, let url = Self.normalized(field.value) {
-                Button { PlatformAppearance.open(url) } label: { Label("Open Website", image: Icons.globe) }
+                Button { PlatformAppearance.open(url) } label: { Label { Text("Open Website") } icon: { VaultIcon(Icons.globe) } }
             }
             // An identity's email stays unprotectable (owner decision 260728):
             // Profile, QuickType, and share surfaces all present that address,
@@ -239,10 +239,10 @@ struct DetailFieldRow: View {
             if !field.value.isEmpty, !readOnly,
                !(category == .identity && field.kind == .email) {
                 Divider()
-                Button { showProtect = true } label: { Label("Protect…", image: Icons.lock) }
+                Button { showProtect = true } label: { Label { Text("Protect…") } icon: { VaultIcon(Icons.lock) } }
             }
         } label: {
-            PolarisIcon("ic_menu_horizontal", size: 17)
+            VaultIcon("ic_menu_horizontal", size: 17)
                 .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))

@@ -68,7 +68,7 @@ struct LooxHubScreen: View {
                         ProfileRowTile(style: .brandMark)
                         Text("Upgrade to Loox Max").vaultType(.body).themedForeground()
                         Spacer(minLength: Space.s2)
-                        PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                        VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                     }
                     .padding(.horizontal, Space.s4)
                     .frame(minHeight: Metric.rowHeight)
@@ -89,7 +89,7 @@ struct LooxHubScreen: View {
                     HStack(spacing: Space.s3) {
                         Text("Manage plan").vaultType(.body).themedForeground()
                         Spacer(minLength: Space.s2)
-                        PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                        VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                     }
                     .padding(.horizontal, Space.s4)
                     .frame(minHeight: Metric.rowHeight)
@@ -151,7 +151,7 @@ struct LooxHubScreen: View {
                     Spacer(minLength: Space.s3)
                     LooxQuotaBar(fraction: maxQuotaFraction)
                         .frame(width: 96)
-                    PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                    VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                 }
                 .padding(.horizontal, Space.s4)
                 .frame(minHeight: Metric.rowHeight)
@@ -378,7 +378,7 @@ struct LooxHubScreen: View {
                         Button(action: trailingAction) {
                             HStack(spacing: Space.s1) {
                                 Text(trailing).vaultType(.subhead)
-                                PolarisIcon(Icons.chevronRight, size: 12)
+                                VaultIcon(Icons.chevronRight, size: 12)
                             }
                             .themedForeground(.secondary)
                             .contentShape(.rect)

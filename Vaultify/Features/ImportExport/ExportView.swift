@@ -49,7 +49,7 @@ struct ExportView: View {
                     Label {
                         Text("A CSV export is **not encrypted**. Anyone with the file can read every password. Passkeys are never included in CSV.")
                     } icon: {
-                        PolarisIcon(Icons.alert).foregroundStyle(VaultColors.strengthWeak)
+                        VaultIcon(Icons.alert).foregroundStyle(VaultColors.strengthWeak)
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -81,7 +81,7 @@ struct ExportView: View {
             if let exportURL {
                 Section {
                     ShareLink(item: exportURL) {
-                        Label { Text("Share Export") } icon: { PolarisIcon(Icons.share) }
+                        Label { Text("Share Export") } icon: { VaultIcon(Icons.share) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)

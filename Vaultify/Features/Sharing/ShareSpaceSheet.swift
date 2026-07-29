@@ -104,7 +104,7 @@ struct ShareSpaceSheet: View {
             Menu {
                 Button { Task { await checkProfileNow() } } label: { Text("Check now") }
             } label: {
-                PolarisIcon(Icons.moreHorizontal, size: Metric.iconInline)
+                VaultIcon(Icons.moreHorizontal, size: Metric.iconInline)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -180,7 +180,7 @@ struct ShareSpaceSheet: View {
         Form {
             Section {
                 if env.repository.activePersonaSpaces.isEmpty {
-                    Label { Text("No Spaces yet") } icon: { PolarisIcon(Icons.folder, size: Metric.iconTileLarge) }
+                    Label { Text("No Spaces yet") } icon: { VaultIcon(Icons.folder, size: Metric.iconTileLarge) }
                         .themedForeground(.secondary)
                 } else {
                     ForEach(env.repository.activePersonaSpaces) { space in
@@ -226,7 +226,7 @@ struct ShareSpaceSheet: View {
 
                 Section {
                     Toggle(isOn: $allowMultipleDevices) {
-                        Label { Text("Allow use on multiple devices") } icon: { PolarisIcon(Icons.apps) }
+                        Label { Text("Allow use on multiple devices") } icon: { VaultIcon(Icons.apps) }
                     }
                 } footer: {
                     Text("When off, everything is encrypted for the first device they enrolled. Their other devices only see a locked placeholder.")
@@ -255,7 +255,7 @@ struct ShareSpaceSheet: View {
             Spacer()
             Text("\(env.repository.itemCount(for: space.id))").themedForeground(.secondary)
             if selectedSpaceId == space.id {
-                PolarisIcon(Icons.check, size: 18).foregroundStyle(Color(rgb: env.theme.active.accent))
+                VaultIcon(Icons.check, size: 18).foregroundStyle(Color(rgb: env.theme.active.accent))
             }
         }
         .contentShape(.rect)
@@ -347,7 +347,7 @@ struct ShareSpaceSheet: View {
                             Button {
                                 showMessageCompose = true
                             } label: {
-                                Label { Text("Nudge via Messages") } icon: { PolarisIcon(Icons.share) }
+                                Label { Text("Nudge via Messages") } icon: { VaultIcon(Icons.share) }
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.themedProminent)
@@ -358,14 +358,14 @@ struct ShareSpaceSheet: View {
                             }
                         } else {
                             ShareLink(item: shareURL) {
-                                Label { Text("Share invite link") } icon: { PolarisIcon(Icons.share) }
+                                Label { Text("Share invite link") } icon: { VaultIcon(Icons.share) }
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.themedProminent)
                         }
                         #else
                         ShareLink(item: shareURL) {
-                            Label { Text("Share invite link") } icon: { PolarisIcon(Icons.share) }
+                            Label { Text("Share invite link") } icon: { VaultIcon(Icons.share) }
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.themedProminent)
@@ -455,7 +455,7 @@ struct ShareSpaceSheet: View {
         let hasFailures = !summary.failures.isEmpty
         return ScrollView {
             VStack(spacing: Space.s5) {
-                PolarisIcon(hasFailures ? Icons.alert : Icons.shield, size: Metric.iconTileLarge)
+                VaultIcon(hasFailures ? Icons.alert : Icons.shield, size: Metric.iconTileLarge)
                     .themedForeground(hasFailures ? .warning : .success)
                 Text(hasFailures ? "Needs attention" : "Space shared")
                     .vaultType(.section).themedForeground()

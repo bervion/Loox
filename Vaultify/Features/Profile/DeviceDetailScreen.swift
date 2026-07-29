@@ -46,7 +46,7 @@ struct DeviceDetailScreen: View {
 
     private var hero: some View {
         VStack(spacing: Space.s3) {
-            PolarisIcon(DeviceIconMapping.icon(forModel: device.model), size: 72)
+            VaultIcon(DeviceIconMapping.icon(forModel: device.model), size: 72)
                 .foregroundStyle(Color(rgb: RGBMath.ensureContrast(
                     ProfileBadgeTint.deviceHex, on: env.theme.active.groupedBackground, floor: 3.0)))
             Text(verbatim: title)

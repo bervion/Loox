@@ -8,7 +8,7 @@ import SwiftUI
 ///
 ///     // Cancel + a trailing action:
 ///     VaultSheetScaffold(title: "Spaces", trailing: {
-///         Button { … } label: { PolarisIcon(Icons.add, size: 18) }
+///         Button { … } label: { VaultIcon(Icons.add, size: 18) }
 ///     }) { List { … } }
 ///
 ///     // Read-only viewer — Done on the right:

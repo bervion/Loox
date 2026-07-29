@@ -272,7 +272,7 @@ extension View {
 
 /// 44pt tappable icon button for use inside `HeaderActionCluster`.
 ///
-/// Wraps a `PolarisIcon` in a fixed-frame button that satisfies WCAG 44pt minimum
+/// Wraps a `VaultIcon` in a fixed-frame button that satisfies WCAG 44pt minimum
 /// touch target. Screens may also inline `Button/Menu` directly if they need a menu.
 struct HeaderIconButton: View {
     let icon: String
@@ -300,7 +300,7 @@ struct HeaderIconButton: View {
             // Frame + contentShape live INSIDE the label so the whole 44pt
             // area is hit-testable, not just the 24pt glyph (SwiftUI only taps
             // the label's content shape, ignoring a frame applied to the Button).
-            PolarisIcon(icon, size: Metric.iconUtility)
+            VaultIcon(icon, size: Metric.iconUtility)
                 .themedForeground(role)
                 .frame(width: Metric.hitMin, height: Metric.hitMin)
                 .contentShape(.rect)

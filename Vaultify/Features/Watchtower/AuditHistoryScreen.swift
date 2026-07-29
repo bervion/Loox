@@ -63,7 +63,7 @@ struct AuditHistoryScreen: View {
     private var emptyState: some View {
         VStack {
             HStack(spacing: Space.s3) {
-                PolarisIcon(Icons.shield, size: Metric.iconInline)
+                VaultIcon(Icons.shield, size: Metric.iconInline)
                     .themedForeground(.secondary)
                 Text("Run your first audit to start tracking progress.")
                     .vaultType(.callout)

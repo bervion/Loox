@@ -61,7 +61,7 @@ struct CategoryRow: View {
             // Count badge
             CountBadge(count: count, tintRole: tintRole)
 
-            PolarisIcon(Icons.chevronRight, size: 14)
+            VaultIcon(Icons.chevronRight, size: 14)
                 .themedForeground(.tertiary)
         }
         .padding(.horizontal, Space.s4)
@@ -89,7 +89,7 @@ struct IconTileBadge: View {
             .fill(tint.opacity(0.14))
             .frame(width: size, height: size)
             .overlay(
-                PolarisIcon(icon, size: size * 0.58)
+                VaultIcon(icon, size: size * 0.58)
                     .foregroundStyle(tint)
             )
     }
@@ -132,7 +132,7 @@ struct WatchtowerIssueRow: View {
                 }
             }
             Spacer(minLength: 8)
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
         }
         .contentShape(.rect)
     }

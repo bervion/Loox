@@ -12,7 +12,7 @@ struct MacToolbarSearchField: View {
 
     var body: some View {
         HStack(spacing: Space.s2) {
-            PolarisIcon(Icons.search, size: 14).themedForeground(.secondary)
+            VaultIcon(Icons.search, size: 14).themedForeground(.secondary)
             TextField("Search vault", text: $searchQuery)
                 .textFieldStyle(.plain)
                 .focused(searchFocus)
@@ -20,7 +20,7 @@ struct MacToolbarSearchField: View {
                 Button {
                     searchQuery = ""
                 } label: {
-                    PolarisIcon(Icons.close, size: 12).themedForeground(.secondary)
+                    VaultIcon(Icons.close, size: 12).themedForeground(.secondary)
                         // Mac is pointer-driven (no 44pt thumb-target rule), but a bare
                         // 12pt glyph is still too fussy to click precisely — pad the hit
                         // box out to the toolbar-icon optical size without growing the
@@ -59,15 +59,15 @@ struct MacDetailHeader: View {
         HStack(spacing: Space.s3) {
             Spacer(minLength: 0)
             Button(action: onEdit) {
-                Label { Text("Edit") } icon: { PolarisIcon(Icons.edit, size: 13) }
+                Label { Text("Edit") } icon: { VaultIcon(Icons.edit, size: 13) }
             }
             .buttonStyle(.bordered)
             Menu {
                 Button(action: onArchiveToggle) {
-                    Label(item.archived ? "Unarchive" : "Archive", image: Icons.archive)
+                    Label { Text(item.archived ? "Unarchive" : "Archive") } icon: { VaultIcon(Icons.archive) }
                 }
             } label: {
-                PolarisIcon(Icons.moreHorizontal, size: 16).themedForeground(.secondary)
+                VaultIcon(Icons.moreHorizontal, size: 16).themedForeground(.secondary)
                     // Same pointer-target padding as the search field's clear button —
                     // click box grows, visible glyph stays 16pt.
                     .contentShape(Rectangle().inset(by: -(Metric.iconUtility - 16) / 2))

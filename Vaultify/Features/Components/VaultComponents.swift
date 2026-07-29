@@ -10,7 +10,7 @@ struct CategoryBadge: View {
             .fill(VaultColors.category(category).opacity(0.16))
             .frame(width: size, height: size)
             .overlay(
-                PolarisIcon(category.iconAsset, size: size * 0.58)
+                VaultIcon(category.iconAsset, size: size * 0.58)
                     .foregroundStyle(VaultColors.category(category))
             )
     }
@@ -34,7 +34,7 @@ struct FilterChip: View {
         let theme = env.theme.active
         Button(action: action) {
             HStack(spacing: 6) {
-                if let icon { PolarisIcon(icon, size: Metric.iconCompact) }
+                if let icon { VaultIcon(icon, size: Metric.iconCompact) }
                 Text(title).vaultType(.subhead).fontWeight(.medium)
             }
             .padding(.horizontal, Space.s3)

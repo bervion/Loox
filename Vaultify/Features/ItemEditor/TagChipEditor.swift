@@ -14,10 +14,10 @@ struct TagChipEditor: View {
                     HStack(spacing: 8) {
                         ForEach(tags, id: \.self) { tag in
                             HStack(spacing: 4) {
-                                PolarisIcon(Icons.hashtag, size: 12).themedForeground(.secondary)
+                                VaultIcon(Icons.hashtag, size: 12).themedForeground(.secondary)
                                 Text(tag).vaultType(.subhead)
                                 Button { remove(tag) } label: {
-                                    PolarisIcon(Icons.close, size: 11).themedForeground(.secondary)
+                                    VaultIcon(Icons.close, size: 11).themedForeground(.secondary)
                                 }
                                 .buttonStyle(.plain)
                                 // The visible glyph stays small (11pt) so the chip doesn't bulge,

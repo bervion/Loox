@@ -120,7 +120,7 @@ struct LooxCurrentPlanView: View {
         HStack(spacing: Space.s3) {
             Text(title).vaultType(.body).themedForeground()
             Spacer(minLength: Space.s2)
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
         }
         .padding(.horizontal, Space.s4)
         .frame(minHeight: Metric.rowHeight)

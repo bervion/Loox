@@ -27,7 +27,7 @@ struct MacSidebarList: View {
                         Label {
                             Text(verbatim: folder.name)
                         } icon: {
-                            PolarisIcon(folder.iconAsset).foregroundStyle(folder.color.tint)
+                            VaultIcon(folder.iconAsset).foregroundStyle(folder.color.tint)
                         }
                         .tag(MacVaultFilter.space(folder.id))
                     }
@@ -36,7 +36,7 @@ struct MacSidebarList: View {
                         Text("Spaces")
                         Spacer()
                         Button { creatingSpace = true } label: {
-                            PolarisIcon(Icons.add, size: 12)
+                            VaultIcon(Icons.add, size: 12)
                                 // Pointer target padding, matching MacHeaderBar's clear/
                                 // overflow buttons — visible glyph stays 12pt.
                                 .contentShape(Rectangle().inset(by: -(Metric.iconUtility - 12) / 2))
@@ -54,7 +54,7 @@ struct MacSidebarList: View {
                         Label {
                             Text(verbatim: entry.tag)
                         } icon: {
-                            PolarisIcon(Icons.hashtag)
+                            VaultIcon(Icons.hashtag)
                         }
                         .tag(MacVaultFilter.tag(entry.tag))
                     }
@@ -71,7 +71,7 @@ struct MacSidebarList: View {
     }
 
     private func row(_ title: LocalizedStringResource, icon: String, tag: MacVaultFilter) -> some View {
-        Label { Text(title.inAppLocalized) } icon: { PolarisIcon(icon) }
+        Label { Text(title.inAppLocalized) } icon: { VaultIcon(icon) }
             .tag(tag)
     }
 
@@ -85,7 +85,7 @@ struct MacSidebarList: View {
                        let image = env.repository.avatarImage(for: identity.id) {
                         Image(platformImage: image).resizable().scaledToFill()
                     } else {
-                        PolarisIcon(Icons.person, size: 16).themedForeground(.secondary)
+                        VaultIcon(Icons.person, size: 16).themedForeground(.secondary)
                     }
                 }
                 .frame(width: Metric.iconTile, height: Metric.iconTile)

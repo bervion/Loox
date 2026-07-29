@@ -38,7 +38,7 @@ struct WatchtowerEmptyStateView: View {
 
                 Button(action: onAdd) {
                     HStack(spacing: Space.s2) {
-                        PolarisIcon(Icons.pageAdd, size: Metric.iconInline)
+                        VaultIcon(Icons.pageAdd, size: Metric.iconInline)
                         Text("Add your first password")
                     }
                     .frame(maxWidth: .infinity)

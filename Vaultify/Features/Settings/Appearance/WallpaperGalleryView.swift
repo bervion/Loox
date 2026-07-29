@@ -32,7 +32,7 @@ struct WallpaperGalleryView: View {
 
             Section {
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label { Text("Choose Photo") } icon: { PolarisIcon(Icons.add) }
+                    Label { Text("Choose Photo") } icon: { VaultIcon(Icons.add) }
                 }
             } footer: {
                 Text("Your photo stays on this device.")
@@ -72,7 +72,7 @@ struct WallpaperGalleryView: View {
                                   lineWidth: selected ? 3 : 1))
                 .overlay(alignment: .topTrailing) {
                     if selected {
-                        PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+                        VaultIcon(Icons.checkCircle, size: Metric.iconInline)
                             .foregroundStyle(.white)
                             .padding(6)
                     }
@@ -86,7 +86,7 @@ struct WallpaperGalleryView: View {
             HStack {
                 title.themedForeground()
                 Spacer()
-                if isSelected { PolarisIcon(Icons.checkCircle, size: Metric.iconInline).foregroundStyle(Color.accentColor) }
+                if isSelected { VaultIcon(Icons.checkCircle, size: Metric.iconInline).foregroundStyle(Color.accentColor) }
             }
             .contentShape(.rect) // whole row is tappable, not just the label text
         }

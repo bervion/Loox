@@ -31,7 +31,7 @@ struct PersonaAliasesScreen: View {
             if case .retired = gate.bannerState {
                 Section {
                     NavigationLink { AffectedAccountsScreen() } label: {
-                        Label { Text("Review affected accounts") } icon: { PolarisIcon(Icons.archive) }
+                        Label { Text("Review affected accounts") } icon: { VaultIcon(Icons.archive) }
                     }
                 }
                 .listRowBackground(VaultColors.surface)
@@ -183,7 +183,7 @@ struct PersonaAliasesScreen: View {
                 Button {
                     guardQuota { guardEmail(persona) { promptReusableLabel = true } }
                 } label: {
-                    Label { Text("Create reusable address") } icon: { PolarisIcon(Icons.addCircle) }
+                    Label { Text("Create reusable address") } icon: { VaultIcon(Icons.addCircle) }
                 }
                 .alert("New reusable address", isPresented: $promptReusableLabel) {
                     TextField("Label", text: $reusableLabelDraft)
@@ -205,7 +205,7 @@ struct PersonaAliasesScreen: View {
             }
             if canCreate {
                 Button { guardQuota { guardEmail(persona) { showingPerSiteEditor = true } } } label: {
-                    Label { Text("Add site-specific address") } icon: { PolarisIcon(Icons.addCircle) }
+                    Label { Text("Add site-specific address") } icon: { VaultIcon(Icons.addCircle) }
                 }
             }
         }
@@ -239,11 +239,11 @@ struct PersonaAliasesScreen: View {
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) { pendingDelete = alias } label: {
-                Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
+                Label { Text("Delete") } icon: { VaultIcon(Icons.trash) }
             }
             if alias.status != .disabled {
                 Button { pendingPause = alias } label: {
-                    Label { Text("Pause") } icon: { PolarisIcon(Icons.hide) }
+                    Label { Text("Pause") } icon: { VaultIcon(Icons.hide) }
                 }
             }
         }

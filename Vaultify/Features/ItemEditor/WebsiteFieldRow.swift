@@ -51,7 +51,7 @@ struct WebsiteFieldRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer(minLength: 0)
-            PolarisIcon(Icons.add, size: 13).themedForeground(.accent)
+            VaultIcon(Icons.add, size: 13).themedForeground(.accent)
         }
         .padding(.horizontal, Space.s3)
         .padding(.vertical, Space.s2)

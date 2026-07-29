@@ -240,7 +240,7 @@ struct RestoreMethodSheet: View {
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 0)
-                PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
+                VaultIcon(Icons.chevronRight, size: Metric.iconInline)
                     .themedForeground(.iconSecondary)
                     .frame(maxHeight: .infinity)
             }
@@ -439,7 +439,7 @@ private struct JoinByRecoveryView: View {
 
     private var recoveryField: some View {
         HStack(spacing: Space.s2) {
-            PolarisIcon(Icons.key, size: Metric.iconInline)
+            VaultIcon(Icons.key, size: Metric.iconInline)
                 .foregroundStyle(Color(rgb: env.theme.active.accent))
                 .frame(width: Metric.controlSmall, height: Metric.controlSmall)
                 .background(Color(rgb: env.theme.active.accentSoft),
@@ -451,7 +451,7 @@ private struct JoinByRecoveryView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             #if os(iOS)
             Button { showScanner = true } label: {
-                PolarisIcon(Icons.scanCode, size: Metric.iconInline)
+                VaultIcon(Icons.scanCode, size: Metric.iconInline)
                     .foregroundStyle(Color(rgb: env.theme.active.accent))
                     .frame(width: Metric.hitMin, height: Metric.hitMin, alignment: .trailing)
                     .contentShape(Rectangle())
@@ -495,7 +495,7 @@ private struct JoinByRecoveryView: View {
                 if busy {
                     ProgressView()
                 } else {
-                    PolarisIcon(Icons.importData, size: Metric.iconUtility)
+                    VaultIcon(Icons.importData, size: Metric.iconUtility)
                         .foregroundStyle(Color(rgb: env.theme.active.accent))
                     Text("Import from PDF")
                         .vaultType(.callout).fontWeight(.semibold).themedForeground(.primary)

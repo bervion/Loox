@@ -75,7 +75,7 @@ struct EditorFieldRow: View {
     @ViewBuilder private var valueEditor: some View {
         if isSealedToThisRow {
             let lockedRow = HStack(spacing: 6) {
-                PolarisIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
+                VaultIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
                 Text(lockedValueCopy).vaultType(.caption).themedForeground(.secondary)
             }
             // Only an app-wide sealed field can be unlocked from here; a per-field
@@ -166,7 +166,7 @@ struct EditorFieldRow: View {
                         .accessibilityHidden(true)
                 }
             }
-            PolarisIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
+            VaultIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
         }
     }
 
@@ -254,7 +254,7 @@ struct EditorFieldRow: View {
                 // 44pt hit target so it's easy to tap.
                 if field.kind == .totp && !isEditing {
                     Button(action: onScanTOTP) {
-                        PolarisIcon(Icons.scanCode, size: 26)
+                        VaultIcon(Icons.scanCode, size: 26)
                             .foregroundStyle(Color.accentColor)
                             // Trailing-align the glyph inside the 44pt hit target so it sits at
                             // the row's right edge (lined up with the passkey glyph below), while
@@ -274,7 +274,7 @@ struct EditorFieldRow: View {
             }
         case .fileRef:
             HStack(spacing: 8) {
-                PolarisIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? "ic_attachment", size: 18)
+                VaultIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? "ic_attachment", size: 18)
                     .foregroundStyle(Color.accentColor)
                 Text(AttachmentMeta.decode(field.value)?.name ?? "Attachment").vaultType(.body).lineLimit(1)
                 Spacer()
@@ -428,7 +428,7 @@ struct FloatingFieldChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                PolarisIcon(icon, size: 13)
+                VaultIcon(icon, size: 13)
                 title.vaultType(.caption).fontWeight(.semibold)
             }
             .foregroundStyle(foreground)

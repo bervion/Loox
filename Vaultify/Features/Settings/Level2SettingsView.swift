@@ -237,7 +237,7 @@ struct Level2SettingsView: View {
                     .foregroundStyle(destructive ? env.theme.active.color(.destructive)
                                                  : env.theme.active.color(.primary))
                 Spacer()
-                PolarisIcon(Icons.chevronRight, size: 14)
+                VaultIcon(Icons.chevronRight, size: 14)
                     .themedForeground(.iconSecondary)
             }
             .padding(.horizontal, Space.s5)

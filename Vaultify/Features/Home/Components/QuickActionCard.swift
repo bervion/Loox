@@ -116,7 +116,7 @@ private struct QuickActionTile: View {
                 // Per-type duotone: the tile's hue fills the full-opacity primary path,
                 // the 40% secondary path softens it. Each hue clears ~3:1 on
                 // `controlBackground` in light + dark (palette on the parent).
-                PolarisIcon(item.icon, size: Metric.iconUtility)
+                VaultIcon(item.icon, size: Metric.iconUtility)
                     .foregroundStyle(item.tint)
 
                 Text(item.label)

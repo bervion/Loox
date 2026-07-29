@@ -35,7 +35,7 @@ struct ImportView: View {
                 // primary tint and read as a static label instead of a control.
                 Button { showPicker = true } label: {
                     Label { Text("Choose File…") } icon: {
-                        PolarisIcon(Icons.importData, size: Metric.iconInline)
+                        VaultIcon(Icons.importData, size: Metric.iconInline)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -67,7 +67,7 @@ struct ImportView: View {
                         Label {
                             Text("\(parsedPasskeys.count) passkeys")
                         } icon: {
-                            PolarisIcon(Icons.passkey)
+                            VaultIcon(Icons.passkey)
                         }
                     }
                 }

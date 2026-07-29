@@ -29,7 +29,7 @@ struct SettingsIconBadge: View {
             Image(systemName: systemName)
                 .font(.system(size: 13, weight: .semibold))
         } else {
-            PolarisIcon(icon ?? Icons.info, size: 16)
+            VaultIcon(icon ?? Icons.info, size: 16, weight: .semibold)
         }
     }
 }

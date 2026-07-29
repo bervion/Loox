@@ -91,7 +91,7 @@ struct ProfileSectionCard: View {
 
     private var emptyState: some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(icon, size: Metric.iconTile)
+            VaultIcon(icon, size: Metric.iconTile)
                 .foregroundStyle(Color(rgb: env.theme.active.accentText))
                 .frame(width: Metric.controlLarge, height: Metric.controlLarge)
                 .background(Color(rgb: env.theme.active.accentSoft),
@@ -116,18 +116,18 @@ struct ProfileSectionCard: View {
                     Label {
                         Text(verbatim: candidate.title.isEmpty ? "Untitled" : candidate.title)
                     } icon: {
-                        if candidate.id == selected?.id { PolarisIcon(Icons.checkCircle) }
+                        if candidate.id == selected?.id { VaultIcon(Icons.checkCircle) }
                     }
                 }
             }
             if !pool.isEmpty { Divider() }
-            Button(action: onCreate) { Label { Text("Create new") } icon: { PolarisIcon(Icons.add) } }
+            Button(action: onCreate) { Label { Text("Create new") } icon: { VaultIcon(Icons.add) } }
         } label: {
             HStack(spacing: Space.s3) {
-                PolarisIcon(icon, size: Metric.iconInline).themedForeground(.secondary)
+                VaultIcon(icon, size: Metric.iconInline).themedForeground(.secondary)
                 Text(chooseLabel).vaultType(.body).themedForeground()
                 Spacer()
-                PolarisIcon(Icons.chevronDown, size: 13).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronDown, size: 13).themedForeground(.tertiary)
             }
             .padding(Space.s4)
             .contentShape(.rect)

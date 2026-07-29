@@ -92,7 +92,7 @@ struct ForwardingInboxDetailScreen: View {
                 }
                 if !inbox.isDefault {
                     Button { try? env.repository.setDefaultInbox(inbox) } label: {
-                        Label { Text("Set as default") } icon: { PolarisIcon(Icons.checkCircle) }
+                        Label { Text("Set as default") } icon: { VaultIcon(Icons.checkCircle) }
                     }
                 }
             }
@@ -111,7 +111,7 @@ struct ForwardingInboxDetailScreen: View {
             Label {
                 Text(title)
             } icon: {
-                if busy { ProgressView().controlSize(.small) } else { PolarisIcon(icon) }
+                if busy { ProgressView().controlSize(.small) } else { VaultIcon(icon) }
             }
         }
         .disabled(verification.isBusy(inbox))
@@ -128,7 +128,7 @@ struct ForwardingInboxDetailScreen: View {
                 Text(verbatim: appString("You can send again in \(wait)s"))
                     .themedForeground(.secondary)
             } icon: {
-                PolarisIcon(Icons.clock).themedForeground(.secondary)
+                VaultIcon(Icons.clock).themedForeground(.secondary)
             }
         } else {
             verificationRow(inbox, title: title, icon: Icons.refresh, activity: .sending) {
@@ -141,7 +141,7 @@ struct ForwardingInboxDetailScreen: View {
         Section {
             Button(role: .destructive) { confirmDelete = true } label: {
                 Label { Text("Delete").foregroundStyle(env.theme.active.color(.destructive)) }
-                    icon: { PolarisIcon(Icons.trash).foregroundStyle(env.theme.active.color(.destructive)) }
+                    icon: { VaultIcon(Icons.trash).foregroundStyle(env.theme.active.color(.destructive)) }
             }
         }
         .listRowBackground(VaultColors.surface)

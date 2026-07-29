@@ -105,7 +105,7 @@ struct FilteredItemsScreen: View {
                             }
                         }
                     }
-                } label: { PolarisIcon("ic_sort", size: 22) }
+                } label: { VaultIcon("ic_sort", size: 22) }
                     .accessibilityLabel(Text("Filter"))
             }
         }
@@ -114,7 +114,7 @@ struct FilteredItemsScreen: View {
                 if trimmed.isEmpty {
                     ContentUnavailableView {
                         Label { Text("No items here") } icon: {
-                            PolarisIcon(Icons.folder, size: Metric.iconTileLarge)
+                            VaultIcon(Icons.folder, size: Metric.iconTileLarge)
                         }
                     }
                 } else {

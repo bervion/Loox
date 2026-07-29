@@ -67,7 +67,7 @@ struct ProfileAvatarView: View {
             .accessibilityLabel(Text("Profile photo"))
 
             PhotosPicker(selection: $picked, matching: .images) {
-                PolarisIcon(Icons.camera, size: 15)
+                VaultIcon(Icons.camera, size: 15)
                     .foregroundStyle(badgeForeground)
                     .frame(width: 30, height: 30)
                     .background(badgeBackground, in: Circle())

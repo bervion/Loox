@@ -13,7 +13,7 @@ struct CopyToastOverlay: View {
     var body: some View {
         if let label = env.clipboard.recentCopyLabel {
             HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+                VaultIcon(Icons.checkCircle, size: Metric.iconInline)
                     .foregroundStyle(Color(rgb: env.theme.active.success))
                 Text(appString("Copied \(label)")).vaultType(.subhead).fontWeight(.medium)
             }

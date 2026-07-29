@@ -40,7 +40,7 @@ struct LargeTypeView: View {
         VaultSheetScaffold(
             title: nil,
             leading: {
-                Button { dismiss() } label: { PolarisIcon(Icons.close, size: Metric.iconInline) }
+                Button { dismiss() } label: { VaultIcon(Icons.close, size: Metric.iconInline) }
                     .accessibilityLabel(Text("Close"))
             },
             trailing: {

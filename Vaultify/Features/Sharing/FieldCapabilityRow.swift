@@ -20,7 +20,7 @@ struct FieldCapabilityRow: View {
 
     var body: some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(field.kind.iconAsset, size: Metric.iconInline)
+            VaultIcon(field.kind.iconAsset, size: Metric.iconInline)
                 .themedForeground(.iconSecondary)
             VStack(alignment: .leading, spacing: Space.s1) {
                 fieldLabelText(field.label)
@@ -49,12 +49,12 @@ struct FieldCapabilityRow: View {
                         Button { capability = .totp(.none) } label: { Text("Off") }
                         Button { capability = .totp(.askEachTime) } label: { Text("Ask each time") }
                         Button { requestHandOver(.totp(.shared)) } label: {
-                            Label("Hand over secret…", image: Icons.alert)
+                            Label { Text("Hand over secret…") } icon: { VaultIcon(Icons.alert) }
                         }
                     } label: {
                         HStack(spacing: Space.s1) {
                             Text(totpModeTitle).vaultType(.callout)
-                            PolarisIcon(Icons.chevronDown, size: 14)
+                            VaultIcon(Icons.chevronDown, size: 14)
                         }
                         .themedForeground(.accentText)
                     }

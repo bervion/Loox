@@ -360,7 +360,7 @@ struct HomeScreen: View {
         let waitingOnOwner = share.status == .readyForCeremony
         return HStack(spacing: Space.s3) {
             StatusDot(kind: waitingOnOwner ? .active : .pending)
-            PolarisIcon(Icons.share, size: Metric.iconInline)
+            VaultIcon(Icons.share, size: Metric.iconInline)
                 .themedForeground(waitingOnOwner ? .success : .warning)
             Group {
                 if waitingOnOwner {
@@ -372,7 +372,7 @@ struct HomeScreen: View {
             .vaultType(.body).themedForeground()
             .lineLimit(1).truncationMode(.tail)
             Spacer(minLength: Space.s2)
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
+            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
         }
         .padding(Space.s4)
         .frame(minHeight: Metric.hitMin)
@@ -413,11 +413,11 @@ struct HomeScreen: View {
     private func approvalRowLabel(count: Int) -> some View {
         HStack(spacing: Space.s3) {
             Circle().fill(env.theme.active.color(.success)).frame(width: 8, height: 8)
-            PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.warning)
+            VaultIcon(Icons.shield, size: Metric.iconInline).themedForeground(.warning)
             Text("Approval needed").vaultType(.body).themedForeground()
             Spacer()
             Text("\(count)").themedForeground(.secondary)
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
+            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.secondary)
         }
         .padding(Space.s4)
         .frame(minHeight: Metric.hitMin)
@@ -446,7 +446,7 @@ struct HomeScreen: View {
                         .vaultType(.subhead).themedForeground(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: Space.s2)
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -621,7 +621,7 @@ struct HomeScreen: View {
                     spaceTitleText
                         .vaultType(.headline)
                         .themedForeground(.primary)
-                    PolarisIcon(Icons.chevronDown, size: 13)
+                    VaultIcon(Icons.chevronDown, size: 13)
                         .foregroundStyle(env.theme.uiTint)
                 }
                 .contentShape(.rect)
@@ -634,7 +634,7 @@ struct HomeScreen: View {
                 HStack(spacing: 3) {
                     Text(LocalizedStringResource("See all").inAppLocalized)
                         .vaultType(.subhead)
-                    PolarisIcon(Icons.chevronRight, size: 11)
+                    VaultIcon(Icons.chevronRight, size: 11)
                 }
                 // Quiet grey (not accent) — a low-key affordance, per request.
                 .themedForeground(.secondary)
@@ -692,7 +692,7 @@ struct HomeScreen: View {
                     .fill(Color(rgb: env.theme.active.accentSoft))
                     .frame(width: 116, height: 116)
                     .elevation(.level1)
-                PolarisIcon(Icons.lockFill, size: 52)
+                VaultIcon(Icons.lockFill, size: 52)
                     .themedForeground(.accent)
             }
 
@@ -717,7 +717,7 @@ struct HomeScreen: View {
                 showItemTypePicker = true
             } label: {
                 HStack(spacing: Space.s2) {
-                    PolarisIcon(Icons.add, size: Metric.iconInline)
+                    VaultIcon(Icons.add, size: Metric.iconInline)
                     Text("Add Item")
                 }
             }
@@ -739,7 +739,7 @@ struct HomeScreen: View {
                     .fill(Color(rgb: env.theme.active.accentSoft))
                     .frame(width: 116, height: 116)
                     .elevation(.level1)
-                PolarisIcon(env.repository.activePersonaSpaces.isEmpty ? Icons.folder : Icons.lockFill, size: 52)
+                VaultIcon(env.repository.activePersonaSpaces.isEmpty ? Icons.folder : Icons.lockFill, size: 52)
                     .themedForeground(.accent)
             }
 
@@ -760,7 +760,7 @@ struct HomeScreen: View {
                 // otherwise fall back to Unfiled, which only the default identity owns).
                 Button { showCreateSpaceFromEmptyState = true } label: {
                     HStack(spacing: Space.s2) {
-                        PolarisIcon(Icons.addCircle, size: Metric.iconInline)
+                        VaultIcon(Icons.addCircle, size: Metric.iconInline)
                         Text("Create a Space")
                     }
                 }
@@ -772,7 +772,7 @@ struct HomeScreen: View {
                     showItemTypePicker = true
                 } label: {
                     HStack(spacing: Space.s2) {
-                        PolarisIcon(Icons.add, size: Metric.iconInline)
+                        VaultIcon(Icons.add, size: Metric.iconInline)
                         Text("Add Item")
                     }
                 }

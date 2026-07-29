@@ -38,7 +38,7 @@ struct QuickViewApprovalFieldsSection: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let remaining = max(0, Double(expiresAtUnixMs) / 1000 - context.date.timeIntervalSince1970)
             HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.clock, size: Metric.iconInline).themedForeground(.secondary)
+                VaultIcon(Icons.clock, size: Metric.iconInline).themedForeground(.secondary)
                 Text("Expires in \(Int(remaining)) seconds")
                     .vaultType(.footnote).themedForeground(.secondary)
                     .monospacedDigit()

@@ -46,7 +46,7 @@ struct TOTPScannerSheet: View {
         // NavigationStack toolbar Cancel can fail to render on macOS sheets — guarantee
         // a working close control plus a non-collapsed sheet size.
         .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: { PolarisIcon(Icons.close, size: Metric.iconInline) }
+            Button { dismiss() } label: { VaultIcon(Icons.close, size: Metric.iconInline) }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.cancelAction)
                 .accessibilityLabel(Text("Close"))
@@ -62,7 +62,7 @@ struct TOTPScannerSheet: View {
                 Text(error).vaultType(.footnote).foregroundStyle(VaultColors.strengthWeak)
             }
             PhotosPicker(selection: $photoItem, matching: .images) {
-                Label { Text("Choose a screenshot") } icon: { PolarisIcon(Icons.image) }
+                Label { Text("Choose a screenshot") } icon: { VaultIcon(Icons.image) }
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)

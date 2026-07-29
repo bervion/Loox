@@ -10,7 +10,7 @@ struct QuickLinkFieldRow: View {
     var body: some View {
         Toggle(isOn: $isSelected) {
             HStack(spacing: Space.s3) {
-                PolarisIcon(field.kind.iconAsset, size: Metric.iconInline)
+                VaultIcon(field.kind.iconAsset, size: Metric.iconInline)
                     .themedForeground(.iconSecondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: appLabel(field.label))

@@ -103,7 +103,7 @@ struct AuditFixQueueScreen: View {
     private var completed: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
             HStack(spacing: Space.s3) {
-                PolarisIcon(Icons.checkCircle, size: Metric.iconUtility)
+                VaultIcon(Icons.checkCircle, size: Metric.iconUtility)
                     .themedForeground(.success)
                 Text("You have walked the whole queue.")
                     .vaultType(.headline)
@@ -187,7 +187,7 @@ private struct FindingDetailView: View {
                                                 .themedForeground(.tertiary)
                                         }
                                         Spacer()
-                                        PolarisIcon(Icons.chevronRight, size: 14)
+                                        VaultIcon(Icons.chevronRight, size: 14)
                                             .themedForeground(.tertiary)
                                     }
                                     .padding(Space.s3)

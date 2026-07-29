@@ -11,7 +11,7 @@ struct PasskeyCapabilityRow: View {
 
     var body: some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(Icons.passkey, size: Metric.iconInline)
+            VaultIcon(Icons.passkey, size: Metric.iconInline)
                 .themedForeground(.iconSecondary)
             VStack(alignment: .leading, spacing: Space.s1) {
                 Text(verbatim: passkey.relyingParty)
@@ -26,12 +26,12 @@ struct PasskeyCapabilityRow: View {
                 Button { capability = .passkey(.none) } label: { Text("Off") }
                 Button { capability = .passkey(.askEachTime) } label: { Text("Ask each time") }
                 Button { requestHandOver(.passkey(.shared)) } label: {
-                    Label("Hand over key…", image: Icons.alert)
+                    Label { Text("Hand over key…") } icon: { VaultIcon(Icons.alert) }
                 }
             } label: {
                 HStack(spacing: Space.s1) {
                     Text(modeTitle).vaultType(.callout)
-                    PolarisIcon(Icons.chevronDown, size: 14)
+                    VaultIcon(Icons.chevronDown, size: 14)
                 }
                 .themedForeground(.accentText)
             }

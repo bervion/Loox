@@ -13,7 +13,7 @@ struct MacItemListColumn: View {
         Group {
             if items.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No items") } icon: { PolarisIcon(Icons.apps, size: 40) }
+                    Label { Text("No items") } icon: { VaultIcon(Icons.apps, size: 40) }
                 } description: {
                     Text("Items you add will appear here.")
                 }
@@ -30,7 +30,7 @@ struct MacItemListColumn: View {
                                 Button(role: .destructive) {
                                     try? env.repository.moveToTrash(item)
                                 } label: {
-                                    Label("Trash", image: Icons.trash)
+                                    Label { Text("Trash") } icon: { VaultIcon(Icons.trash) }
                                 }
                             }
                     }

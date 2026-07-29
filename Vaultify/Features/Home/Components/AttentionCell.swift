@@ -77,7 +77,7 @@ struct AttentionCell: View {
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
-                    PolarisIcon(reasonIcon, size: 12)
+                    VaultIcon(reasonIcon, size: 12)
                         .foregroundStyle(toneColor)
                     Text(reasonLabel)
                         .vaultType(.footnote)

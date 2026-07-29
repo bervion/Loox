@@ -20,7 +20,7 @@ struct FolderEditorSheet: View {
         self.folder = folder
         self.onSaved = onSaved
         _name = State(initialValue: folder?.name ?? "")
-        _icon = State(initialValue: folder?.iconAsset ?? CuratedFolderIcons.defaultIcon)
+        _icon = State(initialValue: folder?.iconAsset ?? IconCatalog.defaultToken)
         _color = State(initialValue: folder?.color ?? .blue)
     }
 
@@ -45,7 +45,7 @@ struct FolderEditorSheet: View {
                 if isEditing {
                     Section {
                         Button(role: .destructive) { confirmDelete = true } label: {
-                            Label { Text("Delete Space") } icon: { PolarisIcon(Icons.trash) }
+                            Label { Text("Delete Space") } icon: { VaultIcon(Icons.trash) }
                         }
                     }
                     .listRowBackground(VaultColors.surface)

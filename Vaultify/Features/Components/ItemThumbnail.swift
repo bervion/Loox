@@ -58,7 +58,7 @@ struct ItemThumbnail: View {
     /// the duotone glyph IS the avatar, at the category tint. (Only the monogram
     /// keeps a colored backing tile.)
     private func largeIcon(_ asset: String) -> some View {
-        PolarisIcon(asset, size: size).foregroundStyle(VaultColors.category(category))
+        VaultIcon(asset, size: size).foregroundStyle(VaultColors.category(category))
     }
 
     private func letterAvatar(_ initials: String, shape: some Shape) -> some View {

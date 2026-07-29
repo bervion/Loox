@@ -145,7 +145,7 @@ struct QuickLinkView: View {
                             Button(role: .destructive) {
                                 revokeTarget = record
                             } label: {
-                                Label("Revoke", image: Icons.trash)
+                                Label { Text("Revoke") } icon: { VaultIcon(Icons.trash) }
                             }
                         }
                     }

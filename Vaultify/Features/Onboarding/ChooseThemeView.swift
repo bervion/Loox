@@ -71,7 +71,7 @@ private struct ThemePreviewCard: View {
                 ZStack(alignment: .topTrailing) {
                     preview
                     if isSelected {
-                        PolarisIcon(Icons.checkCircle, size: 18)
+                        VaultIcon(Icons.checkCircle, size: 18)
                             .foregroundStyle(Color(rgb: primaryPalette.accent))
                             .padding(5)
                             .background(Color(rgb: primaryPalette.background), in: Circle())

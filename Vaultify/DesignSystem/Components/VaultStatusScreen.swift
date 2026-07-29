@@ -116,7 +116,7 @@ struct VaultStatusScreen<Feature: View>: View {
                 .frame(width: 132, height: 132)
                 .accessibilityHidden(true)
         } else if let icon {
-            PolarisIcon(icon, size: Metric.iconTileLarge)
+            VaultIcon(icon, size: Metric.iconTileLarge)
                 .themedForeground(tint)
         }
     }

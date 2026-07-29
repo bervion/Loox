@@ -120,7 +120,7 @@ struct ProfileScreen: View {
     private var switchButton: some View {
         Button { showSwitcher = true } label: {
             HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.orderRepeat, size: Metric.iconInline)
+                VaultIcon(Icons.orderRepeat, size: Metric.iconInline)
                 Text("Switch profile")
             }
             .frame(maxWidth: .infinity)

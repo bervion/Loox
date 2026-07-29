@@ -25,7 +25,7 @@ struct VaultTabBar: View {
                                 .vaultTabSelectionSurface()
                                 .matchedGeometryEffect(id: "pill", in: pill)
                         }
-                        PolarisIcon(selected ? tab.iconSelected : tab.icon, size: Metric.iconTab)
+                        VaultIcon(selected ? tab.iconSelected : tab.icon, size: Metric.iconTab)
                             .foregroundStyle(Color(rgb: selected ? theme.accent : theme.iconSecondary))
                             .overlay(alignment: .topTrailing) { badgeDot(tab) }
                     }

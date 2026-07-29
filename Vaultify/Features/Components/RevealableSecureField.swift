@@ -25,7 +25,7 @@ struct RevealableSecureField: View {
             if let icon {
                 // Icon sits in a soft accent tile (mirrors the onboarding card iconography);
                 // the tile also gives the prominent field its taller resting height.
-                PolarisIcon(icon, size: Metric.iconInline)
+                VaultIcon(icon, size: Metric.iconInline)
                     .foregroundStyle(Color(rgb: theme.accentText))
                     .frame(width: Metric.controlSmall, height: Metric.controlSmall)
                     .background(Color(rgb: theme.accentSoft),
@@ -57,7 +57,7 @@ struct RevealableSecureField: View {
                     reveal.toggle()
                     Haptics.tap()
                 } label: {
-                    PolarisIcon(reveal ? Icons.hide : Icons.reveal, size: Metric.iconInline)
+                    VaultIcon(reveal ? Icons.hide : Icons.reveal, size: Metric.iconInline)
                         .foregroundStyle(Color(rgb: theme.secondaryText))
                         // Expand the TAP area to the 44pt WCAG/HIG minimum without growing the
                         // glyph or the row: `.contentShape` only affects hit-testing, not the

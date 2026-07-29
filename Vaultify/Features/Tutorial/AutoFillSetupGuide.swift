@@ -86,7 +86,7 @@ struct AutoFillSetupGuide: View {
             Spacer(minLength: 0)
             switch trailing {
             case .chevron:
-                PolarisIcon(Icons.chevronRight, size: 13).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronRight, size: 13).themedForeground(.tertiary)
             case .toggleOn:
                 // A drawn switch, not a live Toggle: this row is a picture of
                 // another app's screen and must never look interactive.
@@ -97,7 +97,7 @@ struct AutoFillSetupGuide: View {
                         Circle().fill(.white).frame(width: 22, height: 22).padding(2)
                     }
             case .check:
-                PolarisIcon(Icons.check, size: 15)
+                VaultIcon(Icons.check, size: 15)
                     .foregroundStyle(Color(rgb: theme.accent))
             }
         }

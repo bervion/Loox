@@ -1,9 +1,9 @@
 import Foundation
 
 /// FontAwesome6 Duotone device-type glyphs for the Profile Devices list — imported into
-/// `Assets.xcassets/DeviceIcons` (an `fa_` prefix keeps them out of `PolarisIconCatalog`'s
+/// `Assets.xcassets/DeviceIcons` (an `fa_` prefix keeps them out of the SF icon catalog's
 /// item-icon picker, a separate namespace from the Polaris set). Rendered through the same
-/// template-vector pipeline as Polaris icons (`PolarisIcon`, `.renderingMode(.template)`): the
+/// template-vector pipeline as Polaris icons (`VaultIcon`, `.renderingMode(.template)`): the
 /// source SVGs keep FontAwesome's original two-layer opacity styling (the "secondary" shape at
 /// 40% opacity, "primary" at 100%), which Xcode's SVG asset pipeline preserves per pixel — so a
 /// single `.foregroundStyle` tint reproduces the duotone shading at both opacities with no

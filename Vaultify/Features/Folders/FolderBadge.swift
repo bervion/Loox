@@ -18,7 +18,7 @@ struct FolderBadge: View {
             .fill(color.tint.opacity(0.16))
             .frame(width: size, height: size)
             .overlay(
-                PolarisIcon(icon, size: size * 0.56)
+                VaultIcon(icon, size: size * 0.56)
                     .foregroundStyle(color.tint)
             )
     }

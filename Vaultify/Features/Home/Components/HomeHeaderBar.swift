@@ -66,7 +66,7 @@ struct HomeHeaderBar: View {
                         // NavigationLink: the SwiftUI push hid the tab bar via a toolbar modifier
                         // that reveals late on pop; the navigator slide covers it cleanly.
                         Button(action: onNotifications) {
-                            PolarisIcon(Icons.notification, size: Metric.iconUtility)
+                            VaultIcon(Icons.notification, size: Metric.iconUtility)
                                 .themedForeground()
                                 .frame(width: Metric.hitMin, height: Metric.hitMin)
                                 .contentShape(.rect)
@@ -88,7 +88,7 @@ struct HomeHeaderBar: View {
 
                         // Add — opens the item-type picker sheet.
                         Button(action: onAdd) {
-                            PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
+                            VaultIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
                                 .frame(width: Metric.hitMin, height: Metric.hitMin)
                                 .contentShape(.rect)
@@ -137,7 +137,7 @@ struct HomeHeaderBar: View {
                 // Fixed 44pt glass circle so its trailing edge lands on Space.gutter exactly
                 // like the action cluster — `.glassProminent`'s intrinsic padding sat wider.
                 // White check per product decision — reads on the accent-tinted glass.
-                PolarisIcon(Icons.check, size: Metric.iconUtility)
+                VaultIcon(Icons.check, size: Metric.iconUtility)
                     .foregroundStyle(.white)
                     .frame(width: Metric.hitMin, height: Metric.hitMin)
                     .glassEffect(.regular.tint(env.theme.active.color(.accent)).interactive(), in: Circle())
@@ -158,7 +158,7 @@ struct HomeHeaderBar: View {
         Button {
             withAnimation(editModeAnimation) { isEditingLayout = false }
         } label: {
-            PolarisIcon(Icons.check, size: Metric.iconUtility)
+            VaultIcon(Icons.check, size: Metric.iconUtility)
                 .foregroundStyle(env.theme.active.color(.onAccent))
                 .frame(width: Metric.hitMin, height: Metric.hitMin)
                 .background(Circle().fill(env.theme.active.color(.accentFill)))
@@ -186,7 +186,7 @@ struct HomeFolderPickerSheet: View {
             title: "Spaces",
             trailing: {
                 Button { creatingSpace = true } label: {
-                    PolarisIcon(Icons.add, size: 18)
+                    VaultIcon(Icons.add, size: 18)
                 }
                 .accessibilityLabel(Text("Create New Space"))
             }
@@ -256,7 +256,7 @@ struct HomeFolderPickerSheet: View {
                 Spacer(minLength: Space.s2)
                 Text("\(count)").themedForeground(.secondary)
                 if selected {
-                    PolarisIcon(Icons.checkCircle, size: 20).foregroundStyle(accent)
+                    VaultIcon(Icons.checkCircle, size: 20).foregroundStyle(accent)
                 }
             }
             .contentShape(.rect)
@@ -280,7 +280,7 @@ struct HomeFolderPickerSheet: View {
                 }
                 Spacer()
                 if showChevron {
-                    PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                    VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                 }
             }
             .contentShape(.rect)
@@ -296,6 +296,6 @@ struct HomeFolderPickerSheet: View {
         return RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
             .fill(fill)
             .frame(width: size, height: size)
-            .overlay(PolarisIcon(icon, size: 17).foregroundStyle(iconColor))
+            .overlay(VaultIcon(icon, size: 17).foregroundStyle(iconColor))
     }
 }

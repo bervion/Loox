@@ -76,7 +76,7 @@ struct PrivateEmailIntroSheet: View {
             .toolbar {
                 ToolbarItem(placement: .platformTopBarLeading) {
                     Button { dismiss() } label: {
-                        PolarisIcon(Icons.close, size: Metric.iconInline)
+                        VaultIcon(Icons.close, size: Metric.iconInline)
                     }
                     .accessibilityLabel(Text("Close"))
                 }
@@ -95,7 +95,7 @@ struct PrivateEmailIntroSheet: View {
     private func explainerRow(icon: String, title: LocalizedStringKey,
                               blurb: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            PolarisIcon(icon, size: 24)
+            VaultIcon(icon, size: 24)
                 .foregroundStyle(Color.looxBlue)
                 .frame(width: Metric.controlSmall, alignment: .top)
             VStack(alignment: .leading, spacing: 2) {
@@ -124,7 +124,7 @@ struct PrivateEmailIntroSheet: View {
             // Confirmed while the sheet was open: say so and stop offering a
             // step that is already done.
             HStack(alignment: .top, spacing: Space.s3) {
-                PolarisIcon(Icons.checkCircle, size: 24).themedForeground(.success)
+                VaultIcon(Icons.checkCircle, size: 24).themedForeground(.success)
                 Text("This address is verified. Private addresses can forward to it now.")
                     .vaultType(.subhead)
                     .themedForeground(.secondary)
