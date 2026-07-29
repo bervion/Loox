@@ -126,7 +126,7 @@ struct WatchtowerScreen: View {
                 VaultScreenHeader {
                     HeaderActionCluster {
                         Button { showItemTypePicker = true } label: {
-                            PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
+                            VaultIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
                                 .frame(width: Metric.hitMin, height: Metric.hitMin)
                                 .contentShape(.rect)
@@ -379,7 +379,7 @@ struct WatchtowerScreen: View {
             // (the style owns typography and height — plain Text labels only).
             Button { openCategory(.audit) } label: {
                 HStack(spacing: Space.s2) {
-                    PolarisIcon(Icons.shieldPerson, size: Metric.iconInline)
+                    VaultIcon(Icons.shieldPerson, size: Metric.iconInline)
                     Text("Run Vault Audit")
                 }
                 .frame(maxWidth: .infinity)
@@ -425,13 +425,13 @@ struct WatchtowerScreen: View {
             if latestPayload != nil {
                 Button { openCategory(.history) } label: {
                     HStack(spacing: Space.s3) {
-                        PolarisIcon(Icons.clock, size: Metric.iconInline)
+                        VaultIcon(Icons.clock, size: Metric.iconInline)
                             .themedForeground(.secondary)
                         Text("Audit history")
                             .vaultType(.body)
                             .themedForeground(.primary)
                         Spacer()
-                        PolarisIcon(Icons.chevronRight, size: 14)
+                        VaultIcon(Icons.chevronRight, size: 14)
                             .themedForeground(.tertiary)
                     }
                     .padding(Space.s4)
@@ -452,7 +452,7 @@ struct WatchtowerScreen: View {
 
     private var allClearView: some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+            VaultIcon(Icons.checkCircle, size: Metric.iconInline)
                 .themedForeground(.success)
             Text("Excellent vault health. No open issues in the last audit.")
                 .vaultType(.callout)

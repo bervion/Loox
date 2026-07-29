@@ -13,10 +13,10 @@ struct CopyMorphIcon: View {
 
     var body: some View {
         ZStack {
-            PolarisIcon(Icons.copy, size: size)
+            VaultIcon(Icons.copy, size: size)
                 .opacity(copied ? 0 : 1)
                 .scaleEffect(copied ? 0.6 : 1)
-            PolarisIcon(Icons.copyDone, size: size)
+            VaultIcon(Icons.copyDone, size: size)
                 .opacity(copied ? 1 : 0)
                 .scaleEffect(copied ? 1 : 0.6)
         }

@@ -18,11 +18,11 @@ struct LockPasswordField: View {
 
     var body: some View {
         HStack(spacing: Space.s2) {
-            PolarisIcon(Icons.lock, size: Metric.iconInline)
+            VaultIcon(Icons.lock, size: Metric.iconInline)
                 .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
             ZStack(alignment: .leading) {
                 if text.isEmpty {
-                    // Placeholder → SF; the typed value keeps MonoLisa below.
+                    // Placeholder is prose; the typed value below takes tabular digits.
                     Text(title)
                         .vaultType(.body)
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
@@ -53,22 +53,25 @@ struct LockPasswordField: View {
     }
 
     private var loginButton: some View {
-        // Neutral primary fill (Apple-style): black in light, white in dark.
-        // THEME tokens, not `Color.primary`/system background — those follow the
-        // SYSTEM scheme, and inside a sheet whose surface follows the APP theme
-        // they can land near the surface color (a washed-out "disabled" button).
-        let onTint = Color(rgb: env.theme.active.background)
+        // The accent fill, like every other primary action (the slide-to-unlock
+        // knob on this same screen is the closest sibling). THEME tokens, not
+        // `Color.primary`/system background — those follow the SYSTEM scheme,
+        // and inside a sheet whose surface follows the APP theme they can land
+        // near the surface color (a washed-out "disabled" button). `accentFill`
+        // and `accentForeground` also carry the WCAG guarantee that the arrow
+        // stays legible on every preset, which a raw accent pairing would not.
+        let onTint = Color(rgb: env.theme.active.accentForeground)
         let side: CGFloat = 36
         return Button(action: onSubmit) {
             ZStack {
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .fill(Color(rgb: env.theme.active.primaryText))
+                    .fill(Color(rgb: env.theme.active.accentFill))
                 if busy {
                     ProgressView()
                         .controlSize(.small)
                         .tint(onTint)
                 } else {
-                    PolarisIcon(Icons.arrowRight, size: 18)
+                    VaultIcon(Icons.arrowRight, size: 18)
                         .foregroundStyle(onTint)
                 }
             }

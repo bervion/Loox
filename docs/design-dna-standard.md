@@ -33,7 +33,7 @@ Never pick a nested child's radius from the scale directly. Standalone shapes us
 
 ### 4. Typography is architecture
 Only `vaultType` roles — a raw `.font(.system…)` or `.font(.title2.bold())` in feature code is
-a defect. Secrets/codes/card numbers use `Font.vaultCode` (MonoLisa); labels stay SF; never
+a defect. Secrets/codes/card numbers use `Font.vaultCode` (SF, tabular digits); labels stay SF; never
 mono the whole app. OTP renders grouped (`381 942`) as a typographic object, not body text.
 
 ### 5. Motion explains spatial relationships (Controlled Reveal)
@@ -115,14 +115,12 @@ A screen passes only if it renders correctly in ALL of:
   light-dark preview swatches; the fixed decorative quick-action glyph tints (soft-chip
   style since 260711 — labels use text roles); the Settings icon badge tiles
   (`SettingsIconBadge` — white glyph on fixed system-Settings hues, user-granted 260711);
-  SF Symbols for Apple-platform notions Polaris has no honest glyph for (the `icloud`
-  family wherever the iCloud feature appears — Settings badge, Sync screen, passkey
-  backup badge) and for Polaris glyphs that distort at badge scale (`envelope.fill`
-  for Private Email; both user-granted 260711);
+  SF Symbols are now the app's icon set (owner-approved 260729) and are no longer an
+  exemption — they are the rule, reached through `VaultIcon`; what remains exempt is the
+  handful of raw `Image(systemName:)` badge call sites in `SettingsIconBadge`;
   native UISwitch/system-control chrome (the OS draws it); ambient shadows built from black
   opacity (that is how `Elevation` works by design); proportional avatar/tile corner radii that
-  scale with the tile size (a size-relative pattern, not a magic number); SF Symbols inside the
-  PAYMENT CARD context only (user-granted 260711 — `creditcard` etc. read better there; brand
+  scale with the tile size (a size-relative pattern, not a magic number); in the PAYMENT CARD context, brand
   identification uses the SELF-DRAWN generic mark tiles in `Assets.xcassets/CardBrands`
   (user-approved 260711), never an actual third-party logo asset).
 - **Accessibility**: Reduce Motion (instant swaps), Reduce Transparency (solid fallbacks),

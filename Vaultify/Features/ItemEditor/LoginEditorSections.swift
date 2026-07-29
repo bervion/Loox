@@ -135,7 +135,7 @@ struct LoginEditorSections: View {
                     field.wrappedValue.value = ""
                     Haptics.tap()
                 } label: {
-                    PolarisIcon(Icons.close, size: 12)
+                    VaultIcon(Icons.close, size: 12)
                         .themedForeground(.secondary)
                         .padding(6)
                         .background(VaultColors.fill, in: Circle())
@@ -164,7 +164,7 @@ struct LoginEditorSections: View {
                     Haptics.tap()
                 } label: {
                     HStack(spacing: 5) {
-                        PolarisIcon(Icons.person, size: 12)
+                        VaultIcon(Icons.person, size: 12)
                         Text("Use real email instead").vaultType(.footnote)
                     }
                     .themedForeground()
@@ -251,7 +251,7 @@ struct LoginEditorSections: View {
                     Button {
                         draft.fields.append(DynamicField(label: kind.defaultLabel, kind: kind))
                     } label: {
-                        Label { Text(kind.title) } icon: { PolarisIcon(kind.iconAsset) }
+                        Label { Text(kind.title) } icon: { VaultIcon(kind.iconAsset) }
                     }
                 }
             } label: {
@@ -363,7 +363,7 @@ struct LoginEditorSections: View {
     /// Full-width label for an add-row action so the WHOLE row is tappable — a bare
     /// `Label` only registers taps on its text/icon, leaving the rest of the row dead.
     private func actionRowLabel(_ title: LocalizedStringKey, icon: String) -> some View {
-        Label { Text(title) } icon: { PolarisIcon(icon) }
+        Label { Text(title) } icon: { VaultIcon(icon) }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
     }
@@ -376,7 +376,7 @@ struct LoginEditorSections: View {
                     .vaultType(.caption).themedForeground(.secondary).lineLimit(1)
             }
             Spacer(minLength: Space.s2)
-            PolarisIcon(Icons.personLockFilled, size: 22).themedForeground(.secondary)
+            VaultIcon(Icons.personLockFilled, size: 22).themedForeground(.secondary)
         }
         .padding(.vertical, 2)
     }

@@ -105,7 +105,7 @@ struct LooxAcquisitionPaywallView: View {
 
             Button { showLanding = true } label: {
                 HStack(spacing: Space.s2) {
-                    PolarisIcon(Icons.info, size: 15)
+                    VaultIcon(Icons.info, size: 15)
                     Text("Learn more about \(selectedTier.displayName)")
                         .vaultType(.subhead)
                 }
@@ -136,7 +136,7 @@ struct LooxAcquisitionPaywallView: View {
             // changes (blue for Loox+, teal→green for Max).
             ZStack {
                 Circle().fill(LooxPlanTint.fill(selectedTier))
-                PolarisIcon(icon, size: 16)
+                VaultIcon(icon, size: 16)
                     .foregroundStyle(LooxPlanTint.onFill(selectedTier))
             }
             .frame(width: 32, height: 32)
@@ -242,7 +242,7 @@ struct LooxAcquisitionPaywallView: View {
                         // On-tint badge glyph — the documented fixed-tile
                         // exemption class (each identity fill clears the 3:1
                         // floor for its on-tint color by construction).
-                        PolarisIcon(Icons.check, size: 13)
+                        VaultIcon(Icons.check, size: 13)
                             .foregroundStyle(LooxPlanTint.onFill(tier))
                     }
                     .frame(width: 24, height: 24)

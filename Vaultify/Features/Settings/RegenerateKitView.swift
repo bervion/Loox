@@ -46,18 +46,18 @@ struct RegenerateKitView: View {
                     // quiet. Bare Form buttons would inherit the app-wide
                     // primary tint and read as static labels.
                     Button { env.clipboard.copy(newKey, label: appString("recovery key")) } label: {
-                        Label { Text("Copy") } icon: { PolarisIcon(Icons.copy, size: Metric.iconCompact) }
+                        Label { Text("Copy") } icon: { VaultIcon(Icons.copy, size: Metric.iconCompact) }
                     }
                     .buttonStyle(.themedCompact)
                     ShareLink(item: newKey) {
-                        Label { Text("Share") } icon: { PolarisIcon(Icons.share, size: Metric.iconCompact) }
+                        Label { Text("Share") } icon: { VaultIcon(Icons.share, size: Metric.iconCompact) }
                     }
                     .buttonStyle(.themedCompact)
                     // Export glyph, not a shield: this row hands the kit to the
                     // Files sheet, it doesn't say anything about protection.
                     Button(action: presentExporter) {
                         Label { Text("Save Emergency Kit (PDF)") } icon: {
-                            PolarisIcon(Icons.exportData, size: Metric.iconCompact)
+                            VaultIcon(Icons.exportData, size: Metric.iconCompact)
                         }
                     }
                     .buttonStyle(.themedCompactProminent)
@@ -117,7 +117,7 @@ struct RegenerateKitView: View {
             // "fetch again", not "issue a new kit". A key for the first
             // issue, a replay arrow for a re-issue.
             Label { Text(env.session.hasRecoveryKit ? "Regenerate Kit" : "Generate Kit") }
-                icon: { PolarisIcon(env.session.hasRecoveryKit ? Icons.replay : Icons.key,
+                icon: { VaultIcon(env.session.hasRecoveryKit ? Icons.replay : Icons.key,
                                     size: Metric.iconInline) }
                 .frame(maxWidth: .infinity)
         }

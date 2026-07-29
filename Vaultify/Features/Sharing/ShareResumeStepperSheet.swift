@@ -90,9 +90,9 @@ struct ShareResumeStepperSheet: View {
             Menu {
                 Button(role: .destructive) {
                     confirmCancel = true
-                } label: { Label("Cancel Invite", image: Icons.trash) }
+                } label: { Label { Text("Cancel Invite") } icon: { VaultIcon(Icons.trash) } }
             } label: {
-                PolarisIcon("ic_menu_horizontal", size: Metric.iconInline)
+                VaultIcon("ic_menu_horizontal", size: Metric.iconInline)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -145,7 +145,7 @@ struct ShareResumeStepperSheet: View {
             switch step.state {
             case .done:
                 Circle().fill(Color(rgb: env.theme.active.successSoft))
-                PolarisIcon(Icons.check, size: 12).themedForeground(.success)
+                VaultIcon(Icons.check, size: 12).themedForeground(.success)
             case .current:
                 Circle().strokeBorder(env.theme.active.color(.warning), lineWidth: 2)
                 ProgressView().controlSize(.mini)
@@ -215,7 +215,7 @@ struct ShareResumeStepperSheet: View {
                     if busy {
                         ProgressView().frame(maxWidth: .infinity)
                     } else {
-                        Label { Text("Send Invite via Messages") } icon: { PolarisIcon(Icons.share) }
+                        Label { Text("Send Invite via Messages") } icon: { VaultIcon(Icons.share) }
                             .frame(maxWidth: .infinity)
                     }
                 }

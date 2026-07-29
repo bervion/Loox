@@ -95,11 +95,11 @@ struct MacRootView: View {
         Menu {
             ForEach(ItemCategory.allCases) { category in
                 Button { editorTarget = .new(category) } label: {
-                    Label { Text(category.title) } icon: { PolarisIcon(category.iconAsset) }
+                    Label { Text(category.title) } icon: { VaultIcon(category.iconAsset) }
                 }
             }
         } label: {
-            Label { Text("New Item") } icon: { PolarisIcon(Icons.add) }
+            Label { Text("New Item") } icon: { VaultIcon(Icons.add) }
         }
         .buttonStyle(.borderedProminent)
         .tint(env.theme.accentColor)
@@ -126,13 +126,13 @@ struct MacRootView: View {
                     Button { filter = .allItems } label: { Text("All Spaces") }
                     ForEach(env.repository.folders) { folder in
                         Button { filter = .space(folder.id) } label: {
-                            Label { Text(verbatim: folder.name) } icon: { PolarisIcon(folder.iconAsset) }
+                            Label { Text(verbatim: folder.name) } icon: { VaultIcon(folder.iconAsset) }
                         }
                     }
                 } label: {
                     HStack(spacing: Space.s1) {
                         Text(currentSpaceName).vaultType(.subhead).themedForeground(.secondary)
-                        PolarisIcon(Icons.chevronDown, size: 10).themedForeground(.secondary)
+                        VaultIcon(Icons.chevronDown, size: 10).themedForeground(.secondary)
                     }
                 }
                 .menuStyle(.button)
@@ -223,7 +223,7 @@ struct MacRootView: View {
     /// Blank-slate detail on the plain background — canvas, not a gray pane.
     private var emptyDetail: some View {
         VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.lockFill, size: 56).themedForeground(.disabled)
+            VaultIcon(Icons.lockFill, size: 56).themedForeground(.disabled)
             Text("Select an item to view its details.")
                 .vaultType(.subhead).themedForeground(.secondary)
         }

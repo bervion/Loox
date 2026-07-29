@@ -138,7 +138,7 @@ struct EmergencyKitView: View {
                 if !recoveryKey.isEmpty {
                     ShareLink(item: recoveryKey) {
                         HStack(spacing: Space.s1) {
-                            PolarisIcon(Icons.share, size: 13)
+                            VaultIcon(Icons.share, size: 13)
                             Text("Share").vaultType(.caption).fontWeight(.semibold)
                         }
                         .foregroundStyle(.white)
@@ -181,7 +181,7 @@ struct EmergencyKitView: View {
                 if !recoveryKey.isEmpty {
                     HStack {
                         Spacer()
-                        PolarisIcon(copiedKey ? Icons.checkCircle : Icons.copy, size: Metric.iconInline)
+                        VaultIcon(copiedKey ? Icons.checkCircle : Icons.copy, size: Metric.iconInline)
                             .foregroundStyle(copiedKey ? Color(rgb: theme.success)
                                                        : theme.color(.iconSecondary))
                     }

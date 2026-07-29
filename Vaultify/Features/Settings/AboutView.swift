@@ -208,7 +208,7 @@ struct AboutView: View {
 
     private func aboutRow(_ icon: String, _ title: LocalizedStringResource, _ detail: LocalizedStringResource) -> some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            PolarisIcon(icon, size: 22).foregroundStyle(Color.accentColor).frame(width: 26)
+            VaultIcon(icon, size: 22).foregroundStyle(Color.accentColor).frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).vaultType(.subhead).fontWeight(.medium).themedForeground(.primary)
                 Text(detail).vaultType(.caption).themedForeground(.secondary)

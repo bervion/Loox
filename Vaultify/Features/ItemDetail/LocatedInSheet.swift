@@ -34,7 +34,7 @@ struct LocatedInSheet: View {
                         Spacer()
                         if canMove {
                             Button { showMovePicker = true } label: {
-                                Label { Text("Move") } icon: { PolarisIcon(Icons.enter) }
+                                Label { Text("Move") } icon: { VaultIcon(Icons.enter) }
                             }
                             .buttonStyle(.themedCompact)
                         }

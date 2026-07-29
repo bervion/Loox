@@ -40,7 +40,7 @@ struct AuditFullReportScreen: View {
                 if sections.isEmpty {
                     reportSection("Healthy") {
                         HStack(spacing: Space.s3) {
-                            PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+                            VaultIcon(Icons.checkCircle, size: Metric.iconInline)
                                 .themedForeground(.success)
                             Text("No issues were found in this audit.")
                                 .vaultType(.body)

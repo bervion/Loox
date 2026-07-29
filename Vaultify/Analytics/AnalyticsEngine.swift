@@ -141,7 +141,12 @@ nonisolated enum AnalyticsUserProperty: String {
 private struct AnalyticsScreenModifier: ViewModifier {
     let name: String
     func body(content: Content) -> some View {
-        content.onAppear { AnalyticsEngine.shared.logScreen(name) }
+        content.onAppear {
+            AnalyticsEngine.shared.logScreen(name)
+            // Crash reporting has its own consent and its own gate — the screen
+            // a freeze happened on must not depend on the GA4 answer.
+            CrashReporter.shared.set(.activeScreen(name))
+        }
     }
 }
 

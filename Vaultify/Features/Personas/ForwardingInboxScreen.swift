@@ -35,7 +35,7 @@ struct ForwardingInboxScreen: View {
                 }
                 if gate.allows(.create) {
                     Button { addingInbox = true } label: {
-                        Label { Text("Add inbox") } icon: { PolarisIcon(Icons.addCircle) }
+                        Label { Text("Add inbox") } icon: { VaultIcon(Icons.addCircle) }
                     }
                 }
             } footer: {
@@ -125,7 +125,7 @@ struct ForwardingInboxScreen: View {
                     }
                 } else {
                     Button { reconcile() } label: {
-                        Label { Text("Update existing addresses") } icon: { PolarisIcon("ic_refresh") }
+                        Label { Text("Update existing addresses") } icon: { VaultIcon("ic_refresh") }
                     }
                 }
             } footer: {
@@ -159,19 +159,19 @@ struct ForwardingInboxScreen: View {
             verificationMenuItems(inbox)
             if !inbox.isDefault {
                 Button { try? env.repository.setDefaultInbox(inbox) } label: {
-                    Label { Text("Set as default") } icon: { PolarisIcon(Icons.checkCircle) }
+                    Label { Text("Set as default") } icon: { VaultIcon(Icons.checkCircle) }
                 }
             }
             if inbox.source == .manual {
                 Button(role: .destructive) { pendingDeleteInbox = inbox } label: {
-                    Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
+                    Label { Text("Delete") } icon: { VaultIcon(Icons.trash) }
                 }
             }
         }
         .swipeActions(edge: .trailing) {
             if inbox.source == .manual {
                 Button(role: .destructive) { pendingDeleteInbox = inbox } label: {
-                    Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
+                    Label { Text("Delete") } icon: { VaultIcon(Icons.trash) }
                 }
             }
         }
@@ -206,7 +206,7 @@ struct ForwardingInboxScreen: View {
                 Button {
                     Task { await verification.check(inbox, relay: env.relay) }
                 } label: {
-                    Label { Text("Check verification") } icon: { PolarisIcon(Icons.checkCircle) }
+                    Label { Text("Check verification") } icon: { VaultIcon(Icons.checkCircle) }
                 }
                 .disabled(verification.isBusy(inbox))
                 resendButton(inbox, title: "Resend email",
@@ -234,9 +234,9 @@ struct ForwardingInboxScreen: View {
             // the countdown is the answer to "why can't I send again".
             if waiting > 0 {
                 Label { Text(verbatim: appString("Send again in \(waiting)s")) }
-                    icon: { PolarisIcon(Icons.clock) }
+                    icon: { VaultIcon(Icons.clock) }
             } else {
-                Label { Text(title) } icon: { PolarisIcon(icon) }
+                Label { Text(title) } icon: { VaultIcon(icon) }
             }
         }
         .disabled(waiting > 0 || verification.isBusy(inbox))

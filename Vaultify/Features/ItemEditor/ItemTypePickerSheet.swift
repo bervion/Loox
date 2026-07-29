@@ -59,7 +59,7 @@ struct ItemTypePickerSheet: View {
                     // Icon-only toolbar button → iOS 26 gives it the circular
                     // liquid-glass close treatment automatically (matches the editor).
                     Button { dismiss() } label: {
-                        PolarisIcon(Icons.close, size: Metric.iconInline)
+                        VaultIcon(Icons.close, size: Metric.iconInline)
                     }
                     .accessibilityLabel(Text("Close"))
                 }
@@ -79,7 +79,7 @@ struct ItemTypePickerSheet: View {
             HStack(alignment: .center, spacing: Space.s2) {
                 HStack(alignment: .top, spacing: Space.s3) {
                     // Brand blue duotone glyph, aligned to the title's top line.
-                    PolarisIcon(category.avatarIcon, size: 28)
+                    VaultIcon(category.avatarIcon, size: 28)
                         .foregroundStyle(Color.looxBlue)
                         .frame(width: Metric.controlSmall, alignment: .top)
                     VStack(alignment: .leading, spacing: 2) {
@@ -93,7 +93,7 @@ struct ItemTypePickerSheet: View {
                     }
                     Spacer(minLength: 0)
                 }
-                PolarisIcon(Icons.chevronRight, size: 14)
+                VaultIcon(Icons.chevronRight, size: 14)
                     .themedForeground(.tertiary)
             }
             .padding(Space.s4)

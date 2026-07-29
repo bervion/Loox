@@ -60,7 +60,7 @@ struct WatchtowerStrengthScreen: View {
             if toFix.isEmpty {
                 Section {
                     HStack(spacing: Space.s3) {
-                        PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+                        VaultIcon(Icons.checkCircle, size: Metric.iconInline)
                             .themedForeground(.success)
                         Text("Every password is strong and unique.")
                             .vaultType(.callout)

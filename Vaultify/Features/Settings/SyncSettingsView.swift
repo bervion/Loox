@@ -59,6 +59,14 @@ struct SyncSettingsView: View {
                     .buttonStyle(.themedCompact)
                     .disabled(env.cloudSync.status == .syncing)
                     statusRow
+                } footer: {
+                    // Passkeys whose credential id is too long for a CloudKit record
+                    // name never reach iCloud. Stating it beats letting them look
+                    // synced. Explanatory copy on this screen lives in the footer,
+                    // never as a footnote row inside the card of controls.
+                    if env.cloudSync.passkeysExcludedFromSync > 0 {
+                        Text("Some passkeys stay on this device. Their credential IDs are too long for iCloud to store.")
+                    }
                 }
                 .listRowBackground(VaultColors.surface)
 
@@ -68,7 +76,7 @@ struct SyncSettingsView: View {
                         // real destination here, syncing is upkeep.
                         Button { showPairSheet = true } label: {
                             Label { Text("Pair New Device") } icon: {
-                                PolarisIcon(Icons.scanCode, size: Metric.iconCompact)
+                                VaultIcon(Icons.scanCode, size: Metric.iconCompact)
                             }
                         }
                         .buttonStyle(.themedCompactProminent)
@@ -184,6 +192,10 @@ struct SyncSettingsView: View {
         case .error(let message):
             Text(message).vaultType(.footnote)
                 .foregroundStyle(env.theme.active.color(.destructive))
+        case .configurationError(let message):
+            // A schema gap is not a network blip: it never clears by retrying, so it
+            // gets the banner treatment and names the plane that stopped syncing.
+            VaultInfoBanner(.warning, verbatimText: message).inList()
         }
     }
 }

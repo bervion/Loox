@@ -40,7 +40,7 @@ struct LargeTypeView: View {
         VaultSheetScaffold(
             title: nil,
             leading: {
-                Button { dismiss() } label: { PolarisIcon(Icons.close, size: Metric.iconInline) }
+                Button { dismiss() } label: { VaultIcon(Icons.close, size: Metric.iconInline) }
                     .accessibilityLabel(Text("Close"))
             },
             trailing: {
@@ -85,7 +85,7 @@ struct LargeTypeView: View {
 
     private var copyButton: some View {
         Button { copy() } label: {
-            // Text only (no icon), in SF — not the MonoLisa code font.
+            // Text only (no icon), and the body role — this is a control label, not a code.
             Text(copied ? "Copied" : "Copy")
                 .vaultType(.body)
                 .foregroundStyle(theme.color(copied ? .accent : .primary))
@@ -117,10 +117,10 @@ struct LargeTypeView: View {
                             .foregroundStyle(theme.color(.onAccent))
                     } else {
                         HStack(spacing: Space.s3) {
-                            // OTP is a typographic object (rule 4): same MonoLisa
-                            // treatment as `TOTPCodeView`'s live code, not raw SF.
+                            // Same treatment as `TOTPCodeView`'s live code: SF with
+                            // monospaced digits, so the two read identically.
                             Text(TOTPCodeView.format(code))
-                                .font(.vaultCode(.title3, weight: .semibold)).monospacedDigit()
+                                .vaultType(.section).monospacedDigit()
                                 .themedForeground(.primary)
                             CountdownRing(remaining: remaining, period: 30)
                         }

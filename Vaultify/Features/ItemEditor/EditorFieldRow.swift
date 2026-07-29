@@ -75,7 +75,7 @@ struct EditorFieldRow: View {
     @ViewBuilder private var valueEditor: some View {
         if isSealedToThisRow {
             let lockedRow = HStack(spacing: 6) {
-                PolarisIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
+                VaultIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
                 Text(lockedValueCopy).vaultType(.caption).themedForeground(.secondary)
             }
             // Only an app-wide sealed field can be unlocked from here; a per-field
@@ -166,7 +166,7 @@ struct EditorFieldRow: View {
                         .accessibilityHidden(true)
                 }
             }
-            PolarisIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
+            VaultIcon(Icons.lockFill, size: Metric.iconCompact).themedForeground(.secondary)
         }
     }
 
@@ -218,7 +218,7 @@ struct EditorFieldRow: View {
             CardCodeFieldEditor(value: $field.value, maxLength: 6, placeholder: valuePlaceholder)
         // Any `protected` single-line value (password/TOTP, plus template fields sealed at rest
         // like Card Number, Security Code, ID Number) shares the same controlled-reveal
-        // treatment: masked bullets when unfocused, MonoLisa plaintext only while the user is
+        // treatment: masked bullets when unfocused, plaintext only while the user is
         // actively typing. Storage encryption without matching on-screen masking would leave a
         // sensitive value visible the whole time it's being edited — this generalizes the
         // password/TOTP-only masking that existed before to every `protected` kind.
@@ -230,8 +230,8 @@ struct EditorFieldRow: View {
                 ZStack(alignment: .leading) {
                     TextField(valuePlaceholder, text: $field.value)
                         .focused($valueFocused)
-                        // MonoLisa for a typed secret value; SF for the empty
-                        // placeholder and for TOTP secrets.
+                        // Tabular digits for a typed secret value; proportional figures for
+                        // the empty placeholder and for TOTP secrets.
                         .font(field.value.isEmpty || field.kind == .totp ? VaultType.body.font : .vaultCode())
                         .platformAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -254,7 +254,7 @@ struct EditorFieldRow: View {
                 // 44pt hit target so it's easy to tap.
                 if field.kind == .totp && !isEditing {
                     Button(action: onScanTOTP) {
-                        PolarisIcon(Icons.scanCode, size: 26)
+                        VaultIcon(Icons.scanCode, size: 26)
                             .foregroundStyle(Color.accentColor)
                             // Trailing-align the glyph inside the 44pt hit target so it sits at
                             // the row's right edge (lined up with the passkey glyph below), while
@@ -274,7 +274,7 @@ struct EditorFieldRow: View {
             }
         case .fileRef:
             HStack(spacing: 8) {
-                PolarisIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? "ic_attachment", size: 18)
+                VaultIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? "ic_attachment", size: 18)
                     .foregroundStyle(Color.accentColor)
                 Text(AttachmentMeta.decode(field.value)?.name ?? "Attachment").vaultType(.body).lineLimit(1)
                 Spacer()
@@ -428,7 +428,7 @@ struct FloatingFieldChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                PolarisIcon(icon, size: 13)
+                VaultIcon(icon, size: 13)
                 title.vaultType(.caption).fontWeight(.semibold)
             }
             .foregroundStyle(foreground)

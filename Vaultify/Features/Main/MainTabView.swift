@@ -6,7 +6,7 @@ import UIKit
 /// The compact (iPhone) unlocked app shell: Home · Items · Watchtower · Search.
 ///
 /// Uses the system `TabView` tab bar for native switching performance and iOS 26 Liquid
-/// Glass. Each tab item intentionally provides only a Polaris icon asset, so the visual
+/// Glass. Each tab item intentionally provides only an icon, so the visual
 /// bar remains icon-only while VoiceOver still gets localized labels. Shared shell
 /// behaviors (toast, sheets, auto-lock, section notifications) come from
 /// `vaultShellBehaviors()` — the same modifier the iPad/Mac sidebar applies.
@@ -97,7 +97,7 @@ struct MainTabView: View {
         #else
         // macOS sizes the native TabView icon from the SwiftUI Image directly (no
         // intrinsic-size rasterization quirk like iOS's UIKit-backed tab bar).
-        Image(name)
+        Image(vaultIcon: name)
             .renderingMode(.template)
             .accessibilityLabel(Text(tab.accessibilityLabel))
         #endif
@@ -105,14 +105,30 @@ struct MainTabView: View {
 
     #if canImport(UIKit)
     /// The native tab bar sizes a custom template image by its **intrinsic** size and ignores
-    /// any SwiftUI `.frame`. The Polaris assets are a 20pt square, so re-render each into a
-    /// UIImage at `Metric.iconTab` — the size the bar actually honours (verified: an SF Symbol
-    /// renders larger, so the bar sizes by the image, not a fixed slot).
+    /// any SwiftUI `.frame`, so each icon is re-rendered into a UIImage at `Metric.iconTab` —
+    /// the size the bar actually honours.
+    ///
+    /// The name must go through `IconResolver`: tab icons are `sf:`-prefixed tokens, and
+    /// `UIImage(named:)` on one of those returns nil, which silently produces an EMPTY tab bar
+    /// (no crash, no log — the bar just renders blank pills).
     private func tabImage(_ name: String) -> UIImage {
         let size = CGSize(width: Metric.iconTab, height: Metric.iconTab)
-        guard let base = UIImage(named: name) else { return UIImage() }
+        let base: UIImage? = switch IconResolver.resolve(name) {
+        case .system(let symbol):
+            UIImage(systemName: symbol,
+                    withConfiguration: UIImage.SymbolConfiguration(pointSize: Metric.iconTab))
+        case .asset(let asset):
+            UIImage(named: asset)
+        }
+        guard let base else { return UIImage() }
+        // Aspect-fit rather than stretch: the legacy assets were square, but SF Symbols are not,
+        // and drawing one into a square box distorts its stroke weights.
+        let scale = min(size.width / base.size.width, size.height / base.size.height)
+        let fitted = CGSize(width: base.size.width * scale, height: base.size.height * scale)
         let rendered = UIGraphicsImageRenderer(size: size).image { _ in
-            base.draw(in: CGRect(origin: .zero, size: size))
+            base.draw(in: CGRect(origin: CGPoint(x: (size.width - fitted.width) / 2,
+                                                 y: (size.height - fitted.height) / 2),
+                                 size: fitted))
         }
         return rendered.withRenderingMode(.alwaysTemplate)
     }

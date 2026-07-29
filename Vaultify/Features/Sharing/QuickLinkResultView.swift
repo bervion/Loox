@@ -31,7 +31,7 @@ struct QuickLinkResultView: View {
         // the action pair sits at the bottom of the sheet where the thumb is.
         VStack(alignment: .leading, spacing: Space.s5) {
             HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.checkCircle, size: Metric.iconUtility)
+                VaultIcon(Icons.checkCircle, size: Metric.iconUtility)
                     .themedForeground(.success)
                 Text("Link ready")
                     .vaultType(.screenTitle).themedForeground()
@@ -77,7 +77,7 @@ struct QuickLinkResultView: View {
                     copied = true
                 } label: {
                     Label { Text(copied ? "Link Copied" : "Copy Link") }
-                        icon: { PolarisIcon(copied ? Icons.copyDone : Icons.copy) }
+                        icon: { VaultIcon(copied ? Icons.copyDone : Icons.copy) }
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.themedProminent)
@@ -128,7 +128,7 @@ struct QuickLinkResultView: View {
     /// full ≥44pt hit target even though it reads visually light.
     private func utilityAction(icon: String, title: LocalizedStringResource) -> some View {
         VStack(spacing: Space.s1) {
-            PolarisIcon(icon, size: Metric.iconInline).themedForeground(.accentText)
+            VaultIcon(icon, size: Metric.iconInline).themedForeground(.accentText)
             Text(title)
                 .vaultType(.footnote).themedForeground(.accentText)
                 .multilineTextAlignment(.center)

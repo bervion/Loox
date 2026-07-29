@@ -50,7 +50,7 @@ struct LegacyChipTabBar: View {
                         .frame(width: TabBarMetric.indicatorSize,
                                height: TabBarMetric.indicatorSize)
                 }
-                PolarisIcon(selected ? tab.iconSelected : tab.icon, size: Metric.iconTab)
+                VaultIcon(selected ? tab.iconSelected : tab.icon, size: Metric.iconTab)
                     .foregroundStyle(selected ? theme.color(.primary) : theme.color(.iconSecondary))
             }
             // Fixed indicator-width slot; full bar height keeps the hit area ≥44pt.

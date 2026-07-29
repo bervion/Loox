@@ -48,7 +48,7 @@ struct ProtectFieldSheet: View {
                 // WHAT is being protected — the old sheet never said.
                 Section {
                     HStack(spacing: Space.s3) {
-                        PolarisIcon(Icons.lockFill, size: Metric.iconInline)
+                        VaultIcon(Icons.lockFill, size: Metric.iconInline)
                             .themedForeground(.iconSecondary)
                         fieldLabelText(field.label)
                             .vaultType(.headline)

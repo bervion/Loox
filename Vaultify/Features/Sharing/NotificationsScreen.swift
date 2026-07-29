@@ -33,7 +33,7 @@ struct NotificationsScreen: View {
             if invites.isEmpty && requests.isEmpty && outgoingShares.isEmpty && history.isEmpty {
                 ContentUnavailableView {
                     Label { Text("No notifications") } icon: {
-                        PolarisIcon(Icons.notification, size: Metric.iconTileLarge)
+                        VaultIcon(Icons.notification, size: Metric.iconTileLarge)
                     }
                 } description: {
                     Text("Share invitations and approval requests appear here.")
@@ -125,7 +125,7 @@ struct NotificationsScreen: View {
     private func inviteRow(_ invite: InviteEnvelope) -> some View {
         HStack(spacing: Space.s3) {
             pendingDot
-            PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accentText)
+            VaultIcon(Icons.share, size: Metric.iconInline).themedForeground(.accentText)
             VStack(alignment: .leading, spacing: 2) {
                 InvitePrompt.senderLine(sender: env.inviteInboxCoordinator.senderName(for: invite))
                     .vaultType(.body).themedForeground()
@@ -154,14 +154,14 @@ struct NotificationsScreen: View {
                 // Green dot only when the owner can act (profile arrived); the
                 // waiting states are informational, not a call to action.
                 if share.status == .readyForCeremony { pendingDot }
-                PolarisIcon(Icons.share, size: Metric.iconInline).themedForeground(.accentText)
+                VaultIcon(Icons.share, size: Metric.iconInline).themedForeground(.accentText)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: share.recipientLabel).vaultType(.body).themedForeground()
                     Text(outgoingStatusText(share.status))
                         .vaultType(.footnote).themedForeground(.secondary)
                 }
                 Spacer(minLength: Space.s2)
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
             .frame(minHeight: Metric.hitMin)
             .contentShape(.rect)
@@ -180,7 +180,7 @@ struct NotificationsScreen: View {
 
     private func historyRow(_ entry: NotificationHistoryStore.Entry) -> some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(historyIcon(entry.kind), size: Metric.iconInline)
+            VaultIcon(historyIcon(entry.kind), size: Metric.iconInline)
                 .themedForeground(.iconSecondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(historyTitle(entry.kind)).vaultType(.body).themedForeground()
@@ -222,7 +222,7 @@ struct NotificationsScreen: View {
         Button { presentedApproval = pending } label: {
             HStack(spacing: Space.s3) {
                 pendingDot
-                PolarisIcon(Icons.shield, size: Metric.iconInline).themedForeground(.warning)
+                VaultIcon(Icons.shield, size: Metric.iconInline).themedForeground(.warning)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Code approval requested").vaultType(.body).themedForeground()
                     Text(Date(timeIntervalSince1970: Double(pending.request.createdAtUnixMs) / 1000)
@@ -230,7 +230,7 @@ struct NotificationsScreen: View {
                         .vaultType(.footnote).themedForeground(.secondary)
                 }
                 Spacer(minLength: Space.s2)
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
             .frame(minHeight: Metric.hitMin)
             .contentShape(.rect)

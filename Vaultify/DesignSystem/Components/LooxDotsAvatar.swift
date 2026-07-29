@@ -148,7 +148,7 @@ struct LooxDotsAvatar: View {
                         Image(systemName: loopSystemGlyph)
                             .font(.system(size: size * 0.26, weight: .medium))
                     } else {
-                        PolarisIcon(Icons.camera, size: size * 0.30)
+                        VaultIcon(Icons.camera, size: size * 0.30)
                     }
                 }
                 .foregroundStyle(accent)
@@ -159,7 +159,7 @@ struct LooxDotsAvatar: View {
                     .foregroundStyle(accent)
                     .transition(.scale.combined(with: .opacity))
             } else if let centerIcon {
-                Image(centerIcon)
+                Image(vaultIcon: centerIcon)
                     .resizable()
                     .renderingMode(.template)
                     .scaledToFit()

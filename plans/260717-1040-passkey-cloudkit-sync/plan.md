@@ -1,6 +1,7 @@
 # Passkey CloudKit Sync (`VaultPasskey`)
 
 **Status:** IMPLEMENTED (branch `feat/passkey-cloudkit-sync`, 260717) — code + tests done; PENDING: CloudKit Production deploy of `VaultPasskey` (OPS gate) and the phase-3 two-device checklist.
+- **260729 — the OPS gate is now a CONFIRMED user-visible bug, not a latent risk.** The owner reports passkeys not syncing between two devices on one iCloud account, and an audit traced it here: the plane pushes, Production rejects the unknown record type, `dirty` never clears, and the other device's delta pull returns zero passkey records. Items and folders keep syncing because `push()` is fault-isolated per plane, which is exactly the reported symptom. No code fix applies. Follow-up work landed on `feat/sf-icons-crash-reporting-260729`: per-plane sync errors are now surfaced and a schema error reads as a configuration problem retrying cannot fix, plus a CKRecord mapping round-trip test that pins the field names/types Production must carry. The deploy step is now in `docs/deployment-guide.md` so this class cannot recur.
 - Phase 1 ✓ (columns, tombstone-with-wipe, LWW helpers, `PasskeySyncMergeTests` 11 tests green + all legacy passkey suites)
 - Phase 2 ✓ (plane wired into the fault-isolated push + pull switch; post-sync reload verified to refresh passkeys + QuickType) — OPS gate outstanding
 - Phase 3 ✓ code (badge honesty via existing localized strings; docs synced) / ☐ device checklist (user)

@@ -57,7 +57,7 @@ Project.swift              # Tuist manifest — source of truth for the Xcode pr
 Vaultify/                  # App target
 ├── App/                   #   @main entry, root scene
 ├── Features/              #   feature screens (vault, items, settings, …)
-├── DesignSystem/          #   Polaris SVG icons, components, theme
+├── DesignSystem/          #   Icons (SF via VaultIcon), components, theme
 ├── Services/              #   app services (e.g. Sync/CloudSyncService — iCloud opt-in)
 ├── Security/              #   biometrics / unlock
 ├── Data/, Resources/      #   stores, Localizable.xcstrings, Assets.xcassets

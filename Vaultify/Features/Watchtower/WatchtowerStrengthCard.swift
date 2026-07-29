@@ -80,7 +80,7 @@ struct WatchtowerStrengthCard: View {
                     .vaultType(.headline)
                     .themedForeground(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
+                VaultIcon(Icons.chevronRight, size: Metric.iconInline)
                     .themedForeground(.iconDisabled)
             }
             WatchtowerStrengthBar(value: overallStrength, introKey: introKey)

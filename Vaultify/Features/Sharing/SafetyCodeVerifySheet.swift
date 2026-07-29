@@ -86,7 +86,7 @@ struct SafetyCodeCard: View {
                     .textSelection(.enabled)
                 Button(action: onCopy) {
                     HStack(spacing: Space.s2) {
-                        PolarisIcon(Icons.copy, size: Metric.iconInline)
+                        VaultIcon(Icons.copy, size: Metric.iconInline)
                         Text("Copy code").vaultType(.body).fontWeight(.medium)
                     }
                     .themedForeground(.accentText)

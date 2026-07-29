@@ -18,10 +18,10 @@ struct PersonaSwitcherScreen: View {
                     Button { select(persona) } label: { row(persona) }
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) { attemptDelete(persona) } label: {
-                                Label { Text("Delete") } icon: { PolarisIcon(Icons.trash) }
+                                Label { Text("Delete") } icon: { VaultIcon(Icons.trash) }
                             }
                             Button { editorTarget = .edit(persona) } label: {
-                                Label { Text("Edit") } icon: { PolarisIcon(Icons.edit) }
+                                Label { Text("Edit") } icon: { VaultIcon(Icons.edit) }
                             }
                             .tint(Color(rgb: env.theme.active.accent))
                         }
@@ -31,7 +31,7 @@ struct PersonaSwitcherScreen: View {
 
             Section {
                 Button { attemptCreate() } label: {
-                    Label { Text("Add persona") } icon: { PolarisIcon(Icons.addCircle) }
+                    Label { Text("Add persona") } icon: { VaultIcon(Icons.addCircle) }
                 }
             }
             .listRowBackground(VaultColors.surface)
@@ -81,11 +81,11 @@ struct PersonaSwitcherScreen: View {
                 }
                 Spacer()
                 if persona.id == env.repository.activePersona?.id {
-                    PolarisIcon(Icons.checkCircle).themedForeground(.accentText)
+                    VaultIcon(Icons.checkCircle).themedForeground(.accentText)
                 }
             }
         } icon: {
-            PolarisIcon(PersonaKindStyle.icon(persona.kind)).themedForeground(.iconSecondary)
+            VaultIcon(PersonaKindStyle.icon(persona.kind)).themedForeground(.iconSecondary)
         }
     }
 

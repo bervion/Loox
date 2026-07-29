@@ -79,7 +79,7 @@ struct ItemEditorScreen: View {
                 Button {
                     hasChanges ? (confirmDiscard = true) : dismiss()
                 } label: {
-                    PolarisIcon(Icons.close, size: Metric.iconInline)
+                    VaultIcon(Icons.close, size: Metric.iconInline)
                 }
                 .accessibilityLabel(Text("Cancel"))
             },
@@ -167,14 +167,14 @@ struct ItemEditorScreen: View {
                                 Button {
                                     draft.fields.append(DynamicField(label: kind.defaultLabel, kind: kind))
                                 } label: {
-                                    Label { Text(kind.title) } icon: { PolarisIcon(kind.iconAsset) }
+                                    Label { Text(kind.title) } icon: { VaultIcon(kind.iconAsset) }
                                 }
                             }
                         } label: {
                             // Full-width label so the WHOLE row is tappable — a bare `Label`
                             // only registers taps on its text/icon, leaving the rest of the
                             // row dead (same fix already applied in `LoginEditorSections`).
-                            Label { Text("Add Field") } icon: { PolarisIcon(Icons.addCircle) }
+                            Label { Text("Add Field") } icon: { VaultIcon(Icons.addCircle) }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
                         }
@@ -183,7 +183,7 @@ struct ItemEditorScreen: View {
                         .menuIndicator(.hidden)
 
                         Button { showAttachmentPicker = true } label: {
-                            Label { Text("Add Attachment") } icon: { PolarisIcon("ic_attachment") }
+                            Label { Text("Add Attachment") } icon: { VaultIcon("ic_attachment") }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
                         }
@@ -286,7 +286,7 @@ struct ItemEditorScreen: View {
                 AttachmentPickerSheet { data, name, ext in addAttachment(data, name: name, ext: ext) }
             }
             .sheet(isPresented: $showIconPicker) {
-                ItemIconPickerSheet(selected: draft.iconAsset) { draft.iconAsset = $0 }
+                IconPickerSheet(selected: draft.iconAsset) { draft.iconAsset = $0 }
             }
         }
         // Float the "generate" bubble anchored just below the focused password field. Applied
@@ -350,7 +350,7 @@ struct ItemEditorScreen: View {
                                 if creatingAlias {
                                     ProgressView().controlSize(.small)
                                 } else {
-                                    PolarisIcon(Icons.mail, size: Metric.iconInline).themedForeground(.accentText)
+                                    VaultIcon(Icons.mail, size: Metric.iconInline).themedForeground(.accentText)
                                 }
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Create private email").vaultType(.body).themedForeground(.accent)
@@ -428,13 +428,13 @@ struct ItemEditorScreen: View {
         Menu {
             ForEach(env.repository.folders) { folder in
                 Button { draft.folderId = folder.id } label: {
-                    Label { Text(folder.name) } icon: { PolarisIcon(folder.iconAsset) }
+                    Label { Text(folder.name) } icon: { VaultIcon(folder.iconAsset) }
                 }
             }
         } label: {
             HStack(spacing: Space.s2) {
                 SpaceIdentityLine(folder: selectedFolder, badgeSize: 22)
-                PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
+                VaultIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
             }
             .padding(.horizontal, Space.s3)
             .padding(.vertical, Space.s2)
@@ -454,19 +454,19 @@ struct ItemEditorScreen: View {
             // Menu glyphs use the single-tone category icon so all three rows share
             // the line-icon weight/padding (the duotone glyph reads oversized here).
             Button { draft.iconAsset = nil } label: {
-                Label { Text("Default") } icon: { PolarisIcon(draft.category.iconAsset, size: Metric.iconInline) }
+                Label { Text("Default") } icon: { VaultIcon(draft.category.iconAsset, size: Metric.iconInline) }
             }
             Button { draft.iconAsset = ItemAvatarStyle.monogramToken } label: {
-                Label { Text("Letter avatar") } icon: { PolarisIcon("ic_text", size: Metric.iconInline) }
+                Label { Text("Letter avatar") } icon: { VaultIcon("ic_text", size: Metric.iconInline) }
             }
             Button { showIconPicker = true } label: {
-                Label { Text("Choose icon") } icon: { PolarisIcon("ic_apps", size: Metric.iconInline) }
+                Label { Text("Choose icon") } icon: { VaultIcon("ic_apps", size: Metric.iconInline) }
             }
         } label: {
             FaviconView(urlString: draft.urlField?.value, category: draft.category, size: 56,
                         title: draft.title, iconAsset: draft.iconAsset)
                 .overlay(alignment: .bottomTrailing) {
-                    PolarisIcon(Icons.chevronDown, size: 10)
+                    VaultIcon(Icons.chevronDown, size: 10)
                         .themedForeground(.secondary)
                         .padding(Space.s1)
                         .background(VaultColors.surface, in: Circle())

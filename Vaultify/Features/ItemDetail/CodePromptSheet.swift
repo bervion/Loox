@@ -52,6 +52,13 @@ struct CodePromptSheet: View {
             }
             .padding(.horizontal, Space.s6)
             .padding(.top, Space.s4)
+            // The field takes focus on appear, and this sheet has no scroll
+            // view to dismiss the keyboard with — a tap on the empty area does
+            // it instead. Scoped to the content (the scaffold's own bar sits
+            // outside), and the field, its submit arrow and any child button
+            // keep their own taps: the deeper gesture wins.
+            .contentShape(Rectangle())
+            .onTapGesture { PlatformAppearance.dismissKeyboard() }
         }
         .platformPresentationDetents([.medium])
     }

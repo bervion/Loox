@@ -249,7 +249,7 @@ struct SearchResultsList: View {
     @ViewBuilder private var recentsList: some View {
         if recents.isEmpty {
             ContentUnavailableView {
-                Label { Text("Search vault") } icon: { PolarisIcon(Icons.search, size: 48) }
+                Label { Text("Search vault") } icon: { VaultIcon(Icons.search, size: 48) }
             } description: {
                 Text("Find items by name, field, or tag.")
             }

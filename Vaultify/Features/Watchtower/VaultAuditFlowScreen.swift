@@ -72,7 +72,7 @@ struct VaultAuditFlowScreen: View {
 
     private func checklistRow(_ title: LocalizedStringKey) -> some View {
         HStack(spacing: Space.s3) {
-            PolarisIcon(Icons.checkCircle, size: Metric.iconInline)
+            VaultIcon(Icons.checkCircle, size: Metric.iconInline)
                 .themedForeground(.success)
             Text(title)
                 .vaultType(.body)
@@ -238,7 +238,7 @@ private struct AuditResultView: View {
                 Button { openCategory(.fullReport) } label: {
                     HStack(spacing: Space.s1) {
                         Text("View full report").vaultType(.subhead)
-                        PolarisIcon(Icons.chevronRight, size: 12)
+                        VaultIcon(Icons.chevronRight, size: 12)
                     }
                     .themedForeground(.accentText)
                     .frame(minHeight: Metric.hitMin)

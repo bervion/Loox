@@ -61,12 +61,6 @@ let project = Project(
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                 "CFBundleLocalizations": ["en", "vi", "ja"],
-                // MonoLisa — monospaced typeface for secrets/codes and detail values
-                // (bundled from Vaultify/Resources/Fonts via the Resources glob).
-                "UIAppFonts": [
-                    "MonoLisa-Regular.ttf",
-                    "MonoLisa-Bold.ttf",
-                ],
                 // Export compliance: app uses only exempt encryption (standard
                 // algorithms protecting the user's own on-device data) → skips the
                 // per-upload encryption questionnaire in App Store Connect.
@@ -153,6 +147,12 @@ let project = Project(
                 .target(name: "VaultifySafari", condition: .when([.ios])),
                 // GA4 without ad identifiers (see `packages` above). App only.
                 .package(product: "FirebaseAnalyticsCore"),
+                // Crash diagnostics (see `CrashReporter`). App only, for the
+                // same reason: an extension must never carry telemetry.
+                // dSYMs are uploaded by fastlane after the archive, NOT by an
+                // in-Xcode run script — the script's path is derived-data
+                // dependent and would silently stop symbolicating on the runner.
+                .package(product: "FirebaseCrashlytics"),
             ],
             settings: .settings(base: [
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "vaultify",

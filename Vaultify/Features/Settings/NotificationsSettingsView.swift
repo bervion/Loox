@@ -19,7 +19,7 @@ struct NotificationsSettingsView: View {
                 LabeledContent {
                     Text(statusLabel).themedForeground(statusRole)
                 } label: {
-                    Label { Text("Notification permission") } icon: { PolarisIcon(Icons.notification) }
+                    Label { Text("Notification permission") } icon: { VaultIcon(Icons.notification) }
                 }
                 if authorizationStatus == .denied {
                     // Denied is a blocked state with a remedy the user owns, not
@@ -37,7 +37,7 @@ struct NotificationsSettingsView: View {
 
             Section {
                 Toggle(isOn: rotationRemindersBinding) {
-                    Label { Text("Rotation reminders") } icon: { PolarisIcon(Icons.refresh) }
+                    Label { Text("Rotation reminders") } icon: { VaultIcon(Icons.refresh) }
                 }
             } footer: {
                 Text("Get a local notification on the day a password is due to rotate. The notification shows only the item name, never a password or username.")
@@ -46,7 +46,7 @@ struct NotificationsSettingsView: View {
 
             Section {
                 Toggle(isOn: auditRemindersBinding) {
-                    Label { Text("Security checkup reminders") } icon: { PolarisIcon(Icons.shieldPerson) }
+                    Label { Text("Security checkup reminders") } icon: { VaultIcon(Icons.shieldPerson) }
                 }
             } footer: {
                 Text("Get a reminder every two weeks to open Loox and check your vault's health. The notification shows no scores or item details.")

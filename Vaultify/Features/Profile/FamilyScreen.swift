@@ -61,7 +61,7 @@ struct FamilyScreen: View {
     private var shareSpaceButton: some View {
         Button { showShareSpace = true } label: {
             HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.share, size: Metric.iconInline)
+                VaultIcon(Icons.share, size: Metric.iconInline)
                 Text("Invite someone")
             }
             .frame(maxWidth: .infinity)
@@ -88,7 +88,7 @@ struct FamilyScreen: View {
                         .lineLimit(1)
                 }
                 Spacer(minLength: Space.s2)
-                PolarisIcon(Icons.chevronRight, size: Metric.iconCompact)
+                VaultIcon(Icons.chevronRight, size: Metric.iconCompact)
                     .themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)
@@ -109,7 +109,7 @@ struct FamilyScreen: View {
             ZStack {
                 Circle().fill(Color(rgb: env.theme.active.accentSoft))
                     .frame(width: Metric.avatarHero, height: Metric.avatarHero)
-                PolarisIcon(Icons.organization, size: Metric.iconTileLarge)
+                VaultIcon(Icons.organization, size: Metric.iconTileLarge)
                     .themedForeground(.accent)
             }
             VStack(spacing: Space.s2) {
@@ -185,7 +185,7 @@ private struct FamilyMemberScreen: View {
             HStack(spacing: Space.s3) {
                 // Received items used to render with no type at all here; the
                 // category avatar is what tells a Secure Note from a login.
-                PolarisIcon(categoryIcon(share), size: Metric.iconTile)
+                VaultIcon(categoryIcon(share), size: Metric.iconTile)
                     .themedForeground(.iconSecondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: itemTitle(share)).vaultType(.body).themedForeground().lineLimit(1)
@@ -195,7 +195,7 @@ private struct FamilyMemberScreen: View {
                         .lineLimit(1)
                 }
                 Spacer(minLength: Space.s2)
-                PolarisIcon(Icons.chevronRight, size: Metric.iconCompact)
+                VaultIcon(Icons.chevronRight, size: Metric.iconCompact)
                     .themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)

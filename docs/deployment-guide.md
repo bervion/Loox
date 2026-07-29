@@ -119,9 +119,42 @@ are unaffected. The app-level privacy manifest lives at
 `Vaultify/Resources/PrivacyInfo.xcprivacy` (no-tracking declaration + UserDefaults
 required-reason; Firebase SDK bundles carry their own manifests). Verify events with the DEBUG console mirror (Console.app, category `analytics`)
 or Firebase DebugView (`-FIRDebugEnabled` launch argument). At the next App Store
-submission, declare **Product Interaction — not linked to identity** in App Privacy
-(the SDK ships its own privacy manifest; no IDFA/tracking declaration needed since the
-build links `FirebaseAnalyticsCore`).
+submission, declare **Product Interaction — not linked to identity**, plus **Crash Data**
+and **Other Diagnostic Data — not linked to identity** in App Privacy (the SDKs ship their
+own privacy manifests; no IDFA/tracking declaration needed since the build links
+`FirebaseAnalyticsCore`, and `FirebaseCrashlytics` pulls no ad identifiers either).
+
+### 8. Crashlytics
+
+Same Firebase project and the same committed plist — no extra config. The release lane uploads
+dSYMs via `upload_symbols_to_crashlytics` after `build_app`; there is deliberately NO Xcode
+run-script phase, because its canonical path depends on the derived-data layout and differs
+between a dev machine and the self-hosted runner, where it fails silently. Collection is off in
+DEBUG builds and is gated at runtime by its own `crashReportingEnabled` setting (separate from
+the analytics toggle). Extensions carry no Firebase, so appex crashes never appear.
+
+### 9. CloudKit schema deploy (MANDATORY before any tag)
+
+CloudKit **Production has no just-in-time schema creation**. A record type that exists only in
+Development is rejected in Production: the affected sync plane fails silently (planes are
+fault-isolated, so everything else keeps syncing) and that data never reaches a second device.
+This has already shipped past twice.
+
+Before tagging a release that adds or changes a record type:
+
+1. Run a Debug build once against **Development** so the type is JIT-created with all fields.
+2. CloudKit Console → container `iCloud.com.bervion.vaultify` → **Deploy Schema Changes to
+   Production**.
+3. Verify each record type is listed in the Production schema afterwards — deploying is
+   all-or-nothing and irreversible, so confirm rather than assume.
+
+Known types to check: `VaultItem`, `VaultFolder`, `VaultPasskey`, `VaultPersona`,
+`VaultEmailAlias`, `VaultForwardingInbox`, `AuditReport`, `AuditFindingState`, `OwnerDevice`,
+`DeviceRevocation`. `VaultPasskey` carries `sealed` (Bytes), `largeBlobSealed` (Bytes),
+`createdAt` (Date/Time), `updatedAt` (Date/Time), `deletedAtMs` (Int64).
+
+Never use Erase Vault to troubleshoot sync: it deletes the whole zone, every device's synced
+copy, and the recovery envelope.
 
 ## Day-to-day
 

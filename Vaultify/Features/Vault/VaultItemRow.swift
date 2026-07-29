@@ -74,7 +74,7 @@ struct VaultItemRow: View {
         // Pinned → a pin glyph overlaid at the row's outermost top-right corner.
         .overlay(alignment: .topTrailing) {
             if item.pinned {
-                PolarisIcon(Icons.pinFill, size: 11)
+                VaultIcon(Icons.pinFill, size: 11)
                     .foregroundStyle(Color(rgb: env.theme.active.accent))
             }
         }
@@ -109,7 +109,7 @@ struct VaultItemRow: View {
     /// with the row's own background (white in light, dark in dark) so it sits like a sticker
     /// on the favicon's bottom-right corner. A hairline keeps it crisp over any favicon.
     private var favoriteBadge: some View {
-        PolarisIcon(Icons.starFill, size: 10)
+        VaultIcon(Icons.starFill, size: 10)
             .foregroundStyle(VaultColors.favoriteStar)
             .frame(width: 16, height: 16)
             .background(Color(rgb: env.theme.active.elevatedBackground),
@@ -123,7 +123,7 @@ struct VaultItemRow: View {
 
     private var sharedChip: some View {
         HStack(spacing: 4) {
-            PolarisIcon(Icons.share, size: 9).themedForeground(.accent)
+            VaultIcon(Icons.share, size: 9).themedForeground(.accent)
             Text("Shared").vaultType(.caption).themedForeground(.secondary)
         }
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
@@ -135,7 +135,7 @@ struct VaultItemRow: View {
     /// the list without opening the item.
     private var sharingBadge: some View {
         HStack(spacing: 3) {
-            PolarisIcon(Icons.clock, size: 9).themedForeground(.warning)
+            VaultIcon(Icons.clock, size: 9).themedForeground(.warning)
             Text("SHARING…").vaultType(.caption).fontWeight(.semibold).themedForeground(.warning)
         }
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)

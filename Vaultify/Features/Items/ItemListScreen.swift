@@ -23,14 +23,14 @@ struct ItemListScreen: View {
                     Picker("Sort", selection: $sort) {
                         ForEach(VaultSort.allCases) { Text($0.label).tag($0) }
                     }
-                } label: { PolarisIcon("ic_sort", size: 22) }
+                } label: { VaultIcon("ic_sort", size: 22) }
                     .accessibilityLabel(Text("Sort"))
             }
         }
         .overlay {
             if items.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No items here") } icon: { PolarisIcon(category.iconAsset, size: Metric.iconTileLarge) }
+                    Label { Text("No items here") } icon: { VaultIcon(category.iconAsset, size: Metric.iconTileLarge) }
                 }
             }
         }

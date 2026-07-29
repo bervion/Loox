@@ -19,7 +19,7 @@ struct NotificationPermissionGateView: View {
 
     var body: some View {
         VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.notification, size: Metric.iconTile)
+            VaultIcon(Icons.notification, size: Metric.iconTile)
                 .themedForeground(.warning)
             Text("Notification permission")
                 .vaultType(.section).themedForeground()

@@ -40,7 +40,7 @@ struct FolderPickerSheet: View {
                 }
                 Section {
                     Button { creating = true } label: {
-                        Label { Text("New Space…") } icon: { PolarisIcon(Icons.addCircle) }
+                        Label { Text("New Space…") } icon: { VaultIcon(Icons.addCircle) }
                     }
                     .buttonStyle(.plain)
                 }
@@ -69,7 +69,7 @@ struct FolderPickerSheet: View {
             }
             name.themedForeground()
             Spacer()
-            if selected { PolarisIcon(Icons.check, size: 18).foregroundStyle(Color(rgb: env.theme.active.accent)) }
+            if selected { VaultIcon(Icons.check, size: 18).foregroundStyle(Color(rgb: env.theme.active.accent)) }
         }
         .contentShape(.rect)
     }

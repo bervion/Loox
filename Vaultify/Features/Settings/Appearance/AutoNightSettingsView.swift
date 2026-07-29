@@ -86,7 +86,7 @@ struct AutoNightSettingsView: View {
             HStack {
                 title.themedForeground()
                 Spacer()
-                if mode == value { PolarisIcon(Icons.checkCircle, size: Metric.iconInline).foregroundStyle(Color.accentColor) }
+                if mode == value { VaultIcon(Icons.checkCircle, size: Metric.iconInline).foregroundStyle(Color.accentColor) }
             }
             .contentShape(.rect) // whole row is tappable, not just the label text
         }

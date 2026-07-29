@@ -50,7 +50,7 @@ final class AppNavigator {
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
                             Button { [weak self] in self?.pop() } label: {
-                                PolarisIcon(Icons.chevronLeft)
+                                VaultIcon(Icons.chevronLeft)
                             }
                             .accessibilityLabel(Text("Back"))
                             .accessibilityIdentifier("nav.back")

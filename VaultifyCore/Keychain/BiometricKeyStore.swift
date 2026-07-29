@@ -65,9 +65,15 @@ nonisolated enum BiometricKeyStore {
     }
 
     /// Retrieve the Vault Key, prompting for biometrics. Runs off the main actor.
+    ///
+    /// The `SecItemCopyMatching` below blocks its thread until biometry answers,
+    /// and after a device wake the daemon can take the prompt and never come
+    /// back — which used to strand the continuation forever, freezing whatever
+    /// awaited it. Cancelling the surrounding task now invalidates the very
+    /// `LAContext` the query is using (the supported way to unblock a pending
+    /// biometric keychain read) AND resumes, so this call always finishes.
     static func retrieve(reason: String) async throws -> [UInt8] {
-        let context = LAContext()
-        context.localizedReason = reason
+        let read = PendingRead(reason: reason)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecUseDataProtectionKeychain as String: true,
@@ -76,29 +82,84 @@ nonisolated enum BiometricKeyStore {
             kSecAttrAccessGroup as String: accessGroup,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecUseAuthenticationContext as String: context,
+            kSecUseAuthenticationContext as String: read.context,
         ]
-        return try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                var result: AnyObject?
-                let status = SecItemCopyMatching(query as CFDictionary, &result)
-                switch status {
-                case errSecSuccess:
-                    if let data = result as? Data {
-                        continuation.resume(returning: Array(data))
-                    } else {
-                        continuation.resume(throwing: Failure.store(status))
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                read.attach(continuation)
+                DispatchQueue.global(qos: .userInitiated).async {
+                    var result: AnyObject?
+                    let status = SecItemCopyMatching(query as CFDictionary, &result)
+                    switch status {
+                    case errSecSuccess:
+                        if let data = result as? Data {
+                            read.finish(.success(Array(data)))
+                        } else {
+                            read.finish(.failure(Failure.store(status)))
+                        }
+                    case errSecUserCanceled:
+                        read.finish(.failure(Failure.cancelled))
+                    case errSecAuthFailed:
+                        read.finish(.failure(Failure.denied))
+                    case errSecItemNotFound:
+                        read.finish(.failure(Failure.invalidated))
+                    default:
+                        read.finish(.failure(Failure.store(status)))
                     }
-                case errSecUserCanceled:
-                    continuation.resume(throwing: Failure.cancelled)
-                case errSecAuthFailed:
-                    continuation.resume(throwing: Failure.denied)
-                case errSecItemNotFound:
-                    continuation.resume(throwing: Failure.invalidated)
-                default:
-                    continuation.resume(throwing: Failure.store(status))
                 }
             }
+        } onCancel: {
+            read.cancel()
+        }
+    }
+
+    /// Owns the one biometric read in flight: its `LAContext` and its single
+    /// resume. The keychain thread and the cancellation handler race for that
+    /// resume, and resuming a continuation twice traps, so exactly one of them
+    /// wins and the loser's result is dropped — a late success never reaches a
+    /// caller, and its buffer is released with the dropped `Result`.
+    private nonisolated final class PendingRead: @unchecked Sendable {
+        let context: LAContext
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<[UInt8], Error>?
+        private var finished = false
+
+        init(reason: String) {
+            context = LAContext()
+            context.localizedReason = reason
+        }
+
+        /// Hand over the continuation. A cancellation that beat the query to it
+        /// is resumed here instead of being lost.
+        func attach(_ continuation: CheckedContinuation<[UInt8], Error>) {
+            lock.lock()
+            guard !finished else {
+                lock.unlock()
+                continuation.resume(throwing: Failure.cancelled)
+                return
+            }
+            self.continuation = continuation
+            lock.unlock()
+        }
+
+        func finish(_ result: Result<[UInt8], Error>) {
+            lock.lock()
+            guard !finished else {
+                lock.unlock()
+                return
+            }
+            finished = true
+            let continuation = self.continuation
+            self.continuation = nil
+            lock.unlock()
+            continuation?.resume(with: result)
+        }
+
+        /// Unblock the keychain call, then resume — invalidating the context is
+        /// what makes a pending biometric read return at all.
+        func cancel() {
+            context.invalidate()
+            finish(.failure(Failure.cancelled))
         }
     }
 

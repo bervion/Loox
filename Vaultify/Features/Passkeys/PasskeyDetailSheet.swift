@@ -42,7 +42,7 @@ struct PasskeyDetailSheet: View {
                         Label {
                             Text("Delete Passkey")
                         } icon: {
-                            PolarisIcon(Icons.trash)
+                            VaultIcon(Icons.trash)
                         }
                         .foregroundStyle(env.theme.active.color(.destructive))
                     }
@@ -97,7 +97,7 @@ struct PasskeyDetailSheet: View {
             if let systemName {
                 Image(systemName: systemName).font(.system(size: 12, weight: .medium))
             } else if let icon {
-                PolarisIcon(icon, size: 13)
+                VaultIcon(icon, size: 13)
             }
             text.vaultType(.caption)
         }

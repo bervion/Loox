@@ -58,7 +58,7 @@ struct AliasDetailScreen: View {
                     HStack {
                         Text(verbatim: address).themedForeground(.primary)
                         Spacer()
-                        PolarisIcon(Icons.copy, size: 16).themedForeground(.iconSecondary)
+                        VaultIcon(Icons.copy, size: 16).themedForeground(.iconSecondary)
                     }
                 }
                 LabeledContent { Text(verbatim: statusLabel(alias.status)) } label: { Text("Status") }
@@ -105,17 +105,17 @@ struct AliasDetailScreen: View {
                 if alias.status == .reserved {
                     // Reserved means a prior activation didn't reach the relay — retry.
                     Button { activate(alias) } label: {
-                        Label { Text("Activate") } icon: { PolarisIcon(Icons.checkCircle) }
+                        Label { Text("Activate") } icon: { VaultIcon(Icons.checkCircle) }
                     }
                 }
                 if alias.status != .disabled {
                     // Pause is reversible later (relay keeps the row) — not destructive.
                     Button { confirmPause = true } label: {
-                        Label { Text("Pause forwarding") } icon: { PolarisIcon(Icons.hide) }
+                        Label { Text("Pause forwarding") } icon: { VaultIcon(Icons.hide) }
                     }
                 }
                 Button(role: .destructive) { confirmDelete = true } label: {
-                    Label { Text("Delete permanently") } icon: { PolarisIcon(Icons.trash) }
+                    Label { Text("Delete permanently") } icon: { VaultIcon(Icons.trash) }
                 }
             }
             .listRowBackground(VaultColors.surface)

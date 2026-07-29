@@ -55,7 +55,7 @@ struct MaskedMultilineFieldEditor: View {
                 Haptics.warning()
                 focused = true
             } label: {
-                PolarisIcon(Icons.reveal, size: 20)
+                VaultIcon(Icons.reveal, size: 20)
                     .themedForeground(.secondary)
                     // Visual glyph stays compact; tappable region meets the 44pt
                     // minimum (rule 6 hit-target convention used across this file).

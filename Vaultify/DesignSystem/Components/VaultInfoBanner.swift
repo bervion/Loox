@@ -97,8 +97,8 @@ struct VaultInfoBanner: View {
     var body: some View {
         HStack(alignment: .top, spacing: Space.s3) {
             // 1pt optical nudge: the glyph's cap height sits above the first
-            // text baseline without it (PolarisIcon is already a11y-hidden).
-            PolarisIcon(icon ?? defaultIcon, size: Metric.iconCompact)
+            // text baseline without it (VaultIcon is already a11y-hidden).
+            VaultIcon(icon ?? defaultIcon, size: Metric.iconCompact)
                 .foregroundStyle(tintColor)
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: Space.s1) {

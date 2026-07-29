@@ -38,7 +38,7 @@ struct TotpListScreen: View {
             Label {
                 Text("No 2FA codes")
             } icon: {
-                PolarisIcon(Icons.clock, size: 48)
+                VaultIcon(Icons.clock, size: 48)
                     .themedForeground(.secondary)
             }
         } description: {

@@ -20,7 +20,7 @@ struct AttachmentFieldRow: View {
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
                     .fill(env.theme.active.color(.accent).opacity(0.14))
                     .frame(width: 44, height: 44)
-                    .overlay(PolarisIcon(meta.iconAsset, size: 22).foregroundStyle(env.theme.active.color(.accent)))
+                    .overlay(VaultIcon(meta.iconAsset, size: 22).foregroundStyle(env.theme.active.color(.accent)))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(meta.name).vaultType(.body).themedForeground().lineLimit(1)
                     Text("\(meta.ext.uppercased()), \(meta.sizeText)").vaultType(.caption).themedForeground(.secondary)
@@ -41,13 +41,13 @@ struct AttachmentFieldRow: View {
 
     private func menu(_ meta: AttachmentMeta) -> some View {
         Menu {
-            Button { preview() } label: { Label("Quick Look", image: Icons.reveal) }
+            Button { preview() } label: { Label { Text("Quick Look") } icon: { VaultIcon(Icons.reveal) } }
             Button(role: .destructive) {
                 env.attachmentStore.delete(meta)
                 onRemove()
-            } label: { Label("Delete Attachment", image: Icons.delete) }
+            } label: { Label { Text("Delete Attachment") } icon: { VaultIcon(Icons.delete) } }
         } label: {
-            PolarisIcon("ic_menu_horizontal", size: 17)
+            VaultIcon("ic_menu_horizontal", size: 17)
                 .themedForeground(.secondary)
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(VaultColors.fill))

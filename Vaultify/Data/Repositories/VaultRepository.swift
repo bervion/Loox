@@ -129,8 +129,14 @@ import UserNotifications
     /// the losers. Patches the freshly-built in-memory state in place — never `reload()`.
     private func mergeDuplicateSeedFolders(key: SecureBytes) {
         guard folders.count > 1 else { return }
-        let seedSignature = "\(appString("My Vault"))|\(Icons.lockFill)|\(FolderColor.blue.rawValue)"
-        let groups = Dictionary(grouping: folders) { "\($0.name)|\($0.iconAsset)|\($0.color.rawValue)" }
+        // Both sides go through `canonical` because the seed icon is written in two spellings:
+        // a build before the SF migration stored `ic_lock_filled`, one after stores `sf:lock.fill`.
+        // Comparing the raw strings would stop two devices' seeded Spaces from ever matching, and
+        // they would duplicate permanently instead of converging.
+        let seedSignature = "\(appString("My Vault"))|\(IconResolver.canonical(Icons.lockFill))|\(FolderColor.blue.rawValue)"
+        let groups = Dictionary(grouping: folders) {
+            "\($0.name)|\(IconResolver.canonical($0.iconAsset))|\($0.color.rawValue)"
+        }
         var loserIds: Set<String> = []
         for (signature, group) in groups where group.count > 1 && signature == seedSignature {
             let ordered = group.sorted { ($0.createdAt, $0.id) < ($1.createdAt, $1.id) }

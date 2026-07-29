@@ -16,7 +16,9 @@ The product must not feel like generated UI assembled screen by screen. Every su
 
 - Read `README.md`, `CLAUDE.md`, `docs/codebase-summary.md`, and this file before UI work.
 - Use native SwiftUI patterns compatible with iOS 17.3 unless newer APIs are guarded with `#available`.
-- Do not use SF Symbols directly in app UI. Use Polaris PDF/SVG icon assets through the existing icon system.
+- Icons are SF Symbols, reached through `VaultIcon(_:size:)` — never `Image(systemName:)` or
+  `Image(name)` directly. `Icons` holds chrome tokens; `IconCatalog` is the picker library;
+  `LegacyIconMap` keeps icon names already stored in real vaults rendering. See CLAUDE.md.
 - All visible user-facing text must be localized in English and Vietnamese.
 - Do not hardcode raw colors in feature screens.
 - Do not use `Color.primary`, `Color.secondary`, `.white`, `.black`, `.red`, or opacity guesses on custom themed surfaces unless explicitly mapped through semantic tokens.
@@ -73,7 +75,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Elevation (soft shadow) | `.elevation(.level1/.level2/.level3/.sheet)` | `DesignSystem/Tokens/Elevation.swift` |
 | Motion | `Motion.spring/standard/fast/base/medium/slow/pressScale`, `.vault(_,reduceMotion:)` | `DesignSystem/Tokens/Motion.swift` |
 | Typography roles | `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)` | `DesignSystem/Typography.swift` |
-| Secrets/codes (SF) | `Font.vaultCode(_:weight:)` — SF, no monospaced typeface | `DesignSystem/Typography.swift` |
+| Secrets/codes | `Font.vaultCode(_:weight:)` — SF with tabular digits | `DesignSystem/Typography.swift` |
 | Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
 | Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
 | Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
@@ -215,7 +217,9 @@ Rules:
 
 ## Icon System
 
-Vaultify uses Polaris icons from vector assets. Agents must make Polaris icons behave like a custom SF Symbols family.
+Vaultify uses SF Symbols through `VaultIcon`, which resolves a name to either a symbol or a
+legacy bundled asset. The legacy `dt_*` / `ic_*` assets stay bundled only so icon values already
+stored in a vault never render empty; do not author new UI against them.
 
 Icon asset rules:
 
@@ -420,7 +424,7 @@ Implementation constraints:
 - Do not hide the native tab bar for the main shell.
 - Do not place labels visually under icons.
 - Do not hardcode strings in tab item views.
-- Do not use SF Symbols.
+- Do not construct icons with `Image(systemName:)` — go through `VaultIcon`.
 - Use Polaris assets for icon rendering.
 - Use semantic theme tokens for all colors.
 - Let native `TabView` handle bottom safe area for root content.
@@ -620,7 +624,7 @@ Constraints:
 - Newer Apple APIs must be guarded with #available.
 - No visible tab labels.
 - Keep accessibility labels and selected state.
-- Use Polaris icon assets, not SF Symbols.
+- Use `VaultIcon` with an `Icons` token or an `IconCatalog` token, never a bare symbol name.
 - Use live semantic theme tokens only.
 - Preserve per-tab navigation state.
 - Prefer the native iOS tab bar surface; do not add a custom overlay for the shell.

@@ -167,7 +167,7 @@ struct ItemDetailScreen: View {
                     .padding(.top, Space.s10 + Space.s9 + Space.s2)
             } else {
                 ContentUnavailableView {
-                    Label { Text("Item not found") } icon: { PolarisIcon(Icons.alert, size: Metric.iconTileLarge) }
+                    Label { Text("Item not found") } icon: { VaultIcon(Icons.alert, size: Metric.iconTileLarge) }
                 }
                 .padding(.top, Space.s9 + Space.s7)
             }
@@ -201,23 +201,21 @@ struct ItemDetailScreen: View {
                 if !item.isTrashed {
                     ToolbarItem(placement: .platformPrimaryAction) {
                         Button { showShareAccess = true } label: {
-                            PolarisIcon(Icons.share, size: Metric.iconInline)
+                            VaultIcon(Icons.share, size: Metric.iconInline)
                         }
                     }
                 }
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
-                        Button { editing = .edit(item) } label: { Label("Edit", image: Icons.edit) }
+                        Button { editing = .edit(item) } label: { Label { Text("Edit") } icon: { VaultIcon(Icons.edit) } }
                             .accessibilityIdentifier("item.detail.edit")
                         // Pin + favorite moved here from beside the Space pill —
                         // the pill (Space + identity) needs the whole line.
                         Button { env.repository.togglePin(item) } label: {
-                            Label(item.pinned ? "Unpin" : "Pin",
-                                  image: item.pinned ? Icons.pinFill : Icons.pin)
+                            Label { Text(item.pinned ? "Unpin" : "Pin") } icon: { VaultIcon(item.pinned ? Icons.pinFill : Icons.pin) }
                         }
                         Button { try? env.repository.toggleFavorite(item) } label: {
-                            Label(item.favorite ? "Unfavorite" : "Favorite",
-                                  image: item.favorite ? Icons.starFill : Icons.star)
+                            Label { Text(item.favorite ? "Unfavorite" : "Favorite") } icon: { VaultIcon(item.favorite ? Icons.starFill : Icons.star) }
                         }
                         if quickViewEntryVisible {
                             Button {
@@ -226,18 +224,18 @@ struct ItemDetailScreen: View {
                                 } else {
                                     showQuickViewChooser = true
                                 }
-                            } label: { Label("Send to Browser", image: "ic_globe") }
+                            } label: { Label { Text("Send to Browser") } icon: { VaultIcon("ic_globe") } }
                         }
                         if let url = item.urlField?.value, !url.isEmpty {
                             ShareLink(item: url) {
-                                Label("Share Website Link", image: Icons.share)
+                                Label { Text("Share Website Link") } icon: { VaultIcon(Icons.share) }
                             }
                         }
                         // Archiving only applies to live items; a trashed item is
                         // restored/deleted from the card below instead.
                         if !item.isTrashed {
                             if item.archived {
-                                Button { env.repository.unarchive(item) } label: { Label("Unarchive", image: Icons.archive) }
+                                Button { env.repository.unarchive(item) } label: { Label { Text("Unarchive") } icon: { VaultIcon(Icons.archive) } }
                             } else {
                                 Button {
                                     if env.repository.identityRemovalGate(item) == .lastActiveIdentity {
@@ -245,7 +243,7 @@ struct ItemDetailScreen: View {
                                     } else {
                                         env.repository.archive(item); closeDetail()
                                     }
-                                } label: { Label("Archive", image: Icons.archive) }
+                                } label: { Label { Text("Archive") } icon: { VaultIcon(Icons.archive) } }
                             }
                         }
                         // Progressive disclosure (T1): the only destructive action for a
@@ -259,9 +257,9 @@ struct ItemDetailScreen: View {
                                 } else {
                                     confirmTrash = true
                                 }
-                            } label: { Label("Move to Trash", image: Icons.trash) }
+                            } label: { Label { Text("Move to Trash") } icon: { VaultIcon(Icons.trash) } }
                         }
-                    } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
+                    } label: { VaultIcon("ic_menu_horizontal", size: Metric.iconInline) }
                         .accessibilityLabel(Text("More"))
                         .accessibilityIdentifier("item.detail.more")
                 }
@@ -269,9 +267,9 @@ struct ItemDetailScreen: View {
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
                         Button(role: .destructive) { requestLeave() } label: {
-                            Label("Leave Share", image: Icons.trash)
+                            Label { Text("Leave Share") } icon: { VaultIcon(Icons.trash) }
                         }
-                    } label: { PolarisIcon("ic_menu_horizontal", size: Metric.iconInline) }
+                    } label: { VaultIcon("ic_menu_horizontal", size: Metric.iconInline) }
                         .accessibilityLabel(Text("More"))
                 }
             }
@@ -415,7 +413,7 @@ struct ItemDetailScreen: View {
                     // Shared projections live in no Space and take no pins —
                     // a static origin pill replaces the Located-In button.
                     HStack(spacing: Space.s2) {
-                        PolarisIcon(Icons.share, size: 13).themedForeground(.accentText)
+                        VaultIcon(Icons.share, size: 13).themedForeground(.accentText)
                         Text("Shared with Me").vaultType(.subhead).themedForeground(.secondary)
                     }
                     .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
@@ -429,7 +427,7 @@ struct ItemDetailScreen: View {
                     Button { showLocatedIn = true } label: {
                         HStack(spacing: Space.s2) {
                             SpaceIdentityLine(folder: folder(for: item))
-                            PolarisIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
+                            VaultIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
                         }
                         .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
                         .background(VaultColors.surface,
@@ -467,7 +465,7 @@ struct ItemDetailScreen: View {
                 HStack(spacing: Space.s2) {
                     ForEach(item.tags, id: \.self) { tag in
                         HStack(spacing: 3) {
-                            PolarisIcon(Icons.hashtag, size: 11)
+                            VaultIcon(Icons.hashtag, size: 11)
                                 .foregroundStyle(Color(rgb: env.theme.active.accentText))
                             Text(tag).vaultType(.subhead)
                                 .foregroundStyle(Color(rgb: env.theme.active.accentText))
@@ -582,7 +580,7 @@ struct ItemDetailScreen: View {
                         env.clipboard.copy(safetyCode, label: appString("Safety code"),
                                            sensitive: false)
                     } label: {
-                        PolarisIcon(Icons.copy, size: Metric.iconInline)
+                        VaultIcon(Icons.copy, size: Metric.iconInline)
                             .themedForeground(.accentText)
                             .frame(width: Metric.hitMin, height: Metric.hitMin)
                             .contentShape(.rect)
@@ -642,7 +640,7 @@ struct ItemDetailScreen: View {
                     if !item.isTrashed {
                         Button { showShareAccess = true } label: {
                             HStack(spacing: Space.s3) {
-                                PolarisIcon(Icons.addCircle, size: Metric.iconInline)
+                                VaultIcon(Icons.addCircle, size: Metric.iconInline)
                                     .themedForeground(.accentText)
                                 Text("Share this item")
                                     .vaultType(.body)
@@ -670,7 +668,7 @@ struct ItemDetailScreen: View {
         } label: {
             VStack(alignment: .leading, spacing: Space.s2) {
                 HStack(spacing: Space.s3) {
-                    PolarisIcon(Icons.share, size: Metric.iconInline)
+                    VaultIcon(Icons.share, size: Metric.iconInline)
                         .themedForeground(isPending ? .warning : .accent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: share.recipientLabel)
@@ -686,7 +684,7 @@ struct ItemDetailScreen: View {
                         // No status badge here: the subtitle already says the
                         // share is active — the duplicate pill only squeezed
                         // the recipient's email into an ellipsis.
-                        PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                        VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                     }
                 }
                 if isPending {
@@ -731,7 +729,7 @@ struct ItemDetailScreen: View {
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Space.s3) {
-                PolarisIcon(icon, size: Metric.iconInline).foregroundStyle(color)
+                VaultIcon(icon, size: Metric.iconInline).foregroundStyle(color)
                 Text(label).vaultType(.body).foregroundStyle(color)
                 Spacer()
             }

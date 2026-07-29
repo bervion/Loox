@@ -13,7 +13,7 @@ struct MacItemListColumn: View {
         Group {
             if items.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No items") } icon: { PolarisIcon(Icons.apps, size: 40) }
+                    Label { Text("No items") } icon: { VaultIcon(Icons.apps, size: 40) }
                 } description: {
                     Text("Items you add will appear here.")
                 }
@@ -24,13 +24,12 @@ struct MacItemListColumn: View {
                             .tag(item.id)
                             .contextMenu {
                                 Button { try? env.repository.toggleFavorite(item) } label: {
-                                    Label(item.favorite ? "Unfavorite" : "Favorite",
-                                          image: item.favorite ? Icons.starFill : Icons.star)
+                                    Label { Text(item.favorite ? "Unfavorite" : "Favorite") } icon: { VaultIcon(item.favorite ? Icons.starFill : Icons.star) }
                                 }
                                 Button(role: .destructive) {
                                     try? env.repository.moveToTrash(item)
                                 } label: {
-                                    Label("Trash", image: Icons.trash)
+                                    Label { Text("Trash") } icon: { VaultIcon(Icons.trash) }
                                 }
                             }
                     }

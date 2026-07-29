@@ -55,7 +55,7 @@ struct PasswordGeneratorView: View {
                         Text("Type")
                         Spacer()
                         Text(mode.title).themedForeground(.secondary)
-                        PolarisIcon(Icons.chevronDown, size: 14)
+                        VaultIcon(Icons.chevronDown, size: 14)
                             .themedForeground(.secondary)
                     }
                     .contentShape(Rectangle())

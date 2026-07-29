@@ -106,6 +106,22 @@ enum AuthError: Error, LocalizedError {
         return BiometricKeyStore.isEnrolled
     }
 
+    /// Snapshot what biometric unlock can do right now, off the main actor.
+    ///
+    /// `biometricEnrolled` and the `BiometricAuth` lookups are each a blocking
+    /// round-trip to a system daemon; both daemons are cold right after a device
+    /// wake. A screen that reads them from `body` therefore stalls the main
+    /// actor on every update at exactly the worst moment, so the lock screen
+    /// takes one snapshot per foreground pass through here instead.
+    func biometricCapability() async -> BiometricCapability {
+        #if DEBUG
+        if uiTestCredential != nil { return .unavailable }
+        #endif
+        return await Task.detached(priority: .userInitiated) {
+            BiometricCapability.probe()
+        }.value
+    }
+
     // MARK: Create
 
     /// Provision a brand-new vault from a master password.

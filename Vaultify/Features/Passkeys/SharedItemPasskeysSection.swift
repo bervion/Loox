@@ -64,7 +64,7 @@ struct SharedItemPasskeysSection: View {
                     .vaultType(.caption).themedForeground(.secondary).lineLimit(1)
             }
             Spacer(minLength: Space.s2)
-            PolarisIcon(Icons.personLockFilled, size: 22).foregroundStyle(Self.passkeyPurple)
+            VaultIcon(Icons.personLockFilled, size: 22).foregroundStyle(Self.passkeyPurple)
         }
         .padding(.horizontal, Space.s4)
         .padding(.vertical, Space.s3)

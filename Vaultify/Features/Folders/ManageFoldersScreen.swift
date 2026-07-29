@@ -10,7 +10,7 @@ struct ManageFoldersScreen: View {
         List {
             if env.repository.folders.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No Spaces yet") } icon: { PolarisIcon(Icons.folder, size: Metric.iconTileLarge) }
+                    Label { Text("No Spaces yet") } icon: { VaultIcon(Icons.folder, size: Metric.iconTileLarge) }
                 } description: {
                     Text("Group your items by company, project, or context.")
                 }
@@ -22,7 +22,7 @@ struct ManageFoldersScreen: View {
                             Text(folder.name).themedForeground()
                             Spacer()
                             Text("\(env.repository.itemCount(for: folder.id))").themedForeground(.secondary)
-                            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
                         }
                         .contentShape(.rect)
                     }
@@ -37,7 +37,7 @@ struct ManageFoldersScreen: View {
         .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .platformPrimaryAction) {
-                Button { creating = true } label: { PolarisIcon(Icons.add, size: Metric.iconUtility) }
+                Button { creating = true } label: { VaultIcon(Icons.add, size: Metric.iconUtility) }
                     .accessibilityLabel(Text("New Space"))
             }
             #if os(iOS)

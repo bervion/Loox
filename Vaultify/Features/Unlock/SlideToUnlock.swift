@@ -38,7 +38,7 @@ struct SlideToUnlock: View {
                         .overlay {
                             Circle().stroke(Color(rgb: theme.primaryText), lineWidth: 2)
                         }
-                    PolarisIcon(Icons.arrowRight, size: 20)
+                    VaultIcon(Icons.arrowRight, size: 20)
                         .foregroundStyle(Color(rgb: theme.accentForeground))
                 }
                 .frame(width: knob, height: knob)

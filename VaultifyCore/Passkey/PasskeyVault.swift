@@ -149,11 +149,25 @@ struct PasskeyVault {
         key.withUnsafeBytes { largeBlob(credentialID: credentialID, key: Array($0)) }
     }
 
+    /// Upper bound on a largeBlob write, matching the passkey envelope cap. The
+    /// blob rides in the passkey's CKRecord as a Data field, and CloudKit refuses
+    /// a field beyond roughly a megabyte without a CKAsset — one oversized blob
+    /// would make that credential permanently unsavable and leave it dirty for
+    /// every future sync. The relying party controls this payload, so the bound
+    /// is enforced at the write boundary.
+    static let maxLargeBlobBytes = 16_384
+
     /// Persist a WebAuthn largeBlob for a credential, sealed under the Vault Key.
-    /// Returns false when the credential is unknown so the caller reports the
-    /// write as failed to the relying party.
+    /// Returns false when the credential is unknown, or when the blob exceeds
+    /// `maxLargeBlobBytes`, so the caller reports the write as failed to the
+    /// relying party. Oversized blobs are REFUSED, never truncated: a truncated
+    /// blob is corrupt key material reported to the site as successfully stored.
     @discardableResult
     func setLargeBlob(_ data: Data, credentialID: Data, key: [UInt8]) -> Bool {
+        guard data.count <= Self.maxLargeBlobBytes else {
+            passkeyVaultLog.error("large-blob-too-large")
+            return false
+        }
         guard let record = record(credentialID: credentialID) else { return false }
         do {
             record.largeBlobSealed = try AESGCM.seal(data, key: key)

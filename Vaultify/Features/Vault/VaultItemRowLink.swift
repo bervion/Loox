@@ -33,7 +33,7 @@ struct VaultItemRowLink: View {
                     Button(role: .destructive) {
                         if isLastIdentity { showLastIdentityBlock = true } else { try? env.repository.moveToTrash(item) }
                     } label: {
-                        Label("Trash", image: Icons.trash)
+                        Label { Text("Trash") } icon: { VaultIcon(Icons.trash) }
                     }
                 }
             }
@@ -43,7 +43,7 @@ struct VaultItemRowLink: View {
                         try? env.repository.toggleFavorite(item)
                         Haptics.tap()
                     } label: {
-                        Label("Favorite", image: item.favorite ? Icons.starFill : Icons.star)
+                        Label { Text("Favorite") } icon: { VaultIcon(item.favorite ? Icons.starFill : Icons.star) }
                     }
                     .tint(VaultColors.strengthMedium)
                 }
@@ -54,12 +54,12 @@ struct VaultItemRowLink: View {
                         env.repository.togglePin(item)
                         Haptics.tap()
                     } label: {
-                        Label(item.pinned ? "Unpin" : "Pin", image: item.pinned ? Icons.pinFill : Icons.pin)
+                        Label { Text(item.pinned ? "Unpin" : "Pin") } icon: { VaultIcon(item.pinned ? Icons.pinFill : Icons.pin) }
                     }
                     Button {
                         if isLastIdentity { showLastIdentityBlock = true } else { env.repository.archive(item) }
                     } label: {
-                        Label("Archive", image: Icons.archive)
+                        Label { Text("Archive") } icon: { VaultIcon(Icons.archive) }
                     }
                 }
             }

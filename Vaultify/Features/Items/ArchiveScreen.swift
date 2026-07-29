@@ -9,7 +9,7 @@ struct ArchiveScreen: View {
         Group {
             if env.repository.archived.isEmpty {
                 ContentUnavailableView {
-                    Label { Text("No archived items") } icon: { PolarisIcon(Icons.archive, size: 44) }
+                    Label { Text("No archived items") } icon: { VaultIcon(Icons.archive, size: 44) }
                 } description: {
                     Text("Archived items are hidden from your lists but never deleted.")
                 }
@@ -19,13 +19,13 @@ struct ArchiveScreen: View {
                         NavigationLink(value: item.id) { VaultItemRow(item: item) }
                             .swipeActions(edge: .leading) {
                                 Button { env.repository.unarchive(item) } label: {
-                                    Label("Unarchive", image: Icons.archive)
+                                    Label { Text("Unarchive") } icon: { VaultIcon(Icons.archive) }
                                 }
                                 .tint(VaultColors.strengthStrong)
                             }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) { try? env.repository.moveToTrash(item) } label: {
-                                    Label("Trash", image: Icons.trash)
+                                    Label { Text("Trash") } icon: { VaultIcon(Icons.trash) }
                                 }
                             }
                             .listRowBackground(VaultColors.surface)

@@ -1,13 +1,14 @@
 import SwiftUI
 
-/// Reusable icon + color chooser for a folder. Shows a live `FolderBadge`
-/// preview, a row of color swatches, and a grid of curated Polaris icons.
+/// Icon + color chooser for a Space. Shows a live `FolderBadge` preview and the color swatches
+/// inline, and hands the icon itself to `IconPickerSheet` — the catalog is far too large to sit
+/// inside a `Form` section the way the old 66-glyph grid did.
 struct IconColorPicker: View {
     @Binding var icon: String
     @Binding var color: FolderColor
     @Environment(AppEnvironment.self) private var env
+    @State private var showIconPicker = false
 
-    private let iconColumns = [GridItem(.adaptive(minimum: 54), spacing: Space.s3)]
     private let colorColumns = [GridItem(.adaptive(minimum: 44), spacing: Space.s3)]
 
     var body: some View {
@@ -25,7 +26,9 @@ struct IconColorPicker: View {
                             .frame(width: Metric.controlSmall, height: Metric.controlSmall)
                             .overlay {
                                 if swatch == color {
-                                    Circle().strokeBorder(env.theme.active.color(.primary).opacity(0.6), lineWidth: 2).padding(-3)
+                                    Circle()
+                                        .strokeBorder(env.theme.active.color(.primary).opacity(0.6), lineWidth: 2)
+                                        .padding(-3)
                                 }
                             }
                             .frame(width: Metric.hitMin, height: Metric.hitMin)
@@ -36,33 +39,30 @@ struct IconColorPicker: View {
             }
 
             section(title: "Icon") {
-                LazyVGrid(columns: iconColumns, spacing: Space.s3) {
-                    ForEach(CuratedFolderIcons.all, id: \.self) { name in
-                        let selected = name == icon
-                        PolarisIcon(name, size: Metric.iconUtility)
-                            .foregroundStyle(selected ? color.tint : env.theme.active.color(.primary))
-                            .frame(width: Metric.iconPickerTile, height: Metric.iconPickerTile)
-                            .background(
-                                // Metric.iconPickerTile * 0.28 = Radius.md — same proportional tile convention as
-                                // FolderBadge/FaviconView at this size class.
-                                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                    .fill(selected ? color.tint.opacity(0.16) : VaultColors.surface)
-                            )
-                            .overlay {
-                                if selected {
-                                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                                        .strokeBorder(color.tint, lineWidth: 2)
-                                }
-                            }
-                            .contentShape(.rect)
-                            .onTapGesture { icon = name }
+                Button { showIconPicker = true } label: {
+                    HStack(spacing: Space.s3) {
+                        VaultIcon(icon, size: Metric.iconUtility)
+                            .foregroundStyle(color.tint)
+                        Text("Choose icon")
+                            .vaultType(.body)
+                            .themedForeground(.primary)
+                        Spacer(minLength: Space.s2)
+                        VaultIcon(Icons.chevronRight, size: Metric.iconCompact)
+                            .themedForeground(.iconSecondary)
                     }
+                    .frame(minHeight: Metric.hitMin)
+                    .contentShape(.rect)
                 }
+                .buttonStyle(.plain)
             }
+        }
+        .sheet(isPresented: $showIconPicker) {
+            IconPickerSheet(selected: icon) { icon = $0 }
         }
     }
 
-    @ViewBuilder private func section(title: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
+    @ViewBuilder private func section(title: LocalizedStringKey,
+                                      @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             Text(title).vaultType(.sectionLabel).themedForeground(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)

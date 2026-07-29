@@ -51,7 +51,7 @@ struct PaymentCardsScreen: View {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color(rgb: env.theme.active.accentSoft))
                         .frame(width: 40, height: 40)
-                    PolarisIcon(Icons.creditCard, size: 20).themedForeground(.accentText)
+                    VaultIcon(Icons.creditCard, size: 20).themedForeground(.accentText)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: cardTitle(card)).vaultType(.body).themedForeground().lineLimit(1)
@@ -62,7 +62,7 @@ struct PaymentCardsScreen: View {
                 if let brand = brandName(card) {
                     Text(verbatim: brand).vaultType(.caption).themedForeground(.tertiary)
                 }
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)
             .frame(minHeight: Metric.rowHeight)
@@ -74,7 +74,7 @@ struct PaymentCardsScreen: View {
     private var addButton: some View {
         Button { editing = .new(.card) } label: {
             HStack(spacing: Space.s2) {
-                PolarisIcon(Icons.addCircle, size: Metric.iconInline)
+                VaultIcon(Icons.addCircle, size: Metric.iconInline)
                 Text("Add card")
             }
             .frame(maxWidth: .infinity)
@@ -86,7 +86,7 @@ struct PaymentCardsScreen: View {
         VStack(spacing: Space.s4) {
             ZStack {
                 Circle().fill(Color(rgb: env.theme.active.accentSoft)).frame(width: 92, height: 92)
-                PolarisIcon(Icons.creditCard, size: 40).themedForeground(.accent)
+                VaultIcon(Icons.creditCard, size: 40).themedForeground(.accent)
             }
             VStack(spacing: Space.s2) {
                 Text("No payment card yet").vaultType(.headline).themedForeground()

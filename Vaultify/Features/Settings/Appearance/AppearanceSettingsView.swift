@@ -67,7 +67,7 @@ struct AppearanceSettingsView: View {
                     }
                     .padding(Space.s2)
                     if selected {
-                        PolarisIcon(Icons.checkCircle, size: 18)
+                        VaultIcon(Icons.checkCircle, size: 18)
                             .foregroundStyle(Color(rgb: preview.accent))
                             .padding(5)
                             .background(Color(rgb: preview.background), in: Circle())
@@ -94,17 +94,17 @@ struct AppearanceSettingsView: View {
             NavigationLink {
                 AutoNightSettingsView()
             } label: {
-                Label { Text("Automatic Dark Mode") } icon: { PolarisIcon(Icons.clock) }
+                Label { Text("Automatic Dark Mode") } icon: { VaultIcon(Icons.clock) }
             }
             Picker(selection: Binding(get: { settings.fontScale },
                                       set: { env.theme.setFontScale($0) })) {
                 ForEach(FontScale.allCases) { Text($0.label).tag($0) }
             } label: {
-                Label { Text("Text Size") } icon: { PolarisIcon("ic_text") }
+                Label { Text("Text Size") } icon: { VaultIcon("ic_text") }
             }
             Toggle(isOn: Binding(get: { settings.reduceMotion },
                                  set: { env.theme.setReduceMotion($0) })) {
-                Label { Text("Reduce Motion") } icon: { PolarisIcon(Icons.reveal) }
+                Label { Text("Reduce Motion") } icon: { VaultIcon(Icons.reveal) }
             }
         }
         .listRowBackground(VaultColors.surface)

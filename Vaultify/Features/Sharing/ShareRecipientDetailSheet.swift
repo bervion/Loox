@@ -94,7 +94,7 @@ struct ShareRecipientDetailSheet: View {
                     Label {
                         Text("Item")
                     } icon: {
-                        PolarisIcon(item.category.avatarIcon, size: Metric.iconInline)
+                        VaultIcon(item.category.avatarIcon, size: Metric.iconInline)
                     }
                 }
             }

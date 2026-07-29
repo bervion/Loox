@@ -190,7 +190,7 @@ struct ShareAccessSheet: View {
                     Task { await checkProfileNow() }
                 } label: { Text("Check now") }
             } label: {
-                PolarisIcon("ic_menu_horizontal", size: Metric.iconInline)
+                VaultIcon("ic_menu_horizontal", size: Metric.iconInline)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -223,7 +223,7 @@ struct ShareAccessSheet: View {
             doneView
         case .failed(let message):
             VStack(spacing: Space.s4) {
-                PolarisIcon(Icons.alert, size: Metric.iconTile)
+                VaultIcon(Icons.alert, size: Metric.iconTile)
                     .themedForeground(.destructive)
                 Text(verbatim: message)
                     .vaultType(.callout).themedForeground(.secondary)
@@ -517,7 +517,7 @@ struct ShareAccessSheet: View {
                                 action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Space.s3) {
-                PolarisIcon(icon, size: Metric.iconUtility)
+                VaultIcon(icon, size: Metric.iconUtility)
                     .themedForeground(.accentText)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title.inAppLocalized)
@@ -527,7 +527,7 @@ struct ShareAccessSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
-                PolarisIcon(Icons.chevronRight, size: Metric.iconInline)
+                VaultIcon(Icons.chevronRight, size: Metric.iconInline)
                     .themedForeground(.iconSecondary)
             }
             .contentShape(Rectangle())
@@ -566,7 +566,7 @@ struct ShareAccessSheet: View {
                                     .vaultType(.body).themedForeground(.primary)
                                 Spacer(minLength: Space.s2)
                                 if normalizedEmail == label {
-                                    PolarisIcon(Icons.check, size: Metric.iconInline)
+                                    VaultIcon(Icons.check, size: Metric.iconInline)
                                         .themedForeground(.accentText)
                                 }
                             }
@@ -616,7 +616,7 @@ struct ShareAccessSheet: View {
 
                 Section {
                     Toggle(isOn: $allowMultipleDevices) {
-                        Label { Text("Allow use on multiple devices") } icon: { PolarisIcon(Icons.apps) }
+                        Label { Text("Allow use on multiple devices") } icon: { VaultIcon(Icons.apps) }
                     }
                 } footer: {
                     Text("When off, everything is encrypted for the first device they enrolled. Their other devices only see a locked placeholder.")
@@ -642,7 +642,7 @@ struct ShareAccessSheet: View {
                                         showRevokeOfflineNotice = true
                                     }
                                 } label: {
-                                    Label("Revoke", image: Icons.trash)
+                                    Label { Text("Revoke") } icon: { VaultIcon(Icons.trash) }
                                 }
                             }
                         }
@@ -751,7 +751,7 @@ struct ShareAccessSheet: View {
                             Button {
                                 showMessageCompose = true
                             } label: {
-                                Label { Text("Nudge via Messages") } icon: { PolarisIcon(Icons.share) }
+                                Label { Text("Nudge via Messages") } icon: { VaultIcon(Icons.share) }
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.themedProminent)
@@ -762,14 +762,14 @@ struct ShareAccessSheet: View {
                             }
                         } else {
                             ShareLink(item: shareURL) {
-                                Label { Text("Share invite link") } icon: { PolarisIcon(Icons.share) }
+                                Label { Text("Share invite link") } icon: { VaultIcon(Icons.share) }
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.themedProminent)
                         }
                         #else
                         ShareLink(item: shareURL) {
-                            Label { Text("Share invite link") } icon: { PolarisIcon(Icons.share) }
+                            Label { Text("Share invite link") } icon: { VaultIcon(Icons.share) }
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.themedProminent)
@@ -821,7 +821,7 @@ struct ShareAccessSheet: View {
 
     private var doneView: some View {
         VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.shield, size: Metric.iconTileLarge)
+            VaultIcon(Icons.shield, size: Metric.iconTileLarge)
                 .themedForeground(.success)
             Text("Access shared")
                 .vaultType(.section).themedForeground()
@@ -847,7 +847,7 @@ struct ShareAccessSheet: View {
             }
         case .iCloudUnavailable:
             VStack(spacing: Space.s4) {
-                PolarisIcon(Icons.info, size: Metric.iconTile)
+                VaultIcon(Icons.info, size: Metric.iconTile)
                     .themedForeground(.warning)
                 Text("Sign in to iCloud to share access. Sharing uses an encrypted approval transport; it does not turn on vault sync.")
                     .vaultType(.callout).themedForeground(.secondary)

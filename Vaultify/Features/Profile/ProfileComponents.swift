@@ -87,7 +87,7 @@ struct ProfileRowTile: View {
                 // `Radius.sm`/10): this case is still reused by every OTHER screen
                 // (Family, Loox Hub, Payment Cards, …), which this redesign doesn't touch —
                 // snapping it to a token would visually shift their tiles too.
-                PolarisIcon(icon, size: 18)
+                VaultIcon(icon, size: 18)
                     .themedForeground(.iconSecondary)
                     .frame(width: tileSize, height: tileSize)
                     .background(VaultColors.fill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -133,9 +133,9 @@ struct ProfileRowTile: View {
             // Profile-only SF Symbols: owner-approved exception to the Polaris-only rule (260715).
             Image(systemName: name).font(.system(size: Self.sfGlyphSize, weight: .semibold))
         case .templateAsset(let name):
-            // `PolarisIcon` is a generic template-vector renderer (name + size), not literally
+            // `VaultIcon` is a generic template-vector renderer (name + size), not literally
             // limited to the Polaris SVG set — reused as-is for the FontAwesome device glyphs.
-            PolarisIcon(name, size: assetGlyphOverride ?? Self.assetGlyphSize)
+            VaultIcon(name, size: assetGlyphOverride ?? Self.assetGlyphSize)
         }
     }
 
@@ -233,7 +233,7 @@ struct ProfileNavRow<Destination: View>: View {
                 if let value {
                     Text(verbatim: value).vaultType(.subhead).themedForeground(.secondary)
                 }
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)
             .frame(minHeight: Metric.rowHeight)
@@ -277,7 +277,7 @@ struct DeviceRow: View {
             }
             Spacer(minLength: Space.s2)
             if device.isCurrent { activeBadge }
-            PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
         }
         .padding(.horizontal, Space.s4)
         .frame(minHeight: Metric.rowHeight)

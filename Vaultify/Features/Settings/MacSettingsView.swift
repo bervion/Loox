@@ -28,7 +28,7 @@ struct MacSettingsView: View {
             switch self {
             case .general: return Icons.settings
             case .security: return Icons.lockFill
-            case .appearance: return "ic_apps_filled"
+            case .appearance: return Icons.appearance
             case .spaces: return Icons.folder
             case .sync: return Icons.sync
             case .passkeys: return Icons.passkey
@@ -46,7 +46,7 @@ struct MacSettingsView: View {
         NavigationSplitView {
             List(selection: $pane) {
                 ForEach(Pane.allCases) { pane in
-                    Label { Text(pane.label.inAppLocalized) } icon: { PolarisIcon(pane.icon) }
+                    Label { Text(pane.label.inAppLocalized) } icon: { VaultIcon(pane.icon) }
                         .tag(pane)
                 }
             }
@@ -86,7 +86,7 @@ struct MacSettingsView: View {
 
     private var lockedPlaceholder: some View {
         VStack(spacing: Space.s4) {
-            PolarisIcon(Icons.lockFill, size: 48).themedForeground(.secondary)
+            VaultIcon(Icons.lockFill, size: 48).themedForeground(.secondary)
             Text("Unlock Loox in the main window to change settings.")
                 .vaultType(.subhead).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
@@ -118,17 +118,17 @@ private struct MacGeneralSettingsPane: View {
                     Text("Tiếng Việt").tag("vi")
                     Text("日本語").tag("ja")
                 } label: {
-                    Label { Text("Language") } icon: { PolarisIcon(Icons.language) }
+                    Label { Text("Language") } icon: { VaultIcon(Icons.language) }
                 }
                 .pickerStyle(.segmented)
             }
 
             Section {
                 Toggle(isOn: $settings.showWebsiteIcons) {
-                    Label { Text("Show website icons") } icon: { PolarisIcon(Icons.globe) }
+                    Label { Text("Show website icons") } icon: { VaultIcon(Icons.globe) }
                 }
                 Toggle(isOn: $settings.hibpEnabled) {
-                    Label { Text("Check for known breaches") } icon: { PolarisIcon(Icons.shield) }
+                    Label { Text("Check for known breaches") } icon: { VaultIcon(Icons.shield) }
                 }
             } footer: {
                 Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
@@ -141,27 +141,35 @@ private struct MacGeneralSettingsPane: View {
                     Text("1 min").tag(60)
                     Text("Never").tag(0)
                 } label: {
-                    Label { Text("Clear clipboard") } icon: { PolarisIcon(Icons.copy) }
+                    Label { Text("Clear clipboard") } icon: { VaultIcon(Icons.copy) }
                 }
                 .pickerStyle(.segmented)
             }
 
             Section {
                 Toggle(isOn: $settings.analyticsEnabled) {
-                    Label { Text("Share anonymous usage statistics") } icon: { PolarisIcon(Icons.chartFill) }
+                    Label { Text("Share anonymous usage statistics") } icon: { VaultIcon(Icons.chartFill) }
                 }
             } footer: {
                 Text("Counts which features are used to help improve Loox. Never your vault contents, item names, websites, or search terms. Not linked to your identity.")
             }
 
             Section {
+                Toggle(isOn: $settings.crashReportingEnabled) {
+                    Label { Text("Send crash diagnostics") } icon: { VaultIcon(Icons.alert) }
+                }
+            } footer: {
+                Text("Sends a diagnostic report when Loox crashes, so the fault can be found and fixed. Reports carry the state of the app and the device, never your vault contents. Not linked to your identity.")
+            }
+
+            Section {
                 Button { env.session.lock(deliberate: true) } label: {
-                    Label { Text("Lock Now") } icon: { PolarisIcon(Icons.lockFill) }
+                    Label { Text("Lock Now") } icon: { VaultIcon(Icons.lockFill) }
                 }
                 .buttonStyle(.borderless)
                 Button(role: .destructive) { confirmErase = true } label: {
                     Label { Text("Erase Vault").foregroundStyle(env.theme.active.color(.destructive)) }
-                        icon: { PolarisIcon(Icons.delete).foregroundStyle(env.theme.active.color(.destructive)) }
+                        icon: { VaultIcon(Icons.delete).foregroundStyle(env.theme.active.color(.destructive)) }
                 }
                 .buttonStyle(.borderless)
             }
@@ -204,13 +212,13 @@ private struct MacSecuritySettingsPane: View {
             Section {
                 if BiometricAuth.isAvailable {
                     Toggle(isOn: biometricBinding) {
-                        Label { Text("Unlock with \(BiometricAuth.displayName)") } icon: { PolarisIcon(BiometricAuth.iconAsset) }
+                        Label { Text("Unlock with \(BiometricAuth.displayName)") } icon: { VaultIcon(BiometricAuth.iconAsset) }
                     }
                 }
                 Picker(selection: $settings.autoLock) {
                     ForEach(AutoLockTimeout.allCases) { Text($0.title).tag($0) }
                 } label: {
-                    Label { Text("Auto-Lock") } icon: { PolarisIcon(Icons.clock) }
+                    Label { Text("Auto-Lock") } icon: { VaultIcon(Icons.clock) }
                 }
                 // Inline picker — see the menu-popup bridge note in the General pane.
                 .pickerStyle(.segmented)
@@ -220,12 +228,12 @@ private struct MacSecuritySettingsPane: View {
                 NavigationLink {
                     ChangeMasterPasswordView()
                 } label: {
-                    Label { Text("Change Master Password") } icon: { PolarisIcon(Icons.key) }
+                    Label { Text("Change Master Password") } icon: { VaultIcon(Icons.key) }
                 }
                 NavigationLink {
                     RegenerateKitView()
                 } label: {
-                    Label { Text("Emergency Kit") } icon: { PolarisIcon(Icons.shield) }
+                    Label { Text("Emergency Kit") } icon: { VaultIcon(Icons.shield) }
                 }
                 NavigationLink {
                     Level2SettingsView()
@@ -234,14 +242,14 @@ private struct MacSecuritySettingsPane: View {
                         Text(env.session.hasLevel2 ? "On" : "Off")
                             .themedForeground(.secondary)
                     } label: {
-                        Label { Text("Extra Protection") } icon: { PolarisIcon(Icons.lockFill) }
+                        Label { Text("Extra Protection") } icon: { VaultIcon(Icons.lockFill) }
                     }
                 }
             }
 
             Section {
                 Toggle(isOn: automaticPasskeyBinding) {
-                    Label { Text("Automatic passkey upgrades") } icon: { PolarisIcon(Icons.passkey) }
+                    Label { Text("Automatic passkey upgrades") } icon: { VaultIcon(Icons.passkey) }
                 }
             } footer: {
                 Text("Automatic passkey upgrades can create passkeys in the background with a write-only public key. Reading or using passkeys still requires unlocking your vault.")

@@ -94,7 +94,7 @@ struct LooxSwirlAnimationView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(centerTint ?? .primary)
         } else if let centerIcon {
-            Image(centerIcon)
+            Image(vaultIcon: centerIcon)
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()

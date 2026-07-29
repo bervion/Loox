@@ -20,7 +20,7 @@ struct ShareInviteSentSheet: View {
                 Circle()
                     .fill(Color(rgb: env.theme.active.successSoft))
                     .frame(width: 72, height: 72)
-                PolarisIcon(Icons.checkCircle, size: 32).themedForeground(.success)
+                VaultIcon(Icons.checkCircle, size: 32).themedForeground(.success)
             }
             VStack(spacing: Space.s2) {
                 Text("Invite sent to \(recipientLabel)")

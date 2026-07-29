@@ -50,7 +50,7 @@ struct HomeLayoutEditor: View {
     private func row(_ section: HomeSection) -> some View {
         Toggle(isOn: visibility(of: section)) {
             HStack(spacing: Space.s3) {
-                PolarisIcon(section.icon, size: Metric.iconInline)
+                VaultIcon(section.icon, size: Metric.iconInline)
                     .themedForeground(.iconSecondary)
                     .frame(width: Metric.iconUtility, height: Metric.iconUtility)
                 Text(section.title)
@@ -112,7 +112,7 @@ private struct HomeSectionVisibilityToggleStyle: ToggleStyle {
                 .fill(env.theme.active.color(.accentFill))
                 .opacity(on ? 1 : 0)
                 .overlay {
-                    PolarisIcon(Icons.check, size: 13)
+                    VaultIcon(Icons.check, size: 13)
                         .foregroundStyle(env.theme.active.color(.onAccent))
                         .opacity(on ? 1 : 0)
                 }

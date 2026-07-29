@@ -80,7 +80,15 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// Master switch for the periodic security-checkup reminder notification.
     /// Default ON; the WatchtowerScreen reschedules on each completed audit.
     var auditRemindersEnabled: Bool { didSet { defaults.set(auditRemindersEnabled, forKey: Key.auditReminders) } }
-    var iCloudSyncEnabled: Bool { didSet { defaults.set(iCloudSyncEnabled, forKey: Key.icloud) } }
+    var iCloudSyncEnabled: Bool {
+        didSet {
+            defaults.set(iCloudSyncEnabled, forKey: Key.icloud)
+            // Every UI path funnels through this setter, so the crash key that
+            // splits sync-on from sync-off reports is refreshed here; sampling
+            // it once at launch would mislabel any session that flipped it.
+            CrashReporter.shared.set(.iCloudSync(enabled: iCloudSyncEnabled))
+        }
+    }
     /// Approval Mode transport (CKShare grants/requests/responses). Deliberately
     /// SEPARATE from `iCloudSyncEnabled`: enabling approval sharing must never
     /// imply vault-item uploads, and the approval push pipeline must never be
@@ -94,6 +102,17 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         didSet {
             defaults.set(analyticsEnabled, forKey: Key.analytics)
             AnalyticsEngine.shared.setEnabled(analyticsEnabled)
+        }
+    }
+    /// Crash diagnostics (see `CrashReporter`'s privacy and scope contract).
+    /// Opt-out, and deliberately SEPARATE from `analyticsEnabled`: declining
+    /// usage statistics should not silence the report that explains why the app
+    /// died. The didSet drives the SDK's own collection switch, so turning this
+    /// off stops Crashlytics recording rather than only stopping our calls.
+    var crashReportingEnabled: Bool {
+        didSet {
+            defaults.set(crashReportingEnabled, forKey: Key.crashReporting)
+            CrashReporter.shared.setEnabled(crashReportingEnabled)
         }
     }
     var clipboardClearSeconds: Int { didSet { defaults.set(clipboardClearSeconds, forKey: Key.clipboard) } }
@@ -155,6 +174,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
             // through this setter, so the language signal lives here, not per-view.
             AnalyticsEngine.shared.log(.languageChanged(preferredLanguage))
             AnalyticsEngine.shared.setUserProperty(.appLanguage, preferredLanguage)
+            CrashReporter.shared.set(.appLanguage(preferredLanguage))
         }
     }
 
@@ -184,6 +204,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         approvalModeEnabled = d.bool(forKey: Key.approvalMode)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
         analyticsEnabled = d.object(forKey: Key.analytics) as? Bool ?? true
+        crashReportingEnabled = d.object(forKey: Key.crashReporting) as? Bool ?? true
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
         selectedPaymentCardId = d.string(forKey: Key.selectedCard)
@@ -229,6 +250,12 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         UserDefaults.standard.object(forKey: Key.analytics) as? Bool ?? true
     }
 
+    /// Consent read for `CrashReporter` bootstrap, which runs before any
+    /// `SettingsStore` instance exists.
+    nonisolated static func isCrashReportingEnabled() -> Bool {
+        UserDefaults.standard.object(forKey: Key.crashReporting) as? Bool ?? true
+    }
+
     private nonisolated enum Key {
         static let onboarding = "onboarding_completed"
         static let hasChosenAppearance = "has_chosen_appearance"
@@ -243,6 +270,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let approvalMode = "approval_mode_enabled"
         static let favicons = "show_website_icons"
         static let analytics = "analytics_enabled"
+        static let crashReporting = "crash_reporting_enabled"
         static let clipboard = "clipboard_clear_seconds"
         static let privacyScreen = "hide_in_app_switcher"
         static let selectedCard = "profile_selected_payment_card_id"

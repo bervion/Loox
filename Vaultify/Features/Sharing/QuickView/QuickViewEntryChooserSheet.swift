@@ -77,14 +77,14 @@ struct QuickViewEntryChooserSheet: View {
                           subtitle: LocalizedStringResource, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Space.s3) {
-                PolarisIcon(icon, size: Metric.iconUtility).themedForeground(.accentText)
+                VaultIcon(icon, size: Metric.iconUtility).themedForeground(.accentText)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title.inAppLocalized).vaultType(.headline).themedForeground()
                     Text(subtitle.inAppLocalized).vaultType(.footnote).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
-                PolarisIcon(Icons.chevronRight, size: Metric.iconInline).themedForeground(.iconSecondary)
+                VaultIcon(Icons.chevronRight, size: Metric.iconInline).themedForeground(.iconSecondary)
             }
             .contentShape(Rectangle())
             .padding(.vertical, Space.s1)

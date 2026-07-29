@@ -50,12 +50,12 @@ struct ItemsScreen: View {
                                     Label {
                                         Text(category.title)
                                     } icon: {
-                                        PolarisIcon(category.iconAsset)
+                                        VaultIcon(category.iconAsset)
                                     }
                                 }
                             }
                         } label: {
-                            PolarisIcon(Icons.pageAdd, size: Metric.iconUtility)
+                            VaultIcon(Icons.pageAdd, size: Metric.iconUtility)
                                 .themedForeground()
                         }
                         // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
@@ -160,7 +160,7 @@ struct ItemsScreen: View {
     private var createSpaceRow: some View {
         Button { creatingSpace = true } label: {
             HStack(spacing: Space.s3) {
-                PolarisIcon(Icons.addCircle, size: 22)
+                VaultIcon(Icons.addCircle, size: 22)
                     .foregroundStyle(Color(rgb: env.theme.active.accent))
                     .frame(width: Metric.badgeTile)
                 Text("Create Space").foregroundStyle(Color(rgb: env.theme.active.accent))
@@ -221,7 +221,7 @@ struct ItemsScreen: View {
                 if count > 0 {
                     Text("\(count)").themedForeground(.secondary)
                 }
-                PolarisIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)
             .padding(.vertical, Space.s3)
@@ -245,6 +245,6 @@ struct ItemsScreen: View {
         RoundedRectangle(cornerRadius: Radius.concentric(outer: Radius.lg, inset: Space.s4), style: .continuous)
             .fill(fill)
             .frame(width: Metric.badgeTile, height: Metric.badgeTile)
-            .overlay(PolarisIcon(icon, size: iconSize).foregroundStyle(iconColor))
+            .overlay(VaultIcon(icon, size: iconSize).foregroundStyle(iconColor))
     }
 }

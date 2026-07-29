@@ -135,7 +135,7 @@ struct LooxPlanLandingScreen: View {
 
     private func planRow(_ icon: String, _ title: String, _ detail: String) -> some View {
         HStack(alignment: .top, spacing: Space.s3) {
-            PolarisIcon(icon, size: 22)
+            VaultIcon(icon, size: 22)
                 .themedForeground(.accentText)
                 .frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {

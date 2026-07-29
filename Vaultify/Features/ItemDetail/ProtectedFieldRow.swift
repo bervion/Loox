@@ -91,7 +91,10 @@ struct ProtectedFieldRow: View {
     @ViewBuilder private var value: some View {
         Group {
             if let plaintext {
-                Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
+                // Colour-coded like every other revealed secret — a protected value is
+                // still a password being read off the screen.
+                Text(SecretColoring.attributed(plaintext, theme: env.theme.active))
+                    .font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
             } else {
                 // Name the secret up front — which prompt appears on tap must
                 // not be a surprise (the Extra Password unlocks for this item
@@ -117,18 +120,18 @@ struct ProtectedFieldRow: View {
     /// it. Revealed: the "•••" menu with the value actions.
     @ViewBuilder private var trailing: some View {
         if plaintext == nil {
-            PolarisIcon(Icons.lockFill, size: 22)
+            VaultIcon(Icons.lockFill, size: 22)
                 .foregroundStyle(copied ? VaultColors.copyFlashText : Self.guardTeal)
         } else {
             Menu {
-                Button { copy() } label: { Label("Copy", image: Icons.copy) }
-                Button { showLargeType = true } label: { Label("Large Type", image: "ic_text") }
-                Button { plaintext = nil } label: { Label("Conceal", image: Icons.hide) }
+                Button { copy() } label: { Label { Text("Copy") } icon: { VaultIcon(Icons.copy) } }
+                Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon("ic_text") } }
+                Button { plaintext = nil } label: { Label { Text("Conceal") } icon: { VaultIcon(Icons.hide) } }
                 Button(role: .destructive) { confirmRemoval = true } label: {
-                    Label("Remove Protection", image: Icons.lock)
+                    Label { Text("Remove Protection") } icon: { VaultIcon(Icons.lock) }
                 }
             } label: {
-                PolarisIcon("ic_menu_horizontal", size: 17)
+                VaultIcon("ic_menu_horizontal", size: 17)
                     .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
                     .frame(width: 30, height: 30)
                     .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))

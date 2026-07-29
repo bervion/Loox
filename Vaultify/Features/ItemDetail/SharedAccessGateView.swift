@@ -91,7 +91,7 @@ struct SharedAccessGateView<Content: View>: View {
     private func stateCard(icon: String, tint: ThemeRole,
                            message: LocalizedStringKey) -> some View {
         VStack(spacing: Space.s3) {
-            PolarisIcon(icon, size: Metric.iconTile).themedForeground(tint)
+            VaultIcon(icon, size: Metric.iconTile).themedForeground(tint)
             Text(message)
                 .vaultType(.callout).themedForeground(.secondary)
                 .multilineTextAlignment(.center)
