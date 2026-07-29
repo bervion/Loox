@@ -70,7 +70,23 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
   — do not use APIs newer than that SDK without availability guards, or the runner build
   fails. Known trap: `TextField`/`SecureField` with a `LocalizedStringResource` title is
   iOS 26+ → use `LocalizedStringKey`.
-- **Icons**: use the **Polaris SVG icon set**, not SF Symbols.
+- **Icons**: **SF Symbols**, reached through `VaultIcon(_:size:)` — never `Image(systemName:)` or
+  `Image(name)` directly. `Vaultify/DesignSystem/Icons/` owns the system:
+  - `Icons` — app-chrome tokens. Values are `sf:`-prefixed names resolved by `IconResolver`.
+  - `IconCatalog` — the browsable library behind the Space/item picker (`IconPickerSheet`).
+  - `LegacyIconMap` — `dt_*` / `ic_*` names still stored in real vaults, mapped to their SF
+    equivalent at READ time. Stored icon values are never rewritten: `FolderRecord.iconAsset` is
+    a plaintext CloudKit field merged last-writer-wins, so a rewrite would blank icons on any
+    device still on an older build, and item avatars live inside the sealed blob.
+  - Newly picked icons are stored `sf:`-prefixed. `IconResolver.canonical` compares the two
+    namespaces (the seeded-Space dedupe signature needs it).
+  - **iOS 17.3 is the SF Symbols floor.** A newer symbol compiles clean and renders BLANK at
+    runtime. `VaultifyTests/IconCatalogTests` checks every name against the bundled allowlist
+    `VaultifyTests/Fixtures/sf-symbols-ios-17-3.txt` — regenerate that file, do not bypass it.
+  - The `dt_*` / `ic_*` assets stay bundled so an in-flight legacy value never renders empty.
+  - TRAP: pass an icon NAME (a token), not a bare SF symbol name. The resolver reads a bare name
+    as an asset name and draws nothing — no crash, no log. Same trap for `Label(_, image:)`,
+    `Image(name)` and `UIImage(named:)`; use `VaultIcon` or `Image(vaultIcon:)`.
 
 ## Design System (READ before ANY UI work)
 
@@ -155,10 +171,35 @@ catalog** (`AnalyticsEvents.swift`) only; never inline `AnalyticsEvent("...")` a
 sites, and every new factory gets an `auditSamples` entry (GA4 limits are test-enforced).
 PRIVACY CONTRACT: parameters carry item TYPES, `AnalyticsBucket` counts, product IDs,
 setting states — never item names/values, websites, search terms, or user content. App
-target only (extensions must never link Firebase; product is `FirebaseAnalyticsCore` —
-no IDFA). Bulk flows wrap repository writes in `runSuppressed` + one summary event.
-Screens: `.analyticsScreen("snake_name")`. Works without `GoogleService-Info.plist`
-(analytics dark); the real plist lives in `Vaultify/Resources/`.
+target only (extensions must never link Firebase; products are `FirebaseAnalyticsCore` —
+no IDFA — and `FirebaseCrashlytics`). Bulk flows wrap repository writes in `runSuppressed`
++ one summary event. Screens: `.analyticsScreen("snake_name")`. Works without
+`GoogleService-Info.plist` (analytics dark); the real plist lives in `Vaultify/Resources/`.
+
+## Crash reporting (Crashlytics)
+
+`Vaultify/Analytics/CrashReporter.swift` + `CrashReportKeys.swift`. Shares Firebase's single
+`configure()` gate with analytics, but has its OWN consent flag
+(`SettingsStore.crashReportingEnabled`, opt-out) — turning analytics off must not silently keep
+uploading crashes, and vice versa. Collection is off in DEBUG so dev crashes stay out of the
+production dashboard.
+
+PRIVACY CONTRACT — stricter than it looks, because a crash payload is not a typed event:
+- Custom keys come from the typed `CrashReportKeys` catalog only, validated by a pure policy
+  the same way `AnalyticsPolicy` validates events. Never pass a free-form string.
+- Never call `setUserID` — it would link crash data to identity and contradict the privacy
+  manifest's `Linked=false` declaration.
+- Never log an interpolated `Error`: Loox errors can embed record ids, CloudKit zone/share
+  names and file URLs. Categorise to a fixed identifier first.
+- `precondition`/`fatalError` MESSAGES are uploaded. Do not interpolate paths or filenames.
+- Extensions carry no Firebase, so a crash inside VaultifyAutoFill / VaultifyAutoFillMac /
+  VaultifySafari is INVISIBLE here. Do not "fix" that by linking Firebase into an appex.
+- A hang is not always a crash: Crashlytics sees a watchdog termination only when the OS kills
+  the process. A recoverable main-thread stall leaves no report.
+
+dSYMs upload from the fastlane release lane, not an Xcode run-script phase — the script's path
+is derived-data-layout dependent and differs between a dev machine and the self-hosted runner,
+where it fails silently. Use ONE mechanism.
 
 ## Verifying runtime behavior
 
@@ -187,7 +228,12 @@ Documents, read back with `simctl get_app_container <id> data`.
 - ❌ Don't commit the generated project, `Derived/`, or any secret.
 - ❌ Don't gate Approval-Mode sharing code on `iCloudSyncEnabled` — it has its own
   `approvalModeEnabled` flag (control plane ≠ vault-item sync, plan ADR-2).
-- ❌ Don't use SF Symbols or Material icons — Polaris SVG only.
+- ❌ Don't construct icons with `Image(systemName:)`, `Image(name)`, `Label(_, image:)` or
+  `UIImage(named:)` — an `sf:` token is not an asset name and renders BLANK. Use `VaultIcon`
+  (or `Image(vaultIcon:)` where a raw `Image` is genuinely required).
+- ❌ Don't add an SF Symbol newer than iOS 17.3 — it compiles and renders nothing on the floor.
+- ❌ Don't rewrite stored `iconAsset` values to migrate icons — resolve at read time
+  (`LegacyIconMap`), or two devices on different builds stop converging.
 - ❌ Don't ship user-facing text without a Vietnamese translation in `Localizable.xcstrings`
   (native) or in **both** `VaultifySafari/Resources/_locales/en` + `_locales/vi` (Safari
   extension web layer).
