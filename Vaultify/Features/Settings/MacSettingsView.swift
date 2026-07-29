@@ -28,7 +28,7 @@ struct MacSettingsView: View {
             switch self {
             case .general: return Icons.settings
             case .security: return Icons.lockFill
-            case .appearance: return Icons.appearance
+            case .appearance: return Icons.appsFill
             case .spaces: return Icons.folder
             case .sync: return Icons.sync
             case .passkeys: return Icons.passkey

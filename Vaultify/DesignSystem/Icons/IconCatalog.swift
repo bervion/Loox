@@ -1,10 +1,14 @@
 import Foundation
 
-/// One pickable icon: the glyph's name plus the English terms that should find it.
+/// One pickable icon: the stored glyph name plus the English terms that should find it.
 struct CatalogIcon: Identifiable, Hashable {
-    /// Asset name of a bundled duotone glyph. This is also the value STORED when the icon is
-    /// picked, so it must stay stable — a rename orphans every vault that already holds it.
+    /// The value STORED when this icon is picked, and the value handed to `VaultIcon`: a bundled
+    /// duotone asset name, or an `sf:`-prefixed SF Symbol. It must stay stable — a rename orphans
+    /// every vault that already holds it.
     let name: String
+
+    /// True for the SF additions, false for the app's own duotone glyphs.
+    var isSystemSymbol: Bool { name.hasPrefix(IconResolver.systemPrefix) }
     /// Lowercase English search terms, space separated. Matched alongside the name so "web"
     /// finds `dt_globe` and "2fa" finds `dt_clock`.
     let keywords: String
@@ -20,10 +24,12 @@ struct IconCatalogSection: Identifiable {
     var id: String { key }
 }
 
-/// The icon library offered by the Space and item pickers.
+/// The icon library offered by the Space and item pickers: the app's duotone set, plus SF
+/// Symbols as additional choices.
 ///
-/// Every name here must resolve to a bundled asset — `IconCatalogTests` fails the build if one
-/// does not, because a missing asset renders as an empty tile with no crash and no log.
+/// Both families fail the same silent way — a missing asset and an SF symbol newer than the
+/// deployment floor each render an empty tile with no crash and no log — so `IconCatalogTests`
+/// checks every entry of both.
 enum IconCatalog {
     static let sections: [IconCatalogSection] = IconCatalogData.sections
 
@@ -45,7 +51,8 @@ enum IconCatalog {
     }
 
     /// Icons matching a free-text query, searched over both the name and its keywords. The
-    /// `dt_` prefix and underscores are stripped so "credit card" finds `dt_credit_card`.
+    /// `dt_`/`sf:` prefixes, underscores and dots are stripped, so "credit card" finds both
+    /// `dt_credit_card` and `sf:creditcard.fill`.
     static func search(_ query: String) -> [CatalogIcon] {
         let needle = normalize(query)
         guard !needle.isEmpty else { return [] }
@@ -57,8 +64,10 @@ enum IconCatalog {
     private static func normalize(_ text: String) -> String {
         var value = text.lowercased()
         if value.hasPrefix("dt_") { value.removeFirst(3) }
+        if value.hasPrefix(IconResolver.systemPrefix) { value.removeFirst(IconResolver.systemPrefix.count) }
         return value
             .replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: ".", with: " ")
             .trimmingCharacters(in: .whitespaces)
     }
 }

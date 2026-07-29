@@ -1,112 +1,91 @@
 import Foundation
 
-/// Centralised icon tokens for app chrome. Categories, Spaces and item avatars carry their
-/// own stored `iconAsset` and do not come through here.
-///
-/// Values are `sf:`-prefixed SF Symbol names resolved by `IconResolver`, so every
-/// `VaultIcon(Icons.x)` call site migrated without an edit. Names are pinned to the symbols
-/// available on the iOS 17.3 deployment floor — `IconCatalogTests` fails the build if one is not.
+/// Centralised asset names for app-chrome icons (categories/fields expose their
+/// own `iconAsset`). Keeps string literals out of view code.
 enum Icons {
-    static let home = IconResolver.token("house")
-    static let homeFill = IconResolver.token("house.fill")
-    static let search = IconResolver.token("magnifyingglass")
-    static let watchtower = IconResolver.token("checkmark.shield")
-    /// The Security (Watchtower) tab. Deliberately NOT `organization`: that token means
-    /// people, and the tab must not read as a group-of-people glyph.
-    static let securityTab = IconResolver.token("checkmark.shield")
-    /// Selected state of the Security tab.
-    static let securityTabFill = IconResolver.token("checkmark.shield.fill")
-    static let settings = IconResolver.token("gearshape")
-    static let settingsFill = IconResolver.token("gearshape.fill")
-    static let notification = IconResolver.token("bell")
-    static let add = IconResolver.token("plus")
-    static let addCircle = IconResolver.token("plus.circle")
-    static let edit = IconResolver.token("pencil")
-    static let delete = IconResolver.token("trash")
-    static let trash = IconResolver.token("trash")
-    static let copy = IconResolver.token("doc.on.doc")
-    static let copyDone = IconResolver.token("checkmark.circle")
-    static let reveal = IconResolver.token("eye")
-    static let hide = IconResolver.token("eye.slash")
-    static let star = IconResolver.token("star")
-    static let starFill = IconResolver.token("star.fill")
-    static let check = IconResolver.token("checkmark")
-    static let checkCircle = IconResolver.token("checkmark.circle")
-    static let layoutSection = IconResolver.token("arrow.up.arrow.down")
-    static let enter = IconResolver.token("tray.and.arrow.down")
-    static let close = IconResolver.token("xmark")
-    static let closeCircle = IconResolver.token("xmark.circle")
-    static let chevronLeft = IconResolver.token("chevron.left")
-    static let chevronRight = IconResolver.token("chevron.right")
-    static let chevronDown = IconResolver.token("chevron.down")
-    static let arrowRight = IconResolver.token("arrow.right")
-    static let lock = IconResolver.token("lock")
-    static let lockFill = IconResolver.token("lock.fill")
-    static let key = IconResolver.token("key")
-    static let creditCard = IconResolver.token("creditcard")
-    static let shield = IconResolver.token("checkmark.shield")
-    static let shieldAlert = IconResolver.token("exclamationmark.shield")
+    static let home = "ic_home"
+    static let homeFill = "ic_home_filled"
+    static let search = "ic_search"
+    static let watchtower = "ic_shield_check_mark"
+    static let settings = "ic_settings"
+    static let notification = "ic_notification"
+    static let settingsFill = "ic_settings_filled"
+    static let add = "ic_plus"
+    static let addCircle = "ic_plus_circle"
+    static let edit = "ic_edit"
+    static let delete = "ic_delete"
+    static let copy = "ic_clipboard"
+    static let copyDone = "ic_clipboard_check"
+    static let reveal = "ic_view"
+    static let hide = "ic_hide"
+    static let star = "ic_star"
+    static let starFill = "ic_star_filled"
+    static let check = "ic_check"
+    static let checkCircle = "ic_check_circle"
+    static let layoutSection = "ic_layout_section"
+    static let enter = "ic_enter"
+    static let close = "ic_x"
+    static let closeCircle = "ic_x_circle"
+    static let chevronLeft = "ic_chevron_left"
+    static let identityCard = "ic_identity_card"
+    static let orderRepeat = "ic_order_repeat"
+    static let chevronRight = "ic_chevron_right"
+    static let chevronDown = "ic_chevron_down"
+    static let arrowRight = "ic_arrow_right"
+    static let lock = "ic_lock"
+    static let lockFill = "ic_lock_filled"
+    static let key = "ic_key"
+    static let creditCard = "ic_credit_card"
+    static let shield = "ic_shield_check_mark"
+    static let shieldAlert = "ic_shield_none"
     /// Shield with a person silhouette — the Vault Audit action glyph.
-    static let shieldPerson = IconResolver.token("person.badge.shield.checkmark")
-    static let passkey = IconResolver.token("person.badge.key")
-    static let personLockFilled = IconResolver.token("person.badge.key.fill")
-    /// A protected/anonymous identity — the anonymous persona kind, a paired-device
-    /// status, and the shared-access gate. Distinct from `passkey`: a key badge would
-    /// claim these are passkeys.
-    static let identityShielded = IconResolver.token("lock.circle.fill")
-    static let alert = IconResolver.token("exclamationmark.triangle")
-    static let refresh = IconResolver.token("arrow.triangle.2.circlepath")
-    static let replay = IconResolver.token("arrow.clockwise")
-    static let sync = IconResolver.token("arrow.triangle.2.circlepath")
-    static let magic = IconResolver.token("sparkles")
-    static let clock = IconResolver.token("clock")
-    static let globe = IconResolver.token("globe")
-    static let share = IconResolver.token("square.and.arrow.up")
-    static let info = IconResolver.token("info.circle")
-    static let folder = IconResolver.token("folder")
-    static let identityCard = IconResolver.token("person.text.rectangle")
-    static let orderRepeat = IconResolver.token("arrow.left.arrow.right")
-    /// The Recently Used home section. A swap arrow (`orderRepeat`) does not say "recent".
-    static let recentlyUsed = IconResolver.token("clock.arrow.circlepath")
-    static let inventory = IconResolver.token("tray.full")
-    static let hashtag = IconResolver.token("number")
-    static let plan = IconResolver.token("flag")
-    static let planFill = IconResolver.token("flag.fill")
-    static let organization = IconResolver.token("person.2")
-    static let organizationFill = IconResolver.token("person.2.fill")
-    static let apps = IconResolver.token("square.grid.2x2")
-    static let appsFill = IconResolver.token("square.grid.2x2.fill")
-    /// The Appearance settings pane. Kept off `appsFill` so the macOS sidebar does not
-    /// label Appearance with the All Items glyph.
-    static let appearance = IconResolver.token("paintpalette")
-    static let pin = IconResolver.token("pin")
-    static let pinFill = IconResolver.token("pin.fill")
-    static let archive = IconResolver.token("archivebox")
-    static let calendar = IconResolver.token("calendar")
-    static let chartFill = IconResolver.token("chart.bar.fill")
-    static let importData = IconResolver.token("arrow.down.doc")
-    static let exportData = IconResolver.token("square.and.arrow.down")
-    static let language = IconResolver.token("character.bubble")
-    static let scanCode = IconResolver.token("qrcode")
-    static let person = IconResolver.token("person")
-    /// The canonical email glyph app-wide.
-    static let mail = IconResolver.token("envelope")
-    static let camera = IconResolver.token("camera")
-    static let image = IconResolver.token("photo")
+    static let shieldPerson = "ic_shield_person"
+    static let alert = "ic_alert_triangle"
+    static let refresh = "ic_refresh"
+    static let replay = "ic_replay"
+    static let magic = "ic_magic"
+    static let clock = "ic_clock"
+    static let globe = "ic_globe"
+    static let share = "ic_share"
+    static let info = "ic_info"
+    static let folder = "ic_folder"
+    static let inventory = "ic_inventory"
+    static let hashtag = "ic_hashtag"
+    static let plan = "ic_plan"
+    static let planFill = "ic_plan_filled"
+    static let organization = "ic_organization"
+    static let organizationFill = "ic_organization_filled"
+    static let apps = "ic_apps"
+    static let appsFill = "ic_apps_filled"
+    static let pin = "ic_pin"
+    static let pinFill = "ic_pin_filled"
+    static let archive = "ic_archive"
+    static let calendar = "ic_calendar"
+    static let chartFill = "ic_chart_vertical_filled"
+    static let trash = "ic_delete"
+    static let importData = "ic_import"
+    static let exportData = "ic_export"
+    static let language = "ic_language"
+    static let passkey = "ic_passkey"
+    static let personLockFilled = "ic_person_lock_filled"
+    static let scanCode = "ic_shopcodes"
+    static let sync = "ic_refresh"
+    static let person = "ic_person"
+    // "ic_email" is the canonical email glyph app-wide; the older "ic_mail"
+    // asset stays bundled only for the folder icon picker's curated catalog.
+    static let mail = "ic_email"
+    static let camera = "ic_camera"
+    static let image = "ic_image"
     /// A single device (phone) — used in the Profile Devices list.
-    static let device = IconResolver.token("iphone")
+    static let device = "ic_phone"
     /// Document with a plus badge — used on the Add quick-action tile and header cluster.
-    static let pageAdd = IconResolver.token("doc.badge.plus")
-    /// Horizontal three-dot overflow — used in the header action cluster.
-    static let moreHorizontal = IconResolver.token("ellipsis")
-    /// The Reduce Motion accessibility row. Not `reveal`: an eye there reads as "show the secret".
-    static let reduceMotion = IconResolver.token("figure.walk.motion")
-    /// Suspending something that keeps running (alias forwarding). Not `hide`, which conceals a value.
-    static let pause = IconResolver.token("pause.circle")
+    static let pageAdd = "ic_page_add"
+    /// Horizontal three-dot overflow ("•••") — used in the header action cluster.
+    static let moreHorizontal = "ic_menu_horizontal"
     /// Reorder / sort control.
-    static let sort = IconResolver.token("arrow.up.arrow.down")
+    static let sort = "ic_sort"
     /// Plain-text / large-type affordance.
-    static let text = IconResolver.token("textformat")
+    static let text = "ic_text"
     /// File attachment.
-    static let attachment = IconResolver.token("paperclip")
+    static let attachment = "ic_attachment"
 }

@@ -16,9 +16,9 @@ The product must not feel like generated UI assembled screen by screen. Every su
 
 - Read `README.md`, `CLAUDE.md`, `docs/codebase-summary.md`, and this file before UI work.
 - Use native SwiftUI patterns compatible with iOS 17.3 unless newer APIs are guarded with `#available`.
-- Icons are SF Symbols, reached through `VaultIcon(_:size:)` — never `Image(systemName:)` or
-  `Image(name)` directly. `Icons` holds chrome tokens; `IconCatalog` is the picker library;
-  content glyphs (Spaces, item avatars, field icons) stay FontAwesome duotone assets. See CLAUDE.md.
+- Icons are Polaris assets, reached through `VaultIcon(_:size:)` — never `Image(systemName:)` or
+  `Image(name)` directly. `Icons` holds the chrome tokens. SF Symbols appear only as extra
+  choices inside the Space/item icon picker, never as app chrome. See CLAUDE.md.
 - All visible user-facing text must be localized in English and Vietnamese.
 - Do not hardcode raw colors in feature screens.
 - Do not use `Color.primary`, `Color.secondary`, `.white`, `.black`, `.red`, or opacity guesses on custom themed surfaces unless explicitly mapped through semantic tokens.
@@ -75,7 +75,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Elevation (soft shadow) | `.elevation(.level1/.level2/.level3/.sheet)` | `DesignSystem/Tokens/Elevation.swift` |
 | Motion | `Motion.spring/standard/fast/base/medium/slow/pressScale`, `.vault(_,reduceMotion:)` | `DesignSystem/Tokens/Motion.swift` |
 | Typography roles | `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)` | `DesignSystem/Typography.swift` |
-| Secrets/codes | `Font.vaultCode(_:weight:)` — SF with tabular digits | `DesignSystem/Typography.swift` |
+| Secrets/codes | `Font.vaultCode(_:weight:)` — SF text with tabular digits | `DesignSystem/Typography.swift` |
 | Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
 | Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
 | Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
@@ -218,8 +218,8 @@ Rules:
 ## Icon System
 
 Vaultify renders every icon through `VaultIcon`, which resolves an `sf:`-prefixed name to an SF
-Symbol and anything else to a bundled asset. App chrome is SF (via `Icons`); content glyphs —
-Spaces, item avatars, field and category icons — are the FontAwesome duotone set.
+Symbol and anything else to a bundled Polaris asset. The app's icon language is Polaris; SF is
+offered only as an additional pick inside the Space/item icon picker.
 
 Icon asset rules:
 

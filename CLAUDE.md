@@ -70,29 +70,29 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
   — do not use APIs newer than that SDK without availability guards, or the runner build
   fails. Known trap: `TextField`/`SecureField` with a `LocalizedStringResource` title is
   iOS 26+ → use `LocalizedStringKey`.
-- **Icons** — split by ROLE, not by era. `Vaultify/DesignSystem/Icons/` owns the system and
-  `VaultIcon(_:size:)` is the only renderer; never `Image(systemName:)` or `Image(name)` directly.
-  - **App chrome** (tab bar, buttons, menus, rows) = **SF Symbols** via the `Icons` tokens, whose
-    values carry an `sf:` prefix.
-  - **Content** (Spaces, item avatars, `FieldKind`/`ItemCategory` glyphs, Home quick-action tiles)
-    = the bundled **FontAwesome duotone / Polaris** assets in `Assets.xcassets/PolarisIcons`,
-    named by asset directly. That two-tone look is the product's visual language — do NOT map it
-    onto SF. Mapping `dt_*` to SF once erased it app-wide in a single change.
-  - `IconResolver`: `sf:`-prefixed → SF Symbol, anything else → asset. No translation table.
-  - `IconCatalog` is the duotone library behind the Space/item picker (`IconPickerSheet`).
-    `IconCatalog.seedSpaceIcon` is the first Space's icon and must stay byte-identical across
-    versions — the seeded-Space dedupe signature compares it across devices.
+- **Icons** — the app's icon set is **Polaris** (`Assets.xcassets/PolarisIcons`), including the
+  FontAwesome duotone `dt_*` glyphs. SF Symbols are NOT the app's icon language; they exist only
+  as extra CHOICES inside the Space/item icon picker.
+  - `Vaultify/DesignSystem/Icons/` owns the system. `VaultIcon(_:size:)` is the only renderer —
+    never `Image(systemName:)`, `Image(name)`, `Label(_, image:)` or `UIImage(named:)`, which all
+    bypass it (an `sf:` value passed to them renders nothing: no crash, no log).
+  - `Icons` = app-chrome tokens, all Polaris asset names. **Do not turn a chrome token into an
+    SF symbol** — doing so once restyled the entire app in a single change.
+  - `IconResolver`: an `sf:`-prefixed name → SF Symbol, anything else → asset. That prefix is the
+    only thing that makes a glyph SF.
+  - `IconCatalog` = the picker library: the 71 offerable duotone glyphs FIRST (the product's own
+    visual language, and the default), then SF Symbols appended per theme as additions.
+  - `IconCatalog.seedSpaceIcon` is the first Space's icon and must stay byte-identical across
+    versions — the seeded-Space dedupe signature compares it across devices, so binding it to a
+    chrome token would leave two "My Vault" Spaces that never converge.
   - Stored icon values are never rewritten: `FolderRecord.iconAsset` is a plaintext CloudKit field
     merged last-writer-wins, and item avatars live inside the sealed blob.
   - **iOS 17.3 is the SF Symbols floor.** A newer symbol compiles clean and renders BLANK at
-    runtime. `VaultifyTests/IconCatalogTests` checks every token against the bundled allowlist
-    `VaultifyTests/Fixtures/sf-symbols-ios-17-3.txt` — regenerate it, do not bypass it.
+    runtime, so every catalog symbol is checked against the bundled allowlist
+    `VaultifyTests/Fixtures/sf-symbols-ios-17-3.txt`. Regenerate it; do not bypass it.
   - An imageset whose SVG has NO path data still satisfies `UIImage(named:)` and renders blank;
     `dt_house`, `dt_coins` and `dt_shield` ship that way and are excluded from the picker until
-    re-exported. `IconCatalogTests` enforces that every offered glyph has drawable content.
-  - TRAP: `Label(_, image:)`, `Image(name)` and `UIImage(named:)` all bypass the resolver, so an
-    `sf:` token passed to them renders nothing — no crash, no log. Use `VaultIcon`, or
-    `Image(vaultIcon:)` where a raw `Image` is genuinely required.
+    re-exported. `IconCatalogTests` enforces drawable content for every offered glyph.
 
 ## Design System (READ before ANY UI work)
 
@@ -240,8 +240,8 @@ Documents, read back with `simctl get_app_container <id> data`.
 - ❌ Don't add an SF Symbol newer than iOS 17.3 — it compiles and renders nothing on the floor.
 - ❌ Don't rewrite stored `iconAsset` values to migrate icons — two devices on different app
   versions stop converging, and the seeded-Space dedupe signature breaks.
-- ❌ Don't turn a content glyph (Space, item avatar, field/category icon) into an SF Symbol —
-  the duotone set is the product's visual language, not legacy debt.
+- ❌ Don't restyle existing icons onto SF Symbols. Polaris is the app's icon set; SF is an
+  additive CHOICE in the icon picker only.
 - ❌ Don't ship user-facing text without a Vietnamese translation in `Localizable.xcstrings`
   (native) or in **both** `VaultifySafari/Resources/_locales/en` + `_locales/vi` (Safari
   extension web layer).
