@@ -1,1 +1,1 @@
-Bản cập nhật này làm mới bộ biểu tượng trong ứng dụng, cải thiện báo cáo sự cố để khắc phục lỗi nhanh hơn, tăng cường bảo mật khi mở khóa, và bổ sung chẩn đoán đồng bộ passkey. Mật khẩu và passkey của bạn vẫn được lưu trữ riêng tư hoàn toàn trên thiết bị.
+Khôi phục bộ biểu tượng, mở rộng bảng chọn duotone, thêm vòng hiển thị độ mạnh mật khẩu. Cập nhật ngay để trải nghiệm rõ ràng và tinh tế hơn.

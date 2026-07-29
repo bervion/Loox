@@ -1,1 +1,1 @@
-This update introduces a refreshed icon design across the app, improves crash reporting to help us fix issues faster, strengthens unlock security, and adds diagnostics for passkey sync. Your passwords and passkeys remain fully private and stored only on your device.
+Icon library restored, wider duotone picker, and a new visual ring for password strength. Update now for a clearer, more polished look.
