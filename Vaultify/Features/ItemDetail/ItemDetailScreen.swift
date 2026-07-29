@@ -212,12 +212,10 @@ struct ItemDetailScreen: View {
                         // Pin + favorite moved here from beside the Space pill —
                         // the pill (Space + identity) needs the whole line.
                         Button { env.repository.togglePin(item) } label: {
-                            Label(item.pinned ? "Unpin" : "Pin",
-                                  image: item.pinned ? Icons.pinFill : Icons.pin)
+                            Label { Text(item.pinned ? "Unpin" : "Pin") } icon: { VaultIcon(item.pinned ? Icons.pinFill : Icons.pin) }
                         }
                         Button { try? env.repository.toggleFavorite(item) } label: {
-                            Label(item.favorite ? "Unfavorite" : "Favorite",
-                                  image: item.favorite ? Icons.starFill : Icons.star)
+                            Label { Text(item.favorite ? "Unfavorite" : "Favorite") } icon: { VaultIcon(item.favorite ? Icons.starFill : Icons.star) }
                         }
                         if quickViewEntryVisible {
                             Button {

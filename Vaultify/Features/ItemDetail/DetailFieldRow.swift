@@ -164,11 +164,15 @@ struct DetailFieldRow: View {
                 // instead of a whole-field crossfade between two views.
                 // `.textSelection` takes a concrete (non-uniform) type per
                 // branch, so the enabled/disabled cases can't share a ternary.
+                // Digit/letter/symbol colour-coding, same scheme as the generator and the
+                // Large Type viewer — a revealed password is read character by character.
                 if revealed {
-                    GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
+                    GlyphResolveText(text: field.value, isRevealed: revealed,
+                                     font: valueFont, colorized: true)
                         .textSelection(.enabled)
                 } else {
-                    GlyphResolveText(text: field.value, isRevealed: revealed, font: valueFont)
+                    GlyphResolveText(text: field.value, isRevealed: revealed,
+                                     font: valueFont, colorized: true)
                         .textSelection(.disabled)
                 }
             } else {

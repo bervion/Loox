@@ -9,8 +9,13 @@ struct GlyphResolveText: View {
     let text: String
     let isRevealed: Bool
     var font: Font = .vaultCode()
+    /// Colour resolved glyphs by character class (digit / letter / symbol), the same
+    /// reading aid the generator and the Large Type viewer use. Off by default: a card
+    /// number is all digits, so colouring one just paints the whole field blue.
+    var colorized: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(AppEnvironment.self) private var env
     /// Leading characters currently resolved (0 = fully masked).
     @State private var resolvedCount = 0
 
@@ -21,7 +26,7 @@ struct GlyphResolveText: View {
     private static let perGlyph = 0.035
 
     var body: some View {
-        Text(displayed)
+        Text(attributed)
             .font(font)
             .lineLimit(isRevealed ? nil : 1)
             .accessibilityLabel(isRevealed ? Text(verbatim: text) : Text("Hidden value"))
@@ -33,14 +38,25 @@ struct GlyphResolveText: View {
 
     /// Resolved prefix + dot remainder while animating; the fixed mask when concealed.
     /// MonoLisa is monospaced, so the dot→glyph swap never shifts layout width.
-    private var displayed: String {
+    ///
+    /// Colour is applied per glyph rather than to the whole string so it tracks the resolve:
+    /// a character takes its class colour at the moment it lands, and the dots still waiting
+    /// stay neutral instead of flashing red because "•" is punctuation.
+    private var attributed: AttributedString {
         guard isRevealed else {
-            return String(repeating: "•", count: Self.maskCount)
+            return AttributedString(String(repeating: "•", count: Self.maskCount))
         }
         let characters = Array(text)
         let shown = min(resolvedCount, characters.count)
-        return String(characters.prefix(shown))
-            + String(repeating: "•", count: characters.count - shown)
+        let resolved = String(characters.prefix(shown))
+        let pending = String(repeating: "•", count: characters.count - shown)
+
+        guard colorized else { return AttributedString(resolved + pending) }
+        var result = SecretColoring.attributed(resolved, theme: env.theme.active)
+        var mask = AttributedString(pending)
+        mask.foregroundColor = env.theme.active.color(.secondary)
+        result.append(mask)
+        return result
     }
 
     private func resolve() async {

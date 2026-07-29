@@ -24,8 +24,7 @@ struct MacItemListColumn: View {
                             .tag(item.id)
                             .contextMenu {
                                 Button { try? env.repository.toggleFavorite(item) } label: {
-                                    Label(item.favorite ? "Unfavorite" : "Favorite",
-                                          image: item.favorite ? Icons.starFill : Icons.star)
+                                    Label { Text(item.favorite ? "Unfavorite" : "Favorite") } icon: { VaultIcon(item.favorite ? Icons.starFill : Icons.star) }
                                 }
                                 Button(role: .destructive) {
                                     try? env.repository.moveToTrash(item)

@@ -7,9 +7,10 @@ struct TOTPCodeView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             Text(TOTPGenerator.code(forStoredValue: secret, date: context.date).map(Self.format) ?? "Invalid secret")
-                // OTP as a typographic object: MonoLisa title3, semibold — the
-                // code is the field's whole reason for being, not a body row.
-                .font(.vaultCode(.title3, weight: .semibold))
+                // SF, not MonoLisa: the code is a figure to read and retype, and SF's
+                // digits are the more legible pair at a glance. `monospacedDigit` keeps
+                // the width fixed so the number does not jitter as it ticks over.
+                .vaultType(.section)
                 .monospacedDigit()
                 .lineLimit(1)
                 // Guards against clipping at accessibility XXL Dynamic Type sizes

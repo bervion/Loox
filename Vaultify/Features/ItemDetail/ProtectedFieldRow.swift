@@ -91,7 +91,10 @@ struct ProtectedFieldRow: View {
     @ViewBuilder private var value: some View {
         Group {
             if let plaintext {
-                Text(plaintext).font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
+                // Colour-coded like every other revealed secret — a protected value is
+                // still a password being read off the screen.
+                Text(SecretColoring.attributed(plaintext, theme: env.theme.active))
+                    .font(.vaultCode()).textSelection(.enabled).lineLimit(nil)
             } else {
                 // Name the secret up front — which prompt appears on tap must
                 // not be a surprise (the Extra Password unlocks for this item
