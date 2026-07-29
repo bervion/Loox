@@ -47,7 +47,7 @@ struct AttachmentFieldRow: View {
                 onRemove()
             } label: { Label { Text("Delete Attachment") } icon: { VaultIcon(Icons.delete) } }
         } label: {
-            VaultIcon("ic_menu_horizontal", size: 17)
+            VaultIcon(Icons.moreHorizontal, size: 17)
                 .themedForeground(.secondary)
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(VaultColors.fill))

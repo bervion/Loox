@@ -190,7 +190,7 @@ struct ShareAccessSheet: View {
                     Task { await checkProfileNow() }
                 } label: { Text("Check now") }
             } label: {
-                VaultIcon("ic_menu_horizontal", size: Metric.iconInline)
+                VaultIcon(Icons.moreHorizontal, size: Metric.iconInline)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)

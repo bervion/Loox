@@ -100,7 +100,7 @@ struct AppearanceSettingsView: View {
                                       set: { env.theme.setFontScale($0) })) {
                 ForEach(FontScale.allCases) { Text($0.label).tag($0) }
             } label: {
-                Label { Text("Text Size") } icon: { VaultIcon("ic_text") }
+                Label { Text("Text Size") } icon: { VaultIcon(Icons.text) }
             }
             Toggle(isOn: Binding(get: { settings.reduceMotion },
                                  set: { env.theme.setReduceMotion($0) })) {

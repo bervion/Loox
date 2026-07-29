@@ -115,9 +115,10 @@ A screen passes only if it renders correctly in ALL of:
   light-dark preview swatches; the fixed decorative quick-action glyph tints (soft-chip
   style since 260711 — labels use text roles); the Settings icon badge tiles
   (`SettingsIconBadge` — white glyph on fixed system-Settings hues, user-granted 260711);
-  SF Symbols are now the app's icon set (owner-approved 260729) and are no longer an
-  exemption — they are the rule, reached through `VaultIcon`; what remains exempt is the
-  handful of raw `Image(systemName:)` badge call sites in `SettingsIconBadge`;
+  SF Symbols for Apple-platform notions Polaris has no honest glyph for (the `icloud` family
+  wherever the iCloud feature appears, and `envelope.fill` for Private Email; user-granted
+  260711), plus the SF choices offered inside the Space/item icon picker (owner-approved
+  260729) — app chrome itself stays Polaris;
   native UISwitch/system-control chrome (the OS draws it); ambient shadows built from black
   opacity (that is how `Elevation` works by design); proportional avatar/tile corner radii that
   scale with the tile size (a size-relative pattern, not a magic number); in the PAYMENT CARD context, brand

@@ -133,7 +133,7 @@ import UserNotifications
         // a build before the SF migration stored `ic_lock_filled`, one after stores `sf:lock.fill`.
         // Comparing the raw strings would stop two devices' seeded Spaces from ever matching, and
         // they would duplicate permanently instead of converging.
-        let seedSignature = "\(appString("My Vault"))|\(IconResolver.canonical(Icons.lockFill))|\(FolderColor.blue.rawValue)"
+        let seedSignature = "\(appString("My Vault"))|\(IconResolver.canonical(IconCatalog.seedSpaceIcon))|\(FolderColor.blue.rawValue)"
         let groups = Dictionary(grouping: folders) {
             "\($0.name)|\(IconResolver.canonical($0.iconAsset))|\($0.color.rawValue)"
         }

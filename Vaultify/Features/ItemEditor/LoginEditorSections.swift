@@ -262,7 +262,7 @@ struct LoginEditorSections: View {
             .menuIndicator(.hidden)
 
             Button { onAddAttachment() } label: {
-                actionRowLabel("Add Attachment", icon: "ic_attachment")
+                actionRowLabel("Add Attachment", icon: Icons.attachment)
             }
             .buttonStyle(.plain)
         }

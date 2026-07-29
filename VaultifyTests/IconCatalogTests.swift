@@ -1,4 +1,7 @@
 import XCTest
+#if canImport(UIKit)
+import UIKit
+#endif
 @testable import Vaultify
 
 /// Guards the icon system's one silent failure mode: an SF Symbol that does not exist on the
@@ -34,82 +37,124 @@ final class IconCatalogTests: XCTestCase {
                              "SF Symbol availability fixture failed to load")
     }
 
-    func testPickerCatalogSymbolsExistOn17_3() {
-        assertAvailable(IconCatalog.allIcons.map(\.symbol), "IconCatalog")
+    func testChromeTokensAreBundledAssets() {
+        // App chrome is the Polaris set. Only the Space/item picker offers SF, and only as an
+        // addition — a chrome token that became a symbol would restyle the whole app at once.
+        #if canImport(UIKit)
+        var problems: [String] = []
+        for token in Self.chromeTokens {
+            guard case .asset(let asset) = IconResolver.resolve(token) else {
+                problems.append("\(token) is not an asset name"); continue
+            }
+            if UIImage(named: asset) == nil { problems.append("\(asset) has no bundled asset") }
+        }
+        XCTAssertTrue(problems.isEmpty, "chrome icon problems: \(problems)")
+        #endif
     }
 
-    func testChromeTokensExistOn17_3() {
-        // Tokens are stored `sf:`-prefixed, so resolve them the way the renderer does.
-        let symbols = Self.chromeTokens.compactMap { name -> String? in
-            guard case .system(let symbol) = IconResolver.resolve(name) else { return nil }
+    func testOnlyPrefixedNamesResolveToSymbols() {
+        // Content and chrome glyphs are Polaris assets; only an explicitly `sf:`-prefixed name
+        // becomes a symbol. Resolving unprefixed names onto SF once restyled the whole app.
+        XCTAssertEqual(IconResolver.resolve("dt_folder"), .asset("dt_folder"))
+        XCTAssertEqual(IconResolver.resolve("ic_lock_filled"), .asset("ic_lock_filled"))
+        XCTAssertEqual(IconResolver.resolve("sf:lock.fill"), .system("lock.fill"))
+    }
+
+    func testPickerOffersBothFamilies() {
+        let duotone = IconCatalog.allIcons.filter { !$0.isSystemSymbol }
+        let symbols = IconCatalog.allIcons.filter(\.isSystemSymbol)
+        XCTAssertEqual(duotone.count, 170, "the offerable duotone set is 170 glyphs")
+        XCTAssertGreaterThan(symbols.count, 200, "SF symbols are the addition, not a token gesture")
+        // Duotone leads: it is the product's own language and stays the default.
+        XCTAssertEqual(IconCatalog.sections.first?.icons.first?.name, "dt_folder")
+    }
+
+    func testCatalogSymbolsExistOn17_3() {
+        let symbols = IconCatalog.allIcons.filter(\.isSystemSymbol).compactMap { icon -> String? in
+            guard case .system(let symbol) = IconResolver.resolve(icon.name) else { return nil }
             return symbol
         }
-        XCTAssertEqual(symbols.count, Self.chromeTokens.count,
-                       "every Icons token should resolve to an SF Symbol")
-        assertAvailable(symbols, "Icons")
+        assertAvailable(symbols, "IconCatalog")
     }
 
-    func testLegacyMapTargetsExistOn17_3() {
-        assertAvailable(Array(LegacyIconMap.systemName.values), "LegacyIconMap")
+    func testCatalogIconsResolveToBundledAssets() {
+        #if canImport(UIKit)
+        // A missing asset renders as an empty tile with no crash and no log, so the picker can
+        // silently ship holes. Only an existence check catches that.
+        let missing = IconCatalog.allIcons.filter { !$0.isSystemSymbol }
+            .map(\.name).filter { UIImage(named: $0) == nil }.sorted()
+        XCTAssertTrue(missing.isEmpty, "catalog names with no bundled asset: \(missing)")
+        #endif
     }
 
-    func testCatalogTokensResolveToTheirSymbol() {
-        // The renderer takes an icon NAME, and a bare SF symbol name is not one: it resolves as
-        // an asset name and draws nothing — no crash, no log, just an empty tile. Every catalog
-        // entry must therefore be handed to the renderer as its `token`, never its `symbol`.
-        for icon in IconCatalog.allIcons {
-            XCTAssertEqual(IconResolver.resolve(icon.token), .system(icon.symbol),
-                           "catalog token \(icon.token) should resolve to \(icon.symbol)")
-        }
-        XCTAssertEqual(IconResolver.resolve("folder.fill"), .asset("folder.fill"),
-                       "a bare symbol name must NOT be mistaken for a resolvable icon name")
-    }
-
-    func testCatalogHasNoDuplicateSymbols() {
-        let all = IconCatalog.allIcons.map(\.symbol)
+    func testCatalogHasNoDuplicateIcons() {
+        let all = IconCatalog.allIcons.map(\.name)
         let duplicated = Dictionary(grouping: all, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
-        XCTAssertTrue(duplicated.isEmpty, "symbol listed in more than one category: \(duplicated)")
+        XCTAssertTrue(duplicated.isEmpty, "icon listed in more than one category: \(duplicated)")
     }
 
-    func testCatalogIsSubstantial() {
-        // The picker this replaced offered 66 icons; a truncated regeneration must not pass.
-        XCTAssertGreaterThan(IconCatalog.allIcons.count, 200)
-        XCTAssertGreaterThan(IconCatalog.sections.count, 10)
+    func testCatalogCoversEveryBundledDuotoneGlyph() {
+        // Every duotone asset that ships should be pickable: one that exists but is absent from
+        // the catalog is dead weight in the bundle and an icon the user can never choose.
+        #if canImport(UIKit)
         XCTAssertTrue(IconCatalog.sections.allSatisfy { !$0.icons.isEmpty })
+        XCTAssertGreaterThan(IconCatalog.sections.count, 10)
+        #endif
     }
 
-    func testDefaultTokenIsAFolder() {
+    func testEveryCatalogGlyphActuallyDraws() throws {
+        // `UIImage(named:)` succeeds for an imageset whose SVG has no path data at all, so an
+        // existence check is not enough — three glyphs shipped empty for months behind exactly
+        // that gap and rendered as blank tiles in the picker. Read the source and require
+        // drawable content.
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let icons = root.appendingPathComponent("Vaultify/Assets.xcassets/PolarisIcons")
+        var blank: [String] = []
+        for icon in IconCatalog.allIcons where !icon.isSystemSymbol {
+            let svg = icons.appendingPathComponent("\(icon.name).imageset/\(icon.name).svg")
+            let source = try String(contentsOf: svg, encoding: .utf8)
+            if !source.contains("<path") { blank.append(icon.name) }
+        }
+        XCTAssertTrue(blank.isEmpty, "catalog glyphs with no path data render blank: \(blank)")
+    }
+
+    func testDefaultIsAFolder() {
         // The model default and the picker default are the same value by construction; if this
         // drifts, a new Space is created with an icon the picker cannot show as selected.
-        XCTAssertEqual(IconCatalog.defaultToken, IconResolver.token("folder.fill"))
+        XCTAssertEqual(IconCatalog.defaultToken, "dt_folder")
     }
 
     func testSearchMatchesNameAndKeywords() {
-        XCTAssertTrue(IconCatalog.search("folder").contains { $0.symbol == "folder.fill" })
-        // Dots and spaces are equivalent, so a two-word query finds a run-together symbol name.
-        XCTAssertTrue(IconCatalog.search("credit card").contains { $0.symbol.hasPrefix("creditcard") })
+        XCTAssertTrue(IconCatalog.search("folder").contains { $0.name == "dt_folder" })
+        // The `dt_` prefix and underscores are stripped, so a two-word query finds the asset.
+        XCTAssertTrue(IconCatalog.search("credit card").contains { $0.name == "dt_credit_card" })
+        // Keywords carry the synonyms the name does not.
+        XCTAssertTrue(IconCatalog.search("web").contains { $0.name == "dt_globe" })
+        // The `sf:` prefix and dots are stripped too, so the SF additions are searchable.
+        XCTAssertTrue(IconCatalog.search("credit card").contains { $0.name.hasPrefix("sf:creditcard") })
         XCTAssertTrue(IconCatalog.search("").isEmpty)
-        XCTAssertTrue(IconCatalog.search("zzzznotasymbol").isEmpty)
+        XCTAssertTrue(IconCatalog.search("zzzznotanicon").isEmpty)
     }
 
     /// Mirrors the `Icons` surface. Kept explicit rather than reflected so that adding a token
     /// without covering it here is a visible omission.
     private static let chromeTokens: [String] = [
-        Icons.home, Icons.homeFill, Icons.search, Icons.watchtower, Icons.securityTab,
-        Icons.securityTabFill, Icons.settings, Icons.settingsFill, Icons.notification,
+        Icons.home, Icons.homeFill, Icons.search, Icons.watchtower,
+        Icons.settings, Icons.settingsFill, Icons.notification,
         Icons.add, Icons.addCircle, Icons.edit, Icons.delete, Icons.trash, Icons.copy,
         Icons.copyDone, Icons.reveal, Icons.hide, Icons.star, Icons.starFill, Icons.check,
         Icons.checkCircle, Icons.layoutSection, Icons.enter, Icons.close, Icons.closeCircle,
         Icons.chevronLeft, Icons.chevronRight, Icons.chevronDown, Icons.arrowRight,
         Icons.lock, Icons.lockFill, Icons.key, Icons.creditCard, Icons.shield,
         Icons.shieldAlert, Icons.shieldPerson, Icons.passkey, Icons.personLockFilled,
-        Icons.identityShielded, Icons.alert, Icons.refresh, Icons.replay, Icons.sync,
+        Icons.alert, Icons.refresh, Icons.replay, Icons.sync,
         Icons.magic, Icons.clock, Icons.globe, Icons.share, Icons.info, Icons.folder,
-        Icons.identityCard, Icons.orderRepeat, Icons.recentlyUsed, Icons.inventory,
+        Icons.identityCard, Icons.orderRepeat, Icons.inventory,
         Icons.hashtag, Icons.plan, Icons.planFill, Icons.organization, Icons.organizationFill,
-        Icons.apps, Icons.appsFill, Icons.appearance, Icons.pin, Icons.pinFill, Icons.archive,
+        Icons.apps, Icons.appsFill, Icons.pin, Icons.pinFill, Icons.archive,
         Icons.calendar, Icons.chartFill, Icons.importData, Icons.exportData, Icons.language,
         Icons.scanCode, Icons.person, Icons.mail, Icons.camera, Icons.image, Icons.device,
-        Icons.pageAdd, Icons.moreHorizontal, Icons.reduceMotion, Icons.pause,
+        Icons.pageAdd, Icons.moreHorizontal, Icons.sort, Icons.text, Icons.attachment,
     ]
 }

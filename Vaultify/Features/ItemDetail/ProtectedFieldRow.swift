@@ -125,13 +125,13 @@ struct ProtectedFieldRow: View {
         } else {
             Menu {
                 Button { copy() } label: { Label { Text("Copy") } icon: { VaultIcon(Icons.copy) } }
-                Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon("ic_text") } }
+                Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon(Icons.text) } }
                 Button { plaintext = nil } label: { Label { Text("Conceal") } icon: { VaultIcon(Icons.hide) } }
                 Button(role: .destructive) { confirmRemoval = true } label: {
                     Label { Text("Remove Protection") } icon: { VaultIcon(Icons.lock) }
                 }
             } label: {
-                VaultIcon("ic_menu_horizontal", size: 17)
+                VaultIcon(Icons.moreHorizontal, size: 17)
                     .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
                     .frame(width: 30, height: 30)
                     .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))

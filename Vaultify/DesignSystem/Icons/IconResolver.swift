@@ -34,21 +34,14 @@ enum IconResolver {
         if name.hasPrefix(systemPrefix) {
             return .system(String(name.dropFirst(systemPrefix.count)))
         }
-        if let mapped = LegacyIconMap.systemName[name] {
-            return .system(mapped)
-        }
-        // Unknown name falls through to the asset catalog, where a miss renders empty. That is
-        // why `LegacyIconMap` has to cover every name any shipped build could have stored —
-        // `LegacyIconMapTests` pins that coverage.
         return .asset(name)
     }
 
     /// Canonical form for comparing two icon names that may be written in different namespaces.
     ///
     /// The seeded-Space dedupe signature compares stored icon strings across devices to decide
-    /// whether two "My Vault" Spaces are the same Space. `ic_lock_filled` from an older build and
-    /// `sf:lock.fill` from a current one have to compare equal, or the two stop converging and
-    /// duplicate permanently.
+    /// whether two "My Vault" Spaces are the same Space, so both sides must be normalised before
+    /// comparison rather than compared raw.
     static func canonical(_ name: String) -> String {
         switch resolve(name) {
         case .system(let symbol): return systemPrefix + symbol

@@ -1,16 +1,19 @@
 import Foundation
 
-/// One pickable icon: the SF Symbol plus the English terms that should find it.
+/// One pickable icon: the stored glyph name plus the English terms that should find it.
 struct CatalogIcon: Identifiable, Hashable {
-    /// SF Symbol name, guaranteed present on the iOS 17.3 deployment floor.
-    let symbol: String
-    /// Lowercase English search terms, space separated. Matched alongside the symbol name so
-    /// "car" finds `car.fill` and "wifi" finds `network`.
+    /// The value STORED when this icon is picked, and the value handed to `VaultIcon`: a bundled
+    /// duotone asset name, or an `sf:`-prefixed SF Symbol. It must stay stable — a rename orphans
+    /// every vault that already holds it.
+    let name: String
+
+    /// True for the SF additions, false for the app's own duotone glyphs.
+    var isSystemSymbol: Bool { name.hasPrefix(IconResolver.systemPrefix) }
+    /// Lowercase English search terms, space separated. Matched alongside the name so "web"
+    /// finds `dt_globe` and "2fa" finds `dt_clock`.
     let keywords: String
 
-    /// The form written to the vault when this icon is picked.
-    var token: String { IconResolver.token(symbol) }
-    var id: String { symbol }
+    var id: String { name }
 }
 
 /// A browsable group in the icon picker.
@@ -21,36 +24,49 @@ struct IconCatalogSection: Identifiable {
     var id: String { key }
 }
 
-/// The icon library offered by the Space and item pickers.
+/// The icon library offered by the Space and item pickers: the app's duotone set, plus SF
+/// Symbols as additional choices.
 ///
-/// Every symbol here is checked against the iOS 17.3 SF Symbols set by `IconCatalogTests`.
-/// A symbol added in a later release compiles without a warning and renders as an empty box on
-/// a 17.3 device, so the test is the only thing standing between a typo and a blank icon in a
-/// shipped build.
+/// Both families fail the same silent way — a missing asset and an SF symbol newer than the
+/// deployment floor each render an empty tile with no crash and no log — so `IconCatalogTests`
+/// checks every entry of both.
 enum IconCatalog {
     static let sections: [IconCatalogSection] = IconCatalogData.sections
 
     /// Flat list, used by the tests and by search.
     static var allIcons: [CatalogIcon] { sections.flatMap(\.icons) }
 
-    /// Stored token for a brand-new Space. The first icon of the first section by construction,
+    /// The icon the very first Space is seeded with.
+    ///
+    /// A literal, deliberately NOT `Icons.lockFill`: that token is app chrome and is now an SF
+    /// symbol, whereas a Space badge is a content glyph. It must also stay byte-identical across
+    /// versions — the seeded-Space dedupe signature compares this value across devices, so
+    /// changing it would leave two "My Vault" Spaces that never converge.
+    static let seedSpaceIcon = "ic_lock_filled"
+
+    /// Stored value for a brand-new Space. The first icon of the first section by construction,
     /// so the picker's default and the model's default can never drift apart.
     static var defaultToken: String {
-        sections.first?.icons.first.map(\.token) ?? IconResolver.token("folder.fill")
+        sections.first?.icons.first.map(\.name) ?? "dt_folder"
     }
 
-    /// Icons matching a free-text query, searched over both the symbol name and its keywords.
-    /// Dots and spaces are equivalent so "credit card" finds `creditcard.fill`.
+    /// Icons matching a free-text query, searched over both the name and its keywords. The
+    /// `dt_`/`sf:` prefixes, underscores and dots are stripped, so "credit card" finds both
+    /// `dt_credit_card` and `sf:creditcard.fill`.
     static func search(_ query: String) -> [CatalogIcon] {
         let needle = normalize(query)
         guard !needle.isEmpty else { return [] }
         return allIcons.filter { icon in
-            normalize(icon.symbol).contains(needle) || icon.keywords.contains(needle)
+            normalize(icon.name).contains(needle) || icon.keywords.contains(needle)
         }
     }
 
     private static func normalize(_ text: String) -> String {
-        text.lowercased()
+        var value = text.lowercased()
+        if value.hasPrefix("dt_") { value.removeFirst(3) }
+        if value.hasPrefix(IconResolver.systemPrefix) { value.removeFirst(IconResolver.systemPrefix.count) }
+        return value
+            .replacingOccurrences(of: "_", with: " ")
             .replacingOccurrences(of: ".", with: " ")
             .trimmingCharacters(in: .whitespaces)
     }

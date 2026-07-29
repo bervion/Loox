@@ -317,9 +317,9 @@ private struct ApprovedCodeView: View {
                 CountdownRing(remaining: remainingSeconds, period: 30)
                 Menu {
                     Button { copy() } label: { Label { Text("Copy") } icon: { VaultIcon(Icons.copy) } }
-                    Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon("ic_text") } }
+                    Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon(Icons.text) } }
                 } label: {
-                    VaultIcon("ic_menu_horizontal", size: 17)
+                    VaultIcon(Icons.moreHorizontal, size: 17)
                         .themedForeground(.secondary)
                         .frame(width: 30, height: 30)
                         .background(Circle().fill(VaultColors.fill))

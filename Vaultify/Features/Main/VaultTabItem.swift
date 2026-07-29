@@ -11,7 +11,7 @@ enum VaultTab: Int, CaseIterable, Identifiable {
         switch self {
         case .home: return Icons.home
         case .items: return Icons.apps
-        case .watchtower: return Icons.securityTab
+        case .watchtower: return Icons.organization
         case .search: return Icons.search
         }
     }
@@ -22,7 +22,7 @@ enum VaultTab: Int, CaseIterable, Identifiable {
         switch self {
         case .home: return Icons.homeFill
         case .items: return Icons.appsFill
-        case .watchtower: return Icons.securityTabFill
+        case .watchtower: return Icons.organizationFill
         case .search: return Icons.search
         }
     }

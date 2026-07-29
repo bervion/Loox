@@ -8,6 +8,9 @@ struct PasswordStrengthMeter: View {
     @Environment(AppEnvironment.self) private var env
 
     private var result: StrengthResult { PasswordStrengthEngine.evaluate(password) }
+    /// The meter's BAR and LABEL stay on the coarse three-step scale on purpose — this view is
+    /// feedback while typing, where a label that keeps changing is noise. Only the colour is
+    /// shared with the graded read-out so the two can never disagree about red vs green.
     private var strength: PasswordStrength {
         switch result.grade {
         case .veryWeak, .weak: return .weak
@@ -18,7 +21,7 @@ struct PasswordStrengthMeter: View {
     /// Bits from the SAME estimate that drives the label (log2 of guesses) —
     /// the old character-class entropy would contradict the pattern-aware grade.
     private var bits: Int { Int(result.log10Guesses * 3.3219) }
-    private var color: Color { VaultColors.strength(strength) }
+    private var color: Color { VaultColors.strength(grade: result.grade) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {

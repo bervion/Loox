@@ -125,7 +125,7 @@ struct ForwardingInboxScreen: View {
                     }
                 } else {
                     Button { reconcile() } label: {
-                        Label { Text("Update existing addresses") } icon: { VaultIcon("ic_refresh") }
+                        Label { Text("Update existing addresses") } icon: { VaultIcon(Icons.refresh) }
                     }
                 }
             } footer: {

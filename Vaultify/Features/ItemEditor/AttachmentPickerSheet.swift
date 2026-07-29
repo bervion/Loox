@@ -19,7 +19,7 @@ struct AttachmentPickerSheet: View {
             List {
                 Section {
                     Button { showFileImporter = true } label: {
-                        Label { Text("Choose File") } icon: { VaultIcon("ic_attachment") }
+                        Label { Text("Choose File") } icon: { VaultIcon(Icons.attachment) }
                     }
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label { Text("Choose Photo") } icon: { VaultIcon(Icons.image) }

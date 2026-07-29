@@ -199,7 +199,7 @@ struct DetailFieldRow: View {
     @ViewBuilder private var trailing: some View {
         HStack(spacing: 10) {
             if field.kind == .password, !field.value.isEmpty {
-                strengthBadge
+                PasswordStrengthRing(password: field.value, onAccent: copied)
             }
             if field.kind == .totp {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -208,23 +208,23 @@ struct DetailFieldRow: View {
                 }
             }
             if field.kind != .multiline {
+                // A read-out sitting flush against the menu reads as one blob; the rule tells
+                // the eye where the value ends and the control begins.
+                if showsActionDivider { RowActionDivider(onAccent: copied) }
                 menu
             }
         }
     }
 
-    private var strengthBadge: some View {
-        let strength = PasswordStrength.evaluate(field.value)
-        return HStack(spacing: 5) {
-            Text(strength.title).vaultType(.subhead).foregroundStyle(copied ? VaultColors.copyFlashText.opacity(0.85) : theme.color(.secondary))
-            Circle().fill(VaultColors.strength(strength)).frame(width: 9, height: 9)
-        }
+    /// Only rows that actually show something before the menu need separating from it.
+    private var showsActionDivider: Bool {
+        (field.kind == .password && !field.value.isEmpty) || field.kind == .totp
     }
 
     private var menu: some View {
         Menu {
             Button { copy() } label: { Label { Text("Copy") } icon: { VaultIcon(Icons.copy) } }
-            Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon("ic_text") } }
+            Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon(Icons.text) } }
             // TOTP renders its code live — a Reveal toggle is meaningless there.
             if isSecret, field.kind != .totp {
                 Button {
@@ -246,7 +246,7 @@ struct DetailFieldRow: View {
                 Button { showProtect = true } label: { Label { Text("Protect…") } icon: { VaultIcon(Icons.lock) } }
             }
         } label: {
-            VaultIcon("ic_menu_horizontal", size: 17)
+            VaultIcon(Icons.moreHorizontal, size: 17)
                 .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))
