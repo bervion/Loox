@@ -75,7 +75,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Elevation (soft shadow) | `.elevation(.level1/.level2/.level3/.sheet)` | `DesignSystem/Tokens/Elevation.swift` |
 | Motion | `Motion.spring/standard/fast/base/medium/slow/pressScale`, `.vault(_,reduceMotion:)` | `DesignSystem/Tokens/Motion.swift` |
 | Typography roles | `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)` | `DesignSystem/Typography.swift` |
-| Secrets/codes (SF) | `Font.vaultCode(_:weight:)` — SF, no monospaced typeface | `DesignSystem/Typography.swift` |
+| Secrets/codes | `Font.vaultCode(_:weight:)` — SF with tabular digits | `DesignSystem/Typography.swift` |
 | Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
 | Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
 | Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |

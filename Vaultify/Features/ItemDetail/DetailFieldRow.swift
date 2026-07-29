@@ -155,9 +155,9 @@ struct DetailFieldRow: View {
                     .textSelection(.disabled)
             }
         default:
-            // Mono is for SECRETS only (user rule): passwords and protected
-            // values keep MonoLisa; usernames, emails, aliases, and notes
-            // read in SF like the rest of the app.
+            // Both faces are SF. Secrets take `vaultCode` for its TABULAR digits, so a
+            // revealed value does not shift width as it resolves; usernames, emails,
+            // aliases and notes are prose and read better with proportional figures.
             let valueFont: Font = isSecret ? .vaultCode() : VaultType.body.font
             if isSecret {
                 // Controlled Reveal: glyphs resolve in place left-to-right

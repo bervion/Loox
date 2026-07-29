@@ -110,7 +110,7 @@ feature screens (screens only compose, never invent visual language).
 - **Motion** `Motion.spring`, `Motion.standard`, `Motion.fast/base/medium/slow`, `Motion.pressScale`;
   `.vault(_, reduceMotion:)` collapses under Reduce Motion.
 - **Typography** `.vaultType(.largeTitle/.screenTitle/.section/.headline/.body/.callout/.subhead/.footnote/.caption/.sectionLabel)`
-  → Apple Dynamic Type (keeps accessibility). Never `.font(.system(size: N))`. Secrets/codes: `Font.vaultCode` (SF — no monospaced typeface; add `.monospacedDigit()` only where digit width must stay stable).
+  → Apple Dynamic Type (keeps accessibility). Never `.font(.system(size: N))`. Secrets/codes: `Font.vaultCode` — SF with TABULAR digits baked in, so a value that ticks or resolves never shifts width. The app bundles NO third-party typeface; do not add one.
 
 **Color — semantic only, live, WCAG.** Resolve via `.themedForeground(role)` / `theme.color(role)`
 (`ThemeRole`: primary/secondary/tertiary/disabled · iconPrimary/Secondary/Disabled · accent(fill)/accentText/accentSoft/onAccent ·

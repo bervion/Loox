@@ -37,7 +37,8 @@ struct GlyphResolveText: View {
     }
 
     /// Resolved prefix + dot remainder while animating; the fixed mask when concealed.
-    /// MonoLisa is monospaced, so the dot→glyph swap never shifts layout width.
+    /// Digits are tabular, so a numeric secret holds its width as glyphs land; letters keep
+    /// SF's proportional advances, so the trailing edge drifts a little during the resolve.
     ///
     /// Colour is applied per glyph rather than to the whole string so it tracks the resolve:
     /// a character takes its class colour at the moment it lands, and the dots still waiting

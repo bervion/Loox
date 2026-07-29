@@ -33,7 +33,7 @@ Never pick a nested child's radius from the scale directly. Standalone shapes us
 
 ### 4. Typography is architecture
 Only `vaultType` roles — a raw `.font(.system…)` or `.font(.title2.bold())` in feature code is
-a defect. Secrets/codes/card numbers use `Font.vaultCode` (MonoLisa); labels stay SF; never
+a defect. Secrets/codes/card numbers use `Font.vaultCode` (SF, tabular digits); labels stay SF; never
 mono the whole app. OTP renders grouped (`381 942`) as a typographic object, not body text.
 
 ### 5. Motion explains spatial relationships (Controlled Reveal)

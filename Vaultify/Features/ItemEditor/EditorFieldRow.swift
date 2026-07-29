@@ -218,7 +218,7 @@ struct EditorFieldRow: View {
             CardCodeFieldEditor(value: $field.value, maxLength: 6, placeholder: valuePlaceholder)
         // Any `protected` single-line value (password/TOTP, plus template fields sealed at rest
         // like Card Number, Security Code, ID Number) shares the same controlled-reveal
-        // treatment: masked bullets when unfocused, MonoLisa plaintext only while the user is
+        // treatment: masked bullets when unfocused, plaintext only while the user is
         // actively typing. Storage encryption without matching on-screen masking would leave a
         // sensitive value visible the whole time it's being edited — this generalizes the
         // password/TOTP-only masking that existed before to every `protected` kind.
@@ -230,8 +230,8 @@ struct EditorFieldRow: View {
                 ZStack(alignment: .leading) {
                     TextField(valuePlaceholder, text: $field.value)
                         .focused($valueFocused)
-                        // MonoLisa for a typed secret value; SF for the empty
-                        // placeholder and for TOTP secrets.
+                        // Tabular digits for a typed secret value; proportional figures for
+                        // the empty placeholder and for TOTP secrets.
                         .font(field.value.isEmpty || field.kind == .totp ? VaultType.body.font : .vaultCode())
                         .platformAutocapitalization(.never)
                         .autocorrectionDisabled()

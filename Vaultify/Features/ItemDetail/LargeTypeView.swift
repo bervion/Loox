@@ -85,7 +85,7 @@ struct LargeTypeView: View {
 
     private var copyButton: some View {
         Button { copy() } label: {
-            // Text only (no icon), in SF — not the MonoLisa code font.
+            // Text only (no icon), and the body role — this is a control label, not a code.
             Text(copied ? "Copied" : "Copy")
                 .vaultType(.body)
                 .foregroundStyle(theme.color(copied ? .accent : .primary))

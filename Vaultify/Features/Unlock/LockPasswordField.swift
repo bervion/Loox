@@ -22,7 +22,7 @@ struct LockPasswordField: View {
                 .foregroundStyle(Color(rgb: env.theme.active.secondaryText))
             ZStack(alignment: .leading) {
                 if text.isEmpty {
-                    // Placeholder → SF; the typed value keeps MonoLisa below.
+                    // Placeholder is prose; the typed value below takes tabular digits.
                     Text(title)
                         .vaultType(.body)
                         .foregroundStyle(Color(rgb: env.theme.active.secondaryText))

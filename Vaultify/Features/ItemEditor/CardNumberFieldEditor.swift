@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Editor for the card template's "Card Number" field: same Controlled-Reveal treatment as
 /// every other `protected` single-line field in `EditorFieldRow` (masked bullets when
-/// unfocused, MonoLisa plaintext while typing) — plus the card-specific additions: a numeric
+/// unfocused, plaintext while typing) — plus the card-specific additions: a numeric
 /// keypad, brand-aware digit grouping as-you-type, a trailing brand badge, and a subtle Luhn
 /// warning that never blocks saving. Storage (`value`) always holds digits only; the space
 /// grouping is display-only.

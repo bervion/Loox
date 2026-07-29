@@ -7,9 +7,9 @@ struct TOTPCodeView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             Text(TOTPGenerator.code(forStoredValue: secret, date: context.date).map(Self.format) ?? "Invalid secret")
-                // SF, not MonoLisa: the code is a figure to read and retype, and SF's
-                // digits are the more legible pair at a glance. `monospacedDigit` keeps
-                // the width fixed so the number does not jitter as it ticks over.
+                // The section role, not `vaultCode`: the code is a headline figure to read
+                // and retype, so it takes the heading weight rather than the secret face.
+                // `monospacedDigit` keeps the width fixed as the number ticks over.
                 .vaultType(.section)
                 .monospacedDigit()
                 .lineLimit(1)
