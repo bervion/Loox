@@ -1,1 +1,1 @@
-Icon library restored, wider duotone picker, and a new visual ring for password strength. Update now for a clearer, more polished look.
+This update fixes an issue where shake-to-lock could turn off after moving between screens, so it now stays active wherever you go in the app.

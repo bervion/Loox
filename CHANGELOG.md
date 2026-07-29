@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.45.1] - 2026-07-29
+
+### Fixed
+- keep shake-to-lock armed once you navigate anywhere (#187)
+
+
 ## [1.45.0] - 2026-07-29
 
 ### Added

@@ -1,1 +1,1 @@
-Khôi phục bộ biểu tượng, mở rộng bảng chọn duotone, thêm vòng hiển thị độ mạnh mật khẩu. Cập nhật ngay để trải nghiệm rõ ràng và tinh tế hơn.
+Bản cập nhật này khắc phục lỗi lắc để khóa có thể tắt khi chuyển màn hình, giờ đây tính năng luôn hoạt động dù bạn đang ở đâu trong ứng dụng.
