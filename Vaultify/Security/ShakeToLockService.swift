@@ -31,9 +31,12 @@ import CoreMotion
     var isRunning: Bool { motion.isAccelerometerActive }
 
     func start(onShake: @escaping () -> Void) {
-        guard motion.isAccelerometerAvailable, !motion.isAccelerometerActive else { return }
+        guard motion.isAccelerometerAvailable else { return }
+        // Always re-arm, even when already running: an early return that skipped this would
+        // silently keep a stale closure and stale peaks from the previous arming.
         self.onShake = onShake
         peaks.removeAll()
+        guard !motion.isAccelerometerActive else { return }
         motion.accelerometerUpdateInterval = 1.0 / 30
         motion.startAccelerometerUpdates(to: .main) { [weak self] data, _ in
             guard let self, let a = data?.acceleration else { return }

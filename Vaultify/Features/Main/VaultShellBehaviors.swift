@@ -4,7 +4,8 @@ import Combine
 /// Shared unlocked-shell behaviors applied by BOTH the compact iPhone tab shell
 /// (`MainTabView`) and the regular-width iPad/Mac sidebar (`VaultSidebarView`):
 /// the copy toast, the editor sheets (otpauth import + recovered draft), auto-lock
-/// (inactivity timer + shake), the section-switch notifications, and the mesh morph.
+/// (the inactivity timer; shake-to-lock is armed at the app root instead, since a pushed
+/// screen must not disarm a panic gesture), the section-switch notifications, and the mesh morph.
 ///
 /// Extracted so the two layouts stay behavior-identical — only ONE layout is on screen
 /// at a time (chosen by `AdaptiveRootView`), so exactly one instance is ever active.
@@ -12,7 +13,6 @@ struct VaultShellBehaviors: ViewModifier {
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
     @Environment(\.scenePhase) private var scenePhase
-    @State private var shakeDetector = ShakeToLockService()
     /// The request whose ceremony sheet is currently up. Decoupled from the
     /// coordinator inbox on purpose: inbox refreshes must not swap the sheet
     /// mid-ceremony, and dismissing must not clear the NEXT pending request.
@@ -40,10 +40,7 @@ struct VaultShellBehaviors: ViewModifier {
             // use (scrolling, reading, editing a single screen) no longer trips the auto-lock.
             .userActivityMonitor { env.session.registerActivity() }
             .onReceive(inactivityTimer) { _ in env.session.lockIfTimedOut() }
-            .onAppear { env.theme.morphMesh(); updateShakeDetector() }
-            .onDisappear { shakeDetector.stop() }
-            .onChange(of: env.settings.shakeToLock) { _, _ in updateShakeDetector() }
-            .onChange(of: scenePhase) { _, _ in updateShakeDetector() }
+            .onAppear { env.theme.morphMesh() }
             .onReceive(NotificationCenter.default.publisher(for: .vaultSwitchToWatchtower)) { _ in
                 uiState.selectedTab = .watchtower
             }
@@ -220,21 +217,6 @@ struct VaultShellBehaviors: ViewModifier {
         // "Shared with Me", completes it once the zone is enumerable.
     }
 
-    /// Start/stop shake-to-lock based on the setting + foreground state (no idle battery cost).
-    private func updateShakeDetector() {
-        guard !env.uiTestConfiguration.isEnabled else {
-            shakeDetector.stop()
-            return
-        }
-        if env.settings.shakeToLock, scenePhase == .active {
-            shakeDetector.start {
-                Haptics.success()
-                env.session.lock(deliberate: true)
-            }
-        } else {
-            shakeDetector.stop()
-        }
-    }
 }
 
 extension View {
