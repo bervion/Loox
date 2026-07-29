@@ -5,7 +5,7 @@ import SwiftUI
 /// One component for both so the two stay one visual language; the flat unsearchable grid it
 /// replaces could not carry a catalog this size.
 struct IconPickerSheet: View {
-    /// Currently stored icon token, so the picker can mark it. May be a legacy name.
+    /// Currently stored icon name, so the picker can mark it. May be a legacy value.
     let selected: String?
     let onPick: (String) -> Void
 
@@ -105,14 +105,12 @@ struct IconPickerSheet: View {
     }
 
     private func tile(_ icon: CatalogIcon) -> some View {
-        let isSelected = selectedCanonical == IconResolver.canonical(icon.token)
+        let isSelected = selectedCanonical == IconResolver.canonical(icon.name)
         return Button {
-            onPick(icon.token)
+            onPick(icon.name)
             dismiss()
         } label: {
-            // `token`, not `symbol`: the resolver reads a bare SF name as an ASSET name and
-            // renders nothing at all, which is invisible in review and obvious only on device.
-            VaultIcon(icon.token, size: Metric.iconUtility)
+            VaultIcon(icon.name, size: Metric.iconUtility)
                 .themedForeground(isSelected ? .accent : .iconPrimary)
                 .frame(width: Metric.iconPickerTile, height: Metric.iconPickerTile)
                 .background(isSelected ? env.theme.active.color(.accentSoft) : VaultColors.fill,
@@ -125,7 +123,7 @@ struct IconPickerSheet: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(verbatim: icon.symbol))
+        .accessibilityLabel(Text(verbatim: icon.name))
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }

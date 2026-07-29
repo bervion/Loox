@@ -103,4 +103,10 @@ enum Icons {
     static let reduceMotion = IconResolver.token("figure.walk.motion")
     /// Suspending something that keeps running (alias forwarding). Not `hide`, which conceals a value.
     static let pause = IconResolver.token("pause.circle")
+    /// Reorder / sort control.
+    static let sort = IconResolver.token("arrow.up.arrow.down")
+    /// Plain-text / large-type affordance.
+    static let text = IconResolver.token("textformat")
+    /// File attachment.
+    static let attachment = IconResolver.token("paperclip")
 }

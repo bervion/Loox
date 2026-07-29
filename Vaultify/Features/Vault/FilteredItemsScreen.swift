@@ -105,7 +105,7 @@ struct FilteredItemsScreen: View {
                             }
                         }
                     }
-                } label: { VaultIcon("ic_sort", size: 22) }
+                } label: { VaultIcon(Icons.sort, size: 22) }
                     .accessibilityLabel(Text("Filter"))
             }
         }

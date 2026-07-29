@@ -144,7 +144,7 @@ struct OnboardingFlow: View {
             // Seed a default Space ("My Vault") so new items have a home; the user
             // can rename it or add more later. Best-effort — never block setup.
             // Keep the id so the item seeds file into it (else they'd be Unfiled).
-            defaultFolderId = try? env.repository.addFolder(name: appString("My Vault"), icon: Icons.lockFill, color: .blue)
+            defaultFolderId = try? env.repository.addFolder(name: appString("My Vault"), icon: IconCatalog.seedSpaceIcon, color: .blue)
             step = .name
             return nil
         } catch {

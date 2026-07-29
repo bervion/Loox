@@ -22,11 +22,11 @@ struct QuickViewEntryChooserSheet: View {
         VaultSheetScaffold(title: "Send to Browser") {
             Form {
                 Section {
-                    optionRow(icon: "ic_shopcodes", title: "Scan QR Code",
+                    optionRow(icon: Icons.scanCode, title: "Scan QR Code",
                              subtitle: "Point your camera at the code shown in your browser.") {
                         showScanner = true
                     }
-                    optionRow(icon: "ic_text", title: "Enter Code",
+                    optionRow(icon: Icons.text, title: "Enter Code",
                              subtitle: "Type the code shown in your browser.") {
                         showEnterCode = true
                     }

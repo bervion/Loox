@@ -25,8 +25,8 @@ nonisolated struct AttachmentMeta: Codable, Sendable, Identifiable {
 
     var iconAsset: String {
         switch ext.lowercased() {
-        case "png", "jpg", "jpeg", "heic", "heif", "gif", "webp": return "ic_image"
-        default: return "ic_attachment"
+        case "png", "jpg", "jpeg", "heic", "heif", "gif", "webp": return Icons.image
+        default: return Icons.attachment
         }
     }
 }

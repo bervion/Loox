@@ -274,7 +274,7 @@ struct EditorFieldRow: View {
             }
         case .fileRef:
             HStack(spacing: 8) {
-                VaultIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? "ic_attachment", size: 18)
+                VaultIcon(AttachmentMeta.decode(field.value)?.iconAsset ?? Icons.attachment, size: 18)
                     .foregroundStyle(Color.accentColor)
                 Text(AttachmentMeta.decode(field.value)?.name ?? "Attachment").vaultType(.body).lineLimit(1)
                 Spacer()

@@ -30,7 +30,7 @@ struct FolderItemsScreen: View {
                     Picker("Sort", selection: $sort) {
                         ForEach(VaultSort.allCases) { Text($0.label).tag($0) }
                     }
-                } label: { VaultIcon("ic_sort", size: 22) }
+                } label: { VaultIcon(Icons.sort, size: 22) }
                     .accessibilityLabel(Text("Sort"))
             }
         }

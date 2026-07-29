@@ -183,7 +183,7 @@ struct ItemEditorScreen: View {
                         .menuIndicator(.hidden)
 
                         Button { showAttachmentPicker = true } label: {
-                            Label { Text("Add Attachment") } icon: { VaultIcon("ic_attachment") }
+                            Label { Text("Add Attachment") } icon: { VaultIcon(Icons.attachment) }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
                         }
@@ -457,10 +457,10 @@ struct ItemEditorScreen: View {
                 Label { Text("Default") } icon: { VaultIcon(draft.category.iconAsset, size: Metric.iconInline) }
             }
             Button { draft.iconAsset = ItemAvatarStyle.monogramToken } label: {
-                Label { Text("Letter avatar") } icon: { VaultIcon("ic_text", size: Metric.iconInline) }
+                Label { Text("Letter avatar") } icon: { VaultIcon(Icons.text, size: Metric.iconInline) }
             }
             Button { showIconPicker = true } label: {
-                Label { Text("Choose icon") } icon: { VaultIcon("ic_apps", size: Metric.iconInline) }
+                Label { Text("Choose icon") } icon: { VaultIcon(Icons.apps, size: Metric.iconInline) }
             }
         } label: {
             FaviconView(urlString: draft.urlField?.value, category: draft.category, size: 56,

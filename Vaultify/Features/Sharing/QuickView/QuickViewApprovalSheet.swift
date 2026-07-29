@@ -63,7 +63,7 @@ struct QuickViewApprovalSheet: View {
                                  item: VaultItem) -> some View {
         ScrollView {
             VStack(spacing: Space.s5) {
-                VaultIcon("ic_globe", size: Metric.iconTileLarge).themedForeground(.accent)
+                VaultIcon(Icons.globe, size: Metric.iconTileLarge).themedForeground(.accent)
 
                 Text("A browser wants to view fields from \(item.title.isEmpty ? appString("this item") : item.title).")
                     .vaultType(.callout).themedForeground(.secondary)

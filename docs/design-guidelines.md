@@ -18,7 +18,7 @@ The product must not feel like generated UI assembled screen by screen. Every su
 - Use native SwiftUI patterns compatible with iOS 17.3 unless newer APIs are guarded with `#available`.
 - Icons are SF Symbols, reached through `VaultIcon(_:size:)` — never `Image(systemName:)` or
   `Image(name)` directly. `Icons` holds chrome tokens; `IconCatalog` is the picker library;
-  `LegacyIconMap` keeps icon names already stored in real vaults rendering. See CLAUDE.md.
+  content glyphs (Spaces, item avatars, field icons) stay FontAwesome duotone assets. See CLAUDE.md.
 - All visible user-facing text must be localized in English and Vietnamese.
 - Do not hardcode raw colors in feature screens.
 - Do not use `Color.primary`, `Color.secondary`, `.white`, `.black`, `.red`, or opacity guesses on custom themed surfaces unless explicitly mapped through semantic tokens.
@@ -217,9 +217,9 @@ Rules:
 
 ## Icon System
 
-Vaultify uses SF Symbols through `VaultIcon`, which resolves a name to either a symbol or a
-legacy bundled asset. The legacy `dt_*` / `ic_*` assets stay bundled only so icon values already
-stored in a vault never render empty; do not author new UI against them.
+Vaultify renders every icon through `VaultIcon`, which resolves an `sf:`-prefixed name to an SF
+Symbol and anything else to a bundled asset. App chrome is SF (via `Icons`); content glyphs —
+Spaces, item avatars, field and category icons — are the FontAwesome duotone set.
 
 Icon asset rules:
 

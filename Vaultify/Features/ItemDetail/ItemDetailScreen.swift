@@ -224,7 +224,7 @@ struct ItemDetailScreen: View {
                                 } else {
                                     showQuickViewChooser = true
                                 }
-                            } label: { Label { Text("Send to Browser") } icon: { VaultIcon("ic_globe") } }
+                            } label: { Label { Text("Send to Browser") } icon: { VaultIcon(Icons.globe) } }
                         }
                         if let url = item.urlField?.value, !url.isEmpty {
                             ShareLink(item: url) {
@@ -259,7 +259,7 @@ struct ItemDetailScreen: View {
                                 }
                             } label: { Label { Text("Move to Trash") } icon: { VaultIcon(Icons.trash) } }
                         }
-                    } label: { VaultIcon("ic_menu_horizontal", size: Metric.iconInline) }
+                    } label: { VaultIcon(Icons.moreHorizontal, size: Metric.iconInline) }
                         .accessibilityLabel(Text("More"))
                         .accessibilityIdentifier("item.detail.more")
                 }
@@ -269,7 +269,7 @@ struct ItemDetailScreen: View {
                         Button(role: .destructive) { requestLeave() } label: {
                             Label { Text("Leave Share") } icon: { VaultIcon(Icons.trash) }
                         }
-                    } label: { VaultIcon("ic_menu_horizontal", size: Metric.iconInline) }
+                    } label: { VaultIcon(Icons.moreHorizontal, size: Metric.iconInline) }
                         .accessibilityLabel(Text("More"))
                 }
             }

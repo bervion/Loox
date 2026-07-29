@@ -92,7 +92,7 @@ struct ShareResumeStepperSheet: View {
                     confirmCancel = true
                 } label: { Label { Text("Cancel Invite") } icon: { VaultIcon(Icons.trash) } }
             } label: {
-                VaultIcon("ic_menu_horizontal", size: Metric.iconInline)
+                VaultIcon(Icons.moreHorizontal, size: Metric.iconInline)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)

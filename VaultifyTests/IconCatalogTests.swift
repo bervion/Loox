@@ -1,4 +1,7 @@
 import XCTest
+#if canImport(UIKit)
+import UIKit
+#endif
 @testable import Vaultify
 
 /// Guards the icon system's one silent failure mode: an SF Symbol that does not exist on the
@@ -34,10 +37,6 @@ final class IconCatalogTests: XCTestCase {
                              "SF Symbol availability fixture failed to load")
     }
 
-    func testPickerCatalogSymbolsExistOn17_3() {
-        assertAvailable(IconCatalog.allIcons.map(\.symbol), "IconCatalog")
-    }
-
     func testChromeTokensExistOn17_3() {
         // Tokens are stored `sf:`-prefixed, so resolve them the way the renderer does.
         let symbols = Self.chromeTokens.compactMap { name -> String? in
@@ -49,47 +48,77 @@ final class IconCatalogTests: XCTestCase {
         assertAvailable(symbols, "Icons")
     }
 
-    func testLegacyMapTargetsExistOn17_3() {
-        assertAvailable(Array(LegacyIconMap.systemName.values), "LegacyIconMap")
+    func testOnlyPrefixedNamesResolveToSymbols() {
+        // Content glyphs — Spaces, item avatars, field/category icons, the Home quick-action
+        // tiles — are the bundled duotone set, and that two-tone look is the product's own
+        // visual language. Resolving them onto flat SF Symbols once erased all of it at a
+        // stroke, so ONLY an explicitly `sf:`-prefixed name may become a symbol.
+        XCTAssertEqual(IconResolver.resolve("dt_folder"), .asset("dt_folder"))
+        XCTAssertEqual(IconResolver.resolve("ic_lock_filled"), .asset("ic_lock_filled"))
+        XCTAssertEqual(IconResolver.resolve("sf:lock.fill"), .system("lock.fill"))
     }
 
-    func testCatalogTokensResolveToTheirSymbol() {
-        // The renderer takes an icon NAME, and a bare SF symbol name is not one: it resolves as
-        // an asset name and draws nothing — no crash, no log, just an empty tile. Every catalog
-        // entry must therefore be handed to the renderer as its `token`, never its `symbol`.
+    func testCatalogIconsResolveToBundledAssets() {
         for icon in IconCatalog.allIcons {
-            XCTAssertEqual(IconResolver.resolve(icon.token), .system(icon.symbol),
-                           "catalog token \(icon.token) should resolve to \(icon.symbol)")
+            XCTAssertEqual(IconResolver.resolve(icon.name), .asset(icon.name),
+                           "catalog icon \(icon.name) should render its own asset")
         }
-        XCTAssertEqual(IconResolver.resolve("folder.fill"), .asset("folder.fill"),
-                       "a bare symbol name must NOT be mistaken for a resolvable icon name")
+        #if canImport(UIKit)
+        // A missing asset renders as an empty tile with no crash and no log, so the picker can
+        // silently ship holes. Only an existence check catches that.
+        let missing = IconCatalog.allIcons.map(\.name).filter { UIImage(named: $0) == nil }.sorted()
+        XCTAssertTrue(missing.isEmpty, "catalog names with no bundled asset: \(missing)")
+        #endif
     }
 
-    func testCatalogHasNoDuplicateSymbols() {
-        let all = IconCatalog.allIcons.map(\.symbol)
+    func testCatalogHasNoDuplicateIcons() {
+        let all = IconCatalog.allIcons.map(\.name)
         let duplicated = Dictionary(grouping: all, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
-        XCTAssertTrue(duplicated.isEmpty, "symbol listed in more than one category: \(duplicated)")
+        XCTAssertTrue(duplicated.isEmpty, "icon listed in more than one category: \(duplicated)")
     }
 
-    func testCatalogIsSubstantial() {
-        // The picker this replaced offered 66 icons; a truncated regeneration must not pass.
-        XCTAssertGreaterThan(IconCatalog.allIcons.count, 200)
-        XCTAssertGreaterThan(IconCatalog.sections.count, 10)
+    func testCatalogCoversEveryBundledDuotoneGlyph() {
+        // Every duotone asset that ships should be pickable: one that exists but is absent from
+        // the catalog is dead weight in the bundle and an icon the user can never choose.
+        #if canImport(UIKit)
+        let listed = Set(IconCatalog.allIcons.map(\.name))
+        XCTAssertEqual(listed.count, 71, "the offerable duotone set is 71 glyphs")
         XCTAssertTrue(IconCatalog.sections.allSatisfy { !$0.icons.isEmpty })
+        XCTAssertGreaterThan(IconCatalog.sections.count, 10)
+        #endif
     }
 
-    func testDefaultTokenIsAFolder() {
+    func testEveryCatalogGlyphActuallyDraws() throws {
+        // `UIImage(named:)` succeeds for an imageset whose SVG has no path data at all, so an
+        // existence check is not enough — three glyphs shipped empty for months behind exactly
+        // that gap and rendered as blank tiles in the picker. Read the source and require
+        // drawable content.
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let icons = root.appendingPathComponent("Vaultify/Assets.xcassets/PolarisIcons")
+        var blank: [String] = []
+        for icon in IconCatalog.allIcons {
+            let svg = icons.appendingPathComponent("\(icon.name).imageset/\(icon.name).svg")
+            let source = try String(contentsOf: svg, encoding: .utf8)
+            if !source.contains("<path") { blank.append(icon.name) }
+        }
+        XCTAssertTrue(blank.isEmpty, "catalog glyphs with no path data render blank: \(blank)")
+    }
+
+    func testDefaultIsAFolder() {
         // The model default and the picker default are the same value by construction; if this
         // drifts, a new Space is created with an icon the picker cannot show as selected.
-        XCTAssertEqual(IconCatalog.defaultToken, IconResolver.token("folder.fill"))
+        XCTAssertEqual(IconCatalog.defaultToken, "dt_folder")
     }
 
     func testSearchMatchesNameAndKeywords() {
-        XCTAssertTrue(IconCatalog.search("folder").contains { $0.symbol == "folder.fill" })
-        // Dots and spaces are equivalent, so a two-word query finds a run-together symbol name.
-        XCTAssertTrue(IconCatalog.search("credit card").contains { $0.symbol.hasPrefix("creditcard") })
+        XCTAssertTrue(IconCatalog.search("folder").contains { $0.name == "dt_folder" })
+        // The `dt_` prefix and underscores are stripped, so a two-word query finds the asset.
+        XCTAssertTrue(IconCatalog.search("credit card").contains { $0.name == "dt_credit_card" })
+        // Keywords carry the synonyms the name does not.
+        XCTAssertTrue(IconCatalog.search("web").contains { $0.name == "dt_globe" })
         XCTAssertTrue(IconCatalog.search("").isEmpty)
-        XCTAssertTrue(IconCatalog.search("zzzznotasymbol").isEmpty)
+        XCTAssertTrue(IconCatalog.search("zzzznotanicon").isEmpty)
     }
 
     /// Mirrors the `Icons` surface. Kept explicit rather than reflected so that adding a token
