@@ -48,7 +48,7 @@ struct AttachmentFieldRow: View {
             } label: { Label { Text("Delete Attachment") } icon: { VaultIcon(Icons.delete) } }
         } label: {
             VaultIcon(Icons.moreHorizontal, size: 17)
-                .themedForeground(.secondary)
+                .themedForeground(.iconPrimary)
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(VaultColors.fill))
                 // Invisible padded hit area: the visual circle stays 30pt, the

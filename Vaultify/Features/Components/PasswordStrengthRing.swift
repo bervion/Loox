@@ -15,6 +15,13 @@ struct PasswordStrengthRing: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Small and heavy-stroked rather than large and thin: at this size the ring is
+    /// read as a mark, not measured, so weight carries it further than diameter. The
+    /// stroke is inset by half its width, so the ring is exactly `ringSize` wide
+    /// instead of bleeding past its frame into the row's spacing.
+    private static let ringSize: CGFloat = 13
+    private static let ringWidth: CGFloat = 3
+
     private var grade: PasswordGrade { PasswordStrengthEngine.evaluate(password).grade }
 
     private var tint: Color {
@@ -36,14 +43,15 @@ struct PasswordStrengthRing: View {
                 .foregroundStyle(labelColor)
                 .lineLimit(1)
             ZStack {
-                Circle().stroke(trackColor, lineWidth: 2.5)
-                Circle()
+                Circle().inset(by: Self.ringWidth / 2)
+                    .stroke(trackColor, lineWidth: Self.ringWidth)
+                Circle().inset(by: Self.ringWidth / 2)
                     .trim(from: 0, to: grade.fraction)
-                    .stroke(tint, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .stroke(tint, style: StrokeStyle(lineWidth: Self.ringWidth, lineCap: .round))
                     // From twelve o'clock, like every other progress ring in the app.
                     .rotationEffect(.degrees(-90))
             }
-            .frame(width: 16, height: 16)
+            .frame(width: Self.ringSize, height: Self.ringSize)
             .animation(.vault(Motion.standard, reduceMotion: reduceMotion), value: grade)
         }
         // One label for both halves: VoiceOver should hear the verdict once, not a word

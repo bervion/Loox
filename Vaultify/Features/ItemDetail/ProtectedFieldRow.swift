@@ -132,7 +132,7 @@ struct ProtectedFieldRow: View {
                 }
             } label: {
                 VaultIcon(Icons.moreHorizontal, size: 17)
-                    .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
+                    .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.iconPrimary))
                     .frame(width: 30, height: 30)
                     .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))
                     // Invisible padded hit area: the visual circle stays 30pt, the
