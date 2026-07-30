@@ -482,16 +482,23 @@ Notices (banners):
 
 - `VaultInfoBanner(.info/.warning/.error)` — the always-open tinted notice. Use when the whole
   message must be read (a degraded state, a blocked feature, a shared-item explainer).
-- `VaultExpandableBanner` — same severity vocabulary, collapsed to its title until tapped, with
-  the explanation and ONE action behind the disclosure. Use where a warning must be honest
-  without shouting over the screen's protagonist: the item detail warning
-  (`ItemAttentionBanner`) leads with the most severe finding, shows a count when it speaks for
-  several, and keeps the sentences plus the fix a tap away.
-- ONE banner per screen state, never a stack: three tinted cards with three text actions is the
-  button wall rule 7 forbids. Rank the findings, lead with the top one, list the rest inside.
-- Both use the soft severity fill with PRIMARY-rank copy and the TEXT-rank status token
-  (`accentText` / `warningText` / `destructiveText`) on the glyph and action label. Never the
-  FILL-rank hue on its own soft fill — it measures as low as 2.48:1.
+- `VaultExpandableBanner` — same severity vocabulary, PAINTED not tinted, collapsed to a single
+  44pt bar until tapped, with the explanation and ONE action behind the disclosure. Use where a
+  warning must be impossible to slide past: the item detail warning (`ItemAttentionBanner`)
+  leads with the most severe finding, shows a count when it speaks for several, and keeps the
+  sentences plus the fix a tap away.
+- ONE banner per screen state, never a stack: three cards with three actions is the button wall
+  rule 7 forbids. Rank the findings, lead with the top one, list the rest inside.
+- Surfaces differ by shape, and each has its own text contract:
+  - `VaultInfoBanner` — soft severity fill, PRIMARY-rank copy, TEXT-rank status token
+    (`accentText` / `warningText` / `destructiveText`) on the glyph and action label. Never the
+    FILL-rank hue on its own soft fill — it measures as low as 2.48:1.
+  - `VaultExpandableBanner` — solid `Variant.fill`, copy and glyphs in `Variant.onFill`. The
+    fill is darkened by the minimum that lets white clear **4.5:1** (a banner carries sentences,
+    so the 3:1 a two-word button label gets is not enough; the raw Day red measures 3.91), and a
+    hue too light for that budget (dark-mode yellow, the mono accent) keeps its color and takes
+    the dark on-color instead. The action pill sits on `background`, so its label uses the
+    TEXT-rank token, not the fill hue.
 - Toolbar overflow ("…") is chrome, not an accent action: render it at `.iconPrimary`.
 
 ## Home Screen Notes From Current Screenshot

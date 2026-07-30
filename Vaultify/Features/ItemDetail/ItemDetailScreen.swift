@@ -147,16 +147,6 @@ struct ItemDetailScreen: View {
                 VStack(spacing: Space.s6) {
                     header(item)
                     if item.sharedOrigin != nil { sharedBadge }
-                    // Password warnings for an owned, live item: one expandable
-                    // banner, collapsed, above the fields it talks about. A trashed
-                    // item has nothing to rotate, and a shared projection is not
-                    // ours to advise on.
-                    if item.sharedOrigin == nil, !item.isTrashed {
-                        ItemAttentionBanner(item: item,
-                                            auditFindings: auditFindings,
-                                            onUpdatePassword: passwordUpdateAction(for: item),
-                                            onEditItem: { editing = .edit(item) })
-                    }
                     if item.sharedOrigin == nil {
                         fieldsCard(item)
                     } else {
@@ -486,6 +476,17 @@ struct ItemDetailScreen: View {
 
                     Spacer(minLength: 0)
                 }
+            }
+
+            // Warnings sit between the Space line and the item's own identity —
+            // the first thing read after "where am I", and before the credential
+            // itself, so the caution lands before the value is used. A trashed item
+            // has nothing to rotate, and a shared projection is not ours to advise on.
+            if item.sharedOrigin == nil, !item.isTrashed {
+                ItemAttentionBanner(item: item,
+                                    auditFindings: auditFindings,
+                                    onUpdatePassword: passwordUpdateAction(for: item),
+                                    onEditItem: { editing = .edit(item) })
             }
 
             HStack(spacing: Space.s3) {

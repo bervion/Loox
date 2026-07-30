@@ -177,6 +177,31 @@ extension VaultInfoBanner.Variant {
         }
     }
 
+    /// FILL-rank severity surface, for a banner that PAINTS the whole shape
+    /// (`VaultExpandableBanner`) instead of tinting it. Pair only with `onFill` —
+    /// the soft-fill text contract above does not apply here.
+    ///
+    /// Darkened by the minimum that lets white clear **4.5:1**, not the 3:1 a
+    /// filled control gets: a banner carries sentences, not a two-word button
+    /// label. The raw Day red (`#E5484D`) measures 3.91 against white, which is
+    /// why the tinted version read washed out and the plain one would read thin.
+    /// The budget matters as much as the floor — a genuinely light hue (dark-mode
+    /// yellow, the mono accent) exceeds it, keeps its color, and pairs with the
+    /// dark on-color rather than losing its identity.
+    func fill(_ theme: AppTheme) -> UInt32 {
+        let hue: UInt32 = switch self {
+        case .info: theme.accentFill
+        case .warning: theme.warning
+        case .error: theme.destructive
+        }
+        return RGBMath.controlFill(hue, floor: 4.5, maxDarken: 0.25)
+    }
+
+    /// Copy and glyph color on `fill`: white wherever it clears the control floor
+    /// (the iOS convention this banner is styled after), black on the light hues
+    /// where white would be unreadable. Derived per theme, never hardcoded.
+    func onFill(_ theme: AppTheme) -> UInt32 { RGBMath.onAccent(fill(theme)) }
+
     var defaultIcon: String {
         switch self {
         case .info: return Icons.info
