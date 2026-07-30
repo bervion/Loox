@@ -25,6 +25,21 @@ nonisolated func watchtowerGaugeAmber(_ theme: AppTheme) -> UInt32 {
     RGBMath.blend(theme.warning, 0xF5A623, 0.55)
 }
 
+/// Display hue for one strength grade on the Watchtower strength bar — the same
+/// decorative band-paint layer as `watchtowerGaugeGreen/Amber` (text keeps the
+/// semantic tokens). Five stops of the 1P ramp: deep green, green, amber,
+/// orange, red — all derived from the active theme's status hues so every
+/// theme keeps its own temperature.
+nonisolated func watchtowerGradeHue(_ grade: PasswordGrade, theme: AppTheme) -> UInt32 {
+    switch grade {
+    case .excellent: return RGBMath.blend(watchtowerGaugeGreen(theme), 0x000000, 0.30)
+    case .strong: return watchtowerGaugeGreen(theme)
+    case .fair: return watchtowerGaugeAmber(theme)
+    case .weak: return RGBMath.blend(watchtowerGaugeAmber(theme), theme.destructive, 0.45)
+    case .veryWeak: return theme.destructive
+    }
+}
+
 /// Bands on the REAL 0–1000 audit scale (proposal thresholds 800/500).
 nonisolated func scoreBand(for score: Int) -> ScoreBand {
     if score >= 800 {
@@ -284,7 +299,7 @@ struct WatchtowerScoreRing: View {
             drawTicks(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, scale: scale,
                       base: base, spin: spin, alpha: igniteAmount(p))
             drawMarker(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, scale: scale,
-                       fraction: targetFraction, progress: markerProgress(p),
+                       progress: markerProgress(p),
                        color: Color(rgb: safetyRGB(targetFraction, theme: theme)))
         }
         .frame(width: size.width, height: size.height)
@@ -367,15 +382,17 @@ struct WatchtowerScoreRing: View {
         }
     }
 
-    /// Triangle marker in the ring interior pointing OUTWARD at the score's
-    /// position. It does not sweep — during the settle window it rises from the
-    /// readout toward the band with a soft overshoot bounce while fading in.
+    /// Triangle marker in the ring interior pointing OUTWARD at the band's apex.
+    /// FIXED at top center (1P idiom): position never encodes the score — the
+    /// number and the band hue do — so the marker only rises, points up, and
+    /// takes the score's safety color. During the settle window it rises from
+    /// the readout toward the band with a soft overshoot bounce while fading in.
     private func drawMarker(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
                             r: CGFloat, bw: CGFloat, scale: CGFloat,
-                            fraction: CGFloat, progress: CGFloat, color: Color) {
+                            progress: CGFloat, color: Color) {
         guard progress > 0.001 else { return }
-        let f = max(0, min(1, fraction))
-        let rad = (Geo.startDeg + Geo.sweepDeg * f) * .pi / 180
+        // 270° = straight up in screen coordinates (y grows downward).
+        let rad: CGFloat = 270 * .pi / 180
         let triH: CGFloat = 13 * scale
         let triW: CGFloat = 16 * scale
         let gap:  CGFloat = 6  * scale
@@ -405,11 +422,14 @@ struct WatchtowerScoreRing: View {
     @ViewBuilder
     private func readout(band: ScoreBand, color: Color, cy: CGFloat, scale: CGFloat) -> some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: cy - 28 * scale)
+            // Display-size figure centered on the dial's center (1P proportions):
+            // the spacer puts the number's vertical middle on `cy`, which drops
+            // the status line to the arc's lower opening.
+            Spacer().frame(height: cy - 34 * scale)
             // SF (not vaultCode): the score is a headline figure, not a secret;
             // monospacedDigit keeps the odometer roll from jittering sideways.
             Text("\(displayedScore)")
-                .vaultType(.largeTitle)
+                .vaultType(.scoreDisplay)
                 .themedForeground(.primary)
                 .monospacedDigit()
                 .contentTransition(.numericText(value: Double(displayedScore)))
@@ -419,6 +439,8 @@ struct WatchtowerScoreRing: View {
             // Band label uses the DISCRETE semantic role (not the continuous
             // sweep tint) so it always matches the exact 80/50 thresholds. The
             // "Calculating" caption crossfades out when the roll settles.
+            // Uppercased at render (1P's "FANTASTIC" register) — the catalog
+            // strings stay sentence case for every other surface.
             ZStack {
                 Text("Calculating")
                     .vaultType(.sectionLabel)
@@ -431,8 +453,9 @@ struct WatchtowerScoreRing: View {
                     .kerning(1.4)
                     .opacity(settled ? 1 : 0)
             }
+            .textCase(.uppercase)
             .animation(Motion.standard, value: settled)
-            .padding(.top, 2)
+            .padding(.top, 4 * scale)
             Spacer()
         }
         .frame(maxWidth: .infinity)

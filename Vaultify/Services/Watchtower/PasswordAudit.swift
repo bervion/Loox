@@ -31,6 +31,9 @@ nonisolated struct VaultHealth: Sendable {
     var score: Int = 100
     /// Mean per-item password strength 0-100 (entropy-based, ignores duplicates).
     var overallStrength: Int = 100
+    /// How many analyzed passwords landed in each 5-step grade — the strength
+    /// bar's distribution. Grades absent from the vault are absent from the map.
+    var grades: [PasswordGrade: Int] = [:]
 
     static let empty = VaultHealth()
     var issueCount: Int { weak.count + reused.count + pwned.count + missing2FA.count }
@@ -64,10 +67,20 @@ nonisolated enum PasswordAudit {
 
         var weak: [VaultIssue] = []
         var reused: [VaultIssue] = []
+        var grades: [PasswordGrade: Int] = [:]
         var strengthSum: Double = 0
 
         for (item, password) in withPasswords {
-            let strength = PasswordStrength.evaluate(password)
+            // One engine pass per password: the 5-step grade feeds the strength
+            // bar's distribution, and the legacy 3-tier mapping below is exactly
+            // `PasswordStrength.evaluate`, so weak/score semantics are unchanged.
+            let grade = PasswordStrengthEngine.evaluate(password).grade
+            grades[grade, default: 0] += 1
+            let strength: PasswordStrength = switch grade {
+            case .veryWeak, .weak: .weak
+            case .fair: .medium
+            case .strong, .excellent: .strong
+            }
             // Normalise: weak→33, medium→66, strong→100 (matches fraction * 100)
             strengthSum += strength.fraction * 100
 
@@ -90,7 +103,8 @@ nonisolated enum PasswordAudit {
             pwned: [],
             missing2FA: missing2FA,
             score: score,
-            overallStrength: overallStrength
+            overallStrength: overallStrength,
+            grades: grades
         )
     }
 

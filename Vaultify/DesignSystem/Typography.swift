@@ -25,6 +25,11 @@ extension Font {
 /// user's text-size setting and stay Apple-native. Use a role via `.vaultType(_:)`,
 /// never an ad-hoc `.font(.system(size:))`.
 nonisolated enum VaultType {
+    /// The Watchtower gauge's score figure — the one display-size number in the
+    /// app. Fixed size on purpose: it lives inside the dial's fixed 260pt canvas
+    /// geometry, which does not scale with Dynamic Type either; the accessible
+    /// reading is the gauge's accessibility label, not a scaled glyph.
+    case scoreDisplay
     case largeTitle    // rare root identity screens
     case screenTitle   // root screen title ("Kho")
     case section       // section heading
@@ -38,6 +43,7 @@ nonisolated enum VaultType {
 
     var font: Font {
         switch self {
+        case .scoreDisplay: return .system(size: 52, weight: .bold)
         case .largeTitle:   return .system(.largeTitle).weight(.bold)
         case .screenTitle:  return .system(.title2).weight(.bold)
         case .section:      return .system(.title3).weight(.semibold)

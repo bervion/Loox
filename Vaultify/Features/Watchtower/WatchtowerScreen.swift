@@ -119,7 +119,7 @@ struct WatchtowerScreen: View {
                 }
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
-                .refreshable { reload() }
+                .refreshable { reload(replayIntro: true) }
                 }
 
                 // Floating header overlays the scroll content — no title, just the action set.
@@ -178,7 +178,7 @@ struct WatchtowerScreen: View {
             // then push the next periodic reminder out from this fresh audit.
             .onChange(of: controller.phase) { _, phase in
                 if phase == .finished {
-                    reload()
+                    reload(replayIntro: true)
                     rescheduleAuditReminder()
                 }
             }
@@ -196,12 +196,18 @@ struct WatchtowerScreen: View {
         }
     }
 
-    private func reload() {
+    /// Refresh health + the saved report. `replayIntro` bumps the intro key so the
+    /// gauge/bar choreography replays — ONLY for real data moments (pull to
+    /// refresh, a finished audit). `.task` runs on every tab visit, and bumping
+    /// there made the intro restart on every switch, which is exactly what the
+    /// once-per-key gate exists to prevent (and rapid restarts are what exposed
+    /// the bar's overflow).
+    private func reload(replayIntro: Bool = false) {
         health = PasswordAudit.analyze(env.repository.activePersonaItems)
         if let key = env.session.vaultKey {
             latestPayload = AuditReportStore(store: env.store).latest(personaID: personaID, key: key)
         }
-        refreshCount += 1
+        if replayIntro { refreshCount += 1 }
     }
 
     // MARK: - Periodic auto-audit
@@ -398,7 +404,8 @@ struct WatchtowerScreen: View {
             }
 
             Button { openCategory(.strength) } label: {
-                WatchtowerStrengthCard(overallStrength: health.overallStrength, introKey: introKey)
+                WatchtowerStrengthCard(overallStrength: health.overallStrength,
+                                       grades: health.grades, introKey: introKey)
             }
             .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
                                                base: Color(rgb: env.theme.active.elevatedBackground),

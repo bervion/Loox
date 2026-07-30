@@ -21,7 +21,7 @@ struct WatchtowerStrengthScreen: View {
     /// Cached in state: the pattern-aware engine over every password is far too
     /// costly per render (same reasoning as HomeScreen's cached analyze).
     @State private var all: [Entry] = []
-    @State private var overallStrength = 100
+    @State private var grades: [PasswordGrade: Int] = [:]
 
     private func refresh() {
         let items = env.repository.activePersonaItems
@@ -34,7 +34,7 @@ struct WatchtowerStrengthScreen: View {
                          subtitle: item.subtitle,
                          strength: PasswordStrength.evaluate(password))
         }
-        overallStrength = PasswordAudit.analyze(items).overallStrength
+        grades = PasswordAudit.analyze(items).grades
     }
 
     var body: some View {
@@ -45,7 +45,7 @@ struct WatchtowerStrengthScreen: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    WatchtowerStrengthBar(value: overallStrength)
+                    WatchtowerStrengthBar(grades: grades)
                     Text("\(strongCount) of \(all.count) passwords are strong")
                         .vaultType(.callout)
                         .themedForeground(.secondary)
