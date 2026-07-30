@@ -1,1 +1,1 @@
-This update brings Quick Actions to the top of Home for faster access to your most-used tools. Items that need attention now show a clear warning banner, so you can spot and fix issues at a glance.
+See your vault's overall security health at a glance with the new Watchtower gauge. Passwords that need attention, such as those exposed in breaches or reused across accounts, are now clearly flagged so you can fix them quickly.

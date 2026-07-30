@@ -1,1 +1,1 @@
-Quick Actions giờ nằm ngay đầu trang Home, giúp bạn thao tác nhanh hơn. Các mục cần chú ý sẽ hiển thị banner cảnh báo rõ ràng, giúp bạn dễ dàng nhận biết và xử lý kịp thời.
+Giờ đây bạn có thể xem nhanh mức độ an toàn của cả kho mật khẩu qua thước đo Watchtower mới. Những mật khẩu cần chú ý, như bị lộ trong rò rỉ dữ liệu hoặc dùng trùng ở nhiều nơi, sẽ được đánh dấu rõ ràng để bạn xử lý kịp thời.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.47.0] - 2026-07-30
+
+### Added
+- gauge Watchtower kiểu 1Password, và Cần chú ý biết mật khẩu lộ / trùng (#189)
+
+
 ## [1.46.0] - 2026-07-30
 
 ### Added
