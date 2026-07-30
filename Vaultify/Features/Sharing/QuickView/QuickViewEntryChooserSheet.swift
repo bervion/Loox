@@ -61,6 +61,7 @@ struct QuickViewEntryChooserSheet: View {
         // would be drawn behind it.
         .tutorialHost(env.tutorial, flowIDs: ["quick-view"])
         .task { env.tutorial.startIfNeeded(.quickView) }
+        .onDisappear { env.tutorial.cancelPendingStart() }
     }
 
     private func startFlow(code: String) {

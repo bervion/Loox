@@ -112,6 +112,7 @@ struct ShareAccessSheet: View {
         // so a tour about sharing has to live inside the sheet it explains.
         .tutorialHost(env.tutorial, flowIDs: ["sharing"])
         .task { env.tutorial.startIfNeeded(.sharing) }
+        .onDisappear { env.tutorial.cancelPendingStart() }
         .task(id: pollingZoneName) {
             guard let zoneName = pollingZoneName else { return }
             await pollForProfile(zoneName: zoneName)

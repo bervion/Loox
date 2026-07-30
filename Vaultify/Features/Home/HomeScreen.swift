@@ -239,6 +239,8 @@ struct HomeScreen: View {
                 env.tutorial.startIfNeeded(.firstRun)
             }
             .analyticsScreen("home")
+            // A tour asked for but not yet shown must not pop over another tab.
+            .onDisappear { env.tutorial.cancelPendingStart() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
             // Also re-mirror into the App Group so the AutoFill extension defaults a
             // newly saved login into this same Space (see `mirrorActivePersonaContext`).

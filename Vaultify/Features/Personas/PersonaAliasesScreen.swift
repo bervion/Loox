@@ -91,6 +91,8 @@ struct PersonaAliasesScreen: View {
             // A pushed screen, so the root host covers it — no local host needed.
             env.tutorial.startIfNeeded(.privateEmail)
         }
+        // A tour asked for but not yet shown must not pop over another screen.
+        .onDisappear { env.tutorial.cancelPendingStart() }
         .sheet(isPresented: $showingPerSiteEditor) {
             if let persona { AliasEditorSheet(persona: persona, onCreated: { activate($0) }) }
         }
