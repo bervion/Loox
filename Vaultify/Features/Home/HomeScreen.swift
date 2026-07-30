@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Home tab — credential-first composition (Design DNA pass, Phase 3):
-/// Header → pending shares / approval alerts → TOTP scroller → Needs Attention →
-/// Recently Used → Favorites → All items → profile strip → compact quick actions →
+/// Home tab — profile row → quick actions → pending shares / approval alerts →
+/// TOTP scroller → Needs Attention → Recently Used → Favorites → All items →
 /// Empty state when vault is empty.
 ///
-/// The protagonist of this screen is "find and use a credential instantly" — live
-/// credential content leads the scroll, profile identity and secondary actions
-/// (Add/Generate/2FA/Watchtower) sit below it as a thin strip + compact row.
+/// The protagonist of this screen is "find and use a credential instantly". Quick
+/// Actions leads the default order (owner decision 260730) so Add / Generate / 2FA /
+/// Security sit under the thumb on first glance; the credential sections follow, and
+/// every section below the pinned profile row can be reordered or hidden.
 ///
 /// `selectedFolderId` nil = "All Spaces" (no folder filter). Every section is
 /// filtered by the selected folder and renders only when non-empty.
@@ -24,6 +24,10 @@ struct HomeScreen: View {
     @Environment(\.openSettings) private var openSettings
     #endif
     @State private var editorTarget: EditorTarget?
+    /// Set by a "Needs Attention" row's Update action: the same editor, but with the
+    /// password generator already presented. A separate binding from `editorTarget`
+    /// on purpose — the ordinary edit entries must not inherit the generator.
+    @State private var passwordUpdateTarget: VaultItem?
     /// The create-item type picker + the category chosen there, presented as the
     /// editor once the picker finishes dismissing.
     @State private var showItemTypePicker = false
@@ -229,6 +233,14 @@ struct HomeScreen: View {
             // New items inherit the Space currently selected on Home (nil = All Spaces →
             // editor falls back to the primary Space).
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
+            // Anchored at the stable root, NOT inside attentionSection: fixing the
+            // password drops that row (and can empty the whole section) mid-dismiss,
+            // which would strand the sheet binding.
+            .sheet(item: $passwordUpdateTarget) {
+                ItemEditorScreen(target: .edit($0),
+                                 preselectedFolderId: selectedFolderId,
+                                 autoOpenPasswordGenerator: true)
+            }
             // Item-type picker → present the editor once it finishes dismissing.
             .sheet(isPresented: $showItemTypePicker, onDismiss: {
                 if let category = pendingNewCategory {
@@ -531,22 +543,43 @@ struct HomeScreen: View {
 
     // MARK: Needs attention
 
+    /// Titled group card: the section title lives INSIDE the card (same anatomy as
+    /// the All items card below) so the warning rows and the label that frames them
+    /// read as one grouped answer instead of a list floating under a grey caption.
     private var attentionSection: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            homeSectionHeader(
-                title: LocalizedStringResource("Needs Attention (\(attentionItems.count))").inAppLocalized
-            )
+        VStack(alignment: .leading, spacing: 0) {
+            Text(LocalizedStringResource("Needs Attention (\(attentionItems.count))").inAppLocalized)
+                .vaultType(.headline)
+                .themedForeground(.primary)
+                .padding(.horizontal, Space.s4)
+                .padding(.top, Space.s4)
+                .padding(.bottom, Space.s2)
 
-            groupedCard {
-                ForEach(Array(attentionItems.enumerated()), id: \.element.id) { idx, item in
-                    AttentionCell(
-                        item: item,
-                        onEdit: { editorTarget = .edit($0) },
-                        onOpen: { openItem($0.id) },
-                        showDivider: idx < attentionItems.count - 1
-                    )
-                }
+            ForEach(Array(attentionItems.enumerated()), id: \.element.id) { idx, item in
+                AttentionCell(
+                    item: item,
+                    onEdit: { startPasswordUpdate($0) },
+                    onOpen: { openItem($0.id) },
+                    showDivider: idx < attentionItems.count - 1
+                )
             }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(rgb: env.theme.active.elevatedBackground))
+        .vaultCornerRadius(Radius.lg)
+        .elevation(.level1)
+    }
+
+    /// The attention row's "Update" action. Every reason on that list is about the
+    /// password (weak, or a rotation cadence that ran out), so the editor opens with
+    /// the generator already up and the user confirms one value instead of hunting
+    /// through the form. An item with no password — or one sealed behind Extra
+    /// Protection, which the generator must not overwrite — opens the plain editor.
+    private func startPasswordUpdate(_ item: VaultItem) {
+        if let field = item.passwordField, !field.isExtraProtected {
+            passwordUpdateTarget = item
+        } else {
+            editorTarget = .edit(item)
         }
     }
 
