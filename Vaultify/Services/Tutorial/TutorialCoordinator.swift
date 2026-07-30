@@ -10,9 +10,17 @@ import SwiftUI
     private(set) var stepIndex = 0
 
     @ObservationIgnored private let store: TutorialStore
+    /// The settle-delay task between a screen asking for its tour and the tour
+    /// actually appearing (see `startIfNeeded`).
+    @ObservationIgnored private var pendingStart: Task<Void, Never>?
+    @ObservationIgnored private let settleDelay: Duration
 
-    init(store: TutorialStore = TutorialStore()) {
+    /// `settleDelay` is injectable so the state-machine tests stay synchronous
+    /// (`.zero` starts the flow inline, no task hop).
+    init(store: TutorialStore = TutorialStore(),
+         settleDelay: Duration = .milliseconds(1200)) {
         self.store = store
+        self.settleDelay = settleDelay
     }
 
     var currentStep: TutorialStep? {
@@ -38,11 +46,41 @@ import SwiftUI
 
     /// Begin a flow unless it was already completed or skipped, or the feature
     /// is off. Safe to call on every appearance — it self-suppresses.
+    ///
+    /// The flow appears after `settleDelay`, not on the same frame the screen
+    /// does: a tour that pops with the tab switch reads as an interruption —
+    /// the user hasn't even seen the screen it explains yet. One beat later,
+    /// the layout has landed and the tour reads as a guide. The asking screen
+    /// must cancel on disappear (`cancelPendingStart`) — otherwise a tab
+    /// switched away from during the delay would pop its tour over some other
+    /// screen.
     func startIfNeeded(_ flow: TutorialFlow) {
-        guard TutorialFeature.enabled, self.flow == nil, store.shouldPresent(flow.id) else { return }
+        guard TutorialFeature.enabled, self.flow == nil, pendingStart == nil,
+              store.shouldPresent(flow.id) else { return }
+        guard settleDelay > .zero else {
+            begin(flow)
+            return
+        }
+        pendingStart = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: self?.settleDelay ?? .zero)
+            guard let self else { return }
+            self.pendingStart = nil
+            guard !Task.isCancelled, self.flow == nil, self.store.shouldPresent(flow.id) else { return }
+            self.begin(flow)
+        }
+    }
+
+    private func begin(_ flow: TutorialFlow) {
         self.flow = flow
         stepIndex = 0
         logStep()
+    }
+
+    /// The screen that asked for a tour is going away before the settle delay
+    /// elapsed — drop the request. The flow stays eligible for the next visit.
+    func cancelPendingStart() {
+        pendingStart?.cancel()
+        pendingStart = nil
     }
 
     func advance() {
@@ -70,6 +108,7 @@ import SwiftUI
     /// something outside the user's intent (an auto-lock, a push landing on
     /// another screen). It stays eligible to run again later.
     func suspend() {
+        cancelPendingStart()
         flow = nil
         stepIndex = 0
     }

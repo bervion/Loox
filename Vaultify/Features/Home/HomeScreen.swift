@@ -46,6 +46,12 @@ struct HomeScreen: View {
     /// Cached Watchtower issue count for the quick-action badge (recomputed on appear and
     /// when the item set changes — `PasswordAudit.analyze` is too costly to run per render).
     @State private var watchtowerIssueCount = 0
+    /// Items sharing a password with another item (from the same cached scan).
+    @State private var reusedItemIDs: Set<String> = []
+    /// Items the last saved audit found in a known leak (dismissals honored),
+    /// and when that audit completed — a password changed since is exonerated.
+    @State private var leakedItemIDs: Set<String> = []
+    @State private var leakedAsOf: Date = .distantPast
     /// Home layout edit mode — flips the screen into the section arranger (reorder +
     /// show/hide), driven from the header's edit button.
     @State private var isEditingLayout = false
@@ -56,8 +62,21 @@ struct HomeScreen: View {
         env.repository.totpItems(folder: selectedFolderId)
     }
 
-    private var attentionItems: [VaultItem] {
-        env.repository.itemsNeedingAttention(folder: selectedFolderId, limit: 4)
+    /// Needs Attention entries: leaked (from the last saved audit) → weak →
+    /// reused → rotation, worst first. The reuse/leak indexes are cached state
+    /// (`recomputeSecuritySignals`) — reuse needs a persona-wide scan and leak
+    /// needs the sealed report, neither of which belongs in a render pass.
+    private var attentionEntries: [HomeAttention.Entry] {
+        // Persona- AND Space-scoped, like every other Home section. (The old
+        // repository query filtered only by Space, so under "All Spaces" it
+        // could list another persona's items.)
+        let pool = env.repository.activePersonaItems
+        let scoped = selectedFolderId == nil ? pool : pool.filter { $0.folderId == selectedFolderId }
+        return HomeAttention.entries(
+            items: scoped,
+            reusedItemIDs: reusedItemIDs,
+            leakedItemIDs: leakedItemIDs,
+            leakedAsOf: leakedAsOf)
     }
 
     private var favoriteItems: [VaultItem] {
@@ -87,9 +106,17 @@ struct HomeScreen: View {
     /// matches the Watchtower screen's synchronous count (HIBP/pwned excluded; that
     /// needs the network). Scoped to the ACTIVE persona, exactly like the
     /// Watchtower screen, so the badge and the screen never disagree.
-    private func recomputeWatchtowerCount() {
+    ///
+    /// The same pass also feeds Needs Attention's reuse and leak indexes: reuse
+    /// comes from this scan, leaked from the last saved audit (the only place a
+    /// network verdict can come from — opening Home makes no request).
+    private func recomputeSecuritySignals() {
         let health = PasswordAudit.analyze(env.repository.activePersonaItems)
         watchtowerIssueCount = health.weak.count + health.reused.count + health.missing2FA.count
+        reusedItemIDs = Set(health.reused.map(\.itemID))
+        let leaked = ItemAuditFindings.leakedIndex(env: env)
+        leakedItemIDs = leaked.itemIDs
+        leakedAsOf = leaked.completedAt
     }
 
     /// With exactly one Space, default the filter to that Space (not "All Spaces") so its name
@@ -205,13 +232,15 @@ struct HomeScreen: View {
             .navigationDestination(for: ProfileRoute.self) { _ in ProfileScreen().fullScreenPush() }
             .navigationDestination(for: SettingsRoute.self) { _ in SettingsScreen().fullScreenPush() }
             .task {
-                recomputeWatchtowerCount(); restoreSelectedSpace(); autoSelectSingleSpace()
+                recomputeSecuritySignals(); restoreSelectedSpace(); autoSelectSingleSpace()
                 // First unlocked look at Home is where the tour makes sense —
                 // the vault exists and its own surfaces are on screen. Repeat
                 // visits self-suppress once the flow has been answered.
                 env.tutorial.startIfNeeded(.firstRun)
             }
             .analyticsScreen("home")
+            // A tour asked for but not yet shown must not pop over another tab.
+            .onDisappear { env.tutorial.cancelPendingStart() }
             // Remember the Home Space across launches (per identity; device-local, not synced).
             // Also re-mirror into the App Group so the AutoFill extension defaults a
             // newly saved login into this same Space (see `mirrorActivePersonaContext`).
@@ -221,7 +250,7 @@ struct HomeScreen: View {
             }
             // Switching the active persona re-drives the Home filter to that persona's Space.
             .onChange(of: env.repository.activePersona?.id) { applyRememberedSpace() }
-            .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
+            .onChange(of: env.repository.items) { recomputeSecuritySignals() }
             .onChange(of: env.repository.activePersonaSpaces.count) { autoSelectSingleSpace() }
             // First share arriving on a single-Space setup: release the
             // auto-selected filter so the shared item is actually visible.
@@ -325,7 +354,7 @@ struct HomeScreen: View {
         case .totp:
             if !totpItems.isEmpty { totpSection }
         case .attention:
-            if !attentionItems.isEmpty { attentionSection }
+            if !attentionEntries.isEmpty { attentionSection }
         case .recentlyUsed:
             if !recentlyUsedItems.isEmpty, allItems.count > 5 { recentlyUsedSection }
         case .favorites:
@@ -553,24 +582,25 @@ struct HomeScreen: View {
                     .vaultType(.headline)
                     .themedForeground(.primary)
                 // The count as a badge, toned like the most severe row below it.
-                VaultCountBadge(count: attentionItems.count,
+                VaultCountBadge(count: attentionEntries.count,
                                 tint: env.theme.active.color(attentionBadgeTone.role))
                 Spacer(minLength: 0)
             }
             // VoiceOver keeps the spoken "Needs Attention (3)" form: a bare number
             // read after the title says nothing about what it counts.
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(LocalizedStringResource("Needs Attention (\(attentionItems.count))").inAppLocalized))
+            .accessibilityLabel(Text(LocalizedStringResource("Needs Attention (\(attentionEntries.count))").inAppLocalized))
             .padding(.horizontal, Space.s4)
             .padding(.top, Space.s4)
             .padding(.bottom, Space.s2)
 
-            ForEach(Array(attentionItems.enumerated()), id: \.element.id) { idx, item in
+            ForEach(Array(attentionEntries.enumerated()), id: \.element.id) { idx, entry in
                 AttentionCell(
-                    item: item,
+                    item: entry.item,
+                    reason: entry.reason,
                     onEdit: { startPasswordUpdate($0) },
                     onOpen: { openItem($0.id) },
-                    showDivider: idx < attentionItems.count - 1
+                    showDivider: idx < attentionEntries.count - 1
                 )
             }
         }
@@ -580,16 +610,10 @@ struct HomeScreen: View {
         .elevation(.level1)
     }
 
-    /// Tone for the section's count badge. `itemsNeedingAttention` is already ranked
-    /// worst-first, so the leading row's reason IS the section's severity — no need
-    /// to grade the whole list.
+    /// Tone for the section's count badge: entries are ranked worst-first, so the
+    /// leading entry's reason IS the section's severity.
     private var attentionBadgeTone: RotationTone {
-        guard let first = attentionItems.first else { return .warning }
-        let status = RotationStatus.evaluate(
-            rotateDays: first.rotateDays,
-            passwordChangedAt: first.passwordChangedAt,
-            createdAt: first.createdAt)
-        return RotationStatus.attentionReason(status: status, isWeak: first.hasWeakPassword)?.tone ?? .warning
+        attentionEntries.first?.reason.tone ?? .warning
     }
 
     /// The attention row's "Update" action. Every reason on that list is about the

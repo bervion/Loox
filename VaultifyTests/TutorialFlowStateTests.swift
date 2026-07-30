@@ -23,7 +23,9 @@ final class TutorialFlowStateTests: XCTestCase {
     }
 
     private func makeCoordinator() -> TutorialCoordinator {
-        TutorialCoordinator(store: TutorialStore(defaults: defaults))
+        // Zero settle delay: these tests cover the state machine, and `.zero`
+        // takes the synchronous path (production keeps the real settle beat).
+        TutorialCoordinator(store: TutorialStore(defaults: defaults), settleDelay: .zero)
     }
 
     private let flow = TutorialFlow(id: "test-flow", steps: [

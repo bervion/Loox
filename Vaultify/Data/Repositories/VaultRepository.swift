@@ -520,33 +520,8 @@ import UserNotifications
         noteLocalMutation()
     }
 
-    // MARK: Attention list
-
-    /// Items that need user attention: overdue rotation, then weak passwords,
-    /// then soon-due rotation, then stale (no cadence, 180+ days). Excludes
-    /// trashed/archived items.
-    func itemsNeedingAttention(limit: Int = 50) -> [VaultItem] {
-        typealias Ranked = (item: VaultItem, order: Int)
-        var ranked: [Ranked] = []
-        for item in items {
-            let status = RotationStatus.evaluate(
-                rotateDays: item.rotateDays,
-                passwordChangedAt: item.passwordChangedAt,
-                createdAt: item.createdAt)
-            let reason = RotationStatus.attentionReason(status: status, isWeak: item.hasWeakPassword)
-            switch reason {
-            case .overdue:  ranked.append((item, 0))
-            case .weak:     ranked.append((item, 1))
-            case .soon:     ranked.append((item, 2))
-            case .stale:    ranked.append((item, 3))
-            case .none:     break
-            }
-        }
-        return ranked
-            .sorted { $0.order < $1.order }
-            .prefix(limit)
-            .map(\.item)
-    }
+    // Needs-Attention assembly lives in `HomeAttention.entries` (Home feature) —
+    // it folds in reuse and leak signals the repository cannot know.
 
     func emptyTrash() throws {
         for item in trashed { try delete(item) }

@@ -53,7 +53,9 @@ extension TutorialFlow {
     static let watchtower = TutorialFlow(id: "watchtower", steps: [
         TutorialStep(id: "score",
                      anchor: TutorialAnchorID.watchtowerScore,
-                     shape: .circle,
+                     // The anchor spans the whole ring block — a rounded window
+                     // reads as "this surface", not a keyhole around the dial.
+                     shape: .rounded,
                      title: "Your vault health score",
                      message: "One number out of 1000, from password strength, reuse, known leaks, and how much two-factor protection you have. Tap it to see what moved it."),
         TutorialStep(id: "run-audit",

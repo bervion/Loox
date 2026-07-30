@@ -561,8 +561,16 @@ Rebuilt to DS spec with folder switcher, quick actions, TOTP quick-view, and "Ne
 Reshaped with visual strength gauge and issue category drill-down.
 
 **Components:**
-- `WatchtowerScoreRing` — 270° semicircle gauge (0–100 strength score), color-coded (destructive/warning/neutral).
-- `WatchtowerStrengthCard` — overall strength summary (distinct from security health).
+- `WatchtowerScoreRing` — 270° gauge on the real 0–1000 audit scale, 1P anatomy: display-size
+  figure (`VaultType.scoreDisplay`) centered on the dial, band label UPPERCASE at the arc's lower
+  opening, triangle marker FIXED at top center (score is carried by number + band hue, never by
+  marker position). Intro replays only on real data moments (`WatchtowerIntroGate` — pull to
+  refresh, finished audit, persona switch), never on a tab visit.
+- `WatchtowerStrengthCard` — grade DISTRIBUTION bar (`VaultHealth.grades`), 1P layered capsules:
+  strongest grade on top, each segment overlapping the one below, deep green → green → amber →
+  orange → red via `watchtowerGradeHue`; present-but-tiny grades keep a 10pt sliver. The stack is
+  clipped to the bar capsule — layers can never paint outside the card, whatever the animation
+  state.
 - `WatchtowerComponents` — helper views (category headers, issue rows, 2FA support indicator).
 - `TwoFactorCatalog` (`Services/Watchtower/`) — curated "supports 2FA" service hostnames (host-suffix matching, no false-positives).
 

@@ -26,6 +26,28 @@ struct ItemAuditFindings {
 
     static let none = ItemAuditFindings(findings: [], completedAt: .distantPast)
 
+    /// Every item the latest report found in a known leak, for Home's "Needs
+    /// Attention" section — the vault-wide sibling of `load(itemID:)`, honoring
+    /// the same dismissals. Empty set when locked or never audited; the caller
+    /// applies the password-changed-since staleness rule per item.
+    static func leakedIndex(env: AppEnvironment) -> (itemIDs: Set<String>, completedAt: Date) {
+        guard let key = env.session.vaultKey else { return ([], .distantPast) }
+        let personaID = env.repository.activePersona?.id
+        let reportStore = AuditReportStore(store: env.store)
+        guard let payload = reportStore.latest(personaID: personaID, key: key) else {
+            return ([], .distantPast)
+        }
+        let leaked = payload.findings.filter { $0.ruleID == "exposure.leaked" }
+        guard !leaked.isEmpty else { return ([], payload.completedAt) }
+        let hidden = reportStore.hiddenFingerprints(
+            fingerprints: leaked.map { ($0.fingerprint, $0.ruleID) },
+            ruleVersions: payload.ruleVersions,
+            personaID: personaID, key: key)
+        let ids = leaked.filter { !hidden.contains($0.fingerprint) }
+            .reduce(into: Set<String>()) { $0.formUnion($1.affectedItemIDs) }
+        return (ids, payload.completedAt)
+    }
+
     /// Open findings for `itemID` from the latest report, or `.none` when the vault
     /// is locked, no audit has ever run, or nothing names this item.
     static func load(itemID: String, env: AppEnvironment) -> ItemAuditFindings {

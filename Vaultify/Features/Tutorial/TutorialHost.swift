@@ -54,7 +54,11 @@ struct TutorialHost: ViewModifier {
                                 .transition(.opacity)
                         }
                     }
-                    .animation(.vault(Motion.standard, reduceMotion: reduceMotion),
+                    // Slow ease, not the standard beat: the tour arrives after the
+                    // screen has settled (see TutorialCoordinator.settleDelay), so
+                    // it should fade in like a guide sitting down, not pop like an
+                    // alert. Exit keeps the same curve — no one-frame vanish.
+                    .animation(.vault(.easeInOut(duration: Motion.slow), reduceMotion: reduceMotion),
                                value: step != nil)
                 }
                 .ignoresSafeArea()

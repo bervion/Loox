@@ -119,7 +119,7 @@ struct WatchtowerScreen: View {
                 }
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
-                .refreshable { reload() }
+                .refreshable { reload(replayIntro: true) }
                 }
 
                 // Floating header overlays the scroll content — no title, just the action set.
@@ -133,6 +133,20 @@ struct WatchtowerScreen: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(Text("Add Item"))
+
+                        // Run Vault Audit lives in the header's glass capsule
+                        // (rightmost — the tab's primary verb), not as a filled
+                        // bar pushing the content down. Icon-rank primary, like
+                        // every other chrome control.
+                        Button { openCategory(.audit) } label: {
+                            VaultIcon(Icons.shieldPerson, size: Metric.iconUtility)
+                                .themedForeground()
+                                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text("Run Vault Audit"))
+                        .tutorialAnchor(TutorialAnchorID.watchtowerRunAudit)
                     }
                 }
             }
@@ -161,6 +175,8 @@ struct WatchtowerScreen: View {
                 startTourIfScoreIsShowing()
             }
             .analyticsScreen("watchtower")
+            // A tour asked for but not yet shown must not pop over another tab.
+            .onDisappear { env.tutorial.cancelPendingStart() }
             // Security audits the ACTIVE persona's vault — switching persona reloads.
             .onChange(of: env.repository.activePersona?.id) {
                 didAutoAudit = false
@@ -178,8 +194,8 @@ struct WatchtowerScreen: View {
             // then push the next periodic reminder out from this fresh audit.
             .onChange(of: controller.phase) { _, phase in
                 if phase == .finished {
-                    reload()
-                    rescheduleAuditReminder()
+                    reload(replayIntro: true)
+                    rescheduleAuditReminder(allowPermissionPrompt: true)
                 }
             }
             // Unlocking is when the key (and plaintext) becomes available again —
@@ -196,12 +212,18 @@ struct WatchtowerScreen: View {
         }
     }
 
-    private func reload() {
+    /// Refresh health + the saved report. `replayIntro` bumps the intro key so the
+    /// gauge/bar choreography replays — ONLY for real data moments (pull to
+    /// refresh, a finished audit). `.task` runs on every tab visit, and bumping
+    /// there made the intro restart on every switch, which is exactly what the
+    /// once-per-key gate exists to prevent (and rapid restarts are what exposed
+    /// the bar's overflow).
+    private func reload(replayIntro: Bool = false) {
         health = PasswordAudit.analyze(env.repository.activePersonaItems)
         if let key = env.session.vaultKey {
             latestPayload = AuditReportStore(store: env.store).latest(personaID: personaID, key: key)
         }
-        refreshCount += 1
+        if replayIntro { refreshCount += 1 }
     }
 
     // MARK: - Periodic auto-audit
@@ -227,12 +249,16 @@ struct WatchtowerScreen: View {
     }
 
     /// After an audit completes, push the local reminder out to the next cadence
-    /// window (or clear it if the user turned reminders off).
-    private func rescheduleAuditReminder() {
+    /// window (or clear it if the user turned reminders off). The permission
+    /// prompt is allowed only right after a completed audit — a deliberate user
+    /// action, and a contextual moment to ask ("remind you next time?"). A tab
+    /// visit never prompts: that dialog used to land on top of this tab's tour.
+    private func rescheduleAuditReminder(allowPermissionPrompt: Bool = false) {
         guard let completedAt = latestPayload?.completedAt else { return }
         AuditReminderNotificationService.shared.reschedule(
             lastAuditedAt: completedAt,
-            enabled: env.settings.auditRemindersEnabled)
+            enabled: env.settings.auditRemindersEnabled,
+            allowPermissionPrompt: allowPermissionPrompt)
     }
 
     // MARK: - Destinations
@@ -325,7 +351,6 @@ struct WatchtowerScreen: View {
                             WatchtowerScoreRing(score: latestPayload.score, introKey: introKey)
                         }
                         .buttonStyle(.plain)
-                        .tutorialAnchor(TutorialAnchorID.watchtowerScore)
                         .accessibilityLabel(Text("Vault Health"))
                         .accessibilityHint(Text("Why this score"))
                     } else {
@@ -336,26 +361,21 @@ struct WatchtowerScreen: View {
                 }
                 .padding(.vertical, Space.s2)
 
-                VStack(spacing: Space.s1) {
-                    if let latestPayload {
-                        Text(verbatim: lastAuditedText(latestPayload.completedAt))
-                            .vaultType(.footnote)
-                            .themedForeground(.tertiary)
-                        if latestPayload.confidenceLimited {
-                            Text(verbatim: appString("Based on \(latestPayload.analyzedItemCount) items"))
-                                .vaultType(.footnote)
-                                .themedForeground(.tertiary)
-                        }
-                    } else {
-                        Text("Run your first audit to see your vault's health score.")
-                            .vaultType(.callout)
-                            .themedForeground(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Space.s7)
-                    }
+                if latestPayload == nil {
+                    Text("Run your first audit to see your vault's health score.")
+                        .vaultType(.callout)
+                        .themedForeground(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Space.s7)
+                        .padding(.bottom, Space.s3)
                 }
-                .padding(.bottom, Space.s3)
+                // Audited meta (last audited / item count) folded into the
+                // description paragraph below — see `scoreDescription`.
             }
+            // The tour spotlights the WHOLE ring block, not a circle cut tight
+            // around the dial — the step is about this surface, and the rounded
+            // window reads as "this card" instead of a keyhole.
+            .tutorialAnchor(TutorialAnchorID.watchtowerScore)
         }
     }
 
@@ -364,6 +384,22 @@ struct WatchtowerScreen: View {
         return days == 0
             ? appString("Last audited today")
             : appString("Last audited \(days) days ago")
+    }
+
+    /// The paragraph under the ring: meaning → action → audit meta, as full
+    /// localized sentences joined into running text.
+    private var scoreDescription: String {
+        var sentences = [
+            appString("Your score is an overall read of how safe your vault is, based on password strength, reuse, known leaks, and two-factor coverage."),
+            appString("Fix the flagged items below to raise it."),
+        ]
+        if let latestPayload {
+            sentences.append(lastAuditedText(latestPayload.completedAt) + ".")
+            if latestPayload.confidenceLimited {
+                sentences.append(appString("Based on \(latestPayload.analyzedItemCount) items") + ".")
+            }
+        }
+        return sentences.joined(separator: " ")
     }
 
     // MARK: - Main content
@@ -375,30 +411,47 @@ struct WatchtowerScreen: View {
     @ViewBuilder
     private var populatedContent: some View {
         VStack(spacing: Space.s5) {
-            // One filled primary; the resume path is the quiet tinted secondary
-            // (the style owns typography and height — plain Text labels only).
-            Button { openCategory(.audit) } label: {
-                HStack(spacing: Space.s2) {
-                    VaultIcon(Icons.shieldPerson, size: Metric.iconInline)
-                    Text("Run Vault Audit")
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.themedProminent)
-            .padding(.horizontal, Space.gutter)
-            .tutorialAnchor(TutorialAnchorID.watchtowerRunAudit)
-
+            // Compact grey chip under the ring (1P's "Share My Score" spot):
+            // warning glyph + a short verb. Run Vault Audit moved to the header
+            // capsule, so this is the section's only button.
             if let sections, sections.actNowCount > 0 {
                 Button { openCategory(.fixQueue) } label: {
-                    Text(verbatim: appString("Continue fixing \(sections.actNowCount) issues"))
-                        .frame(maxWidth: .infinity)
+                    HStack(spacing: Space.s2) {
+                        VaultIcon(Icons.alert, size: Metric.iconCompact)
+                            .themedForeground(.warning)
+                        Text("Fix issues")
+                            .vaultType(.subhead).fontWeight(.semibold)
+                            .themedForeground(.primary)
+                        VaultCountBadge(count: sections.actNowCount,
+                                        tint: env.theme.active.color(.warning))
+                    }
+                    .padding(.horizontal, Space.s4)
+                    .frame(minHeight: Metric.controlMedium)
+                    .background(Color(rgb: env.theme.active.controlBackground),
+                                in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                 }
-                .buttonStyle(.themedTinted)
-                .padding(.horizontal, Space.gutter)
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel(Text(verbatim: appString("Continue fixing \(sections.actNowCount) issues")))
+            }
+
+            // What the score means, in one left-aligned paragraph (1P register):
+            // the meaning, the action, and the audit meta in running text instead
+            // of centered caption fragments under the ring.
+            if latestPayload != nil {
+                Text(verbatim: scoreDescription)
+                    .vaultType(.callout)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Space.gutter)
             }
 
             Button { openCategory(.strength) } label: {
-                WatchtowerStrengthCard(overallStrength: health.overallStrength, introKey: introKey)
+                WatchtowerStrengthCard(overallStrength: health.overallStrength,
+                                       grades: health.grades, introKey: introKey)
             }
             .buttonStyle(PressableSurfaceStyle(theme: env.theme.active,
                                                base: Color(rgb: env.theme.active.elevatedBackground),

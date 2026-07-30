@@ -30,7 +30,14 @@ final class AuditReminderNotificationService: @unchecked Sendable {
 
     /// Reschedule the checkup reminder one cadence window after the last audit.
     /// Disabled or an already-passed target cancels any pending reminder.
-    func reschedule(lastAuditedAt: Date, enabled: Bool) {
+    ///
+    /// `allowPermissionPrompt` gates the SYSTEM authorization dialog. It must be
+    /// true only on a deliberate user action (they just ran an audit) — merely
+    /// visiting the Security tab used to raise the prompt on top of the tab's
+    /// own tutorial, two modal surfaces fighting for the same first impression.
+    /// Without the prompt, an undetermined permission simply schedules nothing;
+    /// the next reschedule after permission lands elsewhere picks it up.
+    func reschedule(lastAuditedAt: Date, enabled: Bool, allowPermissionPrompt: Bool = false) {
         guard enabled else {
             cancel()
             return
@@ -42,7 +49,7 @@ final class AuditReminderNotificationService: @unchecked Sendable {
             cancel()
             return
         }
-        requestAuthorizationIfNeeded { [weak self] granted in
+        requestAuthorizationIfNeeded(allowPrompt: allowPermissionPrompt) { [weak self] granted in
             guard let self, granted else { return }
             self.scheduleNotification(fireDate: fireDate)
         }
@@ -55,13 +62,18 @@ final class AuditReminderNotificationService: @unchecked Sendable {
 
     // MARK: Private
 
-    private func requestAuthorizationIfNeeded(completion: @escaping (Bool) -> Void) {
+    private func requestAuthorizationIfNeeded(allowPrompt: Bool,
+                                              completion: @escaping (Bool) -> Void) {
         center.getNotificationSettings { [weak self] settings in
             guard let self else { return }
             switch settings.authorizationStatus {
             case .authorized, .provisional, .ephemeral:
                 completion(true)
             case .notDetermined:
+                guard allowPrompt else {
+                    completion(false)
+                    return
+                }
                 self.center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
                     completion(granted)
                 }
