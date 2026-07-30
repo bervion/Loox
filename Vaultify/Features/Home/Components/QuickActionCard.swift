@@ -158,13 +158,7 @@ private struct QuickActionTile: View {
     /// Small trailing badge — counts are secondary, so they stay a quiet capsule in the
     /// tile's own hue (a 14% well + full-tint numerals), not a headline.
     private func countBadge(_ count: Int) -> some View {
-        Text(verbatim: "\(min(count, 99))")
-            .vaultType(.caption)
-            .fontWeight(.bold)
-            .foregroundStyle(item.tint)
-            .padding(.horizontal, Space.s1)
-            .frame(minWidth: 18, minHeight: 18)
-            .background(item.tint.opacity(0.14), in: Capsule())
+        VaultCountBadge(count: count, tint: item.tint)
     }
 }
 

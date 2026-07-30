@@ -45,21 +45,9 @@ struct AttentionCell: View {
         }
     }
 
-    private var tone: RotationTone {
-        switch reason {
-        case .overdue, .weak: return .destructive
-        case .soon, .stale: return .warning
-        case .none: return .warning
-        }
-    }
+    private var tone: RotationTone { reason?.tone ?? .warning }
 
-    private var toneColor: Color {
-        switch tone {
-        case .destructive: return env.theme.active.color(.destructive)
-        case .warning: return env.theme.active.color(.warning)
-        case .neutral: return env.theme.active.color(.secondary)
-        }
-    }
+    private var toneColor: Color { env.theme.active.color(tone.role) }
 
     // Destructive reasons get a prominent primary button; others get secondary.
     private var isDestructiveTone: Bool { tone == .destructive }

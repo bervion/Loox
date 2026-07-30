@@ -548,12 +548,22 @@ struct HomeScreen: View {
     /// read as one grouped answer instead of a list floating under a grey caption.
     private var attentionSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(LocalizedStringResource("Needs Attention (\(attentionItems.count))").inAppLocalized)
-                .vaultType(.headline)
-                .themedForeground(.primary)
-                .padding(.horizontal, Space.s4)
-                .padding(.top, Space.s4)
-                .padding(.bottom, Space.s2)
+            HStack(spacing: Space.s2) {
+                Text(LocalizedStringResource("Needs Attention").inAppLocalized)
+                    .vaultType(.headline)
+                    .themedForeground(.primary)
+                // The count as a badge, toned like the most severe row below it.
+                VaultCountBadge(count: attentionItems.count,
+                                tint: env.theme.active.color(attentionBadgeTone.role))
+                Spacer(minLength: 0)
+            }
+            // VoiceOver keeps the spoken "Needs Attention (3)" form: a bare number
+            // read after the title says nothing about what it counts.
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(LocalizedStringResource("Needs Attention (\(attentionItems.count))").inAppLocalized))
+            .padding(.horizontal, Space.s4)
+            .padding(.top, Space.s4)
+            .padding(.bottom, Space.s2)
 
             ForEach(Array(attentionItems.enumerated()), id: \.element.id) { idx, item in
                 AttentionCell(
@@ -568,6 +578,18 @@ struct HomeScreen: View {
         .background(Color(rgb: env.theme.active.elevatedBackground))
         .vaultCornerRadius(Radius.lg)
         .elevation(.level1)
+    }
+
+    /// Tone for the section's count badge. `itemsNeedingAttention` is already ranked
+    /// worst-first, so the leading row's reason IS the section's severity — no need
+    /// to grade the whole list.
+    private var attentionBadgeTone: RotationTone {
+        guard let first = attentionItems.first else { return .warning }
+        let status = RotationStatus.evaluate(
+            rotateDays: first.rotateDays,
+            passwordChangedAt: first.passwordChangedAt,
+            createdAt: first.createdAt)
+        return RotationStatus.attentionReason(status: status, isWeak: first.hasWeakPassword)?.tone ?? .warning
     }
 
     /// The attention row's "Update" action. Every reason on that list is about the
