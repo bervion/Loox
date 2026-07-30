@@ -19,6 +19,10 @@ struct ItemAuditFindings {
     let findings: [QueuedFinding]
     /// When the audit that produced these findings finished.
     let completedAt: Date
+    /// Rule versions from that report — an Ignore records the version it was decided
+    /// under, so a later rule version resurfaces the finding instead of staying
+    /// silently dismissed.
+    var ruleVersions: [String: Int] = [:]
 
     static let none = ItemAuditFindings(findings: [], completedAt: .distantPast)
 
@@ -40,6 +44,7 @@ struct ItemAuditFindings {
             personaID: personaID, key: key)
         return ItemAuditFindings(
             findings: mine.filter { !hidden.contains($0.fingerprint) }.map(QueuedFinding.init),
-            completedAt: payload.completedAt)
+            completedAt: payload.completedAt,
+            ruleVersions: payload.ruleVersions)
     }
 }

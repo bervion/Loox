@@ -486,7 +486,8 @@ struct ItemDetailScreen: View {
                 ItemAttentionBanner(item: item,
                                     auditFindings: auditFindings,
                                     onUpdatePassword: passwordUpdateAction(for: item),
-                                    onEditItem: { editing = .edit(item) })
+                                    onEditItem: { editing = .edit(item) },
+                                    onIgnored: { auditFindings = ItemAuditFindings.load(itemID: itemID, env: env) })
             }
 
             HStack(spacing: Space.s3) {

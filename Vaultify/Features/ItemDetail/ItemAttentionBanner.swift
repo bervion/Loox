@@ -18,6 +18,8 @@ import SwiftUI
 /// wall DNA rule 7 forbids. The severity of the top warning colors the banner; the
 /// rest are listed inside.
 struct ItemAttentionBanner: View {
+    @Environment(AppEnvironment.self) private var env
+
     let item: VaultItem
     /// Findings from the last audit that name this item (already filtered to the
     /// user's open decisions). Empty when no audit has run — the live warnings below
@@ -29,6 +31,9 @@ struct ItemAttentionBanner: View {
     let onUpdatePassword: (() -> Void)?
     /// Opens the plain editor, where a verification code is added as a field.
     let onEditItem: () -> Void
+    /// Called after a warning is silenced, so the caller re-reads its audit findings
+    /// (an ignored fingerprint drops out of the next load).
+    let onIgnored: () -> Void
 
     var body: some View {
         if let top = warnings.first {
@@ -39,6 +44,8 @@ struct ItemAttentionBanner: View {
                 count: warnings.count,
                 actionLabel: actionLabel(for: top),
                 action: action(for: top),
+                secondaryLabel: LocalizedStringResource("Ignore").inAppLocalized,
+                secondaryAction: { ignore(top) },
                 detail: { detailStack }
             )
         }
@@ -71,9 +78,19 @@ struct ItemAttentionBanner: View {
         let title: LocalizedStringResource
         let detail: LocalizedStringResource
         let fix: Fix
+        /// Where the warning came from — decides where Ignore records the decision.
+        let source: Source
     }
 
     private enum Fix { case password, verificationCode, none }
+
+    private enum Source {
+        /// Live signal: silenced device-locally, keyed to the password it was about.
+        case live(kind: String)
+        /// Audit finding: silenced as a real `FindingStatus.ignored`, so Watchtower
+        /// stops listing it too.
+        case audit(QueuedFinding)
+    }
 
     /// Rule IDs the item detail speaks for. Everything else the audit finds
     /// (URL hygiene, duplicates, staleness) belongs to Watchtower's report, not on
@@ -101,29 +118,38 @@ struct ItemAttentionBanner: View {
         guard let reason = RotationStatus.attentionReason(status: rotationStatus,
                                                           isWeak: item.hasWeakPassword)
         else { return [] }
-        switch reason {
+        let warning: Warning = switch reason {
         case .weak:
-            return [Warning(
+            Warning(
                 id: "weak", rank: 1, variant: .error, icon: Icons.alert,
                 title: LocalizedStringResource("Weak password").inAppLocalized,
                 detail: LocalizedStringResource("This password is easy to guess. Generate a stronger one.").inAppLocalized,
-                fix: .password)]
+                fix: .password, source: .live(kind: "weak"))
         case .overdue:
-            return [Warning(
+            Warning(
                 id: "overdue", rank: 3, variant: .error, icon: Icons.clock,
                 title: LocalizedStringResource("Password change overdue").inAppLocalized,
-                detail: rotationStatus.label, fix: .password)]
+                detail: rotationStatus.label, fix: .password, source: .live(kind: "overdue"))
         case .soon:
-            return [Warning(
+            Warning(
                 id: "soon", rank: 4, variant: .warning, icon: Icons.clock,
                 title: LocalizedStringResource("Password change due soon").inAppLocalized,
-                detail: rotationStatus.label, fix: .password)]
+                detail: rotationStatus.label, fix: .password, source: .live(kind: "soon"))
         case .stale:
-            return [Warning(
+            Warning(
                 id: "stale", rank: 4, variant: .warning, icon: Icons.clock,
                 title: LocalizedStringResource("Password unchanged for a long time").inAppLocalized,
-                detail: rotationStatus.label, fix: .password)]
+                detail: rotationStatus.label, fix: .password, source: .live(kind: "stale"))
         }
+        return env.settings.isItemWarningDismissed(dismissKey(warning.id)) ? [] : [warning]
+    }
+
+    /// Dismissal identity for a live warning: the item, the kind, and the password
+    /// baseline the warning was about. A later password produces a different key, so
+    /// silencing one weak password never silences the next one.
+    private func dismissKey(_ kind: String) -> String {
+        let baseline = Int((item.passwordChangedAt ?? item.createdAt).timeIntervalSince1970)
+        return "\(item.id)|\(kind)|\(baseline)"
     }
 
     // MARK: Audit-derived warnings
@@ -160,7 +186,8 @@ struct ItemAttentionBanner: View {
             icon: icon(for: finding.ruleID),
             title: AuditFindingCopy.itemTitle(ruleID: finding.ruleID),
             detail: AuditFindingCopy.explanation(ruleID: finding.ruleID),
-            fix: finding.ruleID == "auth.totp-missing" ? .verificationCode : .password)
+            fix: finding.ruleID == "auth.totp-missing" ? .verificationCode : .password,
+            source: .audit(finding))
     }
 
     /// Interleaved with the live warnings' ranks: leak first, then a weak password,
@@ -215,5 +242,39 @@ struct ItemAttentionBanner: View {
         case .verificationCode: return onEditItem
         case .none: return nil
         }
+    }
+
+    // MARK: Ignore
+
+    /// Silence the warning the banner currently leads with. Ignoring the top one
+    /// reveals the next, so a credential with several problems is answered one
+    /// decision at a time rather than all of them by one tap.
+    private func ignore(_ warning: Warning) {
+        switch warning.source {
+        case .live(let kind):
+            env.settings.dismissItemWarning(dismissKey(kind))
+        case .audit(let finding):
+            ignoreAuditFinding(finding)
+        }
+        Haptics.tap()
+        onIgnored()
+    }
+
+    /// Records the decision where Watchtower already reads it, so an item ignored
+    /// here stops being listed there too. Rule version comes from the report that
+    /// produced the finding: a later rule version resurfaces it for a fresh look
+    /// (`AuditReportStore.effectiveStatus`).
+    private func ignoreAuditFinding(_ finding: QueuedFinding) {
+        guard let key = env.session.vaultKey else { return }
+        let record = AuditFinding(
+            ruleID: finding.ruleID,
+            ruleVersion: auditFindings.ruleVersions[finding.ruleID] ?? 1,
+            severity: finding.severity, category: .quality,
+            affectedItemIDs: finding.itemIDs, fingerprint: finding.fingerprint,
+            titleKey: "", detail: nil, remediation: .reviewItem,
+            estimatedFixSeconds: 0, detectedAt: .now)
+        try? AuditReportStore(store: env.store)
+            .setState(.ignored, reason: "ignored", for: record,
+                      personaID: env.repository.activePersona?.id, key: key)
     }
 }

@@ -202,6 +202,17 @@ extension VaultInfoBanner.Variant {
     /// where white would be unreadable. Derived per theme, never hardcoded.
     func onFill(_ theme: AppTheme) -> UInt32 { RGBMath.onAccent(fill(theme)) }
 
+    /// Surface for a quiet secondary chip sitting ON `fill` (the banner's Ignore).
+    ///
+    /// Stepped AWAY from the on-color, not toward it: lightening a red fill under
+    /// white text is the obvious-looking choice and measures 3.48:1, under the floor
+    /// its label needs. Deepening keeps the same chip legible at 6.2:1 — and it is
+    /// the idiom the tokens already use for `accentPress`.
+    func fillQuiet(_ theme: AppTheme) -> UInt32 {
+        let away: UInt32 = onFill(theme) == 0xFFFFFF ? 0x000000 : 0xFFFFFF
+        return RGBMath.blend(fill(theme), away, 0.18)
+    }
+
     var defaultIcon: String {
         switch self {
         case .info: return Icons.info

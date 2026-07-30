@@ -28,6 +28,10 @@ struct VaultExpandableBanner<Detail: View>: View {
     private let count: Int
     private let actionLabel: LocalizedStringResource?
     private let action: (() -> Void)?
+    /// The one quiet secondary (typically Ignore). Rule 7 caps the pair at a filled
+    /// primary plus this — a third button belongs in a menu, not here.
+    private let secondaryLabel: LocalizedStringResource?
+    private let secondaryAction: (() -> Void)?
     private let detail: Detail
 
     /// Collapsed by default: the title alone carries the warning, and a detail
@@ -37,8 +41,8 @@ struct VaultExpandableBanner<Detail: View>: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Width of the disclosure chevron column. The expanded copy indents by this
-    /// plus the header spacing so it lines up under the title, not under the chevron.
+    /// Disclosure chevron size. Small on purpose: the title carries the row, the
+    /// chevron only says the row opens.
     private let chevronSize: CGFloat = 13
 
     init(_ variant: VaultInfoBanner.Variant,
@@ -47,6 +51,8 @@ struct VaultExpandableBanner<Detail: View>: View {
          count: Int = 1,
          actionLabel: LocalizedStringResource? = nil,
          action: (() -> Void)? = nil,
+         secondaryLabel: LocalizedStringResource? = nil,
+         secondaryAction: (() -> Void)? = nil,
          @ViewBuilder detail: () -> Detail) {
         self.variant = variant
         self.icon = icon
@@ -54,6 +60,8 @@ struct VaultExpandableBanner<Detail: View>: View {
         self.count = count
         self.actionLabel = actionLabel
         self.action = action
+        self.secondaryLabel = secondaryLabel
+        self.secondaryAction = secondaryAction
         self.detail = detail()
     }
 
@@ -113,27 +121,46 @@ struct VaultExpandableBanner<Detail: View>: View {
                 .vaultType(.footnote)
                 .foregroundStyle(onFillColor)
                 .fixedSize(horizontal: false, vertical: true)
-            if let actionLabel, let action {
-                // A filled pill on the severity hue: the label carries the
-                // TEXT-rank status color (guarded for light surfaces), never the
-                // raw fill hue, which measures too low on its own light chip.
-                Button(action: action) {
-                    Text(actionLabel)
-                        .vaultType(.footnote).fontWeight(.semibold)
-                        .foregroundStyle(tintColor)
-                        .padding(.horizontal, Space.s3)
-                        .frame(minHeight: Metric.controlSmall)
-                        .background(Color(rgb: env.theme.active.background), in: Capsule())
-                        .contentShape(Capsule())
+            if actionLabel != nil || secondaryLabel != nil {
+                HStack(spacing: Space.s2) {
+                    if let actionLabel, let action {
+                        // Filled on the plain background, so its label carries the
+                        // TEXT-rank status color — never the raw fill hue, which
+                        // measures too low on its own light chip.
+                        button(actionLabel, action: action,
+                               fill: Color(rgb: env.theme.active.background),
+                               label: tintColor)
+                    }
+                    if let secondaryLabel, let secondaryAction {
+                        // Quieter by construction: the severity hue deepened a step, so
+                        // the chip belongs to the banner instead of competing with the
+                        // primary — and its label keeps the contrast a lighter chip loses.
+                        button(secondaryLabel, action: secondaryAction,
+                               fill: Color(rgb: variant.fillQuiet(env.theme.active)),
+                               label: onFillColor)
+                    }
                 }
-                .buttonStyle(.plain)
             }
         }
-        // Indent past the chevron column so the sentences start under the title.
-        .padding(.leading, chevronSize + Space.s3 + Space.s3)
-        .padding(.trailing, Space.s3)
+        // Flush with the chevron's leading edge, not indented under the title: the
+        // sentences are the banner's body, not a continuation of its heading.
+        .padding(.horizontal, Space.s3)
         .padding(.bottom, Space.s3)
         .transition(.opacity)
+    }
+
+    private func button(_ label: LocalizedStringResource, action: @escaping () -> Void,
+                        fill: Color, label labelColor: Color) -> some View {
+        Button(action: action) {
+            Text(label)
+                .vaultType(.footnote).fontWeight(.semibold)
+                .foregroundStyle(labelColor)
+                .padding(.horizontal, Space.s4)
+                .frame(minHeight: Metric.controlSmall)
+                .background(fill, in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     /// VoiceOver reads severity, then title, then how many findings are folded in;

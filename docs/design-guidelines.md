@@ -497,8 +497,12 @@ Notices (banners):
     fill is darkened by the minimum that lets white clear **4.5:1** (a banner carries sentences,
     so the 3:1 a two-word button label gets is not enough; the raw Day red measures 3.91), and a
     hue too light for that budget (dark-mode yellow, the mono accent) keeps its color and takes
-    the dark on-color instead. The action pill sits on `background`, so its label uses the
-    TEXT-rank token, not the fill hue.
+    the dark on-color instead. Expanded copy sits flush with the chevron, not indented under the
+    title.
+  - Buttons on a painted banner: primary is `background`-filled with a TEXT-rank label; the one
+    quiet secondary uses `Variant.fillQuiet` — the hue stepped AWAY from its on-color. Lightening
+    a red fill under white text looks right and measures 3.48:1; deepening it keeps 6.2:1. Both
+    are `Radius.sm` rounded rects at `Metric.controlSmall`.
 - Toolbar overflow ("…") is chrome, not an accent action: render it at `.iconPrimary`.
 
 ## Home Screen Notes From Current Screenshot

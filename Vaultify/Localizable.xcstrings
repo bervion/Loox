@@ -10105,6 +10105,22 @@
         }
       }
     },
+    "Ignore": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無視"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ qua"
+          }
+        }
+      }
+    },
     "Ignore this finding": {
       "localizations": {
         "ja": {
