@@ -30,6 +30,21 @@ nonisolated enum AuditFindingCopy {
         return base.inAppLocalized
     }
 
+    /// Title for ONE item's copy of a finding (the item detail warning banner).
+    /// `title(ruleID:)` is a report heading and speaks in groups ("Reused
+    /// passwords"); on a single item that reads as someone else's summary.
+    /// Rules with no item-scoped wording fall back to the report heading.
+    static func itemTitle(ruleID: String) -> LocalizedStringResource {
+        let base: LocalizedStringResource? = switch ruleID {
+        case "exposure.leaked": "Password found in a known leak"
+        case "reuse.exact": "Password reused on other items"
+        case "auth.totp-missing": "Verification code available"
+        default: nil
+        }
+        guard let base else { return title(ruleID: ruleID) }
+        return base.inAppLocalized
+    }
+
     static func explanation(ruleID: String) -> LocalizedStringResource {
         let base: LocalizedStringResource = switch ruleID {
         case "exposure.leaked":

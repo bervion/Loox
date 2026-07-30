@@ -42,6 +42,15 @@ struct ItemDetailScreen: View {
     /// True once the password row has scrolled past the top of the viewport —
     /// drives the T3 bottom "Copy Password" cluster's fade-in.
     @State private var passwordFieldOffscreen = false
+    /// Set by the attention banner's "Update password": the editor opens with the
+    /// generator already up, so replacing the password is the first thing offered.
+    /// A separate binding from `editing` on purpose — the plain Edit entry must not
+    /// inherit the generator.
+    @State private var passwordUpdateTarget: VaultItem?
+    /// This item's findings from the last saved audit (leak / reuse / 2FA available),
+    /// loaded once per visit and re-read after an edit. Offline: the report is read
+    /// from the store, never re-run, so opening an item makes no network request.
+    @State private var auditFindings: ItemAuditFindings = .none
 
     /// Message-style alert bindings, lifted out of `body` so the long modifier
     /// chain stays within the Swift type-checker's budget (a stable-Xcode build
@@ -86,6 +95,15 @@ struct ItemDetailScreen: View {
         env.repository.markUsed(item)
     }
 
+    /// The attention banner's action, or nil when there is no password this screen
+    /// may hand the generator: an item without a password field has nothing to
+    /// rotate, and an extra-protected one is sealed ciphertext the generator must
+    /// never overwrite (the reveal gate owns that field).
+    private func passwordUpdateAction(for item: VaultItem) -> (() -> Void)? {
+        guard let field = item.passwordField, !field.isExtraProtected else { return nil }
+        return { passwordUpdateTarget = item }
+    }
+
     private func folder(for item: VaultItem) -> Folder? {
         item.folderId.flatMap { id in env.repository.folders.first { $0.id == id } }
     }
@@ -124,9 +142,21 @@ struct ItemDetailScreen: View {
     var body: some View {
         ScrollView {
             if let item {
-                VStack(spacing: 18) {
+                // Space.s6 between sections: the fields card, tags, passkeys, sharing
+                // and metadata each read as their own block instead of one dense stack.
+                VStack(spacing: Space.s6) {
                     header(item)
                     if item.sharedOrigin != nil { sharedBadge }
+                    // Password warnings for an owned, live item: one expandable
+                    // banner, collapsed, above the fields it talks about. A trashed
+                    // item has nothing to rotate, and a shared projection is not
+                    // ours to advise on.
+                    if item.sharedOrigin == nil, !item.isTrashed {
+                        ItemAttentionBanner(item: item,
+                                            auditFindings: auditFindings,
+                                            onUpdatePassword: passwordUpdateAction(for: item),
+                                            onEditItem: { editing = .edit(item) })
+                    }
                     if item.sharedOrigin == nil {
                         fieldsCard(item)
                     } else {
@@ -259,7 +289,13 @@ struct ItemDetailScreen: View {
                                 }
                             } label: { Label { Text("Move to Trash") } icon: { VaultIcon(Icons.trash) } }
                         }
-                    } label: { VaultIcon(Icons.moreHorizontal, size: Metric.iconInline) }
+                    } label: {
+                        // Icon-rank primary (near-black in light, near-white in dark):
+                        // the overflow menu is chrome, not an accent action, and the
+                        // accent tint made it compete with Share beside it.
+                        VaultIcon(Icons.moreHorizontal, size: Metric.iconInline)
+                            .themedForeground(.iconPrimary)
+                    }
                         .accessibilityLabel(Text("More"))
                         .accessibilityIdentifier("item.detail.more")
                 }
@@ -269,12 +305,20 @@ struct ItemDetailScreen: View {
                         Button(role: .destructive) { requestLeave() } label: {
                             Label { Text("Leave Share") } icon: { VaultIcon(Icons.trash) }
                         }
-                    } label: { VaultIcon(Icons.moreHorizontal, size: Metric.iconInline) }
+                    } label: {
+                        VaultIcon(Icons.moreHorizontal, size: Metric.iconInline)
+                            .themedForeground(.iconPrimary)
+                    }
                         .accessibilityLabel(Text("More"))
                 }
             }
         }
         .sheet(item: $editing) { ItemEditorScreen(target: $0) }
+        // Anchored here, not on the banner: fixing the password removes the banner
+        // mid-dismiss, which would strand its sheet binding.
+        .sheet(item: $passwordUpdateTarget) {
+            ItemEditorScreen(target: .edit($0), autoOpenPasswordGenerator: true)
+        }
         .sheet(isPresented: $showLocatedIn) { LocatedInSheet(itemID: itemID) }
         .sheet(isPresented: $showShareAccess) { ShareAccessSheet(itemID: itemID) }
         .sheet(isPresented: $showQuickViewChooser) {
@@ -334,6 +378,11 @@ struct ItemDetailScreen: View {
         }
         .onAppear {
             if let item { AnalyticsEngine.shared.log(.itemViewed(item.category)) }
+            // Owned items only: a shared projection has no audit findings of ours,
+            // and the guard skips opening the sealed report for nothing.
+            if item?.sharedOrigin == nil {
+                auditFindings = ItemAuditFindings.load(itemID: itemID, env: env)
+            }
         }
         // The Extra Password unlock is scoped to THIS visit: leaving the item
         // reseals every level2 field, so coming back always asks again. Sheets

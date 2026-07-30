@@ -145,38 +145,53 @@ struct VaultInfoBanner: View {
         return label + Text(verbatim: ", ") + text.resolved
     }
 
-    private var severityLabel: LocalizedStringKey {
-        switch variant {
-        case .info: return "Information"
-        case .warning: return "Warning"
-        case .error: return "Important"
-        }
-    }
+    private var severityLabel: LocalizedStringKey { variant.severityLabel }
 
+    private var tintColor: Color { variant.tintColor(env.theme.active) }
+
+    private var softBackground: UInt32 { variant.softBackground(env.theme.active) }
+
+    private var defaultIcon: String { variant.defaultIcon }
+}
+
+// MARK: - Severity vocabulary
+
+/// The severity → color/glyph/label mapping, shared with `VaultExpandableBanner`
+/// so both banner shapes speak the same vocabulary (and the measured contrast
+/// contract above holds for both).
+extension VaultInfoBanner.Variant {
     /// TEXT-rank status color for the glyph and the action label.
-    private var tintColor: Color {
-        let theme = env.theme.active
-        switch variant {
+    func tintColor(_ theme: AppTheme) -> Color {
+        switch self {
         case .info: return Color(rgb: theme.accentText)
         case .warning: return Color(rgb: theme.warningText)
         case .error: return Color(rgb: theme.destructiveText)
         }
     }
 
-    private var softBackground: UInt32 {
-        let theme = env.theme.active
-        switch variant {
+    func softBackground(_ theme: AppTheme) -> UInt32 {
+        switch self {
         case .info: return theme.accentSoft
         case .warning: return theme.warningSoft
         case .error: return theme.destructiveSoft
         }
     }
 
-    private var defaultIcon: String {
-        switch variant {
+    var defaultIcon: String {
+        switch self {
         case .info: return Icons.info
         case .warning: return Icons.alert
         case .error: return Icons.closeCircle
+        }
+    }
+
+    /// Prefix VoiceOver reads before the copy, since the tint alone carries
+    /// severity visually.
+    var severityLabel: LocalizedStringKey {
+        switch self {
+        case .info: return "Information"
+        case .warning: return "Warning"
+        case .error: return "Important"
         }
     }
 }
