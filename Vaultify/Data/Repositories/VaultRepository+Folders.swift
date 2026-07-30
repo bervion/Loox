@@ -213,27 +213,8 @@ extension VaultRepository {
             .prefix(limit))
     }
 
-    /// Items needing attention, optionally scoped to a folder, capped at `limit`.
-    func itemsNeedingAttention(folder folderId: String?, limit: Int = 4) -> [VaultItem] {
-        let source: [VaultItem] = folderId == nil ? items : items.filter { $0.folderId == folderId }
-        typealias Ranked = (item: VaultItem, order: Int)
-        var ranked: [Ranked] = []
-        for item in source {
-            let status = RotationStatus.evaluate(
-                rotateDays: item.rotateDays,
-                passwordChangedAt: item.passwordChangedAt,
-                createdAt: item.createdAt)
-            let reason = RotationStatus.attentionReason(status: status, isWeak: item.hasWeakPassword)
-            switch reason {
-            case .overdue: ranked.append((item, 0))
-            case .weak:    ranked.append((item, 1))
-            case .soon:    ranked.append((item, 2))
-            case .stale:   ranked.append((item, 3))
-            case .none:    break
-            }
-        }
-        return ranked.sorted { $0.order < $1.order }.prefix(limit).map(\.item)
-    }
+    // Needs-Attention assembly moved to `HomeAttention.entries` (Home feature):
+    // it now also folds in reuse and leak signals the repository cannot know.
 
     // MARK: Category, lookup & search
 

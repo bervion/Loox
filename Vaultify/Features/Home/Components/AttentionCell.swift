@@ -5,6 +5,9 @@ import SwiftUI
 /// an "Update" button that opens the item editor on the password.
 struct AttentionCell: View {
     let item: VaultItem
+    /// Why this item is listed — computed by `HomeAttention` so the row, the
+    /// section badge, and the item detail banner never disagree.
+    let reason: HomeAttentionReason
     /// Runs the row's Update action — the caller decides whether that means the
     /// editor with the password generator up, or the plain editor.
     let onEdit: (VaultItem) -> Void
@@ -15,37 +18,29 @@ struct AttentionCell: View {
 
     @Environment(AppEnvironment.self) private var env
 
-    // Compute attention reason + rotation status once per render.
-    private var rotationStatus: RotationStatus {
-        RotationStatus.evaluate(
-            rotateDays: item.rotateDays,
-            passwordChangedAt: item.passwordChangedAt,
-            createdAt: item.createdAt)
-    }
-
-    private var reason: AttentionReason? {
-        RotationStatus.attentionReason(status: rotationStatus, isWeak: item.hasWeakPassword)
-    }
-
     private var reasonLabel: LocalizedStringResource {
         switch reason {
-        case .overdue: return rotationStatus.short
+        case .leaked: return LocalizedStringResource("Leaked password").inAppLocalized
         case .weak: return LocalizedStringResource("Weak password").inAppLocalized
-        case .soon: return rotationStatus.short
-        case .stale: return rotationStatus.short
-        case .none: return LocalizedStringResource("Check needed").inAppLocalized
+        case .reused: return LocalizedStringResource("Reused password").inAppLocalized
+        case .overdue, .soon, .stale:
+            // The rotation states own a precise, day-counted label.
+            return RotationStatus.evaluate(
+                rotateDays: item.rotateDays,
+                passwordChangedAt: item.passwordChangedAt,
+                createdAt: item.createdAt).short
         }
     }
 
     private var reasonIcon: String {
         switch reason {
-        case .overdue, .weak: return Icons.alert
-        case .soon, .stale: return Icons.clock
-        case .none: return Icons.alert
+        case .leaked, .weak: return Icons.alert
+        case .reused: return Icons.orderRepeat
+        case .overdue, .soon, .stale: return Icons.clock
         }
     }
 
-    private var tone: RotationTone { reason?.tone ?? .warning }
+    private var tone: RotationTone { reason.tone }
 
     private var toneColor: Color { env.theme.active.color(tone.role) }
 

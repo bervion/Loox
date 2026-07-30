@@ -11139,6 +11139,22 @@
         }
       }
     },
+    "Leaked password": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "漏洩したパスワード"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mật khẩu bị lộ"
+          }
+        }
+      }
+    },
     "Learn more about %@": {
       "localizations": {
         "ja": {
@@ -17793,6 +17809,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cô lập việc dùng lại"
+          }
+        }
+      }
+    },
+    "Reused password": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使い回しのパスワード"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mật khẩu dùng chung"
           }
         }
       }
