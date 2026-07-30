@@ -19,6 +19,19 @@ enum ThemeRole {
     case destructive, onDestructive, success, warning
 }
 
+extension RotationTone {
+    /// The theme role a rotation / attention tone paints with. `RotationTone` is
+    /// pure core logic and knows nothing about themes; this is the single place the
+    /// two vocabularies meet, so every surface showing a tone agrees on its color.
+    var role: ThemeRole {
+        switch self {
+        case .destructive: return .destructive
+        case .warning: return .warning
+        case .neutral: return .secondary
+        }
+    }
+}
+
 extension View {
     /// Apply a semantic foreground color from the active theme.
     func themedForeground(_ role: ThemeRole = .primary) -> some View {

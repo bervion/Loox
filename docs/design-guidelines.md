@@ -478,6 +478,33 @@ Buttons:
 - Destructive action uses semantic destructive tokens.
 - Icon-only buttons require labels for accessibility.
 
+Notices (banners):
+
+- `VaultInfoBanner(.info/.warning/.error)` — the always-open tinted notice. Use when the whole
+  message must be read (a degraded state, a blocked feature, a shared-item explainer).
+- `VaultExpandableBanner` — same severity vocabulary, PAINTED not tinted, collapsed to a single
+  44pt bar until tapped, with the explanation and ONE action behind the disclosure. Use where a
+  warning must be impossible to slide past: the item detail warning (`ItemAttentionBanner`)
+  leads with the most severe finding, shows a count when it speaks for several, and keeps the
+  sentences plus the fix a tap away.
+- ONE banner per screen state, never a stack: three cards with three actions is the button wall
+  rule 7 forbids. Rank the findings, lead with the top one, list the rest inside.
+- Surfaces differ by shape, and each has its own text contract:
+  - `VaultInfoBanner` — soft severity fill, PRIMARY-rank copy, TEXT-rank status token
+    (`accentText` / `warningText` / `destructiveText`) on the glyph and action label. Never the
+    FILL-rank hue on its own soft fill — it measures as low as 2.48:1.
+  - `VaultExpandableBanner` — solid `Variant.fill`, copy and glyphs in `Variant.onFill`. The
+    fill is darkened by the minimum that lets white clear **4.5:1** (a banner carries sentences,
+    so the 3:1 a two-word button label gets is not enough; the raw Day red measures 3.91), and a
+    hue too light for that budget (dark-mode yellow, the mono accent) keeps its color and takes
+    the dark on-color instead. Expanded copy sits flush with the chevron, not indented under the
+    title.
+  - Buttons on a painted banner: primary is `background`-filled with a TEXT-rank label; the one
+    quiet secondary uses `Variant.fillQuiet` — the hue stepped AWAY from its on-color. Lightening
+    a red fill under white text looks right and measures 3.48:1; deepening it keeps 6.2:1. Both
+    are `Radius.sm` rounded rects at `Metric.controlSmall`.
+- Toolbar overflow ("…") is chrome, not an accent action: render it at `.iconPrimary`.
+
 ## Home Screen Notes From Current Screenshot
 
 Observed problems to fix during UI standardization:
@@ -510,14 +537,22 @@ Rebuilt to DS spec with folder switcher, quick actions, TOTP quick-view, and "Ne
 - `TotpCardView` — TOTP display with 6-digit code + countdown ring.
 - `TotpRingView` — circular progress indicator for TOTP countdown.
 - `AttentionCell` — item row for "Needs attention" (rotation overdue/soon/stale, weak password).
+  Its trailing button reads **Update**: it opens the item editor with the password generator
+  already presented, so the fix is one confirmation. An item with no password, or one sealed
+  behind Extra Protection, opens the plain editor instead.
 
-**Sections** (from top):
-1. **Folder switcher** (header) — tap to navigate folders.
-2. **Quick actions** — Generator, Settings, ⋯ (configurable).
-3. **TOTP quick-view** — show next TOTP without entering detail screen.
-4. **"Needs attention"** — rotation reminders + weak passwords (from `RotationStatus`).
-5. **Favorites** — pinned + favorite items.
-6. **"All items"** — full list, pinned-first within each category.
+**Sections** (from top). Order and visibility are user-editable (`HomeSection` +
+`HomeLayoutEditor`); the list below is the DEFAULT, and a saved order always wins:
+1. **Profile row** — pinned, never hidden or reordered.
+2. **Quick actions** — Add · Security · Generate · 2FA (owner decision 260730: leads the default
+   order so the primary actions sit under the thumb on first glance).
+3. **Pending shares / approval alerts** — only when there is something waiting.
+4. **TOTP quick-view** — show next TOTP without entering detail screen.
+5. **"Needs attention"** — rotation reminders + weak passwords (from `RotationStatus`). The
+   section title lives INSIDE the card (same anatomy as the "All items" card), not as a grey
+   label above it.
+6. **Recently used**, **Favorites** — pinned + favorite items.
+7. **"All items"** — Space filter as the card's own title, newest first, pinned-first.
 
 **Retired:** `CustomizeHomeScreen`, `UtilitiesSection`, `homeShowRecentlyUsed/Modified` settings. Underlying data (`pinned`, `favorite`, `useCount`) retained.
 

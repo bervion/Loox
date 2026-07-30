@@ -145,38 +145,89 @@ struct VaultInfoBanner: View {
         return label + Text(verbatim: ", ") + text.resolved
     }
 
-    private var severityLabel: LocalizedStringKey {
-        switch variant {
-        case .info: return "Information"
-        case .warning: return "Warning"
-        case .error: return "Important"
-        }
-    }
+    private var severityLabel: LocalizedStringKey { variant.severityLabel }
 
+    private var tintColor: Color { variant.tintColor(env.theme.active) }
+
+    private var softBackground: UInt32 { variant.softBackground(env.theme.active) }
+
+    private var defaultIcon: String { variant.defaultIcon }
+}
+
+// MARK: - Severity vocabulary
+
+/// The severity → color/glyph/label mapping, shared with `VaultExpandableBanner`
+/// so both banner shapes speak the same vocabulary (and the measured contrast
+/// contract above holds for both).
+extension VaultInfoBanner.Variant {
     /// TEXT-rank status color for the glyph and the action label.
-    private var tintColor: Color {
-        let theme = env.theme.active
-        switch variant {
+    func tintColor(_ theme: AppTheme) -> Color {
+        switch self {
         case .info: return Color(rgb: theme.accentText)
         case .warning: return Color(rgb: theme.warningText)
         case .error: return Color(rgb: theme.destructiveText)
         }
     }
 
-    private var softBackground: UInt32 {
-        let theme = env.theme.active
-        switch variant {
+    func softBackground(_ theme: AppTheme) -> UInt32 {
+        switch self {
         case .info: return theme.accentSoft
         case .warning: return theme.warningSoft
         case .error: return theme.destructiveSoft
         }
     }
 
-    private var defaultIcon: String {
-        switch variant {
+    /// FILL-rank severity surface, for a banner that PAINTS the whole shape
+    /// (`VaultExpandableBanner`) instead of tinting it. Pair only with `onFill` —
+    /// the soft-fill text contract above does not apply here.
+    ///
+    /// Darkened by the minimum that lets white clear **4.5:1**, not the 3:1 a
+    /// filled control gets: a banner carries sentences, not a two-word button
+    /// label. The raw Day red (`#E5484D`) measures 3.91 against white, which is
+    /// why the tinted version read washed out and the plain one would read thin.
+    /// The budget matters as much as the floor — a genuinely light hue (dark-mode
+    /// yellow, the mono accent) exceeds it, keeps its color, and pairs with the
+    /// dark on-color rather than losing its identity.
+    func fill(_ theme: AppTheme) -> UInt32 {
+        let hue: UInt32 = switch self {
+        case .info: theme.accentFill
+        case .warning: theme.warning
+        case .error: theme.destructive
+        }
+        return RGBMath.controlFill(hue, floor: 4.5, maxDarken: 0.25)
+    }
+
+    /// Copy and glyph color on `fill`: white wherever it clears the control floor
+    /// (the iOS convention this banner is styled after), black on the light hues
+    /// where white would be unreadable. Derived per theme, never hardcoded.
+    func onFill(_ theme: AppTheme) -> UInt32 { RGBMath.onAccent(fill(theme)) }
+
+    /// Surface for a quiet secondary chip sitting ON `fill` (the banner's Ignore).
+    ///
+    /// Stepped AWAY from the on-color, not toward it: lightening a red fill under
+    /// white text is the obvious-looking choice and measures 3.48:1, under the floor
+    /// its label needs. Deepening keeps the same chip legible at 6.2:1 — and it is
+    /// the idiom the tokens already use for `accentPress`.
+    func fillQuiet(_ theme: AppTheme) -> UInt32 {
+        let away: UInt32 = onFill(theme) == 0xFFFFFF ? 0x000000 : 0xFFFFFF
+        return RGBMath.blend(fill(theme), away, 0.18)
+    }
+
+    var defaultIcon: String {
+        switch self {
         case .info: return Icons.info
         case .warning: return Icons.alert
         case .error: return Icons.closeCircle
+        }
+    }
+
+    /// Prefix VoiceOver reads before the copy, since the tint alone carries
+    /// severity visually.
+    var severityLabel: LocalizedStringKey {
+        switch self {
+        case .info: return "Information"
+        case .warning: return "Warning"
+        case .error: return "Important"
         }
     }
 }

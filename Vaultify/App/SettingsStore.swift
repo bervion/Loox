@@ -144,6 +144,29 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// Device-local; a hidden section is simply skipped when composing the Home feed.
     var homeHiddenSections: [String] { didSet { defaults.set(homeHiddenSections, forKey: Key.homeHiddenSections) } }
 
+    /// Live item warnings silenced from the item detail banner's Ignore button
+    /// (`ItemAttentionBanner`), as `"<itemID>|<kind>|<password baseline>"` keys.
+    ///
+    /// Device-local on purpose: this records a preference about being told, not vault
+    /// data. Findings that came from an audit are NOT stored here — those get the real
+    /// `FindingStatus.ignored` in the audit store, so Watchtower honors them too.
+    ///
+    /// The baseline is the password timestamp the warning was about, so a later
+    /// password brings the warning back: silencing one weak password must never
+    /// silence the next one.
+    var dismissedItemWarnings: [String] {
+        didSet { defaults.set(dismissedItemWarnings, forKey: Key.dismissedItemWarnings) }
+    }
+
+    func isItemWarningDismissed(_ key: String) -> Bool {
+        dismissedItemWarnings.contains(key)
+    }
+
+    func dismissItemWarning(_ key: String) {
+        guard !dismissedItemWarnings.contains(key) else { return }
+        dismissedItemWarnings.append(key)
+    }
+
     /// The remembered Home Space for an identity: a folderId, "" for an explicit
     /// "All Spaces" choice, or nil when the user never chose one.
     func lastSelectedSpace(persona: String) -> String? {
@@ -212,6 +235,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         activePersonaID = d.string(forKey: Key.activePersona)
         homeSectionOrder = d.stringArray(forKey: Key.homeSectionOrder) ?? []
         homeHiddenSections = d.stringArray(forKey: Key.homeHiddenSections) ?? []
+        dismissedItemWarnings = d.stringArray(forKey: Key.dismissedItemWarnings) ?? []
         preferredLanguage = d.string(forKey: Key.language) ?? "system"
         if mirrorToSharedConfig {
             SharedConfig.sharedDefaults.set(preferredLanguage, forKey: SharedConfig.languageKey)
@@ -278,6 +302,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let activePersona = "active_persona_id"
         static let homeSectionOrder = "home_section_order"
         static let homeHiddenSections = "home_hidden_sections"
+        static let dismissedItemWarnings = "dismissed_item_warnings"
         static let language = "preferred_language"
     }
 }

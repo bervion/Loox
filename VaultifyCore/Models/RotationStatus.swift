@@ -22,6 +22,16 @@ nonisolated enum AttentionReason: Sendable, Equatable {
     case weak
     case soon
     case stale
+
+    /// Severity language shared by every surface that shows this reason (the Home
+    /// rows, that section's count badge, the item detail banner): a weak or overdue
+    /// password is destructive, a cadence merely running out is a warning.
+    var tone: RotationTone {
+        switch self {
+        case .overdue, .weak: return .destructive
+        case .soon, .stale: return .warning
+        }
+    }
 }
 
 /// Pure, `nonisolated` value type carrying the derived rotation status and its

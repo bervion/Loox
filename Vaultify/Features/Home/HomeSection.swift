@@ -10,6 +10,10 @@ import SwiftUI
 /// MainActor-isolated (project default): its `icon` reads the MainActor `Icons` constants
 /// and it's only ever composed on the main thread by the Home views.
 enum HomeSection: String, CaseIterable, Identifiable, Sendable {
+    /// Leads the default layout, directly under the pinned profile row (owner
+    /// decision 260730). A saved order still wins — a user who moved the sections
+    /// themselves keeps their arrangement.
+    case quickActions
     case pendingShares
     case approvals
     case totp
@@ -17,7 +21,6 @@ enum HomeSection: String, CaseIterable, Identifiable, Sendable {
     case recentlyUsed
     case favorites
     case allItems
-    case quickActions
 
     var id: String { rawValue }
 

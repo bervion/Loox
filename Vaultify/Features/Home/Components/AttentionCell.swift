@@ -1,12 +1,14 @@
 import SwiftUI
 
-/// A single row in the "Cần chú ý" (Needs Attention) grouped list.
+/// A single row in the Needs Attention grouped list.
 /// Shows: favicon/category tile + item name + reason label (with tone icon) +
-/// "Đổi" button that opens the item editor.
+/// an "Update" button that opens the item editor on the password.
 struct AttentionCell: View {
     let item: VaultItem
+    /// Runs the row's Update action — the caller decides whether that means the
+    /// editor with the password generator up, or the plain editor.
     let onEdit: (VaultItem) -> Void
-    /// Tapping the row (outside the "Change" button) opens the item detail.
+    /// Tapping the row (outside the Update button) opens the item detail.
     let onOpen: (VaultItem) -> Void
     /// Controls the hairline divider between cells inside the grouped card.
     var showDivider: Bool = true
@@ -43,21 +45,9 @@ struct AttentionCell: View {
         }
     }
 
-    private var tone: RotationTone {
-        switch reason {
-        case .overdue, .weak: return .destructive
-        case .soon, .stale: return .warning
-        case .none: return .warning
-        }
-    }
+    private var tone: RotationTone { reason?.tone ?? .warning }
 
-    private var toneColor: Color {
-        switch tone {
-        case .destructive: return env.theme.active.color(.destructive)
-        case .warning: return env.theme.active.color(.warning)
-        case .neutral: return env.theme.active.color(.secondary)
-        }
-    }
+    private var toneColor: Color { env.theme.active.color(tone.role) }
 
     // Destructive reasons get a prominent primary button; others get secondary.
     private var isDestructiveTone: Bool { tone == .destructive }
@@ -89,13 +79,13 @@ struct AttentionCell: View {
 
             Spacer(minLength: Space.s2)
 
-            // "Đổi" action button — the visible capsule stays compact; an
+            // Update action button — the visible capsule stays compact; an
             // invisible frame pads the actual hit area to Metric.hitMin so a
             // near-miss opens Edit, not the row's own onOpen tap (below).
             Button {
                 onEdit(item)
             } label: {
-                Text("Change")
+                Text("Update")
                     .vaultType(.subhead)
                     .fontWeight(.medium)
                     .padding(.horizontal, Space.s3)
@@ -120,7 +110,7 @@ struct AttentionCell: View {
         .padding(.vertical, Space.s3)
         .frame(minHeight: Metric.rowHeight)
         .contentShape(.rect)
-        // Whole row opens detail; the "Change" button intercepts its own taps.
+        // Whole row opens detail; the Update button intercepts its own taps.
         .onTapGesture { onOpen(item) }
         .overlay(alignment: .bottom) {
             if showDivider {

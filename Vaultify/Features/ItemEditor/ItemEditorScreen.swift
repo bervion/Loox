@@ -9,6 +9,11 @@ struct ItemEditorScreen: View {
     /// Space to preselect for a new item (the caller's current Space context, e.g. the
     /// Space selected on Home). `nil` → fall back to the primary Space.
     let preselectedFolderId: String?
+    /// Open the password generator as soon as the editor is up. Set by the "Update
+    /// password" entries (Home's Needs Attention rows, the item detail warning
+    /// banner) where replacing the password IS the reason the editor opened — the
+    /// user still confirms the generated value and saves.
+    let autoOpenPasswordGenerator: Bool
     @Environment(AppEnvironment.self) private var env
     @Environment(UIStateStore.self) private var uiState
     @Environment(\.dismiss) private var dismiss
@@ -44,9 +49,12 @@ struct ItemEditorScreen: View {
     @State private var didUnlockExtraProtection = false
     @State private var blockedProtectedDelete = false
 
-    init(target: EditorTarget, preselectedFolderId: String? = nil) {
+    init(target: EditorTarget,
+         preselectedFolderId: String? = nil,
+         autoOpenPasswordGenerator: Bool = false) {
         self.target = target
         self.preselectedFolderId = preselectedFolderId
+        self.autoOpenPasswordGenerator = autoOpenPasswordGenerator
         let item: VaultItem
         switch target {
         case .new(let category):
@@ -232,8 +240,12 @@ struct ItemEditorScreen: View {
             }
             // Not `.onAppear`: the gate raises a prompt (a nested sheet, or the
             // system biometric sheet) and doing that mid-presentation of this
-            // editor is how nested sheets get dropped.
-            .task { requestExtraProtectionUnlock() }
+            // editor is how nested sheets get dropped. The generator request rides
+            // the same task for the same reason.
+            .task {
+                requestExtraProtectionUnlock()
+                presentPasswordGeneratorIfRequested()
+            }
             // Keep the restorable snapshot in sync so a kill mid-edit can resume this draft
             // (sealed under the Vault Key when the app backgrounds). Cleared on dismiss.
             .onChange(of: draft) { captureDraftForRestore() }
@@ -711,6 +723,21 @@ struct ItemEditorScreen: View {
                 showExtraProtectionPrompt = true
             }
         }
+    }
+
+    /// Raise the password generator on this item's password field for a caller that
+    /// opened the editor to replace it (`autoOpenPasswordGenerator`).
+    ///
+    /// Skipped whenever the Extra Protection gate is in play: that prompt is itself a
+    /// nested sheet, and presenting two at once drops one of them. An extra-protected
+    /// password is skipped outright — it is sealed ciphertext the generator must not
+    /// overwrite behind the reveal gate.
+    private func presentPasswordGeneratorIfRequested() {
+        guard autoOpenPasswordGenerator, generatingFieldID == nil,
+              !showExtraProtectionPrompt,
+              !(hasSealedLevel2Field && !env.session.isLevel2Unlocked),
+              let field = draft.passwordField, !field.isExtraProtected else { return }
+        generatingFieldID = field.id
     }
 
     /// Re-raise the gate from a locked row. Clears the once-per-visit latch first:

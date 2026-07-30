@@ -247,7 +247,10 @@ struct DetailFieldRow: View {
             }
         } label: {
             VaultIcon(Icons.moreHorizontal, size: 17)
-                .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.secondary))
+                // Icon-rank primary on the grey well: a row's overflow control should
+                // read as dark dots in a chip, not as another grey glyph among the
+                // secondary metadata beside it.
+                .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.iconPrimary))
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(copied ? VaultColors.copyFlashText.opacity(0.22) : VaultColors.fill))
                 // Invisible padded hit area: the visual circle stays 30pt, the
