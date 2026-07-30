@@ -30,6 +30,8 @@ struct WatchtowerStrengthBar: View {
     /// vanishing (exact counts live one tap deeper, on the strength screen).
     private static let minSliver: CGFloat = 10
     private static let barHeight: CGFloat = 14
+    /// Surface-colored ring around each segment (the 1P separation seam).
+    private static let seamWidth: CGFloat = 2
 
     /// (hue, cumulative fraction 0…1) from strongest to weakest, only for
     /// grades present in the vault.
@@ -61,9 +63,14 @@ struct WatchtowerStrengthBar: View {
 
                 // Weakest first (bottom), strongest last (top): each later
                 // capsule covers the one below up to its own cumulative edge.
+                // The seam ring is the CARD's surface color, so each capsule
+                // reads as its own piece with a breath of separation (the 1P
+                // white-border effect) in light and dark alike.
                 ForEach(Array(segments.enumerated().reversed()), id: \.offset) { index, segment in
                     Capsule()
                         .fill(Color(rgb: segment.hue))
+                        .overlay(Capsule().strokeBorder(
+                            Color(rgb: theme.elevatedBackground), lineWidth: Self.seamWidth))
                         .frame(width: segmentWidth(segment.cumulative, index: index,
                                                    of: segments, in: width))
                 }
@@ -125,7 +132,7 @@ struct WatchtowerStrengthCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack(spacing: Space.s2) {
-                Text("Overall password strength")
+                Text("Overall Password Strength")
                     .vaultType(.headline)
                     .themedForeground(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
