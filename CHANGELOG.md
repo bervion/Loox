@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.46.0] - 2026-07-30
+
+### Added
+- Quick Actions lên đầu Home, và banner cảnh báo cho từng item (#188)
+
+
 ## [1.45.1] - 2026-07-29
 
 ### Fixed

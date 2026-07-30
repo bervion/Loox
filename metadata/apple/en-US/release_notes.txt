@@ -1,1 +1,1 @@
-This update fixes an issue where shake-to-lock could turn off after moving between screens, so it now stays active wherever you go in the app.
+This update brings Quick Actions to the top of Home for faster access to your most-used tools. Items that need attention now show a clear warning banner, so you can spot and fix issues at a glance.

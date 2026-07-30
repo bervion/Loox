@@ -1,1 +1,1 @@
-Bản cập nhật này khắc phục lỗi lắc để khóa có thể tắt khi chuyển màn hình, giờ đây tính năng luôn hoạt động dù bạn đang ở đâu trong ứng dụng.
+Quick Actions giờ nằm ngay đầu trang Home, giúp bạn thao tác nhanh hơn. Các mục cần chú ý sẽ hiển thị banner cảnh báo rõ ràng, giúp bạn dễ dàng nhận biết và xử lý kịp thời.
