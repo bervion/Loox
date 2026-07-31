@@ -350,7 +350,7 @@ struct WatchtowerScreen: View {
         WatchtowerCategoryScreen(
             title: AuditFindingCopy.title(ruleID: ruleID),
             items: itemIDs.compactMap { itemsByID[$0] },
-            infoNote: LocalizedStringKey(String(localized: AuditFindingCopy.explanation(ruleID: ruleID))))
+            explanation: AuditFindingCopy.explanation(ruleID: ruleID))
     }
 
     // MARK: - Score ring + audit meta
