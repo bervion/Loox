@@ -1,22 +1,15 @@
 import SwiftUI
 
 /// A single item row used in the vault list, search results, and trash. Shows
-/// the website favicon (falling back to the category badge) and — when the item
-/// belongs to a Space — a small colored Space chip, so you can tell e.g. the
-/// "Work" GitHub from the "Personal" one at a glance. `showSpace` is off inside a
-/// single-Space view where the chip would be redundant.
+/// the website favicon (falling back to the category badge); the item's Space
+/// is deliberately NOT shown here — the detail screen states it, and the chip
+/// made every list read heavier for a fact rarely needed at a glance.
 struct VaultItemRow: View {
     let item: VaultItem
-    var showSpace = true
     /// Search query whose tokens are emphasized inside the title (search results
     /// only) — shows *why* a row matched. nil elsewhere.
     var highlight: String? = nil
     @Environment(AppEnvironment.self) private var env
-
-    private var folder: Folder? {
-        guard showSpace, let id = item.folderId else { return nil }
-        return env.repository.folders.first { $0.id == id }
-    }
 
     /// This item is owned here AND has an outgoing share that hasn't reached
     /// Active yet (design 12a "SHARING…" item badge). Recipient-side
@@ -53,13 +46,10 @@ struct VaultItemRow: View {
                 }
                 // Status metadata reads as its OWN line under the identity lines.
                 // The previous trailing placement with layoutPriority squeezed the
-                // TITLE down to a few characters whenever the Space name or the
-                // "SHARING" badge ran long — the row's payload lost to its metadata.
-                if folder != nil || item.sharedOrigin != nil || hasPendingShare {
+                // TITLE down to a few characters whenever the badge ran long —
+                // the row's payload lost to its metadata.
+                if item.sharedOrigin != nil || hasPendingShare {
                     HStack(spacing: Space.s2) {
-                        if let folder { spaceChip(folder) }
-                        // Recipient-side projection — read-only, lives in no
-                        // Space, so the chip slot is free for the "Shared" marker.
                         if item.sharedOrigin != nil {
                             sharedChip
                         } else if hasPendingShare {
@@ -140,15 +130,5 @@ struct VaultItemRow: View {
         }
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
         .background(Color(rgb: env.theme.active.warningSoft), in: Capsule())
-    }
-
-    private func spaceChip(_ folder: Folder) -> some View {
-        HStack(spacing: 4) {
-            Circle().fill(folder.color.tint).frame(width: 7, height: 7)
-            Text(folder.name).vaultType(.caption).themedForeground(.secondary)
-                .lineLimit(1).truncationMode(.tail)
-        }
-        .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
-        .background(VaultColors.fill, in: Capsule())
     }
 }

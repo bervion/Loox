@@ -69,7 +69,7 @@ struct FilteredItemsScreen: View {
         List {
             Section {
                 ForEach(items) {
-                    VaultItemRowLink(item: $0, showSpace: spaceId == nil, highlight: trimmed)
+                    VaultItemRowLink(item: $0, highlight: trimmed)
                 }
             } header: {
                 // The owning identity + Space, same line as the detail header —

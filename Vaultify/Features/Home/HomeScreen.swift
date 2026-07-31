@@ -941,7 +941,7 @@ struct HomeScreen: View {
         Button {
             openItem(item.id)
         } label: {
-            VaultItemRow(item: item, showSpace: selectedFolderId == nil)
+            VaultItemRow(item: item)
                 .padding(.horizontal, Space.s4)
                 .padding(.vertical, Space.s3)
                 .frame(minHeight: Metric.rowHeight)
