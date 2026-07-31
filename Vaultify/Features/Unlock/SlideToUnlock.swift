@@ -32,11 +32,14 @@ struct SlideToUnlock: View {
                     .opacity(1 - progress * 1.4)
 
                 // Sliding knob (accent fill + arrow — a deliberate action control).
+                // Ring in the on-accent color, like the arrow: it reads as a
+                // highlight edge on the knob. `primaryText` here was a near-black
+                // outline in light mode — heavy against the soft track.
                 ZStack {
                     Circle()
                         .fill(Color(rgb: theme.accentFill))
                         .overlay {
-                            Circle().stroke(Color(rgb: theme.primaryText), lineWidth: 2)
+                            Circle().stroke(Color(rgb: theme.accentForeground), lineWidth: 2)
                         }
                     VaultIcon(Icons.arrowRight, size: 20)
                         .foregroundStyle(Color(rgb: theme.accentForeground))
