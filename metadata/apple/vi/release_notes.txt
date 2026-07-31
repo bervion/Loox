@@ -1,1 +1,1 @@
-Giờ đây bạn có thể xem nhanh mức độ an toàn của cả kho mật khẩu qua thước đo Watchtower mới. Những mật khẩu cần chú ý, như bị lộ trong rò rỉ dữ liệu hoặc dùng trùng ở nhiều nơi, sẽ được đánh dấu rõ ràng để bạn xử lý kịp thời.
+Watchtower được thiết kế lại với đồng hồ bảo mật rõ ràng hơn, tự động làm mới và trải nghiệm mượt mà hơn. Chúng tôi cũng khắc phục các lỗi liên quan đến banner để cảnh báo luôn chính xác và dễ đọc.

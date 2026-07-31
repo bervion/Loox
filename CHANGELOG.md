@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.48.0] - 2026-07-31
+
+### Added
+- 1P-style gauge redesign, auto-refresh, flow and banner fixes (#190)
+
+
 ## [1.47.0] - 2026-07-30
 
 ### Added

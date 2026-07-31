@@ -1,1 +1,1 @@
-See your vault's overall security health at a glance with the new Watchtower gauge. Passwords that need attention, such as those exposed in breaches or reused across accounts, are now clearly flagged so you can fix them quickly.
+Watchtower is redesigned with a clearer security gauge, automatic refresh, and smoother flow. We also fixed related banner issues so your alerts stay accurate and easy to read.
