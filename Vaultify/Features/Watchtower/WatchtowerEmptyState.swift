@@ -66,14 +66,14 @@ struct WatchtowerPendingRing: View {
                 Circle()
                     .trim(from: 0, to: 0.75)
                     .rotation(.degrees(135))
-                    .stroke(track, style: StrokeStyle(lineWidth: 26, lineCap: .round))
-                    .frame(width: 196, height: 196)
+                    .stroke(track, style: StrokeStyle(lineWidth: 30, lineCap: .round))
+                    .frame(width: 212, height: 212)
                 Text(verbatim: "—")
                     .vaultType(.largeTitle)
                     .themedForeground(.tertiary)
             }
             // 270° gauge leaves a bottom gap; pull the caption up into it.
-            .frame(height: 176, alignment: .top)
+            .frame(height: 190, alignment: .top)
 
             Text("Not checked yet")
                 .vaultType(.footnote)

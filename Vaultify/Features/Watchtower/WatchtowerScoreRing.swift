@@ -10,33 +10,45 @@ nonisolated struct ScoreBand {
 
 // MARK: - Gauge display hues
 
-/// Vivid display green for the Watchtower gauge band and strength bar
-/// (1Password-reference hue). The semantic `.success` token is tuned for TEXT
-/// contrast (a deep teal-green in light mode) and reads heavy and off-hue on a
-/// wide decorative band, so the display layer pulls it 60% toward a vivid pure
-/// green. Text/icons keep using the token — this is band paint only.
-nonisolated func watchtowerGaugeGreen(_ theme: AppTheme) -> UInt32 {
-    RGBMath.blend(theme.success, 0x2DB616, 0.60)
+/// Fixed display palette for the Watchtower gauge band and strength bar,
+/// sampled from the 1Password reference. The semantic status tokens are tuned
+/// for TEXT contrast (a deep teal-green, a dark amber) and read heavy on a wide
+/// decorative band, so the band paint uses these vivid hues directly — the same
+/// exact colors in every theme and appearance. Text/icons keep the tokens.
+nonisolated enum WatchtowerPalette {
+    static let deepGreen: UInt32 = 0x3E8E27
+    static let green: UInt32     = 0x52C13C
+    static let yellow: UInt32    = 0xF5D22B
+    static let orange: UInt32    = 0xF79E1F
+    static let red: UInt32       = 0xE94E2B
+    /// The gauge's cool endpoint: the band drifts toward this sky blue over its
+    /// last stretch (the 1P tail gradient), scaled by how safe the score is.
+    static let skyTail: UInt32   = 0x5BBDEE
+    /// Mid ramp of the safety morph, between yellow and orange.
+    static let amber: UInt32     = 0xF5B322
 }
 
-/// Vivid display amber for the gauge's mid ramp — same rationale as
-/// `watchtowerGaugeGreen`: the `.warning` token is a dark text amber.
+/// Display green for the gauge band and strength-bar track (band paint only).
+nonisolated func watchtowerGaugeGreen(_ theme: AppTheme) -> UInt32 {
+    WatchtowerPalette.green
+}
+
+/// Display amber for the gauge's mid ramp — same band-paint layer.
 nonisolated func watchtowerGaugeAmber(_ theme: AppTheme) -> UInt32 {
-    RGBMath.blend(theme.warning, 0xF5A623, 0.55)
+    WatchtowerPalette.amber
 }
 
 /// Display hue for one strength grade on the Watchtower strength bar — the same
 /// decorative band-paint layer as `watchtowerGaugeGreen/Amber` (text keeps the
-/// semantic tokens). Five stops of the 1P ramp: deep green, green, amber,
-/// orange, red — all derived from the active theme's status hues so every
-/// theme keeps its own temperature.
+/// semantic tokens). Five stops of the 1P ramp: deep green, green, yellow,
+/// orange, red.
 nonisolated func watchtowerGradeHue(_ grade: PasswordGrade, theme: AppTheme) -> UInt32 {
     switch grade {
-    case .excellent: return RGBMath.blend(watchtowerGaugeGreen(theme), 0x000000, 0.30)
-    case .strong: return watchtowerGaugeGreen(theme)
-    case .fair: return watchtowerGaugeAmber(theme)
-    case .weak: return RGBMath.blend(watchtowerGaugeAmber(theme), theme.destructive, 0.45)
-    case .veryWeak: return theme.destructive
+    case .excellent: return WatchtowerPalette.deepGreen
+    case .strong: return WatchtowerPalette.green
+    case .fair: return WatchtowerPalette.yellow
+    case .weak: return WatchtowerPalette.orange
+    case .veryWeak: return WatchtowerPalette.red
     }
 }
 
@@ -93,14 +105,14 @@ struct WatchtowerScoreRing: View {
 
     // MARK: Geometry (proportional — scaled by GeometryReader)
     private enum Geo {
-        static let baseWidth: CGFloat  = 260
-        static let baseHeight: CGFloat = 218
-        static let cx: CGFloat = baseWidth / 2     // 130
+        static let baseWidth: CGFloat  = 272
+        static let baseHeight: CGFloat = 230
+        static let cx: CGFloat = baseWidth / 2     // 136
         /// Must keep the band's outer edge (cy − radius − bandWidth/2) ≥ 1pt
         /// inside the canvas or the arc apex gets clipped flat.
-        static let cy: CGFloat = 118
-        static let radius: CGFloat = 104
-        static let bandWidth: CGFloat = 26
+        static let cy: CGFloat = 124
+        static let radius: CGFloat = 106
+        static let bandWidth: CGFloat = 30
         static let startDeg: CGFloat = 135
         static let sweepDeg: CGFloat = 270
         /// Ticks tile the FULL disc (they rotate through the window). 28 divides
@@ -295,9 +307,9 @@ struct WatchtowerScoreRing: View {
         Canvas { ctx, _ in
             drawTrack(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, theme: theme)
             drawBand(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, base: base,
-                     fraction: f, spin: spin, alpha: igniteAmount(p), theme: theme)
+                     fraction: f, spin: spin, alpha: igniteAmount(p))
             drawTicks(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, scale: scale,
-                      base: base, spin: spin, alpha: igniteAmount(p))
+                      base: base, fraction: f, spin: spin, alpha: igniteAmount(p))
             drawMarker(ctx: ctx, cx: cx, cy: cy, r: r, bw: bw, scale: scale,
                        progress: markerProgress(p),
                        color: Color(rgb: safetyRGB(targetFraction, theme: theme)))
@@ -323,56 +335,78 @@ struct WatchtowerScoreRing: View {
                    style: StrokeStyle(lineWidth: bw, lineCap: .round))
     }
 
+    /// Band hue at window position `t` (0 = start cap, 1 = end cap): a darker
+    /// head eases into the base hue, a plateau carries it, and the last stretch
+    /// drifts toward the sky-blue endpoint — the 1P tail gradient. The drift is
+    /// scaled by `fraction` so a risky red dial never turns partly blue.
+    private func bandRGB(at t: CGFloat, base: UInt32, fraction: CGFloat) -> UInt32 {
+        let head = RGBMath.blend(base, 0x000000, 0.16)
+        switch t {
+        case ..<0.35:
+            return RGBMath.blend(head, base, Double(easeInOut(t / 0.35)))
+        case ..<0.72:
+            return base
+        default:
+            let drift = Double(clamp01((t - 0.72) / 0.28) * fraction)
+            return RGBMath.blend(base, WatchtowerPalette.skyTail, drift)
+        }
+    }
+
     /// Full-length coloured band: hue = safety blend for `fraction`. The fill is
     /// a conic gradient painted on the ROTATING DISC (offset by `spin`), so its
-    /// darker head and accent-tinted tail sweep through the window while the
+    /// darker head and sky-tinted tail sweep through the window while the
     /// flywheel spins — the multi-tone "disc" look. `alpha` runs the grey→colour
     /// ignition. The stops wrap continuously so no seam shows at any rotation.
     private func drawBand(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
                           r: CGFloat, bw: CGFloat, base: UInt32,
-                          fraction: CGFloat, spin: CGFloat, alpha: CGFloat,
-                          theme: AppTheme) {
+                          fraction: CGFloat, spin: CGFloat, alpha: CGFloat) {
         guard alpha > 0.001 else { return }
-        let head = RGBMath.blend(base, 0x000000, 0.10)
-        let tail = RGBMath.blend(base, theme.accent, 0.30 * Double(fraction))
-        // At rest the window spans locations 0…0.75 of the conic turn: head at
-        // the start cap, base on top, tail at the end cap; 0.75→1 blends the
-        // tail back to the head across the hidden gap (seamless while spinning).
-        let gradient = Gradient(stops: [
-            .init(color: Color(rgb: head), location: 0),
-            .init(color: Color(rgb: base), location: 0.42),
-            .init(color: Color(rgb: tail), location: 0.75),
-            .init(color: Color(rgb: head), location: 1),
-        ])
+        // The window spans locations 0…0.75 of the conic turn; sample the band
+        // curve at fixed window positions (extra stop at 0.87 keeps the tail's
+        // curve from flattening into one linear blend); 0.75→1 blends the tail
+        // back to the head across the hidden gap (seamless while spinning).
+        let stops = [0, 0.35, 0.72, 0.87, 1].map { (t: CGFloat) in
+            Gradient.Stop(color: Color(rgb: bandRGB(at: t, base: base, fraction: fraction)),
+                          location: t * 0.75)
+        } + [Gradient.Stop(color: Color(rgb: bandRGB(at: 0, base: base, fraction: fraction)),
+                           location: 1)]
         var layer = ctx
         layer.opacity = Double(alpha)
         layer.stroke(arcPath(cx: cx, cy: cy, r: r),
-                     with: .conicGradient(gradient,
+                     with: .conicGradient(Gradient(stops: stops),
                                           center: CGPoint(x: cx, y: cy),
                                           angle: .degrees(Double(Geo.startDeg + spin))),
                      style: StrokeStyle(lineWidth: bw, lineCap: .round))
     }
 
-    /// Scale ticks drawn ON the band in a darker shade of its current hue
-    /// (1P-style). They belong to the rotating disc: uniform around the full
-    /// circle, offset by `spin`, and clipped to the 270° window as they sweep
-    /// through it. Long/short alternation makes the rotation legible.
+    /// Scale ticks drawn ON the band, CENTERED on its midline (1P-style), in a
+    /// darker shade of the band hue beneath them. They belong to the rotating
+    /// disc: uniform around the full circle, offset by `spin`, and clipped to
+    /// the 270° window as they sweep through it. Long/short alternation makes
+    /// the rotation legible.
     private func drawTicks(ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
                            r: CGFloat, bw: CGFloat, scale: CGFloat,
-                           base: UInt32, spin: CGFloat, alpha: CGFloat) {
+                           base: UInt32, fraction: CGFloat, spin: CGFloat, alpha: CGFloat) {
         guard alpha > 0.001 else { return }
-        let tickColor = Color(rgb: RGBMath.blend(base, 0x000000, 0.30))
-            .opacity(0.85 * Double(alpha))
-        let innerR = r - bw / 2 + 3 * scale
         let spacing = 360 / CGFloat(Geo.discTickCount)
         for i in 0..<Geo.discTickCount {
             // Normalize the tick's disc angle into [0, 360) past the window start.
             var offset = (spacing * CGFloat(i) + spin).truncatingRemainder(dividingBy: 360)
             if offset < 0 { offset += 360 }
             guard offset <= Geo.sweepDeg + 0.5 else { continue } // outside the window
+            // The tick and the gradient rotate together, so its band position is
+            // its REST angle (spin cancels out) — the colour under it is stable.
+            var discDeg = (spacing * CGFloat(i)).truncatingRemainder(dividingBy: 360)
+            if discDeg < 0 { discDeg += 360 }
+            let bandPos = min(1, discDeg / Geo.sweepDeg)
+            let tickColor = Color(rgb: RGBMath.blend(
+                bandRGB(at: bandPos, base: base, fraction: fraction), 0x000000, 0.30))
+                .opacity(0.85 * Double(alpha))
             let deg = Geo.startDeg + offset
             let isMajor = i % 2 == 0
-            let outerR = innerR + bw * (isMajor ? 0.58 : 0.38)
+            let len = bw * (isMajor ? 0.52 : 0.34)
+            let innerR = r - len / 2
+            let outerR = r + len / 2
             let rad = deg * .pi / 180
             var path = Path()
             path.move(to: CGPoint(x: cx + innerR * cos(rad), y: cy + innerR * sin(rad)))
@@ -425,7 +459,7 @@ struct WatchtowerScoreRing: View {
             // Display-size figure centered on the dial's center (1P proportions):
             // the spacer puts the number's vertical middle on `cy`, which drops
             // the status line to the arc's lower opening.
-            Spacer().frame(height: cy - 34 * scale)
+            Spacer().frame(height: cy - 38 * scale)
             // SF (not vaultCode): the score is a headline figure, not a secret;
             // monospacedDigit keeps the odometer roll from jittering sideways.
             Text("\(displayedScore)")
@@ -455,7 +489,7 @@ struct WatchtowerScoreRing: View {
             }
             .textCase(.uppercase)
             .animation(Motion.standard, value: settled)
-            .padding(.top, 4 * scale)
+            .padding(.top, 12 * scale)
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -463,14 +497,13 @@ struct WatchtowerScoreRing: View {
 
     // MARK: - Colour + easing
 
-    /// Safety colour for a fraction: destructive (0) → warning (0.5) → success (1),
-    /// anchored on the ACTIVE THEME's semantic roles so the morph follows the
-    /// theme across appearances — see `watchtowerGaugeAmber/Green` for why the
-    /// warm endpoints are pulled toward vivid display hues.
+    /// Safety colour for a fraction: red (0) → amber (0.5) → green (1), on the
+    /// fixed `WatchtowerPalette` display hues — the same ramp the strength bar's
+    /// grades use, so the dial and the bar always speak one palette.
     private func safetyRGB(_ f: CGFloat, theme: AppTheme) -> UInt32 {
         let t = Double(max(0, min(1, f)))
         if t < 0.5 {
-            return RGBMath.blend(theme.destructive, watchtowerGaugeAmber(theme), t / 0.5)
+            return RGBMath.blend(WatchtowerPalette.red, watchtowerGaugeAmber(theme), t / 0.5)
         } else {
             return RGBMath.blend(watchtowerGaugeAmber(theme), watchtowerGaugeGreen(theme), (t - 0.5) / 0.5)
         }

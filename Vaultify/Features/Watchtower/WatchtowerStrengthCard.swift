@@ -28,9 +28,9 @@ struct WatchtowerStrengthBar: View {
     /// Every present segment keeps at least this much visible past the previous
     /// one — a grade with 2 items out of 200 still reads as a sliver instead of
     /// vanishing (exact counts live one tap deeper, on the strength screen).
-    private static let minSliver: CGFloat = 10
-    private static let barHeight: CGFloat = 14
-    /// Surface-colored ring around each segment (the 1P separation seam).
+    private static let minSliver: CGFloat = 12
+    private static let barHeight: CGFloat = 18
+    /// Surface-colored gap between segments (the 1P separation seam).
     private static let seamWidth: CGFloat = 2
 
     /// (hue, cumulative fraction 0…1) from strongest to weakest, only for
@@ -63,14 +63,22 @@ struct WatchtowerStrengthBar: View {
 
                 // Weakest first (bottom), strongest last (top): each later
                 // capsule covers the one below up to its own cumulative edge.
-                // The seam ring is the CARD's surface color, so each capsule
-                // reads as its own piece with a breath of separation (the 1P
-                // white-border effect) in light and dark alike.
+                // The seam is a CARD-colored capsule painted UNDER the colour,
+                // proud of it at the trailing cap only — a full-height crescent
+                // gap where one segment ends over the next (the 1P white-gap
+                // effect). Painted under, not stroked over: an inner stroke's
+                // outer edge antialiases against the saturated capsule beneath,
+                // which read as a grey shadow on the white card. The widest
+                // (weakest) capsule ends at the bar's own edge and carries no
+                // seam — there is nothing beneath it to separate from.
                 ForEach(Array(segments.enumerated().reversed()), id: \.offset) { index, segment in
+                    let seam = index < segments.count - 1 ? Self.seamWidth : 0
                     Capsule()
-                        .fill(Color(rgb: segment.hue))
-                        .overlay(Capsule().strokeBorder(
-                            Color(rgb: theme.elevatedBackground), lineWidth: Self.seamWidth))
+                        .fill(Color(rgb: theme.elevatedBackground))
+                        .overlay {
+                            Capsule().fill(Color(rgb: segment.hue))
+                                .padding(.trailing, seam)
+                        }
                         .frame(width: segmentWidth(segment.cumulative, index: index,
                                                    of: segments, in: width))
                 }
