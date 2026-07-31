@@ -51,13 +51,15 @@ struct ItemAttentionBanner: View {
         }
     }
 
-    /// One line per warning. A single warning needs no title repeated from the
-    /// banner header, so it renders as the sentence alone.
+    /// One line per warning. The LEAD warning's title is already the banner
+    /// header, so its sentence renders alone — repeating it directly under the
+    /// header read as a doubled title. Only the trailing warnings, whose titles
+    /// appear nowhere else, carry theirs.
     private var detailStack: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             ForEach(warnings) { warning in
                 VStack(alignment: .leading, spacing: 2) {
-                    if warnings.count > 1 {
+                    if warning.id != warnings.first?.id {
                         Text(warning.title).fontWeight(.semibold)
                     }
                     Text(warning.detail)
@@ -82,7 +84,7 @@ struct ItemAttentionBanner: View {
         let source: Source
     }
 
-    private enum Fix { case password, verificationCode, none }
+    private enum Fix { case password, verificationCode, details, none }
 
     private enum Source {
         /// Live signal: silenced device-locally, keyed to the password it was about.
@@ -96,10 +98,37 @@ struct ItemAttentionBanner: View {
     /// (URL hygiene, duplicates, staleness) belongs to Watchtower's report, not on
     /// top of the fields the user came here to use. `quality.weak` is deliberately
     /// absent: the live weak-password warning below says the same thing without
-    /// needing an audit to have run.
+    /// needing an audit to have run. Missing details IS here: the Watchtower
+    /// group lands the user on this screen, which must then name the gap.
     private static let surfacedRuleIDs: Set<String> = [
         "exposure.leaked", "reuse.exact", "auth.totp-missing",
+        "maintenance.missing-metadata",
     ]
+
+    // MARK: Missing-details gaps (live mirrors of `MissingMetadataRule`)
+
+    /// No URL field carries a value — same read as the rule's `rawURLs` check,
+    /// recomputed live so filling the field clears the warning immediately.
+    private var missingURL: Bool {
+        item.fields.filter { $0.kind == .url }.allSatisfy(\.isEmpty)
+    }
+
+    private var missingUsername: Bool {
+        item.fields.filter { $0.kind == .username || $0.kind == .email }.allSatisfy(\.isEmpty)
+    }
+
+    /// Names the CURRENT gap, not the audited one — the finding only says
+    /// "details missing", and stating which field is what makes it actionable.
+    private var missingDetailsTitle: LocalizedStringResource {
+        let base: LocalizedStringResource = if missingURL && missingUsername {
+            "Website and username not saved"
+        } else if missingURL {
+            "Website not saved"
+        } else {
+            "Username not saved"
+        }
+        return base.inAppLocalized
+    }
 
     private var warnings: [Warning] {
         (localWarnings + auditWarnings).sorted { $0.rank < $1.rank }
@@ -173,20 +202,34 @@ struct ItemAttentionBanner: View {
             // the audit ran was never the one that was checked.
             guard let password = item.passwordField?.value, !password.isEmpty else { return false }
             return (item.passwordChangedAt ?? item.createdAt) <= auditFindings.completedAt
+        case "maintenance.missing-metadata":
+            // The verdict is about gaps in the SAVED fields: recompute from the
+            // live item, so filling in the website or username clears it here
+            // without waiting for the next audit.
+            return item.category == .login
+                && item.passwordField?.value.isEmpty == false
+                && (missingURL || missingUsername)
         default:
             return true
         }
     }
 
     private func warning(for finding: QueuedFinding) -> Warning {
-        Warning(
+        let fix: Fix = switch finding.ruleID {
+        case "auth.totp-missing": .verificationCode
+        case "maintenance.missing-metadata": .details
+        default: .password
+        }
+        return Warning(
             id: finding.fingerprint,
             rank: rank(for: finding),
             variant: variant(for: finding),
             icon: icon(for: finding.ruleID),
-            title: AuditFindingCopy.itemTitle(ruleID: finding.ruleID),
+            title: finding.ruleID == "maintenance.missing-metadata"
+                ? missingDetailsTitle
+                : AuditFindingCopy.itemTitle(ruleID: finding.ruleID),
             detail: AuditFindingCopy.explanation(ruleID: finding.ruleID),
-            fix: finding.ruleID == "auth.totp-missing" ? .verificationCode : .password,
+            fix: fix,
             source: .audit(finding))
     }
 
@@ -198,7 +241,9 @@ struct ItemAttentionBanner: View {
         case "exposure.leaked": return 0
         case "reuse.exact": return 2
         case "auth.totp-missing": return 5
-        default: return 6
+        // Hygiene, not danger: always after the security warnings.
+        case "maintenance.missing-metadata": return 6
+        default: return 7
         }
     }
 
@@ -206,8 +251,9 @@ struct ItemAttentionBanner: View {
         switch finding.ruleID {
         case "exposure.leaked": return .error
         case "reuse.exact": return finding.severity >= .high ? .error : .warning
-        // An available verification code is an opportunity, not a fault: info tone.
-        case "auth.totp-missing": return .info
+        // An available verification code is an opportunity, not a fault: info
+        // tone — and missing details degrade AutoFill, not security.
+        case "auth.totp-missing", "maintenance.missing-metadata": return .info
         default: return .warning
         }
     }
@@ -217,6 +263,7 @@ struct ItemAttentionBanner: View {
         case "exposure.leaked": return Icons.alert
         case "reuse.exact": return Icons.orderRepeat
         case "auth.totp-missing": return Icons.clock
+        case "maintenance.missing-metadata": return Icons.info
         default: return Icons.alert
         }
     }
@@ -231,6 +278,8 @@ struct ItemAttentionBanner: View {
                 : LocalizedStringResource("Update password").inAppLocalized
         case .verificationCode:
             return LocalizedStringResource("Add a verification code").inAppLocalized
+        case .details:
+            return LocalizedStringResource("Add the missing details").inAppLocalized
         case .none:
             return nil
         }
@@ -239,7 +288,7 @@ struct ItemAttentionBanner: View {
     private func action(for warning: Warning) -> (() -> Void)? {
         switch warning.fix {
         case .password: return onUpdatePassword
-        case .verificationCode: return onEditItem
+        case .verificationCode, .details: return onEditItem
         case .none: return nil
         }
     }

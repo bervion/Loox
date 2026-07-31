@@ -43,7 +43,7 @@ nonisolated enum VaultType {
 
     var font: Font {
         switch self {
-        case .scoreDisplay: return .system(size: 52, weight: .bold)
+        case .scoreDisplay: return .system(size: 58, weight: .bold)
         case .largeTitle:   return .system(.largeTitle).weight(.bold)
         case .screenTitle:  return .system(.title2).weight(.bold)
         case .section:      return .system(.title3).weight(.semibold)

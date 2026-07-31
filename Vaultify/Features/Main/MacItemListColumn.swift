@@ -20,7 +20,7 @@ struct MacItemListColumn: View {
             } else {
                 List(selection: $selection) {
                     ForEach(items) { item in
-                        VaultItemRow(item: item, showSpace: true)
+                        VaultItemRow(item: item)
                             .tag(item.id)
                             .contextMenu {
                                 Button { try? env.repository.toggleFavorite(item) } label: {

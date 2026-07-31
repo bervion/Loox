@@ -2,11 +2,9 @@ import SwiftUI
 
 /// A vault item row wrapped in a `NavigationLink` to its detail, with the
 /// standard trailing-trash / leading-favorite swipe actions. Shared by Home's
-/// filtered lists, the All Items browse, and search results. `showSpace` is
-/// passed through to `VaultItemRow` (off inside a single-Space view).
+/// filtered lists, the All Items browse, and search results.
 struct VaultItemRowLink: View {
     let item: VaultItem
-    var showSpace = true
     /// Search query forwarded to `VaultItemRow` for match highlighting.
     var highlight: String? = nil
     @Environment(AppEnvironment.self) private var env
@@ -23,7 +21,7 @@ struct VaultItemRowLink: View {
     private var isSharedProjection: Bool { item.sharedOrigin != nil }
 
     var body: some View {
-        NavigationLink(value: item.id) { VaultItemRow(item: item, showSpace: showSpace, highlight: highlight) }
+        NavigationLink(value: item.id) { VaultItemRow(item: item, highlight: highlight) }
             // Deferred zoom (Design DNA #5): no-op unless the enclosing stack injected
             // `\.vaultZoomNamespace` (currently Search) — matches `ZoomTransitionDestination`
             // in `vaultNavigationDestinations()` by `item.id`.

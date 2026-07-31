@@ -57,6 +57,15 @@ struct WatchtowerScreen: View {
 
     private var personaID: String? { env.repository.activePersona?.id }
 
+    /// Cheap change signal for the active persona's items: an edit bumps
+    /// `updatedAt`, an add or delete changes the count. Drives the refresh
+    /// `onChange` without comparing full item contents every render.
+    private var itemsRevision: String {
+        let items = env.repository.activePersonaItems
+        let latestEdit = items.map(\.updatedAt).max() ?? .distantPast
+        return "\(items.count)|\(latestEdit.timeIntervalSince1970)"
+    }
+
     private func startTourIfScoreIsShowing() {
         guard !emptyVault, latestPayload != nil else { return }
         env.tutorial.startIfNeeded(.watchtower)
@@ -115,7 +124,7 @@ struct WatchtowerScreen: View {
                         ringSection
                         contentSection
                     }
-                    .padding(.bottom, Space.s10)
+                    .padding(.bottom, TabBarMetric.contentBottomInset)
                 }
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
@@ -187,8 +196,15 @@ struct WatchtowerScreen: View {
             // also arms when the score arrives — it explains that number, and
             // pointing at a ring that says "not checked yet" explains nothing.
             .onChange(of: latestPayload?.score) { startTourIfScoreIsShowing() }
-            .onChange(of: env.repository.items.count) {
-                health = PasswordAudit.analyze(env.repository.activePersonaItems)
+            // Any item change — an edit (fixed password), an add, a delete —
+            // refreshes the live health AND re-arms the auto-audit, so the
+            // score and the finding groups catch up without a manual run.
+            // Count alone missed edits: fixing a weak password left this
+            // screen stating the old verdict until the user re-ran the audit.
+            .onChange(of: itemsRevision) {
+                didAutoAudit = false
+                reload()
+                autoAuditIfStale()
             }
             // A completed run IS a data moment: refresh the payload + replay intro,
             // then push the next periodic reminder out from this fresh audit.
@@ -228,22 +244,28 @@ struct WatchtowerScreen: View {
 
     // MARK: - Periodic auto-audit
 
-    /// The audit is stale when the vault has items and either was never audited
-    /// or the last audit is older than the reminder cadence.
+    /// The audit is stale when the vault has items and either was never audited,
+    /// the last audit is older than the reminder cadence, or any item changed
+    /// after it completed — a fixed password makes the saved findings a stale
+    /// snapshot that must not keep stating the old verdict.
     private var auditIsStale: Bool {
         guard !emptyVault else { return false }
         guard let completedAt = latestPayload?.completedAt else { return true }
-        return Date.now.timeIntervalSince(completedAt) >= AuditReminder.cadence
+        if Date.now.timeIntervalSince(completedAt) >= AuditReminder.cadence { return true }
+        let latestEdit = env.repository.activePersonaItems.map(\.updatedAt).max() ?? .distantPast
+        return latestEdit > completedAt
     }
 
     /// Run an audit unprompted when the user opens Security and the vault is due,
     /// so the score stays current without them remembering to tap the button.
-    /// Guarded to run once per appearance, only while unlocked and idle.
+    /// Guarded to run once per appearance (re-armed by an item change), only
+    /// while unlocked and no run is in flight — `.finished` is a valid start
+    /// state, or the run that just completed would block every later refresh.
     private func autoAuditIfStale() {
         guard !didAutoAudit,
               env.session.vaultKey != nil,
-              controller.phase == .idle,
               auditIsStale else { return }
+        if case .running = controller.phase { return }
         didAutoAudit = true
         controller.start(env: env)
     }
@@ -325,15 +347,10 @@ struct WatchtowerScreen: View {
         } ?? []
         let itemsByID = Dictionary(uniqueKeysWithValues: env.repository.activePersonaItems
             .map { ($0.id, $0) })
-        let issues = itemIDs.compactMap { itemsByID[$0] }.map { item in
-            VaultIssue(itemID: item.id,
-                       itemTitle: item.title.isEmpty ? appString("Untitled") : item.title,
-                       category: item.category, kind: .weak, detail: nil)
-        }
         WatchtowerCategoryScreen(
             title: AuditFindingCopy.title(ruleID: ruleID),
-            issues: issues,
-            infoNote: LocalizedStringKey(String(localized: AuditFindingCopy.explanation(ruleID: ruleID))))
+            items: itemIDs.compactMap { itemsByID[$0] },
+            explanation: AuditFindingCopy.explanation(ruleID: ruleID))
     }
 
     // MARK: - Score ring + audit meta
@@ -387,10 +404,12 @@ struct WatchtowerScreen: View {
     }
 
     /// The paragraph under the ring: meaning → action → audit meta, as full
-    /// localized sentences joined into running text.
+    /// localized sentences joined into running text. Deliberately short — the
+    /// factor list (strength, reuse, leaks, 2FA) lives one tap in, on Why
+    /// this score.
     private var scoreDescription: String {
         var sentences = [
-            appString("Your score is an overall read of how safe your vault is, based on password strength, reuse, known leaks, and two-factor coverage."),
+            appString("Your score is an overall read of how safe your vault is."),
             appString("Fix the flagged items below to raise it."),
         ]
         if let latestPayload {
@@ -461,15 +480,18 @@ struct WatchtowerScreen: View {
             if let sections, !sections.isEmpty {
                 if !sections.actNow.isEmpty {
                     AuditGroupSectionView(title: LocalizedStringResource("Act now").inAppLocalized,
-                                          rows: sections.actNow, tintRole: .destructive)
+                                          rows: sections.actNow, tintRole: .destructive,
+                                          open: openCategory)
                 }
                 if !sections.improve.isEmpty {
                     AuditGroupSectionView(title: LocalizedStringResource("Improve").inAppLocalized,
-                                          rows: sections.improve, tintRole: .warning)
+                                          rows: sections.improve, tintRole: .warning,
+                                          open: openCategory)
                 }
                 if !sections.maintain.isEmpty {
                     AuditGroupSectionView(title: LocalizedStringResource("Maintain").inAppLocalized,
-                                          rows: sections.maintain, tintRole: .accent)
+                                          rows: sections.maintain, tintRole: .accent,
+                                          open: openCategory)
                 }
             } else if sections != nil {
                 allClearView

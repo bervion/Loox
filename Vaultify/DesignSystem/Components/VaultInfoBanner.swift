@@ -6,14 +6,13 @@ import SwiftUI
 /// or reversible state, `.error` marks a state the user has to resolve before
 /// the feature works again.
 ///
-/// Contrast contract (why body copy is PRIMARY rank, not secondary): measured
-/// across the 4 themes x 7 accents, secondary text on the soft tint fills lands
-/// between 1.77:1 (day / mono) and 8.04:1, failing the 4.5:1 floor on 22 of 28
-/// accent combinations and the 3:1 large-text floor on 15 of them. Primary text
-/// clears 4.5:1 on every combination (worst case 5.56:1, night-tinted / mono).
-/// The leading glyph and the action label use the TEXT-rank status tokens
-/// (`accentText` / `warningText` / `destructiveText`), never the FILL-rank hue,
-/// which measures as low as 2.48:1 on its own soft fill.
+/// The surface PAINTS the severity hue solid and sets its copy in the
+/// WCAG-derived on-color (`onFill`), matching its expandable sibling
+/// (`VaultExpandableBanner`, the item detail's password warnings) — one banner
+/// language everywhere. The earlier soft-tint treatment washed out against a
+/// white card, and a notice the eye slides past is a notice that does not work.
+/// `fill` darkens each hue just enough for the on-color to clear 4.5:1 (body
+/// sentences, not a button label), so the pairing holds on every theme.
 ///
 /// Feature banners (e.g. `CapabilityBannerView`) keep their own content logic
 /// and render through this surface rather than re-drawing the anatomy.
@@ -99,25 +98,33 @@ struct VaultInfoBanner: View {
             // 1pt optical nudge: the glyph's cap height sits above the first
             // text baseline without it (VaultIcon is already a11y-hidden).
             VaultIcon(icon ?? defaultIcon, size: Metric.iconCompact)
-                .foregroundStyle(tintColor)
+                .foregroundStyle(onFillColor)
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: Space.s1) {
                 copyStack
                 if let actionLabel, let action {
+                    // Same chip the expandable banner uses: filled with the
+                    // plain background, label in the TEXT-rank status color —
+                    // never the raw fill hue, which measures too low on its
+                    // own light chip.
                     Button(action: action) {
                         Text(actionLabel)
                             .vaultType(.footnote).fontWeight(.semibold)
                             .foregroundStyle(tintColor)
-                            .frame(minHeight: Metric.hitMin, alignment: .leading)
-                            .contentShape(Rectangle())
+                            .padding(.horizontal, Space.s4)
+                            .frame(minHeight: Metric.controlSmall)
+                            .background(Color(rgb: env.theme.active.background),
+                                        in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                            .contentShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .padding(.top, Space.s1)
                 }
             }
         }
         .padding(Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(rgb: softBackground))
+        .background(Color(rgb: variant.fill(env.theme.active)))
         .vaultCornerRadius(Radius.md)
     }
 
@@ -128,11 +135,11 @@ struct VaultInfoBanner: View {
             if let title {
                 title.resolved
                     .vaultType(.subhead).fontWeight(.semibold)
-                    .themedForeground(.primary)
+                    .foregroundStyle(onFillColor)
             }
             text.resolved
                 .vaultType(.footnote)
-                .themedForeground(.primary)
+                .foregroundStyle(onFillColor)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -147,9 +154,12 @@ struct VaultInfoBanner: View {
 
     private var severityLabel: LocalizedStringKey { variant.severityLabel }
 
+    /// TEXT-rank status color — only for the action chip, which sits on the
+    /// plain background rather than the severity fill.
     private var tintColor: Color { variant.tintColor(env.theme.active) }
 
-    private var softBackground: UInt32 { variant.softBackground(env.theme.active) }
+    /// Copy and glyphs on the painted surface.
+    private var onFillColor: Color { Color(rgb: variant.onFill(env.theme.active)) }
 
     private var defaultIcon: String { variant.defaultIcon }
 }
@@ -169,17 +179,8 @@ extension VaultInfoBanner.Variant {
         }
     }
 
-    func softBackground(_ theme: AppTheme) -> UInt32 {
-        switch self {
-        case .info: return theme.accentSoft
-        case .warning: return theme.warningSoft
-        case .error: return theme.destructiveSoft
-        }
-    }
-
-    /// FILL-rank severity surface, for a banner that PAINTS the whole shape
-    /// (`VaultExpandableBanner`) instead of tinting it. Pair only with `onFill` —
-    /// the soft-fill text contract above does not apply here.
+    /// FILL-rank severity surface: both banner shapes PAINT the whole surface
+    /// with this hue. Pair only with `onFill`.
     ///
     /// Darkened by the minimum that lets white clear **4.5:1**, not the 3:1 a
     /// filled control gets: a banner carries sentences, not a two-word button

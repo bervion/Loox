@@ -77,6 +77,8 @@ nonisolated enum AuditFindingCopy {
             "The saved website address could not be read as a valid link."
         case "maintenance.stale":
             "This item has not been reviewed in years. A quick check keeps it trustworthy."
+        case "maintenance.missing-metadata":
+            "AutoFill matches logins to apps and sites by the website address, and the username tells similar accounts apart. Add the missing details so this login fills reliably."
         default:
             "This item could use a quick review."
         }
