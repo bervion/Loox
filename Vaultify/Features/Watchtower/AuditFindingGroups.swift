@@ -80,12 +80,17 @@ nonisolated struct AuditGroupSections: Sendable {
 
 // MARK: - Section view
 
-/// One titled group of finding rows in the Security overview.
+/// One titled group of finding rows in the Security overview. Rows open through
+/// the host's `open` (→ `openCategory`), so compact iOS gets the navigator's
+/// native full-screen slide — a `NavigationLink` here took the old SwiftUI
+/// tab-bar-hiding path, the one flow on this tab that ducked the bar in place
+/// instead of sliding over it.
 struct AuditGroupSectionView: View {
     @Environment(AppEnvironment.self) private var env
     let title: LocalizedStringResource
     let rows: [AuditGroupRow]
     let tintRole: ThemeRole
+    let open: (WatchtowerCategory) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -98,7 +103,7 @@ struct AuditGroupSectionView: View {
             ThemedCard(cornerRadius: Radius.lg, padding: 0) {
                 VStack(spacing: 0) {
                     ForEach(rows) { row in
-                        NavigationLink(value: WatchtowerCategory.findingGroup(row.ruleID)) {
+                        Button { open(.findingGroup(row.ruleID)) } label: {
                             // No subtitle: the count badge already carries the
                             // number — a "3 items" line under it says it twice.
                             CategoryRow(icon: Self.icon(for: row.ruleID),

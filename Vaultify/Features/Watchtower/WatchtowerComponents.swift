@@ -115,25 +115,3 @@ struct CountBadge: View {
             .background(tint.opacity(0.14), in: Capsule())
     }
 }
-
-// MARK: - WatchtowerIssueRow
-
-/// A row representing a flagged item in a Watchtower category drill-down list.
-struct WatchtowerIssueRow: View {
-    let issue: VaultIssue
-
-    var body: some View {
-        HStack(spacing: Space.s3) {
-            CategoryBadge(category: issue.category, size: 34)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(issue.itemTitle).vaultType(.body).lineLimit(1)
-                if let detail = issue.detail {
-                    Text(detail).vaultType(.footnote).themedForeground(.secondary)
-                }
-            }
-            Spacer(minLength: 8)
-            VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
-        }
-        .contentShape(.rect)
-    }
-}

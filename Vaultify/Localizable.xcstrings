@@ -26955,18 +26955,18 @@
         }
       }
     },
-    "Your score is an overall read of how safe your vault is, based on password strength, reuse, known leaks, and two-factor coverage.": {
+    "Your score is an overall read of how safe your vault is.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "スコアは、パスワードの強度、使い回し、既知の漏洩、二要素認証の適用状況に基づいて、保管庫全体の安全度を示します。"
+            "value": "スコアは保管庫全体の安全度を示します。"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Điểm số cho biết mức an toàn tổng thể của kho, dựa trên độ mạnh mật khẩu, mật khẩu dùng chung, rò rỉ đã biết và mức bảo vệ hai lớp."
+            "value": "Điểm số cho biết mức an toàn tổng thể của kho."
           }
         }
       }

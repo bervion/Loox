@@ -1,10 +1,13 @@
 import SwiftUI
 
-/// Drill-down list for a single Watchtower issue category (compromised / reused /
-/// weak / missing 2FA). Each row taps through to the item's detail screen.
+/// Drill-down list for a single Watchtower finding group (compromised / reused /
+/// weak / missing details). Rows are the app's ONE vault item row
+/// (`VaultItemRowLink`: favicon, title, subtitle, swipe actions, push to
+/// detail) — a bespoke row here drifted immediately (its own chevron on top of
+/// the List disclosure, no favicon, no Space chip).
 struct WatchtowerCategoryScreen: View {
     let title: LocalizedStringResource
-    let issues: [VaultIssue]
+    let items: [VaultItem]
     /// Privacy/context note pinned above the list (e.g. the k-anonymity
     /// explanation on the breach category). nil for categories without one.
     var infoNote: LocalizedStringKey? = nil
@@ -17,11 +20,10 @@ struct WatchtowerCategoryScreen: View {
                         .inList()
                 }
             }
-            ForEach(issues) { issue in
-                NavigationLink(value: issue.itemID) {
-                    WatchtowerIssueRow(issue: issue)
+            Section {
+                ForEach(items) { item in
+                    VaultItemRowLink(item: item)
                 }
-                .listRowBackground(VaultColors.surface)
             }
         }
         .scrollContentBackground(.hidden)

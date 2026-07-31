@@ -84,7 +84,9 @@ struct WatchtowerStrengthScreen: View {
         .navigationTitle(Text("Overall password strength"))
         .platformNavigationBarTitleDisplayMode(.inline)
         .task { refresh() }
-        .onChange(of: env.repository.items.count) { refresh() }
+        // Full items, not the count: fixing a password from the To fix list
+        // below must re-grade this screen when the user pops back to it.
+        .onChange(of: env.repository.items) { refresh() }
     }
 
     private func distributionRow(_ tier: PasswordStrength, count: Int) -> some View {
