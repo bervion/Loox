@@ -28,7 +28,8 @@ struct FilteredItemsScreen: View {
     /// Live narrowing — seeded from the spec, adjustable in the toolbar menu.
     @State private var spaceId: String?
     @State private var query: String
-    @State private var sort: VaultSort = .updated
+    @State private var sort = VaultSort()
+    @State private var category: ItemCategory?
 
     init(filter: ItemFilter) {
         self.filter = filter
@@ -51,6 +52,9 @@ struct FilteredItemsScreen: View {
             let ids = env.repository.passkeyItemIDs(in: pool)
             pool = pool.filter { ids.contains($0.id) }
         }
+        if let category {
+            pool = pool.filter { $0.category == category }
+        }
         if !trimmed.isEmpty {
             // Same contract as the repository's free-text search: every token
             // must match the item's (lowercased) searchable text.
@@ -62,24 +66,22 @@ struct FilteredItemsScreen: View {
 
     private var title: String {
         if filter.passkeysOnly { return appString("Passkeys") }
-        return folder?.name ?? appString("All Items")
+        return folder?.displayName ?? appString("All Items")
     }
 
     var body: some View {
         List {
-            Section {
-                ForEach(items) {
-                    VaultItemRowLink(item: $0, highlight: trimmed)
-                }
-            } header: {
-                // The owning identity + Space, same line as the detail header —
-                // "whose Space am I browsing" without repeating it on every row.
-                if let folder {
+            // The owning identity + Space, same line as the detail header —
+            // "whose Space am I browsing" without repeating it on every row.
+            // Header-only section so it stays above the month-year sections.
+            if let folder {
+                Section {} header: {
                     SpaceIdentityLine(folder: folder)
                         .textCase(nil)
                         .padding(.bottom, Space.s1)
                 }
             }
+            VaultItemSections(items: items, sort: sort, highlight: trimmed)
         }
         .platformInsetGroupedListStyle()
         .themedFormBackground()
@@ -91,22 +93,18 @@ struct FilteredItemsScreen: View {
         .platformAutocapitalization(.never)
         .toolbar {
             ToolbarItem(placement: .platformPrimaryAction) {
-                Menu {
-                    Picker("Sort", selection: $sort) {
-                        ForEach(VaultSort.allCases) { Text($0.label).tag($0) }
-                    }
+                VaultSortFilterMenu(sort: $sort, category: $category) {
                     if env.repository.activePersonaSpaces.count > 1 || spaceId != nil {
                         // "Spaces", NOT "Space" — that key doubles as the password
                         // generator's separator option ("Dấu cách" in VI).
                         Picker("Spaces", selection: $spaceId) {
                             Text("All Spaces").tag(String?.none)
                             ForEach(env.repository.activePersonaSpaces) { space in
-                                Text(verbatim: space.name).tag(String?.some(space.id))
+                                Text(verbatim: space.displayName).tag(String?.some(space.id))
                             }
                         }
                     }
-                } label: { VaultIcon(Icons.sort, size: 22) }
-                    .accessibilityLabel(Text("Filter"))
+                }
             }
         }
         .overlay {

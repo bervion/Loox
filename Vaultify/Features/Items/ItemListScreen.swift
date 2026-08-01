@@ -1,17 +1,18 @@
 import SwiftUI
 
 /// A filtered item list for one category (reached from the Items tab). Items are
-/// reactive from the repository; sortable; with an empty-state.
+/// reactive from the repository; sortable; with an empty-state. No category
+/// filter here — the category IS the screen.
 struct ItemListScreen: View {
     @Environment(AppEnvironment.self) private var env
     let category: ItemCategory
-    @State private var sort: VaultSort = .updated
+    @State private var sort = VaultSort()
 
     private var items: [VaultItem] { sort.apply(env.repository.items(ofCategory: category)) }
 
     var body: some View {
         List {
-            ForEach(items) { VaultItemRowLink(item: $0) }
+            VaultItemSections(items: items, sort: sort)
         }
         .platformInsetGroupedListStyle()
         .themedFormBackground()
@@ -19,12 +20,7 @@ struct ItemListScreen: View {
         .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .platformPrimaryAction) {
-                Menu {
-                    Picker("Sort", selection: $sort) {
-                        ForEach(VaultSort.allCases) { Text($0.label).tag($0) }
-                    }
-                } label: { VaultIcon(Icons.sort, size: 22) }
-                    .accessibilityLabel(Text("Sort"))
+                VaultSortFilterMenu(sort: $sort)
             }
         }
         .overlay {

@@ -50,7 +50,7 @@ struct SpaceIdentityLine: View {
             }
             if let folder {
                 FolderBadge(icon: folder.iconAsset, color: folder.color, size: badgeSize)
-                Text(folder.name)
+                Text(verbatim: folder.displayName)
                     .vaultType(.subhead).fontWeight(.semibold).themedForeground()
                     .lineLimit(1).truncationMode(.tail)
             } else {

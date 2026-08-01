@@ -18,7 +18,9 @@ struct FolderBadge: View {
             .fill(color.tint.opacity(0.16))
             .frame(width: size, height: size)
             .overlay(
-                VaultIcon(icon, size: size * 0.56)
+                // Alias, don't rewrite: stored values may carry legacy seed
+                // glyph names; they render as the modern duotone equivalent.
+                VaultIcon(IconResolver.legacySpaceAlias(icon), size: size * 0.56)
                     .foregroundStyle(color.tint)
             )
     }

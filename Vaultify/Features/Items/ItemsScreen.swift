@@ -83,7 +83,7 @@ struct ItemsScreen: View {
             sectionHeader("Spaces")
             groupedCard {
                 ForEach(env.repository.activePersonaSpaces) { folder in
-                    navRow(VaultRoute.folder(folder.id), title: Text(verbatim: folder.name),
+                    navRow(VaultRoute.folder(folder.id), title: Text(verbatim: folder.displayName),
                            count: env.repository.itemCount(for: folder.id), showDivider: true) {
                         FolderBadge(icon: folder.iconAsset, color: folder.color, size: Metric.badgeTile)
                     }
@@ -160,11 +160,9 @@ struct ItemsScreen: View {
     private var createSpaceRow: some View {
         Button { creatingSpace = true } label: {
             HStack(spacing: Space.s3) {
-                VaultIcon(Icons.addCircle, size: 22)
-                    .foregroundStyle(Color(rgb: env.theme.active.accent))
-                    .frame(width: Metric.badgeTile)
-                Text("Create Space").foregroundStyle(Color(rgb: env.theme.active.accent))
-                Spacer()
+                Text("Create New Space").foregroundStyle(Color(rgb: env.theme.active.accent))
+                Spacer(minLength: Space.s2)
+                VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
             }
             .padding(.horizontal, Space.s4)
             .padding(.vertical, Space.s3)

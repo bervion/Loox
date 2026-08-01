@@ -251,7 +251,7 @@ struct ShareSpaceSheet: View {
     private func spaceRow(_ space: Folder) -> some View {
         HStack(spacing: Space.s3) {
             FolderBadge(icon: space.iconAsset, color: space.color, size: Metric.badgeTile)
-            Text(space.name).themedForeground()
+            Text(verbatim: space.displayName).themedForeground()
             Spacer()
             Text("\(env.repository.itemCount(for: space.id))").themedForeground(.secondary)
             if selectedSpaceId == space.id {
@@ -327,7 +327,7 @@ struct ShareSpaceSheet: View {
         ScrollView {
             VStack(spacing: Space.s5) {
                 ShareInviteSentSheet(recipientLabel: recipientEmail,
-                                     itemTitle: selectedSpace?.name ?? appString("this Space"),
+                                     itemTitle: selectedSpace?.displayName ?? appString("this Space"),
                                      accepted: participantHasAccepted)
 
                 if pollExhausted {

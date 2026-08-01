@@ -40,12 +40,27 @@ enum IconResolver {
     /// Canonical form for comparing two icon names that may be written in different namespaces.
     ///
     /// The seeded-Space dedupe signature compares stored icon strings across devices to decide
-    /// whether two "My Vault" Spaces are the same Space, so both sides must be normalised before
-    /// comparison rather than compared raw.
+    /// whether two seeded Spaces are the same Space, so both sides must be normalised before
+    /// comparison rather than compared raw. Legacy Space glyph spellings fold here too, so a
+    /// store that predates the duotone restyle still matches one whose user re-picked the
+    /// modern glyph.
     static func canonical(_ name: String) -> String {
-        switch resolve(name) {
+        switch resolve(legacySpaceAlias(name)) {
         case .system(let symbol): return systemPrefix + symbol
         case .asset(let asset): return asset
+        }
+    }
+
+    /// Legacy Space glyphs folded to their modern duotone picker equivalents, for display and
+    /// comparison only. Applied in `canonical()` (dedupe + picker selection) and the folder
+    /// render paths (`FolderBadge`, `Folder.displayIcon`) — deliberately NOT in `resolve()`,
+    /// because the raw names double as app-chrome tokens (`Icons.lockFill`, `Icons.folder`)
+    /// whose rendering must not change.
+    static func legacySpaceAlias(_ name: String) -> String {
+        switch name {
+        case "ic_lock_filled": "dt_lock"
+        case "ic_folder": "dt_folder"
+        default: name
         }
     }
 }

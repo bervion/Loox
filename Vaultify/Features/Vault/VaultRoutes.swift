@@ -12,20 +12,6 @@ enum VaultRoute: Hashable, Codable {
     case recentlyDeleted
 }
 
-/// Sort order shared by the item browse lists.
-enum VaultSort: String, CaseIterable, Identifiable {
-    case updated, title
-    var id: String { rawValue }
-    var label: LocalizedStringKey { self == .updated ? "Recently Updated" : "Title" }
-
-    func apply(_ items: [VaultItem]) -> [VaultItem] {
-        switch self {
-        case .updated: items.sorted { $0.updatedAt > $1.updatedAt }
-        case .title: items.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
-        }
-    }
-}
-
 /// The screen a `VaultRoute` resolves to. Shared by `vaultNavigationDestinations`
 /// (SwiftUI-path navigation on the iPad/Mac sidebar) and `AppNavigator` (the
 /// compact-iOS UIKit push), so both routes render an identical destination.

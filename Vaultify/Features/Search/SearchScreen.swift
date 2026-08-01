@@ -8,10 +8,13 @@ import UIKit
 /// above the keyboard on iOS 26). Activating the search field on appear means both
 /// the tab-bar search and the Home header magnifier drop straight into search.
 ///
-/// Pure KEYWORD search (the 1Password split): no scope chips — browsing a Space,
-/// category, or tag is a pushed `FilteredItemsScreen`/list elsewhere. The pool is
-/// the active persona's items (fail-closed under strictAnonymous, INV-R03), and
-/// matching shared projections append as their own section.
+/// Keyword search first (the 1Password split): browsing a Space, category, or tag
+/// is a pushed `FilteredItemsScreen`/list elsewhere. A chip row adds quick
+/// category narrowing + sort over the typed query — the same filter vocabulary
+/// as the browse lists — while Space scoping stays implicit (never a chip the
+/// user has to think about). The pool is the active persona's items (fail-closed
+/// under strictAnonymous, INV-R03), and matching shared projections append as
+/// their own section.
 struct SearchScreen: View {
     @Environment(UIStateStore.self) private var uiState
     @Environment(AppEnvironment.self) private var env
@@ -126,6 +129,12 @@ struct SearchScreen: View {
 struct SearchResultsList: View {
     @Environment(AppEnvironment.self) private var env
     let query: String
+    /// Quick category filter + sort (the chip row). The chip is an independent
+    /// post-filter, NOT injected into `SearchOperators`: typed operator keywords
+    /// keep their zero-result literal-text fallback, while a chip the user
+    /// explicitly tapped always constrains the list.
+    @State private var category: ItemCategory?
+    @State private var sort = VaultSort()
 
     private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
 
@@ -150,6 +159,12 @@ struct SearchResultsList: View {
     /// user may genuinely be searching for. When operators were recognized but
     /// produced nothing, the whole query re-runs as literal free text.
     private var results: [VaultItem] {
+        var pool = keywordResults
+        if let category { pool = pool.filter { $0.category == category } }
+        return sort.apply(pool)
+    }
+
+    private var keywordResults: [VaultItem] {
         guard !trimmed.isEmpty else { return [] }
         let parsed = SearchOperators.parse(trimmed)
         let base: [VaultItem] = parsed.freeTextTokens.isEmpty
@@ -158,8 +173,12 @@ struct SearchResultsList: View {
         guard !parsed.operators.isEmpty else { return base }
         let context = auditContext(for: base, operators: parsed.operators)
         let operated = base.filter { SearchOperators.matches($0, operators: parsed.operators, context: context) }
-        // Zero-result fallback: same pool, whole query as literal text.
-        guard operated.isEmpty else { return operated }
+        // Zero-result fallback: same pool, whole query as literal text. Judged
+        // on the CHIP-CONSTRAINED view: an operator reading that is non-empty
+        // overall but empty within the active chip would otherwise show zero
+        // results without ever trying the literal reading.
+        let visible = category.map { c in operated.filter { $0.category == c } } ?? operated
+        guard visible.isEmpty else { return operated }
         return env.repository.search(trimmed, scope: scope)
     }
 
@@ -174,15 +193,30 @@ struct SearchResultsList: View {
             SearchOperators.matches(item, operators: parsed.operators, context: .empty)
                 && parsed.freeTextTokens.allSatisfy { item.searchText.contains($0) }
         }
-        guard operated.isEmpty, !parsed.operators.isEmpty else { return operated }
-        let literalTokens = trimmed.lowercased().split(separator: " ").map(String.init)
-        return env.sharedItems.items.filter { item in
-            literalTokens.allSatisfy { item.searchText.contains($0) }
+        var base = operated
+        // Fallback judged on the chip-constrained view, mirroring `keywordResults`.
+        let visibleOperated = category.map { c in operated.filter { $0.category == c } } ?? operated
+        if visibleOperated.isEmpty, !parsed.operators.isEmpty {
+            let literalTokens = trimmed.lowercased().split(separator: " ").map(String.init)
+            base = env.sharedItems.items.filter { item in
+                literalTokens.allSatisfy { item.searchText.contains($0) }
+            }
         }
+        // Same chip semantics as the main section: an explicit chip filters
+        // even the literal fallback.
+        if let category { base = base.filter { $0.category == category } }
+        return sort.apply(base)
     }
 
     /// Pre-query surface: what you touched last is usually what you came for.
     private var recents: [VaultItem] { env.repository.recentlyUsed(limit: 12) }
+
+    /// Chip active with no query yet: browse that category across the scoped
+    /// pool, so the chip means something before the user types.
+    private var categoryBrowse: [VaultItem] {
+        guard let category else { return [] }
+        return sort.apply(env.repository.scopedItems(scope: scope).filter { $0.category == category })
+    }
 
     /// Builds only the signals the recognized operators actually need, computed
     /// once per query over `pool` (already persona-filtered — never the whole
@@ -204,6 +238,10 @@ struct SearchResultsList: View {
             // Pin to the top: otherwise the content rides down with the search field
             // when the keyboard is dismissed, leaving a gap at the top.
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            // The chip row lives in the CONTENT area, not the toolbar: on iOS 26
+            // the Search tab hides its nav bar (the field moved to the tab bar),
+            // so a toolbar control would silently vanish there.
+            .safeAreaInset(edge: .top, spacing: 0) { filterBar }
             .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
             // Keyboard dismissal rides on scroll (`.scrollDismissesKeyboard`) only. A
             // whole-surface `simultaneousGesture(TapGesture())` here used to cancel the
@@ -212,11 +250,87 @@ struct SearchResultsList: View {
 
     @ViewBuilder private var content: some View {
         if trimmed.isEmpty {
-            recentsList
+            if category != nil {
+                categoryBrowseList
+            } else {
+                recentsList
+            }
         } else if results.isEmpty, sharedResults.isEmpty {
             ContentUnavailableView.search(text: query)
         } else {
             resultsList
+        }
+    }
+
+    /// Category chips + the compact sort menu. Chips never steal first
+    /// responder, so the search-field focus choreography stays intact.
+    private var filterBar: some View {
+        HStack(spacing: Space.s2) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Space.s2) {
+                    FilterChip(title: LocalizedStringResource("All").inAppLocalized, isSelected: category == nil) {
+                        guard category != nil else { return }
+                        category = nil
+                        Haptics.tap()
+                    }
+                    ForEach(ItemCategory.allCases) { cat in
+                        FilterChip(title: cat.title, isSelected: category == cat, icon: cat.iconAsset) {
+                            category = category == cat ? nil : cat
+                            Haptics.tap()
+                        }
+                    }
+                }
+                .padding(.horizontal, Space.gutter)
+            }
+            sortMenu
+                .padding(.trailing, Space.gutter)
+        }
+        .padding(.vertical, Space.s1)
+        // Opaque canvas under the pinned bar — the List's rows otherwise
+        // scroll visibly through the safe-area inset.
+        .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            VaultSortPickers(sort: $sort)
+        } label: {
+            VaultIcon(Icons.sort, size: Metric.iconCompact)
+                .themedForeground(.secondary)
+                .frame(width: Metric.hitMin, height: Metric.hitMin)
+                .contentShape(.rect)
+        }
+        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .accessibilityLabel(Text("Sort"))
+        // Haptic on the Menu, not its content: the content unmounts as the menu
+        // closes and can miss the change that closed it.
+        .onChange(of: sort) { Haptics.tap() }
+    }
+
+    /// Chip-only browse (no query yet): the chip's category across the pool.
+    @ViewBuilder private var categoryBrowseList: some View {
+        if let category {
+            if categoryBrowse.isEmpty {
+                ContentUnavailableView {
+                    Label { Text("No items here") } icon: { VaultIcon(category.iconAsset, size: Metric.iconTileLarge) }
+                }
+            } else {
+                List {
+                    Section {
+                        ForEach(categoryBrowse) { VaultItemRowLink(item: $0, highlight: "") }
+                    } header: {
+                        Text(category.title)
+                    }
+                }
+                .platformInsetGroupedListStyle()
+                .textCase(nil)
+                .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
+                .scrollDismissesKeyboard(.immediately)
+            }
         }
     }
 

@@ -440,7 +440,7 @@ struct ItemEditorScreen: View {
         Menu {
             ForEach(env.repository.folders) { folder in
                 Button { draft.folderId = folder.id } label: {
-                    Label { Text(folder.name) } icon: { VaultIcon(folder.iconAsset) }
+                    Label { Text(verbatim: folder.displayName) } icon: { VaultIcon(folder.displayIcon) }
                 }
             }
         } label: {

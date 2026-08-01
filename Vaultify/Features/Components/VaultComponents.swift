@@ -22,7 +22,8 @@ func fieldLabelText(_ label: String) -> Text {
     Text(LocalizedStringKey(label))
 }
 
-/// A small pill used for category filters and tags.
+/// A small pill used for category filters and tags. The capsule stays compact;
+/// an invisible frame stretches the tap area to the 44pt minimum hit target.
 struct FilterChip: View {
     let title: LocalizedStringResource
     let isSelected: Bool
@@ -42,7 +43,10 @@ struct FilterChip: View {
             .background(isSelected ? theme.color(.accentFill) : VaultColors.surface,
                         in: Capsule())
             .foregroundStyle(isSelected ? theme.color(.onAccent) : theme.color(.primary))
+            .frame(minHeight: Metric.hitMin)
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

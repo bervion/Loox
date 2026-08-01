@@ -120,22 +120,28 @@ import UserNotifications
 
     // MARK: Duplicate seed-folder convergence
 
-    /// Two devices that each ran first-run onboarding both seed a "My Vault" folder with
+    /// Two devices that each ran first-run onboarding both seed a first Space with
     /// fresh UUIDs; merging vaults by record id leaves BOTH folders. Converge: among
-    /// duplicates carrying the EXACT untouched seed signature (localized "My Vault" name
-    /// + seed icon + seed color — deliberately narrow so a user's own identical-looking
-    /// folders are never collapsed), keep the earliest-created, re-point the losers'
-    /// items at it (re-sealed, `updatedAt` bumped so the move propagates), and tombstone
-    /// the losers. Patches the freshly-built in-memory state in place — never `reload()`.
+    /// duplicates carrying an untouched seed signature (ANY historical localized seed
+    /// name + seed icon + seed color — the name set spans languages and copy renames,
+    /// because the stored name froze at seed time in the then-active language, while
+    /// icon + color stay deliberately narrow so a user's own identical-looking folders
+    /// are never collapsed), keep the earliest-created, re-point the losers' items at
+    /// it (re-sealed, `updatedAt` bumped so the move propagates), and tombstone the
+    /// losers. Patches the freshly-built in-memory state in place — never `reload()`.
     private func mergeDuplicateSeedFolders(key: SecureBytes) {
         guard folders.count > 1 else { return }
-        // Both sides go through `canonical` because the seed icon is written in two spellings:
-        // a build before the SF migration stored `ic_lock_filled`, one after stores `sf:lock.fill`.
-        // Comparing the raw strings would stop two devices' seeded Spaces from ever matching, and
-        // they would duplicate permanently instead of converging.
-        let seedSignature = "\(appString("My Vault"))|\(IconResolver.canonical(IconCatalog.seedSpaceIcon))|\(FolderColor.blue.rawValue)"
+        // Sentinel a TextField value can never equal (NUL byte), so a user-named
+        // folder can't collide with the folded seed-name group.
+        let seedNameKey = "\u{0}seed"
+        // Icon parts go through `SeedSpaceIcon.dedupeKey`, which folds every
+        // spelling a shipped seed ever stored — `ic_lock_filled` (via
+        // `canonical`) and the SF-era `sf:lock.fill` — so stores seeded by any
+        // build match without rewriting bytes.
+        let seedSignature = "\(seedNameKey)|\(SeedSpaceIcon.dedupeKey(IconCatalog.seedSpaceIcon))|\(FolderColor.blue.rawValue)"
         let groups = Dictionary(grouping: folders) {
-            "\($0.name)|\(IconResolver.canonical($0.iconAsset))|\($0.color.rawValue)"
+            let namePart = SeedSpaceName.isSeedName($0.name) ? seedNameKey : $0.name
+            return "\(namePart)|\(SeedSpaceIcon.dedupeKey($0.iconAsset))|\($0.color.rawValue)"
         }
         var loserIds: Set<String> = []
         for (signature, group) in groups where group.count > 1 && signature == seedSignature {

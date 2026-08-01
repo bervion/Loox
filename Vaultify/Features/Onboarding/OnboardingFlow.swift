@@ -16,7 +16,7 @@ struct OnboardingFlow: View {
     @State private var showRestoreSheet = false
     @State private var restoreMethod: JoinVaultFlow.Method = .qr
 
-    /// Id of the default "My Vault" Space seeded in `createVault`, threaded into the
+    /// Id of the default "My Space" Space seeded in `createVault`, threaded into the
     /// item seeds so they get a home (otherwise they'd land in Unfiled).
     @State private var defaultFolderId: String?
 
@@ -141,10 +141,12 @@ struct OnboardingFlow: View {
             // without hunting through Settings. No-op unless the build is iCloud-configured
             // (`CloudSyncService.isConfigured`), so it never touches an unprovisioned container.
             env.settings.iCloudSyncEnabled = true
-            // Seed a default Space ("My Vault") so new items have a home; the user
+            // Seed a default Space ("My Space") so new items have a home; the user
             // can rename it or add more later. Best-effort — never block setup.
             // Keep the id so the item seeds file into it (else they'd be Unfiled).
-            defaultFolderId = try? env.repository.addFolder(name: appString("My Vault"), icon: IconCatalog.seedSpaceIcon, color: .blue)
+            // The stored name must be one of `SeedSpaceName.historical` or the
+            // seed dedupe pass stops recognising it.
+            defaultFolderId = try? env.repository.addFolder(name: SeedSpaceName.current, icon: IconCatalog.seedSpaceIcon, color: .blue)
             step = .name
             return nil
         } catch {
@@ -153,7 +155,7 @@ struct OnboardingFlow: View {
     }
 
     /// Seed the mandatory default identity from the onboarding display name. Best-effort,
-    /// like the "My Vault" folder seed. Skips if an identity already exists (e.g. re-running
+    /// like the "My Space" folder seed. Skips if an identity already exists (e.g. re-running
     /// onboarding after a recovery reset), so it never creates a duplicate default.
     private func seedIdentity(_ displayName: String, email: String, tag: String) {
         guard env.repository.activeIdentities.isEmpty else { return }
@@ -161,7 +163,7 @@ struct OnboardingFlow: View {
         var identity = IdentitySeed.make(
             displayName: displayName, email: email, fallback: appString("Me"),
             note: note, tag: tag)
-        // File the seed into "My Vault" (matches the editor's default) so it isn't Unfiled.
+        // File the seed into the seeded Space (matches the editor's default) so it isn't Unfiled.
         identity.folderId = defaultFolderId ?? env.repository.primarySpaceId
         // Seeded, not user-created — keep it out of the item_created stream.
         AnalyticsEngine.shared.runSuppressed { try? env.repository.add(identity) }

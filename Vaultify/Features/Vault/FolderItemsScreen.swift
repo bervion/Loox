@@ -6,18 +6,23 @@ import SwiftUI
 struct FolderItemsScreen: View {
     @Environment(AppEnvironment.self) private var env
     let folderId: String?
-    @State private var sort: VaultSort = .updated
+    @State private var sort = VaultSort()
+    @State private var category: ItemCategory?
 
     private var folder: Folder? {
         guard let folderId else { return nil }
         return env.repository.folders.first { $0.id == folderId }
     }
-    private var items: [VaultItem] { sort.apply(env.repository.items(inFolder: folderId)) }
-    private var title: String { folder?.name ?? appString("Unfiled") }
+    private var items: [VaultItem] {
+        var pool = env.repository.items(inFolder: folderId)
+        if let category { pool = pool.filter { $0.category == category } }
+        return sort.apply(pool)
+    }
+    private var title: String { folder?.displayName ?? appString("Unfiled") }
 
     var body: some View {
         List {
-            ForEach(items) { VaultItemRowLink(item: $0) }
+            VaultItemSections(items: items, sort: sort)
         }
         .platformInsetGroupedListStyle()
         .themedFormBackground()
@@ -26,12 +31,7 @@ struct FolderItemsScreen: View {
         .tint(folder?.color.tint)
         .toolbar {
             ToolbarItem(placement: .platformPrimaryAction) {
-                Menu {
-                    Picker("Sort", selection: $sort) {
-                        ForEach(VaultSort.allCases) { Text($0.label).tag($0) }
-                    }
-                } label: { VaultIcon(Icons.sort, size: 22) }
-                    .accessibilityLabel(Text("Sort"))
+                VaultSortFilterMenu(sort: $sort, category: $category)
             }
         }
         .overlay {

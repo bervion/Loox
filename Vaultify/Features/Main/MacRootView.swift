@@ -120,13 +120,13 @@ struct MacRootView: View {
     /// Column-2 header: the context title, plus the Space dropdown when browsing items.
     private var listHeader: some View {
         VStack(alignment: .leading, spacing: Space.s1) {
-            Text(listTitle).vaultType(.headline)
+            listTitle.vaultType(.headline)
             if isSpaceFilterable {
                 Menu {
                     Button { filter = .allItems } label: { Text("All Spaces") }
                     ForEach(env.repository.folders) { folder in
                         Button { filter = .space(folder.id) } label: {
-                            Label { Text(verbatim: folder.name) } icon: { VaultIcon(folder.iconAsset) }
+                            Label { Text(verbatim: folder.displayName) } icon: { VaultIcon(folder.displayIcon) }
                         }
                     }
                 } label: {
@@ -170,18 +170,21 @@ struct MacRootView: View {
         }
     }
 
-    private var listTitle: LocalizedStringResource {
+    /// `Text`, not a `LocalizedStringResource`: a Space's display name must
+    /// render verbatim, never round-trip through a localization key it might
+    /// collide with (the seed Space's display name IS the catalog key
+    /// "My Space" whenever the in-app language is EN).
+    private var listTitle: Text {
         switch filter {
-        case .allItems: return "All Items"
-        case .favorites: return "Favorites"
-        case .watchtower: return "Security"
-        case .archive: return "Archive"
-        case .trash: return "Recently Deleted"
+        case .allItems: return Text("All Items")
+        case .favorites: return Text("Favorites")
+        case .watchtower: return Text("Security")
+        case .archive: return Text("Archive")
+        case .trash: return Text("Recently Deleted")
         case .space(let id):
-            let name = env.repository.folders.first { $0.id == id }?.name ?? ""
-            return LocalizedStringResource(stringLiteral: name)
+            return Text(verbatim: env.repository.folders.first { $0.id == id }?.displayName ?? "")
         case .tag(let tag):
-            return LocalizedStringResource(stringLiteral: "#\(tag)")
+            return Text(verbatim: "#\(tag)")
         }
     }
 
@@ -245,7 +248,7 @@ struct MacRootView: View {
 
     private var currentSpaceName: String {
         if case .space(let id) = filter,
-           let name = env.repository.folders.first(where: { $0.id == id })?.name {
+           let name = env.repository.folders.first(where: { $0.id == id })?.displayName {
             return name
         }
         return appString("All Spaces")
