@@ -262,33 +262,58 @@ struct SearchResultsList: View {
         }
     }
 
-    /// Category chips + the compact sort menu. Chips never steal first
-    /// responder, so the search-field focus choreography stays intact.
+    /// Two SEPARATE controls, never merged into one menu: the category
+    /// dropdown chip leads, the sort menu sits at the trailing edge. Neither
+    /// steals first responder, so the search-field focus choreography stays
+    /// intact.
     private var filterBar: some View {
         HStack(spacing: Space.s2) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Space.s2) {
-                    FilterChip(title: LocalizedStringResource("All").inAppLocalized, isSelected: category == nil) {
-                        guard category != nil else { return }
-                        category = nil
-                        Haptics.tap()
-                    }
-                    ForEach(ItemCategory.allCases) { cat in
-                        FilterChip(title: cat.title, isSelected: category == cat, icon: cat.iconAsset) {
-                            category = category == cat ? nil : cat
-                            Haptics.tap()
-                        }
-                    }
-                }
-                .padding(.horizontal, Space.gutter)
-            }
+            categoryMenu
+            Spacer(minLength: Space.s2)
             sortMenu
-                .padding(.trailing, Space.gutter)
         }
+        .padding(.horizontal, Space.gutter)
         .padding(.vertical, Space.s1)
         // Opaque canvas under the pinned bar — the List's rows otherwise
         // scroll visibly through the safe-area inset.
         .themedWallpaper(env.theme.wallpaper, fallback: Color(rgb: env.theme.active.groupedBackground))
+    }
+
+    /// Chip-styled dropdown over the categories; the default is every
+    /// category ("All Categories"), and an active pick fills the chip with
+    /// the accent so the narrowed state stays visible.
+    private var categoryMenu: some View {
+        let theme = env.theme.active
+        return Menu {
+            Picker("Categories", selection: $category) {
+                Text("All Categories").tag(ItemCategory?.none)
+                ForEach(ItemCategory.allCases) { cat in
+                    Label { Text(cat.title) } icon: { VaultIcon(cat.iconAsset) }
+                        .tag(ItemCategory?.some(cat))
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                if let category { VaultIcon(category.iconAsset, size: Metric.iconCompact) }
+                Text(category?.title ?? LocalizedStringResource("All Categories").inAppLocalized)
+                    .vaultType(.subhead).fontWeight(.medium)
+                VaultIcon(Icons.chevronDown, size: 11)
+            }
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s2)
+            .background(category == nil ? VaultColors.surface : theme.color(.accentFill), in: Capsule())
+            .foregroundStyle(category == nil ? theme.color(.primary) : theme.color(.onAccent))
+            .frame(minHeight: Metric.hitMin)
+            .contentShape(.rect)
+        }
+        // Plain glyph menu — macOS would otherwise draw a bordered pull-down button.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .accessibilityLabel(Text("Categories"))
+        // Haptic on the Menu, not its content: the content unmounts as the
+        // menu closes and can miss the change that closed it.
+        .onChange(of: category) { Haptics.tap() }
     }
 
     private var sortMenu: some View {
