@@ -734,7 +734,7 @@ struct HomeScreen: View {
     /// Selected Space name, or the localized "All Spaces" fallback (nil filter).
     private var spaceTitleText: Text {
         if let id = selectedFolderId, let folder = env.repository.activePersonaSpaces.first(where: { $0.id == id }) {
-            return Text(verbatim: folder.name)
+            return Text(verbatim: folder.displayName)
         }
         return Text("All Spaces")
     }

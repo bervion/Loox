@@ -202,7 +202,7 @@ struct HomeFolderPickerSheet: View {
                     } action: { select(nil) }
 
                     ForEach(env.repository.activePersonaSpaces) { folder in
-                        spaceRow(name: Text(verbatim: folder.name),
+                        spaceRow(name: Text(verbatim: folder.displayName),
                                  count: env.repository.itemCount(for: folder.id),
                                  selected: selectedFolderId == folder.id) {
                             FolderBadge(icon: folder.iconAsset, color: folder.color, size: 30)

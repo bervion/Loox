@@ -60,6 +60,17 @@ final class IconCatalogTests: XCTestCase {
         XCTAssertEqual(IconResolver.resolve("sf:lock.fill"), .system("lock.fill"))
     }
 
+    func testCanonicalFoldsLegacySpaceGlyphs() {
+        // Dedupe + picker-selection comparisons treat the legacy seed spellings as their
+        // modern duotone equivalents. `resolve()` stays raw on purpose: the same asset
+        // names double as chrome tokens (`Icons.lockFill`, `Icons.folder`) whose
+        // rendering must not restyle.
+        XCTAssertEqual(IconResolver.canonical("ic_lock_filled"), "dt_lock")
+        XCTAssertEqual(IconResolver.canonical("ic_folder"), "dt_folder")
+        XCTAssertEqual(IconResolver.canonical("dt_lock"), "dt_lock")
+        XCTAssertEqual(IconResolver.canonical("sf:lock.fill"), "sf:lock.fill")
+    }
+
     func testPickerOffersBothFamilies() {
         let duotone = IconCatalog.allIcons.filter { !$0.isSystemSymbol }
         let symbols = IconCatalog.allIcons.filter(\.isSystemSymbol)

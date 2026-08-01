@@ -4,13 +4,18 @@ import SwiftUI
 struct TagItemsScreen: View {
     @Environment(AppEnvironment.self) private var env
     let tag: String
-    @State private var sort: VaultSort = .updated
+    @State private var sort = VaultSort()
+    @State private var category: ItemCategory?
 
-    private var items: [VaultItem] { sort.apply(env.repository.items(withTag: tag)) }
+    private var items: [VaultItem] {
+        var pool = env.repository.items(withTag: tag)
+        if let category { pool = pool.filter { $0.category == category } }
+        return sort.apply(pool)
+    }
 
     var body: some View {
         List {
-            ForEach(items) { VaultItemRowLink(item: $0) }
+            VaultItemSections(items: items, sort: sort)
         }
         .platformInsetGroupedListStyle()
         .themedFormBackground()
@@ -18,12 +23,7 @@ struct TagItemsScreen: View {
         .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .platformPrimaryAction) {
-                Menu {
-                    Picker("Sort", selection: $sort) {
-                        ForEach(VaultSort.allCases) { Text($0.label).tag($0) }
-                    }
-                } label: { VaultIcon(Icons.sort, size: 22) }
-                    .accessibilityLabel(Text("Sort"))
+                VaultSortFilterMenu(sort: $sort, category: $category)
             }
         }
         .overlay {

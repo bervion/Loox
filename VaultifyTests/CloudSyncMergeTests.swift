@@ -277,4 +277,38 @@ final class CloudSyncMergeTests: XCTestCase {
         XCTAssertEqual(repo.items.first { $0.id == item.id }?.folderId, keptId,
                        "items re-point at the surviving folder")
     }
+
+    func testCrossLanguageSeedFoldersMergeAfterRemoteSync() throws {
+        let store = makeStore()
+        let repo = makeRepo(store: store)
+        // Two devices seeded in different in-app languages, one already carrying
+        // the modern duotone glyph spelling: same seed Space, different frozen bytes.
+        let keptId = try repo.addFolder(name: "My Vault", icon: "ic_lock_filled", color: .blue)
+        _ = try repo.addFolder(name: "Kho của tôi", icon: "dt_lock", color: .blue)
+        // A user's own Space whose name merely echoes a seed name but whose icon
+        // differs must never be collapsed.
+        let customId = try repo.addFolder(name: "Nhóm của tôi", icon: "dt_folder", color: .blue)
+
+        repo.reloadAfterRemoteSync()
+
+        XCTAssertEqual(repo.folders.filter { $0.iconAsset != "dt_folder" }.count, 1,
+                       "seed folders converge across languages and icon spellings")
+        XCTAssertTrue(repo.folders.contains { $0.id == keptId }, "earliest-created folder wins")
+        XCTAssertTrue(repo.folders.contains { $0.id == customId },
+                      "a non-seed-icon folder survives even with a seed-like name")
+    }
+
+    func testSfEraSeedFolderConvergesWithModernSeed() throws {
+        let store = makeStore()
+        let repo = makeRepo(store: store)
+        // One build era briefly seeded the SF spelling; it must still fold into
+        // the seed group next to the asset spelling.
+        let keptId = try repo.addFolder(name: "My Vault", icon: "sf:lock.fill", color: .blue)
+        _ = try repo.addFolder(name: "Nhóm của tôi", icon: "ic_lock_filled", color: .blue)
+
+        repo.reloadAfterRemoteSync()
+
+        XCTAssertEqual(repo.folders.count, 1, "the SF-era seed spelling folds into the seed group")
+        XCTAssertEqual(repo.folders.first?.id, keptId, "earliest-created folder wins")
+    }
 }

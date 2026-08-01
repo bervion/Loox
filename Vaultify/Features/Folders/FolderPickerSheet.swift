@@ -29,7 +29,7 @@ struct FolderPickerSheet: View {
                     Section {
                         ForEach(env.repository.folders) { folder in
                             Button { select(folder.id) } label: {
-                                row(name: Text(folder.name),
+                                row(name: Text(verbatim: folder.displayName),
                                     badge: FolderBadge(icon: folder.iconAsset, color: folder.color, size: Metric.badgeTile),
                                     selected: folderId == folder.id)
                             }

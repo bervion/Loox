@@ -84,7 +84,14 @@ xcodebuild -workspace Vaultify.xcworkspace -scheme Vaultify -configuration Debug
     visual language, and the default), then SF Symbols appended per theme as additions.
   - `IconCatalog.seedSpaceIcon` is the first Space's icon and must stay byte-identical across
     versions — the seeded-Space dedupe signature compares it across devices, so binding it to a
-    chrome token would leave two "My Vault" Spaces that never converge.
+    chrome token would leave two seeded "My Space" Spaces that never converge. It renders as its
+    duotone equivalent via `IconResolver.legacySpaceAlias` (in `canonical()` + folder render
+    paths only — never `resolve()`, whose raw names double as chrome tokens); the SF-era seed
+    spelling `sf:lock.fill` folds only in `SeedSpaceIcon.dedupeKey` (dedupe-only — a user-picked
+    SF lock keeps rendering as SF). The seed NAME has the same frozen-bytes rule: every
+    era/language lives in `SeedSpaceName.historical` (localized values of the "My Space"/
+    "My Vault" catalog keys are storage constants, test-pinned), and UI shows
+    `Folder.displayName` (never write it back).
   - Stored icon values are never rewritten: `FolderRecord.iconAsset` is a plaintext CloudKit field
     merged last-writer-wins, and item avatars live inside the sealed blob.
   - **iOS 17.3 is the SF Symbols floor.** A newer symbol compiles clean and renders BLANK at

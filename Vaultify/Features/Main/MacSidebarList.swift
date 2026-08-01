@@ -25,9 +25,9 @@ struct MacSidebarList: View {
                 Section {
                     ForEach(env.repository.folders) { folder in
                         Label {
-                            Text(verbatim: folder.name)
+                            Text(verbatim: folder.displayName)
                         } icon: {
-                            VaultIcon(folder.iconAsset).foregroundStyle(folder.color.tint)
+                            VaultIcon(folder.displayIcon).foregroundStyle(folder.color.tint)
                         }
                         .tag(MacVaultFilter.space(folder.id))
                     }

@@ -38,10 +38,11 @@ enum IconCatalog {
 
     /// The icon the very first Space is seeded with.
     ///
-    /// A literal, deliberately NOT `Icons.lockFill`: that token is app chrome and is now an SF
-    /// symbol, whereas a Space badge is a content glyph. It must also stay byte-identical across
-    /// versions — the seeded-Space dedupe signature compares this value across devices, so
-    /// changing it would leave two "My Vault" Spaces that never converge.
+    /// A literal, deliberately NOT `Icons.lockFill`: that chrome token must stay free to restyle
+    /// independently of stored data. The value must also stay byte-identical across versions —
+    /// the seeded-Space dedupe signature compares it across devices, so changing it would leave
+    /// two seeded Spaces that never converge. It renders as the modern duotone glyph through
+    /// `IconResolver.legacySpaceAlias`; the stored bytes never change.
     static let seedSpaceIcon = "ic_lock_filled"
 
     /// Stored value for a brand-new Space. The first icon of the first section by construction,

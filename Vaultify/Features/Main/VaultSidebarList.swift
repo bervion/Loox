@@ -86,13 +86,13 @@ struct VaultSidebarList: View {
                 Section {
                     ForEach(env.repository.folders) { folder in
                         Label {
-                            Text(verbatim: folder.name)
+                            Text(verbatim: folder.displayName)
                         } icon: {
                             // A Space keeps its OWN chosen Polaris glyph — a user-picked
                             // icon has no honest SF equivalent — but wears the same
                             // white-on-tint badge as every other sidebar row, in the
                             // Space's own colour.
-                            SettingsIconBadge(icon: folder.iconAsset, tint: folder.color.tint)
+                            SettingsIconBadge(icon: folder.displayIcon, tint: folder.color.tint)
                         }
                         .tag(UIStateStore.SidebarSelection.space(folder.id))
                     }

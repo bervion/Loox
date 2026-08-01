@@ -19,7 +19,7 @@ struct ManageFoldersScreen: View {
                     Button { editorFolder = folder } label: {
                         HStack(spacing: 12) {
                             FolderBadge(icon: folder.iconAsset, color: folder.color, size: 34)
-                            Text(folder.name).themedForeground()
+                            Text(verbatim: folder.displayName).themedForeground()
                             Spacer()
                             Text("\(env.repository.itemCount(for: folder.id))").themedForeground(.secondary)
                             VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)

@@ -259,7 +259,11 @@ extension VaultRepository {
                 item.folderId == id && tokens.allSatisfy { item.searchText.contains($0) }
             }
         case .allSpaces:
-            let names = Dictionary(folders.map { ($0.id, $0.name.lowercased()) }, uniquingKeysWith: { a, _ in a })
+            // Both the frozen stored name and the rendered display name are
+            // searchable: an untouched seed Space shows a localized name the
+            // stored bytes do not contain.
+            let names = Dictionary(folders.map { ($0.id, ($0.name + " " + $0.displayName).lowercased()) },
+                                   uniquingKeysWith: { a, _ in a })
             return pool.filter { item in
                 let hay = item.searchText + " " + (item.folderId.flatMap { names[$0] } ?? "")
                 return tokens.allSatisfy { hay.contains($0) }
