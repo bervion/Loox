@@ -1,1 +1,1 @@
-Giờ đây bạn có thể sắp xếp và lọc mọi danh sách trong ứng dụng, giúp tìm kiếm dễ dàng hơn. Tên mặc định của Không gian cũng rõ ràng hơn.
+Giờ đây bạn có thể sắp xếp và lọc mọi danh sách trong ứng dụng, giúp tìm kiếm dễ dàng hơn. Tên mặc định của Nhóm cũng rõ ràng hơn.
