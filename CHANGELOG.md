@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.49.0] - 2026-08-01
+
+### Added
+- sort and filter every browse list, Space-first seed naming (#191)
+
+
 ## [1.48.0] - 2026-07-31
 
 ### Added

@@ -1,1 +1,1 @@
-Watchtower is redesigned with a clearer security gauge, automatic refresh, and smoother flow. We also fixed related banner issues so your alerts stay accurate and easy to read.
+You can now sort and filter every list in the app, making it easier to find what you need. Spaces also get clearer default names.

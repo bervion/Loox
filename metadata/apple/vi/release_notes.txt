@@ -1,1 +1,1 @@
-Watchtower được thiết kế lại với đồng hồ bảo mật rõ ràng hơn, tự động làm mới và trải nghiệm mượt mà hơn. Chúng tôi cũng khắc phục các lỗi liên quan đến banner để cảnh báo luôn chính xác và dễ đọc.
+Giờ đây bạn có thể sắp xếp và lọc mọi danh sách trong ứng dụng, giúp tìm kiếm dễ dàng hơn. Tên mặc định của Không gian cũng rõ ràng hơn.
