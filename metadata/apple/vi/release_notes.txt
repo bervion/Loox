@@ -1,1 +1,1 @@
-Giờ đây bạn có thể sắp xếp và lọc mọi danh sách trong ứng dụng, giúp tìm kiếm dễ dàng hơn. Tên mặc định của Nhóm cũng rõ ràng hơn.
+Bộ lọc rõ ràng hơn: chọn Nhóm và sắp xếp giờ là hai lựa chọn riêng biệt, giúp bạn quản lý kho dễ dàng hơn.

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.49.1] - 2026-08-01
+
+### Changed
+- split category dropdown and sort into two separate controls (#192)
+- dùng đúng thuật ngữ Nhóm trong release notes VI
+
+
 ## [1.49.0] - 2026-08-01
 
 ### Added

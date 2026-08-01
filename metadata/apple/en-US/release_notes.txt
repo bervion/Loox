@@ -1,1 +1,1 @@
-You can now sort and filter every list in the app, making it easier to find what you need. Spaces also get clearer default names.
+Cleaner filtering: category and sort are now separate controls, making it faster to organize your vault.
