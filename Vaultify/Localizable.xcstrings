@@ -6385,6 +6385,22 @@
         }
       }
     },
+    "Couldn’t read that file" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このファイルを読み込めませんでした"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không đọc được tệp này"
+          }
+        }
+      }
+    },
     "Couldn’t read that file as a key" : {
       "localizations" : {
         "ja" : {
@@ -7794,6 +7810,22 @@
         }
       }
     },
+    "Details read from file" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルから情報を読み取りました"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã đọc thông tin từ tệp"
+          }
+        }
+      }
+    },
     "Developer" : {
       "localizations" : {
         "ja" : {
@@ -8750,6 +8782,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nhập khóa in trong Bộ khôi phục (PDF) bạn đã lưu."
+          }
+        }
+      }
+    },
+    "Enter the passphrase for this .p12 file. It is used once to read the certificate details and is not stored." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この.p12ファイルのパスフレーズを入力してください。証明書情報の読み取りに一度だけ使用され、保存されません。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhập cụm mật khẩu của tệp .p12 này. Nó chỉ dùng một lần để đọc thông tin chứng chỉ và không được lưu lại."
           }
         }
       }
@@ -9858,6 +9906,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Các trường"
+          }
+        }
+      }
+    },
+    "File isn’t on this device." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルはこのデバイスにありません。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp không có trên thiết bị này."
           }
         }
       }
@@ -11388,6 +11452,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nhập %lld bản ghi"
+          }
+        }
+      }
+    },
+    "Import File…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルを読み込む…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhập tệp…"
           }
         }
       }
@@ -24565,6 +24645,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đây không giống một mã thiết lập 2FA."
+          }
+        }
+      }
+    },
+    "That passphrase didn’t open the file" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このパスフレーズではファイルを開けませんでした"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cụm mật khẩu này không mở được tệp"
           }
         }
       }

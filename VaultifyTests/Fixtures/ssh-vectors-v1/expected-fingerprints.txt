@@ -1,0 +1,4 @@
+ssh-test-vector-ed25519 256 SHA256:2hOxGnO0mJf98wVMTaq3sZGauj6qdexRlhfpLL2JjwA vaultify-test-ed25519 (ED25519)
+ssh-test-vector-rsa2048 2048 SHA256:Ivojfwuqafb6gC27RXrkj/TH9KLGwCLMVKMy7wJMaLA vaultify-test-rsa2048 (RSA)
+ssh-test-vector-ecdsa256 256 SHA256:7i8K7iOSUApVRcym/UtQkpBuGihdFwQ4Xx7MslvrlQk vaultify-test-ecdsa256 (ECDSA)
+ssh-test-vector-ed25519-pass 256 SHA256:ey31uiSSiKIHchOUzIgU19Zz6c7z1NOsAjpGi2eVl2g vaultify-test-ed25519-pass (ED25519)

@@ -11,6 +11,9 @@ struct TemplateEditorSections: View {
     @Binding var draft: VaultItem
     let template: ItemTemplateDefinition
     var onAddAttachment: () -> Void = {}
+    /// Routes imported file bytes through the editor's staged-attachment path,
+    /// so a discarded draft sweeps them (no orphan ciphertext).
+    var onAttachImportedFile: (Data, String, String) -> Void = { _, _, _ in }
     var onProtectedDeleteBlocked: () -> Void = {}
     var onRequestExtraProtectionUnlock: () -> Void = {}
 
@@ -19,9 +22,18 @@ struct TemplateEditorSections: View {
     /// Advanced sections the user explicitly opened this visit.
     @State private var openedAdvanced: Set<String> = []
     @State private var showKeyImporter = false
+    @State private var showAssetImporter = false
+    /// A picked `.p12` waiting for its passphrase before inspection.
+    @State private var pendingP12: PendingP12?
     /// Import outcome shown under the import row: honest verification state,
     /// never a stronger claim than the parser proved.
     @State private var importStatus: LocalizedStringKey?
+
+    private struct PendingP12: Identifiable {
+        let data: Data
+        let filename: String
+        var id: String { filename }
+    }
 
     var body: some View {
         ForEach(template.sections, id: \.id) { section in
@@ -78,6 +90,11 @@ struct TemplateEditorSections: View {
 
     // MARK: Sections
 
+    /// Templates whose items are usually born from an existing credential file.
+    private static let assetImportKinds: Set<ItemKindID> = [
+        .ascAPIKey, .apnsKey, .signingIdentity, .provisioningProfile, .tlsCertificate,
+    ]
+
     @ViewBuilder private func coreSection(_ section: TemplateSection) -> some View {
         Section {
             // Import-first: an SSH item is usually born from an existing key
@@ -85,11 +102,167 @@ struct TemplateEditorSections: View {
             if template.kindID == .sshKey, section.id == "keys" {
                 keyImportRow
             }
+            if Self.assetImportKinds.contains(template.kindID), section.id == "core" {
+                assetImportRow
+            }
             sectionRows(section)
         } header: {
             if !section.title.isEmpty { Text(LocalizedStringKey(section.title)) }
         }
         .listRowBackground(VaultColors.surface)
+    }
+
+    private var assetImportRow: some View {
+        VStack(alignment: .leading, spacing: Space.s1) {
+            Button { showAssetImporter = true } label: {
+                Label { Text("Import File…") } icon: { VaultIcon(Icons.importData) }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if let importStatus {
+                Text(importStatus)
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+            }
+        }
+        .fileImporter(isPresented: $showAssetImporter,
+                      allowedContentTypes: [.item]) { result in
+            guard case .success(let url) = result else { return }
+            importAssetFile(at: url)
+        }
+        .sheet(item: $pendingP12) { pending in
+            CodePromptSheet(title: "Passphrase",
+                            message: "Enter the passphrase for this .p12 file. It is used once to read the certificate details and is not stored.",
+                            placeholder: "Passphrase") { passphrase in
+                inspectP12(pending, passphrase: passphrase)
+            }
+        }
+    }
+
+    /// Bounded local inspection of a picked developer asset. Original bytes are
+    /// canonical: they attach as a staged file; derived metadata only PREFILLS
+    /// editable fields. Filenames never grant authority — at most they suggest
+    /// an editable Key ID.
+    private func importAssetFile(at url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url), data.count <= 5 * 1024 * 1024 else {
+            importStatus = "Couldn’t read that file"
+            Haptics.error()
+            return
+        }
+        let filename = url.lastPathComponent
+        switch template.kindID {
+        case .ascAPIKey, .apnsKey:
+            let result = P8KeyInspector.inspect(data)
+            guard result.isPKCS8 else {
+                importStatus = "Couldn’t read that file as a key"
+                Haptics.error()
+                return
+            }
+            if let match = filename.firstMatch(of: /AuthKey_([A-Z0-9]{10})\.p8/) {
+                prefillIfEmpty(.appleKeyID, String(match.1))
+            }
+            attachOriginal(data, filename: filename)
+            importStatus = "Saved, not verified"
+            Haptics.success()
+        case .provisioningProfile:
+            let result = ProvisioningProfileInspector.inspect(data)
+            if result.parsed {
+                if let uuid = result.uuid { prefillIfEmpty(.appleProfileUUID, uuid) }
+                if let appID = result.applicationIdentifier { prefillIfEmpty(.appleAppID, appID) }
+                if let team = result.teamIdentifier { prefillIfEmpty(.appleTeamID, team) }
+                if !result.platforms.isEmpty {
+                    prefillIfEmpty(.applePlatforms, result.platforms.joined(separator: ", "))
+                }
+                if let expiry = result.expirationDate {
+                    setExpiry(.appleValidity, date: expiry)
+                }
+                if draft.title.isEmpty, let name = result.name { draft.title = name }
+                importStatus = "Details read from file"
+            } else {
+                importStatus = "Saved, not verified"
+            }
+            attachOriginal(data, filename: filename)
+            Haptics.success()
+        case .tlsCertificate:
+            if let result = CertificateInspector.inspect(data) {
+                if let subject = result.subjectSummary { prefillIfEmpty(.tlsSubject, subject) }
+                if let serial = result.serialNumberHex { prefillIfEmpty(.tlsSerial, serial) }
+                prefillIfEmpty(.tlsFingerprint, result.sha256Fingerprint)
+                if let notAfter = result.notAfter { setExpiry(.tlsValidity, date: notAfter) }
+                importStatus = "Details read from file"
+            } else {
+                importStatus = "Saved, not verified"
+            }
+            attachOriginal(data, filename: filename)
+            Haptics.success()
+        case .signingIdentity:
+            pendingP12 = PendingP12(data: data, filename: filename)
+        default:
+            break
+        }
+    }
+
+    /// `CodePromptSheet` contract: return an error string to keep the prompt
+    /// up, nil to dismiss.
+    private func inspectP12(_ pending: PendingP12, passphrase: String) -> String? {
+        switch P12Inspector.inspect(pending.data, passphrase: passphrase) {
+        case .wrongPassphrase:
+            return appString("That passphrase didn’t open the file")
+        case .unreadable:
+            return appString("Couldn’t read that file")
+        case .parsed(let metadata):
+            if let name = metadata.commonName { prefillIfEmpty(.appleCommonName, name) }
+            if let team = metadata.teamID { prefillIfEmpty(.appleTeamID, team) }
+            if let certificate = metadata.certificate {
+                if let serial = certificate.serialNumberHex { prefillIfEmpty(.appleSerial, serial) }
+                prefillIfEmpty(.appleFingerprint, certificate.sha256Fingerprint)
+                if let notAfter = certificate.notAfter { setExpiry(.appleValidity, date: notAfter) }
+            }
+            attachOriginal(pending.data, filename: pending.filename)
+            importStatus = "Details read from file"
+            Haptics.success()
+            return nil
+        }
+    }
+
+    // MARK: Field prefill helpers
+
+    private func prefillIfEmpty(_ roleID: FieldRoleID, _ value: String) {
+        if let index = draft.fields.firstIndex(where: { $0.roleID == roleID }) {
+            if draft.fields[index].isEmpty { draft.fields[index].value = value }
+        } else if let descriptor = template.sections.lazy
+            .flatMap(\.fields).first(where: { $0.roleID == roleID }) {
+            var field = descriptor.makeField(
+                sectionID: template.sections.first { $0.fields.contains { $0.roleID == roleID } }?.id)
+            field.value = value
+            draft.fields.append(field)
+        }
+    }
+
+    /// Writes an expiry both as the visible ISO date value and as semantic
+    /// lifecycle, so audit and `expires:` search see it.
+    private func setExpiry(_ roleID: FieldRoleID, date: Date) {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        prefillIfEmpty(roleID, formatter.string(from: date))
+        if let index = draft.fields.firstIndex(where: { $0.roleID == roleID }) {
+            var semantics = draft.fields[index].semantics ?? FieldSemantics()
+            var lifecycle = semantics.lifecycle ?? FieldLifecycle()
+            lifecycle.expiresAt = date
+            semantics.lifecycle = lifecycle
+            draft.fields[index].semantics = semantics
+        }
+    }
+
+    private func attachOriginal(_ data: Data, filename: String) {
+        let ext = (filename as NSString).pathExtension
+        let name = (filename as NSString).deletingPathExtension
+        onAttachImportedFile(data, name.isEmpty ? filename : name,
+                             ext.isEmpty ? "bin" : ext)
     }
 
     private var keyImportRow: some View {
