@@ -27,6 +27,10 @@ nonisolated struct VaultAuditItem: Identifiable, Sendable {
     /// `loginHygieneEligible`: 2FA/passkey/URL-hygiene/completeness rules.
     let passwordAuditEligible: Bool
     let loginHygieneEligible: Bool
+    /// Earliest field-level expiry (`FieldSemantics.lifecycle.expiresAt`) —
+    /// certificates, provisioning profiles, API tokens. A date only; nothing
+    /// identifying rides in the snapshot.
+    let earliestExpiry: Date?
 
     var hasPassword: Bool { !(password ?? "").isEmpty }
 }
@@ -76,7 +80,10 @@ nonisolated struct VaultAuditSnapshot: Sendable {
                 passwordChangedAt: item.passwordChangedAt,
                 isTrashed: item.isTrashed,
                 passwordAuditEligible: capabilities.passwordAudit,
-                loginHygieneEligible: capabilities.loginHygieneAudit)
+                loginHygieneEligible: capabilities.loginHygieneAudit,
+                earliestExpiry: item.fields
+                    .compactMap { $0.semantics?.lifecycle?.expiresAt }
+                    .min())
         }
         return VaultAuditSnapshot(items: auditItems, personaID: personaID, capturedAt: now)
     }

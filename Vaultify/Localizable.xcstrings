@@ -7053,6 +7053,22 @@
         }
       }
     },
+    "Credentials nearing their end date" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有効期限が近い認証情報"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thông tin xác thực sắp hết hạn"
+          }
+        }
+      }
+    },
     "Current 2FA code" : {
       "localizations" : {
         "ja" : {
@@ -9371,6 +9387,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hết hạn %@"
+          }
+        }
+      }
+    },
+    "Expires in %lld days" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Expires in 1 day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Expires in %lld days"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あと %lld 日で期限切れ"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hết hạn sau %lld ngày"
           }
         }
       }
@@ -19071,6 +19121,22 @@
         }
       }
     },
+    "Recorded end date has passed" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "記録された有効期限が過ぎています"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngày hết hạn đã lưu đã qua"
+          }
+        }
+      }
+    },
     "Recover" : {
       "localizations" : {
         "ja" : {
@@ -24887,6 +24953,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giao dịch chưa hoàn tất. Bạn chưa bị trừ tiền."
+          }
+        }
+      }
+    },
+    "The recorded end date for this credential is close or has passed. Loox shows only the stored date; check the provider for live status." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この認証情報の記録された有効期限が近いか、既に過ぎています。Looxは保存された日付のみを表示します。実際の状態はプロバイダで確認してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngày hết hạn đã lưu của thông tin này sắp đến hoặc đã qua. Loox chỉ hiển thị ngày đã lưu; kiểm tra nhà cung cấp để biết trạng thái thực."
           }
         }
       }

@@ -41,6 +41,7 @@ nonisolated enum AuditRuleRegistry {
             MissingMetadataRule(),
             URLHygieneRule(),
             StaleCredentialRule(),
+            ExpiringCredentialRule(),
         ]
     }
 }

@@ -25,6 +25,7 @@ nonisolated enum AuditFindingCopy {
         case "maintenance.missing-url": "Logins without a website"
         case "maintenance.missing-username": "Logins without a username"
         case "maintenance.missing-metadata": "Logins missing details"
+        case "maintenance.expiring": "Credentials nearing their end date"
         default: "Review suggested"
         }
         return base.inAppLocalized
@@ -77,6 +78,8 @@ nonisolated enum AuditFindingCopy {
             "The saved website address could not be read as a valid link."
         case "maintenance.stale":
             "This item has not been reviewed in years. A quick check keeps it trustworthy."
+        case "maintenance.expiring":
+            "The recorded end date for this credential is close or has passed. Loox shows only the stored date; check the provider for live status."
         case "maintenance.missing-metadata":
             "AutoFill matches logins to apps and sites by the website address, and the username tells similar accounts apart. Add the missing details so this login fills reliably."
         default:

@@ -14,7 +14,8 @@ final class ServiceCapabilityCatalogTests: XCTestCase {
                        rawURLs: url.map { [$0] } ?? [],
                        createdAt: .now, updatedAt: .now, lastUsedAt: nil,
                        rotateDays: 0, passwordChangedAt: nil, isTrashed: false,
-                       passwordAuditEligible: true, loginHygieneEligible: true)
+                       passwordAuditEligible: true, loginHygieneEligible: true,
+                       earliestExpiry: nil)
     }
 
     private func snapshot(_ items: [VaultAuditItem]) -> VaultAuditSnapshot {
