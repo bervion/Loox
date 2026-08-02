@@ -33,9 +33,17 @@ extension WebExtensionReader {
             throw ReadError.itemNotFound
         }
         guard item.category == category else { throw ReadError.forbidden }
+        // Post-decrypt capability check: the stored item's own template must
+        // claim the requested fill surface (a semantic item that merely
+        // PRESENTS as identity/card gains nothing from the raw category).
+        let capabilities = ItemCapabilityResolver.capabilities(for: item)
         switch category {
-        case .identity: return identityValues(of: item)
-        default: return cardValues(of: item)
+        case .identity:
+            guard capabilities.identityFill else { throw ReadError.forbidden }
+            return identityValues(of: item)
+        default:
+            guard capabilities.cardFill else { throw ReadError.forbidden }
+            return cardValues(of: item)
         }
     }
 
@@ -169,7 +177,10 @@ extension WebExtensionReader {
               let plaintext = try? AESGCM.open(record.sealed, key: key),
               let secret = try? JSONDecoder().decode(ItemSecret.self, from: plaintext)
         else { return nil }
-        return VaultItem(id: record.id, category: secret.category,
-                         title: secret.title, fields: secret.fields)
+        var item = VaultItem(id: record.id, category: secret.category,
+                             title: secret.title, fields: secret.fields)
+        item.unknownCategoryRaw = secret.unknownCategoryRaw
+        item.semantics = secret.semantics
+        return item
     }
 }

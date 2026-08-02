@@ -9,6 +9,9 @@ import SwiftUI
 /// render disabled — they are not shareable.
 struct FieldCapabilityRow: View {
     let field: DynamicField
+    /// The owning item, when the sheet has it — enables full resolver policy
+    /// (template + role). Without it the kind-shape policy still applies.
+    var item: VaultItem? = nil
     @Binding var capability: FieldCapability
     /// Hand-over modes (TOTP seed) never write directly: the parent shows the
     /// irreversibility warning (INV-08) and applies the capability on confirm.
@@ -18,7 +21,13 @@ struct FieldCapabilityRow: View {
     /// SSH private keys, recovery codes) is not offerable in v1 alongside the
     /// existing Level-2 and attachment exclusions.
     private var shareable: Bool {
-        TransitionalSharePolicy.approvalShareAllows(field)
+        if let item {
+            return ItemCapabilityResolver.capabilities(for: field, in: item).approvalShare
+                // TOTP is offerable as a ROW (its tri-state flow decides the
+                // mode); the resolver's value-share bit doesn't model that.
+                || (field.kind == .totp && !field.isExtraProtected)
+        }
+        return TransitionalSharePolicy.approvalShareAllows(field)
     }
 
     var body: some View {

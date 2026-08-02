@@ -101,7 +101,7 @@ enum SharedGrantComposer {
                       // Policy enforced at the producer boundary too: even a
                       // stale capability naming a non-shareable field (key
                       // material, Level-2) must not serialize its value.
-                      TransitionalSharePolicy.approvalShareAllows(field)
+                      ItemCapabilityResolver.capabilities(for: field, in: item).approvalShare
                 else { return nil }
                 return (field.id, Data(field.value.utf8))
             })

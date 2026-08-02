@@ -429,6 +429,10 @@ import UserNotifications
     func update(_ item: VaultItem) throws {
         // Same guard as `add` — the missing-record fallback below upserts.
         guard item.sharedOrigin == nil, !item.id.hasPrefix("shared::") else { return }
+        // An item sealed by a NEWER incompatible wire generation is read-only
+        // recovery: typed re-encoding here would silently strip everything
+        // this build cannot represent. The original ciphertext stays intact.
+        guard !item.isUnsupportedSchema else { return }
         guard let key = session.vaultKey else { throw AuthError.locked }
         guard let record = try record(id: item.id) else { return try add(item) }
         var updated = item
@@ -581,7 +585,10 @@ import UserNotifications
                              trashedAt: record.trashedAt)
         // Preserved so a later save re-seals the ORIGINAL category raw value.
         item.unknownCategoryRaw = secret.unknownCategoryRaw
-        return item
+        item.semantics = secret.semantics
+        // Legacy items gain provable semantics in memory; they persist only
+        // when a user edit re-seals the item (lazy migration, never bulk).
+        return LegacySemanticsInference.applied(to: item)
     }
 
     /// Unseal the record and return just the password field value. Returns nil

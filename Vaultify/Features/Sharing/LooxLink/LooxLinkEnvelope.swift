@@ -35,7 +35,9 @@ extension LooxLinkEnvelope {
     /// a one-shot link has no recipient identity and no revocation of the
     /// copy, so key material is absolutely denied here), and empty values.
     static func shareableFields(of item: VaultItem) -> [DynamicField] {
-        item.fields.filter { TransitionalSharePolicy.quickShareAllows($0) }
+        item.fields.filter {
+            ItemCapabilityResolver.capabilities(for: $0, in: item).quickShare
+        }
     }
 
     /// Default selection: the credential trio (username/email, website,

@@ -9,7 +9,7 @@ nonisolated struct IncompleteItemRule: nonisolated AuditRule {
 
     func evaluate(_ snapshot: VaultAuditSnapshot, context: AuditContext) async throws -> [AuditFinding] {
         snapshot.activeItems.compactMap { item in
-            guard item.category == .login, !item.hasPassword, !item.hasPasskey, !item.hasTOTP
+            guard item.loginHygieneEligible, !item.hasPassword, !item.hasPasskey, !item.hasTOTP
             else { return nil }
             return AuditFinding(
                 ruleID: id,
@@ -36,7 +36,7 @@ nonisolated struct MissingMetadataRule: nonisolated AuditRule {
 
     func evaluate(_ snapshot: VaultAuditSnapshot, context: AuditContext) async throws -> [AuditFinding] {
         snapshot.activeItems.compactMap { item in
-            guard item.category == .login, item.hasPassword else { return nil }
+            guard item.loginHygieneEligible, item.hasPassword else { return nil }
             let missingURL = item.rawURLs.allSatisfy(\.isEmpty)
             let missingUsername = item.usernames.allSatisfy(\.isEmpty)
             guard missingURL || missingUsername else { return nil }

@@ -154,7 +154,7 @@ struct ShareRecipientDetailSheet: View {
         } else if let item, capabilities != nil {
             Section {
                 ForEach(item.fields) { field in
-                    FieldCapabilityRow(field: field, capability: binding(for: field))
+                    FieldCapabilityRow(field: field, item: item, capability: binding(for: field))
                 }
                 ForEach(itemPasskeys) { passkey in
                     PasskeyCapabilityRow(passkey: passkey, capability: passkeyBinding(for: passkey),

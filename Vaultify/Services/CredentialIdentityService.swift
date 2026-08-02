@@ -80,10 +80,14 @@ enum CredentialIdentityService {
         // One identity per website host, so a login with several websites is suggested
         // on every one of its domains.
         let ownedPasswordIdentities: [ASPasswordCredentialIdentity] = lastOwnedItems.flatMap { item -> [ASPasswordCredentialIdentity] in
-            // Extra-protected credentials can't fill (the value is sealed
-            // ciphertext), so a QuickType suggestion would be a dead end — and a
-            // sealed username would even surface ciphertext on the bar.
-            guard let passwordField = item.passwordField, !passwordField.value.isEmpty,
+            // Template capability first (the resolver keeps developer secrets
+            // and unknown kinds out of QuickType), then the value-level
+            // exclusions: extra-protected credentials can't fill (the value is
+            // sealed ciphertext), so a QuickType suggestion would be a dead
+            // end — and a sealed username would even surface ciphertext on
+            // the bar.
+            guard ItemCapabilityResolver.capabilities(for: item).loginAutoFill,
+                  let passwordField = item.passwordField, !passwordField.value.isEmpty,
                   !passwordField.isExtraProtected,
                   let userField = item.usernameField, !userField.isEmpty,
                   !userField.isExtraProtected else { return [] }
@@ -165,9 +169,10 @@ enum CredentialIdentityService {
     @available(iOS 18, *)
     private static func oneTimeCodeIdentities(_ items: [VaultItem]) -> [ASOneTimeCodeCredentialIdentity] {
         items.flatMap { item -> [ASOneTimeCodeCredentialIdentity] in
-            // totpField already excludes sealed seeds; the label must not leak a
-            // sealed username's ciphertext either.
-            guard item.totpField != nil else { return [] }
+            // Capability-gated (a developer item's seed is not an authenticator
+            // entry); totpField already excludes sealed seeds; the label must
+            // not leak a sealed username's ciphertext either.
+            guard ItemCapabilityResolver.isTOTPSource(item) else { return [] }
             let userField = item.usernameField
             let user = (userField?.isExtraProtected == true) ? nil : userField?.value
             return item.autofillHosts.map { host in

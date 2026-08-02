@@ -107,7 +107,7 @@ nonisolated enum ScoringEngine {
     // MARK: - Auth readiness (140): confirmed protection >> opportunities
 
     private static func authReadiness(items: [VaultAuditItem], findings: [AuditFinding]) -> Int {
-        let confirmedIDs = Set(items.filter { $0.category == .login && ($0.hasTOTP || $0.hasPasskey) }
+        let confirmedIDs = Set(items.filter { $0.loginHygieneEligible && ($0.hasTOTP || $0.hasPasskey) }
             .map(\.id))
         // Unique ITEMS with no confirmed protection at all: a login that already
         // holds a TOTP but could add a passkey is covered, not an opportunity;

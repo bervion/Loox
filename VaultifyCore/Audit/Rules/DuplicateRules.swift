@@ -51,7 +51,7 @@ nonisolated struct ConflictingLoginRule: nonisolated AuditRule {
 
     func evaluate(_ snapshot: VaultAuditSnapshot, context: AuditContext) async throws -> [AuditFinding] {
         var groups: [String: [VaultAuditItem]] = [:]
-        for item in snapshot.activeItems where item.category == .login && item.hasPassword {
+        for item in snapshot.activeItems where item.loginHygieneEligible && item.hasPassword {
             let hosts = item.rawURLs.compactMap { DomainNormalizer.normalizedHost(from: $0) }
             guard let host = hosts.first else { continue }
             for username in item.usernames.map({ $0.lowercased() }) where !username.isEmpty {
