@@ -24,9 +24,9 @@ struct ItemEditorScreen: View {
     @State private var generatingFieldID: String?
     @State private var scanningFieldID: String?
     @State private var showAttachmentPicker = false
-    /// Attachment bytes sealed during this session but not yet committed by a
-    /// save — deleted on discard so cancellation leaves no orphan ciphertext.
-    @State private var stagedAttachmentMetas: [AttachmentMeta] = []
+    /// Artifacts staged during this session but not yet committed by a save —
+    /// rolled back on discard so cancellation leaves no orphan ciphertext.
+    @State private var stagedArtifacts: [StagedArtifact] = []
     @State private var showIconPicker = false
     @State private var showCardScanner = false
     @State private var didApplyDefaultFolder = false
@@ -162,6 +162,7 @@ struct ItemEditorScreen: View {
                         draft: $draft,
                         template: template,
                         onAddAttachment: { showAttachmentPicker = true },
+                        onAttachImportedFile: { addAttachment($0, name: $1, ext: $2) },
                         onProtectedDeleteBlocked: { blockedProtectedDelete = true },
                         onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)
                 } else {
@@ -550,27 +551,30 @@ struct ItemEditorScreen: View {
         return env.repository.folders.first { $0.id == id }
     }
 
-    /// Seal the picked bytes via `AttachmentStore` and append a `.fileRef` field
-    /// holding the (non-secret) metadata pointer. The meta is remembered as
-    /// STAGED until save: discarding the editor must delete the sealed bytes,
-    /// or a cancelled attachment leaves orphan ciphertext in the store.
+    /// Stage the picked bytes as a v2 artifact (per-artifact DEK, portable
+    /// through backups) and append a `.fileRef` field holding the metadata
+    /// pointer. Nothing is committed until save: discard rolls the staged
+    /// ciphertext back, so a cancelled attachment leaves no orphan bytes.
     private func addAttachment(_ data: Data, name: String, ext: String) {
-        guard let meta = try? env.attachmentStore.save(data, name: name, ext: ext) else {
+        let filename = ext.isEmpty ? name : "\(name).\(ext)"
+        guard let staged = try? env.artifactStore.stage(data: data, filename: filename, uti: ext) else {
             Haptics.error(); return
         }
-        stagedAttachmentMetas.append(meta)
+        stagedArtifacts.append(staged)
+        var meta = AttachmentMeta(id: staged.id, name: name, ext: ext, size: data.count)
+        meta.v2 = true
         draft.fields.append(DynamicField(label: name, kind: .fileRef, value: meta.encoded()))
         Haptics.success()
     }
 
-    /// Deletes attachment bytes sealed during THIS editing session when the
-    /// draft is discarded. Save clears the staging list first, so committed
-    /// attachments are never touched.
+    /// Rolls back artifacts staged during THIS editing session when the draft
+    /// is discarded. Save commits and clears the list first, so committed
+    /// artifacts are never touched.
     private func discardStagedAttachments() {
-        for meta in stagedAttachmentMetas {
-            env.attachmentStore.delete(meta)
+        for staged in stagedArtifacts {
+            env.artifactStore.rollback(staged)
         }
-        stagedAttachmentMetas = []
+        stagedArtifacts = []
     }
 
     /// The card template's Card Number field value, if present — passed to `EditorFieldRow`
@@ -856,6 +860,11 @@ struct ItemEditorScreen: View {
             }
         }
         do {
+            // Artifacts commit in the SAME context save as the item edit
+            // (`deferSave: true`): the item and its bytes land together.
+            for staged in stagedArtifacts {
+                try env.artifactStore.commit(staged, ownerItemId: draft.id, deferSave: true)
+            }
             if isNew {
                 try env.repository.add(draft)
                 bindPendingAlias()
@@ -863,9 +872,7 @@ struct ItemEditorScreen: View {
                 try env.repository.update(draft)
                 republishSharedDisplayIfNeeded(for: draft)
             }
-            // The save committed every attachment added this session — they
-            // are owned by the item now, not staged.
-            stagedAttachmentMetas = []
+            stagedArtifacts = []
             Haptics.success()
             dismiss()
         } catch {

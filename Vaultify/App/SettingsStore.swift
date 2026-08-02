@@ -94,6 +94,14 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     /// imply vault-item uploads, and the approval push pipeline must never be
     /// gated by the vault-sync toggle (control plane ≠ secret plane).
     var approvalModeEnabled: Bool { didSet { defaults.set(approvalModeEnabled, forKey: Key.approvalMode) } }
+    /// CloudKit artifact plane (encrypted attachment binaries as CKAssets).
+    /// Default OFF and not surfaced in Settings yet: the mapping + merge policy
+    /// exist (`ArtifactCloudMapping`), but the plane stays out of the live
+    /// push/pull until its convergence story — asset upload retries,
+    /// partial-download honesty, and the two-phase delete — is proven. Nothing
+    /// may read this as "artifacts sync" until `CloudSyncService` actually
+    /// wires the plane behind it.
+    var artifactSyncEnabled: Bool { didSet { defaults.set(artifactSyncEnabled, forKey: Key.artifactSync) } }
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
     /// Anonymous GA4 usage statistics (see `AnalyticsEngine`'s privacy contract).
     /// Opt-out; the didSet keeps the live engine in lockstep so flipping the
@@ -225,6 +233,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         auditRemindersEnabled = d.object(forKey: Key.auditReminders) as? Bool ?? true
         iCloudSyncEnabled = d.bool(forKey: Key.icloud)
         approvalModeEnabled = d.bool(forKey: Key.approvalMode)
+        artifactSyncEnabled = d.bool(forKey: Key.artifactSync)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
         analyticsEnabled = d.object(forKey: Key.analytics) as? Bool ?? true
         crashReportingEnabled = d.object(forKey: Key.crashReporting) as? Bool ?? true
@@ -292,6 +301,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         static let auditReminders = "audit_reminders_enabled"
         static let icloud = "icloud_sync_enabled"
         static let approvalMode = "approval_mode_enabled"
+        static let artifactSync = "artifact_sync_enabled"
         static let favicons = "show_website_icons"
         static let analytics = "analytics_enabled"
         static let crashReporting = "crash_reporting_enabled"

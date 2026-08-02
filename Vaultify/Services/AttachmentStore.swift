@@ -7,6 +7,11 @@ nonisolated struct AttachmentMeta: Codable, Sendable, Identifiable {
     var name: String
     var ext: String
     var size: Int
+    /// True when the bytes live in the v2 `ArtifactStore` (per-artifact DEK,
+    /// backup-portable) instead of the legacy vault-key sidecar. Optional so
+    /// every pre-existing pointer decodes unchanged, and old builds simply
+    /// ignore the extra key.
+    var v2: Bool? = nil
 
     static let tag = "att:"
 

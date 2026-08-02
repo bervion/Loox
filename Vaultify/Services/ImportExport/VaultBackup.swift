@@ -13,14 +13,33 @@ nonisolated enum VaultBackup {
         /// Archived items travel in the backup (they are vault content) and
         /// restore back into the Archive instead of surfacing as live items.
         var archived: Bool
+        /// Stable item id — a restore that keeps ids lets artifacts re-attach
+        /// to their owner and makes re-importing the same backup idempotent.
+        var id: String?
+        var favorite: Bool?
+        var pinned: Bool?
+        /// The record-level icon override (`VaultItem.iconAsset`).
+        var iconAssetOverride: String?
+        var rotateDays: Int?
+        var passwordChangedAt: Date?
+        var createdAt: Date?
+        var updatedAt: Date?
 
         init(title: String, category: String, fields: [DynamicField],
-             tags: [String] = [], folderName: String? = nil, archived: Bool = false) {
+             tags: [String] = [], folderName: String? = nil, archived: Bool = false,
+             id: String? = nil, favorite: Bool? = nil, pinned: Bool? = nil,
+             iconAssetOverride: String? = nil, rotateDays: Int? = nil,
+             passwordChangedAt: Date? = nil, createdAt: Date? = nil, updatedAt: Date? = nil) {
             self.title = title; self.category = category; self.fields = fields
             self.tags = tags; self.folderName = folderName; self.archived = archived
+            self.id = id; self.favorite = favorite; self.pinned = pinned
+            self.iconAssetOverride = iconAssetOverride; self.rotateDays = rotateDays
+            self.passwordChangedAt = passwordChangedAt
+            self.createdAt = createdAt; self.updatedAt = updatedAt
         }
 
-        /// Back-compat decode: backups written before folders/tags/archive lack these keys.
+        /// Back-compat decode: backups written before folders/tags/archive —
+        /// and before the v2 identity/metadata fields — lack these keys.
         init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             title = try c.decode(String.self, forKey: .title)
@@ -29,9 +48,63 @@ nonisolated enum VaultBackup {
             tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
             folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
             archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
+            id = try c.decodeIfPresent(String.self, forKey: .id)
+            favorite = try c.decodeIfPresent(Bool.self, forKey: .favorite)
+            pinned = try c.decodeIfPresent(Bool.self, forKey: .pinned)
+            iconAssetOverride = try c.decodeIfPresent(String.self, forKey: .iconAssetOverride)
+            rotateDays = try c.decodeIfPresent(Int.self, forKey: .rotateDays)
+            passwordChangedAt = try c.decodeIfPresent(Date.self, forKey: .passwordChangedAt)
+            createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt)
+            updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt)
         }
     }
-    struct EncryptedBackup: Codable { var version: Int; var salt: Data; var kdf: KdfParams; var sealed: Data }
+
+    /// Envelope. Version 1 seals the payload directly under the passphrase KEK.
+    /// Version 2 seals the payload under a random content key (CK) and stores
+    /// the CK wrapped by the KEK in `wrappedCK` — so per-artifact keys inside
+    /// the payload chain to one place and a future re-passphrase only re-wraps
+    /// 32 bytes. `wrappedCK` is optional so v1 files still decode.
+    struct EncryptedBackup: Codable {
+        var version: Int
+        var salt: Data
+        var kdf: KdfParams
+        var sealed: Data
+        var wrappedCK: Data? = nil
+    }
+
+    /// One artifact on the backup wire: manifest fields in the clear WITHIN the
+    /// sealed payload, the blob sealed again under its own random key, and that
+    /// key wrapped by the backup content key (AAD-bound to id + owner).
+    struct PortableArtifact: Codable {
+        var id: String
+        var ownerItemId: String
+        var filename: String
+        var utiType: String
+        var byteCount: Int
+        var plaintextSHA256: Data
+        var wrappedKey: Data
+        var blob: Data
+    }
+
+    /// Plaintext artifact exchanged with `ArtifactStore` on both sides of the
+    /// wire: export input (decrypted from the vault) and validated import
+    /// output (ready to re-seal under the destination vault key).
+    struct ArtifactPayload {
+        var id: String
+        var ownerItemId: String
+        var filename: String
+        var utiType: String
+        var data: Data
+    }
+
+    enum BackupFailure: Error, Equatable {
+        /// A v2 envelope without its wrapped content key, or artifacts inside
+        /// a payload that never carried one.
+        case missingContentKey
+        /// An artifact blob failed authentication, hash, or length validation.
+        /// Import is all-or-nothing, so this aborts the whole restore.
+        case artifactCorrupt
+    }
 
     /// The Level-2 Secret Key wrap from the Keychain bundle. Sealed field values
     /// travel inside items, but without this wrap a restore on another device
@@ -48,12 +121,16 @@ nonisolated enum VaultBackup {
         var items: [(item: VaultItem, folderName: String?)]
         var passkeys: [PasskeySecret]
         var level2: Level2Wrap?
+        /// Fully validated (authenticated + hash/length checked) artifact
+        /// plaintexts. Populated only from v2 backups.
+        var artifacts: [ArtifactPayload] = []
     }
 
     private struct PortableVaultPayload: Codable {
         var items: [PortableItem]
         var passkeys: [PasskeySecret]?
         var level2: Level2Wrap?
+        var artifacts: [PortableArtifact]?
     }
 
     // MARK: CSV
@@ -132,6 +209,7 @@ nonisolated enum VaultBackup {
     static func exportEncrypted(_ items: [VaultItem], folderNames: [String: String] = [:],
                                 passkeys: [PasskeySecret] = [],
                                 level2: Level2Wrap? = nil,
+                                artifacts: [ArtifactPayload] = [],
                                 passphrase: String) async throws -> Data {
         let portable = items.map {
             // An unknown-category item (written by a newer build) exports its
@@ -141,19 +219,46 @@ nonisolated enum VaultBackup {
                          category: $0.unknownCategoryRaw ?? $0.category.rawValue,
                          fields: $0.fields,
                          tags: $0.tags, folderName: $0.folderId.flatMap { folderNames[$0] },
-                         archived: $0.archived)
+                         archived: $0.archived,
+                         id: $0.id, favorite: $0.favorite, pinned: $0.pinned,
+                         iconAssetOverride: $0.iconAsset, rotateDays: $0.rotateDays,
+                         passwordChangedAt: $0.passwordChangedAt,
+                         createdAt: $0.createdAt, updatedAt: $0.updatedAt)
         }
-        let json = try JSONEncoder().encode(PortableVaultPayload(items: portable,
-                                                                 passkeys: passkeys.isEmpty ? nil : passkeys,
-                                                                 level2: level2))
+        var contentKey = CryptoRandom.bytes(32)
+        defer { secureZero(&contentKey) }
+        let contentKeyWrap = SecureBytes(contentKey)
+        let portableArtifacts: [PortableArtifact] = try artifacts.map { payload in
+            var blobKey = ArtifactCrypto.newDEK()
+            defer { secureZero(&blobKey) }
+            let blob = try ArtifactCrypto.sealArtifact(
+                plaintext: payload.data, dek: blobKey,
+                artifactID: payload.id, ownerItemID: payload.ownerItemId,
+                purpose: ArtifactCrypto.purposeBackup)
+            let wrappedKey = try ArtifactCrypto.wrapDEK(
+                blobKey, under: contentKeyWrap,
+                artifactID: payload.id, ownerItemID: payload.ownerItemId)
+            return PortableArtifact(id: payload.id, ownerItemId: payload.ownerItemId,
+                                    filename: payload.filename, utiType: payload.utiType,
+                                    byteCount: payload.data.count,
+                                    plaintextSHA256: ArtifactCrypto.sha256(payload.data),
+                                    wrappedKey: wrappedKey, blob: blob)
+        }
+        let json = try JSONEncoder().encode(PortableVaultPayload(
+            items: portable,
+            passkeys: passkeys.isEmpty ? nil : passkeys,
+            level2: level2,
+            artifacts: portableArtifacts.isEmpty ? nil : portableArtifacts))
         let salt = KeyHierarchy.newSalt()
         let kdf = KdfParams.standard
         var kek = try await Task.detached(priority: .userInitiated) {
             try KeyHierarchy.deriveKEK(passphrase: passphrase, salt: salt, params: kdf)
         }.value
         defer { secureZero(&kek) }
-        let sealed = try AESGCM.seal(json, key: kek)
-        return try JSONEncoder().encode(EncryptedBackup(version: 1, salt: Data(salt), kdf: kdf, sealed: sealed))
+        let sealed = try AESGCM.seal(json, key: contentKey)
+        let wrappedCK = try AESGCM.seal(Data(contentKey), key: kek)
+        return try JSONEncoder().encode(EncryptedBackup(version: 2, salt: Data(salt), kdf: kdf,
+                                                        sealed: sealed, wrappedCK: wrappedCK))
     }
 
     static func importEncrypted(_ data: Data, passphrase: String) async throws -> [(item: VaultItem, folderName: String?)] {
@@ -166,7 +271,17 @@ nonisolated enum VaultBackup {
             try KeyHierarchy.deriveKEK(passphrase: passphrase, salt: Array(backup.salt), params: backup.kdf)
         }.value
         defer { secureZero(&kek) }
-        let json = try AESGCM.open(backup.sealed, key: kek)
+        // v1 seals the payload directly under the KEK; v2 goes through the CK.
+        var contentKey: [UInt8] = []
+        defer { secureZero(&contentKey) }
+        let json: Data
+        if backup.version >= 2 {
+            guard let wrappedCK = backup.wrappedCK else { throw BackupFailure.missingContentKey }
+            contentKey = Array(try AESGCM.open(wrappedCK, key: kek))
+            json = try AESGCM.open(backup.sealed, key: contentKey)
+        } else {
+            json = try AESGCM.open(backup.sealed, key: kek)
+        }
         let payload: PortableVaultPayload
         if let decoded = try? JSONDecoder().decode(PortableVaultPayload.self, from: json) {
             payload = decoded
@@ -176,9 +291,18 @@ nonisolated enum VaultBackup {
         }
         let items = payload.items.map { portable -> (item: VaultItem, folderName: String?) in
             let known = ItemCategory(rawValue: portable.category)
-            var item = VaultItem(category: known ?? .custom,
+            var item = VaultItem(id: portable.id ?? UUID().uuidString,
+                                 category: known ?? .custom,
                                  title: portable.title, fields: portable.fields,
-                                 tags: portable.tags, archived: portable.archived)
+                                 favorite: portable.favorite ?? false,
+                                 tags: portable.tags,
+                                 iconAsset: portable.iconAssetOverride,
+                                 pinned: portable.pinned ?? false,
+                                 archived: portable.archived,
+                                 rotateDays: portable.rotateDays ?? 0,
+                                 passwordChangedAt: portable.passwordChangedAt,
+                                 createdAt: portable.createdAt ?? .now,
+                                 updatedAt: portable.updatedAt ?? .now)
             // Presentation degrades to `.custom`; identity is preserved so a
             // later save (or re-export) writes the original category back.
             item.unknownCategoryRaw = known == nil ? portable.category : nil
@@ -188,7 +312,44 @@ nonisolated enum VaultBackup {
             try PasskeyEnvelope.validate(secret)
             return secret
         }
-        return EncryptedImport(items: items, passkeys: passkeys, level2: payload.level2)
+        let artifacts = try validatedArtifacts(payload.artifacts, contentKey: contentKey)
+        return EncryptedImport(items: items, passkeys: passkeys, level2: payload.level2,
+                               artifacts: artifacts)
+    }
+
+    /// Authenticate + verify EVERY artifact blob before anything is returned:
+    /// restore is all-or-nothing, so one corrupt blob fails the whole import
+    /// here — before a single item or file could land.
+    private static func validatedArtifacts(_ portables: [PortableArtifact]?,
+                                           contentKey: [UInt8]) throws -> [ArtifactPayload] {
+        guard let portables, !portables.isEmpty else { return [] }
+        guard !contentKey.isEmpty else { throw BackupFailure.missingContentKey }
+        let wrap = SecureBytes(contentKey)
+        return try portables.map { portable in
+            guard portable.byteCount <= ArtifactCrypto.maxPlaintextBytes else {
+                throw BackupFailure.artifactCorrupt
+            }
+            let plaintext: Data
+            do {
+                var blobKey = try ArtifactCrypto.unwrapDEK(
+                    portable.wrappedKey, under: wrap,
+                    artifactID: portable.id, ownerItemID: portable.ownerItemId)
+                defer { secureZero(&blobKey) }
+                plaintext = try ArtifactCrypto.openArtifact(
+                    envelope: portable.blob, dek: blobKey,
+                    artifactID: portable.id, ownerItemID: portable.ownerItemId,
+                    purpose: ArtifactCrypto.purposeBackup)
+            } catch {
+                throw BackupFailure.artifactCorrupt
+            }
+            guard plaintext.count == portable.byteCount,
+                  ArtifactCrypto.sha256(plaintext) == portable.plaintextSHA256 else {
+                throw BackupFailure.artifactCorrupt
+            }
+            return ArtifactPayload(id: portable.id, ownerItemId: portable.ownerItemId,
+                                   filename: portable.filename, utiType: portable.utiType,
+                                   data: plaintext)
+        }
     }
 
     // MARK: CSV helpers

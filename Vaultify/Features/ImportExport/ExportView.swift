@@ -126,8 +126,38 @@ struct ExportView: View {
                           let kdf = bundle.l2Kdf else { return nil }
                     return VaultBackup.Level2Wrap(wrappedL2SK: wrapped, salt: salt, kdf: kdf)
                 }
+                // Legacy sidecar attachments adopt into first-class artifacts
+                // at export time — a backup is exactly the moment their bytes
+                // must become portable. Adoption is idempotent; missing legacy
+                // bytes stay honestly absent.
+                for item in items {
+                    for field in item.fields where field.kind == .fileRef {
+                        guard let meta = AttachmentMeta.decode(field.value),
+                              meta.v2 != true else { continue }
+                        _ = try? env.artifactStore.adoptLegacyAttachment(
+                            meta, ownerItemId: item.id, from: env.attachmentStore)
+                    }
+                }
+                // Artifacts whose bytes live on this device travel in the
+                // backup; a record in the honest missing-bytes state has
+                // nothing to contribute and is skipped rather than failing
+                // the whole export.
+                let artifacts: [VaultBackup.ArtifactPayload] = items.flatMap { item in
+                    env.artifactStore.records(ownerItemId: item.id).compactMap { record in
+                        guard env.artifactStore.hasBytes(record),
+                              let data = try? env.artifactStore.loadPlaintext(record),
+                              let manifest = try? env.artifactStore.manifest(for: record)
+                        else { return nil }
+                        return VaultBackup.ArtifactPayload(id: record.id,
+                                                           ownerItemId: record.ownerItemId,
+                                                           filename: manifest.filename,
+                                                           utiType: manifest.utiType,
+                                                           data: data)
+                    }
+                }
                 let data = try await VaultBackup.exportEncrypted(items, folderNames: folderNames,
                                                                  passkeys: passkeys, level2: level2,
+                                                                 artifacts: artifacts,
                                                                  passphrase: passphrase)
                 exportURL = try write(data, name: "loox-backup.vaultify")
             } else {

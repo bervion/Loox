@@ -43,7 +43,13 @@ struct AttachmentFieldRow: View {
         Menu {
             Button { preview() } label: { Label { Text("Quick Look") } icon: { VaultIcon(Icons.reveal) } }
             Button(role: .destructive) {
-                env.attachmentStore.delete(meta)
+                if meta.v2 == true {
+                    if let record = env.artifactStore.record(id: meta.id) {
+                        env.artifactStore.delete(record)
+                    }
+                } else {
+                    env.attachmentStore.delete(meta)
+                }
                 onRemove()
             } label: { Label { Text("Delete Attachment") } icon: { VaultIcon(Icons.delete) } }
         } label: {
@@ -65,7 +71,24 @@ struct AttachmentFieldRow: View {
     private func preview() {
         guard let meta else { return }
         do {
-            previewURL = try env.attachmentStore.decryptToTemp(meta)
+            if meta.v2 == true {
+                guard let record = env.artifactStore.record(id: meta.id) else {
+                    // Honest missing state: the record (or its bytes) is not on
+                    // this device — never fabricate a preview.
+                    self.error = appString("File isn’t on this device.")
+                    return
+                }
+                previewURL = try env.artifactStore.exportPlaintext(record)
+            } else if let url = try? env.attachmentStore.decryptToTemp(meta) {
+                previewURL = url
+            } else if let record = env.artifactStore.record(id: meta.id) {
+                // A legacy pointer restored onto a new device: the sidecar
+                // bytes never travelled, but backup restore recreated the
+                // artifact under the same id.
+                previewURL = try env.artifactStore.exportPlaintext(record)
+            } else {
+                self.error = appString("File isn’t on this device.")
+            }
         } catch {
             self.error = appString("Couldn’t open attachment.")
         }

@@ -173,6 +173,14 @@ struct VaultifyApp: App {
                 // being sampled once at launch.
                 .onChange(of: env.session.state, initial: true) { _, state in
                     CrashReporter.shared.set(.vaultLockState(Self.lockStateIdentifier(state)))
+                    // Artifact hygiene rides the lock-state edge: unlock runs
+                    // the reconcile sweep (orphan staged files, records without
+                    // bytes), and every transition wipes plaintext temp
+                    // exports — a decrypted preview must not outlive its vault.
+                    if state == .unlocked {
+                        env.artifactStore.reconcile()
+                    }
+                    env.artifactStore.cleanupTempExports()
                 }
                 // Nothing is joined until this is answered.
                 .alert(InvitePrompt.title(sender: pendingInvite?.senderDisplayName),

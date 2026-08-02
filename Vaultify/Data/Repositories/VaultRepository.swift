@@ -426,6 +426,42 @@ import UserNotifications
         }
     }
 
+    /// Bulk insert for backup restore: one `context.save()` + one `reload()`
+    /// for the whole batch, preserving each item's own id and metadata
+    /// (favorite/pinned/rotation/timestamps) instead of re-minting them. Same
+    /// shared-projection guard as `add`; ineligible items are skipped, never
+    /// a partial failure.
+    func addAll(_ newItems: [VaultItem]) throws {
+        guard let key = session.vaultKey else { throw AuthError.locked }
+        var insertedCategories: [ItemCategory] = []
+        for item in newItems {
+            guard item.sharedOrigin == nil, !item.id.hasPrefix("shared::") else { continue }
+            let record = ItemRecord(id: item.id,
+                                    sealed: try seal(item, key: key),
+                                    favorite: item.favorite,
+                                    createdAt: item.createdAt,
+                                    updatedAt: item.updatedAt,
+                                    trashedAt: item.trashedAt)
+            record.pinned = item.pinned
+            record.archived = item.archived
+            record.useCount = item.useCount
+            record.isDefaultIdentity = item.isDefaultIdentity
+            record.rotateDays = item.rotateDays
+            // Restored items keep their true rotation baseline; a fresh item
+            // falls back to its creation time exactly like `add`.
+            record.passwordChangedAt = item.passwordChangedAt ?? item.createdAt
+            store.context.insert(record)
+            insertedCategories.append(item.category)
+        }
+        guard !insertedCategories.isEmpty else { return }
+        try store.context.save()
+        reload()
+        noteLocalMutation()
+        for category in insertedCategories {
+            AnalyticsEngine.shared.log(.itemCreated(category))
+        }
+    }
+
     func update(_ item: VaultItem) throws {
         // Same guard as `add` — the missing-record fallback below upserts.
         guard item.sharedOrigin == nil, !item.id.hasPrefix("shared::") else { return }
