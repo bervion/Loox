@@ -76,12 +76,30 @@ struct ItemEditorScreen: View {
         !draft.title.trimmingCharacters(in: .whitespaces).isEmpty || draft.fields.contains { !$0.isEmpty }
     }
 
+    /// Registry template driving grouped sections — developer-family only, so
+    /// the eight shipped categories keep their exact editors (parity).
+    private var editorTemplate: ItemTemplateDefinition? {
+        guard let kindID = draft.semantics?.kindID,
+              let template = ItemTemplateRegistry.definition(for: kindID),
+              template.family == .developer else { return nil }
+        return template
+    }
+
+    /// Scaffold title: the template's name for semantic items, else the
+    /// category name.
+    private var editorTitle: LocalizedStringResource {
+        if let template = editorTemplate {
+            return LocalizedStringResource(String.LocalizationValue(template.title)).inAppLocalized
+        }
+        return draft.category.title
+    }
+
     var body: some View {
         VaultSheetScaffold(
             // A real (inline) title is required for the nav bar to render its scroll-edge
             // blur material — an empty title leaves the bar background-less, so scrolled
-            // content shows through the toolbar pills. Use the item's category name.
-            title: draft.category.title,
+            // content shows through the toolbar pills. Use the item's type name.
+            title: editorTitle,
             leading: {
                 // Compact X icon (instead of "Cancel" text) so the centre title fits.
                 Button {
@@ -127,11 +145,19 @@ struct ItemEditorScreen: View {
                 // awkwardly above the form.
 
                 // Login gets grouped sections (Credentials · Websites · Custom · Notes);
-                // other categories keep one flat, reorderable field list.
+                // developer-family templates get registry-driven sections; the
+                // remaining categories keep one flat, reorderable field list.
                 if draft.category == .login {
                     LoginEditorSections(
                         draft: $draft,
                         onScanTOTP: { scanningFieldID = $0 },
+                        onAddAttachment: { showAttachmentPicker = true },
+                        onProtectedDeleteBlocked: { blockedProtectedDelete = true },
+                        onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)
+                } else if let template = editorTemplate {
+                    TemplateEditorSections(
+                        draft: $draft,
+                        template: template,
                         onAddAttachment: { showAttachmentPicker = true },
                         onProtectedDeleteBlocked: { blockedProtectedDelete = true },
                         onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)

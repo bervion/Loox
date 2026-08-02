@@ -19,6 +19,10 @@ struct DetailFieldRow: View {
     /// a "Protect…" that Face-IDs and then silently does nothing is worse
     /// than its absence. Copy/reveal/large-type stay.
     var readOnly = false
+    /// Action-bound device-owner re-auth before REVEAL or COPY of this value
+    /// (capability resolver `revealAuthorization == .reauthenticate` — SSH
+    /// private keys, API tokens). Concealing never needs authorization.
+    var requiresReauth = false
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -256,14 +260,22 @@ struct DetailFieldRow: View {
             // Large Type renders the raw value full-screen — for a multiline
             // secret that would bypass the mask entirely, so it is absent there.
             if presentation != .protectedMultiline {
-                Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon(Icons.text) } }
+                Button { authorizeThen { showLargeType = true } } label: {
+                    Label { Text("Large Type") } icon: { VaultIcon(Icons.text) }
+                }
             }
             // TOTP renders its code live — a Reveal toggle is meaningless there.
             if isSecret, field.kind != .totp {
                 Button {
-                    withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { revealed.toggle() }
-                    if revealed { onUsed() }
-                    scheduleConcealTimeout()
+                    if revealed {
+                        conceal()
+                    } else {
+                        authorizeThen {
+                            withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { revealed = true }
+                            onUsed()
+                            scheduleConcealTimeout()
+                        }
+                    }
                 } label: {
                     Label { Text(revealed ? "Conceal" : "Reveal") } icon: { VaultIcon(revealed ? Icons.hide : Icons.reveal) }
                 }
@@ -341,14 +353,31 @@ struct DetailFieldRow: View {
         }
     }
 
+    /// Runs `action` directly, or behind an action-bound device-owner re-auth
+    /// prompt when this field's policy demands one. A failed or cancelled
+    /// prompt performs nothing.
+    private func authorizeThen(_ action: @escaping @MainActor () -> Void) {
+        guard requiresReauth else { action(); return }
+        Task {
+            do {
+                try await env.session.requireBiometrics(reason: appString("Confirm it’s you"))
+                action()
+            } catch {
+                Haptics.warning()
+            }
+        }
+    }
+
     private func copy() {
         guard !copied, !field.value.isEmpty else { return }
-        env.clipboard.copy(copyValue, label: field.label, sensitive: isSecret || field.kind == .totp)
-        onUsed()
-        copied = true
-        Task {
-            try? await Task.sleep(for: .seconds(1.2))
-            withAnimation(.easeOut(duration: 0.3)) { copied = false }
+        authorizeThen {
+            env.clipboard.copy(copyValue, label: field.label, sensitive: isSecret || field.kind == .totp)
+            onUsed()
+            copied = true
+            Task {
+                try? await Task.sleep(for: .seconds(1.2))
+                withAnimation(.easeOut(duration: 0.3)) { copied = false }
+            }
         }
     }
 

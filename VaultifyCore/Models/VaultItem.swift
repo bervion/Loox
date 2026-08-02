@@ -106,7 +106,15 @@ nonisolated struct VaultItem: Identifiable, Equatable, Codable, Sendable {
 
     /// Subtitle shown in list rows (username/email/site, never the secret —
     /// an extra-protected value is ciphertext and must not surface either).
+    /// Semantic items prefer their template's subtitle role (API environment,
+    /// SSH fingerprint, Git username…) over the generic credential heuristic.
     var subtitle: String? {
+        if let kindID = semantics?.kindID,
+           let role = ItemTemplateRegistry.definition(for: kindID)?.subtitleRole,
+           let field = fields.first(where: { $0.roleID == role }),
+           !field.isEmpty, !field.protected, !field.isExtraProtected {
+            return field.value
+        }
         if let u = usernameField, !u.isEmpty, !u.isExtraProtected { return u.value }
         if let s = urlField, !s.isEmpty, !s.isExtraProtected { return s.value }
         return nil

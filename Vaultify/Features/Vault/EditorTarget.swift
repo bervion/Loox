@@ -16,4 +16,13 @@ enum EditorTarget: Identifiable {
         case .draft(let item): return "draft-\(item.id)"
         }
     }
+
+    /// A brand-new item created from a registry template: fields carry their
+    /// semantic roles and the item its stable kind ID from the first byte.
+    static func newFromTemplate(_ template: ItemTemplateDefinition) -> EditorTarget {
+        var item = VaultItem(category: template.legacyCategory, title: "",
+                             fields: template.defaultFields)
+        item.semantics = template.newItemSemantics
+        return .draft(item)
+    }
 }

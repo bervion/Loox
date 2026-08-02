@@ -147,8 +147,16 @@ struct ItemDetailScreen: View {
                 VStack(spacing: Space.s6) {
                     header(item)
                     if item.sharedOrigin != nil { sharedBadge }
-                    if item.sharedOrigin == nil {
+                    if item.isUnsupportedSchema {
+                        // Written by a newer, incompatible app version: every
+                        // value stays concealed and the record read-only. The
+                        // data itself is intact — only this build cannot
+                        // safely interpret it.
+                        VaultInfoBanner(.warning, icon: Icons.alert,
+                                        text: "This item was saved by a newer version of the app. Update the app to view or edit it. Its data is safe and will sync unchanged.")
+                    } else if item.sharedOrigin == nil {
                         fieldsCard(item)
+                        TemplateActionsCard(item: item)
                     } else {
                         // Shared VALUES render only after live authorization
                         // (INV-01) — header/title above are Tier-1 metadata.
@@ -227,8 +235,12 @@ struct ItemDetailScreen: View {
                 }
                 ToolbarItem(placement: .platformPrimaryAction) {
                     Menu {
-                        Button { editing = .edit(item) } label: { Label { Text("Edit") } icon: { VaultIcon(Icons.edit) } }
-                            .accessibilityIdentifier("item.detail.edit")
+                        // An unsupported-schema item is read-only recovery: an
+                        // Edit that silently strips newer data must not exist.
+                        if !item.isUnsupportedSchema {
+                            Button { editing = .edit(item) } label: { Label { Text("Edit") } icon: { VaultIcon(Icons.edit) } }
+                                .accessibilityIdentifier("item.detail.edit")
+                        }
                         // Pin + favorite moved here from beside the Space pill —
                         // the pill (Space + identity) needs the whole line.
                         Button { env.repository.togglePin(item) } label: {
@@ -556,7 +568,12 @@ struct ItemDetailScreen: View {
                                        totpSecret: field.kind == .totp ? nil : totpSecret,
                                        onChange: { update($0, in: item) },
                                        onRemove: { remove(field, in: item) },
-                                       onUsed: { env.repository.markUsed(item) })
+                                       onUsed: { env.repository.markUsed(item) },
+                                       // Action-bound re-auth for key material and
+                                       // developer tokens (resolver policy).
+                                       requiresReauth: ItemCapabilityResolver
+                                           .capabilities(for: field, in: item)
+                                           .revealAuthorization == .reauthenticate)
                     }
                 }
                 // Reports the password row's on-screen position (T3 bottom cluster) —

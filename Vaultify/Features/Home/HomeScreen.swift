@@ -31,7 +31,7 @@ struct HomeScreen: View {
     /// The create-item type picker + the category chosen there, presented as the
     /// editor once the picker finishes dismissing.
     @State private var showItemTypePicker = false
-    @State private var pendingNewCategory: ItemCategory?
+    @State private var pendingNewTarget: EditorTarget?
     @State private var showGenerator = false
     @State private var showTotpList = false
     @State private var showFolderPicker = false
@@ -272,12 +272,12 @@ struct HomeScreen: View {
             }
             // Item-type picker → present the editor once it finishes dismissing.
             .sheet(isPresented: $showItemTypePicker, onDismiss: {
-                if let category = pendingNewCategory {
-                    pendingNewCategory = nil
-                    editorTarget = .new(category)
+                if let target = pendingNewTarget {
+                    pendingNewTarget = nil
+                    editorTarget = target
                 }
             }) {
-                ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
+                ItemTypePickerSheet { pendingNewTarget = $0; showItemTypePicker = false }
             }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
             // TOTP list is reachable from both the Authenticator section header and the
@@ -311,6 +311,14 @@ struct HomeScreen: View {
                     // visible (INV-R03). Never hidden or reordered (see `HomeSection`).
                     // Regular width: the sidebar's avatar row carries this instead.
                     if horizontalSizeClass != .regular { profileRow }
+
+                    // Honest recovery state: records whose sealed payload failed
+                    // to open are preserved, never silently missing. Not a
+                    // reorderable section — data integrity outranks layout.
+                    if !env.repository.quarantined.isEmpty {
+                        VaultInfoBanner(.warning, icon: Icons.alert,
+                                        text: "Some items can’t be opened right now. Their data is preserved. Updating the app or restoring a backup can recover them.")
+                    }
 
                     // Customizable protagonist band — order and visibility come from
                     // `SettingsStore` (edited via the header's layout editor). Each section
