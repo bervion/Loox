@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.50.0] - 2026-08-02
+
+### Added
+- semantic developer vault types, fail-closed capability resolver, and encrypted artifact lifecycle (#193)
+
+
 ## [1.49.1] - 2026-08-01
 
 ### Changed

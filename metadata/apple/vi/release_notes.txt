@@ -1,1 +1,1 @@
-Bộ lọc rõ ràng hơn: chọn Nhóm và sắp xếp giờ là hai lựa chọn riêng biệt, giúp bạn quản lý kho dễ dàng hơn.
+Bản cập nhật này bổ sung các loại mục lưu trữ dành cho nhà phát triển như khóa API và thông tin SSH, cùng với cơ chế bảo vệ được cải thiện cho các mục nhạy cảm.
