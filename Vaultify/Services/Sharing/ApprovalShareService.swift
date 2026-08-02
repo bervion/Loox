@@ -212,7 +212,8 @@ import Foundation
                       nowUnixMs: Int64,
                       deviceScope: DeviceScope = .multi,
                       allowedDevices: [DeviceHPKEDirectoryEntry] = [],
-                      displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []) async throws -> AccessGrant {
+                      displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = [],
+                      displayCategory: String? = nil) async throws -> AccessGrant {
         let identity = try DeviceSigningIdentity.loadOrCreate()
         // Single-device is meaningless without at least one enrolled device
         // key — and it must NEVER fall back to the legacy synced participant
@@ -244,6 +245,7 @@ import Foundation
                                             websiteHost: displayWebsiteHost,
                                             updatedAtUnixMs: nowUnixMs, revision: 1,
                                             fields: displayFields)
+        display.category = displayCategory
         display.passkeys = displayPasskeys.isEmpty ? nil : displayPasskeys
         if grant.allowedDeviceKeyBindings.isEmpty {
             records.append(ApprovalRecordMapping.displayEnvelopeRecord(
@@ -317,13 +319,15 @@ import Foundation
     /// second-granular monotonic so recipients drop out-of-order updates.
     func republishDisplayEnvelope(itemId: String, title: String, websiteHost: String?,
                                   displayFields: [String: SharedDisplayEnvelope.FieldMeta],
-                                  zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws {
+                                  zoneID: CKRecordZone.ID, nowUnixMs: Int64,
+                                  displayCategory: String? = nil) async throws {
         let grant = try await fetchGrantFresh(zoneID: zoneID, forItemId: itemId,
                                               nowUnixMs: nowUnixMs)
-        let display = SharedDisplayEnvelope(title: title, websiteHost: websiteHost,
+        var display = SharedDisplayEnvelope(title: title, websiteHost: websiteHost,
                                             updatedAtUnixMs: nowUnixMs,
                                             revision: UInt32(clamping: nowUnixMs / 1000),
                                             fields: displayFields)
+        display.category = displayCategory
         let record = ApprovalRecordMapping.displayEnvelopeRecord(
             sealedBlob: try display.sealed(toParticipantPubKey: grant.participantPubKey,
                                            grantId: grant.id),

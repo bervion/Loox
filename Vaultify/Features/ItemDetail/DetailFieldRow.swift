@@ -21,8 +21,10 @@ struct DetailFieldRow: View {
     var readOnly = false
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @State private var copied = false
     @State private var revealed = false
+    @State private var concealTask: Task<Void, Never>?
     @State private var showLargeType = false
     @State private var showProtect = false
 
@@ -103,6 +105,12 @@ struct DetailFieldRow: View {
         .foregroundStyle(copied ? VaultColors.copyFlashText : theme.color(.primary))
         .contentShape(.rect)
         .onTapGesture { if tapCopies { copy() } }
+        // Reveal is one-shot: it expires on backgrounding and navigation away
+        // (vault lock tears the screen down, which lands in onDisappear too).
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { conceal() }
+        }
+        .onDisappear { conceal() }
         .animation(.easeOut(duration: 0.18), value: copied)
         .platformFullScreenCover(isPresented: $showLargeType) {
             // For a TOTP field, drive the grid live from the secret + show a header ring.
@@ -131,18 +139,40 @@ struct DetailFieldRow: View {
             }
     }
 
+    /// Secret policy is resolved BEFORE presentation kind (`DetailValuePresentation`),
+    /// so a protected multiline value can never fall through to the Markdown branch.
+    private var presentation: DetailValuePresentation {
+        .resolve(kind: field.kind, isProtected: field.protected, isCardNumber: isCardNumber)
+    }
+
     @ViewBuilder private var valueContent: some View {
-        switch field.kind {
-        case .totp:
+        switch presentation {
+        case .totpCode:
             TOTPCodeView(secret: field.value)
         case .url:
             // Website → SF, scheme greyed, domain/path in accent, tail-truncated.
             Text(urlColored(field.value)).vaultType(.body)
                 .lineLimit(1).truncationMode(.tail)
-        case .multiline:
+        case .markdownNote:
             // Notes render their Markdown (headings, lists, emphasis, links).
             MarkdownNoteText(text: field.value)
-        case .monospace where isCardNumber:
+        case .protectedMultiline:
+            // SSH private keys, recovery codes: fixed mask until explicit reveal.
+            // The mask has constant geometry (never derived from the value) so it
+            // leaks neither content nor length; revealed content is plain
+            // selectable monospace — secrets are not Markdown.
+            if revealed {
+                Text(field.value)
+                    .font(.vaultCode())
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(verbatim: String(repeating: "•", count: 12))
+                    .font(.vaultCode())
+                    .foregroundStyle(theme.color(.secondary))
+                    .accessibilityLabel(Text("Hidden value"))
+            }
+        case .cardNumber:
             // Grouped display only — storage (`field.value`) stays digits-only;
             // `GlyphResolveText` resolves the FORMATTED string so a revealed card
             // number reads in its real 4-4-4-4 (or Amex 4-6-5) grouping.
@@ -154,33 +184,30 @@ struct DetailFieldRow: View {
                 GlyphResolveText(text: formatted, isRevealed: revealed, font: .vaultCode())
                     .textSelection(.disabled)
             }
-        default:
-            // Both faces are SF. Secrets take `vaultCode` for its TABULAR digits, so a
-            // revealed value does not shift width as it resolves; usernames, emails,
-            // aliases and notes are prose and read better with proportional figures.
-            let valueFont: Font = isSecret ? .vaultCode() : VaultType.body.font
-            if isSecret {
-                // Controlled Reveal: glyphs resolve in place left-to-right
-                // instead of a whole-field crossfade between two views.
-                // `.textSelection` takes a concrete (non-uniform) type per
-                // branch, so the enabled/disabled cases can't share a ternary.
-                // Digit/letter/symbol colour-coding, same scheme as the generator and the
-                // Large Type viewer — a revealed password is read character by character.
-                if revealed {
-                    GlyphResolveText(text: field.value, isRevealed: revealed,
-                                     font: valueFont, colorized: true)
-                        .textSelection(.enabled)
-                } else {
-                    GlyphResolveText(text: field.value, isRevealed: revealed,
-                                     font: valueFont, colorized: true)
-                        .textSelection(.disabled)
-                }
-            } else {
-                Text(field.value)
-                    .font(valueFont)
-                    .lineLimit(1)
+        case .secretGlyphs:
+            // Controlled Reveal: glyphs resolve in place left-to-right
+            // instead of a whole-field crossfade between two views.
+            // `.textSelection` takes a concrete (non-uniform) type per
+            // branch, so the enabled/disabled cases can't share a ternary.
+            // Digit/letter/symbol colour-coding, same scheme as the generator and the
+            // Large Type viewer — a revealed password is read character by character.
+            // `vaultCode` for its TABULAR digits, so a revealed value does not
+            // shift width as it resolves.
+            if revealed {
+                GlyphResolveText(text: field.value, isRevealed: revealed,
+                                 font: .vaultCode(), colorized: true)
                     .textSelection(.enabled)
+            } else {
+                GlyphResolveText(text: field.value, isRevealed: revealed,
+                                 font: .vaultCode(), colorized: true)
+                    .textSelection(.disabled)
+                    .accessibilityLabel(Text("Hidden value"))
             }
+        case .plainText:
+            Text(field.value)
+                .font(VaultType.body.font)
+                .lineLimit(1)
+                .textSelection(.enabled)
         }
     }
 
@@ -207,7 +234,9 @@ struct DetailFieldRow: View {
                                   period: 30, onAccent: copied)
                 }
             }
-            if field.kind != .multiline {
+            // Plain notes carry no menu (reading surface); a protected multiline
+            // secret NEEDS one — the menu is its only reveal and copy path.
+            if presentation != .markdownNote {
                 // A read-out sitting flush against the menu reads as one blob; the rule tells
                 // the eye where the value ends and the control begins.
                 if showsActionDivider { RowActionDivider(onAccent: copied) }
@@ -224,12 +253,17 @@ struct DetailFieldRow: View {
     private var menu: some View {
         Menu {
             Button { copy() } label: { Label { Text("Copy") } icon: { VaultIcon(Icons.copy) } }
-            Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon(Icons.text) } }
+            // Large Type renders the raw value full-screen — for a multiline
+            // secret that would bypass the mask entirely, so it is absent there.
+            if presentation != .protectedMultiline {
+                Button { showLargeType = true } label: { Label { Text("Large Type") } icon: { VaultIcon(Icons.text) } }
+            }
             // TOTP renders its code live — a Reveal toggle is meaningless there.
             if isSecret, field.kind != .totp {
                 Button {
                     withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { revealed.toggle() }
                     if revealed { onUsed() }
+                    scheduleConcealTimeout()
                 } label: {
                     Label { Text(revealed ? "Conceal" : "Reveal") } icon: { VaultIcon(revealed ? Icons.hide : Icons.reveal) }
                 }
@@ -286,6 +320,25 @@ struct DetailFieldRow: View {
         rest.foregroundColor = theme.color(.accentText)
         result.append(rest)
         return result
+    }
+
+    /// Collapse a live reveal and cancel its expiry timer.
+    private func conceal() {
+        concealTask?.cancel()
+        concealTask = nil
+        revealed = false
+    }
+
+    /// A reveal is action-bound, not a persistent state: it expires on its own
+    /// after a short window even if the user stays on the screen.
+    private func scheduleConcealTimeout() {
+        concealTask?.cancel()
+        guard revealed else { concealTask = nil; return }
+        concealTask = Task {
+            try? await Task.sleep(for: .seconds(45))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.3)) { revealed = false }
+        }
     }
 
     private func copy() {

@@ -16,6 +16,10 @@ import UserNotifications
     private(set) var items: [VaultItem] = []
     private(set) var trashed: [VaultItem] = []
     private(set) var archived: [VaultItem] = []
+    /// Records whose sealed payload failed to open this session — surfaced as
+    /// recoverable state instead of silently missing items. Ciphertext stays
+    /// untouched in the store.
+    private(set) var quarantined: [QuarantinedRecord] = []
     private(set) var folders: [Folder] = []
     private(set) var passkeys: [PasskeyInfo] = []
     private(set) var personas: [Persona] = []
@@ -41,6 +45,7 @@ import UserNotifications
         items = []
         trashed = []
         archived = []
+        quarantined = []
         folders = []
         passkeys = []
         personas = []
@@ -60,14 +65,28 @@ import UserNotifications
         var active: [VaultItem] = []
         var trash: [VaultItem] = []
         var arch: [VaultItem] = []
+        var failed: [QuarantinedRecord] = []
         for record in records {
-            guard let item = try? decrypt(record, key: key) else { continue }
+            let item: VaultItem
+            do {
+                item = try decrypt(record, key: key)
+            } catch {
+                // Never a silent skip: keep the ciphertext untouched, surface a
+                // recoverable quarantine entry. Only the record ID and a coarse
+                // error class leave this scope — no payload, no error strings.
+                let failure: QuarantinedRecord.FailureClass =
+                    (error is DecodingError) ? .decodeFailed : .decryptFailed
+                failed.append(QuarantinedRecord(id: record.id, failure: failure,
+                                                updatedAt: record.updatedAt))
+                continue
+            }
             // Trash wins over archive when an item is both; archived items stay out
             // of every normal surface but remain reachable in the Archive screen.
             if item.isTrashed { trash.append(item) }
             else if item.archived { arch.append(item) }
             else { active.append(item) }
         }
+        quarantined = failed.sorted { $0.updatedAt > $1.updatedAt }
         items = active.sorted { $0.updatedAt > $1.updatedAt }
         trashed = trash.sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
         archived = arch.sorted { $0.updatedAt > $1.updatedAt }
@@ -542,24 +561,27 @@ import UserNotifications
     private func decrypt(_ record: ItemRecord, key: SecureBytes) throws -> VaultItem {
         let plaintext = try AESGCM.open(record.sealed, key: key)
         let secret = try JSONDecoder().decode(ItemSecret.self, from: plaintext)
-        return VaultItem(id: record.id,
-                         category: secret.category,
-                         title: secret.title,
-                         folderId: secret.folderId,
-                         fields: secret.fields,
-                         favorite: record.favorite,
-                         tags: secret.tags,
-                         iconAsset: secret.iconAsset,
-                         lastUsedAt: record.lastUsedAt,
-                         pinned: record.pinned,
-                         archived: record.archived,
-                         useCount: record.useCount,
-                         isDefaultIdentity: record.isDefaultIdentity,
-                         rotateDays: record.rotateDays,
-                         passwordChangedAt: record.passwordChangedAt,
-                         createdAt: record.createdAt,
-                         updatedAt: record.updatedAt,
-                         trashedAt: record.trashedAt)
+        var item = VaultItem(id: record.id,
+                             category: secret.category,
+                             title: secret.title,
+                             folderId: secret.folderId,
+                             fields: secret.fields,
+                             favorite: record.favorite,
+                             tags: secret.tags,
+                             iconAsset: secret.iconAsset,
+                             lastUsedAt: record.lastUsedAt,
+                             pinned: record.pinned,
+                             archived: record.archived,
+                             useCount: record.useCount,
+                             isDefaultIdentity: record.isDefaultIdentity,
+                             rotateDays: record.rotateDays,
+                             passwordChangedAt: record.passwordChangedAt,
+                             createdAt: record.createdAt,
+                             updatedAt: record.updatedAt,
+                             trashedAt: record.trashedAt)
+        // Preserved so a later save re-seals the ORIGINAL category raw value.
+        item.unknownCategoryRaw = secret.unknownCategoryRaw
+        return item
     }
 
     /// Unseal the record and return just the password field value. Returns nil

@@ -834,12 +834,15 @@ struct ItemEditorScreen: View {
         let host = item.urlField?.value.isEmpty == false
             ? URL(string: item.urlField!.value)?.host : nil
         // Editor doesn't know per-share capabilities — publish meta for every
-        // shareable field (labels+kinds only, sealed to the recipient).
+        // shareable field (labels+kinds+masking policy only, sealed to the
+        // recipient).
         let displayFields = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
             field.isExtraProtected ? nil
                 : (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
-                                                             kind: field.kind.rawValue))
+                                                             kind: field.kind.rawValue,
+                                                             protected: field.protected))
         })
+        let displayCategory = item.unknownCategoryRaw ?? item.category.rawValue
         // Current plaintexts of shareable fields — republishSharedValues
         // re-seals only the ones each grant actually marks `shared`.
         let currentValues = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
@@ -853,7 +856,8 @@ struct ItemEditorScreen: View {
                 try? await env.approvalShare.republishDisplayEnvelope(
                     itemId: share.itemId,
                     title: title, websiteHost: host, displayFields: displayFields,
-                    zoneID: zoneID, nowUnixMs: nowUnixMs)
+                    zoneID: zoneID, nowUnixMs: nowUnixMs,
+                    displayCategory: displayCategory)
                 // Edited values follow to the recipient near-realtime (their
                 // shared-db push triggers a projection refresh).
                 try? await env.approvalShare.republishSharedValues(

@@ -11039,6 +11039,23 @@
         }
       }
     },
+    "Key material isn’t shareable": {
+      "comment": "Share sheet row footnote: SSH private keys and recovery codes cannot be offered for sharing.",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鍵データは共有できません"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khóa bí mật không thể chia sẻ"
+          }
+        }
+      }
+    },
     "Known leaks": {
       "localizations": {
         "ja": {

@@ -14,8 +14,11 @@ struct FieldCapabilityRow: View {
     /// irreversibility warning (INV-08) and applies the capability on confirm.
     var requestHandOver: (FieldCapability) -> Void = { _ in }
 
+    /// Central policy, not a local denylist: key material (protected multiline —
+    /// SSH private keys, recovery codes) is not offerable in v1 alongside the
+    /// existing Level-2 and attachment exclusions.
     private var shareable: Bool {
-        !(field.isExtraProtected || field.kind == .fileRef)
+        TransitionalSharePolicy.approvalShareAllows(field)
     }
 
     var body: some View {
@@ -28,8 +31,7 @@ struct FieldCapabilityRow: View {
                     .themedForeground()
                     .lineLimit(1)
                 if !shareable {
-                    Text(field.isExtraProtected ? "Extra-protected, not shareable"
-                                                : "Attachments aren’t shareable")
+                    Text(notShareableReason)
                         .vaultType(.footnote)
                         .themedForeground(.secondary)
                 } else {
@@ -66,6 +68,12 @@ struct FieldCapabilityRow: View {
         }
         .frame(minHeight: Metric.hitMin)
         .opacity(shareable ? 1 : 0.5)
+    }
+
+    private var notShareableReason: LocalizedStringKey {
+        if field.isExtraProtected { return "Extra-protected, not shareable" }
+        if field.kind == .fileRef { return "Attachments aren’t shareable" }
+        return "Key material isn’t shareable"
     }
 
     private var isTOTP: Bool {

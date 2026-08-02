@@ -134,7 +134,12 @@ nonisolated enum VaultBackup {
                                 level2: Level2Wrap? = nil,
                                 passphrase: String) async throws -> Data {
         let portable = items.map {
-            PortableItem(title: $0.title, category: $0.category.rawValue, fields: $0.fields,
+            // An unknown-category item (written by a newer build) exports its
+            // ORIGINAL raw category string — a backup round-trip through this
+            // build must never permanently downgrade it to `custom`.
+            PortableItem(title: $0.title,
+                         category: $0.unknownCategoryRaw ?? $0.category.rawValue,
+                         fields: $0.fields,
                          tags: $0.tags, folderName: $0.folderId.flatMap { folderNames[$0] },
                          archived: $0.archived)
         }
@@ -169,10 +174,15 @@ nonisolated enum VaultBackup {
             payload = PortableVaultPayload(items: try JSONDecoder().decode([PortableItem].self, from: json),
                                            passkeys: nil, level2: nil)
         }
-        let items = payload.items.map {
-            (VaultItem(category: ItemCategory(rawValue: $0.category) ?? .custom,
-                       title: $0.title, fields: $0.fields, tags: $0.tags,
-                       archived: $0.archived), $0.folderName)
+        let items = payload.items.map { portable -> (item: VaultItem, folderName: String?) in
+            let known = ItemCategory(rawValue: portable.category)
+            var item = VaultItem(category: known ?? .custom,
+                                 title: portable.title, fields: portable.fields,
+                                 tags: portable.tags, archived: portable.archived)
+            // Presentation degrades to `.custom`; identity is preserved so a
+            // later save (or re-export) writes the original category back.
+            item.unknownCategoryRaw = known == nil ? portable.category : nil
+            return (item, portable.folderName)
         }
         let passkeys = try (payload.passkeys ?? []).map { secret in
             try PasskeyEnvelope.validate(secret)

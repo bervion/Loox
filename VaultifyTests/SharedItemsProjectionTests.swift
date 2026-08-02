@@ -73,10 +73,10 @@ final class SharedItemsProjectionTests: XCTestCase {
         XCTAssertEqual(item.category, .note)
     }
 
-    func testBuildItemFallsBackToLoginForMissingOrUnknownCategory() throws {
-        // Senders that predate the field, and a category only a newer build
-        // knows, both degrade to the historical rendering rather than losing
-        // the item.
+    func testBuildItemCategoryFallbacksDistinguishMissingFromUnknown() throws {
+        // A sender that predates the field degrades to the historical login
+        // rendering. A PRESENT but unknown category (newer sender) must NOT
+        // fabricate a login — it degrades to the generic custom presentation.
         let grant = try makeGrant(capabilities: ["f": .value(.shared)])
         var display = SharedDisplayEnvelope(title: "X", updatedAtUnixMs: nowMs, revision: 1)
         XCTAssertEqual(SharedItemsProjection.buildItem(origin: origin, grant: grant,
@@ -85,7 +85,42 @@ final class SharedItemsProjectionTests: XCTestCase {
         display.category = "hologram"
         XCTAssertEqual(SharedItemsProjection.buildItem(origin: origin, grant: grant,
                                                        display: display, values: [:]).category,
-                       .login)
+                       .custom)
+    }
+
+    func testBuildItemHonorsOwnersProtectionPolicy() throws {
+        // The owner's masking policy survives projection: a protected text
+        // field stays masked on the recipient even though `.text` would not
+        // mask by default — and a pre-policy envelope (no `protected` key)
+        // keeps the kind's historical default.
+        let grant = try makeGrant(capabilities: ["f-sec": .value(.shared),
+                                                 "f-user": .value(.shared)])
+        var display = SharedDisplayEnvelope(title: "Server", updatedAtUnixMs: nowMs, revision: 1)
+        display.fields = [
+            "f-sec": .init(label: "API Token", kind: "text", protected: true),
+            "f-user": .init(label: "Username", kind: "username"),
+        ]
+        let item = SharedItemsProjection.buildItem(
+            origin: origin, grant: grant, display: display,
+            values: ["f-sec": Data("tok_123".utf8), "f-user": Data("dev".utf8)])
+        XCTAssertEqual(item.fields.first { $0.id == "f-sec" }?.protected, true)
+        XCTAssertEqual(item.fields.first { $0.id == "f-user" }?.protected, false)
+    }
+
+    func testFieldMetaProtectedIsWireCompatible() throws {
+        // Old envelope JSON (no `protected` in field meta) decodes with nil.
+        let legacy = Data("""
+        {"title":"T","updatedAtUnixMs":1,"revision":1,
+         "fields":{"f1":{"label":"Password","kind":"password"}}}
+        """.utf8)
+        let decoded = try JSONDecoder().decode(SharedDisplayEnvelope.self, from: legacy)
+        XCTAssertNil(decoded.fields?["f1"]?.protected)
+        // New envelope round-trips the flag.
+        var envelope = SharedDisplayEnvelope(title: "T", updatedAtUnixMs: 1, revision: 1)
+        envelope.fields = ["f1": .init(label: "Key", kind: "multiline", protected: true)]
+        let round = try JSONDecoder().decode(SharedDisplayEnvelope.self,
+                                             from: JSONEncoder().encode(envelope))
+        XCTAssertEqual(round.fields?["f1"]?.protected, true)
     }
 
     func testDisplayEnvelopeWithoutCategoryStillDecodes() throws {

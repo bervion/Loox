@@ -31,12 +31,11 @@ extension LooxLinkEnvelope {
     /// (the seed must never leave the vault — a snapshot of it would be a
     /// permanent secret hand-over), extra-protected (`guard2`) values (sealed
     /// under a separate code the unlocked vault can't read), attachments,
-    /// and empty values.
+    /// key material (protected multiline — SSH private keys, recovery codes:
+    /// a one-shot link has no recipient identity and no revocation of the
+    /// copy, so key material is absolutely denied here), and empty values.
     static func shareableFields(of item: VaultItem) -> [DynamicField] {
-        item.fields.filter { field in
-            field.kind != .totp && field.kind != .fileRef
-                && !field.isExtraProtected && !field.isEmpty
-        }
+        item.fields.filter { TransitionalSharePolicy.quickShareAllows($0) }
     }
 
     /// Default selection: the credential trio (username/email, website,

@@ -19,7 +19,9 @@ import AppKit
     /// Copy a sensitive string, scheduling an auto-clear after `seconds` (0 = no auto-clear).
     static func copySensitive(_ value: String, clearAfter seconds: TimeInterval) {
         #if canImport(UIKit)
-        var options: [UIPasteboard.OptionsKey: Any] = [:]
+        // Secrets never ride Universal Clipboard/Handoff: a token copied on iPhone
+        // must not silently materialize on a nearby Mac's clipboard history.
+        var options: [UIPasteboard.OptionsKey: Any] = [.localOnly: true]
         if seconds > 0 {
             options[.expirationDate] = Date().addingTimeInterval(seconds)
         }

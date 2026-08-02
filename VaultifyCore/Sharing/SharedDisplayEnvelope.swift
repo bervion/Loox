@@ -15,6 +15,18 @@ nonisolated struct SharedDisplayEnvelope: Codable, Sendable, Equatable {
         var label: String
         /// `FieldKind` rawValue; unknown values fall back to a secret kind.
         var kind: String
+        /// The owner's display-masking policy for this field, so a protected
+        /// value stays masked on the recipient's device instead of silently
+        /// degrading to plaintext rendering. Optional — envelopes from senders
+        /// that predate this field decode fine; the recipient then falls back
+        /// to the kind's own default (which masks every secret kind).
+        var protected: Bool? = nil
+
+        init(label: String, kind: String, protected: Bool? = nil) {
+            self.label = label
+            self.kind = kind
+            self.protected = protected
+        }
     }
 
     var title: String
