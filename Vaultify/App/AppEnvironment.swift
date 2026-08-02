@@ -18,6 +18,10 @@ import SwiftUI
     let syncCoordinator: SyncCoordinator
     let faviconService: FaviconService
     let attachmentStore: AttachmentStore
+    /// First-class encrypted artifact lifecycle (per-artifact DEKs, staged
+    /// import, recovery journal). Supersedes `attachmentStore`'s vault-key
+    /// sidecar blobs; the legacy store stays alive for reads + lazy adoption.
+    let artifactStore: ArtifactStore
     /// Restorable UI state (selected tab, per-tab nav depth, in-progress editor draft),
     /// sealed under the Vault Key. Saved on background, re-applied after unlock.
     let uiState: UIStateStore
@@ -210,6 +214,11 @@ import SwiftUI
             session: session,
             directory: isolatedFileRoot?.appending(path: "Attachments")
         )
+        self.artifactStore = ArtifactStore(
+            session: session,
+            store: store,
+            directory: isolatedFileRoot?.appending(path: "Artifacts-v2")
+        )
         self.uiState = UIStateStore(
             session: session,
             fileURL: isolatedFileRoot?.appending(path: "ui-state.enc")
@@ -400,6 +409,7 @@ import SwiftUI
         settings.approvalModeEnabled = false
         settings.iCloudSyncEnabled = false
         repository.clear()
+        artifactStore.eraseAll()
         try? store.eraseAll()
         uiState.wipe()
         session.resetVault()

@@ -39,7 +39,7 @@ struct WatchtowerScreen: View {
     /// Item-type picker + the category chosen there (presented as the editor once
     /// the picker finishes dismissing).
     @State private var showItemTypePicker = false
-    @State private var pendingNewCategory: ItemCategory?
+    @State private var pendingNewTarget: EditorTarget?
     @State private var scrolledUnder = false
     /// Bumped when new audit data arrives so the gauge intro replays (see
     /// `WatchtowerIntroGate` — tab switches alone never replay it).
@@ -166,12 +166,12 @@ struct WatchtowerScreen: View {
             .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
             .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
             .sheet(isPresented: $showItemTypePicker, onDismiss: {
-                if let category = pendingNewCategory {
-                    pendingNewCategory = nil
-                    editorTarget = .new(category)
+                if let target = pendingNewTarget {
+                    pendingNewTarget = nil
+                    editorTarget = target
                 }
             }) {
-                ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
+                ItemTypePickerSheet { pendingNewTarget = $0; showItemTypePicker = false }
             }
             .navigationDestination(for: String.self) { itemID in
                 ItemDetailScreen(itemID: itemID).fullScreenPush()

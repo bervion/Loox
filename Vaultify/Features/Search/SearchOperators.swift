@@ -13,6 +13,13 @@ nonisolated enum SearchOperator: Hashable, Sendable {
     case reusedPassword
     case hasPasskey
     case category(ItemCategory)
+    /// `prefix:value` operators (`type:ssh`, `host:github.com`,
+    /// `env:production`, `expires:<30d`) — parsed from colon tokens, never
+    /// from bare keywords.
+    case typed(String)
+    case host(String)
+    case environment(String)
+    case expiresWithinDays(Int)
 
     static var allCases: [SearchOperator] {
         [.hasTOTP, .weakPassword, .reusedPassword, .hasPasskey] + ItemCategory.allCases.map(SearchOperator.category)
@@ -44,6 +51,8 @@ nonisolated enum SearchOperator: Hashable, Sendable {
             case .securityQuestions: return ["security", "securityquestions", "security questions", "câu hỏi bảo mật"]
             case .custom: return ["custom", "tùy chỉnh"]
             }
+        case .typed, .host, .environment, .expiresWithinDays:
+            return [] // colon-syntax only, never bare keywords
         }
     }
 }
@@ -70,6 +79,8 @@ nonisolated enum SearchOperators {
         var weakItemIDs: Set<String> = []
         var reusedItemIDs: Set<String> = []
         var passkeyItemIDs: Set<String> = []
+        /// Reference clock for `expires:` windows — injected for determinism.
+        var now: Date = .now
         static let empty = Context()
     }
 
@@ -99,6 +110,19 @@ nonisolated enum SearchOperators {
         var folded = normalize(query).split(separator: " ").map(String.init)
         var literal = query.lowercased().split(separator: " ").map(String.init)
         var operators: [SearchOperator] = []
+        // Colon operators claim their tokens first (`type:ssh`,
+        // `host:github.com`, `env:production`, `expires:<30d`). Unrecognized
+        // prefixes and empty values stay in free text untouched.
+        var index = 0
+        while index < literal.count {
+            if let op = prefixedOperator(from: literal[index]) {
+                operators.append(op)
+                literal.remove(at: index)
+                folded.remove(at: index)
+            } else {
+                index += 1
+            }
+        }
         for op in SearchOperator.allCases {
             // Longest phrase first so "ssh key" is tried before the shorter "ssh".
             let keywordWordLists = op.keywords
@@ -116,6 +140,27 @@ nonisolated enum SearchOperators {
         return ParsedQuery(operators: operators, freeTextTokens: literal)
     }
 
+    /// Parses one `prefix:value` token, or nil when it isn't one.
+    static func prefixedOperator(from token: String) -> SearchOperator? {
+        guard let colon = token.firstIndex(of: ":") else { return nil }
+        let prefix = String(token[..<colon])
+        let value = String(token[token.index(after: colon)...])
+        guard !value.isEmpty else { return nil }
+        switch prefix {
+        case "type", "loai": return .typed(normalize(value))
+        case "host": return .host(normalize(value))
+        case "env": return .environment(normalize(value))
+        case "expires":
+            // `<30d`, `30d`, or `30`: anything expiring within N days.
+            var digits = value
+            if digits.hasPrefix("<") { digits.removeFirst() }
+            if digits.hasSuffix("d") { digits.removeLast() }
+            guard let days = Int(digits), (1...3650).contains(days) else { return nil }
+            return .expiresWithinDays(days)
+        default: return nil
+        }
+    }
+
     /// Whether `item` satisfies every recognized operator (AND across operators,
     /// mirroring the free-text AND-across-tokens model).
     static func matches(_ item: VaultItem, operators: [SearchOperator], context: Context) -> Bool {
@@ -126,6 +171,27 @@ nonisolated enum SearchOperators {
             case .reusedPassword: return context.reusedItemIDs.contains(item.id)
             case .hasPasskey: return context.passkeyItemIDs.contains(item.id)
             case .category(let category): return item.category == category
+            case .typed(let needle):
+                // Stable identity only — kind ID or category raw value; never
+                // an editable label.
+                let kind = item.kindID ?? ItemTemplateRegistry.legacyKind(for: item.category)
+                return normalize(kind.rawValue).contains(needle)
+                    || normalize(item.category.rawValue).contains(needle)
+            case .host(let needle):
+                return item.autofillHosts.contains { normalize($0).contains(needle) }
+                    || item.fields.contains {
+                        $0.roleID == .gitHost && !$0.protected && normalize($0.value).contains(needle)
+                    }
+            case .environment(let needle):
+                return item.fields.contains {
+                    $0.roleID == .apiEnvironment && !$0.protected && normalize($0.value).contains(needle)
+                }
+            case .expiresWithinDays(let days):
+                let deadline = context.now.addingTimeInterval(TimeInterval(days) * 86_400)
+                return item.fields.contains {
+                    guard let expiry = $0.semantics?.lifecycle?.expiresAt else { return false }
+                    return expiry <= deadline
+                }
             }
         }
     }

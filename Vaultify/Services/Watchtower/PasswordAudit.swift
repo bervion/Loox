@@ -44,16 +44,21 @@ nonisolated struct VaultHealth: Sendable {
 nonisolated enum PasswordAudit {
     static func analyze(_ items: [VaultItem]) -> VaultHealth {
         let withPasswords: [(VaultItem, String)] = items.compactMap { item in
-            // Extra-protected passwords are sealed ciphertext — grading or breach-
-            // hashing the payload would produce nonsense results.
-            guard let field = item.passwordField, !field.value.isEmpty, !field.isExtraProtected
+            // Resolver-scoped pool: developer tokens and other non-auditable
+            // secrets never enter grading or breach hashing. Extra-protected
+            // passwords are sealed ciphertext — grading or breach-hashing the
+            // payload would produce nonsense results.
+            guard ItemCapabilityResolver.capabilities(for: item).passwordAudit,
+                  let field = item.passwordField, !field.value.isEmpty, !field.isExtraProtected
             else { return nil }
             return (item, field.value)
         }
 
-        // 2FA analysis runs across all (non-trashed) login items regardless of password
+        // 2FA analysis runs across all (non-trashed) hygiene-eligible items
+        // regardless of password
         let missing2FA = items
-            .filter { !$0.isTrashed && $0.category == .login && $0.totpField == nil }
+            .filter { !$0.isTrashed && $0.totpField == nil
+                && ItemCapabilityResolver.capabilities(for: $0).loginHygieneAudit }
             .filter { TwoFactorCatalog.supports2FA($0) }
             .map { issue($0, kind: .missing2FA) }
 

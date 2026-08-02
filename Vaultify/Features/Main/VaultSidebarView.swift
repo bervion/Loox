@@ -19,7 +19,7 @@ struct VaultSidebarView: View {
     // not on a list row, so a selection change can't strand a presentation.
     @State private var editorTarget: EditorTarget?
     @State private var showItemTypePicker = false
-    @State private var pendingNewCategory: ItemCategory?
+    @State private var pendingNewTarget: EditorTarget?
     @State private var showGenerator = false
     @State private var showTotpList = false
     /// Cached Watchtower issue count for the Security row's badge — recomputed on
@@ -110,12 +110,12 @@ struct VaultSidebarView: View {
         .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
         // Item-type picker → present the editor once it finishes dismissing.
         .sheet(isPresented: $showItemTypePicker, onDismiss: {
-            if let category = pendingNewCategory {
-                pendingNewCategory = nil
-                editorTarget = .new(category)
+            if let target = pendingNewTarget {
+                pendingNewTarget = nil
+                editorTarget = target
             }
         }) {
-            ItemTypePickerSheet { pendingNewCategory = $0; showItemTypePicker = false }
+            ItemTypePickerSheet { pendingNewTarget = $0; showItemTypePicker = false }
         }
         .sheet(isPresented: $showGenerator) { GeneratorScreen() }
         .sheet(isPresented: $showTotpList) { TotpListScreen() }

@@ -9,13 +9,25 @@ import SwiftUI
 /// render disabled — they are not shareable.
 struct FieldCapabilityRow: View {
     let field: DynamicField
+    /// The owning item, when the sheet has it — enables full resolver policy
+    /// (template + role). Without it the kind-shape policy still applies.
+    var item: VaultItem? = nil
     @Binding var capability: FieldCapability
     /// Hand-over modes (TOTP seed) never write directly: the parent shows the
     /// irreversibility warning (INV-08) and applies the capability on confirm.
     var requestHandOver: (FieldCapability) -> Void = { _ in }
 
+    /// Central policy, not a local denylist: key material (protected multiline —
+    /// SSH private keys, recovery codes) is not offerable in v1 alongside the
+    /// existing Level-2 and attachment exclusions.
     private var shareable: Bool {
-        !(field.isExtraProtected || field.kind == .fileRef)
+        if let item {
+            return ItemCapabilityResolver.capabilities(for: field, in: item).approvalShare
+                // TOTP is offerable as a ROW (its tri-state flow decides the
+                // mode); the resolver's value-share bit doesn't model that.
+                || (field.kind == .totp && !field.isExtraProtected)
+        }
+        return TransitionalSharePolicy.approvalShareAllows(field)
     }
 
     var body: some View {
@@ -28,8 +40,7 @@ struct FieldCapabilityRow: View {
                     .themedForeground()
                     .lineLimit(1)
                 if !shareable {
-                    Text(field.isExtraProtected ? "Extra-protected, not shareable"
-                                                : "Attachments aren’t shareable")
+                    Text(notShareableReason)
                         .vaultType(.footnote)
                         .themedForeground(.secondary)
                 } else {
@@ -66,6 +77,12 @@ struct FieldCapabilityRow: View {
         }
         .frame(minHeight: Metric.hitMin)
         .opacity(shareable ? 1 : 0.5)
+    }
+
+    private var notShareableReason: LocalizedStringKey {
+        if field.isExtraProtected { return "Extra-protected, not shareable" }
+        if field.kind == .fileRef { return "Attachments aren’t shareable" }
+        return "Key material isn’t shareable"
     }
 
     private var isTOTP: Bool {

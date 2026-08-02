@@ -10,7 +10,7 @@ nonisolated struct TwoFactorRule: nonisolated AuditRule {
 
     func evaluate(_ snapshot: VaultAuditSnapshot, context: AuditContext) async throws -> [AuditFinding] {
         snapshot.activeItems.compactMap { item in
-            guard item.category == .login, !item.hasTOTP,
+            guard item.loginHygieneEligible, !item.hasTOTP,
                   TwoFactorCatalog.supports2FA(urls: item.rawURLs, title: item.title)
             else { return nil }
             return AuditFinding(

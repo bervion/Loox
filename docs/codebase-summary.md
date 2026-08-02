@@ -112,6 +112,48 @@ One-shot, field-scoped E2E handoff to any browser — the **recipient-keyed dual
 ## Loox Membership (subscription V1 client)
 Client side of the subscription strategy (`plans/reports/proposal-260714-2231-loox-subscription-strategy.md`; execution plan `plans/260716-1546-loox-membership-v1/`). Tiers **Loox / Loox+ / Loox Max** (display names; product IDs `com.bervion.vaultify.subscription.{plus|max}.{monthly|annual}`, permanent). `VaultifyCore/Subscription/`: `LooxTier` (+ frozen §3.1 `LooxQuotas` table, `LooxProductID` allowlist + highest-wins `resolveTier`), `LooxGate` (pure over-quota upsell checks naming the cheapest sufficient tier; over-Max defers to the backend counter), `LooxSubscriptionState` (§8.1 state→behavior contract), `LooxMembership.launchEnabled` **launch flag (OFF)** + Terms/Privacy URLs. Purchase surfaces consult `LooxEntitlementStore.purchasesEnabled` — Release: `launchEnabled || betaPurchaseAccess` (AppTransaction `environment != .production`, resolved once at start behind a receipt-presence pre-check so it never prompts), giving **TestFlight/App Review the paywall early** while App Store builds stay dark; DEBUG: explicit "Purchase Surfaces" toggle in Settings→Debug (AppTransaction never consulted — a receiptless dev install could trigger auth UI). App side: `LooxEntitlementStore` (verified StoreKit 2 `currentEntitlements` + lifetime `Transaction.updates` listener; finish-after-grant; DEBUG tier override in Settings→Debug), `LooxHubScreen` redesigned iCloud+-style (tier large-title + member name, `LooxMemberSeal` curved-ring stamp, `LooxFeatureTile` 2-col live-usage grid — quota denominators render only when purchases are enabled — plan/upgrade section, Approval Mode toggle; the Profile "Loox" row title also follows the tier's brand noun), `LooxPaywallScreen` hosting `LooxAcquisitionPaywallView` — custom iCloud+-style acquisition (plain bg, 76pt brand mark, Year/Month segment, gray plan cards with accent-ringed selection, trial pill from live offer, §5.2 disclosure text, accent CTA + iOS-26 glass Restore with material/solid fallback, Terms+Privacy links; `product.purchase()` direct, finish-after-`refreshNow`), `LooxPriceMath` factual per-month comparison line, subscriber guard → current-plan/manage view (Change plan keeps native `SubscriptionStoreView`). Contextual gates wired (all inert while the flag is off): persona create, alias create (both flows), Loox Link create, Quick View approve (pre-Face-ID), Watchtower paid surfaces (full report / Fix Queue / history — the Critical/High Free floor never gates). **Still to wire before flag-flip:** outgoing-recipient seat gate (share-ceremony choke point), Free accent/theme subset (§8.3 preference preservation), App Store Connect products + §12 launch-gate checklist. Local dev: `Loox.storekit` + additive `Vaultify-StoreKit` Tuist scheme (CI schemes untouched).
 
+## Semantic Types, Capability Resolver & Developer Vault (260802)
+The closed `ItemCategory` enum is now a presentation fallback; behavioral identity is the additive
+semantic layer inside the sealed payload: `ItemKindID`/`FieldRoleID` (lossless namespaced strings),
+per-field `Sensitivity`/`ActionAuthorization`/`CryptoProtection`/`FieldLifecycle`, typed `ItemLink`s,
+and `ItemSemantics.schemaVersion` (`VaultifyCore/Models/ItemSemantics.swift`). Unknown categories and
+field kinds round-trip losslessly (`unknownCategoryRaw`/`unknownKindRaw`); an item written by a NEWER
+incompatible schema renders as concealed read-only recovery and the repository refuses to re-seal it.
+Repository decode failures land in `quarantined` (id + coarse error class, surfaced on Home) instead
+of silently vanishing.
+
+- **`ItemTemplateRegistry`** (`VaultifyCore/Types/`) — compile-time descriptors for the eight legacy
+  types plus the developer pack: SSH Key (v2), API Secret, Git Hosting Account, ASC API Key, APNs Key,
+  Apple Signing Identity, Provisioning Profile, TLS Certificate. Sections, roles, registry-minimum
+  policy, capability matrix, Polaris icons, subtitle role.
+- **`ItemCapabilityResolver`** — the ONLY integration authority. AutoFill (`VaultReader.logins/
+  totpItems`), Safari listing + fill payloads, QuickType/OTP identities, audit rules (snapshot flags
+  `passwordAuditEligible`/`loginHygieneEligible`), Watchtower pools, Space share safelist, Quick
+  Link/Approval field policy all resolve through it. Unknown kind/role/category ⇒ zero external
+  capability. Registry policy is a floor: stored/imported policy only tightens
+  (`Sensitivity.stricter`). Key material (protected multiline / `keyMaterial` sensitivity) never
+  enters Quick Link/Quick View/Approval or plaintext export; reveal/copy of `.reauthenticate` fields
+  is action-bound Face ID (`DetailFieldRow.authorizeThen`).
+- **Legacy inference** (`LegacySemanticsInference`) — provable roles only (category+kind+cardinality);
+  labels never grant authority; migration is lazy-on-edit (no bulk reseal → no sync churn).
+- **Template UX** — registry-driven New Item picker (search, 3 recents, family groups); developer
+  templates get grouped editor sections + collapsed advanced disclosure + typed Linked Items (Git);
+  detail gets one safe primary action per type (Copy Public Key / re-auth-gated Copy Token / Git
+  setup snippet with strict shell quoting). Search operators `type:`/`host:`/`env:`/`expires:<30d`.
+- **Artifact v2** (`VaultifyCore/Crypto/ArtifactCrypto.swift`, `ArtifactRecord`,
+  `Vaultify/Services/Artifacts/`) — per-artifact random DEK wrapped by the Vault Key, every seal
+  AAD-bound to artifact/owner/purpose, 20 MiB one-shot ceiling, staged import with recovery journal +
+  janitor, encrypted backup v2 (stable item IDs, metadata, artifact blobs, content-key rewrap,
+  all-or-nothing restore), CloudKit `ArtifactV2` mapping present but flag-gated OFF
+  (`artifactSyncEnabled`; see `docs/cloudkit-artifact-schema-runbook.md`).
+- **Developer inspectors** (`Vaultify/Services/Developer/`, app target ONLY — never compiled into
+  AutoFill/Safari): bounded SSH key parsing with `ssh-keygen`-parity SHA-256 fingerprints, `.p8`
+  PKCS#8 sniffing, `.mobileprovision` plist extraction, certificate metadata, `.p12` inspection with
+  keychain-residue cleanup. Original bytes stay canonical; unverifiable input is stored opaque with an
+  honest "saved, not verified" state.
+- **Watchtower** — `maintenance.expiring` rule tracks field-level expiry (stored dates only, never
+  live provider status).
+
 ## In-app tutorials
 `TutorialFeature.enabled` (VaultifyCore) gates the whole layer. Split by concern: **Design System** owns the visuals — `tutorialAnchor(_:)` publishes a view's frame (PreferenceKey + `Anchor<CGRect>`), `TutorialSpotlightOverlay` cuts one hole with a single `Canvas` + `blendMode(.destinationOut)` and places its tooltip from the hole's own edges, `TutorialGuideSheet` renders numbered steps that can embed a live view with an arrow into it. **App layer** owns behavior — `TutorialFlow` (data), `TutorialStore` (per-flow UserDefaults, device-local, never synced), `TutorialCoordinator` (state machine + `tutorial_step_shown` / `tutorial_flow_ended` analytics), `TutorialHost` (bridges anchors to the overlay).
 
@@ -126,4 +168,4 @@ Implemented & verified running (EN + VI): onboarding (redesigned first-run welco
 
 **Deferred:** subscription launch (flag `LooxMembership.launchEnabled` OFF; ASC group 22241495 live, pending review screenshots + submit; backend entitlement API per proposal v3; recipient-seat + theme gates; §12 checklist); AAGUID community-registry submission (external PR); credential-exchange UI wiring + on-device verification. CloudKit sync (full, pending iCloud enablement; the `VaultPasskey` sync PLANE is implemented and wired — what is outstanding is the CloudKit **Production** schema deploy, an ops action, without which passkey pushes are rejected and no passkey ever reaches a second device); rotation reminder per-item cadence deferred pending full enablement. Manual pre-TestFlight QA still needs on-device QuickType deletion, iOS 18 RP-triggered automatic-upgrade smoke coverage, and the Approval Mode two-device round-trip run (share → accept with sender identity → automatic activation → ask-each-time ceremony → per-item revoke).
 
-**Last updated:** 2026-07-17
+**Last updated:** 2026-08-02

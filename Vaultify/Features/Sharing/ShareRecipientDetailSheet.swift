@@ -154,7 +154,7 @@ struct ShareRecipientDetailSheet: View {
         } else if let item, capabilities != nil {
             Section {
                 ForEach(item.fields) { field in
-                    FieldCapabilityRow(field: field, capability: binding(for: field))
+                    FieldCapabilityRow(field: field, item: item, capability: binding(for: field))
                 }
                 ForEach(itemPasskeys) { passkey in
                     PasskeyCapabilityRow(passkey: passkey, capability: passkeyBinding(for: passkey),
@@ -261,7 +261,8 @@ struct ShareRecipientDetailSheet: View {
                 websiteHost: item.urlField?.value.isEmpty == false
                     ? URL(string: item.urlField!.value)?.host : nil,
                 displayFields: Self.displayFields(for: item),
-                zoneID: zoneID, nowUnixMs: nowUnixMs)
+                zoneID: zoneID, nowUnixMs: nowUnixMs,
+                displayCategory: item.unknownCategoryRaw ?? item.category.rawValue)
             try await env.approvalShare.republishSharedValues(
                 itemId: item.id, values: Self.currentValues(for: item),
                 zoneID: zoneID, nowUnixMs: nowUnixMs)
@@ -353,7 +354,8 @@ struct ShareRecipientDetailSheet: View {
                !(capabilities[field.id]?.isSharedValue == true
                  || capabilities[field.id]?.isAskEachTimeTOTP == true) { return nil }
             return (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
-                                                              kind: field.kind.rawValue))
+                                                              kind: field.kind.rawValue,
+                                                              protected: field.protected))
         })
     }
 

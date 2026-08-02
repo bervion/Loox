@@ -39,7 +39,10 @@ nonisolated enum SpaceShareSafelist {
     /// (both collapse to "skip this item" for
     /// `SpaceShareMembershipReconciler.desired`).
     static func shareableFields(for item: VaultItem) -> [String: FieldCapability]? {
-        guard item.category == .login else { return nil }
+        // Resolver-gated (only the login template claims Space-share
+        // eligibility — parity with the shipped `.login` check, but a future
+        // template or an unknown kind stays out without touching this file).
+        guard ItemCapabilityResolver.capabilities(for: item).spaceShareEligible else { return nil }
         var fields: [String: FieldCapability] = [:]
         for field in item.fields where isEligible(field) {
             fields[field.id] = .value(.shared)

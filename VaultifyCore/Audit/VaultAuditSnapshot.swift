@@ -21,6 +21,16 @@ nonisolated struct VaultAuditItem: Identifiable, Sendable {
     let rotateDays: Int
     let passwordChangedAt: Date?
     let isTrashed: Bool
+    /// Capability flags resolved ONCE at snapshot time via the resolver, so
+    /// rules never re-derive eligibility from `category`/kinds themselves.
+    /// `passwordAuditEligible`: strength/reuse/leak/stale pool membership.
+    /// `loginHygieneEligible`: 2FA/passkey/URL-hygiene/completeness rules.
+    let passwordAuditEligible: Bool
+    let loginHygieneEligible: Bool
+    /// Earliest field-level expiry (`FieldSemantics.lifecycle.expiresAt`) —
+    /// certificates, provisioning profiles, API tokens. A date only; nothing
+    /// identifying rides in the snapshot.
+    let earliestExpiry: Date?
 
     var hasPassword: Bool { !(password ?? "").isEmpty }
 }
@@ -46,6 +56,7 @@ nonisolated struct VaultAuditSnapshot: Sendable {
             // reuse across items. Sealed fields drop out of quality analysis;
             // presence checks (2FA) keep counting the field's existence.
             let password = item.passwordField.flatMap { $0.isExtraProtected ? nil : $0.value }
+            let capabilities = ItemCapabilityResolver.capabilities(for: item)
             return VaultAuditItem(
                 id: item.id,
                 category: item.category,
@@ -54,7 +65,10 @@ nonisolated struct VaultAuditSnapshot: Sendable {
                     .filter { ($0.kind == .username || $0.kind == .email)
                         && !$0.isEmpty && !$0.isExtraProtected }
                     .map(\.value),
-                password: password,
+                // A non-auditable item's password never even enters the
+                // snapshot: a PAT or SSH passphrase must not reach strength
+                // scoring, reuse fingerprints, or the HIBP query pool.
+                password: capabilities.passwordAudit ? password : nil,
                 totpSecret: item.totpField?.value,
                 hasTOTP: item.fields.contains { $0.kind == .totp && !$0.isEmpty },
                 hasPasskey: passkeyItemIDs.contains(item.id),
@@ -64,7 +78,12 @@ nonisolated struct VaultAuditSnapshot: Sendable {
                 lastUsedAt: item.lastUsedAt,
                 rotateDays: item.rotateDays,
                 passwordChangedAt: item.passwordChangedAt,
-                isTrashed: item.isTrashed)
+                isTrashed: item.isTrashed,
+                passwordAuditEligible: capabilities.passwordAudit,
+                loginHygieneEligible: capabilities.loginHygieneAudit,
+                earliestExpiry: item.fields
+                    .compactMap { $0.semantics?.lifecycle?.expiresAt }
+                    .min())
         }
         return VaultAuditSnapshot(items: auditItems, personaID: personaID, capturedAt: now)
     }

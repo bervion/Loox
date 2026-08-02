@@ -21,6 +21,9 @@ struct ImportView: View {
     /// The backup's Level-2 wrap (if any) — adopted on import when this device
     /// has none, so restored sealed fields stay openable with the Extra Password.
     @State private var parsedLevel2: VaultBackup.Level2Wrap?
+    /// Validated artifact plaintexts from a v2 backup, re-sealed under THIS
+    /// vault's key hierarchy at import time.
+    @State private var parsedArtifacts: [VaultBackup.ArtifactPayload] = []
     @State private var encryptedData: Data?
     @State private var passphrase = ""
     @State private var error: String?
@@ -95,7 +98,7 @@ struct ImportView: View {
     }
 
     private func handle(_ result: Result<[URL], Error>) {
-        error = nil; parsed = []; parsedPasskeys = []; encryptedData = nil
+        error = nil; parsed = []; parsedPasskeys = []; parsedArtifacts = []; encryptedData = nil
         guard case let .success(urls) = result, let url = urls.first else {
             if case let .failure(failure) = result {
                 error = failure.localizedDescription
@@ -136,6 +139,7 @@ struct ImportView: View {
             parsed = imported.items.map { ImportRow(item: $0.item, folderName: $0.folderName) }
             parsedPasskeys = imported.passkeys
             parsedLevel2 = imported.level2
+            parsedArtifacts = imported.artifacts
             encryptedData = nil
             if parsed.isEmpty && parsedPasskeys.isEmpty {
                 error = appString("Backup contained no records.")
@@ -158,13 +162,21 @@ struct ImportView: View {
         var folderCache: [String: String] = [:]   // lowercased name → folder id
         do {
             // Bulk: one vault_imported summary below, never per-item events.
+            // Items land through the single repository-level bulk path (one
+            // save + one reload); artifacts were fully validated at decrypt
+            // time, so a corrupt backup already failed before this point.
             try AnalyticsEngine.shared.runSuppressed {
+                var itemsToAdd: [VaultItem] = []
                 for row in parsed {
                     var item = row.item
                     if let name = row.folderName, !name.isEmpty {
                         item.folderId = resolveFolder(name, cache: &folderCache)
                     }
-                    try env.repository.add(item)
+                    itemsToAdd.append(item)
+                }
+                try env.repository.addAll(itemsToAdd)
+                if !parsedArtifacts.isEmpty {
+                    try env.artifactStore.restoreAll(parsedArtifacts)
                 }
             }
             if let key = env.session.vaultKey {

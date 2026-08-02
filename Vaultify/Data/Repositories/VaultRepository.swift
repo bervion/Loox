@@ -16,6 +16,10 @@ import UserNotifications
     private(set) var items: [VaultItem] = []
     private(set) var trashed: [VaultItem] = []
     private(set) var archived: [VaultItem] = []
+    /// Records whose sealed payload failed to open this session — surfaced as
+    /// recoverable state instead of silently missing items. Ciphertext stays
+    /// untouched in the store.
+    private(set) var quarantined: [QuarantinedRecord] = []
     private(set) var folders: [Folder] = []
     private(set) var passkeys: [PasskeyInfo] = []
     private(set) var personas: [Persona] = []
@@ -41,6 +45,7 @@ import UserNotifications
         items = []
         trashed = []
         archived = []
+        quarantined = []
         folders = []
         passkeys = []
         personas = []
@@ -60,14 +65,28 @@ import UserNotifications
         var active: [VaultItem] = []
         var trash: [VaultItem] = []
         var arch: [VaultItem] = []
+        var failed: [QuarantinedRecord] = []
         for record in records {
-            guard let item = try? decrypt(record, key: key) else { continue }
+            let item: VaultItem
+            do {
+                item = try decrypt(record, key: key)
+            } catch {
+                // Never a silent skip: keep the ciphertext untouched, surface a
+                // recoverable quarantine entry. Only the record ID and a coarse
+                // error class leave this scope — no payload, no error strings.
+                let failure: QuarantinedRecord.FailureClass =
+                    (error is DecodingError) ? .decodeFailed : .decryptFailed
+                failed.append(QuarantinedRecord(id: record.id, failure: failure,
+                                                updatedAt: record.updatedAt))
+                continue
+            }
             // Trash wins over archive when an item is both; archived items stay out
             // of every normal surface but remain reachable in the Archive screen.
             if item.isTrashed { trash.append(item) }
             else if item.archived { arch.append(item) }
             else { active.append(item) }
         }
+        quarantined = failed.sorted { $0.updatedAt > $1.updatedAt }
         items = active.sorted { $0.updatedAt > $1.updatedAt }
         trashed = trash.sorted { ($0.trashedAt ?? .distantPast) > ($1.trashedAt ?? .distantPast) }
         archived = arch.sorted { $0.updatedAt > $1.updatedAt }
@@ -407,9 +426,49 @@ import UserNotifications
         }
     }
 
+    /// Bulk insert for backup restore: one `context.save()` + one `reload()`
+    /// for the whole batch, preserving each item's own id and metadata
+    /// (favorite/pinned/rotation/timestamps) instead of re-minting them. Same
+    /// shared-projection guard as `add`; ineligible items are skipped, never
+    /// a partial failure.
+    func addAll(_ newItems: [VaultItem]) throws {
+        guard let key = session.vaultKey else { throw AuthError.locked }
+        var insertedCategories: [ItemCategory] = []
+        for item in newItems {
+            guard item.sharedOrigin == nil, !item.id.hasPrefix("shared::") else { continue }
+            let record = ItemRecord(id: item.id,
+                                    sealed: try seal(item, key: key),
+                                    favorite: item.favorite,
+                                    createdAt: item.createdAt,
+                                    updatedAt: item.updatedAt,
+                                    trashedAt: item.trashedAt)
+            record.pinned = item.pinned
+            record.archived = item.archived
+            record.useCount = item.useCount
+            record.isDefaultIdentity = item.isDefaultIdentity
+            record.rotateDays = item.rotateDays
+            // Restored items keep their true rotation baseline; a fresh item
+            // falls back to its creation time exactly like `add`.
+            record.passwordChangedAt = item.passwordChangedAt ?? item.createdAt
+            store.context.insert(record)
+            insertedCategories.append(item.category)
+        }
+        guard !insertedCategories.isEmpty else { return }
+        try store.context.save()
+        reload()
+        noteLocalMutation()
+        for category in insertedCategories {
+            AnalyticsEngine.shared.log(.itemCreated(category))
+        }
+    }
+
     func update(_ item: VaultItem) throws {
         // Same guard as `add` — the missing-record fallback below upserts.
         guard item.sharedOrigin == nil, !item.id.hasPrefix("shared::") else { return }
+        // An item sealed by a NEWER incompatible wire generation is read-only
+        // recovery: typed re-encoding here would silently strip everything
+        // this build cannot represent. The original ciphertext stays intact.
+        guard !item.isUnsupportedSchema else { return }
         guard let key = session.vaultKey else { throw AuthError.locked }
         guard let record = try record(id: item.id) else { return try add(item) }
         var updated = item
@@ -542,24 +601,30 @@ import UserNotifications
     private func decrypt(_ record: ItemRecord, key: SecureBytes) throws -> VaultItem {
         let plaintext = try AESGCM.open(record.sealed, key: key)
         let secret = try JSONDecoder().decode(ItemSecret.self, from: plaintext)
-        return VaultItem(id: record.id,
-                         category: secret.category,
-                         title: secret.title,
-                         folderId: secret.folderId,
-                         fields: secret.fields,
-                         favorite: record.favorite,
-                         tags: secret.tags,
-                         iconAsset: secret.iconAsset,
-                         lastUsedAt: record.lastUsedAt,
-                         pinned: record.pinned,
-                         archived: record.archived,
-                         useCount: record.useCount,
-                         isDefaultIdentity: record.isDefaultIdentity,
-                         rotateDays: record.rotateDays,
-                         passwordChangedAt: record.passwordChangedAt,
-                         createdAt: record.createdAt,
-                         updatedAt: record.updatedAt,
-                         trashedAt: record.trashedAt)
+        var item = VaultItem(id: record.id,
+                             category: secret.category,
+                             title: secret.title,
+                             folderId: secret.folderId,
+                             fields: secret.fields,
+                             favorite: record.favorite,
+                             tags: secret.tags,
+                             iconAsset: secret.iconAsset,
+                             lastUsedAt: record.lastUsedAt,
+                             pinned: record.pinned,
+                             archived: record.archived,
+                             useCount: record.useCount,
+                             isDefaultIdentity: record.isDefaultIdentity,
+                             rotateDays: record.rotateDays,
+                             passwordChangedAt: record.passwordChangedAt,
+                             createdAt: record.createdAt,
+                             updatedAt: record.updatedAt,
+                             trashedAt: record.trashedAt)
+        // Preserved so a later save re-seals the ORIGINAL category raw value.
+        item.unknownCategoryRaw = secret.unknownCategoryRaw
+        item.semantics = secret.semantics
+        // Legacy items gain provable semantics in memory; they persist only
+        // when a user edit re-seals the item (lazy migration, never bulk).
+        return LegacySemanticsInference.applied(to: item)
     }
 
     /// Unseal the record and return just the password field value. Returns nil

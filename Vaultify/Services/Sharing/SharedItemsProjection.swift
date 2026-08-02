@@ -464,7 +464,12 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
             let meta = display?.fields?[fieldId]
             let kind = meta.flatMap { FieldKind(rawValue: $0.kind) } ?? .password
             let label = meta?.label.isEmpty == false ? meta!.label : appString("Shared value")
-            fields.append(DynamicField(id: fieldId, label: label, kind: kind, value: value))
+            // Owner's masking policy survives projection. Pre-policy envelopes
+            // (protected == nil) fall back to the kind's own default, which is
+            // exactly how those grants rendered historically — and the unknown
+            // -kind `.password` fallback above keeps that path masked.
+            fields.append(DynamicField(id: fieldId, label: label, kind: kind, value: value,
+                                       protected: meta?.protected))
         }
         // Detail-screen field order (dictionary order is random): identity
         // first, then secrets, extras, website last.
@@ -495,11 +500,15 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
             ?? Date(timeIntervalSince1970: Double(grant.createdAtUnixMs) / 1000)
         // A shared Secure Note, card, or SSH key must arrive as itself: the
         // category drives the avatar glyph, the type line, and every list
-        // subtitle. `.login` is the fallback for senders (and Tier-0
-        // placeholders) that carry no category, matching how these items
-        // rendered before the envelope could describe one.
+        // subtitle. `.login` is the fallback ONLY for senders (and Tier-0
+        // placeholders) that carry no category at all, matching how those
+        // items rendered before the envelope could describe one. A PRESENT but
+        // unknown category (newer sender) is a different situation: fabricating
+        // a login for it would attach login semantics to something that is not
+        // one, so it degrades to the generic `.custom` presentation instead.
         let categoryRaw: String? = display?.category
-        let category = categoryRaw.flatMap(ItemCategory.init(rawValue:)) ?? .login
+        let category: ItemCategory =
+            categoryRaw.map { ItemCategory(rawValue: $0) ?? .custom } ?? .login
         var item = VaultItem(id: origin.itemID, category: category,
                              title: display?.title.isEmpty == false
                                 ? display!.title : appString("Shared item"),

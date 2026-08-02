@@ -28,14 +28,16 @@ enum VaultReader {
         }
     }
 
-    /// All non-trashed login items (those exposing a password), decrypted.
+    /// All non-trashed login items, decrypted. Eligibility comes from the
+    /// capability resolver (template policy + a usable password) — a developer
+    /// secret typed as `.password` must never surface as a fillable login.
     /// The store is owned by the caller (one container per extension presentation);
     /// its load failure is handled at host time, so readers stay non-throwing.
     @MainActor static func logins(store: VaultStore, vaultKey: SecureBytes) -> [VaultItem] {
         store.allRecords()
             .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
             .compactMap { decrypt($0, key: vaultKey) }
-            .filter { $0.passwordField != nil }
+            .filter { ItemCapabilityResolver.isFillableLogin($0) }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
@@ -84,12 +86,14 @@ enum VaultReader {
         return defaultIdentityUsername(store: store, vaultKey: vaultKey) ?? ""
     }
 
-    /// Non-trashed items that carry a TOTP secret, for 2FA / one-time-code AutoFill.
+    /// Non-trashed items whose TOTP may drive 2FA / one-time-code AutoFill —
+    /// capability-gated, so a developer item's stored seed never becomes an
+    /// authenticator entry.
     @MainActor static func totpItems(store: VaultStore, vaultKey: SecureBytes) -> [VaultItem] {
         store.allRecords()
             .filter { $0.trashedAt == nil && $0.deletedAt == nil && $0.archived == false }
             .compactMap { decrypt($0, key: vaultKey) }
-            .filter { $0.totpField != nil }
+            .filter { ItemCapabilityResolver.isTOTPSource($0) }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
@@ -97,14 +101,17 @@ enum VaultReader {
         guard let plaintext = try? AESGCM.open(record.sealed, key: key),
               let secret = try? JSONDecoder().decode(ItemSecret.self, from: plaintext)
         else { return nil }
-        return VaultItem(id: record.id, category: secret.category, title: secret.title,
-                         folderId: secret.folderId, fields: secret.fields,
-                         favorite: record.favorite, tags: secret.tags,
-                         iconAsset: secret.iconAsset,
-                         lastUsedAt: record.lastUsedAt,
-                         pinned: record.pinned, archived: record.archived, useCount: record.useCount,
-                         createdAt: record.createdAt,
-                         updatedAt: record.updatedAt, trashedAt: record.trashedAt)
+        var item = VaultItem(id: record.id, category: secret.category, title: secret.title,
+                             folderId: secret.folderId, fields: secret.fields,
+                             favorite: record.favorite, tags: secret.tags,
+                             iconAsset: secret.iconAsset,
+                             lastUsedAt: record.lastUsedAt,
+                             pinned: record.pinned, archived: record.archived, useCount: record.useCount,
+                             createdAt: record.createdAt,
+                             updatedAt: record.updatedAt, trashedAt: record.trashedAt)
+        item.unknownCategoryRaw = secret.unknownCategoryRaw
+        item.semantics = secret.semantics
+        return item
     }
 }
 

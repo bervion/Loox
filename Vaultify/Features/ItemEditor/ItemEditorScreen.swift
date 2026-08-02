@@ -24,6 +24,9 @@ struct ItemEditorScreen: View {
     @State private var generatingFieldID: String?
     @State private var scanningFieldID: String?
     @State private var showAttachmentPicker = false
+    /// Artifacts staged during this session but not yet committed by a save —
+    /// rolled back on discard so cancellation leaves no orphan ciphertext.
+    @State private var stagedArtifacts: [StagedArtifact] = []
     @State private var showIconPicker = false
     @State private var showCardScanner = false
     @State private var didApplyDefaultFolder = false
@@ -76,12 +79,30 @@ struct ItemEditorScreen: View {
         !draft.title.trimmingCharacters(in: .whitespaces).isEmpty || draft.fields.contains { !$0.isEmpty }
     }
 
+    /// Registry template driving grouped sections — developer-family only, so
+    /// the eight shipped categories keep their exact editors (parity).
+    private var editorTemplate: ItemTemplateDefinition? {
+        guard let kindID = draft.semantics?.kindID,
+              let template = ItemTemplateRegistry.definition(for: kindID),
+              template.family == .developer else { return nil }
+        return template
+    }
+
+    /// Scaffold title: the template's name for semantic items, else the
+    /// category name.
+    private var editorTitle: LocalizedStringResource {
+        if let template = editorTemplate {
+            return LocalizedStringResource(String.LocalizationValue(template.title)).inAppLocalized
+        }
+        return draft.category.title
+    }
+
     var body: some View {
         VaultSheetScaffold(
             // A real (inline) title is required for the nav bar to render its scroll-edge
             // blur material — an empty title leaves the bar background-less, so scrolled
-            // content shows through the toolbar pills. Use the item's category name.
-            title: draft.category.title,
+            // content shows through the toolbar pills. Use the item's type name.
+            title: editorTitle,
             leading: {
                 // Compact X icon (instead of "Cancel" text) so the centre title fits.
                 Button {
@@ -127,12 +148,21 @@ struct ItemEditorScreen: View {
                 // awkwardly above the form.
 
                 // Login gets grouped sections (Credentials · Websites · Custom · Notes);
-                // other categories keep one flat, reorderable field list.
+                // developer-family templates get registry-driven sections; the
+                // remaining categories keep one flat, reorderable field list.
                 if draft.category == .login {
                     LoginEditorSections(
                         draft: $draft,
                         onScanTOTP: { scanningFieldID = $0 },
                         onAddAttachment: { showAttachmentPicker = true },
+                        onProtectedDeleteBlocked: { blockedProtectedDelete = true },
+                        onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)
+                } else if let template = editorTemplate {
+                    TemplateEditorSections(
+                        draft: $draft,
+                        template: template,
+                        onAddAttachment: { showAttachmentPicker = true },
+                        onAttachImportedFile: { addAttachment($0, name: $1, ext: $2) },
                         onProtectedDeleteBlocked: { blockedProtectedDelete = true },
                         onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)
                 } else {
@@ -255,10 +285,17 @@ struct ItemEditorScreen: View {
                 // asked for ends with this editor. A key the item view already
                 // held is left alone — it is not ours to revoke.
                 if didUnlockExtraProtection { env.session.clearLevel2Key() }
+                // Any staged attachment that never made it into a save is
+                // orphan ciphertext — sweep it. Save clears the list first,
+                // so this is a no-op on the save path.
+                discardStagedAttachments()
             }
             .interactiveDismissDisabled(hasChanges)
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                Button("Discard", role: .destructive) { dismiss() }
+                Button("Discard", role: .destructive) {
+                    discardStagedAttachments()
+                    dismiss()
+                }
             }
             // Dismissible on purpose: declining leaves the protected fields
             // locked and the rest of the item fully editable.
@@ -514,14 +551,30 @@ struct ItemEditorScreen: View {
         return env.repository.folders.first { $0.id == id }
     }
 
-    /// Seal the picked bytes via `AttachmentStore` and append a `.fileRef` field
-    /// holding the (non-secret) metadata pointer.
+    /// Stage the picked bytes as a v2 artifact (per-artifact DEK, portable
+    /// through backups) and append a `.fileRef` field holding the metadata
+    /// pointer. Nothing is committed until save: discard rolls the staged
+    /// ciphertext back, so a cancelled attachment leaves no orphan bytes.
     private func addAttachment(_ data: Data, name: String, ext: String) {
-        guard let meta = try? env.attachmentStore.save(data, name: name, ext: ext) else {
+        let filename = ext.isEmpty ? name : "\(name).\(ext)"
+        guard let staged = try? env.artifactStore.stage(data: data, filename: filename, uti: ext) else {
             Haptics.error(); return
         }
+        stagedArtifacts.append(staged)
+        var meta = AttachmentMeta(id: staged.id, name: name, ext: ext, size: data.count)
+        meta.v2 = true
         draft.fields.append(DynamicField(label: name, kind: .fileRef, value: meta.encoded()))
         Haptics.success()
+    }
+
+    /// Rolls back artifacts staged during THIS editing session when the draft
+    /// is discarded. Save commits and clears the list first, so committed
+    /// artifacts are never touched.
+    private func discardStagedAttachments() {
+        for staged in stagedArtifacts {
+            env.artifactStore.rollback(staged)
+        }
+        stagedArtifacts = []
     }
 
     /// The card template's Card Number field value, if present — passed to `EditorFieldRow`
@@ -807,6 +860,11 @@ struct ItemEditorScreen: View {
             }
         }
         do {
+            // Artifacts commit in the SAME context save as the item edit
+            // (`deferSave: true`): the item and its bytes land together.
+            for staged in stagedArtifacts {
+                try env.artifactStore.commit(staged, ownerItemId: draft.id, deferSave: true)
+            }
             if isNew {
                 try env.repository.add(draft)
                 bindPendingAlias()
@@ -814,6 +872,7 @@ struct ItemEditorScreen: View {
                 try env.repository.update(draft)
                 republishSharedDisplayIfNeeded(for: draft)
             }
+            stagedArtifacts = []
             Haptics.success()
             dismiss()
         } catch {
@@ -834,12 +893,15 @@ struct ItemEditorScreen: View {
         let host = item.urlField?.value.isEmpty == false
             ? URL(string: item.urlField!.value)?.host : nil
         // Editor doesn't know per-share capabilities — publish meta for every
-        // shareable field (labels+kinds only, sealed to the recipient).
+        // shareable field (labels+kinds+masking policy only, sealed to the
+        // recipient).
         let displayFields = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
             field.isExtraProtected ? nil
                 : (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
-                                                             kind: field.kind.rawValue))
+                                                             kind: field.kind.rawValue,
+                                                             protected: field.protected))
         })
+        let displayCategory = item.unknownCategoryRaw ?? item.category.rawValue
         // Current plaintexts of shareable fields — republishSharedValues
         // re-seals only the ones each grant actually marks `shared`.
         let currentValues = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
@@ -853,7 +915,8 @@ struct ItemEditorScreen: View {
                 try? await env.approvalShare.republishDisplayEnvelope(
                     itemId: share.itemId,
                     title: title, websiteHost: host, displayFields: displayFields,
-                    zoneID: zoneID, nowUnixMs: nowUnixMs)
+                    zoneID: zoneID, nowUnixMs: nowUnixMs,
+                    displayCategory: displayCategory)
                 // Edited values follow to the recipient near-realtime (their
                 // shared-db push triggers a projection refresh).
                 try? await env.approvalShare.republishSharedValues(

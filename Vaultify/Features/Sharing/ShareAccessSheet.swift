@@ -595,7 +595,7 @@ struct ShareAccessSheet: View {
             if let item {
                 Section {
                     ForEach(item.fields) { field in
-                        FieldCapabilityRow(field: field, capability: binding(for: field),
+                        FieldCapabilityRow(field: field, item: item, capability: binding(for: field),
                                            requestHandOver: { proposed in
                                                pendingHandOver = (field.id, proposed)
                                            })

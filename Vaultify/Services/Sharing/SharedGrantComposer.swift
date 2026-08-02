@@ -98,7 +98,11 @@ enum SharedGrantComposer {
         var sharedValues: [String: Data] = Dictionary(uniqueKeysWithValues:
             item.fields.compactMap { field in
                 guard capabilities[field.id]?.isSharedValue == true,
-                      !field.isExtraProtected else { return nil }
+                      // Policy enforced at the producer boundary too: even a
+                      // stale capability naming a non-shareable field (key
+                      // material, Level-2) must not serialize its value.
+                      ItemCapabilityResolver.capabilities(for: field, in: item).approvalShare
+                else { return nil }
                 return (field.id, Data(field.value.utf8))
             })
         var displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []
@@ -135,7 +139,8 @@ enum SharedGrantComposer {
             capabilities[field.id]?.isSharedValue == true
                 || capabilities[field.id]?.isAskEachTimeTOTP == true
                 ? (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
-                                                             kind: field.kind.rawValue))
+                                                             kind: field.kind.rawValue,
+                                                             protected: field.protected))
                 : nil
         })
         let allowed = try allowedDevices(scope: deviceScope, directory: profile.deviceHPKEDirectory)
@@ -151,6 +156,9 @@ enum SharedGrantComposer {
             pinnedDeviceSigningKeys: profile.deviceSigningKeys,
             epoch: epoch, zoneID: zoneID, nowUnixMs: nowUnixMs,
             deviceScope: deviceScope, allowedDevices: allowed,
-            displayPasskeys: displayPasskeys)
+            displayPasskeys: displayPasskeys,
+            // The share renders as WHAT IT IS on the recipient — an unknown
+            // category item forwards its original raw value, never a fallback.
+            displayCategory: item.unknownCategoryRaw ?? item.category.rawValue)
     }
 }

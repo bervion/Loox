@@ -51,14 +51,16 @@ nonisolated enum WebExtensionReader {
         var lists = ItemLists(logins: [], identities: [], cards: [])
         for record in liveRecords(in: store) {
             guard let item = decrypt(record, key: key) else { continue }
-            switch item.category {
-            case .identity:
+            // The resolver is the single authority: identity/card templates
+            // claim their fill surface, login-capable templates claim the
+            // host-scoped listing, and everything else (developer secrets,
+            // unknown kinds) is invisible to the extension.
+            let capabilities = ItemCapabilityResolver.capabilities(for: item)
+            if capabilities.identityFill {
                 lists.identities.append(IdentitySummary(id: item.id, title: item.title))
-            case .card:
+            } else if capabilities.cardFill {
                 lists.cards.append(cardSummary(for: item))
-            default:
-                // Same definition of "login" as the AutoFill reader: anything
-                // exposing a password field, regardless of exact category.
+            } else if capabilities.safariLoginListing {
                 guard item.passwordField != nil,
                       hostMatches(host, item: item) else { continue }
                 let username = VaultReader.username(from: item) ?? ""
@@ -150,12 +152,16 @@ nonisolated enum WebExtensionReader {
         lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
     }
 
-    /// Minimal decrypt for listing/matching: id, category, title, fields.
+    /// Minimal decrypt for listing/matching: id, category, title, fields,
+    /// plus the semantic identity the capability resolver keys off.
     private static func decrypt(_ record: ItemRecord, key: SecureBytes) -> VaultItem? {
         guard let plaintext = try? AESGCM.open(record.sealed, key: key),
               let secret = try? JSONDecoder().decode(ItemSecret.self, from: plaintext)
         else { return nil }
-        return VaultItem(id: record.id, category: secret.category,
-                         title: secret.title, fields: secret.fields)
+        var item = VaultItem(id: record.id, category: secret.category,
+                             title: secret.title, fields: secret.fields)
+        item.unknownCategoryRaw = secret.unknownCategoryRaw
+        item.semantics = secret.semantics
+        return item
     }
 }

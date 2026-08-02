@@ -35,6 +35,7 @@ final class VaultStore {
                                   PersonaRecord.self, EmailAliasRecord.self,
                                   ForwardingInboxRecord.self,
                                   AuditReportRecord.self, FindingStateRecord.self,
+                                  ArtifactRecord.self,
                                   configurations: configuration)
     }
 
@@ -49,7 +50,31 @@ final class VaultStore {
         try context.delete(model: ForwardingInboxRecord.self)
         try context.delete(model: AuditReportRecord.self)
         try context.delete(model: FindingStateRecord.self)
+        try context.delete(model: ArtifactRecord.self)
         try context.save()
+    }
+
+    // MARK: Artifact access (opaque sealed blobs + wrapped DEKs — no Vault Key needed)
+
+    /// All records including soft-deleted tombstones (for reconciliation/sync).
+    @MainActor
+    func allArtifactRecords() -> [ArtifactRecord] {
+        (try? context.fetch(FetchDescriptor<ArtifactRecord>())) ?? []
+    }
+
+    @MainActor
+    func artifactRecord(id: String) -> ArtifactRecord? {
+        var descriptor = FetchDescriptor<ArtifactRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Live (non-tombstoned) artifacts owned by one item.
+    @MainActor
+    func artifactRecords(ownerItemId: String) -> [ArtifactRecord] {
+        let descriptor = FetchDescriptor<ArtifactRecord>(
+            predicate: #Predicate { $0.ownerItemId == ownerItemId && $0.deletedAt == nil })
+        return (try? context.fetch(descriptor)) ?? []
     }
 
     // MARK: Sync access (operates on opaque ciphertext — no Vault Key needed)

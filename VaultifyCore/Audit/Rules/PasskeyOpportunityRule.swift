@@ -11,7 +11,7 @@ nonisolated struct PasskeyOpportunityRule: nonisolated AuditRule {
 
     func evaluate(_ snapshot: VaultAuditSnapshot, context: AuditContext) async throws -> [AuditFinding] {
         snapshot.activeItems.compactMap { item in
-            guard item.category == .login, !item.hasPasskey,
+            guard item.loginHygieneEligible, !item.hasPasskey,
                   ServiceCapabilityCatalog.capability(urls: item.rawURLs)?.supportsPasskey == true
             else { return nil }
             return AuditFinding(
