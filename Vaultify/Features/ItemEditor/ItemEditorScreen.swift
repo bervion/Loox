@@ -24,6 +24,9 @@ struct ItemEditorScreen: View {
     @State private var generatingFieldID: String?
     @State private var scanningFieldID: String?
     @State private var showAttachmentPicker = false
+    /// Attachment bytes sealed during this session but not yet committed by a
+    /// save — deleted on discard so cancellation leaves no orphan ciphertext.
+    @State private var stagedAttachmentMetas: [AttachmentMeta] = []
     @State private var showIconPicker = false
     @State private var showCardScanner = false
     @State private var didApplyDefaultFolder = false
@@ -281,10 +284,17 @@ struct ItemEditorScreen: View {
                 // asked for ends with this editor. A key the item view already
                 // held is left alone — it is not ours to revoke.
                 if didUnlockExtraProtection { env.session.clearLevel2Key() }
+                // Any staged attachment that never made it into a save is
+                // orphan ciphertext — sweep it. Save clears the list first,
+                // so this is a no-op on the save path.
+                discardStagedAttachments()
             }
             .interactiveDismissDisabled(hasChanges)
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                Button("Discard", role: .destructive) { dismiss() }
+                Button("Discard", role: .destructive) {
+                    discardStagedAttachments()
+                    dismiss()
+                }
             }
             // Dismissible on purpose: declining leaves the protected fields
             // locked and the rest of the item fully editable.
@@ -541,13 +551,26 @@ struct ItemEditorScreen: View {
     }
 
     /// Seal the picked bytes via `AttachmentStore` and append a `.fileRef` field
-    /// holding the (non-secret) metadata pointer.
+    /// holding the (non-secret) metadata pointer. The meta is remembered as
+    /// STAGED until save: discarding the editor must delete the sealed bytes,
+    /// or a cancelled attachment leaves orphan ciphertext in the store.
     private func addAttachment(_ data: Data, name: String, ext: String) {
         guard let meta = try? env.attachmentStore.save(data, name: name, ext: ext) else {
             Haptics.error(); return
         }
+        stagedAttachmentMetas.append(meta)
         draft.fields.append(DynamicField(label: name, kind: .fileRef, value: meta.encoded()))
         Haptics.success()
+    }
+
+    /// Deletes attachment bytes sealed during THIS editing session when the
+    /// draft is discarded. Save clears the staging list first, so committed
+    /// attachments are never touched.
+    private func discardStagedAttachments() {
+        for meta in stagedAttachmentMetas {
+            env.attachmentStore.delete(meta)
+        }
+        stagedAttachmentMetas = []
     }
 
     /// The card template's Card Number field value, if present — passed to `EditorFieldRow`
@@ -840,6 +863,9 @@ struct ItemEditorScreen: View {
                 try env.repository.update(draft)
                 republishSharedDisplayIfNeeded(for: draft)
             }
+            // The save committed every attachment added this session — they
+            // are owned by the item now, not staged.
+            stagedAttachmentMetas = []
             Haptics.success()
             dismiss()
         } catch {

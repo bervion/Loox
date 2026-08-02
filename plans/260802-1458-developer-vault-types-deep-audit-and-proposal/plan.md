@@ -1,7 +1,7 @@
 ---
 title: "Developer Vault Types Deep Audit and Proposal"
 description: "Evolve Vaultify from label-driven MVP item forms into a backward-compatible semantic vault platform for SSH, Git, API credentials, and Apple developer assets."
-status: pending
+status: in-progress
 priority: P0
 effort: "Provisional 12-20 engineer-weeks for one senior engineer; re-estimate after compatibility and artifact-crypto spikes"
 tags: [vault-types, developer-tools, ios, security, ux, migration]
