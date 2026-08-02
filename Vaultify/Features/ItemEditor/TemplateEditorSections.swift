@@ -17,6 +17,10 @@ struct TemplateEditorSections: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Advanced sections the user explicitly opened this visit.
     @State private var openedAdvanced: Set<String> = []
+    @State private var showKeyImporter = false
+    /// Import outcome shown under the import row: honest verification state,
+    /// never a stronger claim than the parser proved.
+    @State private var importStatus: LocalizedStringKey?
 
     var body: some View {
         ForEach(template.sections, id: \.id) { section in
@@ -75,11 +79,66 @@ struct TemplateEditorSections: View {
 
     @ViewBuilder private func coreSection(_ section: TemplateSection) -> some View {
         Section {
+            // Import-first: an SSH item is usually born from an existing key
+            // file, so the import affordance leads its keys section.
+            if template.kindID == .sshKey, section.id == "keys" {
+                keyImportRow
+            }
             sectionRows(section)
         } header: {
             if !section.title.isEmpty { Text(LocalizedStringKey(section.title)) }
         }
         .listRowBackground(VaultColors.surface)
+    }
+
+    private var keyImportRow: some View {
+        VStack(alignment: .leading, spacing: Space.s1) {
+            Button { showKeyImporter = true } label: {
+                Label { Text("Import Key File…") } icon: { VaultIcon(Icons.importData) }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if let importStatus {
+                Text(importStatus)
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+            }
+        }
+        .fileImporter(isPresented: $showKeyImporter,
+                      allowedContentTypes: [.item]) { result in
+            guard case .success(let url) = result else { return }
+            importKeyFile(at: url)
+        }
+    }
+
+    /// Reads the picked file (bounded), inspects it locally, and applies the
+    /// derived metadata. Original bytes are canonical: the imported text lands
+    /// verbatim in its key slot; only derived metadata fields are recomputed.
+    private func importKeyFile(at url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url),
+              data.count <= SSHKeyInspector.maxInputBytes,
+              let text = String(data: data, encoding: .utf8) else {
+            importStatus = "Couldn’t read that file as a key"
+            Haptics.error()
+            return
+        }
+        Task {
+            let result = await SSHKeyInspector.inspectDetached(text)
+            draft.fields = SSHKeyImportMapper.fields(applying: result,
+                                                     originalText: text,
+                                                     to: draft.fields)
+            if result.verified {
+                importStatus = "Verified"
+            } else if result.isEncrypted {
+                importStatus = "Passphrase protected"
+            } else {
+                importStatus = "Saved, not verified"
+            }
+            Haptics.success()
+        }
     }
 
     @ViewBuilder private func advancedSection(_ section: TemplateSection) -> some View {

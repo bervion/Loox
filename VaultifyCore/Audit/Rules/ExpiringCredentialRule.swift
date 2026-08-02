@@ -14,7 +14,10 @@ nonisolated struct ExpiringCredentialRule: AuditRule {
     private static let warnWithinDays = 30
 
     func evaluate(_ snapshot: VaultAuditSnapshot, context: AuditContext) async throws -> [AuditFinding] {
-        snapshot.activeItems.compactMap { item in
+        // Explicit result type: without it, the Safari target (which compiles
+        // this file without SWIFT_APPROACHABLE_CONCURRENCY) infers the closure
+        // as non-optional and rejects the guard's `nil`.
+        snapshot.activeItems.compactMap { item -> AuditFinding? in
             guard let expiry = item.earliestExpiry else { return nil }
             let days = Calendar.current.dateComponents([.day], from: context.now, to: expiry).day ?? 0
             let expired = expiry <= context.now
