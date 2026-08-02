@@ -1,7 +1,7 @@
 ---
 title: "Developer Vault Types Deep Audit and Proposal"
 description: "Evolve Vaultify from label-driven MVP item forms into a backward-compatible semantic vault platform for SSH, Git, API credentials, and Apple developer assets."
-status: in-progress
+status: implemented
 priority: P0
 effort: "Provisional 12-20 engineer-weeks for one senior engineer; re-estimate after compatibility and artifact-crypto spikes"
 tags: [vault-types, developer-tools, ios, security, ux, migration]
@@ -77,12 +77,12 @@ parallel work starts only after an explicit file-ownership split.
 
 | # | Phase | Status |
 |---|-------|--------|
-| 1 | [Correctness and Compatibility Guardrails](./phase-01-start.md) | Pending |
-| 2 | [Semantic Type Schema and Registry](./phase-02-semantic-type-schema-and-registry.md) | Pending |
-| 3 | [First-Class Secure Artifact Lifecycle](./phase-03-first-class-secure-artifact-lifecycle.md) | Pending |
-| 4 | [Template-Driven Vault UX](./phase-04-template-driven-vault-ux.md) | Pending |
-| 5 | [Developer Core Pack: SSH, API, and Git](./phase-05-developer-core-pack-ssh-api-and-git.md) | Pending |
-| 6 | [iOS Developer Asset Pack](./phase-06-ios-developer-asset-pack.md) | Pending |
+| 1 | [Correctness and Compatibility Guardrails](./phase-01-start.md) | Done |
+| 2 | [Semantic Type Schema and Registry](./phase-02-semantic-type-schema-and-registry.md) | Done |
+| 3 | [First-Class Secure Artifact Lifecycle](./phase-03-first-class-secure-artifact-lifecycle.md) | Done (CloudKit plane flag-gated) |
+| 4 | [Template-Driven Vault UX](./phase-04-template-driven-vault-ux.md) | Done |
+| 5 | [Developer Core Pack: SSH, API, and Git](./phase-05-developer-core-pack-ssh-api-and-git.md) | Done |
+| 6 | [iOS Developer Asset Pack](./phase-06-ios-developer-asset-pack.md) | Done |
 | 7 | [Rollout, Migration, and Quality Gates](./phase-07-rollout-migration-and-quality-gates.md) | Cross-cutting |
 
 ## Delivery Gates

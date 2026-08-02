@@ -1,6 +1,6 @@
 ---
 title: "Phase 6: iOS Developer Asset Pack"
-status: todo
+status: done
 ---
 
 # Phase 6: iOS Developer Asset Pack

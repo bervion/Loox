@@ -1,6 +1,6 @@
 ---
 title: "Phase 5: Developer Core Pack SSH API and Git"
-status: todo
+status: done
 ---
 
 # Phase 5: Developer Core Pack SSH API and Git

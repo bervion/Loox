@@ -1,6 +1,6 @@
 ---
 title: "Phase 1: Correctness and Compatibility Guardrails"
-status: todo
+status: done
 ---
 
 # Phase 1: Correctness and Compatibility Guardrails

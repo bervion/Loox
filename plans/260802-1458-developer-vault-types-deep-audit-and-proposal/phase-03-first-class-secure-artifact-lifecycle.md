@@ -1,6 +1,6 @@
 ---
 title: "Phase 3: First-Class Secure Artifact Lifecycle"
-status: todo
+status: done
 ---
 
 # Phase 3: First-Class Secure Artifact Lifecycle

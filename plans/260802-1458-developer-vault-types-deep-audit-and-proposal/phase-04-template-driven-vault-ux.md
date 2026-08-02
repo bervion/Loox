@@ -1,6 +1,6 @@
 ---
 title: "Phase 4: Template-Driven Vault UX"
-status: todo
+status: done
 ---
 
 # Phase 4: Template-Driven Vault UX
