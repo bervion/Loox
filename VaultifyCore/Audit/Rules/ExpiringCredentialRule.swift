@@ -25,7 +25,7 @@ nonisolated struct ExpiringCredentialRule: AuditRule {
             return AuditFinding(
                 ruleID: id,
                 ruleVersion: version,
-                severity: expired ? .warning : .info,
+                severity: expired ? .medium : .info,
                 category: category,
                 affectedItemIDs: [item.id],
                 fingerprint: AuditFingerprint.make(ruleID: id, version: version, itemIDs: [item.id]),
