@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Registry-driven editor composition for developer-family templates: the
 /// template's core sections render first, advanced sections stay collapsed
