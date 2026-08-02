@@ -19,7 +19,14 @@ final class AppleAssetInspectorTests: XCTestCase {
 
     private func fixture(_ name: String, _ ext: String) throws -> Data {
         let bundle = Bundle(for: Self.self)
-        let url = bundle.url(forResource: name, withExtension: ext, subdirectory: "apple-vectors-v1")
+        // Sensitive-LOOKING extensions (.p8/.p12/.mobileprovision) ship as
+        // "<name>-<ext>.fixture" so the repo's never-commit-secrets ignore
+        // rules stay fully armed — these are disposable generated vectors,
+        // and inspectors sniff content, never extensions.
+        let url = bundle.url(forResource: "\(name)-\(ext)", withExtension: "fixture",
+                             subdirectory: "apple-vectors-v1")
+            ?? bundle.url(forResource: "\(name)-\(ext)", withExtension: "fixture")
+            ?? bundle.url(forResource: name, withExtension: ext, subdirectory: "apple-vectors-v1")
             ?? bundle.url(forResource: name, withExtension: ext)
         return try Data(contentsOf: XCTUnwrap(url, "missing fixture \(name).\(ext)"))
     }
