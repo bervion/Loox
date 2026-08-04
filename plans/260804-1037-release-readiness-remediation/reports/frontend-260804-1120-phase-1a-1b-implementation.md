@@ -2,9 +2,29 @@
 
 - Date: 2026-08-04
 - Repo: `/Users/bervion/Developer/Projects/frontend/looxpassword`
-- Branch: `feat/quick-view-open-redesign` (not committed; changes are in the working tree)
-- Status: **DONE_WITH_CONCERNS** — code and content complete, blocked on OPEN-3 legal inputs
-  and on deployment.
+- Branch: `fix/legal-routes-and-privacy-claims` → **merged to `main`** via
+  [PR #5](https://github.com/bervion/looxpassword-web/pull/5) at 2026-08-04T04:15:46Z
+  (`a5d7965`, 17 files, +888/-176)
+- Status: **DONE_WITH_CONCERNS** — merged, but **not deployed**, and the policy pages still
+  carry six legal placeholders (OPEN-3).
+
+The work was cut onto a fresh branch off `origin/main` rather than the checked-out
+`feat/quick-view-open-redesign`, which carries two unrelated, unpushed Quick View commits.
+Zero file overlap: that WIP is entirely inside `workers/loox-quick-view/`.
+
+## Scope item missed
+
+**Phase 1A.4, the contact-form honesty fix, was not implemented and this report did not
+say so.** `src/components/contact-form.tsx:29` still calls `setSent(true)` unconditionally
+after attempting the `mailto:` navigation, so the form claims success even when nothing was
+sent. Caught by the second reviewer, not by this report. It remains open in `phase-01`.
+
+## Known gap introduced by this change
+
+`claims-gate.sh` forbids the literal string `starter template`, but **not** the placeholder
+tokens this PR introduced. Deploying today would publish `[LEGAL ENTITY NAME]`,
+`[GOVERNING LAW]` and friends to the live policy pages with both gates reporting green.
+Add the six tokens to `FORBIDDEN` before the next deploy.
 
 ## 1A — routing
 

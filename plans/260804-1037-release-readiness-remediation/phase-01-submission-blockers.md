@@ -75,11 +75,14 @@ only `/` and `/vi`, and one phrase it forbids is live elsewhere on the site.
   for `/terms`, `/privacy`, `/security`.
 - Wire both into `scripts/deploy-marketing.sh` and expose as a `routes:gate` script.
 
-### 1A.4 Contact form honesty
+### 1A.4 Contact form honesty — NOT DONE
 
-The contact form reports success unconditionally, even when the `mailto:` navigation does
-nothing. Report the real outcome, or replace the success state with instructions plus the
-address.
+**This item was missed in the merged PR #5 and the implementation report did not say so.**
+Still outstanding.
+
+`src/components/contact-form.tsx:29` calls `setSent(true)` unconditionally after attempting
+the `mailto:` navigation, so the form shows the success message even when nothing was sent.
+Report the real outcome, or replace the success state with instructions plus the address.
 
 ---
 
@@ -210,6 +213,14 @@ Nobody else opens `Project.swift` in this phase.
    Wire it into the resources arrays of **all three** appexes: `VaultifyAutoFill`
    (`:225-232`), `VaultifyAutoFillMac` (`:288-293`), `VaultifySafari` (`:337-355`).
    The audit named only two; there are three, and the Mac one ships in the Mac slice.
+
+   **Count precisely, the two numbers are different.** The *source* has four targets that
+   need checking once `VaultifyAutoFillMac` is included. The *signed iOS IPA for this
+   submission* contains exactly **three** executable bundles: `Vaultify.app`,
+   `VaultifyAutoFill.appex`, `VaultifySafari.appex`. Apple requires a manifest in the
+   bundle of every executable that uses a required-reason API, so the iOS acceptance
+   criterion is three, and the fourth is covered only because it shares the same manifest
+   file. Do not write "all four executables" when describing the iOS archive.
 6. `defaultKnownRegions` — add `ja` (`Project.swift:18`). Confirmed to have zero shipping
    effect (String Catalogs ignore it; `ja.lproj` is already in the app and both appexes),
    so take it while in the file, do not schedule it separately.
@@ -265,6 +276,7 @@ Merge every `reports/strings-*.json` into `Vaultify/Localizable.xcstrings`, veri
 - [ ] No "starter template" text live; policies signed off by owner + counsel
 - [ ] `home-compare` row 7 and every false claim in `messages/*.json` corrected
 - [ ] Both iOS purchase surfaces expose working Terms and Privacy links
-- [ ] `PrivacyInfo.xcprivacy` present and correct in all four executables; CI check green
+- [ ] `PrivacyInfo.xcprivacy` present and correct in each of the three executable bundles
+      the iOS IPA contains, and in the Mac appex for when that slice ships; CI check green
 - [ ] `AboutView` copy matches the shipping defaults; About links to both policies
 - [ ] `tuist generate && make check` green

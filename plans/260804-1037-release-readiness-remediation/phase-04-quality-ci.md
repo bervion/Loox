@@ -73,10 +73,30 @@ code; it may be an Xcode 27 beta artifact rather than a product defect.
 
 ---
 
-## M15 — the toolchain pin is one runner update from breaking every release
+## M15 — the toolchain pin is an exact match, and machines drift independently
 
-`scripts/ci/select-xcode.sh` hard-pins Xcode 26.5, which is installed nowhere on the
-maintainer machine. Consequences:
+`scripts/ci/select-xcode.sh` requires **exactly** `26.5` (`EXPECTED_XCODE_VERSION="26.5"`,
+string equality). Whether that passes is per-machine, which is the actual problem:
+
+| Machine | Installed | `select-xcode.sh` |
+|---|---|---|
+| Primary working machine, 2026-08-04 | `Xcode.app` 26.6, `Xcode-beta.app` 27.0 | **fails**, exit 1 |
+| Second reviewer's machine | 26.5 (17F42) | passes |
+| Self-hosted release runner | unverified from here | unknown |
+
+A patch bump from 26.5 to 26.6 is enough to break it. So the finding is not "26.5 is
+installed nowhere" — it is that an exact-match pin, plus three machines that update
+independently, plus no inventory check, means nobody can say whether a tag will build
+until it fails. Reframe the fix as a **runner-inventory / preflight gate**, not a version
+correction:
+
+- print the resolved toolchain in the release job and fail with the inventory when no
+  candidate matches, rather than a bare "not found"
+- accept a documented **minimum** rather than an exact string, or pin exactly and add a
+  scheduled check that alerts when the runner drifts
+- record the current runner's actual version somewhere the team can see
+
+Consequences of leaving it as-is:
 
 - An unattended update on the self-hosted `vaultify-release` runner turns every `v*` tag
   into a job that fails **before** signing. It looks like an infrastructure outage, not a
@@ -92,10 +112,20 @@ drift independently. Record the pin policy in the runbook next to the existing
 
 ## `make test` is guaranteed red
 
-The documented local quality command fails because of the auto-generated scheme it targets.
-Point `test` at `Vaultify-Quality`, drop the literal `build` action (the local hook blocks
-the bare word), and fix `DEST` — `name=iPhone 16` does not resolve here; use
-`generic/platform=iOS Simulator`.
+`Makefile:14` sets `SCHEME := Vaultify` and `Makefile:17` sets
+`DEST ?= platform=iOS Simulator,name=iPhone 16`, and `test:` runs `xcodebuild test` against
+both. Two separate faults:
+
+- **Wrong scheme.** `Vaultify-Quality.xcscheme` is the shared scheme that carries the test
+  targets. Point `test` at it.
+- **Unresolvable destination.** `name=iPhone 16` does not resolve on these machines.
+
+**Correction to an earlier draft of this plan:** it said to set `DEST` to
+`generic/platform=iOS Simulator`. That is wrong. A generic destination is valid for a
+compile check only — `xcodebuild test` needs a real, booted simulator. Discover or create
+one and pass its **UDID**, the same way CI does in `scripts/ci/create-simulator.sh`, so the
+local command and the CI command exercise the same runtime. Keep the literal word `build`
+out of the recipe and out of any path (the local hook blocks it).
 
 ## Release gate — close the hole without reversing the owner's decision
 

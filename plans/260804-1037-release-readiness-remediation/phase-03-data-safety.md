@@ -149,11 +149,18 @@ filesystem and store unchanged.
   interpolates a Core Data `NSError` whose `userInfo` carries the store path — into a
   message `CLAUDE.md` explicitly says is uploaded to Crashlytics and must not contain
   paths. Fix the message.
-- **Ship now:** an empty `SchemaMigrationPlan` / `VersionedSchema` scaffold is cheap
-  insurance. Take it.
-- **Defer:** the fixture-backed `testContainerLoadsAgainstAStoreWrittenByThePreviousSchema`
-  test. v1.49.1 → v1.50.0 adds exactly one standalone entity (`ArtifactRecord`) and changes
-  zero existing columns — the case lightweight migration handles.
+- **Do not** add an empty `SchemaMigrationPlan` / `VersionedSchema` scaffold on its own.
+  An earlier draft called it "cheap insurance"; it is not. Declaring a `VersionedSchema`
+  where none existed changes how SwiftData resolves and migrates the model, and shipping
+  that change without a fixture test right before a release is added risk, not reduced
+  risk. Pick one and finish it:
+  - **Keep implicit migration**, and prove it with the manual v1.49.1 → RC upgrade gate
+    below. This is the recommended path for this release: v1.49.1 → v1.50.0 adds exactly
+    one standalone entity (`ArtifactRecord`) and changes zero existing columns, which is
+    the case lightweight migration handles.
+  - **Or go explicit**, with `VersionedSchema`, a `SchemaMigrationPlan`, and
+    fixture-backed tests that load a store written by the previous schema version. That is
+    a real piece of work, not a scaffold.
 - **Keep as a manual Phase 7 gate:** install v1.49.1, build a representative vault, upgrade
   in place, then unlock / read / edit / export / relaunch and verify items, passkeys,
   artifacts, folders and personas. Repeat under low storage.

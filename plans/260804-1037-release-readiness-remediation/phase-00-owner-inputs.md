@@ -26,13 +26,13 @@ iPad screenshot session is owed in Phase 7.
 
 **Branch B — iPhone-only for v1.** Set `TARGETED_DEVICE_FAMILY = "1"`, narrow the appex
 families to match, drop `.iPad` from destinations. Removes Phase 6's iPad track and the
-screenshot requirement. Ship iPad in v1.51 with real QA.
+screenshot requirement. Ship iPad in a later release with real QA.
 
 **Mandatory in both branches:** M13 (`AdaptiveRootView` routing Plus/Max-class iPhones in
 landscape into the iPad sidebar shell) is an **iPhone** bug. Lowering the device family
 does not change `horizontalSizeClass` on an iPhone 16 Pro Max in landscape.
 
-### OPEN-2 — Emergency Kit semantics with iCloud sync off
+### OPEN-2 — Emergency Kit semantics with iCloud sync off — PROPOSED CONTRACT
 
 Blocks Phase 2D entirely. `pushRecoveryEnvelopeIfNeeded()` is gated on
 `iCloudSyncEnabled` (`SyncCoordinator.swift:90`). If the consent step leaves sync off:
@@ -41,9 +41,24 @@ Blocks Phase 2D entirely. `pushRecoveryEnvelopeIfNeeded()` is gated on
   scan the Setup Code") become false, and
 - `JoinByRecoveryView` dead-ends on `.noEnvelope`.
 
-Recommended shape: the consent step explains that cross-device recovery requires sync;
-the Kit's copy becomes conditional on the choice; the local Kit still works as a
-this-device master-password record.
+The second reviewer supplied a specific contract, adopted here pending owner
+acknowledgement. It is precise enough to implement against:
+
+- iCloud sync defaults **OFF**, with no preselected option.
+- The Emergency Kit is still generated when sync is off.
+- With sync off, the Kit resets the **master password only**, and only while the vault and
+  key bundle still exist on this installation.
+- The Kit is **not an offline backup**. It does not survive device loss, app deletion, or
+  a new device setup.
+- Cross-device and device-loss recovery work **only** if sync was on and the recovery
+  envelope uploaded successfully **before** the incident.
+- When the user turns sync on, the UI must **await the first recovery-envelope push** and
+  show success or failure. Silent best-effort is what created this ambiguity.
+- Onboarding copy, the printed PDF, and Join-by-Recovery must all be corrected to this
+  contract. Stop making the general claim that holding the Kit is enough to recover.
+
+This is a genuine reduction in what the product currently implies. Owner should confirm
+before Phase 2D writes the copy.
 
 ### OPEN-3 — Legal inputs for the Terms rewrite
 
@@ -72,12 +87,26 @@ retention clause depends on the answer, and so does M8's 30-day blast radius.
 
 ## Owner actions to take today
 
-### M16 — Run `make certificates`
+### M16 — Regenerate the AutoFill profile (four steps, not one)
 
-`fastlane/Matchfile` runs `readonly: true`, so a stale profile is a hard failure at the
-signing step of a tagged release. The AutoFill entitlements now request iCloud/CloudKit
-and carry an in-file TODO to enable that capability on `com.bervion.vaultify.autofill` in
-the Developer portal. Enable it, then regenerate. Sixty seconds; it can kill a release.
+An earlier draft of this plan said "run `make certificates`, it settles this in sixty
+seconds". **That is wrong.** `make certificates` calls
+`fastlane certificates` → `match(type: "appstore", readonly: true, …)`
+(`fastlane/Fastfile:69-72`). Readonly **cannot create or update** a profile, so it will
+report the stale profile rather than fix it.
+
+The AutoFill entitlements now request iCloud/CloudKit and carry an in-file TODO to enable
+that capability on `com.bervion.vaultify.autofill`. Correct sequence:
+
+1. Enable the CloudKit capability on the AutoFill App ID in the Developer portal.
+2. A maintainer with write access runs `match` in write/force mode to regenerate the
+   profile and store it in the certificates repo. This is deliberately not a `make` target.
+3. Then run `make certificates` (readonly) to verify the release runner resolves the new
+   profile.
+4. Then produce a signed archive and inspect the entitlements of the app and **both**
+   embedded extensions.
+
+Skipping step 2 means a tagged release dies at the signing step with a stale profile.
 
 ### M3 — Decide "Mac (Designed for iPad)" availability
 

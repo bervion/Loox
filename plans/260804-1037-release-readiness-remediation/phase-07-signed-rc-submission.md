@@ -31,7 +31,14 @@ Required for a first submission:
 - [ ] Age rating questionnaire
 - [ ] Privacy Policy URL (`https://looxpassword.com/policies/privacy`)
 - [ ] App Review notes and contact (7.4)
-- [ ] Per-locale copy for `en-US`, `vi`, and `ja` if OPEN-4 says ja ships
+- [ ] Per-locale copy for **`en-US` and `vi` only** on this submission
+
+**Japanese: keep it in the binary, keep it out of the listing.** Continue translating every
+new string to JA so the UI never mixes languages, but do not open a `ja` App Store
+localization until there is a real description, subtitle, keywords, and a copy QA pass.
+`metadata/apple/ja/` currently holds release notes with no listing copy behind them, and
+`deliver` will happily push a half-populated localization. **Filter or move
+`metadata/apple/ja` out of the deliver automation** until that copy exists.
 
 Fix the `submit` lane to match, or drive metadata through ASC directly and set
 `skip_metadata: true`.
@@ -126,7 +133,8 @@ privacy manifest, the policy page, and runtime behavior exactly. Confirm
 
 ## 7.8 — Cut and ship
 
-1. New tag — `v1.51.0`, build > 78. **Do not move or reuse `v1.50.0`.**
+1. New tag at a version number the **owner** picks, build > 78. Do not assume `v1.51.0` —
+   the current RC may already claim it. **Do not move or reuse `v1.50.0`.**
 2. Signed archive from the exact tag SHA.
 3. Xcode Validate / Transporter pass.
 4. Inspect the IPA: app + iOS AutoFill + iOS Safari only, no Mac binary; version and build

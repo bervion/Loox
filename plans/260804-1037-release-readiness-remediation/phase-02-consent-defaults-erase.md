@@ -80,7 +80,20 @@ the Keychain, neither the user nor support can ever kill it.
 - Optionally add `LooxLinkRecordStore.wipe(keeping:)` so records that failed to revoke are
   the only thing retained.
 
+Failure handling is part of the contract, not a nicety: if a Quick Link revoke fails,
+either retain enough revoke record and token to retry it later, or define what the user
+just did as a **local-only erase** and say so. What must not happen is the current
+behavior, where "Erase Anyway" destroys the revoke tokens while the links stay live for up
+to 30 days with nobody able to kill them.
+
+Required repro before this is called done: airplane mode, and app killed mid-erase, with
+the link checked from a second device.
+
 ### M9 — macOS bypasses relay teardown
+
+**Scope note:** macOS is not shipping this round. Fix it through the shared coordinator
+because it is the same code path, but a purely macOS-only defect must not become a blocker
+for the iOS RC.
 
 `MacSettingsView.swift:180` calls `env.eraseEverything()` directly. Aliases keep forwarding
 to the user's real inbox indefinitely with no warning, and `eraseEverything()` then drops

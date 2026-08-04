@@ -4,6 +4,15 @@ Per D3, subscriptions ship live to real users in this release, not merely attach
 review. This phase is the difference between "reviewer can buy in sandbox" and "customers
 can buy".
 
+> **Contested (R2).** Apple's rule is that a first subscription must be submitted *with* an
+> app version — it does **not** require flipping `launchEnabled = true` for every
+> production user on day one. A second reviewer recommends attaching the four IAPs,
+> ensuring the reviewer/sandbox path is complete, and turning production purchases on only
+> once policies are live, backend modes are settled, product states are Ready, purchase and
+> restore pass E2E, and the real-device matrix is green. That splits a first App Store
+> submission from a paid launch. D3 stands, but it is an owner acceptance of the larger
+> combined risk, and §5.6's ordering is what keeps it survivable.
+
 **Good news up front:** the purchase stack is genuinely done and sandbox-tested. Paywall,
 restore, storefront repricing, in-hand-transaction tier grant and Ask-to-Buy all have
 on-device fixes landed 2026-07-17. The backend is live-deployed on both staging and
