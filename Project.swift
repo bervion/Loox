@@ -15,7 +15,11 @@ let looxLinkAppToken = Environment.looxLinkProdToken.getString(default: "")
 let project = Project(
     name: "Vaultify",
     options: .options(
-        defaultKnownRegions: ["en", "vi"],
+        // The app ships EN + VI + JA. String Catalogs ignore this list at
+        // build time, but it is what Xcode seeds `knownRegions` from, so a
+        // missing `ja` makes the generated project look like a two-language
+        // app to anything that reads the project rather than the catalog.
+        defaultKnownRegions: ["en", "vi", "ja"],
         developmentRegion: "en"
     ),
     // GA4 usage analytics. `FirebaseAnalyticsCore` measures WITHOUT AdSupport/IDFA
@@ -114,6 +118,20 @@ let project = Project(
                 "UILaunchStoryboardName": "LaunchScreen",
                 "UISupportedInterfaceOrientations": [
                     "UIInterfaceOrientationPortrait",
+                    "UIInterfaceOrientationLandscapeLeft",
+                    "UIInterfaceOrientationLandscapeRight",
+                ],
+                // iPad ships as a first-class device, so it takes all four
+                // orientations including upside-down (an iPad has no "wrong way
+                // up"). Pinned here rather than left to Tuist's default: the
+                // orientation set is a submission contract, and the app's own
+                // three-orientation iPhone list above would otherwise apply to
+                // iPad too the moment the default changes. Deliberately no
+                // UIRequiresFullScreen — that key opts the app OUT of Split
+                // View and Slide Over, which is the opposite of the decision.
+                "UISupportedInterfaceOrientations~ipad": [
+                    "UIInterfaceOrientationPortrait",
+                    "UIInterfaceOrientationPortraitUpsideDown",
                     "UIInterfaceOrientationLandscapeLeft",
                     "UIInterfaceOrientationLandscapeRight",
                 ],
@@ -229,6 +247,11 @@ let project = Project(
                 "Vaultify/Resources/InfoPlist.xcstrings",
                 "Vaultify/Resources/eff_large_wordlist.txt",
                 "VaultifyCore/SharedAssets.xcassets",
+                // An .appex is its own bundle, so it needs its OWN privacy
+                // manifest — the app's does not cover it. This one declares no
+                // collection (extensions link no Firebase) and only the
+                // UserDefaults reasons VaultifyCore actually needs.
+                "ExtensionResources/PrivacyInfo.xcprivacy",
             ],
             entitlements: "VaultifyAutoFill/VaultifyAutoFill.entitlements",
             settings: .settings(base: [
@@ -290,6 +313,9 @@ let project = Project(
                 "Vaultify/Resources/InfoPlist.xcstrings",
                 "Vaultify/Resources/eff_large_wordlist.txt",
                 "VaultifyCore/SharedAssets.xcassets",
+                // Same manifest as the iOS twin — same shared sources, same
+                // App Group defaults access, same absence of telemetry.
+                "ExtensionResources/PrivacyInfo.xcprivacy",
             ],
             entitlements: "VaultifyAutoFillMac/VaultifyAutoFillMac.entitlements",
             settings: .settings(base: [
@@ -352,6 +378,8 @@ let project = Project(
                 // Localizes the Face ID usage prompt for the extension bundle.
                 "Vaultify/Resources/InfoPlist.xcstrings",
                 "VaultifyCore/SharedAssets.xcassets",
+                // Own bundle, own privacy manifest (see VaultifyAutoFill).
+                "ExtensionResources/PrivacyInfo.xcprivacy",
             ],
             entitlements: "VaultifySafari/VaultifySafari.entitlements",
             settings: .settings(base: [
@@ -407,9 +435,10 @@ let project = Project(
     schemes: [
         // Additive dev-only scheme: same app, but the run action loads the local
         // StoreKit configuration (Loox.storekit) so subscription purchases are
-        // testable in the simulator without App Store Connect. CI, `make check`
-        // and `make test` keep using the auto-generated "Vaultify" scheme, which
-        // Tuist still emits alongside this one. The .storekit file is scheme
+        // testable in the simulator without App Store Connect. `make check` uses
+        // the auto-generated "Vaultify" scheme for its compile check; CI and
+        // `make test` drive the shared "Vaultify-Quality" scheme, which is the
+        // one that carries the test targets. The .storekit file is scheme
         // metadata only — it is deliberately NOT a bundle resource.
         .scheme(
             name: "Vaultify-StoreKit",

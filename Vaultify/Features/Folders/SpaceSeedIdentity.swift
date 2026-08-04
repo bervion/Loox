@@ -6,7 +6,7 @@ import Foundation
 /// forever: the dedupe pass uses the set to match an untouched seed Space no
 /// matter which app version or in-app language seeded it, and display maps any
 /// of them to the current localized name.
-enum SeedSpaceName {
+nonisolated enum SeedSpaceName {
     /// Every localized value first-run seeding ever stored. Append-only.
     static let historical: Set<String> = [
         // Builds seeding appString("My Vault").

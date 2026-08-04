@@ -56,7 +56,7 @@ struct AttentionCell: View {
 
             // Name + reason row
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title.isEmpty ? "Untitled" : item.title)
+                Text(verbatim: item.title.isEmpty ? appString("Untitled") : item.title)
                     .vaultType(.body)
                     .themedForeground()
                     .lineLimit(1)

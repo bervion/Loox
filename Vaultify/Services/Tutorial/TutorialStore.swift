@@ -42,6 +42,10 @@ nonisolated final class TutorialStore {
     /// Forget every answer, so the tours run again from the start. Reachable
     /// from Settings: someone who skipped a tour on day one, or who inherits a
     /// vault set up by somebody else, has no other way back to it.
+    /// Main-actor bound because the flow catalog it enumerates is UI data that
+    /// lives on the main actor; every caller (Settings, the coordinator) is
+    /// already there.
+    @MainActor
     func resetAll() {
         for id in TutorialFlow.allFlowIDs { reset(id) }
     }

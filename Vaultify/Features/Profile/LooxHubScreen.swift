@@ -114,7 +114,9 @@ struct LooxHubScreen: View {
                     .vaultType(.largeTitle)
                     .themedForeground(.secondary)
                     .lineLimit(2)
-                    .minimumScaleFactor(0.65)
+                    // 0.7 is the design-DNA floor for shrink-to-fit; below it a long
+                    // VI name at large Dynamic Type stops being legible.
+                    .minimumScaleFactor(0.7)
             }
             Spacer(minLength: Space.s3)
             // Subscriber stamp — paid tiers only (owner 260716); Free keeps a

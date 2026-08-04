@@ -97,7 +97,9 @@ struct WelcomeLandingView: View {
                 .padding(.horizontal, Space.s7)
 
             restoreLink
-                .padding(.top, Space.s3)
+                // The link now carries its own 44pt frame, so the visual gap comes
+                // mostly from that height rather than from this inset.
+                .padding(.top, Space.s1)
 
             CapabilityCarousel(containerWidth: width, isRegular: isRegular)
                 .padding(.top, isRegular ? Space.s6 : Space.s8)
@@ -132,12 +134,18 @@ struct WelcomeLandingView: View {
 
     // MARK: Restore link (directly under the value proposition)
 
+    /// A `.subhead` text link is ~20pt tall on its own, well under the 44pt minimum, and
+    /// this one is the ONLY route to an existing vault from the landing — the frame and
+    /// hit shape are spelled out rather than left to the label's intrinsic size.
     @ViewBuilder private var restoreLink: some View {
         if let onRestore {
             Button(action: onRestore) {
                 Text(appString("Restore data?"))
                     .vaultType(.subhead)
                     .themedForeground(.accentText)
+                    .frame(minHeight: Metric.hitMin)
+                    .padding(.horizontal, Space.s4)
+                    .contentShape(.rect)
             }
             .buttonStyle(.plain)
         }
@@ -148,10 +156,11 @@ struct WelcomeLandingView: View {
     private func press() {
         guard launch.phase == .idle else { return }
 
-        // Reduce Motion: skip the circle-burst; a plain crossfade hands off.
+        // Reduce Motion: no burst and no crossfade, so there is nothing to wait for.
+        // The old quarter-second timer delayed the hand-off behind an animation the
+        // user had asked not to see.
         if reduceMotion {
-            withAnimation(.easeInOut(duration: 0.25)) { contentHidden = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onContinue() }
+            onContinue()
             return
         }
 

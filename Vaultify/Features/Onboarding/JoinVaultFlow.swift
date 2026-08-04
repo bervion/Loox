@@ -39,7 +39,7 @@ struct JoinVaultFlow: View {
                 .toolbar {
                     if step != .biometric {
                         ToolbarItem(placement: .platformTopBarLeading) {
-                            Button(action: back) { Image(systemName: "chevron.backward") }
+                            Button(action: back) { VaultIcon(Icons.chevronLeft, size: Metric.iconInline) }
                                 .accessibilityLabel(Text("Back"))
                         }
                     }
@@ -72,7 +72,7 @@ struct JoinVaultFlow: View {
                 title: "Vault received. Protect this device",
                 subtitle: "Pairing succeeded. Now create a master password to unlock Loox on this device. It can match your other device or be different, and it never syncs.")
         case .biometric:
-            EnableBiometricView(onEnable: enableBiometricAndFinish) { finish() }
+            EnableBiometricView(onEnable: enableBiometricAndFinish, onSkip: finish)
         }
     }
 
@@ -132,10 +132,15 @@ struct JoinVaultFlow: View {
         }
     }
 
-    private func enableBiometricAndFinish() {
-        Task {
-            try? await env.session.enableBiometricUnlock()
+    /// Same contract as onboarding's: only a real enrolment finishes the flow, and the
+    /// reason is handed back so the step can show it instead of silently claiming success.
+    private func enableBiometricAndFinish() async -> String? {
+        do {
+            try await env.session.enableBiometricUnlock()
             finish()
+            return nil
+        } catch {
+            return error.localizedDescription
         }
     }
 
@@ -177,18 +182,22 @@ struct RestoreMethodSheet: View {
                     Text("Restore data")
                         .vaultType(.screenTitle)
                         .padding(.top, Space.s9)
-                    Text("Move your vault from another device, or reopen it with your Emergency Kit.")
+                    Text("Move your vault from another device, or reopen it with your Emergency Kit. Both routes turn on iCloud Sync, because that is where the vault is downloaded from.")
                         .vaultType(.body).themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Space.s2)
 
+                    // Text link, so the 44pt target has to be spelled out; the top
+                    // padding is trimmed to keep the visual gap after the frame grows.
                     Button { onStartFresh() } label: {
                         Text("Want to start fresh?")
                             .vaultType(.body)
                             .themedForeground(.accentText)
+                            .frame(minHeight: Metric.hitMin, alignment: .leading)
+                            .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, Space.s4)
+                    .padding(.top, Space.s1)
 
                     VStack(spacing: Space.s3) {
                         restoreOptionBox(icon: "PairDeviceDuotone",
@@ -197,7 +206,7 @@ struct RestoreMethodSheet: View {
                                          action: onQR)
                         restoreOptionBox(icon: "RecoveryKitDuotone",
                                          title: "Use Recovery Key",
-                                         detail: "Enter the key printed in the Emergency Kit (PDF) you saved.",
+                                         detail: "Enter the key from your saved Emergency Kit. This works only if that vault had iCloud Sync on before you lost the device.",
                                          action: onRecovery)
                     }
                     .padding(.top, Space.s6)
@@ -209,7 +218,7 @@ struct RestoreMethodSheet: View {
                 // The system toolbar close (glass pill on iOS 26), tinted by the
                 // app's neutral default.
                 ToolbarItem(placement: .platformTopBarLeading) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                    Button { dismiss() } label: { VaultIcon(Icons.close, size: Metric.iconInline) }
                         .accessibilityLabel(Text("Close"))
                 }
             }
@@ -385,8 +394,16 @@ private struct JoinByRecoveryView: View {
                     .frame(width: 150, height: 150)
                 OnboardingStepHeader(
                     "Use Recovery Key",
-                    subtitle: "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key. Your vault will download from iCloud.",
+                    subtitle: "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key.",
                     style: .compact)
+
+                // The precondition, stated before the user spends effort typing a key
+                // that cannot work. A kit made with sync off has no envelope on iCloud,
+                // so this screen can only dead-end for it.
+                VaultInfoBanner(.info,
+                                text: "This needs the other vault to have had iCloud Sync on, and to be signed in to the same iCloud account here. A kit created with sync off resets the master password on its own device and cannot rebuild the vault here.")
+                    .padding(.horizontal, Space.s6)
+                    .padding(.top, Space.s5)
 
                 VStack(spacing: Space.s4) {
                     recoveryField

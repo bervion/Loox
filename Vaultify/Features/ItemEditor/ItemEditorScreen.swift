@@ -51,6 +51,18 @@ struct ItemEditorScreen: View {
     @State private var didOfferExtraProtection = false
     @State private var didUnlockExtraProtection = false
     @State private var blockedProtectedDelete = false
+    /// Set by the paths where the USER closes this editor: save, discard, and
+    /// cancelling an untouched one. Everything else that unmounts this view is the
+    /// LAYOUT, not a decision — a size-class flip (Split View drag, Stage Manager,
+    /// rotation across the compact boundary) tears down the whole shell and takes
+    /// this sheet with it, and reading that as "closed" is what used to delete a
+    /// half-typed secret with nothing on disk to recover it from.
+    @State private var userClosedEditor = false
+    /// This mount adopted an unsaved draft (cold-launch recovery, or a hand-back
+    /// across a shell remount). Its content equals `original` — it IS the baseline —
+    /// so without this flag the work would read as "nothing to lose" and the very
+    /// next remount would drop it.
+    @State private var resumedUnsavedDraft = false
 
     init(target: EditorTarget,
          preselectedFolderId: String? = nil,
@@ -74,9 +86,25 @@ struct ItemEditorScreen: View {
     private var isNew: Bool {
         switch target { case .new, .draft: return true; case .edit: return false }
     }
-    private var hasChanges: Bool { draft != original }
+    /// Unsaved work worth protecting. A resumed draft counts even while it matches
+    /// its baseline: it was already unsaved when this editor inherited it.
+    private var hasChanges: Bool { draft != original || resumedUnsavedDraft }
     private var canSave: Bool {
         !draft.title.trimmingCharacters(in: .whitespaces).isEmpty || draft.fields.contains { !$0.isEmpty }
+    }
+
+    /// Whether this teardown should hand the draft to the next shell instead of
+    /// discarding it. Three conditions, all required:
+    ///
+    /// - the user did not close it (save / discard / cancel all say so explicitly);
+    /// - there is unsaved work — `interactiveDismissDisabled(hasChanges)` means a
+    ///   swipe-away can only happen when there is none, so an untouched editor still
+    ///   closes for good and can never re-present itself in a loop;
+    /// - the vault is still unlocked. A lock is a privacy boundary: the draft goes
+    ///   with the decrypted items rather than waiting in memory behind the lock
+    ///   screen (a background lock has already sealed it via `persist()`).
+    private var handsDraftBack: Bool {
+        !userClosedEditor && hasChanges && env.session.state == .unlocked
     }
 
     /// Registry template driving grouped sections — developer-family only, so
@@ -106,7 +134,12 @@ struct ItemEditorScreen: View {
             leading: {
                 // Compact X icon (instead of "Cancel" text) so the centre title fits.
                 Button {
-                    hasChanges ? (confirmDiscard = true) : dismiss()
+                    if hasChanges {
+                        confirmDiscard = true
+                    } else {
+                        userClosedEditor = true
+                        dismiss()
+                    }
                 } label: {
                     VaultIcon(Icons.close, size: Metric.iconInline)
                 }
@@ -248,6 +281,16 @@ struct ItemEditorScreen: View {
             .scrollDismissesKeyboard(.immediately)
             .analyticsScreen(isNew ? "item_editor_new" : "item_editor_edit")
             .onAppear {
+                uiState.editorDidMount()
+                // Adopt a session whose host went away (cold-launch recovery, or a
+                // shell remount): the ciphertext staged in it is still on disk and
+                // still referenced by this draft's fileRef fields, so it must come
+                // back with the values — otherwise saving would commit nothing and
+                // the attachment would resolve to bytes that were swept.
+                if let resumed = uiState.claimResumedEditorSession(itemID: draft.id) {
+                    resumedUnsavedDraft = true
+                    stagedArtifacts.append(contentsOf: resumed.stagedArtifacts)
+                }
                 // New items default to the primary Space ("My Vault") so they have
                 // a home; applied once so it never overrides a user's own pick.
                 if isNew, !didApplyDefaultFolder, draft.folderId == nil {
@@ -280,19 +323,29 @@ struct ItemEditorScreen: View {
             // (sealed under the Vault Key when the app backgrounds). Cleared on dismiss.
             .onChange(of: draft) { captureDraftForRestore() }
             .onDisappear {
-                uiState.editorDraft = nil
+                uiState.editorDidUnmount()
                 // Extra Protection stays a per-visit gate: an unlock this editor
                 // asked for ends with this editor. A key the item view already
                 // held is left alone — it is not ours to revoke.
                 if didUnlockExtraProtection { env.session.clearLevel2Key() }
-                // Any staged attachment that never made it into a save is
-                // orphan ciphertext — sweep it. Save clears the list first,
-                // so this is a no-op on the save path.
-                discardStagedAttachments()
+                // The layout took the sheet away, not the user: move the draft AND the
+                // staged ciphertext to the store, which re-presents both in whichever
+                // shell replaces this one. A refused handoff (nothing worth carrying)
+                // falls through to the sweep, so no ciphertext is left behind either way.
+                let handedOff = handsDraftBack
+                    && uiState.handBackEditorSession(stagedArtifacts: stagedArtifacts)
+                if !handedOff {
+                    uiState.finishEditorSession()
+                    // Any staged attachment that never made it into a save is
+                    // orphan ciphertext — sweep it. Save clears the list first,
+                    // so this is a no-op on the save path.
+                    discardStagedAttachments()
+                }
             }
             .interactiveDismissDisabled(hasChanges)
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Discard", role: .destructive) {
+                    userClosedEditor = true
                     discardStagedAttachments()
                     dismiss()
                 }
@@ -873,6 +926,7 @@ struct ItemEditorScreen: View {
                 republishSharedDisplayIfNeeded(for: draft)
             }
             stagedArtifacts = []
+            userClosedEditor = true
             Haptics.success()
             dismiss()
         } catch {

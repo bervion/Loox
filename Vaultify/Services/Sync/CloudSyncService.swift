@@ -127,21 +127,50 @@ private let syncLog = Logger(subsystem: "com.bervion.vaultify", category: "cloud
         }
     }
 
-    /// Best-effort remote wipe for "Erase Vault": deleting the zone drops every
-    /// synced record — sealed items/folders, the recovery-key envelope, and any
-    /// pairing hand-offs — so the printed Emergency Kit can no longer resurrect an
-    /// "erased" vault from iCloud, and a re-created vault never pulls undecryptable
-    /// ghosts sealed under the old key. Offline/erased-signed-out is tolerated (the
-    /// local wipe still proceeds; the cloud copy then outlives until next sign-in).
-    func eraseRemote() async {
-        guard Self.isConfigured else { return }
-        _ = try? await database.modifyRecordZones(saving: [], deleting: [zone.zoneID])
+    /// Remote wipe for "Erase everywhere": deleting the zone drops every synced
+    /// record — sealed items/folders, the recovery-key envelope, and any pairing
+    /// hand-offs — so the printed Emergency Kit can no longer resurrect an
+    /// "erased" vault from iCloud, and a re-created vault never pulls
+    /// undecryptable ghosts sealed under the old key.
+    ///
+    /// Returns whether the cloud copy is actually gone. A failure used to be
+    /// swallowed and the local wipe ran anyway, so a user who erased while
+    /// offline was told the vault was gone while the whole thing sat in iCloud.
+    /// The caller decides what to do with a false; nothing here is retried.
+    @discardableResult
+    func eraseRemote() async -> Bool {
+        guard Self.isConfigured, !Self.isHostingUnitTests else { return true }
+        var erased = true
+        do {
+            let result = try await database.modifyRecordZones(saving: [], deleting: [zone.zoneID])
+            if case .failure(let error) = result.deleteResults[zone.zoneID] {
+                erased = Self.isNothingToErase(error)
+            }
+        } catch {
+            erased = Self.isNothingToErase(error)
+        }
+        // Only once the zone is really gone: a cancelled erase must not leave
+        // the device unsubscribed from a vault that still exists.
+        guard erased else { return false }
         // The push subscription pointed at the deleted zone; drop it and forget the
         // local marker so a future vault re-subscribes cleanly.
         _ = try? await database.modifySubscriptions(saving: [], deleting: [SyncPushService.subscriptionID])
         SyncPushService.clearLocalFlag()
         // The delta cursor died with the zone — a future vault must full-fetch.
         savedChangeToken = nil
+        return true
+    }
+
+    /// There is no cloud copy to erase: the zone never existed or is already
+    /// gone, or this device has no iCloud account to reach one with. None of
+    /// those means a copy survived the erase — unlike a network failure, which
+    /// does and must be reported.
+    nonisolated private static func isNothingToErase(_ error: Error) -> Bool {
+        guard let ckError = error as? CKError else { return false }
+        switch ckError.code {
+        case .zoneNotFound, .userDeletedZone, .notAuthenticated: return true
+        default: return false
+        }
     }
 
     /// Push every plane, isolating failures: one record type the server

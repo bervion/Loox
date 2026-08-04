@@ -515,15 +515,29 @@ import Foundation
             .filter { $0.hasPrefix(ApprovalConfig.zonePrefix) }
     }
 
-    /// Vault-erase cleanup: best-effort revoke of every share this owner
-    /// created — the zones must not outlive the vault that sealed their
-    /// content. Falls back to the local registry when the zone listing fails
-    /// (offline erase still revokes what this device knows about).
-    func revokeAllOwned() async {
-        let names = (try? await ownedApprovalZoneNames()) ?? Self.ownedZoneNames
-        for zoneName in Set(names).union(Self.ownedZoneNames) {
-            try? await revoke(zoneName: zoneName)
+    /// Vault-erase cleanup: revoke every share this owner created — the zones
+    /// must not outlive the vault that sealed their content. Falls back to the
+    /// local registry when the zone listing fails, so an offline erase still
+    /// revokes what this device knows about.
+    ///
+    /// Returns how many zones were addressed and how many are still shared. A
+    /// failed listing counts as a failure on its own: zones this device never
+    /// registered locally stay live and invisible, which is exactly the case
+    /// `ownedApprovalZoneNames()` exists to cover.
+    @discardableResult
+    func revokeAllOwned() async -> (attempted: Int, failed: Int) {
+        guard CloudSyncService.isConfigured, !CloudSyncService.isHostingUnitTests else { return (0, 0) }
+        var names = Set(Self.ownedZoneNames)
+        var failed = 0
+        do {
+            names.formUnion(try await ownedApprovalZoneNames())
+        } catch {
+            failed += 1
         }
+        for zoneName in names {
+            do { try await revoke(zoneName: zoneName) } catch { failed += 1 }
+        }
+        return (attempted: max(names.count, failed), failed: failed)
     }
 
     /// Record IDs of every `ApprovalSharedField` in the zone — scoped to

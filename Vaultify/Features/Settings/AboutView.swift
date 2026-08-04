@@ -71,7 +71,10 @@ struct AboutView: View {
                 .vaultType(.headline)
                 .foregroundStyle(AboutInk.text)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("No accounts to create. No servers holding your vault. No subscription holding your data hostage. Just your iPhone, your keys, your secrets.")
+            // "No servers holding your vault" was retired: with iCloud sync on,
+            // Apple does hold the ciphertext. The readable-by-nobody claim is the
+            // one the architecture actually backs.
+            Text("No accounts to create. No server that can read your vault. No subscription holding your data hostage. Just your iPhone, your keys, your secrets.")
                 .vaultType(.subhead)
                 .foregroundStyle(AboutInk.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -93,7 +96,10 @@ struct AboutView: View {
 
             promiseCard(number: 1, tint: env.theme.active.color(.accent),
                         title: "Your device is the vault",
-                        body: "Everything is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
+                        // "Every item", not "everything": a folder's icon, colour and
+                        // sort order ride along CloudKit in the clear, so the absolute
+                        // is not defensible. Item contents and folder names are sealed.
+                        body: "Every item is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
             promiseCard(number: 2, tint: AboutInk.promiseTeal,
                         title: "Trust is verified, never assumed",
                         body: "Share a password, pair a device, open in a browser. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")
@@ -156,8 +162,12 @@ struct AboutView: View {
                          "Every item is sealed individually before it touches storage.")
                 aboutRow(Icons.person, "Secure Enclave biometrics",
                          "The Vault Key is released only after Face ID / Touch ID.")
-                aboutRow(Icons.globe, "Zero backend",
-                         "Nothing is sent to a server. Your vault never leaves the device unencrypted.")
+                // "Zero backend / nothing is sent to a server" was false as shipped:
+                // CloudKit, Loox Link, Quick View, the relay, the entitlement service
+                // and the favicon fetch all use the network. Name them, and keep the
+                // one claim the crypto actually guarantees.
+                aboutRow(Icons.globe, "Only you can read your vault",
+                         "Some features do use the network: iCloud sync, sharing links, breach checks, website icons, subscriptions and crash diagnostics. Your vault is sealed before any of them, so it stays readable only on your devices.")
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -171,10 +181,16 @@ struct AboutView: View {
                 .vaultType(.sectionLabel)
                 .themedForeground(.secondary)
                 .padding(.leading, Space.s1)
-            VStack(alignment: .leading, spacing: Space.s2) {
-                Text("Loox collects no analytics and has no accounts. The only network request is the optional, anonymised breach check.")
+            VStack(alignment: .leading, spacing: Space.s3) {
+                // States the SHIPPING defaults, not the best case: analytics is
+                // opt-in, crash diagnostics is opt-out. The retired string claimed
+                // no analytics at all while the same binary declared three
+                // collected data types in its privacy manifest.
+                Text("Analytics stay off unless you turn them on. Crash diagnostics are on so faults can be found and fixed, and you can turn them off in Settings. There are no accounts.")
                     .vaultType(.footnote)
                     .themedForeground(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                policyLinks
                 Text("Includes the Argon2 reference implementation (CC0 / Apache-2.0).")
                     .vaultType(.caption)
                     .themedForeground(.tertiary)
@@ -183,6 +199,31 @@ struct AboutView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .themedCard(padding: 0)
         }
+    }
+
+    /// The only in-app path to the policies outside the purchase sheet: a user who
+    /// never opens the paywall would otherwise have none, which stopped being
+    /// acceptable once the app collected anything at all. Falls to a column when
+    /// the two localized labels no longer fit one line (Vietnamese at large
+    /// Dynamic Type is the tight case).
+    private var policyLinks: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.s5) {
+                policyLink("Privacy Policy", LooxMembership.privacyURL)
+                policyLink("Terms of Use", LooxMembership.termsURL)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                policyLink("Privacy Policy", LooxMembership.privacyURL)
+                policyLink("Terms of Use", LooxMembership.termsURL)
+            }
+        }
+        .vaultType(.footnote)
+        .tint(env.theme.active.color(.accentText))
+    }
+
+    private func policyLink(_ title: LocalizedStringKey, _ url: URL) -> some View {
+        Link(title, destination: url)
+            .frame(minHeight: Metric.hitMin, alignment: .leading)
     }
 
     // MARK: Footer

@@ -156,6 +156,11 @@ struct LargeTypeView: View {
             Text(String(character))
                 .font(.vaultCode(size: fontSize))
                 .lineLimit(1)
+                // DELIBERATE exception to the 0.7 design-DNA floor for `minimumScaleFactor`.
+                // This screen exists to make one secret readable across a room, so `fontSize`
+                // is already far above any body role; the cell holds a SINGLE character, and
+                // the alternative to shrinking a wide glyph is truncating the secret itself.
+                // Do not raise this to 0.7 — the widest characters would clip on an SE.
                 .minimumScaleFactor(0.5)
                 .foregroundStyle(isEntered ? theme.color(.onAccent)
                                            : SecretColoring.color(for: character, theme: theme))

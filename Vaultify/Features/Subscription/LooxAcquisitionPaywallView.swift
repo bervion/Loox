@@ -184,15 +184,28 @@ struct LooxAcquisitionPaywallView: View {
 
             // In scrollable content by design: Apple only requires these links
             // be reachable from the purchase screen (3.1.2), not pinned —
-            // the iCloud+ sheet itself scrolls them with the disclosure.
+            // the iCloud+ sheet itself scrolls them with the disclosure. Both
+            // URLs follow the in-app language, so a Vietnamese reader lands on
+            // the Vietnamese page.
             HStack(spacing: Space.s6) {
-                Link("Terms of Use", destination: LooxMembership.termsURL)
-                Link("Privacy Policy", destination: LooxMembership.privacyURL)
+                policyLink(LocalizedStringResource("Terms of Use"), LooxMembership.termsURL)
+                policyLink(LocalizedStringResource("Privacy Policy"), LooxMembership.privacyURL)
             }
             .vaultType(.footnote)
             .tint(LooxPlanTint.link(selectedTier))
             .frame(maxWidth: .infinity)
             .padding(.top, Space.s2)
+        }
+    }
+
+    /// A footnote-sized policy link that still answers a full-size tap: the
+    /// reviewer opens both of these, and so does anyone deciding whether to
+    /// subscribe.
+    private func policyLink(_ title: LocalizedStringResource, _ url: URL) -> some View {
+        Link(destination: url) {
+            Text(title.inAppLocalized)
+                .frame(minHeight: Metric.hitMin)
+                .contentShape(.rect)
         }
     }
 

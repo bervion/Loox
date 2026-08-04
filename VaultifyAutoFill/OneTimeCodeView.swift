@@ -72,7 +72,8 @@ private struct OneTimeCodeListView: View {
     private func row(_ item: VaultItem) -> some View {
         Button { provide(item) } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title.isEmpty ? "Untitled" : item.title).foregroundStyle(.primary)
+                Text(verbatim: item.title.isEmpty ? appString("Untitled") : item.title)
+                    .foregroundStyle(.primary)
                 if let user = item.usernameField?.value, !user.isEmpty {
                     Text(user).font(.caption).foregroundStyle(.secondary)
                 }

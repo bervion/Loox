@@ -6,13 +6,7 @@ import XCTest
 @MainActor
 final class LockControlSnapshotTests: XCTestCase {
     func testSlideToUnlockLight() throws {
-        let configuration = try UITestConfiguration.parse(arguments: [
-            "Vaultify",
-            UITestConfiguration.launchFlag,
-            UITestConfiguration.fixtureArgument,
-            UITestConfiguration.Fixture.vaultEditSaveRelock.rawValue,
-        ])
-        let environment = AppEnvironment(uiTestConfiguration: configuration)
+        let environment = try makeSnapshotEnvironment()
         let subject = SlideToUnlock(onComplete: {})
             .padding(24)
             .frame(width: 390, height: 120)
@@ -21,7 +15,7 @@ final class LockControlSnapshotTests: XCTestCase {
 
         assertSnapshot(
             of: subject,
-            as: .image(layout: .fixed(width: 390, height: 120)),
+            as: .scaledImage(width: 390, height: 120),
             named: "light-en"
         )
     }

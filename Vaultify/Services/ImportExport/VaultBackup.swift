@@ -104,6 +104,13 @@ nonisolated enum VaultBackup {
         /// An artifact blob failed authentication, hash, or length validation.
         /// Import is all-or-nothing, so this aborts the whole restore.
         case artifactCorrupt
+        /// An artifact whose id, owner id, or filename is not a value this app
+        /// could ever have written. The id becomes `<id>.enc` inside the
+        /// artifact root and the filename becomes a path component on export,
+        /// so a crafted value is a file write of the author's choosing. The
+        /// backup author picks the passphrase and hands it to the victim, so
+        /// "needs the passphrase" is not a barrier here.
+        case artifactUnsafePath
     }
 
     /// The Level-2 Secret Key wrap from the Keychain bundle. Sealed field values
@@ -326,6 +333,14 @@ nonisolated enum VaultBackup {
         guard !contentKey.isEmpty else { throw BackupFailure.missingContentKey }
         let wrap = SecureBytes(contentKey)
         return try portables.map { portable in
+            // Identity first, before a key is unwrapped and long before
+            // anything is written: these three strings are the only values on
+            // the wire that become filesystem paths downstream.
+            guard isCanonicalUUID(portable.id),
+                  isCanonicalUUID(portable.ownerItemId),
+                  isBareFilename(portable.filename) else {
+                throw BackupFailure.artifactUnsafePath
+            }
             guard portable.byteCount <= ArtifactCrypto.maxPlaintextBytes else {
                 throw BackupFailure.artifactCorrupt
             }
@@ -349,6 +364,33 @@ nonisolated enum VaultBackup {
             return ArtifactPayload(id: portable.id, ownerItemId: portable.ownerItemId,
                                    filename: portable.filename, utiType: portable.utiType,
                                    data: plaintext)
+        }
+    }
+
+    // MARK: Artifact identity policy
+
+    /// `NAME_MAX` on APFS — one filesystem name can hold no more than this.
+    private static let maxArtifactFilenameBytes = 255
+
+    /// Ids this app could have written. Every artifact id and item id it
+    /// creates is a `UUID().uuidString`, and the artifact id is turned into
+    /// `<id>.enc` on disk, so a value that is not a canonical UUID is a path
+    /// the store would never have produced.
+    private static func isCanonicalUUID(_ value: String) -> Bool {
+        UUID(uuidString: value) != nil
+    }
+
+    /// A bare basename: no path separator, no control character (NUL
+    /// included), not a relative-directory token, and short enough for the
+    /// filesystem. Backslash and colon are deliberately allowed — neither is a
+    /// path separator on Darwin, and refusing them would reject legitimate
+    /// attachment names. Empty is allowed too: `ArtifactStore.exportPlaintext`
+    /// substitutes the artifact id for it.
+    private static func isBareFilename(_ name: String) -> Bool {
+        guard name.utf8.count <= maxArtifactFilenameBytes else { return false }
+        guard name != ".", name != ".." else { return false }
+        return !name.unicodeScalars.contains {
+            $0 == "/" || CharacterSet.controlCharacters.contains($0)
         }
     }
 

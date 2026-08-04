@@ -14,9 +14,9 @@ struct SettingsScreen: View {
     @State private var confirmErase = false
     @State private var showAutoFillGuide = false
     @State private var showTutorialsReset = false
-    @State private var erasing = false
-    @State private var relayBlockErase = false
     @State private var confirmApprovalModeOff = false
+    @State private var revokingLeftoverLinks = false
+    @State private var leftoverLinksStillLive = false
 
     /// One Online Features row: preference toggle + operator/runtime status
     /// (dot + label, the iCloud+ idiom). The toggle mutates ONLY the user
@@ -41,20 +41,30 @@ struct SettingsScreen: View {
         .tint(Color(rgb: env.theme.active.switchOn))
     }
 
-    /// Erase, but tear down live relay aliases first. If the vault has active
-    /// aliases and the relay can't be reached, the erase is BLOCKED (an "erase"
-    /// must never leave anonymous addresses forwarding to a real inbox forever).
-    private func eraseWithRelayTeardown() {
-        guard env.repository.aliases.contains(where: { $0.status == .active }) else {
-            env.eraseEverything(); return
+    /// The erase itself lives in `AppEnvironment.erase` so this screen and the
+    /// macOS Settings window run the identical fail-closed sequence. The view
+    /// only presents the outcome and the three ways out of a blocked erase.
+    private var eraseBlocked: Binding<Bool> {
+        Binding(get: { env.erase.isBlocked },
+                set: { if !$0 { env.erase.cancel() } })
+    }
+
+    /// Quick links that survived a previous erase because their revoke call
+    /// never landed. The per-item Quick Links sheet cannot reach them (their
+    /// item is gone), so this is the only remaining way to kill them.
+    private var leftoverLinks: [LooxLinkRecord] {
+        let itemIDs = Set(env.repository.items.map(\.id))
+        return env.looxLinks.records.records.filter { !$0.isExpired && !itemIDs.contains($0.itemId) }
+    }
+
+    private func revokeLeftoverLinks() async {
+        revokingLeftoverLinks = true
+        defer { revokingLeftoverLinks = false }
+        var stillLive = false
+        for record in leftoverLinks {
+            do { try await env.looxLinks.revoke(record) } catch { stillLive = true }
         }
-        erasing = true
-        Task {
-            defer { erasing = false }
-            do { try await env.relay.disableAllForErase() }
-            catch { relayBlockErase = true; return }   // offline / unreachable → block
-            env.eraseEverything()
-        }
+        leftoverLinksStillLive = stillLive
     }
 
     /// Approval Mode (ADR-2): deliberately independent of `iCloudSyncEnabled` — turning
@@ -187,8 +197,33 @@ struct SettingsScreen: View {
                 }
                 .accessibilityIdentifier("settings.lock-now")
                 Button(role: .destructive) { confirmErase = true } label: {
-                    Label { Text("Erase Vault").foregroundStyle(env.theme.active.color(.destructive)) }
-                        icon: { SettingsIconBadge(systemName: "trash.fill", tint: SettingsBadgeTint.red) }
+                    HStack {
+                        Label { Text("Erase Vault").foregroundStyle(env.theme.active.color(.destructive)) }
+                            icon: { SettingsIconBadge(systemName: "trash.fill", tint: SettingsBadgeTint.red) }
+                        if env.erase.isWorking {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .accessibilityIdentifier("settings.erase-vault")
+                .disabled(env.erase.isWorking)
+                if !leftoverLinks.isEmpty {
+                    Button { Task { await revokeLeftoverLinks() } } label: {
+                        HStack {
+                            Label { Text("Turn off leftover links") }
+                                icon: { SettingsIconBadge(systemName: "link", tint: SettingsBadgeTint.orange) }
+                            if revokingLeftoverLinks {
+                                Spacer()
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(revokingLeftoverLinks)
+                }
+            } footer: {
+                if !leftoverLinks.isEmpty {
+                    Text("Links shared before an earlier erase are still readable until they expire. Turning them off needs a connection.")
                 }
             }
             .listRowBackground(VaultColors.surface)
@@ -266,19 +301,27 @@ struct SettingsScreen: View {
         .sheet(isPresented: $showAutoFillGuide) {
             NavigationStack { AutoFillSetupGuide(openSettings: setUpPasswordAutoFill) }
         }
-        .alert(Text("Network needed"), isPresented: $relayBlockErase) {
-            Button("Cancel", role: .cancel) {}
-            // The relay being unreachable (or retired) must not make an erase
-            // permanently impossible — the fallback proceeds WITHOUT teardown
-            // after stating the consequence plainly.
-            Button("Erase Anyway", role: .destructive) { env.eraseEverything() }
+        // One blocked-erase surface for every remote step, not just aliases:
+        // an unreachable service must never make an erase impossible, and it
+        // must never silently pretend the remote copy is gone either.
+        .alert(Text("Some things are still live"), isPresented: eraseBlocked) {
+            Button("Try Again") { Task { await env.erase.retry() } }
+            Button("Erase Anyway", role: .destructive) { env.erase.eraseAnyway() }
+            Button("Cancel", role: .cancel) { env.erase.cancel() }
         } message: {
-            Text("Connect to the internet so your private-email aliases can be turned off before erasing. If you erase now, active aliases keep forwarding until the service deletes them.")
+            Text(verbatim: env.erase.report.failureMessage)
+        }
+        .alert(Text("Some links are still live"), isPresented: $leftoverLinksStillLive) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Check your connection and try again. Loox still has what it needs to turn them off.")
         }
         .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
-            Button("Erase Everything", role: .destructive) { eraseWithRelayTeardown() }
+            Button("Erase Everywhere", role: .destructive) { Task { await env.erase.begin(.everywhere) } }
+            Button("Erase on This Device", role: .destructive) { Task { await env.erase.begin(.thisDevice) } }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently deletes every item and key on this device. This cannot be undone.")
+            Text("Erase everywhere also turns off your quick links and private email aliases, stops shared logins, and deletes the iCloud copy. Erase on this device removes Loox data from this device only and leaves all of that running.")
         }
         .confirmationDialog("Turn off Approval Mode?", isPresented: $confirmApprovalModeOff, titleVisibility: .visible) {
             Button("Turn Off", role: .destructive) {

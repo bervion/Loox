@@ -8,6 +8,12 @@ struct OnboardingFlow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var step: Step = .welcome
     @State private var recoveryKey = ""
+    /// Set when generating the recovery key fails. Without it an empty key parked the
+    /// Emergency Kit step on a spinner forever: the step has no back control and its CTA
+    /// is disabled while the key is empty, so the run was unescapable.
+    @State private var recoveryKeyError: String?
+    /// Bumped by "Try again" to re-drive the generation task.
+    @State private var recoveryKeyAttempt = 0
     /// Captured at the name step so the Emergency Kit PDF can print "Created for {name}"
     /// and remind which iCloud account holds the synced vault.
     @State private var userName = ""
@@ -21,6 +27,10 @@ struct OnboardingFlow: View {
     @State private var defaultFolderId: String?
 
     enum Step: Equatable { case welcome, join, create, name, emergencyKit, theme, biometric, done }
+
+    /// `.task(id:)` identity for recovery-key generation: the step plus the retry count,
+    /// so tapping "Try again" restarts the task without leaving and re-entering the step.
+    private struct TaskKey: Equatable { let step: Step; let attempt: Int }
 
     var body: some View {
         ZStack {
@@ -37,8 +47,10 @@ struct OnboardingFlow: View {
                         .platformNavigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .platformTopBarLeading) {
-                                Button { step = .welcome } label: { Image(systemName: "chevron.backward") }
-                                    .accessibilityLabel(Text("Back"))
+                                Button { step = .welcome } label: {
+                                    VaultIcon(Icons.chevronLeft, size: Metric.iconInline)
+                                }
+                                .accessibilityLabel(Text("Back"))
                             }
                         }
                 }
@@ -55,7 +67,9 @@ struct OnboardingFlow: View {
                 // No back: the identity seeds ran when the name step completed.
                 EmergencyKitView(recoveryKey: recoveryKey,
                                  ownerName: userName,
-                                 iCloudAccount: userEmail) { step = .theme }
+                                 iCloudAccount: userEmail,
+                                 keyError: recoveryKeyError,
+                                 onRetryKey: { recoveryKeyAttempt += 1 }) { step = .theme }
             case .theme:
                 navStep(back: { step = .emergencyKit }) {
                     ChooseThemeView(selection: Binding(
@@ -79,7 +93,7 @@ struct OnboardingFlow: View {
                     }
                 }
             case .biometric:
-                EnableBiometricView(onEnable: enableBiometric) { step = .done }
+                EnableBiometricView(onEnable: enableBiometric, onSkip: { step = .done })
             case .done:
                 OnboardingDoneStep {
                     AnalyticsEngine.shared.log(.tutorialComplete)
@@ -100,12 +114,18 @@ struct OnboardingFlow: View {
         // (Emergency Kit's Copy button would otherwise give only a haptic).
         .overlay(alignment: .bottom) { CopyToastOverlay() }
         .animation(.vault(.spring(duration: 0.3), reduceMotion: reduceMotion), value: env.clipboard.recentCopyLabel)
-        .task(id: step) {
-            if step == .emergencyKit, recoveryKey.isEmpty {
-                recoveryKey = (try? await env.session.generateRecoveryKit()) ?? ""
-                // The kit is only a lifeline once its envelope reaches iCloud —
-                // push now instead of leaving it to the next debounced sync.
-                if !recoveryKey.isEmpty { env.syncNow() }
+        // Keyed on the retry counter too, so "Try again" re-runs generation.
+        .task(id: TaskKey(step: step, attempt: recoveryKeyAttempt)) {
+            guard step == .emergencyKit, recoveryKey.isEmpty else { return }
+            recoveryKeyError = nil
+            do {
+                recoveryKey = try await env.session.generateRecoveryKit()
+            } catch {
+                // Real handling, not `try?`: the kit step cannot be left or skipped, so a
+                // swallowed failure was a dead end rather than a degraded state. Nothing
+                // is pushed to iCloud here — the envelope upload is the consent step's
+                // job, and it awaits its own result (see `EmergencyKitView`).
+                recoveryKeyError = appString("Couldn’t create your recovery key. Please try again.")
             }
         }
         // Grouped-gray canvas so the white cards/fields of the form steps read
@@ -124,7 +144,7 @@ struct OnboardingFlow: View {
                 .platformNavigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .platformTopBarLeading) {
-                        Button(action: back) { Image(systemName: "chevron.backward") }
+                        Button(action: back) { VaultIcon(Icons.chevronLeft, size: Metric.iconInline) }
                             .accessibilityLabel(Text("Back"))
                     }
                 }
@@ -136,11 +156,12 @@ struct OnboardingFlow: View {
         do {
             try await env.session.createVault(masterPassword: password)
             AnalyticsEngine.shared.log(.vaultCreated)
-            // Turn on iCloud sync by default for new vaults — the Emergency Kit / recovery
-            // path restores from the synced copy, so a fresh user gets multi-device recovery
-            // without hunting through Settings. No-op unless the build is iCloud-configured
-            // (`CloudSyncService.isConfigured`), so it never touches an unprovisioned container.
-            env.settings.iCloudSyncEnabled = true
+            // iCloud sync stays OFF here. Creating a vault is not consent to upload it, and
+            // the seeds below post `.vaultLocalMutation`, which arms `SyncCoordinator`'s
+            // three-second debounce — turning the flag on at this point put the first
+            // CloudKit write on the name step, before any choice was offered. The question
+            // is asked on the Emergency Kit step, which owns the recovery story.
+
             // Seed a default Space ("My Space") so new items have a home; the user
             // can rename it or add more later. Best-effort — never block setup.
             // Keep the id so the item seeds file into it (else they'd be Unfiled).
@@ -169,10 +190,16 @@ struct OnboardingFlow: View {
         AnalyticsEngine.shared.runSuppressed { try? env.repository.add(identity) }
     }
 
-    private func enableBiometric() {
-        Task {
-            try? await env.session.enableBiometricUnlock()
+    /// Advances only on a real enrolment. Swallowing the error and moving on left the
+    /// user believing Face ID was armed when the key was never stored, so the next launch
+    /// asked for the master password with no explanation.
+    private func enableBiometric() async -> String? {
+        do {
+            try await env.session.enableBiometricUnlock()
             step = .done
+            return nil
+        } catch {
+            return error.localizedDescription
         }
     }
 }
@@ -224,9 +251,10 @@ private struct OnboardingDoneStep: View {
     /// the app crossfades in behind the flood.
     private func press() {
         guard launch.phase == .idle else { return }
+        // Reduce Motion asked for no choreography, so there is nothing to wait for —
+        // the old quarter-second timer was a delay with no animation behind it.
         if reduceMotion {
-            withAnimation(.easeInOut(duration: 0.25)) { contentHidden = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onFinish() }
+            onFinish()
             return
         }
         launch.press()

@@ -48,7 +48,11 @@ struct VaultShellBehaviors: ViewModifier {
                 uiState.selectedTab = .items
             }
             // Present the editor for a 2FA login imported via otpauth:// (now that we're unlocked).
-            .sheet(item: Binding(get: { env.pendingTOTPImport },
+            // A handed-back draft of the SAME item supersedes this trigger: the import
+            // request outlives a shell teardown (it lives on `env`), so both sheets would
+            // otherwise fire at once — one pristine, one with the user's typed values —
+            // and SwiftUI would drop whichever lost the race.
+            .sheet(item: Binding(get: { pendingTOTPImportUnlessHandedBack },
                                  set: { env.pendingTOTPImport = $0 })) { item in
                 ItemEditorScreen(target: .draft(item))
             }
@@ -62,9 +66,21 @@ struct VaultShellBehaviors: ViewModifier {
                     NavigationStack { ItemDetailScreen(itemID: itemID) }
                 }
             }
-            // Re-present an unsaved editor draft recovered from a previous launch (one-shot).
+            // Re-present an unsaved editor draft that lost its host: recovered from a
+            // previous launch, or handed back when a size-class flip tore this shell
+            // down mid-edit. Both shells apply this modifier, so the draft lands in
+            // whichever layout comes up next.
             .sheet(item: $uiState.restoredDraft) { draft in
                 ItemEditorScreen(target: draft.isNew ? .draft(draft.item) : .edit(draft.item))
+            }
+            // Quick actions the SHELL owns (see `UIStateStore.QuickSheet`), so a
+            // layout swap re-presents them instead of dropping them with the
+            // layout's own state.
+            .sheet(item: $uiState.quickSheet) { sheet in
+                switch sheet {
+                case .generator: GeneratorScreen()
+                case .totpCodes: TotpListScreen()
+                }
             }
             // Owner approval ceremony (ADR-1): the shell only exists while the
             // vault is unlocked, so a surfaced request can go straight to the
@@ -88,6 +104,11 @@ struct VaultShellBehaviors: ViewModifier {
                 }
             }
             .onAppear {
+                // First, before anything can present: a draft whose editor was torn
+                // down with the previous shell (size-class flip) is re-armed here when
+                // the outgoing editor reported its unmount only after this shell came
+                // up. Ordering between the two is not guaranteed, so both ends ask.
+                uiState.rehydrateEditorIfNeeded()
                 guard !env.uiTestConfiguration.isEnabled else { return }
                 env.approvalCoordinator.refreshOwnerRequests()
                 env.ownerShareRefresher.refresh()
@@ -101,6 +122,13 @@ struct VaultShellBehaviors: ViewModifier {
                 // already `first` when we appear — onChange below never fires for
                 // it, so the sheet must be presented explicitly here.
                 presentNextApprovalIfIdle()
+            }
+            .onDisappear {
+                // This shell leaves for exactly two reasons. A layout swap keeps the
+                // shell-owned quick sheet, so the next layout puts it straight back up.
+                // A lock drops it: the vault should come back the way the user left it,
+                // not with a sheet the lock screen interrupted.
+                if env.session.state != .unlocked { uiState.quickSheet = nil }
             }
             // Warm path: the owner tapped the "they accepted" banner while the
             // unlocked shell is already on screen.
@@ -141,6 +169,13 @@ struct VaultShellBehaviors: ViewModifier {
             }
             // Resume stepper for a tapped "they accepted" banner (owner side).
             .sheet(item: $resumeShareFromTap) { ShareResumeStepperSheet(share: $0) }
+    }
+
+    /// The pending otpauth import, unless the same item is already coming back as a
+    /// handed-back draft (see the sheet above).
+    private var pendingTOTPImportUnlessHandedBack: VaultItem? {
+        guard let pending = env.pendingTOTPImport else { return nil }
+        return uiState.restoredDraft?.id == pending.id ? nil : pending
     }
 
     private func presentNextApprovalIfIdle() {

@@ -9,17 +9,28 @@ struct CopyToastOverlay: View {
     var bottomClearance: CGFloat = Metric.controlLarge + Space.s8
 
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         if let label = env.clipboard.recentCopyLabel {
+            let theme = env.theme.active
             HStack(spacing: Space.s2) {
                 VaultIcon(Icons.checkCircle, size: Metric.iconInline)
-                    .foregroundStyle(Color(rgb: env.theme.active.success))
+                    .foregroundStyle(Color(rgb: theme.success))
                 Text(appString("Copied \(label)")).vaultType(.subhead).fontWeight(.medium)
             }
             .padding(.horizontal, Space.s4)
             .padding(.vertical, Space.s3)
-            .background(.regularMaterial, in: Capsule())
+            // Reduce Transparency gets an opaque capsule: the toast floats over the
+            // item list, and blurred text over a busy row is exactly what that setting
+            // exists to remove.
+            .background {
+                if reduceTransparency {
+                    Capsule().fill(Color(rgb: theme.surfaceFloatingSolid))
+                } else {
+                    Capsule().fill(.regularMaterial)
+                }
+            }
             .elevation(.level2)
             .padding(.bottom, bottomClearance)
             .transition(.move(edge: .bottom).combined(with: .opacity))

@@ -17,6 +17,30 @@ import SwiftUI
         var id: String { item.id }
     }
 
+    /// An unsaved editor session handed to a NEW mount of the item editor — either
+    /// recovered from disk on cold launch, or carried across a shell remount (a
+    /// size-class flip tears down the whole shell, sheets included). The receiving
+    /// editor claims it once and then treats its content as unsaved work, so a
+    /// second remount hands the same session on again.
+    ///
+    /// `stagedArtifacts` are that session's encrypted-but-uncommitted attachment
+    /// imports. Their DEKs live only here, in memory — the on-disk `Snapshot`
+    /// carries the draft alone — and a handoff nobody claims leaves staging files
+    /// that `ArtifactStore.reconcile()` sweeps at the next unlock.
+    struct ResumedEditorSession {
+        let itemID: String
+        let stagedArtifacts: [StagedArtifact]
+    }
+
+    /// A quick-action sheet owned by the SHELL rather than by one layout. Held here
+    /// so both shells present it from `vaultShellBehaviors()`: a size-class flip
+    /// destroys the layout's own `@State`, which used to drop the sheet outright.
+    enum QuickSheet: String, Identifiable {
+        case generator
+        case totpCodes
+        var id: String { rawValue }
+    }
+
     /// iPad/Mac sidebar selection. A section mirrors `selectedTab`; a space points at a
     /// folder id; profile opens the persona detail; settings opens the settings detail.
     enum SidebarSelection: Hashable {
@@ -47,17 +71,38 @@ import SwiftUI
     }
     var searchEntry: SearchEntry = .normal
 
+    /// Quick-action sheet currently up (generator / 2FA codes), or nil.
+    var quickSheet: QuickSheet?
+
+    /// Per-tab navigation depth for the REGULAR-width shell and the on-disk snapshot.
+    ///
+    /// Scope of the guarantee, deliberately narrow: compact width pushes through the
+    /// UIKit shell (`VaultUINavShell` / `AppNavigator`), which never writes these paths,
+    /// so a compact→regular flip keeps the SELECTION but starts the new column at its
+    /// root. Regular→compact restores depth because these paths were the source there.
+    /// Mirroring the UIKit stack into this store is explicitly out of scope — it would
+    /// rewrite the app's highest-risk surface to preserve a scroll position.
     var homePath = NavigationPath()
     var itemsPath = NavigationPath()
     var searchPath = NavigationPath()
     var watchtowerPath = NavigationPath()
-    /// Live capture of the currently-open editor's draft, for the snapshot only.
-    /// NOT a presentation trigger — the editor is already on screen when this is set.
+    /// Live capture of the currently-open editor's draft. Written by the mounted editor
+    /// and read by `persist()`; it is NOT a presentation trigger (the editor is already
+    /// on screen when this is set). Cleared only when the USER closes the editor — a
+    /// shell teardown hands it on instead (see `handBackEditorSession`).
     var editorDraft: DraftState?
-    /// One-shot presentation trigger for a draft recovered from a previous launch.
-    /// Set only by `restore()`; `MainTabView` binds a sheet to it. Kept separate from
-    /// `editorDraft` so capturing a normally-opened editor never re-presents a duplicate.
+    /// One-shot presentation trigger for a draft the user did not close: recovered from
+    /// a previous launch (`restore()`), or carried across a shell remount
+    /// (`handBackEditorSession` / `rehydrateEditorIfNeeded`). Both shells bind a sheet
+    /// to it in `vaultShellBehaviors()`. Kept separate from `editorDraft` so capturing
+    /// a normally-opened editor never re-presents a duplicate.
     var restoredDraft: DraftState?
+    /// Set alongside `restoredDraft`; claimed by the editor mount that adopts it.
+    private(set) var resumedEditorSession: ResumedEditorSession?
+    /// How many item editors are on screen. A size-class flip unmounts one and mounts
+    /// the replacement, so "no editor mounted while a draft exists" is what identifies
+    /// a draft that lost its host.
+    private(set) var mountedEditorCount = 0
 
     private let session: VaultSession
     private let fileURL: URL
@@ -122,18 +167,79 @@ import SwiftUI
         // `editorDraft` (via its capture) so a re-background keeps persisting it.
         editorDraft = snapshot.draft
         restoredDraft = snapshot.draft
+        if let draft = snapshot.draft {
+            // A recovered draft is unsaved work even though it equals its own
+            // baseline: the editor that adopts it must guard it like typed changes.
+            resumedEditorSession = ResumedEditorSession(itemID: draft.item.id, stagedArtifacts: [])
+        }
+    }
+
+    // MARK: Editor session lifecycle
+
+    /// An item editor came on screen.
+    func editorDidMount() { mountedEditorCount += 1 }
+
+    /// An item editor left the screen. Never negative — a mount that somehow
+    /// skipped its pairing must not make the store think an editor is still up.
+    func editorDidUnmount() { mountedEditorCount = max(0, mountedEditorCount - 1) }
+
+    /// The USER closed the editor (saved, or confirmed discard, or dismissed an
+    /// untouched one). Nothing is left to hand back.
+    func finishEditorSession() {
+        editorDraft = nil
+        restoredDraft = nil
+        resumedEditorSession = nil
+    }
+
+    /// The editor's HOST went away while unsaved work was still in it — a size-class
+    /// flip (Split View resize, Stage Manager, rotation across the compact boundary)
+    /// unmounts the whole shell and its sheets. Re-arm the shared presentation trigger
+    /// so the shell that replaces it puts the draft, and the ciphertext staged with it,
+    /// straight back on screen.
+    ///
+    /// Returns whether the session was taken on. `false` means there was no draft to
+    /// carry — the caller still owns its staged ciphertext and must roll it back
+    /// rather than leave it in the staging directory.
+    @discardableResult
+    func handBackEditorSession(stagedArtifacts: [StagedArtifact] = []) -> Bool {
+        guard let draft = editorDraft else { return false }
+        resumedEditorSession = ResumedEditorSession(itemID: draft.item.id,
+                                                    stagedArtifacts: stagedArtifacts)
+        restoredDraft = draft
+        return true
+    }
+
+    /// Live (non-cold-launch) hand-back, from the shell's own appearance: a draft
+    /// exists but nothing is hosting it. Belt to `handBackEditorSession`'s braces —
+    /// the incoming shell can appear BEFORE the outgoing editor reports its unmount,
+    /// and either order has to end with the draft on screen. A draft that already has
+    /// a pending trigger, or an editor still mounted, is left alone.
+    func rehydrateEditorIfNeeded() {
+        guard mountedEditorCount == 0, restoredDraft == nil, editorDraft != nil else { return }
+        handBackEditorSession()
+    }
+
+    /// Adopt the handed-back session for `itemID`, once. A mismatch leaves the session
+    /// pending: the editor it belongs to may not be the one that just mounted.
+    func claimResumedEditorSession(itemID: String) -> ResumedEditorSession? {
+        guard let session = resumedEditorSession, session.itemID == itemID else { return nil }
+        resumedEditorSession = nil
+        return session
     }
 
     /// Drop in-memory state and delete the on-disk snapshot (vault erase / reset).
     func wipe() {
         selectedTab = .home
         sidebarSelection = .section(.home)
+        quickSheet = nil
         homePath = NavigationPath()
         itemsPath = NavigationPath()
         searchPath = NavigationPath()
         watchtowerPath = NavigationPath()
         editorDraft = nil
         restoredDraft = nil
+        resumedEditorSession = nil
+        mountedEditorCount = 0
         try? FileManager.default.removeItem(at: fileURL)
     }
 

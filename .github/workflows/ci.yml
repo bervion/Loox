@@ -38,6 +38,14 @@ jobs:
       - name: Generate project
         run: scripts/ci/prepare-project.sh
 
+      # Required-reason API declarations. VaultifyCore/** is globbed into four
+      # executables, so any shared code that starts touching UserDefaults, file
+      # timestamps, disk space or boot time silently widens the required-reason
+      # surface of three appexes at once. Cheap to check, and the failure mode
+      # is a rejected upload with no build to show for it.
+      - name: Check privacy manifests
+        run: scripts/ci/check-privacy-manifests.sh
+
       - name: Create isolated simulator
         run: scripts/ci/create-simulator.sh
 

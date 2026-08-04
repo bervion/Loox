@@ -508,7 +508,7 @@ struct ItemDetailScreen: View {
                 FaviconView(urlString: item.urlField?.value, category: item.category, size: 56,
                             title: item.title, iconAsset: item.iconAsset)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(item.title.isEmpty ? "Untitled" : item.title)
+                    Text(verbatim: item.title.isEmpty ? appString("Untitled") : item.title)
                         .vaultType(.screenTitle).lineLimit(1).truncationMode(.tail)
                         .accessibilityIdentifier("item.detail.title")
                     Text(item.category.title).vaultType(.subhead).themedForeground(.secondary)

@@ -1,7 +1,7 @@
 import Foundation
 
 /// What an icon name actually renders as, once the legacy Polaris namespace is folded in.
-enum IconGlyph: Equatable {
+nonisolated enum IconGlyph: Equatable {
     /// An SF Symbol, drawn with the system's optical sizing.
     case system(String)
     /// A bundled template asset — a legacy glyph with no SF equivalent.
@@ -21,7 +21,7 @@ enum IconGlyph: Equatable {
 /// icons on every device still running an older build, and item avatars live inside the sealed
 /// blob where a rewrite means unseal → re-seal → re-dirty the entire vault. Translating here
 /// instead costs nothing at rest: an old build keeps rendering its original asset.
-enum IconResolver {
+nonisolated enum IconResolver {
     /// Marks a stored value as an SF Symbol name. A prefix inside the existing `String` column
     /// keeps the two namespaces unambiguous without a schema change — there is no
     /// `VersionedSchema` in this project, so an added column would be its own migration.

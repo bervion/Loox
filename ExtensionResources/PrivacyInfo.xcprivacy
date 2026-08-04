@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- Privacy manifest for the app extensions: VaultifyAutoFill (iOS),
+     VaultifyAutoFillMac (macOS) and VaultifySafari. Apple requires a manifest
+     in the bundle of EVERY executable that uses a required-reason API, and an
+     .appex is its own bundle — the app's manifest does not cover them.
+
+     This directory is deliberately top-level and NOT under Vaultify/ or
+     VaultifyCore/: those paths are inside source globs that every target
+     compiles, so a manifest placed there would be picked up as a build input
+     rather than a per-target resource, and VaultifyCore/ specifically is shared
+     by all four targets.
+
+     Deliberately NOT a copy of Vaultify/Resources/PrivacyInfo.xcprivacy. The
+     extensions link no Firebase (no analytics, no Crashlytics — that is a
+     standing rule, not an accident), so NSPrivacyCollectedDataTypes is empty.
+     Declaring collection that does not happen is as wrong as omitting
+     collection that does.
+
+     UserDefaults is the only required-reason API these bundles reach, through
+     VaultifyCore: `SharedConfig.sharedDefaults` and `ThemeReader.defaults` read
+     the group.com.bervion.vaultify App Group suite (1C8F.1), and
+     `ThemeReader.migrateIfNeeded` reads the process's own UserDefaults.standard
+     (CA92.1). No SystemBootTime entry: the single systemUptime read in the repo
+     is in Vaultify/Services/Haptics.swift, which is app-target only. -->
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+				<string>1C8F.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

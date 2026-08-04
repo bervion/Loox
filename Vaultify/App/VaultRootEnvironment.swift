@@ -17,6 +17,10 @@ struct VaultRootEnvironment: ViewModifier {
     var navigator: AppNavigator? = nil
     #endif
 
+    /// The single source of truth for motion in the app. There is deliberately no
+    /// in-app duplicate of Settings > Accessibility > Motion.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func body(content: Content) -> some View {
         let base = content
             .environment(env)
@@ -28,7 +32,7 @@ struct VaultRootEnvironment: ViewModifier {
             .preferredColorScheme(env.theme.preferredColorScheme)
             .appFontScale(env.theme.settings.fontScale)
             .environment(\.meshPhase, env.theme.meshPhase)
-            .environment(\.meshAnimated, !env.theme.settings.reduceMotion)
+            .environment(\.meshAnimated, !reduceMotion)
         #if os(iOS)
         return base.environment(navigator)
         #else

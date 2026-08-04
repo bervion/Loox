@@ -69,11 +69,11 @@ struct SearchScreen: View {
         // field keeps sending `.query` per keystroke after the first one was
         // consumed by `handleEntry` — apply it in place, keyboard stays down.
         .onChange(of: uiState.searchEntry) { _, entry in
-            if case .query(let q) = entry {
-                search = q
-                suppressFocus = true
-                uiState.searchEntry = .normal
-            }
+            let plan = Self.entryPlan(for: entry, isActiveTab: uiState.selectedTab == .search)
+            guard let query = plan.query else { return }
+            search = query
+            suppressFocus = plan.suppressesFocus
+            if plan.consumesEntry { uiState.searchEntry = .normal }
         }
         .onChange(of: uiState.selectedTab) { _, tab in
             if tab == .search { requestSearchFocus() }
@@ -83,20 +83,45 @@ struct SearchScreen: View {
         }
     }
 
+    /// What a pending entry mode asks of this surface. Pure so the ordering rule below
+    /// can be tested without a live layout.
+    struct EntryPlan: Equatable {
+        /// Text to put in the field; nil leaves it untouched.
+        var query: String?
+        var suppressesFocus: Bool
+        var consumesEntry: Bool
+        var requestsFocus: Bool
+    }
+
+    /// A `.query` entry is applied WHEREVER this screen is mounted, regardless of the
+    /// selected tab. Only the sidebar emits it, and at regular width the Search detail
+    /// column can appear before `selectedTab` has been mirrored across — the old
+    /// tab guard therefore ate the first character typed and left it hidden until the
+    /// user typed a second one. Focus stays suppressed for it: the keyboard belongs to
+    /// the sidebar's field, not to the detail column's.
+    ///
+    /// A plain `.normal` entry is a tab open, so it does need the tab check before it
+    /// raises the keyboard or consumes the mode.
+    static func entryPlan(for entry: UIStateStore.SearchEntry, isActiveTab: Bool) -> EntryPlan {
+        switch entry {
+        case .query(let query):
+            return EntryPlan(query: query, suppressesFocus: true,
+                             consumesEntry: true, requestsFocus: false)
+        case .normal:
+            return EntryPlan(query: nil, suppressesFocus: false,
+                             consumesEntry: isActiveTab, requestsFocus: isActiveTab)
+        }
+    }
+
     /// Apply the pending entry mode once, on tab entry: a `.query` entry pre-fills the
     /// field with the keyboard down; a plain tab open raises the keyboard. Consumes the
     /// mode back to `.normal`.
     private func handleEntry() {
-        guard uiState.selectedTab == .search else { return }
-        switch uiState.searchEntry {
-        case .query(let q):
-            search = q
-            suppressFocus = true
-        case .normal:
-            suppressFocus = false
-        }
-        uiState.searchEntry = .normal
-        requestSearchFocus()
+        let plan = Self.entryPlan(for: uiState.searchEntry, isActiveTab: uiState.selectedTab == .search)
+        if let query = plan.query { search = query }
+        suppressFocus = plan.suppressesFocus
+        if plan.consumesEntry { uiState.searchEntry = .normal }
+        if plan.requestsFocus { requestSearchFocus() }
     }
 
     /// Present + focus the search field, deferred past the layout pass. A native
@@ -416,13 +441,28 @@ struct SearchResultsList: View {
 /// because the classic `.searchable` field renders inside it. Uses a plain runtime
 /// `#available` (no `#if compiler` guard): `.toolbar(.hidden:)` is an iOS-16 API, so
 /// this compiles on any Xcode and the fix ships in CI/TestFlight builds too.
-private struct FlushSearchHeaderChrome: ViewModifier {
+struct FlushSearchHeaderChrome: ViewModifier {
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// The bar is only redundant where the field moved out of it — the compact tab
+    /// shell, which is the only place `Tab(role: .search)` exists. In the regular-width
+    /// split view this screen is the DETAIL column: there is no tab-bar field there, so
+    /// hiding its navigation bar would take the search field itself off screen.
+    static func hidesNavigationBar(horizontalSizeClass: UserInterfaceSizeClass?,
+                                   searchFieldLivesInTabBar: Bool) -> Bool {
+        searchFieldLivesInTabBar && horizontalSizeClass == .compact
+    }
+    #endif
+
     @ViewBuilder func body(content: Content) -> some View {
         // iOS-only by intent (the tab-bar search field exists there); macOS
         // keeps its normal chrome — and `.navigationBar` isn't a macOS
         // toolbar placement anyway.
         #if os(iOS)
-        if #available(iOS 26, *) {
+        if #available(iOS 26, *),
+           Self.hidesNavigationBar(horizontalSizeClass: horizontalSizeClass,
+                                   searchFieldLivesInTabBar: true) {
             content.toolbar(.hidden, for: .navigationBar)
         } else {
             content

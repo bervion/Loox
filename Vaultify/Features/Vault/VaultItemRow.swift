@@ -33,7 +33,7 @@ struct VaultItemRow: View {
                     if let highlighted = highlightedTitle {
                         Text(highlighted)
                     } else {
-                        Text(item.title.isEmpty ? "Untitled" : item.title)
+                        Text(verbatim: item.title.isEmpty ? appString("Untitled") : item.title)
                     }
                 }
                 .vaultType(.body)

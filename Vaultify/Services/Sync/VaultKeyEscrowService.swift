@@ -18,13 +18,15 @@ import Foundation
 /// signed-in iCloud account; the QR scan is what proves physical presence.
 @MainActor final class VaultKeyEscrowService {
     enum Failure: Error, LocalizedError {
-        case notConfigured, noEnvelope, timedOut, cloudUnavailable
+        case notConfigured, noEnvelope, noRecoveryKit, timedOut, cloudUnavailable
 
         var errorDescription: String? {
             switch self {
             case .notConfigured: return appString("iCloud sync isn’t enabled in this build.")
             case .noEnvelope:
                 return appString("No synced vault found for this iCloud account. Create the Emergency Kit on your other device with iCloud Sync on, then try again.")
+            case .noRecoveryKit:
+                return appString("This device has no Emergency Kit to upload yet.")
             case .timedOut: return appString("No response from your other device. Generate a fresh QR code and try again.")
             case .cloudUnavailable:
                 return appString("iCloud can't be reached right now. Check your connection and iCloud sign-in, then try again.")
@@ -61,7 +63,32 @@ import Foundation
     /// still unlock their own device locally, but no longer join new ones) — matching
     /// the single-device "regenerate invalidates the old kit" semantics.
     func pushRecoveryEnvelopeIfNeeded() async {
-        guard CloudSyncService.isConfigured else { return }
+        guard CloudSyncService.isConfigured, !CloudSyncService.isHostingUnitTests,
+              let payload = Self.localEnvelope() else { return }
+        guard UserDefaults.standard.string(forKey: Self.pushedFingerprintKey) != payload.fingerprint else { return }
+        // Best-effort: retried on the next sync while the fingerprint mismatches.
+        try? await upload(payload)
+    }
+
+    /// Upload the recovery envelope and REPORT the outcome.
+    ///
+    /// `pushRecoveryEnvelopeIfNeeded()` is deliberately silent because it trails every
+    /// sync. The consent step cannot be: it tells the user their kit now restores on a
+    /// new device, and that sentence is only true once this write lands. The fingerprint
+    /// short-circuit is skipped here on purpose — "uploaded" has to mean a round-trip
+    /// completed on this run, not that some earlier run left a matching marker.
+    func pushRecoveryEnvelope() async throws {
+        // `CKContainer.init` traps without the iCloud entitlement, and the test host
+        // builds unsigned — never touch CloudKit from a test process.
+        guard CloudSyncService.isConfigured, !CloudSyncService.isHostingUnitTests else {
+            throw Failure.notConfigured
+        }
+        guard let payload = Self.localEnvelope() else { throw Failure.noRecoveryKit }
+        try await upload(payload)
+    }
+
+    /// The local recovery blob plus its fingerprint, or nil when this device has no kit.
+    private static func localEnvelope() -> (wrapped: Data, salt: Data, kdf: Data, fingerprint: String)? {
         guard let bundle = VaultKeyBundle.load(),
               let wrapped = bundle.wrappedByRecovery,
               let salt = bundle.recoverySalt,
@@ -70,16 +97,16 @@ import Foundation
               // where the two paths always shared a profile. Pushing the current
               // password-path `kdf` after it diverges would make the Emergency
               // Kit fail to open the synced envelope on a new device.
-              let kdfData = try? JSONEncoder().encode(bundle.recoveryKdf ?? bundle.kdf) else { return }
-        let fingerprint = Data(SHA256.hash(data: wrapped)).base64EncodedString()
-        let defaults = UserDefaults.standard
-        guard defaults.string(forKey: Self.pushedFingerprintKey) != fingerprint else { return }
+              let kdfData = try? JSONEncoder().encode(bundle.recoveryKdf ?? bundle.kdf) else { return nil }
+        return (wrapped, salt, kdfData, Data(SHA256.hash(data: wrapped)).base64EncodedString())
+    }
 
+    private func upload(_ payload: (wrapped: Data, salt: Data, kdf: Data, fingerprint: String)) async throws {
         let id = CKRecord.ID(recordName: Self.envelopeRecordName, zoneID: zone.zoneID)
         let record = CKRecord(recordType: Self.envelopeRecordType, recordID: id)
-        record["wrappedByRecovery"] = wrapped as CKRecordValue
-        record["recoverySalt"] = salt as CKRecordValue
-        record["kdf"] = kdfData as CKRecordValue
+        record["wrappedByRecovery"] = payload.wrapped as CKRecordValue
+        record["recoverySalt"] = payload.salt as CKRecordValue
+        record["kdf"] = payload.kdf as CKRecordValue
         record["updatedAt"] = Date.now as CKRecordValue
         do {
             // Ensure the zone itself: the envelope must upload even when no
@@ -87,10 +114,10 @@ import Foundation
             // saving an existing zone is a cheap server-side no-op.
             _ = try await database.modifyRecordZones(saving: [zone], deleting: [])
             _ = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
-            defaults.set(fingerprint, forKey: Self.pushedFingerprintKey)
         } catch {
-            // Best-effort: retried on the next sync while the fingerprint mismatches.
+            throw Failure.cloudUnavailable
         }
+        UserDefaults.standard.set(payload.fingerprint, forKey: Self.pushedFingerprintKey)
     }
 
     /// Fetch the synced recovery envelope (new-device join by Emergency Kit).

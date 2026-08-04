@@ -15,13 +15,15 @@ struct VaultSidebarView: View {
     @State private var sidebarSearch = ""
 
     // Quick Actions live in the sidebar at regular width (Home hides its own grid
-    // there), so this layout owns their sheets — anchored on the split view itself,
-    // not on a list row, so a selection change can't strand a presentation.
+    // there). The item-creation flow is anchored on the split view itself, not on a
+    // list row, so a selection change can't strand a presentation; the generator and
+    // 2FA sheets moved to `vaultShellBehaviors()` so a size-class flip carries them.
+    // A new item typed into `editorTarget`'s editor survives that flip too — the
+    // editor hands its draft to `UIStateStore`, which re-presents it in the next
+    // shell (an editor with nothing typed in it simply closes, losing nothing).
     @State private var editorTarget: EditorTarget?
     @State private var showItemTypePicker = false
     @State private var pendingNewTarget: EditorTarget?
-    @State private var showGenerator = false
-    @State private var showTotpList = false
     /// Cached Watchtower issue count for the Security row's badge — recomputed on
     /// appear and when the item set changes, never per render (`PasswordAudit.analyze`
     /// is far too costly for that). Mirrors `HomeScreen`'s own cache.
@@ -56,8 +58,11 @@ struct VaultSidebarView: View {
                 // count is the whole vault's 2FA logins.
                 totpCount: env.repository.totpItems(folder: nil).count,
                 onAddItem: { showItemTypePicker = true },
-                onGeneratePassword: { showGenerator = true },
-                onOpenTotpCodes: { showTotpList = true })
+                // Generator + 2FA codes are presented by the shared shell behaviors,
+                // so a size-class flip carries them over instead of dropping them
+                // with this layout's state.
+                onGeneratePassword: { uiState.quickSheet = .generator },
+                onOpenTotpCodes: { uiState.quickSheet = .totpCodes })
             // No brand title (owner 260723): like iPad Settings, the sidebar
             // opens straight with the search field and the avatar row.
             .navigationTitle("")
@@ -67,9 +72,9 @@ struct VaultSidebarView: View {
             // Every keystroke re-targets the Search detail with the live query;
             // `SearchScreen` consumes `.query` both on entry and in place.
             .onChange(of: sidebarSearch) { _, query in
-                guard !query.isEmpty else { return }
-                uiState.searchEntry = .query(query)
-                if uiState.sidebarSelection != .section(.search) {
+                uiState.searchEntry = Self.searchEntry(
+                    for: query, showingSearchDetail: uiState.sidebarSelection == .section(.search))
+                if !query.isEmpty, uiState.sidebarSelection != .section(.search) {
                     uiState.sidebarSelection = .section(.search)
                 }
             }
@@ -117,8 +122,23 @@ struct VaultSidebarView: View {
         }) {
             ItemTypePickerSheet { pendingNewTarget = $0; showItemTypePicker = false }
         }
-        .sheet(isPresented: $showGenerator) { GeneratorScreen() }
-        .sheet(isPresented: $showTotpList) { TotpListScreen() }
+    }
+
+    /// What a sidebar search-field edit should ask of the Search detail.
+    ///
+    /// An emptied field is a real instruction, not "nothing to say": this field is the
+    /// only way in or out of Search at regular width (`VaultSidebarList` keeps the
+    /// Search row out of the sidebar), so swallowing the clear left the detail column
+    /// showing results for a query that is no longer on screen. `.query("")` resets its
+    /// results, title and empty state together.
+    ///
+    /// With Search NOT in the detail column there is nothing to clear, and a queued
+    /// empty query would follow the user into the next Search entry and suppress the
+    /// keyboard there — so that case drops the pending intent instead.
+    static func searchEntry(for query: String,
+                            showingSearchDetail: Bool) -> UIStateStore.SearchEntry {
+        if query.isEmpty, !showingSearchDetail { return .normal }
+        return .query(query)
     }
 
     /// Security issues (weak + reused + missing 2FA) for the sidebar's Security badge.

@@ -65,7 +65,7 @@ struct TotpCardView: View {
                     .minimumScaleFactor(0.7)
                     .animation(reduceMotion ? nil : .easeInOut(duration: Motion.fast), value: copied)
 
-                    Text(item.title.isEmpty ? "Untitled" : item.title)
+                    Text(verbatim: item.title.isEmpty ? appString("Untitled") : item.title)
                         .vaultType(.footnote)
                         .themedForeground(.secondary)
                         .lineLimit(1)
