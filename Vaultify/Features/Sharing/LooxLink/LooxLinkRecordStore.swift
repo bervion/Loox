@@ -94,10 +94,17 @@ nonisolated struct LooxLinkRecord: Codable, Identifiable, Equatable, Sendable {
         persist()
     }
 
-    func wipe() {
-        records = []
-        if persistenceEnabled {
+    /// Erase the registry, keeping only `retained` — the links an erase could
+    /// not revoke. Their token is the single credential that can still kill
+    /// them, so it outlives the vault instead of being destroyed with it.
+    /// Retaining nothing deletes the Keychain entry outright.
+    func wipe(keeping retained: [LooxLinkRecord] = []) {
+        records = retained
+        guard persistenceEnabled else { return }
+        if retained.isEmpty {
             KeychainStore.delete(account: Self.account)
+        } else {
+            persist()
         }
     }
 

@@ -1,50 +1,98 @@
 #!/usr/bin/env bash
+# Creates and boots a throwaway simulator for one test run, and prints its UDID.
+#
+# The runtime is resolved against the same policy file as the Xcode pin
+# (toolchain-pin.sh) so the two can never drift apart, and every failure path
+# prints the runtime inventory instead of a bare "unavailable".
 set -euo pipefail
 
-EXPECTED_IOS_RUNTIME_VERSION="26.5"
-EXPECTED_DEVICE_TYPE="iPhone 17 Pro"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ci/toolchain-pin.sh
+. "$SCRIPT_DIR/toolchain-pin.sh"
 
-RUNTIMES_JSON="$(xcrun simctl list runtimes --json)"
-DEVICE_TYPES_JSON="$(xcrun simctl list devicetypes --json)"
+# The runtime must be one the selected Xcode can actually drive: a runtime
+# whose major exceeds the toolchain's is installed but unusable.
+XCODE_VERSION="$(xcodebuild -version | sed -n '1s/^Xcode //p')"
+if [[ -z "$XCODE_VERSION" ]]; then
+  echo "Unable to read the active Xcode version; run scripts/ci/select-xcode.sh first" >&2
+  exit 1
+fi
+MAX_RUNTIME_MAJOR="$(version_major "$XCODE_VERSION")"
 
 RUNTIME_ID="$(
-  RUNTIMES_JSON="$RUNTIMES_JSON" \
-  EXPECTED_IOS_RUNTIME_VERSION="$EXPECTED_IOS_RUNTIME_VERSION" \
-  /usr/bin/python3 - <<'PY'
-import json
-import os
+  xcrun simctl list runtimes --json |
+  EXPECTED_MINIMUM="$MINIMUM_IOS_RUNTIME_VERSION" \
+  MAX_MAJOR="$MAX_RUNTIME_MAJOR" \
+  XCODE_VERSION="$XCODE_VERSION" \
+  /usr/bin/python3 -c '
+import json, os, sys
 
-runtimes = json.loads(os.environ["RUNTIMES_JSON"])["runtimes"]
-expected = os.environ["EXPECTED_IOS_RUNTIME_VERSION"]
-runtime = next(
-    (
-        item for item in runtimes
-        if item.get("platform") == "iOS"
-        and item.get("isAvailable")
-        and item.get("version") == expected
-    ),
-    None,
-)
-if runtime is None:
-    raise SystemExit(f"Required iOS simulator runtime {expected} is unavailable")
-print(runtime["identifier"])
-PY
+minimum = tuple(int(part) for part in os.environ["EXPECTED_MINIMUM"].split("."))
+max_major = int(os.environ["MAX_MAJOR"])
+xcode = os.environ["XCODE_VERSION"]
+
+def parsed(value):
+    parts = []
+    for part in value.split("."):
+        try:
+            parts.append(int(part))
+        except ValueError:
+            break
+    return tuple(parts) or (0,)
+
+runtimes = json.load(sys.stdin)["runtimes"]
+ios = [item for item in runtimes if item.get("platform") == "iOS"]
+
+eligible = []
+rejected = []
+for item in ios:
+    version = parsed(item.get("version", "0"))
+    if not item.get("isAvailable"):
+        rejected.append((item, "not available"))
+    elif version < minimum:
+        rejected.append((item, "below minimum %s" % os.environ["EXPECTED_MINIMUM"]))
+    elif version[0] > max_major:
+        rejected.append((item, "newer than Xcode %s can drive" % xcode))
+    else:
+        eligible.append((version, item))
+
+if not eligible:
+    print("No installed iOS simulator runtime satisfies the policy "
+          "(minimum %s, major <= %s for Xcode %s)."
+          % (os.environ["EXPECTED_MINIMUM"], max_major, xcode), file=sys.stderr)
+    print("iOS runtime inventory:", file=sys.stderr)
+    if not ios:
+        print("  (none installed)", file=sys.stderr)
+    for item, reason in rejected:
+        print("  %s\t%s\t%s" % (item.get("name"), item.get("version"), reason), file=sys.stderr)
+    raise SystemExit(1)
+
+# Lowest qualifying runtime, matching select-xcode.sh: a newly downloaded
+# runtime must not silently move what the suites are recorded against.
+eligible.sort(key=lambda pair: pair[0])
+chosen = eligible[0][1]
+print("Selected iOS runtime %s for Xcode %s" % (chosen.get("version"), xcode), file=sys.stderr)
+print(chosen["identifier"])
+'
 )"
 
 DEVICE_TYPE_ID="$(
-  DEVICE_TYPES_JSON="$DEVICE_TYPES_JSON" \
-  EXPECTED_DEVICE_TYPE="$EXPECTED_DEVICE_TYPE" \
-  /usr/bin/python3 - <<'PY'
-import json
-import os
+  xcrun simctl list devicetypes --json |
+  EXPECTED_DEVICE_TYPE="$SIMULATOR_DEVICE_TYPE" \
+  /usr/bin/python3 -c '
+import json, os, sys
 
-device_types = json.loads(os.environ["DEVICE_TYPES_JSON"])["devicetypes"]
+device_types = json.load(sys.stdin)["devicetypes"]
 expected = os.environ["EXPECTED_DEVICE_TYPE"]
 device = next((item for item in device_types if item.get("name") == expected), None)
 if device is None:
-    raise SystemExit(f"Required simulator device type {expected} is unavailable")
+    print("Required simulator device type %s is unavailable." % expected, file=sys.stderr)
+    print("Installed device types:", file=sys.stderr)
+    for item in device_types:
+        print("  %s" % item.get("name"), file=sys.stderr)
+    raise SystemExit(1)
 print(device["identifier"])
-PY
+'
 )"
 
 # Persistent-runner hygiene: per-run simulators from earlier cancelled or
@@ -90,8 +138,10 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
   } >> "$GITHUB_ENV"
 fi
 
-xcrun simctl boot "$SIMULATOR_UDID"
-xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+# Boot chatter goes to stderr so stdout stays exactly one line: the UDID a
+# caller (Makefile, workflow step) substitutes straight into -destination.
+xcrun simctl boot "$SIMULATOR_UDID" >&2
+xcrun simctl bootstatus "$SIMULATOR_UDID" -b >&2
 
 trap - ERR
 

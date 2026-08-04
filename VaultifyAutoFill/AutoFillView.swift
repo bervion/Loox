@@ -208,7 +208,8 @@ private struct CredentialListView: View {
         HStack {
             Button { select(row) } label: {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(row.title.isEmpty ? "Untitled" : row.title).foregroundStyle(.primary)
+                    Text(verbatim: row.title.isEmpty ? appString("Untitled") : row.title)
+                        .foregroundStyle(.primary)
                     if let user = row.username, !user.isEmpty {
                         HStack(spacing: 4) {
                             Text(user).font(.caption).foregroundStyle(.secondary)

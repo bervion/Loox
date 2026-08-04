@@ -83,6 +83,14 @@ struct GeneralSettingsView: View {
                     Label { Text("Show website icons") } icon: { SettingsIconBadge(systemName: "safari.fill", tint: SettingsBadgeTint.blue) }
                 }
                 .tint(switchTint)
+                // Turning the switch off has to remove what the switch already
+                // collected. The cache is a per-host file set in the App Group,
+                // i.e. a list of the sites the user holds logins for, so leaving
+                // it behind would keep that inventory on disk after the user
+                // asked for "everything on-device".
+                .onChange(of: settings.showWebsiteIcons) { _, isOn in
+                    if !isOn { env.faviconService.clearCache() }
+                }
             } footer: {
                 Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
             }

@@ -5,8 +5,9 @@ import XCTest
 /// The artifact lifecycle contract: staged import commits atomically into
 /// record + ciphertext file, rollback and reconcile leave no orphans, a
 /// record without bytes is an honest recoverable state (never a silent drop),
-/// deletion cascades as tombstone + file removal, and legacy `AttachmentStore`
-/// blobs adopt losslessly without destroying the originals.
+/// deletion cascades as tombstone + file removal, legacy `AttachmentStore`
+/// blobs adopt losslessly without destroying the originals, and no stored name
+/// can steer a read, a write or a delete outside its root.
 @MainActor
 final class ArtifactStoreTests: XCTestCase {
 
@@ -170,6 +171,74 @@ final class ArtifactStoreTests: XCTestCase {
 
         artifacts.cleanupTempExports()
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    // MARK: Path containment
+
+    /// The artifact id becomes `<id>.enc` inside the root, so a crafted id is
+    /// an attacker-chosen file write. It must fail BEFORE the write: no file
+    /// outside the root, no record left behind.
+    func testRestoreAllRefusesAnIdThatEscapesTheArtifactRoot() throws {
+        let (artifacts, store, _, root) = makeStack()
+        let escapee = root.deletingLastPathComponent()
+            .appending(path: "escaped-\(UUID().uuidString).enc")
+        let craftedID = "../\(escapee.deletingPathExtension().lastPathComponent)"
+
+        XCTAssertThrowsError(try artifacts.restoreAll([VaultBackup.ArtifactPayload(
+            id: craftedID, ownerItemId: ownerID, filename: "doc.txt",
+            utiType: "public.plain-text", data: payload)])) {
+            XCTAssertEqual($0 as? ArtifactStore.Failure, .unsafePath)
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: escapee.path),
+                       "the traversal must fail before the write, not be cleaned up after it")
+        XCTAssertNil(store.artifactRecord(id: craftedID))
+        XCTAssertTrue(store.allArtifactRecords().isEmpty, "no record survives the refusal")
+    }
+
+    /// `exportPlaintext` joins the manifest filename, and that name rides in
+    /// from a backup. The refusal has to land before the plaintext is written
+    /// anywhere, and the artifact itself must stay intact and readable.
+    func testExportPlaintextRefusesAFilenameThatEscapesItsDirectory() throws {
+        let (artifacts, _, _, _) = makeStack()
+        let escapeName = "exported-escape-\(UUID().uuidString).txt"
+        let escapee = FileManager.default.temporaryDirectory.appending(path: escapeName)
+        let record = try artifacts.commit(
+            try artifacts.stage(data: payload, filename: "../../\(escapeName)",
+                                uti: "public.plain-text"),
+            ownerItemId: ownerID)
+
+        XCTAssertThrowsError(try artifacts.exportPlaintext(record)) {
+            XCTAssertEqual($0 as? ArtifactStore.Failure, .unsafePath)
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: escapee.path))
+        XCTAssertEqual(try artifacts.loadPlaintext(record), payload,
+                       "refusing the export leaves the artifact untouched")
+    }
+
+    /// A record whose stored path is not a direct child of the root is treated
+    /// as having no bytes, and deleting it never reaches outside the root.
+    func testRecordWithAnEscapingRelativePathIsNeverFollowed() throws {
+        let (artifacts, store, _, root) = makeStack()
+        let outside = root.deletingLastPathComponent()
+            .appending(path: "planted-\(UUID().uuidString).enc")
+        try Data([0xde, 0xad]).write(to: outside)
+        defer { try? FileManager.default.removeItem(at: outside) }
+        let record = ArtifactRecord(id: UUID().uuidString, ownerItemId: ownerID,
+                                    wrappedDEK: Data(), sealedManifest: Data(),
+                                    relativePath: "../\(outside.lastPathComponent)",
+                                    byteCount: 2, ciphertextHash: Data())
+        store.context.insert(record)
+
+        XCTAssertFalse(artifacts.hasBytes(record))
+        XCTAssertThrowsError(try artifacts.loadPlaintext(record)) {
+            XCTAssertEqual($0 as? ArtifactStore.Failure, .unsafePath)
+        }
+
+        artifacts.delete(record)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: outside.path),
+                      "a tombstone must never remove a file outside the artifact root")
     }
 
     // MARK: Legacy adoption

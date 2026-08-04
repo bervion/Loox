@@ -44,6 +44,21 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
 
 /// Non-sensitive preference flags persisted in `UserDefaults`. No secrets here.
 @MainActor @Observable final class SettingsStore {
+
+    // Deallocation must not hop to the main actor.
+    //
+    // This is a `@MainActor @Observable final class`, so without an explicit
+    // `nonisolated deinit` the compiler synthesises an ISOLATED deallocating
+    // deinit, and the iOS 17.3 deployment floor routes that through the
+    // `swift_task_deinitOnExecutorMainActorBackDeploy` shim. On Xcode 27 that
+    // shim aborts inside libmalloc ("pointer being freed was not allocated")
+    // whenever one isolated deinit releases another — SettingsStore owns other
+    // main-actor objects, so it nests by construction.
+    //
+    // Nothing here needs isolation: releasing stored references is thread-safe,
+    // and the body is empty. The shipping app never deallocates these objects,
+    // which is why only the test host ever hit it.
+    nonisolated deinit {}
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let mirrorToSharedConfig: Bool
 
@@ -104,8 +119,10 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     var artifactSyncEnabled: Bool { didSet { defaults.set(artifactSyncEnabled, forKey: Key.artifactSync) } }
     var showWebsiteIcons: Bool { didSet { defaults.set(showWebsiteIcons, forKey: Key.favicons) } }
     /// Anonymous GA4 usage statistics (see `AnalyticsEngine`'s privacy contract).
-    /// Opt-out; the didSet keeps the live engine in lockstep so flipping the
-    /// switch applies immediately, no relaunch.
+    /// Opt-IN: an install that has never answered collects nothing, so the first
+    /// launch of a password manager sends no usage telemetry on the strength of
+    /// a default nobody chose. The didSet keeps the live engine in lockstep so
+    /// flipping the switch applies immediately, no relaunch.
     var analyticsEnabled: Bool {
         didSet {
             defaults.set(analyticsEnabled, forKey: Key.analytics)
@@ -235,7 +252,7 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         approvalModeEnabled = d.bool(forKey: Key.approvalMode)
         artifactSyncEnabled = d.bool(forKey: Key.artifactSync)
         showWebsiteIcons = d.object(forKey: Key.favicons) as? Bool ?? true
-        analyticsEnabled = d.object(forKey: Key.analytics) as? Bool ?? true
+        analyticsEnabled = d.object(forKey: Key.analytics) as? Bool ?? false
         crashReportingEnabled = d.object(forKey: Key.crashReporting) as? Bool ?? true
         clipboardClearSeconds = d.object(forKey: Key.clipboard) as? Int ?? 30
         hideInAppSwitcher = d.object(forKey: Key.privacyScreen) as? Bool ?? true
@@ -278,9 +295,13 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     }
 
     /// Consent read for `AnalyticsEngine` bootstrap, which runs before any
-    /// `SettingsStore` instance exists.
+    /// `SettingsStore` instance exists. The fallback MUST match
+    /// `analyticsEnabled`'s: nothing sets the property on a launch where the
+    /// user never touched the switch, so a `true` here would bootstrap the
+    /// engine (and GA4 collection) enabled while the settings screen showed the
+    /// toggle off.
     nonisolated static func isAnalyticsEnabled() -> Bool {
-        UserDefaults.standard.object(forKey: Key.analytics) as? Bool ?? true
+        UserDefaults.standard.object(forKey: Key.analytics) as? Bool ?? false
     }
 
     /// Consent read for `CrashReporter` bootstrap, which runs before any

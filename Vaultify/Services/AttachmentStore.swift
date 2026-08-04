@@ -68,6 +68,20 @@ nonisolated struct AttachmentMeta: Codable, Sendable, Identifiable {
         try? FileManager.default.removeItem(at: url(for: meta.id))
     }
 
+    /// Vault-erase teardown: drop every sealed blob in the store.
+    ///
+    /// The bytes are unreadable once the Vault Key is gone, but the directory
+    /// itself survived an erase until now — and a set of files with real sizes
+    /// and timestamps still records that a vault existed and roughly what was
+    /// in it. Deletes by enumeration rather than by item pointer, so a blob
+    /// whose owning item was already gone goes too.
+    func eraseAll() {
+        let manager = FileManager.default
+        let files = (try? manager.contentsOfDirectory(at: directory,
+                                                      includingPropertiesForKeys: nil)) ?? []
+        for file in files { try? manager.removeItem(at: file) }
+    }
+
     /// Decrypt to a protected temp file for QuickLook / share. Caller should
     /// delete the returned URL when finished.
     func decryptToTemp(_ meta: AttachmentMeta) throws -> URL {

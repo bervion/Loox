@@ -27,6 +27,21 @@ enum AuthError: Error, LocalizedError {
 /// Owns the vault lock lifecycle and the in-memory Vault Key. The plaintext key
 /// exists only while `state == .unlocked`; `lock()` drops it (zeroising memory).
 @MainActor @Observable final class VaultSession {
+
+    // Deallocation must not hop to the main actor.
+    //
+    // This is a `@MainActor @Observable final class`, so without an explicit
+    // `nonisolated deinit` the compiler synthesises an ISOLATED deallocating
+    // deinit, and the iOS 17.3 deployment floor routes that through the
+    // `swift_task_deinitOnExecutorMainActorBackDeploy` shim. On Xcode 27 that
+    // shim aborts inside libmalloc ("pointer being freed was not allocated")
+    // whenever one isolated deinit releases another — VaultSession owns other
+    // main-actor objects, so it nests by construction.
+    //
+    // Nothing here needs isolation: releasing stored references is thread-safe,
+    // and the body is empty. The shipping app never deallocates these objects,
+    // which is why only the test host ever hit it.
+    nonisolated deinit {}
     enum State: Equatable { case onboarding, locked, unlocked }
 
     private(set) var state: State

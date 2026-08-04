@@ -11,13 +11,7 @@ import XCTest
 final class TutorialTooltipSnapshotTests: XCTestCase {
     private func overlay(spotlight: CGRect?, shape: TutorialSpotlightShape,
                          skip: String?) throws -> some View {
-        let configuration = try UITestConfiguration.parse(arguments: [
-            "Vaultify",
-            UITestConfiguration.launchFlag,
-            UITestConfiguration.fixtureArgument,
-            UITestConfiguration.Fixture.vaultEditSaveRelock.rawValue,
-        ])
-        let environment = AppEnvironment(uiTestConfiguration: configuration)
+        let environment = try makeSnapshotEnvironment()
         return TutorialSpotlightOverlay(
             spotlight: spotlight,
             shape: shape,
@@ -39,7 +33,7 @@ final class TutorialTooltipSnapshotTests: XCTestCase {
     func testSpotlightOverTheHealthRing() throws {
         assertSnapshot(of: try overlay(spotlight: CGRect(x: 65, y: 90, width: 260, height: 218),
                                        shape: .circle, skip: "Skip"),
-                       as: .image(layout: .fixed(width: 390, height: 700)),
+                       as: .scaledImage(width: 390, height: 700),
                        named: "circle-ring")
     }
 
@@ -47,7 +41,7 @@ final class TutorialTooltipSnapshotTests: XCTestCase {
     /// stray centring is unmissable.
     func testClosingStepCardWithoutSkip() throws {
         assertSnapshot(of: try overlay(spotlight: nil, shape: .rounded, skip: nil),
-                       as: .image(layout: .fixed(width: 390, height: 700)),
+                       as: .scaledImage(width: 390, height: 700),
                        named: "centered-no-skip")
     }
 }

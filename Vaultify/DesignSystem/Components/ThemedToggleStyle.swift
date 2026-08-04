@@ -13,6 +13,7 @@ struct ThemedToggleStyle: ToggleStyle {
         let configuration: Configuration
         @Environment(AppEnvironment.self) private var env
         @Environment(\.isEnabled) private var isEnabled
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         // Native UISwitch metrics so the control reads as a standard iOS switch.
         private let trackWidth: CGFloat = 51
@@ -35,7 +36,9 @@ struct ThemedToggleStyle: ToggleStyle {
                 }
                 .frame(width: trackWidth, height: trackHeight)
                 .opacity(isEnabled ? 1 : 0.5)
-                .animation(.spring(response: 0.25, dampingFraction: 0.8), value: configuration.isOn)
+                // Token spring, and nil under Reduce Motion so the knob swaps instantly.
+                // This style is applied app-wide, so it is every switch in the app.
+                .animation(.vault(Motion.spring, reduceMotion: reduceMotion), value: configuration.isOn)
             }
             .contentShape(.rect)
             .onTapGesture { if isEnabled { configuration.isOn.toggle() } }

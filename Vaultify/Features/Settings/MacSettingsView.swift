@@ -104,6 +104,16 @@ private struct MacGeneralSettingsPane: View {
     @Environment(AppEnvironment.self) private var env
     @State private var confirmErase = false
 
+    /// The Mac used to call the raw erase, which skipped the relay teardown
+    /// entirely: aliases kept forwarding to the user's real inbox forever, and
+    /// dropping the CloudKit zone destroyed the alias list on every device, so
+    /// they could no longer be seen or disabled from anywhere. Both platforms
+    /// now drive the same `EraseFlow`.
+    private var eraseBlocked: Binding<Bool> {
+        Binding(get: { env.erase.isBlocked },
+                set: { if !$0 { env.erase.cancel() } })
+    }
+
     var body: some View {
         @Bindable var settings = env.settings
         Form {
@@ -127,11 +137,18 @@ private struct MacGeneralSettingsPane: View {
                 Toggle(isOn: $settings.showWebsiteIcons) {
                     Label { Text("Show website icons") } icon: { VaultIcon(Icons.globe) }
                 }
+            } footer: {
+                Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
+            }
+
+            // Split out of the website-icon section: sharing that footer told Mac
+            // users the breach check talks to Google, which it does not.
+            Section {
                 Toggle(isOn: $settings.hibpEnabled) {
                     Label { Text("Check for known breaches") } icon: { VaultIcon(Icons.shield) }
                 }
             } footer: {
-                Text("Uses Google to fetch site icons as login avatars. This reveals the sites you have logins for to Google; turn off to keep everything on-device.")
+                Text("Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
             }
 
             Section("Privacy") {
@@ -172,14 +189,25 @@ private struct MacGeneralSettingsPane: View {
                         icon: { VaultIcon(Icons.delete).foregroundStyle(env.theme.active.color(.destructive)) }
                 }
                 .buttonStyle(.borderless)
+                .disabled(env.erase.isWorking)
+                if env.erase.isWorking { ProgressView() }
             }
         }
         .themedFormBackground()
         .navigationTitle("General")
-        .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
-            Button("Erase Everything", role: .destructive) { env.eraseEverything() }
+        .alert(Text("Some things are still live"), isPresented: eraseBlocked) {
+            Button("Try Again") { Task { await env.erase.retry() } }
+            Button("Erase Anyway", role: .destructive) { env.erase.eraseAnyway() }
+            Button("Cancel", role: .cancel) { env.erase.cancel() }
         } message: {
-            Text("This permanently deletes every item and key on this device. This cannot be undone.")
+            Text(verbatim: env.erase.report.failureMessage)
+        }
+        .confirmationDialog("Erase the entire vault?", isPresented: $confirmErase, titleVisibility: .visible) {
+            Button("Erase Everywhere", role: .destructive) { Task { await env.erase.begin(.everywhere) } }
+            Button("Erase on This Device", role: .destructive) { Task { await env.erase.begin(.thisDevice) } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Erase everywhere also turns off your quick links and private email aliases, stops shared logins, and deletes the iCloud copy. Erase on this device removes Loox data from this device only and leaves all of that running.")
         }
     }
 }

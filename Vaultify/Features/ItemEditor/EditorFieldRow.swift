@@ -448,22 +448,35 @@ struct FloatingFieldChip: View {
 /// so the chip outline stays clean in both light and dark. Fallback: material capsule.
 private struct GenerateChipSurface: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.appTheme) private var theme
 
     func body(content: Content) -> some View {
-        let shape = Capsule()
         #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *), !reduceTransparency {
-            content.glassEffect(.regular.interactive(), in: shape)
+            content.glassEffect(.regular.interactive(), in: Capsule())
         } else {
-            content
-                .background(.regularMaterial, in: shape)
-                .overlay(shape.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+            fallback(content)
         }
         #else
-        content
-            .background(.regularMaterial, in: shape)
-            .overlay(shape.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+        fallback(content)
         #endif
+    }
+
+    /// Material capsule, or an OPAQUE one under Reduce Transparency — the chip floats over
+    /// the editor's own fields, which is precisely the blur that setting removes. The
+    /// hairline is the theme's separator, never `Color.primary`, which is the system label
+    /// color and ignores the active theme on a themed floating surface.
+    private func fallback(_ content: Content) -> some View {
+        let shape = Capsule()
+        return content
+            .background {
+                if reduceTransparency {
+                    shape.fill(Color(rgb: theme.surfaceFloatingSolid))
+                } else {
+                    shape.fill(.regularMaterial)
+                }
+            }
+            .overlay(shape.strokeBorder(Color(rgb: theme.separatorOpaque), lineWidth: 0.5))
     }
 }
 

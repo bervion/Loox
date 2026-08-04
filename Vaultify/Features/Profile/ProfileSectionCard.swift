@@ -114,7 +114,7 @@ struct ProfileSectionCard: View {
             ForEach(pool) { candidate in
                 Button { onChoose(candidate) } label: {
                     Label {
-                        Text(verbatim: candidate.title.isEmpty ? "Untitled" : candidate.title)
+                        Text(verbatim: candidate.title.isEmpty ? appString("Untitled") : candidate.title)
                     } icon: {
                         if candidate.id == selected?.id { VaultIcon(Icons.checkCircle) }
                     }

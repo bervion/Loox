@@ -11,9 +11,14 @@
      carries only the typed `CrashReportKey` catalog — so Linked stays false;
      keeping that true is a code constraint, not just a declaration. The
      Firebase SDK bundles carry their own manifests; Apple aggregates them into
-     the App Privacy label suggestion. The build links FirebaseAnalyticsCore (no
-     AdSupport/IDFA), so NSPrivacyTracking is false and there are no tracking
-     domains. -->
+     the App Privacy label suggestion — except GoogleAppMeasurement, which is a
+     static xcframework with no manifest, so its device-id collection is
+     declared here. The build links FirebaseAnalyticsCore (no AdSupport/IDFA),
+     so NSPrivacyTracking is false and there are no tracking domains.
+
+     The three appexes get a SEPARATE manifest (ExtensionResources/) that
+     declares no collection at all — they link no Firebase, and copying this
+     file into them would be a false declaration. -->
 <dict>
 	<key>NSPrivacyTracking</key>
 	<false/>
@@ -57,15 +62,55 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
+		<!-- GoogleAppMeasurement (the measurement engine under
+		     FirebaseAnalyticsCore) reads identifierForVendor to form the
+		     analytics app-instance id. It ships as a STATIC xcframework with no
+		     privacy manifest of its own, so nothing aggregates that declaration
+		     for us and it has to be declared here. Not linked to identity (no
+		     `setUserID`, no account) and not tracking: the build carries no
+		     AdSupport/IDFA and never joins this id with third-party data. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
 	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<!-- Both reasons apply and both are required. CA92.1 covers the
+			     app's own `UserDefaults.standard` (settings, the legacy
+			     `appearance_mode` key ThemeReader migrates from). 1C8F.1 covers
+			     the `group.com.bervion.vaultify` suite, which VaultifyCore uses
+			     to hand non-secret prefs to the extensions (`SharedConfig`,
+			     `ThemeReader`). Declaring only one leaves a real access
+			     undeclared. -->
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
 				<string>CA92.1</string>
+				<string>1C8F.1</string>
+			</array>
+		</dict>
+		<!-- `Haptics.selectionTick()` reads `ProcessInfo.systemUptime`, compares
+		     it to a local `lastTick` to throttle drag haptics under the system
+		     32 Hz rate limit, and discards it. That is 35F9.1 verbatim: measure
+		     elapsed time within the app, value never leaves the device. The only
+		     boot-time read in the whole repo, and it is in the app target. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
 			</array>
 		</dict>
 	</array>

@@ -24,7 +24,11 @@ struct EmergencyKitPDFPage: View {
     private let accent = Color(red: 0.15, green: 0.40, blue: 0.93)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        // Spacing is deliberately tight: the page now prints a sync-state row and a
+        // fourth instruction step, and the longest localization (VI) wraps most of
+        // them to two lines. A4 has no second page here, so the rhythm gives way
+        // before the honesty does.
+        VStack(alignment: .leading, spacing: 18) {
             header
             Divider().overlay(rule)
             detailsBlock
@@ -56,7 +60,7 @@ struct EmergencyKitPDFPage: View {
     }
 
     private var detailsBlock: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             Text(appString("Account Details"))
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(ink)
@@ -65,6 +69,15 @@ struct EmergencyKitPDFPage: View {
                 detailRow(icon: Icons.mail, label: appString("ICLOUD ACCOUNT"),
                           value: info.iCloudAccount, mono: false, valueColor: accent)
             }
+
+            // The single fact that decides what the instructions below may promise.
+            // Printed, not implied: a page that does not say which mode it was made in
+            // reads as a backup to everyone who finds it in a drawer years later.
+            detailRow(icon: Icons.key, label: appString("ICLOUD SYNC"),
+                      value: info.scope == .crossDevice
+                          ? appString("On when this kit was created")
+                          : appString("Off when this kit was created"),
+                      mono: false)
 
             // The recovery key is the focal element — large monospaced block, like the
             // Secret Key on a 1Password kit.
@@ -91,12 +104,12 @@ struct EmergencyKitPDFPage: View {
     private var setupCodeBlock: some View {
         HStack(alignment: .center, spacing: 18) {
             QRCodeView(payload: info.qrPayload)
-                .frame(width: 128, height: 128)
+                .frame(width: 116, height: 116)
             VStack(alignment: .leading, spacing: 6) {
                 Text(appString("Setup Code"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(ink)
-                Text(appString("On a new device, choose “Set up from another device” → “Use Recovery Key” and scan this code to restore your vault."))
+                Text(setupCodeDetail)
                     .font(.system(size: 12))
                     .foregroundStyle(label)
                     .fixedSize(horizontal: false, vertical: true)
@@ -105,10 +118,21 @@ struct EmergencyKitPDFPage: View {
         }
     }
 
+    /// The Setup Code only opens a vault that is already on iCloud. Saying so on a
+    /// sync-off kit is the difference between a code that will work later and a code the
+    /// finder believes works now.
+    private var setupCodeDetail: String {
+        info.scope == .crossDevice
+            ? appString("On a new device, install Loox, choose Restore data, then Use Recovery Key, and scan this code.")
+            : appString("This code only works on a new device after iCloud Sync is turned on in Loox and your recovery file has reached iCloud.")
+    }
+
     private var warningBanner: some View {
         HStack(alignment: .top, spacing: 10) {
             VaultIcon(Icons.alert, size: 18).foregroundStyle(Color(red: 0.72, green: 0.42, blue: 0.0))
-            Text(appString("Anyone who has this kit and access to your iCloud can restore your vault, no master password needed. Keep it offline and private."))
+            Text(info.scope == .crossDevice
+                 ? appString("Anyone who has this kit and access to your iCloud can restore your vault, no master password needed. Keep it offline and private.")
+                 : appString("Anyone who has this kit and your device can open your vault, no master password needed. Keep it offline and private."))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color(red: 0.5, green: 0.32, blue: 0.0))
                 .fixedSize(horizontal: false, vertical: true)
@@ -120,11 +144,20 @@ struct EmergencyKitPDFPage: View {
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    /// Steps 3 and 4 carry the reach. The page used to print the cross-device restore
+    /// unconditionally, so a kit made with sync off promised a recovery that did not
+    /// exist — discovered only when the device was already gone.
     private var instructions: some View {
         VStack(alignment: .leading, spacing: 10) {
             step(1, appString("Print this kit and keep the copy off your computer."))
             step(2, appString("Store it somewhere safe (with your passport, will, or a secure drawer)."))
-            step(3, appString("To restore on a new device: install Loox, sign in to the same iCloud, then scan the Setup Code or type the recovery key."))
+            if info.scope == .crossDevice {
+                step(3, appString("To restore on a new device: install Loox, sign in to the same iCloud, open Restore data, then scan the Setup Code or type the recovery key."))
+                step(4, appString("This works only while iCloud Sync stays on. Turn it off and the key resets the master password on your own device instead."))
+            } else {
+                step(3, appString("iCloud Sync was off when this kit was made, so the key resets the master password for the vault on the device that created it."))
+                step(4, appString("This kit is not a backup. It cannot bring your vault back after you lose that device, delete the app, or set up a new one. Turn on iCloud Sync in Loox for that."))
+            }
             Text(String(format: appString("Need help? Contact %@"), info.supportContact))
                 .font(.system(size: 12))
                 .foregroundStyle(label)

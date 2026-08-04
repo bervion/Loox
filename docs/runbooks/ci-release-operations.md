@@ -1,99 +1,135 @@
 # Runbook: CI and release operations
 
 Vaultify separates untrusted pull-request validation from signing and TestFlight upload.
-The workflows are `.github/workflows/ci.yml`, `.github/workflows/release-evidence.yml` and
-`.github/workflows/release-ios.yml`.
+There are exactly two workflows:
+
+| File | Trigger | Runner |
+|---|---|---|
+| `.github/workflows/ci.yml` | pull requests to `main`, non-tag pushes to `main` | self-hosted `vaultify-ci` |
+| `.github/workflows/release-ios.yml` | `v*` tags | self-hosted `vaultify-release` |
+
+Nothing else exists. Earlier revisions of this runbook described a `release-evidence.yml`
+workflow, a `quality/release/readiness.yaml` gate file and seven extra CI jobs; none of
+them were ever committed. Treat any gate not listed below as absent, not as pending.
 
 ## Pull-request and main CI
 
-CI runs for pull requests to `main` and non-release pushes to `main`.
+`ci.yml` runs one job.
 
 | Job name | Host | Purpose |
 |---|---|---|
-| Unit tests | self-hosted `vaultify-ci` | XCTest and Swift Testing in `VaultifyTests` |
-| Snapshot tests | self-hosted `vaultify-ci` | Approved `VaultifySnapshotTests` comparisons |
-| Critical UI journey | self-hosted `vaultify-ci` | Native XCUITest followed by independent Maestro flow |
-| Ledger evidence | self-hosted `vaultify-ci` | Emits the critical-ledger predicate for the exact SHA |
-| Test evidence | self-hosted `vaultify-ci` | Aggregates hard dependencies on unit, snapshot, XCUITest and Maestro |
-| Privacy contract | self-hosted `vaultify-ci` | Emits fail-closed until executable privacy receipts are promoted |
-| Localization contract | self-hosted `vaultify-ci` | Checks non-empty EN/VI copy and verified accessibility cases |
-| Risk disposition | self-hosted `vaultify-ci` | Rejects open critical/high or invalid dispositions |
-| Release operations | self-hosted `vaultify-ci` | Checks release notes and owner-approved monitoring inputs |
+| Unit tests | self-hosted `vaultify-ci` | `VaultifyTests` (XCTest + Swift Testing) via `scripts/ci/run-xcode-suite.sh` |
 
-The three macOS jobs require the quality contract and use Xcode 26.5, Tuist 4.200.1,
-iOS 26.5 and iPhone 17 Pro. Each job creates a fresh simulator, deletes it when the job
-ends, and `create-simulator.sh` sweeps orphans left by cancelled jobs. The jobs serialize
-on the single `vaultify-ci` runner instance; the per-pull-request concurrency group cancels
-superseded runs so the queue stays short.
+It creates a throwaway simulator, runs the suite, uploads
+`unit-test-receipt-<attempt>` (the `.xcresult` plus its `summary.json`), and deletes the
+simulator. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
+cancelled jobs, because the runner is persistent.
 
-Pull-request CI jobs are secret-free and run on the dedicated self-hosted runner instance
-labeled `vaultify-ci` (owner decision, 2026-07-21: GitHub-hosted macOS minutes exceeded the
-plan quota). Checkout credentials are not persisted, and test jobs explicitly check out the
-PR head rather than the synthetic merge ref so receipts bind to the candidate SHA. Candidate
-code can run in these jobs, so signing certificates, App Store Connect credentials, match
-credentials and production tokens must never be added to this workflow. Residual risk to
-keep in view: candidate code now executes on the runner host itself, so `vaultify-ci` must
-remain a separate runner instance from `vaultify-release`, must never hold signing material,
-and any future third-party contribution model requires revisiting this decision.
+Snapshot and critical-UI jobs are **deliberately not** in CI. They were removed in
+`1d64d656` because they tripled the wall time of every run on the single self-hosted
+runner. `Vaultify-Quality` still carries all three test targets, so run them locally with
+`make test` before tagging.
 
-Artifacts are documented in [Quality validation](./quality-validation.md). The corresponding
-GitHub artifact names are `unit-test-receipt-<attempt>`,
-`snapshot-test-receipt-<attempt>`, `critical-ui-receipts-<attempt>`,
-`ledger-evidence-receipt-<attempt>`, `test-evidence-receipt-<attempt>`,
-`privacy-contract-receipt-<attempt>`, `localization-contract-receipt-<attempt>`,
-`risk-disposition-receipt-<attempt>` and `release-operations-receipt-<attempt>`.
-The manual recovery workflow emits `recovery-rehearsal-receipt-<attempt>`.
+Pull-request CI is secret-free by design. Candidate code executes on the runner host, so
+`vaultify-ci` must stay a separate runner instance from `vaultify-release`, must never hold
+signing material, and any future third-party contribution model requires revisiting this.
+Checkout credentials are not persisted, and the job checks out the PR head rather than the
+synthetic merge ref so the receipt binds to the candidate SHA.
+
+## Toolchain pin policy
+
+`scripts/ci/toolchain-pin.sh` is the single source of truth. Both other scripts source it,
+so the Xcode pin and the simulator-runtime pin cannot drift apart.
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `MINIMUM_XCODE_VERSION` | `26.5` | oldest Xcode allowed to test or release |
+| `MINIMUM_IOS_RUNTIME_VERSION` | `26.0` | oldest simulator runtime allowed to host the suites |
+| `SIMULATOR_DEVICE_TYPE` | `iPhone 17 Pro` | device the suites run on |
+
+This is a **minimum**, not an exact match. An exact `26.5` string pin was the previous
+policy and it failed the moment a machine took a patch update; with three machines
+(maintainer, `vaultify-ci`, `vaultify-release`) updating independently, nobody could say
+whether a tag would build until it already had not.
+
+Selection rules:
+
+- `select-xcode.sh` considers every `/Applications/Xcode*.app` plus whatever `xcode-select`
+  points at, rejects any install whose `xcodebuild -showsdks` fails (an unaccepted license
+  is the common case, and `-version` alone does not catch it), and picks the **lowest**
+  qualifying version so a beta install is never selected silently. Every rejection is
+  printed with its reason.
+- `create-simulator.sh` picks the lowest available iOS runtime that meets the minimum
+  **and** whose major does not exceed the selected Xcode's major, because a runtime newer
+  than the toolchain is installed but unusable. It prints the full runtime inventory when
+  nothing qualifies.
+- Both print their selection, so a job log always records the toolchain that produced it.
+
+Reproduce the CI toolchain locally:
+
+```bash
+export DEVELOPER_DIR="$(scripts/ci/select-xcode.sh | tail -n 1)"
+udid="$(scripts/ci/create-simulator.sh | tail -n 1)"
+```
+
+`make test` does exactly this, runs `Vaultify-Quality` against that UDID, then deletes the
+simulator. `make check` is a compile check only, so it uses a generic destination.
+
+Snapshot references are recorded at a pinned `displayScale` (see
+`VaultifySnapshotTests/SnapshotEnvironment.swift`), so they are valid on any device. They
+are still tied to the rendering of one iOS version: re-record after a runtime bump and
+review the diff instead of accepting it.
 
 ## Release boundary
 
-A `v*` tag triggers the release workflow. Signing and upload run only on a self-hosted
-runner carrying every label below:
+A `v*` tag triggers `release-ios.yml`. Signing and upload run only on a self-hosted runner
+carrying every label below:
 
 ```text
 self-hosted, macOS, ARM64, vaultify-release
 ```
 
-The job is attached to the `production-ios-release` environment and proceeds only when
-both `github.actor` and `github.triggering_actor` equal `bervion`. It then verifies that:
+The job is attached to the `production-ios-release` environment and proceeds only when both
+`github.actor` and `github.triggering_actor` equal `bervion`. It then verifies, in order:
 
 1. the tagged commit is reachable from `origin/main`;
-2. the tag matches `MARKETING_VERSION` (`vX.Y.Z` or `vX.Y.Z-beta.*`);
-3. `LOOX_LINK_PROD_TOKEN` is configured;
-4. project generation succeeds with the pinned toolchain;
-5. fastlane can retrieve signing material and upload with App Store Connect credentials.
+2. **the exact tag SHA has a completed, successful `ci.yml` run** — evidence is bound to the
+   commit, so a green run on a later `main` commit does not qualify;
+3. the tag matches `MARKETING_VERSION` (`vX.Y.Z` or `vX.Y.Z-beta.*`);
+4. `LOOX_LINK_PROD_TOKEN` is configured;
+5. project generation succeeds with the pinned toolchain;
+6. fastlane retrieves signing material, uploads dSYMs to Crashlytics, and uploads to
+   TestFlight.
 
 The current private repository plan does not provide enforceable environment required
 reviewers: the API request to add that protection returned HTTP 422. The environment name
-must not be described as human approval enforcement. The current fallback is an immutable
-release tag created by `bervion`, plus the actor and triggering-actor condition above. A
-plan upgrade or another separately enforced owner-approval mechanism is still required
-before claiming protected-environment approval.
+must not be described as human approval enforcement. The fallback is an immutable release
+tag created by `bervion`, plus the actor and triggering-actor condition above. A plan
+upgrade or another separately enforced owner-approval mechanism is still required before
+claiming protected-environment approval.
 
 ## Release procedure
 
 Before creating a release tag:
 
-1. merge only after the green PR canary and owner review;
-2. confirm all required release gates in `quality/release/readiness.yaml` have independent
-   evidence for the exact commit;
-3. ensure every critical/high risk is evidenced as mitigated or explicitly accepted by
-   `bervion`; open critical/high risk always blocks preflight;
-4. complete non-empty release notes from `docs/releases/TEMPLATE.md` and bind the exact tag,
-   metrics, alerts, incident channel and fix-forward runbook in
-   `quality/release/operations.yaml`;
-5. download the successful gate payloads, promote their byte-identical hashes plus Actions
-   run/job/artifact attestations into the evidence index, then run release preflight with a
-   token that has Actions read access;
-6. confirm the worktree is clean and the candidate commit is on `main`;
-7. create and push the immutable version tag as `bervion`;
-8. monitor `Sign and upload to TestFlight` and retain its logs without exposing secrets.
+1. merge only after a green PR run and owner review;
+2. confirm the candidate commit on `main` has a green `ci.yml` run — that same run is what
+   the release job re-checks, so a red or missing one blocks the tag;
+3. run `make test` locally on the pinned toolchain and confirm unit, snapshot and UI targets
+   are green; CI does not cover snapshot or UI;
+4. complete non-empty release notes (`docs/releases/TEMPLATE.md`) and the localized
+   `metadata/apple/*/release_notes.txt` that `make notes` generates;
+5. confirm the worktree is clean and the candidate commit is on `main`;
+6. create and push the immutable version tag as `bervion` (`make release` does the bump,
+   notes and tag);
+7. monitor `Sign and upload to TestFlight` and retain its logs without exposing secrets.
 
-The readiness file currently starts `not-evaluated` with every gate false. A passing local
-test or an uncommitted working-tree run does not authorize a tag.
+A passing local test run is necessary but not sufficient: the release job trusts the
+`ci.yml` receipt for the tagged SHA, nothing else.
 
 ## Compile-only release check
 
-This unsigned check compiles Release configuration without touching signing state:
+This unsigned check compiles the Release configuration without touching signing state:
 
 ```bash
 export DEVELOPER_DIR="$(scripts/ci/select-xcode.sh | tail -n 1)"
@@ -109,17 +145,27 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-This verifies the iOS 17.3 deployment setting compiles with Xcode 26.5. It does not execute
-the app on iOS 17.3 and is not a substitute for the release readiness gates.
+This verifies the iOS 17.3 deployment setting compiles on the selected toolchain. It does
+not execute the app on iOS 17.3.
 
 ## Troubleshooting
 
 - **Release job is skipped:** confirm the tag creation and any rerun were initiated by
   `bervion`; both GitHub actor fields are checked.
+- **"No successful ci.yml run for `<sha>`":** the tagged commit was never validated. Do not
+  move the tag. Push the commit to a branch, let CI run it, then tag a commit that has a
+  green receipt.
 - **Tag is not reachable from main:** do not move the tag. Merge a reviewed fix to `main`
   and create a new version tag.
 - **Tag/version mismatch:** fix `MARKETING_VERSION` through the normal release process and
   create a new tag; never reuse a published tag.
+- **"No installed Xcode satisfies the minimum":** the step prints every install it found
+  and why each was rejected. An "unusable: You have not agreed to the Xcode license
+  agreements" line means `sudo xcodebuild -license accept` on that runner, not a version
+  bump.
+- **"No installed iOS simulator runtime satisfies the policy":** the step prints the runtime
+  inventory. Either install the runtime through Xcode, or move
+  `MINIMUM_IOS_RUNTIME_VERSION` deliberately and re-record snapshot references.
 - **Runner is queued:** verify the online runner has all four required labels.
 - **Protected reviewer API returns HTTP 422:** the current plan cannot enforce that rule.
   Keep the owner-tag fallback and record the residual gate; do not report it as resolved.
@@ -135,20 +181,8 @@ upload, TestFlight artifacts are immutable: expire the affected build in App Sto
 when appropriate, then ship a corrected build with a higher build number. Reverting source
 or workflow files does not withdraw an uploaded binary.
 
-Dispatch the default-branch recovery workflow as `bervion`; `repository_dispatch` is used so
-an arbitrary branch cannot supply the workflow definition executed by the persistent runner:
-
-```bash
-gh api --method POST repos/bervion/Vaultify/dispatches \
-  -f event_type=vaultify-recovery-rehearsal \
-  -f 'client_payload[previous_tag]=vX.Y.Z'
-```
-
-The default-branch SHA must be reachable from `origin/main`, and the immutable prior tag must
-be its ancestor. The job rebuilds the candidate and previous source, assigns the previous
-source the candidate marketing version plus a higher build number, installs it over the
-candidate while retaining the simulator data container, and relaunches it. This is a
-fix-forward rehearsal, not an App Store/TestFlight downgrade. The gate remains failed until
-the workflow can seed candidate-format encrypted vault data and functionally prove the
-previous-source build unlocks and reads the sentinel; a matching container path or PID is
-never sufficient production recovery evidence.
+There is no automated recovery-rehearsal workflow. Downgrade rehearsal, if it is ever
+needed, is a manual local exercise: check out the previous tag, give it the candidate
+marketing version with a higher build number, install it over the candidate on a simulator
+while retaining the data container, and confirm it unlocks and reads real candidate-format
+vault data. A matching container path or PID is not recovery evidence.

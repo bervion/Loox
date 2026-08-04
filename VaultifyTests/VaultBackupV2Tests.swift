@@ -4,8 +4,9 @@ import XCTest
 
 /// The v2 backup wire contract: item identity + metadata round trip losslessly,
 /// artifacts restore byte-identical into a DIFFERENT vault key, v1 files still
-/// import, and one corrupt artifact blob aborts the entire import before any
-/// state could land (all-or-nothing).
+/// import, one corrupt artifact blob aborts the entire import before any state
+/// could land (all-or-nothing), and an artifact whose id, owner or filename
+/// would become a path outside its root is refused on the wire.
 @MainActor
 final class VaultBackupV2Tests: XCTestCase {
     private let passphrase = "correct horse battery staple"
@@ -149,12 +150,131 @@ final class VaultBackupV2Tests: XCTestCase {
     private func assertImportThrowsArtifactCorrupt(_ data: Data,
                                                    file: StaticString = #filePath,
                                                    line: UInt = #line) async {
+        await assertImportThrows(.artifactCorrupt, data, file: file, line: line)
+    }
+
+    private func assertImportThrows(_ expected: VaultBackup.BackupFailure, _ data: Data,
+                                    file: StaticString = #filePath,
+                                    line: UInt = #line) async {
         do {
             _ = try await VaultBackup.importEncryptedWithPasskeys(data, passphrase: passphrase)
-            XCTFail("a corrupt artifact must abort the whole import", file: file, line: line)
+            XCTFail("a rejected artifact must abort the whole import", file: file, line: line)
         } catch {
-            XCTAssertEqual(error as? VaultBackup.BackupFailure, .artifactCorrupt,
-                           file: file, line: line)
+            XCTAssertEqual(error as? VaultBackup.BackupFailure, expected, file: file, line: line)
+        }
+    }
+
+    // MARK: Path containment at the wire
+
+    /// The backup author picks the passphrase and hands it to the victim, so
+    /// the bar for these vectors is "get someone to import a file". The
+    /// artifact id becomes `<id>.enc` inside the artifact root — a crafted id
+    /// is an attacker-chosen file write, refused here before anything is
+    /// unwrapped, let alone written.
+    func testArtifactIdThatEscapesTheArtifactRootIsRejected() async throws {
+        let data = try await v2Backup { contentKey in
+            TestPayload(items: [Self.plainItem()], passkeys: nil,
+                        artifacts: [try self.makeWireArtifact(
+                            blob: Data("bytes".utf8), contentKey: contentKey,
+                            id: "../../../../Library/Preferences/planted")])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    func testArtifactIdThatIsNotACanonicalUUIDIsRejected() async throws {
+        let data = try await v2Backup { contentKey in
+            TestPayload(items: [Self.plainItem()], passkeys: nil,
+                        artifacts: [try self.makeWireArtifact(
+                            blob: Data("bytes".utf8), contentKey: contentKey, id: "artifact-1")])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    func testArtifactOwnerThatIsNotACanonicalUUIDIsRejected() async throws {
+        let data = try await v2Backup { contentKey in
+            TestPayload(items: [Self.plainItem()], passkeys: nil,
+                        artifacts: [try self.makeWireArtifact(
+                            blob: Data("bytes".utf8), contentKey: contentKey, owner: "item-1")])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    /// The second leg: `ArtifactStore.exportPlaintext` joins the manifest
+    /// filename, so a name carrying separators is the same class of bug.
+    func testArtifactFilenameWithAPathSeparatorIsRejected() async throws {
+        let data = try await v2Backup { contentKey in
+            TestPayload(items: [Self.plainItem()], passkeys: nil,
+                        artifacts: [try self.makeWireArtifact(
+                            blob: Data("bytes".utf8), contentKey: contentKey,
+                            filename: "../../../../Library/Preferences/planted.plist")])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    func testArtifactFilenameWithAControlCharacterIsRejected() async throws {
+        let data = try await v2Backup { contentKey in
+            TestPayload(items: [Self.plainItem()], passkeys: nil,
+                        artifacts: [try self.makeWireArtifact(
+                            blob: Data("bytes".utf8), contentKey: contentKey,
+                            filename: "doc\u{0}.pdf")])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    func testRelativeDirectoryTokenFilenameIsRejected() async throws {
+        let data = try await v2Backup { contentKey in
+            TestPayload(items: [Self.plainItem()], passkeys: nil,
+                        artifacts: [try self.makeWireArtifact(
+                            blob: Data("bytes".utf8), contentKey: contentKey, filename: "..")])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    func testArtifactFilenameLongerThanTheFilesystemAllowsIsRejected() async throws {
+        let data = try await v2Backup { contentKey in
+            TestPayload(items: [Self.plainItem()], passkeys: nil,
+                        artifacts: [try self.makeWireArtifact(
+                            blob: Data("bytes".utf8), contentKey: contentKey,
+                            filename: String(repeating: "a", count: 256))])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    /// Identity is checked before the blob is opened: a crafted id on an
+    /// artifact whose ciphertext is also broken still reports the path
+    /// refusal, which is only possible if nothing was decrypted first.
+    func testUnsafeIdentityIsRefusedBeforeTheBlobIsOpened() async throws {
+        let data = try await v2Backup { contentKey in
+            var artifact = try self.makeWireArtifact(blob: Data("bytes".utf8),
+                                                     contentKey: contentKey, id: "../evil")
+            artifact.blob = Data(repeating: 0, count: 32)
+            return TestPayload(items: [Self.plainItem()], passkeys: nil, artifacts: [artifact])
+        }
+
+        await assertImportThrows(.artifactUnsafePath, data)
+    }
+
+    /// The containment rule must not reject the names real attachments carry:
+    /// spaces, unicode, several dots, and a leading dot are all bare basenames.
+    func testOrdinaryFilenamesStillImport() async throws {
+        let blob = Data("bytes".utf8)
+        for name in ["Bảng lương 2026.pdf", "archive.tar.gz", ".hidden", "", "sao kê:Q1.csv"] {
+            let data = try await v2Backup { contentKey in
+                TestPayload(items: [Self.plainItem()], passkeys: nil,
+                            artifacts: [try self.makeWireArtifact(
+                                blob: blob, contentKey: contentKey, filename: name)])
+            }
+
+            let imported = try await VaultBackup.importEncryptedWithPasskeys(data,
+                                                                             passphrase: passphrase)
+            XCTAssertEqual(imported.artifacts.first?.filename, name)
         }
     }
 
@@ -171,13 +291,16 @@ final class VaultBackupV2Tests: XCTestCase {
     }
 
     /// A correctly sealed wire artifact — tests then break exactly one thing.
-    private func makeWireArtifact(blob: Data, contentKey: SecureBytes) throws -> VaultBackup.PortableArtifact {
-        let id = "artifact-1"
-        let owner = "item-1"
+    /// The identity defaults are canonical UUIDs because that is what the app
+    /// writes; a test that wants a hostile one passes it explicitly.
+    private func makeWireArtifact(blob: Data, contentKey: SecureBytes,
+                                  id: String = UUID().uuidString,
+                                  owner: String = UUID().uuidString,
+                                  filename: String = "f.bin") throws -> VaultBackup.PortableArtifact {
         var blobKey = ArtifactCrypto.newDEK()
         defer { secureZero(&blobKey) }
         return VaultBackup.PortableArtifact(
-            id: id, ownerItemId: owner, filename: "f.bin", utiType: "public.data",
+            id: id, ownerItemId: owner, filename: filename, utiType: "public.data",
             byteCount: blob.count,
             plaintextSHA256: ArtifactCrypto.sha256(blob),
             wrappedKey: try ArtifactCrypto.wrapDEK(blobKey, under: contentKey,

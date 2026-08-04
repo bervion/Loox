@@ -134,7 +134,9 @@ nonisolated enum Level2BiometricKeyStore {
                 kSecAttrAccessGroup as String: group,
             ] as CFDictionary)
         }
-        remove(group: SharedConfig.keychainAccessGroup)
+        // Best-effort sweep: the shared-group copy may legitimately not exist,
+        // so only the app-group delete's status is reported to the caller.
+        _ = remove(group: SharedConfig.keychainAccessGroup)
         return remove(group: accessGroup)
     }
 }

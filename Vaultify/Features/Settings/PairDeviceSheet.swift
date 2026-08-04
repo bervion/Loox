@@ -49,7 +49,7 @@ struct PairDeviceSheet: View {
             #else
             VaultStatusScreen(icon: Icons.scanCode,
                               title: "Scan on iPhone",
-                              message: .key("Open Loox on your iPhone (Settings → iCloud Sync → Pair New Device) to scan the new device’s code."))
+                              message: .key("Open Loox on your other device (Settings → iCloud Sync → Pair New Device) to scan the new device’s code."))
             #endif
         case .confirm(let qrPayload):
             // Explicit approval gate: sealing the Vault Key to a scanned key is the

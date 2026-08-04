@@ -2,7 +2,7 @@ import Foundation
 
 /// Centralised asset names for app-chrome icons (categories/fields expose their
 /// own `iconAsset`). Keeps string literals out of view code.
-enum Icons {
+nonisolated enum Icons {
     static let home = "ic_home"
     static let homeFill = "ic_home_filled"
     static let search = "ic_search"

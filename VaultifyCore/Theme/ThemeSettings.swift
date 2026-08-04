@@ -29,7 +29,10 @@ nonisolated struct ThemeSettings: Codable, Sendable, Equatable {
     var customThemes: [CustomTheme]
     var autoNight: AutoNightSetting
     var fontScale: FontScale
-    var reduceMotion: Bool
+
+    // No stored `reduceMotion`: motion is read from the SYSTEM accessibility setting
+    // everywhere in the app. A previously persisted `reduceMotion` key decodes as an
+    // ignored extra field, so old App Group JSON still loads.
 
     init(
         theme: AppThemeReference = .builtin(.day),
@@ -42,8 +45,7 @@ nonisolated struct ThemeSettings: Codable, Sendable, Equatable {
         // the user opts into System/Dark. Existing installs keep their stored
         // settings — this default only applies before anything is persisted.
         autoNight: AutoNightSetting = .off,
-        fontScale: FontScale = .regular,
-        reduceMotion: Bool = false
+        fontScale: FontScale = .regular
     ) {
         self.theme = theme
         self.nightTheme = nightTheme
@@ -52,7 +54,6 @@ nonisolated struct ThemeSettings: Codable, Sendable, Equatable {
         self.customThemes = customThemes
         self.autoNight = autoNight
         self.fontScale = fontScale
-        self.reduceMotion = reduceMotion
     }
 
     static let `default` = ThemeSettings()

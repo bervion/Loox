@@ -169,17 +169,46 @@ import Foundation
         UserDefaults.standard.set(seen, forKey: Self.seenInvitesKey)
     }
 
-    /// Erase-path teardown: descriptor + subscription + local state.
-    func disarm() async {
-        UserDefaults.standard.removeObject(forKey: Self.inboxIDKey)
-        UserDefaults.standard.removeObject(forKey: Self.seenInvitesKey)
+    /// Whether this device ever published a rendezvous inbox. The erase path
+    /// skips the teardown entirely when it did not, so an erase is never
+    /// blocked by a step with nothing to tear down.
+    static var hasPublishedInbox: Bool {
+        UserDefaults.standard.string(forKey: inboxIDKey) != nil
+    }
+
+    /// Device-local rendezvous state: the inbox id and the answered-invite ids.
+    /// Cleared by an erase even when the public descriptor could not be deleted,
+    /// so nothing local keeps naming the erased vault's inbox.
+    static func clearLocalState() {
+        UserDefaults.standard.removeObject(forKey: inboxIDKey)
+        UserDefaults.standard.removeObject(forKey: seenInvitesKey)
+    }
+
+    /// Erase-path teardown: public descriptor + subscription, then local state.
+    /// Returns whether the descriptor is really gone.
+    ///
+    /// The remote delete runs FIRST and the local id is cleared only on success:
+    /// dropping the id while the descriptor survives orphans a public record
+    /// this device can no longer address, and re-arming mints a second one.
+    @discardableResult
+    func disarm() async -> Bool {
         armedThisLaunch = false
-        if let userID = try? await container.userRecordID() {
-            _ = try? await publicDB.modifyRecords(
+        guard Self.hasPublishedInbox else { return true }
+        guard CloudSyncService.isConfigured, !CloudSyncService.isHostingUnitTests else {
+            Self.clearLocalState()
+            return true
+        }
+        guard let userID = try? await container.userRecordID() else { return false }
+        do {
+            _ = try await publicDB.modifyRecords(
                 saving: [], deleting: [CKRecord.ID(recordName: "inbox-" + userID.recordName)])
+        } catch {
+            return false
         }
         _ = try? await publicDB.modifySubscriptions(
             saving: [], deleting: [ApprovalConfig.inviteInboxSubscriptionID])
+        Self.clearLocalState()
+        return true
     }
 
     // MARK: Sender side

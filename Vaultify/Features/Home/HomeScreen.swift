@@ -682,8 +682,9 @@ struct HomeScreen: View {
         return VStack(alignment: .leading, spacing: 0) {
             allItemsCardHeader
                 .padding(.horizontal, Space.s4)
-                .padding(.top, Space.s4)
-                .padding(.bottom, Space.s2)
+                // The header's own 44pt hit boxes already carry the breathing room the
+                // old s4/s2 insets provided, so the block keeps its ~46pt height.
+                .padding(.top, Space.s1)
 
             ForEach(Array(preview.enumerated()), id: \.element.id) { idx, item in
                 itemRow(item, context: "all", showDivider: idx < preview.count - 1)
@@ -700,9 +701,11 @@ struct HomeScreen: View {
     /// control — the title plus the rows below make the card self-evident; sort is fixed
     /// newest-first.
     private var allItemsCardHeader: some View {
-        // Title row only, headline size. NATURAL height (no 44pt frame) so it sits tight to
-        // the rows — a min-height frame here would center the title in a tall row and open a gap.
-        HStack(alignment: .center) {
+        // Title row, headline size. Both buttons carry a real `Metric.hitMin` box — the Space
+        // dropdown and "See all" were text-height (~22pt) taps. The card trims its own top
+        // inset by the same amount (see `allItemsSection`) so the header block still measures
+        // ~46pt and the title stays tight to the rows below.
+        HStack(alignment: .center, spacing: 0) {
             Button { showFolderPicker = true } label: {
                 HStack(spacing: Space.s1) {
                     spaceTitleText
@@ -711,6 +714,7 @@ struct HomeScreen: View {
                     VaultIcon(Icons.chevronDown, size: 13)
                         .foregroundStyle(env.theme.uiTint)
                 }
+                .frame(minHeight: Metric.hitMin)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
@@ -725,6 +729,7 @@ struct HomeScreen: View {
                 }
                 // Quiet grey (not accent) — a low-key affordance, per request.
                 .themedForeground(.secondary)
+                .frame(minHeight: Metric.hitMin)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
@@ -793,7 +798,7 @@ struct HomeScreen: View {
                     .themedForeground(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 300)
-                Text("Everything is encrypted on this iPhone before it's stored.")
+                Text("Everything is encrypted on this device before it's stored.")
                     .vaultType(.footnote)
                     .themedForeground(.tertiary)
                     .multilineTextAlignment(.center)

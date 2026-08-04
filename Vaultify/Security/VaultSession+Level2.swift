@@ -93,29 +93,89 @@ extension VaultSession {
         clearLevel2Key()
     }
 
+    /// What a restore did with the backup's Level-2 wrap. Adoption is silent by
+    /// nature — it writes a Keychain bundle nobody sees — and each outcome leaves
+    /// the user in a different place, so the caller has to be able to say which.
+    nonisolated enum Level2AdoptionResult: Equatable, Sendable {
+        /// This device had no Extra Password and now carries the backup's wrap,
+        /// so its sealed fields open with the password that backup was made with.
+        case adopted
+        /// This device already has its own Extra Password. Its wrap is kept, and
+        /// every level2-sealed field in the backup stays permanently unopenable —
+        /// a successful-looking import that stranded data.
+        case skippedDeviceHasOwnWrap
+        /// The wrap was not fit to persist: out-of-policy Argon2 parameters, a
+        /// salt too short for Argon2, an empty wrap, or no key bundle to write
+        /// into. Nothing was changed, and the sealed fields do not open.
+        case refusedInvalidPolicy
+    }
+
     /// Restore path: adopt a backup's Level-2 wrap when this device has none —
     /// without it, restored level2-sealed fields could never be opened again.
     /// Never overwrites an existing wrap (the local Extra Password keeps working;
     /// fields sealed under a DIFFERENT L2SK stay unreadable either way, and
     /// clobbering the local wrap would break this device's own sealed fields).
-    func adoptLevel2WrapIfAbsent(wrappedL2SK: Data, salt: Data, kdf: KdfParams) {
-        guard let bundle = VaultKeyBundle.load(),
+    ///
+    /// The result is not optional to ignore: both non-adopting outcomes leave
+    /// imported sealed fields unreadable, and the user only finds out days later
+    /// unless the caller tells them.
+    func adoptLevel2WrapIfAbsent(wrappedL2SK: Data, salt: Data,
+                                 kdf: KdfParams) -> Level2AdoptionResult {
+        let bundle = VaultKeyBundle.load()
+        let outcome = Self.level2Adoption(for: bundle, wrappedL2SK: wrappedL2SK, salt: salt, kdf: kdf)
+        guard outcome == .adopted, let bundle,
               let updated = Self.level2AdoptedBundle(from: bundle, wrappedL2SK: wrappedL2SK,
                                                      salt: salt, kdf: kdf)
-        else { return }
-        try? updated.save()
+        else { return outcome }
+        do {
+            try updated.save()
+        } catch {
+            // Nothing persisted, so nothing was adopted — reporting success here
+            // would be the same silent stranding this result type exists to end.
+            return .refusedInvalidPolicy
+        }
         // The wrap just adopted is FOREIGN. Any biometric L2SK on this device
         // belongs to whatever wrap used to be here and would decrypt nothing, so
         // it is dead weight that can only release a useless key.
         Level2BiometricKeyStore.delete()
+        return .adopted
+    }
+
+    /// Pure decision step, so the outcome can be reasoned about (and tested)
+    /// without a provisioned key bundle on disk. `base` is nil when this device
+    /// has no vault at all, which is not an adoptable state either.
+    nonisolated static func level2Adoption(for base: VaultKeyBundle?, wrappedL2SK: Data,
+                                           salt: Data, kdf: KdfParams) -> Level2AdoptionResult {
+        guard isAdoptableLevel2Wrap(wrappedL2SK: wrappedL2SK, salt: salt, kdf: kdf) else {
+            return .refusedInvalidPolicy
+        }
+        guard let base else { return .refusedInvalidPolicy }
+        guard base.wrappedL2SK == nil else { return .skippedDeviceHasOwnWrap }
+        return .adopted
+    }
+
+    /// Whether a Level-2 wrap read from a backup may be written into this
+    /// device's key bundle at all.
+    ///
+    /// The bundle is the app's OWN state: once these parameters are persisted,
+    /// every later reveal of a protected field derives with them, with no
+    /// attacker file in play. Turning Extra Protection off requires the password
+    /// that wrap belongs to, so the user cannot undo a bad adoption.
+    nonisolated static func isAdoptableLevel2Wrap(wrappedL2SK: Data, salt: Data,
+                                                  kdf: KdfParams) -> Bool {
+        // An empty wrap would still make `hasLevel2` true forever while no
+        // password could ever open it.
+        !wrappedL2SK.isEmpty && KdfParams.isAcceptableSalt(salt) && kdf.isWithinPolicy
     }
 
     /// Pure adoption step: `base` carrying the backup's Level-2 wrap, or nil when
-    /// this device already has one. Internal (not private) so tests can exercise
-    /// the never-overwrite rule without a provisioned key bundle on disk.
+    /// this device already has one or the wrap is not fit to persist. Internal
+    /// (not private) so tests can exercise the never-overwrite and policy rules
+    /// without a provisioned key bundle on disk.
     nonisolated static func level2AdoptedBundle(from base: VaultKeyBundle, wrappedL2SK: Data,
                                                 salt: Data, kdf: KdfParams) -> VaultKeyBundle? {
         guard base.wrappedL2SK == nil else { return nil }
+        guard isAdoptableLevel2Wrap(wrappedL2SK: wrappedL2SK, salt: salt, kdf: kdf) else { return nil }
         var updated = base
         updated.wrappedL2SK = wrappedL2SK
         updated.l2Salt = salt

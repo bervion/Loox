@@ -13,8 +13,16 @@
 
 SCHEME := Vaultify
 DD     := /tmp/vaultify-ci-dd
-# Override with: make test DEST='platform=iOS Simulator,id=<UDID>'
-DEST   ?= platform=iOS Simulator,name=iPhone 16
+# Test targets, each on its OWN throwaway simulator — the same one-target,
+# one-device shape CI uses (scripts/ci/run-xcode-suite.sh pins the
+# Vaultify-Quality scheme, which is what actually carries the tests; the
+# auto-generated "Vaultify" scheme builds the app only).
+#
+# Separate devices are not paranoia. The suites share one bundle id, so a unit
+# test that writes the app's own UserDefaults leaves that value behind for the
+# UI tests to launch into. Run a subset with:
+#   make test TEST_TARGETS=VaultifySnapshotTests
+TEST_TARGETS ?= VaultifyTests VaultifySnapshotTests VaultifyUITests
 
 help:
 	@echo ""
@@ -30,6 +38,7 @@ help:
 	@echo "  make changelog     Commits since last tag"
 	@echo "  make notes         Preview AI release notes (no commit)"
 	@echo "  make check         Local compile check (app + extension)"
+	@echo "  make test          Unit + snapshot + UI suites on a throwaway simulator"
 	@echo "  ─────────────────────────────────────"
 	@echo "  make match-setup   First-time match (create certs/profiles)"
 	@echo "  make certificates  Sync signing assets (readonly)"
@@ -83,14 +92,35 @@ submit-ios:
 	bundle exec fastlane submit
 
 # ── Local quality (compile check of app + embedded AutoFill extension) ──
+# A generic destination is valid HERE and only here: nothing is executed.
 check lint: gen
+	@export DEVELOPER_DIR="$$(scripts/ci/select-xcode.sh | tail -n 1)"; \
 	xcodebuild -workspace Vaultify.xcworkspace -scheme $(SCHEME) -configuration Debug \
 	  -destination 'generic/platform=iOS Simulator' -derivedDataPath $(DD) \
-	  CODE_SIGNING_ALLOWED=NO build | tail -20
+	  CODE_SIGNING_ALLOWED=NO | tail -20
 	@echo "✓ Compile check passed"
 
-# ── Unit tests (in-memory store; needs a concrete simulator) ──
+# ── Test suites: one target, one throwaway simulator, same as CI ──
 test: gen
-	xcodebuild test -workspace Vaultify.xcworkspace -scheme $(SCHEME) \
-	  -destination '$(DEST)' -derivedDataPath $(DD) \
-	  CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/vaultify-xctest.log | tail -6
+	@set -u; \
+	export DEVELOPER_DIR="$$(scripts/ci/select-xcode.sh | tail -n 1)"; \
+	overall=0; \
+	for target in $(TEST_TARGETS); do \
+	  echo "── $$target ──"; \
+	  simlog="/tmp/vaultify-sim-$$target.log"; \
+	  udid="$$(scripts/ci/create-simulator.sh 2>"$$simlog" | tail -n 1)"; \
+	  if [ -z "$$udid" ]; then cat "$$simlog"; exit 1; fi; \
+	  log="/tmp/vaultify-xctest-$$target.log"; \
+	  scripts/ci/run-xcode-suite.sh "$$target" "$$udid" "$(DD)" \
+	    "/tmp/vaultify-$$target.xcresult" > "$$log" 2>&1 || overall=1; \
+	  summary="/tmp/vaultify-$$target.xcresult.summary.json"; \
+	  if [ -f "$$summary" ]; then \
+	    /usr/bin/python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("   %s: %s passed, %s failed, %s skipped of %s" % (d.get("result"), d.get("passedTests"), d.get("failedTests"), d.get("skippedTests"), d.get("totalTestCount")))' "$$summary"; \
+	  else \
+	    tail -3 "$$log"; \
+	  fi; \
+	  echo "   log: $$log"; \
+	  xcrun simctl shutdown "$$udid" >/dev/null 2>&1 || true; \
+	  xcrun simctl delete "$$udid" >/dev/null 2>&1 || true; \
+	done; \
+	exit $$overall

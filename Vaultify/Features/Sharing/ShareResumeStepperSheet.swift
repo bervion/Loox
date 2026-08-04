@@ -76,7 +76,7 @@ struct ShareResumeStepperSheet: View {
                 MessageComposeView(
                     recipients: [share.recipientLabel],
                     body: appString(
-                        "I shared an item with you in Loox Password. Open this link on your iPhone to accept: \(pendingShareURL.absoluteString)"))
+                        "I shared an item with you in Loox Password. Open this link on your device to accept: \(pendingShareURL.absoluteString)"))
             }
         }
         #endif

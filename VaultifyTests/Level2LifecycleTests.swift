@@ -108,6 +108,111 @@ final class Level2LifecycleTests: XCTestCase {
         }
     }
 
+    // MARK: - Argon2 parameter policy
+
+    func testShippedProfilesAreWithinPolicy() {
+        XCTAssertTrue(KdfParams.standard.isWithinPolicy)
+        XCTAssertTrue(KdfParams.constrained.isWithinPolicy)
+    }
+
+    func testPolicyAcceptsItsOwnBoundaries() {
+        XCTAssertTrue(KdfParams(memoryCostKiB: KdfParams.maxMemoryCostKiB,
+                                timeCost: KdfParams.maxTimeCost,
+                                parallelism: KdfParams.maxParallelism).isWithinPolicy)
+        // Argon2's own floor: 8 KiB overall, 8 blocks per lane, one iteration.
+        XCTAssertTrue(KdfParams(memoryCostKiB: 8, timeCost: 1, parallelism: 1).isWithinPolicy)
+    }
+
+    func testPolicyRejectsParametersThatWouldStallOrOOM() {
+        // The memory band: jetsam kills the process before Argon2 returns.
+        XCTAssertFalse(KdfParams(memoryCostKiB: 2 * 1024 * 1024, timeCost: 3,
+                                 parallelism: 4).isWithinPolicy)
+        XCTAssertFalse(KdfParams(memoryCostKiB: KdfParams.maxMemoryCostKiB + 1, timeCost: 3,
+                                 parallelism: 4).isWithinPolicy)
+        // The time band: a permanent spinner on a pegged core.
+        XCTAssertFalse(KdfParams(memoryCostKiB: 64 * 1024, timeCost: .max,
+                                 parallelism: 4).isWithinPolicy)
+        XCTAssertFalse(KdfParams(memoryCostKiB: 64 * 1024, timeCost: KdfParams.maxTimeCost + 1,
+                                 parallelism: 4).isWithinPolicy)
+        // Lanes beyond the ceiling, including a value whose 8-blocks-per-lane
+        // floor would overflow if it were multiplied out first.
+        XCTAssertFalse(KdfParams(memoryCostKiB: 64 * 1024, timeCost: 3,
+                                 parallelism: KdfParams.maxParallelism + 1).isWithinPolicy)
+        XCTAssertFalse(KdfParams(memoryCostKiB: 64 * 1024, timeCost: 3,
+                                 parallelism: .max).isWithinPolicy)
+    }
+
+    func testPolicyRejectsParametersArgon2WouldRefuse() {
+        // Each of these makes Argon2 return an error that reaches the user as
+        // "couldn't decrypt", indistinguishable from a wrong password.
+        XCTAssertFalse(KdfParams(memoryCostKiB: 0, timeCost: 3, parallelism: 4).isWithinPolicy)
+        XCTAssertFalse(KdfParams(memoryCostKiB: 64 * 1024, timeCost: 0, parallelism: 4).isWithinPolicy)
+        XCTAssertFalse(KdfParams(memoryCostKiB: 64 * 1024, timeCost: 3, parallelism: 0).isWithinPolicy)
+        // 8 KiB total is fine for one lane, not for four.
+        XCTAssertFalse(KdfParams(memoryCostKiB: 8, timeCost: 1, parallelism: 4).isWithinPolicy)
+    }
+
+    func testSaltPolicyMatchesArgon2Floor() {
+        XCTAssertFalse(KdfParams.isAcceptableSalt(Data()))
+        XCTAssertFalse(KdfParams.isAcceptableSalt(Data([2, 2])))
+        XCTAssertTrue(KdfParams.isAcceptableSalt(Data(repeating: 2, count: KdfParams.minSaltLength)))
+        XCTAssertTrue(KdfParams.isAcceptableSalt(Data(repeating: 2, count: 16)))
+    }
+
+    // MARK: - Validating decoder
+
+    private func kdfJSON(memory: UInt64, time: UInt64, lanes: UInt64) -> Data {
+        Data("""
+        {"memoryCostKiB":\(memory),"timeCost":\(time),"parallelism":\(lanes)}
+        """.utf8)
+    }
+
+    func testInPolicyParametersRoundTripThroughTheCodec() throws {
+        for params in [KdfParams.standard, .constrained] {
+            let decoded = try JSONDecoder().decode(KdfParams.self,
+                                                   from: JSONEncoder().encode(params))
+            XCTAssertEqual(decoded, params)
+        }
+    }
+
+    func testOutOfPolicyParametersFailToDecode() {
+        // 2 GiB, and a time cost that would run for years — both arrive from a
+        // file whose author chose them, so they must never reach Argon2.
+        XCTAssertThrowsError(try JSONDecoder().decode(
+            KdfParams.self, from: kdfJSON(memory: 2 * 1024 * 1024, time: 3, lanes: 4)))
+        XCTAssertThrowsError(try JSONDecoder().decode(
+            KdfParams.self, from: kdfJSON(memory: 65536, time: 4_000_000, lanes: 4)))
+        XCTAssertThrowsError(try JSONDecoder().decode(
+            KdfParams.self, from: kdfJSON(memory: 65536, time: 3, lanes: 1_000_000)))
+        // Beyond UInt32 entirely — rejected by the number decode itself.
+        XCTAssertThrowsError(try JSONDecoder().decode(
+            KdfParams.self, from: kdfJSON(memory: 8_000_000_000, time: 3, lanes: 4)))
+    }
+
+    /// The reason the check lives in the decoder: it fires at the wire, inside
+    /// whatever envelope carries the parameters, without every reader having to
+    /// remember to validate.
+    func testAHostileBackupEnvelopeIsRejectedBeforeAnyDerivation() {
+        let envelope = Data("""
+        {"version":2,"salt":"\(Data(repeating: 1, count: 16).base64EncodedString())",
+         "kdf":{"memoryCostKiB":2097152,"timeCost":3,"parallelism":4},
+         "sealed":"\(Data([1, 2, 3]).base64EncodedString())"}
+        """.utf8)
+
+        XCTAssertThrowsError(try JSONDecoder().decode(VaultBackup.EncryptedBackup.self,
+                                                      from: envelope))
+    }
+
+    func testAHostileLevel2WrapIsRejectedBeforeItCanBePersisted() {
+        let wrap = Data("""
+        {"wrappedL2SK":"\(Data(repeating: 3, count: 60).base64EncodedString())",
+         "salt":"\(Data(repeating: 1, count: 16).base64EncodedString())",
+         "kdf":{"memoryCostKiB":262144,"timeCost":3,"parallelism":4}}
+        """.utf8)
+
+        XCTAssertThrowsError(try JSONDecoder().decode(VaultBackup.Level2Wrap.self, from: wrap))
+    }
+
     // MARK: - Adopting a backup's Level-2 wrap
 
     private func bundle(withLevel2 wrap: Data?) -> VaultKeyBundle {
@@ -123,15 +228,19 @@ final class Level2LifecycleTests: XCTestCase {
                        wrappedL2SK: wrap)
     }
 
+    /// A wrap shaped like a real one: AES-GCM over a 32-byte key, 16-byte salt.
+    private let foreignWrap = Data(repeating: 0xC3, count: 60)
+    private let foreignSalt = Data(repeating: 0x2B, count: 16)
+
     func testAdoptFillsAnAbsentLevel2Wrap() throws {
         let adopted = try XCTUnwrap(
             VaultSession.level2AdoptedBundle(from: bundle(withLevel2: nil),
-                                             wrappedL2SK: Data([1, 1, 1]),
-                                             salt: Data([2, 2]),
+                                             wrappedL2SK: foreignWrap,
+                                             salt: foreignSalt,
                                              kdf: .standard))
 
-        XCTAssertEqual(adopted.wrappedL2SK, Data([1, 1, 1]))
-        XCTAssertEqual(adopted.l2Salt, Data([2, 2]))
+        XCTAssertEqual(adopted.wrappedL2SK, foreignWrap)
+        XCTAssertEqual(adopted.l2Salt, foreignSalt)
         XCTAssertEqual(adopted.l2Kdf, .standard)
         // Everything else is carried over untouched.
         XCTAssertEqual(adopted.wrappedByPassword, Data([9, 9]))
@@ -144,9 +253,88 @@ final class Level2LifecycleTests: XCTestCase {
         // Nil means "nothing to save" — the local Extra Password keeps working,
         // and clobbering its wrap would orphan this device's own sealed fields.
         XCTAssertNil(VaultSession.level2AdoptedBundle(from: local,
-                                                      wrappedL2SK: Data([1, 1, 1]),
-                                                      salt: Data([2, 2]),
+                                                      wrappedL2SK: foreignWrap,
+                                                      salt: foreignSalt,
                                                       kdf: .standard))
+    }
+
+    /// The persisted escalation: adopted parameters are written into this
+    /// device's own key bundle, and every later reveal derives with them with no
+    /// attacker file in play. Extra Protection cannot be turned off without the
+    /// foreign password, so a bad adoption is not undoable.
+    func testAdoptRefusesAnOutOfPolicyKdfEvenWithNoLocalWrap() {
+        let hostile = KdfParams(memoryCostKiB: 2 * 1024 * 1024, timeCost: 3, parallelism: 4)
+
+        XCTAssertNil(VaultSession.level2AdoptedBundle(from: bundle(withLevel2: nil),
+                                                      wrappedL2SK: foreignWrap,
+                                                      salt: foreignSalt,
+                                                      kdf: hostile))
+        XCTAssertFalse(VaultSession.isAdoptableLevel2Wrap(wrappedL2SK: foreignWrap,
+                                                          salt: foreignSalt,
+                                                          kdf: hostile))
+    }
+
+    func testAdoptRefusesASaltArgon2CannotUse() {
+        for salt in [Data(), Data([2, 2])] {
+            XCTAssertNil(VaultSession.level2AdoptedBundle(from: bundle(withLevel2: nil),
+                                                          wrappedL2SK: foreignWrap,
+                                                          salt: salt,
+                                                          kdf: .standard),
+                         "a \(salt.count)-byte salt only ever yields ARGON2_SALT_TOO_SHORT")
+        }
+    }
+
+    func testAdoptRefusesAnEmptyWrap() {
+        // It would leave `hasLevel2` true forever with no password able to open
+        // it, and no way to remove it.
+        XCTAssertNil(VaultSession.level2AdoptedBundle(from: bundle(withLevel2: nil),
+                                                      wrappedL2SK: Data(),
+                                                      salt: foreignSalt,
+                                                      kdf: .standard))
+    }
+
+    // MARK: - Adoption outcome reported to the caller
+
+    func testAdoptionOutcomeDistinguishesItsThreeEndings() {
+        let hostile = KdfParams(memoryCostKiB: 2 * 1024 * 1024, timeCost: 3, parallelism: 4)
+
+        XCTAssertEqual(VaultSession.level2Adoption(for: bundle(withLevel2: nil),
+                                                   wrappedL2SK: foreignWrap,
+                                                   salt: foreignSalt, kdf: .standard),
+                       .adopted)
+        // Restoring your own backup onto a device that already has a different
+        // Extra Password: every sealed field imports as unopenable ciphertext,
+        // so "imported successfully" would be a lie.
+        XCTAssertEqual(VaultSession.level2Adoption(for: bundle(withLevel2: Data([0xAA])),
+                                                   wrappedL2SK: foreignWrap,
+                                                   salt: foreignSalt, kdf: .standard),
+                       .skippedDeviceHasOwnWrap)
+        XCTAssertEqual(VaultSession.level2Adoption(for: bundle(withLevel2: nil),
+                                                   wrappedL2SK: foreignWrap,
+                                                   salt: foreignSalt, kdf: hostile),
+                       .refusedInvalidPolicy)
+        XCTAssertEqual(VaultSession.level2Adoption(for: bundle(withLevel2: nil),
+                                                   wrappedL2SK: foreignWrap,
+                                                   salt: Data([2, 2]), kdf: .standard),
+                       .refusedInvalidPolicy)
+    }
+
+    /// A refusal outranks the collision: with nothing safe to write, "this
+    /// device keeps its own Extra Password" would describe the wrong reason.
+    func testPolicyRefusalIsReportedEvenWhenTheDeviceAlsoHasItsOwnWrap() {
+        let hostile = KdfParams(memoryCostKiB: 2 * 1024 * 1024, timeCost: 3, parallelism: 4)
+
+        XCTAssertEqual(VaultSession.level2Adoption(for: bundle(withLevel2: Data([0xAA])),
+                                                   wrappedL2SK: foreignWrap,
+                                                   salt: foreignSalt, kdf: hostile),
+                       .refusedInvalidPolicy)
+    }
+
+    func testAdoptionWithoutAKeyBundleIsRefusedRatherThanReportedAsAdopted() {
+        XCTAssertEqual(VaultSession.level2Adoption(for: nil,
+                                                   wrappedL2SK: foreignWrap,
+                                                   salt: foreignSalt, kdf: .standard),
+                       .refusedInvalidPolicy)
     }
 
     // MARK: - Swipe-delete gate

@@ -34,5 +34,10 @@ import Network
         monitor.start(queue: DispatchQueue(label: "com.bervion.vaultify.reachability"))
     }
 
-    deinit { monitor?.cancel() }
+    // `nonisolated` on purpose. This class is `@MainActor`, and under the Swift
+    // 6.2 runtime a main-actor class gets an ISOLATED deinit: releasing it off
+    // the main actor makes the runtime hop to run the deinit, which aborts in
+    // the test host. `NWPathMonitor.cancel()` is thread-safe, so there is no
+    // reason for this teardown to be isolated at all.
+    nonisolated deinit { monitor?.cancel() }
 }

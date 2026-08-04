@@ -8,6 +8,9 @@ final class VaultPanicRestartUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        // No `-ui-test-tutorials`: an isolated launch marks every guided tour
+        // answered, so the first-run scrim cannot swallow this test's taps.
+        // A test that wants to drive a tour adds that argument back.
         app.launchArguments = [
             "-ui-testing",
             "-ui-test-fixture", "vault-panic-restart",

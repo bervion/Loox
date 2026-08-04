@@ -34,6 +34,10 @@ struct StagedArtifact {
         case stagingFileMissing
         /// The on-disk envelope does not match the record's ciphertext hash.
         case integrityMismatch
+        /// A stored name does not resolve to a direct child of its root — the
+        /// only shape this store ever writes. Refusing it keeps a crafted name
+        /// from ever reaching the filesystem.
+        case unsafePath
     }
 
     private let session: VaultSession
@@ -55,8 +59,40 @@ struct StagedArtifact {
         try? FileManager.default.createDirectory(at: stagingDirectory, withIntermediateDirectories: true)
     }
 
-    private func fileURL(for record: ArtifactRecord) -> URL {
-        root.appending(path: record.relativePath)
+    // MARK: Path containment
+
+    /// Resolve `component` directly beneath `root`, refusing anything that
+    /// escapes it.
+    ///
+    /// `appending(path:)` and `appendingPathComponent(_:)` behave identically:
+    /// both hand `..` straight through to the kernel, neither normalizes nor
+    /// rejects it, so swapping one for the other changes nothing. Containment
+    /// only holds if it is asserted on the STANDARDIZED result, which is what
+    /// this does. Every path this store writes is a direct child of its root,
+    /// so that exact shape — one component deeper, same prefix — is the
+    /// invariant enforced here.
+    private static func containedURL(_ component: String, under root: URL) -> URL? {
+        let base = root.standardizedFileURL
+        let candidate = base.appending(path: component).standardizedFileURL
+        let baseParts = base.pathComponents
+        let parts = candidate.pathComponents
+        guard parts.count == baseParts.count + 1,
+              Array(parts.prefix(baseParts.count)) == baseParts else { return nil }
+        return candidate
+    }
+
+    /// `containedURL` for the write paths, where an escape is an error rather
+    /// than an absence.
+    private static func requireContained(_ component: String, under root: URL) throws -> URL {
+        guard let url = containedURL(component, under: root) else { throw Failure.unsafePath }
+        return url
+    }
+
+    /// The ciphertext file for a record, or nil when `relativePath` does not
+    /// resolve to a direct child of the artifact root — a value this app never
+    /// writes, so it is treated as no file at all rather than followed.
+    private func fileURL(for record: ArtifactRecord) -> URL? {
+        Self.containedURL(record.relativePath, under: root)
     }
 
     // MARK: Staged import
@@ -120,7 +156,7 @@ struct StagedArtifact {
             relativePath: "\(staged.id).enc",
             byteCount: envelope.count,
             ciphertextHash: ArtifactCrypto.sha256(envelope))
-        let finalURL = root.appending(path: record.relativePath)
+        let finalURL = try Self.requireContained(record.relativePath, under: root)
         try envelope.write(to: finalURL, options: [.atomic, .completeFileProtection])
         store.context.insert(record)
         if !deferSave { try store.context.save() }
@@ -149,14 +185,15 @@ struct StagedArtifact {
     /// Whether the ciphertext bytes are present on this device. False is the
     /// honest "missing bytes" state, never an error.
     func hasBytes(_ record: ArtifactRecord) -> Bool {
-        FileManager.default.fileExists(atPath: fileURL(for: record).path)
+        guard let url = fileURL(for: record) else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
     }
 
     /// Decrypt an artifact into memory. Verifies the envelope against the
     /// record's ciphertext hash before opening.
     func loadPlaintext(_ record: ArtifactRecord) throws -> Data {
         guard let vaultKey = session.vaultKey else { throw Failure.locked }
-        let url = fileURL(for: record)
+        guard let url = fileURL(for: record) else { throw Failure.unsafePath }
         // Size gate from file metadata BEFORE the bytes are read into memory.
         guard let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int
         else { throw Failure.missingBytes }
@@ -192,12 +229,16 @@ struct StagedArtifact {
     /// Callers hand the URL to QuickLook/ShareLink; `cleanupTempExports()`
     /// removes every export directory (wire it at dismiss/lock/launch).
     func exportPlaintext(_ record: ArtifactRecord) throws -> URL {
-        let data = try loadPlaintext(record)
         let manifest = try manifest(for: record)
         let directory = tempExportRoot.appending(path: UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        // The manifest filename is attacker-reachable (it rides in a backup),
+        // and joining it is precisely where `..` survives. Contain it BEFORE
+        // the plaintext is loaded and before the directory exists, so a crafted
+        // name never reaches the filesystem in any form.
         let name = manifest.filename.isEmpty ? record.id : manifest.filename
-        let url = directory.appending(path: name)
+        let url = try Self.requireContained(name, under: directory)
+        let data = try loadPlaintext(record)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try data.write(to: url, options: [.completeFileProtection])
         return url
     }
@@ -226,11 +267,10 @@ struct StagedArtifact {
     }
 
     private func tombstone(_ record: ArtifactRecord) {
-        let url = fileURL(for: record)
         record.deletedAt = .now
         record.updatedAt = .now
         record.dirty = true
-        try? FileManager.default.removeItem(at: url)
+        if let url = fileURL(for: record) { try? FileManager.default.removeItem(at: url) }
         appendJournal(op: "delete", artifactID: record.id, path: record.relativePath)
     }
 
@@ -315,7 +355,7 @@ struct StagedArtifact {
                                                 filename: payload.filename, utiType: payload.utiType,
                                                 data: payload.data)
                 inserted.append(record)
-                written.append(fileURL(for: record))
+                if let url = fileURL(for: record) { written.append(url) }
             }
             try store.context.save()
         } catch {
@@ -351,7 +391,10 @@ struct StagedArtifact {
             relativePath: "\(id).enc",
             byteCount: envelope.count,
             ciphertextHash: ArtifactCrypto.sha256(envelope))
-        try envelope.write(to: fileURL(for: record), options: [.atomic, .completeFileProtection])
+        // Containment before the write, and the write before the insert: an
+        // id that resolves outside the root leaves neither a file nor a record.
+        let url = try Self.requireContained(record.relativePath, under: root)
+        try envelope.write(to: url, options: [.atomic, .completeFileProtection])
         store.context.insert(record)
         return record
     }

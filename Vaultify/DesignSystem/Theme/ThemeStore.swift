@@ -198,7 +198,6 @@ import AppKit
         }
     }
     func setFontScale(_ scale: FontScale) { update { $0.fontScale = scale } }
-    func setReduceMotion(_ enabled: Bool) { update { $0.reduceMotion = enabled } }
 
     /// Set or clear (nil) the per-theme accent override.
     func setAccent(_ accent: AppAccentColor?, for ref: AppThemeReference) {

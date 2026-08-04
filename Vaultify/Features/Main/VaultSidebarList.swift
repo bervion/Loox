@@ -46,7 +46,10 @@ struct VaultSidebarList: View {
 
             Section {
                 // No Search row: the sidebar's own search field (iPad-Settings
-                // idiom) IS the search entry at regular width.
+                // idiom) IS the search entry at regular width — and, because there
+                // is no row to fall back to, its only exit as well. That is why
+                // `VaultSidebarView` emits an empty query on a clear instead of
+                // swallowing it (see `VaultSidebarView.searchEntry(for:…)`).
                 ForEach(VaultTab.allCases.filter { $0 != .search }) { tab in
                     Label {
                         Text(tab.accessibilityLabel)

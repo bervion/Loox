@@ -110,9 +110,19 @@ struct LooxCurrentPlanView: View {
         .sheet(isPresented: $showChangePlan) {
             // Plain store view — StoreKit marks the current plan and runs the
             // upgrade/downgrade flow; no acquisition marketing for subscribers.
+            //
+            // This is a purchase screen of its own, so it carries the same
+            // Terms and Privacy links as the acquisition paywall (3.1.2):
+            // `.policies` renders StoreKit's own pair of buttons and the two
+            // destinations say where they go. Both URLs follow the in-app
+            // language.
             SubscriptionStoreView(productIDs: LooxProductID.all)
                 .subscriptionStoreControlStyle(.prominentPicker)
-                .storeButton(.visible, for: .restorePurchases)
+                .storeButton(.visible, for: .restorePurchases, .policies)
+                .subscriptionStorePolicyDestination(url: LooxMembership.termsURL,
+                                                    for: .termsOfService)
+                .subscriptionStorePolicyDestination(url: LooxMembership.privacyURL,
+                                                    for: .privacyPolicy)
         }
     }
 

@@ -1,0 +1,61 @@
+{
+  "note": "Copy that said 'iPhone' about the CURRENT device, retired now that Branch A ships iPad. Pairing instructions that genuinely mean 'use your phone to scan' were left alone deliberately.",
+  "keys": [
+    {
+      "key": "Everything is encrypted on this device before it's stored.",
+      "en": "Everything is encrypted on this device before it's stored.",
+      "vi": "Mọi thứ được mã hoá ngay trên thiết bị này trước khi lưu.",
+      "ja": "すべてこの端末で暗号化してから保存されます。",
+      "context": "Home screen privacy reassurance"
+    },
+    {
+      "key": "Everything is encrypted on this device. The server only ever holds the locked version, and the key that opens it travels inside the link, never to any server.",
+      "en": "Everything is encrypted on this device. The server only ever holds the locked version, and the key that opens it travels inside the link, never to any server.",
+      "vi": "Mọi thứ được mã hoá ngay trên thiết bị này. Máy chủ chỉ giữ bản đã khoá, còn khoá mở nằm trong chính đường link và không bao giờ tới máy chủ nào.",
+      "ja": "すべてこの端末で暗号化されます。サーバーが保持するのはロックされた状態のみで、解錠する鍵はリンクの中にあり、どのサーバーにも渡りません。",
+      "context": "Quick Link explainer"
+    },
+    {
+      "key": "Remove it from this device?",
+      "en": "Remove it from this device?",
+      "vi": "Gỡ khỏi thiết bị này?",
+      "ja": "この端末から削除しますか？",
+      "context": "Confirmation dialog title when removing a shared item locally"
+    },
+    {
+      "key": "Remove From This Device",
+      "en": "Remove From This Device",
+      "vi": "Gỡ khỏi thiết bị này",
+      "ja": "この端末から削除",
+      "context": "Destructive button in the local-removal confirmation dialog"
+    },
+    {
+      "key": "No accounts to create. No server that can read your vault. No subscription holding your data hostage. Just your device, your keys, your secrets.",
+      "en": "No accounts to create. No server that can read your vault. No subscription holding your data hostage. Just your device, your keys, your secrets.",
+      "vi": "Không phải tạo tài khoản. Không máy chủ nào đọc được vault của bạn. Không gói đăng ký nào giữ dữ liệu của bạn làm con tin. Chỉ có thiết bị của bạn, khoá của bạn, bí mật của bạn.",
+      "ja": "作成するアカウントはありません。あなたのVaultを読めるサーバーもありません。データを人質に取るサブスクリプションもありません。あるのはあなたの端末、あなたの鍵、あなたの秘密だけです。",
+      "context": "About screen positioning statement"
+    },
+    {
+      "key": "Every item is sealed with AES-256 before it touches storage. If it ever leaves your device, to iCloud, to another one, it leaves already locked. We couldn't read it if we wanted to. Nobody can.",
+      "en": "Every item is sealed with AES-256 before it touches storage. If it ever leaves your device, to iCloud, to another one, it leaves already locked. We couldn't read it if we wanted to. Nobody can.",
+      "vi": "Mọi mục đều được niêm phong bằng AES-256 trước khi chạm tới bộ nhớ. Nếu nó rời thiết bị của bạn, lên iCloud hay sang máy khác, nó rời đi ở trạng thái đã khoá. Chúng tôi có muốn cũng không đọc được. Không ai đọc được.",
+      "ja": "すべての項目はストレージに触れる前にAES-256で封印されます。iCloudへ、別の端末へと出ていくときも、すでにロックされた状態で出ていきます。私たちが読みたくても読めません。誰にも読めません。",
+      "context": "About screen encryption card body"
+    },
+    {
+      "key": "I shared an item with you in Loox Password. Open this link on your device to accept: %@",
+      "en": "I shared an item with you in Loox Password. Open this link on your device to accept: %@",
+      "vi": "Mình đã chia sẻ một mục với bạn trong Loox Password. Mở link này trên thiết bị của bạn để nhận: %@",
+      "ja": "Loox Passwordで項目を共有しました。受け取るには、お使いの端末でこのリンクを開いてください: %@",
+      "context": "Share invite message body sent to the recipient, who may be on any device"
+    },
+    {
+      "key": "Open Loox on your other device (Settings → iCloud Sync → Pair New Device) to scan the new device’s code.",
+      "en": "Open Loox on your other device (Settings → iCloud Sync → Pair New Device) to scan the new device’s code.",
+      "vi": "Mở Loox trên thiết bị còn lại của bạn (Cài đặt → Đồng bộ iCloud → Ghép thiết bị mới) để quét mã của thiết bị mới.",
+      "ja": "お使いのもう一方の端末でLooxを開き（設定 → iCloud同期 → 新しい端末をペアリング）、新しい端末のコードを読み取ってください。",
+      "context": "Pair-device sheet instruction; the existing device may be an iPad"
+    }
+  ]
+}

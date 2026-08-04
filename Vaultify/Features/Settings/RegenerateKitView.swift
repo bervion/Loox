@@ -12,6 +12,10 @@ struct RegenerateKitView: View {
     @State private var pdfFile: EmergencyKitPDFFile?
     @State private var exportError: String?
     @State private var generateError: String?
+    /// What the freshly-issued kit can honestly claim. Resolved from the AWAITED envelope
+    /// upload, not from the sync toggle: a kit whose envelope never landed restores
+    /// nothing on a new device, and the printed page must not say otherwise.
+    @State private var kitScope: EmergencyKitScope = .thisInstallationOnly
 
     var body: some View {
         Form {
@@ -159,7 +163,8 @@ struct RegenerateKitView: View {
     /// iCloud account are left blank here (those rows are omitted) — the recovery key, Setup
     /// Code, warning, and instructions are what matter for a re-print.
     private func presentExporter() {
-        let info = EmergencyKitInfo(recoveryKey: newKey, ownerName: "", iCloudAccount: "", createdAt: .now)
+        let info = EmergencyKitInfo(recoveryKey: newKey, ownerName: "", iCloudAccount: "",
+                                    createdAt: .now, scope: kitScope)
         guard let data = EmergencyKitPDF.makeData(info) else {
             exportError = appString("Couldn’t build the Emergency Kit PDF. Please try again.")
             return
@@ -170,15 +175,26 @@ struct RegenerateKitView: View {
 
     private func regenerate() async {
         busy = true; generateError = nil
+        kitScope = .thisInstallationOnly
         do {
             newKey = try await env.session.generateRecoveryKit()
-            // A regenerated key invalidates the synced envelope for future
-            // joins — push the replacement now, not on the next item sync.
-            env.syncNow()
             Haptics.success()
         } catch {
             generateError = appString("Couldn’t generate a new recovery key. Please try again.")
             Haptics.error()
+            busy = false
+            return
+        }
+        // A regenerated key invalidates the synced envelope for future joins, so the
+        // replacement is pushed now rather than on the next item sync — and AWAITED,
+        // because the printed instructions differ depending on whether it landed.
+        if env.settings.iCloudSyncEnabled {
+            do {
+                try await VaultKeyEscrowService().pushRecoveryEnvelope()
+                kitScope = .crossDevice
+            } catch {
+                generateError = appString("Your recovery file did not reach iCloud. Until it does, this kit works on this device only.")
+            }
         }
         busy = false
     }

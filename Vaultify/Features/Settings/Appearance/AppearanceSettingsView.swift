@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Appearance hub: theme (Light/Dark) · auto-night · text size · motion.
+/// Appearance hub: theme (Light/Dark), auto-night and text size.
 /// Accent selection is retired (260713): the app ships the brand colors only
 /// (the engine + presets remain for a future re-enable, like wallpapers). Edits `ThemeStore`
 /// live and persists to the App Group.
@@ -85,6 +85,10 @@ struct AppearanceSettingsView: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        // The selection ring and the check glyph are purely visual (VaultIcon is
+        // accessibility-hidden), so without this trait VoiceOver reads every card
+        // identically and the active theme is unknowable.
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     // MARK: Options
@@ -102,10 +106,9 @@ struct AppearanceSettingsView: View {
             } label: {
                 Label { Text("Text Size") } icon: { VaultIcon(Icons.text) }
             }
-            Toggle(isOn: Binding(get: { settings.reduceMotion },
-                                 set: { env.theme.setReduceMotion($0) })) {
-                Label { Text("Reduce Motion") } icon: { VaultIcon(Icons.reveal) }
-            }
+            // No app-level Reduce Motion switch: every animation in the app reads the
+            // SYSTEM setting (`accessibilityReduceMotion`), so a second in-app copy of
+            // Settings > Accessibility > Motion could only disagree with it.
         }
         .listRowBackground(VaultColors.surface)
     }

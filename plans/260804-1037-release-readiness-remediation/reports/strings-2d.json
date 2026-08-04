@@ -1,0 +1,279 @@
+{
+  "lane": "2D — onboarding flows, Emergency Kit consent and printed kit",
+  "notes": [
+    "Terminology follows the existing catalog: Emergency Kit = Bộ khôi phục / 緊急キット, vault = kho / 保管庫, recovery key = khóa khôi phục / 復旧キー, master password = mật khẩu chính / マスターパスワード, iCloud Sync = Đồng bộ iCloud / iCloud 同期.",
+    "'Try again' is already in the catalog with VI+JA and is reused as-is; it is not restaged here.",
+    "'%@ was not turned on' follows the existing 'Enable %@' pattern (the %@ is the biometry display name, Face ID / Touch ID).",
+    "The keys in 'retire' are no longer referenced by any source file after this lane. They are listed for the integrator to decide; several made claims the approved OPEN-2 contract forbids."
+  ],
+  "keys": [
+    {
+      "key": "This recovery key is how you get back in if you forget your master password. Keep it somewhere safe and private.",
+      "en": "This recovery key is how you get back in if you forget your master password. Keep it somewhere safe and private.",
+      "vi": "Khóa khôi phục này là cách bạn vào lại kho nếu quên mật khẩu chính. Hãy cất ở nơi an toàn và riêng tư.",
+      "ja": "この復旧キーは、マスターパスワードを忘れたときに保管庫へ戻るための手段です。安全で人目に触れない場所に保管してください。",
+      "context": "EmergencyKitView — step subtitle. Replaces the old subtitle that promised a new-device restore unconditionally."
+    },
+    {
+      "key": "Do you want iCloud Sync?",
+      "en": "Do you want iCloud Sync?",
+      "vi": "Bạn có muốn Đồng bộ iCloud không?",
+      "ja": "iCloud 同期を使いますか？",
+      "context": "EmergencyKitView — heading of the consent question. Nothing is preselected."
+    },
+    {
+      "key": "This is the only setting that decides whether your Emergency Kit can rebuild your vault somewhere else.",
+      "en": "This is the only setting that decides whether your Emergency Kit can rebuild your vault somewhere else.",
+      "vi": "Đây là cài đặt duy nhất quyết định Bộ khôi phục của bạn có dựng lại được kho ở nơi khác hay không.",
+      "ja": "緊急キットが別の場所で保管庫を作り直せるかどうかは、この設定だけで決まります。",
+      "context": "EmergencyKitView — subheading under the consent question."
+    },
+    {
+      "key": "Turn on iCloud Sync",
+      "en": "Turn on iCloud Sync",
+      "vi": "Bật Đồng bộ iCloud",
+      "ja": "iCloud 同期をオンにする",
+      "context": "EmergencyKitView — consent option 1 title."
+    },
+    {
+      "key": "Your items upload end to end encrypted, and your Emergency Kit can restore this vault on a new device. Folder icons, colors, order, timestamps, and your device name travel as ordinary iCloud data.",
+      "en": "Your items upload end to end encrypted, and your Emergency Kit can restore this vault on a new device. Folder icons, colors, order, timestamps, and your device name travel as ordinary iCloud data.",
+      "vi": "Các mục của bạn được tải lên dưới dạng mã hóa đầu cuối, và Bộ khôi phục có thể khôi phục kho này trên thiết bị mới. Biểu tượng nhóm, màu sắc, thứ tự, mốc thời gian và tên thiết bị đi kèm dưới dạng dữ liệu iCloud thông thường.",
+      "ja": "アイテムはエンドツーエンドで暗号化されてアップロードされ、緊急キットで新しいデバイスにこの保管庫を復元できます。フォルダのアイコン、色、並び順、日時、デバイス名は通常の iCloud データとして送られます。",
+      "context": "EmergencyKitView — consent option 1 detail. Matches the disclosure already in SyncSettingsView plus DeviceRegistryService."
+    },
+    {
+      "key": "Keep this device only",
+      "en": "Keep this device only",
+      "vi": "Chỉ giữ trên thiết bị này",
+      "ja": "このデバイスだけに保存",
+      "context": "EmergencyKitView — consent option 2 title."
+    },
+    {
+      "key": "Nothing leaves this device. Your Emergency Kit then resets the master password here, and cannot bring the vault back once this device is gone.",
+      "en": "Nothing leaves this device. Your Emergency Kit then resets the master password here, and cannot bring the vault back once this device is gone.",
+      "vi": "Không có gì rời khỏi thiết bị này. Khi đó Bộ khôi phục chỉ đặt lại mật khẩu chính ngay tại đây, và không thể lấy lại kho khi thiết bị này không còn.",
+      "ja": "このデバイスから何も送信されません。その場合、緊急キットはここでマスターパスワードをリセットするだけで、このデバイスを失うと保管庫を取り戻すことはできません。",
+      "context": "EmergencyKitView — consent option 2 detail."
+    },
+    {
+      "key": "Sending your recovery file to iCloud",
+      "en": "Sending your recovery file to iCloud",
+      "vi": "Đang gửi tệp khôi phục lên iCloud",
+      "ja": "復旧ファイルを iCloud に送信中",
+      "context": "EmergencyKitView — shown while the first recovery-envelope push is awaited."
+    },
+    {
+      "key": "Your recovery file reached iCloud. This kit can now restore your vault on a new device.",
+      "en": "Your recovery file reached iCloud. This kit can now restore your vault on a new device.",
+      "vi": "Tệp khôi phục đã lên iCloud. Bộ khôi phục này giờ có thể khôi phục kho trên thiết bị mới.",
+      "ja": "復旧ファイルが iCloud に届きました。このキットで新しいデバイスに保管庫を復元できます。",
+      "context": "EmergencyKitView — success banner after the awaited push."
+    },
+    {
+      "key": "Your recovery file did not reach iCloud",
+      "en": "Your recovery file did not reach iCloud",
+      "vi": "Tệp khôi phục chưa lên được iCloud",
+      "ja": "復旧ファイルが iCloud に届きませんでした",
+      "context": "EmergencyKitView — error banner title; the body is the runtime reason and the action is the existing 'Try again'."
+    },
+    {
+      "key": "What this kit can do",
+      "en": "What this kit can do",
+      "vi": "Bộ khôi phục này làm được gì",
+      "ja": "このキットにできること",
+      "context": "EmergencyKitView — heading of the always-visible scope summary."
+    },
+    {
+      "key": "It resets your master password on this device, and restores your vault on a new device signed in to the same iCloud account. Turn iCloud Sync off later and it goes back to this device only.",
+      "en": "It resets your master password on this device, and restores your vault on a new device signed in to the same iCloud account. Turn iCloud Sync off later and it goes back to this device only.",
+      "vi": "Nó đặt lại mật khẩu chính trên thiết bị này, và khôi phục kho trên thiết bị mới đã đăng nhập cùng tài khoản iCloud. Nếu sau này bạn tắt Đồng bộ iCloud, nó quay lại chỉ dùng được trên thiết bị này.",
+      "ja": "このデバイスでマスターパスワードをリセットでき、同じ iCloud アカウントでサインインした新しいデバイスに保管庫を復元できます。後で iCloud 同期をオフにすると、このデバイス限定に戻ります。",
+      "context": "EmergencyKitView — scope summary when sync is on AND the envelope upload succeeded."
+    },
+    {
+      "key": "It resets your master password for the vault on this device, and only while Loox and this vault are still installed here. It is not a backup: after device loss, deleting the app, or setting up a new device, this kit cannot bring your vault back.",
+      "en": "It resets your master password for the vault on this device, and only while Loox and this vault are still installed here. It is not a backup: after device loss, deleting the app, or setting up a new device, this kit cannot bring your vault back.",
+      "vi": "Nó đặt lại mật khẩu chính cho kho trên thiết bị này, và chỉ khi Loox cùng kho này vẫn còn ở đây. Đây không phải bản sao lưu: sau khi mất thiết bị, xóa ứng dụng hoặc thiết lập máy mới, Bộ khôi phục không lấy lại được kho.",
+      "ja": "このデバイス上の保管庫のマスターパスワードをリセットします。ただし Loox とこの保管庫がここに残っている間だけです。これはバックアップではありません。デバイスの紛失、アプリの削除、新しいデバイスの設定のあとでは、このキットで保管庫を取り戻すことはできません。",
+      "context": "EmergencyKitView — scope summary when sync is off, or on but the envelope has not landed. The core OPEN-2 sentence."
+    },
+    {
+      "key": "Your saved kit was printed before this change. Save it again so the instructions on the page match.",
+      "en": "Your saved kit was printed before this change. Save it again so the instructions on the page match.",
+      "vi": "Bộ khôi phục bạn đã lưu được tạo trước thay đổi này. Hãy lưu lại để hướng dẫn trên trang khớp với thực tế.",
+      "ja": "保存済みのキットはこの変更前に作成されたものです。ページの手順が実際と合うように、もう一度保存してください。",
+      "context": "EmergencyKitView — shown when the sync answer changes after the PDF was already saved."
+    },
+    {
+      "key": "Save the kit to continue. Without it, a forgotten master password cannot be reset.",
+      "en": "Save the kit to continue. Without it, a forgotten master password cannot be reset.",
+      "vi": "Lưu Bộ khôi phục để tiếp tục. Không có nó thì mật khẩu chính bị quên sẽ không đặt lại được.",
+      "ja": "続けるにはキットを保存してください。これがないと、忘れたマスターパスワードをリセットできません。",
+      "context": "EmergencyKitView — replaces 'It is the only way to recover your vault', which overstated what the kit does with sync off."
+    },
+    {
+      "key": "Couldn’t create your recovery key. Please try again.",
+      "en": "Couldn’t create your recovery key. Please try again.",
+      "vi": "Không thể tạo khóa khôi phục. Vui lòng thử lại.",
+      "ja": "復旧キーを作成できませんでした。もう一度お試しください。",
+      "context": "OnboardingFlow — recovery-key generation failure, shown with a retry in place of the old permanent spinner. appString()."
+    },
+    {
+      "key": "%@ was not turned on",
+      "en": "%@ was not turned on",
+      "vi": "Chưa bật %@",
+      "ja": "%@ をオンにできませんでした",
+      "context": "EnableBiometricView — error banner title after a failed enrolment. %@ is Face ID / Touch ID, same substitution as the existing 'Enable %@'."
+    },
+    {
+      "key": "Continue without it",
+      "en": "Continue without it",
+      "vi": "Tiếp tục mà không bật",
+      "ja": "オンにせずに続ける",
+      "context": "EnableBiometricView — the skip link relabels after a failure, where 'Not now' would read as a choice the user did not make."
+    },
+    {
+      "key": "Move your vault from another device, or reopen it with your Emergency Kit. Both routes turn on iCloud Sync, because that is where the vault is downloaded from.",
+      "en": "Move your vault from another device, or reopen it with your Emergency Kit. Both routes turn on iCloud Sync, because that is where the vault is downloaded from.",
+      "vi": "Chuyển kho từ thiết bị khác, hoặc mở lại bằng Bộ khôi phục. Cả hai cách đều bật Đồng bộ iCloud, vì kho được tải về từ đó.",
+      "ja": "別のデバイスから保管庫を移すか、緊急キットで開き直します。どちらの方法でも iCloud 同期がオンになります。保管庫はそこからダウンロードされるためです。",
+      "context": "RestoreMethodSheet — description. Discloses that joining turns sync on, before the user picks a method."
+    },
+    {
+      "key": "Enter the key from your saved Emergency Kit. This works only if that vault had iCloud Sync on before you lost the device.",
+      "en": "Enter the key from your saved Emergency Kit. This works only if that vault had iCloud Sync on before you lost the device.",
+      "vi": "Nhập khóa trong Bộ khôi phục bạn đã lưu. Cách này chỉ dùng được nếu kho đó đã bật Đồng bộ iCloud trước khi bạn mất thiết bị.",
+      "ja": "保存済みの緊急キットにあるキーを入力します。これは、デバイスを失う前にその保管庫で iCloud 同期がオンだった場合にのみ使えます。",
+      "context": "RestoreMethodSheet — 'Use Recovery Key' option detail."
+    },
+    {
+      "key": "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key.",
+      "en": "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key.",
+      "vi": "Nhập tệp PDF Bộ khôi phục đã lưu, quét Mã thiết lập trên đó, hoặc gõ khóa khôi phục.",
+      "ja": "保存した緊急キットの PDF を読み込むか、セットアップコードをスキャンするか、復旧キーを入力してください。",
+      "context": "JoinByRecoveryView — subtitle. The unconditional 'Your vault will download from iCloud' clause moved into the precondition banner below."
+    },
+    {
+      "key": "This needs the other vault to have had iCloud Sync on, and to be signed in to the same iCloud account here. A kit created with sync off resets the master password on its own device and cannot rebuild the vault here.",
+      "en": "This needs the other vault to have had iCloud Sync on, and to be signed in to the same iCloud account here. A kit created with sync off resets the master password on its own device and cannot rebuild the vault here.",
+      "vi": "Cách này cần kho kia đã bật Đồng bộ iCloud, và ở đây bạn phải đăng nhập cùng tài khoản iCloud. Bộ khôi phục tạo khi tắt đồng bộ chỉ đặt lại mật khẩu chính trên chính thiết bị đó, không dựng lại được kho ở đây.",
+      "ja": "これには、もう一方の保管庫で iCloud 同期がオンだったことと、ここで同じ iCloud アカウントにサインインしていることが必要です。同期をオフのまま作成したキットは、そのデバイスでマスターパスワードをリセットするだけで、ここで保管庫を作り直すことはできません。",
+      "context": "JoinByRecoveryView — precondition banner, stated before the user types a key that cannot work."
+    },
+    {
+      "key": "ICLOUD SYNC",
+      "en": "ICLOUD SYNC",
+      "vi": "ĐỒNG BỘ ICLOUD",
+      "ja": "ICLOUD 同期",
+      "context": "EmergencyKitPDFPage — new detail-row label, uppercase like the neighbouring ICLOUD ACCOUNT / RECOVERY KEY labels. appString()."
+    },
+    {
+      "key": "On when this kit was created",
+      "en": "On when this kit was created",
+      "vi": "Đã bật khi tạo Bộ khôi phục này",
+      "ja": "このキットの作成時はオン",
+      "context": "EmergencyKitPDFPage — value of the ICLOUD SYNC row. appString()."
+    },
+    {
+      "key": "Off when this kit was created",
+      "en": "Off when this kit was created",
+      "vi": "Đã tắt khi tạo Bộ khôi phục này",
+      "ja": "このキットの作成時はオフ",
+      "context": "EmergencyKitPDFPage — value of the ICLOUD SYNC row. appString()."
+    },
+    {
+      "key": "On a new device, install Loox, choose Restore data, then Use Recovery Key, and scan this code.",
+      "en": "On a new device, install Loox, choose Restore data, then Use Recovery Key, and scan this code.",
+      "vi": "Trên thiết bị mới, cài Loox, chọn Khôi phục dữ liệu, rồi Dùng khóa khôi phục và quét mã này.",
+      "ja": "新しいデバイスで Loox をインストールし、データを復元、次に復旧キーを使うを選んで、このコードをスキャンしてください。",
+      "context": "EmergencyKitPDFPage — Setup Code caption, cross-device kits. Also fixes the stale in-app path name (was 'Set up from another device'). appString()."
+    },
+    {
+      "key": "This code only works on a new device after iCloud Sync is turned on in Loox and your recovery file has reached iCloud.",
+      "en": "This code only works on a new device after iCloud Sync is turned on in Loox and your recovery file has reached iCloud.",
+      "vi": "Mã này chỉ dùng được trên thiết bị mới sau khi bạn bật Đồng bộ iCloud trong Loox và tệp khôi phục đã lên iCloud.",
+      "ja": "このコードが新しいデバイスで使えるのは、Loox で iCloud 同期をオンにし、復旧ファイルが iCloud に届いたあとだけです。",
+      "context": "EmergencyKitPDFPage — Setup Code caption on a kit printed with sync off. appString()."
+    },
+    {
+      "key": "Anyone who has this kit and your device can open your vault, no master password needed. Keep it offline and private.",
+      "en": "Anyone who has this kit and your device can open your vault, no master password needed. Keep it offline and private.",
+      "vi": "Bất kỳ ai có Bộ khôi phục này và thiết bị của bạn đều có thể mở kho, không cần mật khẩu chính. Hãy giữ nó ngoại tuyến và riêng tư.",
+      "ja": "このキットとあなたのデバイスを持つ人は、マスターパスワードなしで保管庫を開けます。オフラインで人目に触れないように保管してください。",
+      "context": "EmergencyKitPDFPage — warning banner on a sync-off kit; the iCloud-worded variant stays for cross-device kits. appString()."
+    },
+    {
+      "key": "To restore on a new device: install Loox, sign in to the same iCloud, open Restore data, then scan the Setup Code or type the recovery key.",
+      "en": "To restore on a new device: install Loox, sign in to the same iCloud, open Restore data, then scan the Setup Code or type the recovery key.",
+      "vi": "Để khôi phục trên thiết bị mới: cài Loox, đăng nhập cùng tài khoản iCloud, mở Khôi phục dữ liệu, rồi quét Mã thiết lập hoặc gõ khóa khôi phục.",
+      "ja": "新しいデバイスで復元するには、Loox をインストールし、同じ iCloud にサインインして、データを復元を開き、セットアップコードをスキャンするか復旧キーを入力します。",
+      "context": "EmergencyKitPDFPage — instruction step 3, cross-device kits only. appString()."
+    },
+    {
+      "key": "This works only while iCloud Sync stays on. Turn it off and the key resets the master password on your own device instead.",
+      "en": "This works only while iCloud Sync stays on. Turn it off and the key resets the master password on your own device instead.",
+      "vi": "Cách này chỉ dùng được khi Đồng bộ iCloud vẫn bật. Nếu tắt, khóa chỉ đặt lại mật khẩu chính trên chính thiết bị của bạn.",
+      "ja": "これは iCloud 同期がオンの間だけ有効です。オフにすると、キーは自分のデバイスでマスターパスワードをリセットするだけになります。",
+      "context": "EmergencyKitPDFPage — instruction step 4, cross-device kits. appString()."
+    },
+    {
+      "key": "iCloud Sync was off when this kit was made, so the key resets the master password for the vault on the device that created it.",
+      "en": "iCloud Sync was off when this kit was made, so the key resets the master password for the vault on the device that created it.",
+      "vi": "Đồng bộ iCloud đang tắt khi tạo Bộ khôi phục này, nên khóa chỉ đặt lại mật khẩu chính cho kho trên thiết bị đã tạo nó.",
+      "ja": "このキットを作成したとき iCloud 同期はオフだったため、キーは作成したデバイス上の保管庫のマスターパスワードをリセットします。",
+      "context": "EmergencyKitPDFPage — instruction step 3, sync-off kits. appString()."
+    },
+    {
+      "key": "This kit is not a backup. It cannot bring your vault back after you lose that device, delete the app, or set up a new one. Turn on iCloud Sync in Loox for that.",
+      "en": "This kit is not a backup. It cannot bring your vault back after you lose that device, delete the app, or set up a new one. Turn on iCloud Sync in Loox for that.",
+      "vi": "Bộ khôi phục này không phải bản sao lưu. Nó không lấy lại được kho sau khi bạn mất thiết bị đó, xóa ứng dụng hoặc thiết lập máy mới. Hãy bật Đồng bộ iCloud trong Loox cho việc đó.",
+      "ja": "このキットはバックアップではありません。そのデバイスを失ったあと、アプリを削除したあと、新しいデバイスを設定したあとに保管庫を取り戻すことはできません。そのためには Loox で iCloud 同期をオンにしてください。",
+      "context": "EmergencyKitPDFPage — instruction step 4, sync-off kits. The printed form of the OPEN-2 'not an offline backup' clause. appString()."
+    },
+    {
+      "key": "This device has no Emergency Kit to upload yet.",
+      "en": "This device has no Emergency Kit to upload yet.",
+      "vi": "Thiết bị này chưa có Bộ khôi phục để tải lên.",
+      "ja": "このデバイスにはまだアップロードできる緊急キットがありません。",
+      "context": "VaultKeyEscrowService.Failure.noRecoveryKit — new case for the awaited envelope push. appString()."
+    },
+    {
+      "key": "Your recovery file did not reach iCloud. Until it does, this kit works on this device only.",
+      "en": "Your recovery file did not reach iCloud. Until it does, this kit works on this device only.",
+      "vi": "Tệp khôi phục chưa lên được iCloud. Cho tới khi lên được, Bộ khôi phục này chỉ dùng được trên thiết bị này.",
+      "ja": "復旧ファイルが iCloud に届きませんでした。届くまで、このキットはこのデバイスでのみ使えます。",
+      "context": "RegenerateKitView — the Settings re-issue path also awaits the push now, so the printed PDF matches reality. appString()."
+    }
+  ],
+  "retire": [
+    {
+      "key": "This recovery key can restore your vault if you forget your master password or set up a new device.",
+      "reason": "Promised a new-device restore with no iCloud Sync precondition (OPEN-2)."
+    },
+    {
+      "key": "Save the kit to continue. It is the only way to recover your vault.",
+      "reason": "With sync off the kit resets the master password; it does not recover the vault."
+    },
+    {
+      "key": "On a new device, choose “Set up from another device” → “Use Recovery Key” and scan this code to restore your vault.",
+      "reason": "Printed on every kit regardless of sync state, and names a flow label the app no longer uses."
+    },
+    {
+      "key": "To restore on a new device: install Loox, sign in to the same iCloud, then scan the Setup Code or type the recovery key.",
+      "reason": "Replaced by a scope-conditional pair of steps."
+    },
+    {
+      "key": "Move your vault from another device, or reopen it with your Emergency Kit.",
+      "reason": "Superseded; the new copy discloses that joining turns iCloud Sync on."
+    },
+    {
+      "key": "Enter the key printed in the Emergency Kit (PDF) you saved.",
+      "reason": "Superseded; the new copy states the iCloud Sync precondition."
+    },
+    {
+      "key": "Import your saved Emergency Kit PDF, scan its Setup Code, or type the recovery key. Your vault will download from iCloud.",
+      "reason": "'Your vault will download from iCloud' is only true when the source vault synced; moved into the precondition banner."
+    }
+  ]
+}

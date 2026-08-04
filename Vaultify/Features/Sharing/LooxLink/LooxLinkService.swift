@@ -197,6 +197,30 @@ import Foundation
         records.remove(shareId: record.shareId)
     }
 
+    /// Erase teardown: revoke every quick link this device created that has not
+    /// expired yet, and report which ones are still live.
+    ///
+    /// This has to happen BEFORE the vault wipe. A link's ciphertext lives on
+    /// the server for up to its expiry (30 days at the cap) and its content key
+    /// travels in the URL fragment, so anyone still holding the URL can read the
+    /// item. The revoke token is the only credential that kills it, and it is
+    /// stored nowhere but this device — wiping first leaves a live link nobody,
+    /// including support, can ever revoke.
+    ///
+    /// Sequential on purpose (the service rate-limits), and cancellation-aware
+    /// so a bounded caller gets an honest "still live" list rather than a
+    /// half-finished pass reported as success.
+    func revokeAllForErase() async -> (attempted: Int, failed: [LooxLinkRecord]) {
+        let live = records.records.filter { !$0.isExpired }
+        guard !live.isEmpty else { return (0, []) }
+        var failed: [LooxLinkRecord] = []
+        for record in live {
+            if Task.isCancelled { failed.append(record); continue }
+            do { try await revoke(record) } catch { failed.append(record) }
+        }
+        return (live.count, failed)
+    }
+
     /// Classify an API failure for the capability store: verified operator
     /// state persists; infra failures feed the breaker; everything else means
     /// the service answered (INV-CAP-07 — no state change from generic errors).

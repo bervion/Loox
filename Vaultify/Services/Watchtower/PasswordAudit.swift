@@ -115,7 +115,7 @@ nonisolated enum PasswordAudit {
 
     static func issue(_ item: VaultItem, kind: VaultIssue.Kind, detail: String? = nil) -> VaultIssue {
         VaultIssue(itemID: item.id,
-                   itemTitle: item.title.isEmpty ? "Untitled" : item.title,
+                   itemTitle: item.title.isEmpty ? appString("Untitled") : item.title,
                    category: item.category, kind: kind, detail: detail)
     }
 }

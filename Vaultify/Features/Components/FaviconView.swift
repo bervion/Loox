@@ -15,7 +15,13 @@ struct FaviconView: View {
     var iconAsset: String? = nil
 
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.faviconNetworkLookups) private var networkLookupsAllowed
     @State private var image: PlatformImage?
+    /// True once this row has resolved its avatar at least once. A later run of
+    /// `.task(id:)` therefore means the website value CHANGED, which in practice
+    /// only happens while the user types in the editor — so that run is the one
+    /// that gets debounced.
+    @State private var hasResolvedOnce = false
 
     private var isBrandLoox: Bool { LooxAppIcon.isBrandTitle(title) }
     private var isAuto: Bool { ItemAvatarStyle.resolve(iconAsset) == .auto }
@@ -58,10 +64,53 @@ struct FaviconView: View {
     private static let tileColor = Color.platformDynamic(light: 0xFFFFFF, dark: 0xE6E6E6)
 
     private func load() async {
+        // Read and set before the first suspension: a keystroke during a fetch
+        // restarts this task, and that restart must already count as an edit.
+        let isFirstResolve = !hasResolvedOnce
+        hasResolvedOnce = true
+        // `showWebsiteIcons` off hides the icons outright, cached ones included:
+        // the setting is about what the avatar shows, not only about traffic.
         guard isAuto, env.settings.showWebsiteIcons,
-              let urlString, let host = FaviconService.host(from: urlString) else { image = nil; return }
+              let urlString, let host = FaviconService.host(from: urlString) else {
+            image = nil
+            return
+        }
         if let cached = env.faviconService.cachedIcon(host: host) { image = cached; return }
-        image = await env.faviconService.fetchIcon(host: host)
+        // Drop the previous site's icon straight away: while a URL is being
+        // edited, keeping it would label the new value with the old site.
+        image = nil
+        // First resolve is a render, so it stays instant. Anything after is an
+        // edit, and each keystroke cancels this task before the delay is up, so
+        // no half-typed host is ever sent.
+        let debounce: Duration = isFirstResolve ? .zero : FaviconService.typingDebounce
+        image = await env.faviconService.fetchIcon(
+            host: host,
+            allowNetwork: networkLookupsAllowed,
+            debounce: debounce)
+    }
+}
+
+/// Whether `FaviconView`s in this subtree may put a host on the network. Cached
+/// icons still render when it is off.
+private struct FaviconNetworkLookupsKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var faviconNetworkLookups: Bool {
+        get { self[FaviconNetworkLookupsKey.self] }
+        set { self[FaviconNetworkLookupsKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// Opt a subtree out of favicon network lookups.
+    ///
+    /// Vault screens leave this on. A bulk preview turns it off: choosing an
+    /// import file must not enumerate that file's hosts to a third party before
+    /// the user has decided to import anything.
+    func faviconNetworkLookups(_ allowed: Bool) -> some View {
+        environment(\.faviconNetworkLookups, allowed)
     }
 }
 

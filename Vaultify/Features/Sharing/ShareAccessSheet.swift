@@ -759,7 +759,7 @@ struct ShareAccessSheet: View {
                             .sheet(isPresented: $showMessageCompose) {
                                 MessageComposeView(
                                     recipients: [normalizedEmail],
-                                    body: appString("I shared an item with you in Loox Password. Open this link on your iPhone to accept: \(shareURL.absoluteString)"))
+                                    body: appString("I shared an item with you in Loox Password. Open this link on your device to accept: \(shareURL.absoluteString)"))
                             }
                         } else {
                             ShareLink(item: shareURL) {

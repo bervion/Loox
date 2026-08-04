@@ -41,14 +41,18 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     /// Whether purchase surfaces render (paywall, plan section, gate sheets).
     /// True once the real launch flag flips — and early in beta environments
     /// (TestFlight, App Review) so sandbox purchases are testable end-to-end
-    /// before launch. App Store builds stay dark until
-    /// `LooxMembership.launchEnabled`. DEBUG builds use the explicit dev
-    /// toggle instead (see `debugPurchasesEnabled`).
+    /// before launch, which `LooxMembership.betaPreviewEnabled` can switch off
+    /// to ship a submission with no commerce surface at all. App Store builds
+    /// stay dark until `LooxMembership.launchEnabled`. DEBUG builds use the
+    /// explicit dev toggle instead (see `debugPurchasesEnabled`).
     var purchasesEnabled: Bool {
         #if DEBUG
         return LooxMembership.launchEnabled || debugPurchasesEnabled
         #else
-        return LooxMembership.launchEnabled || betaPurchaseAccess
+        // Both halves, deliberately: `start()` already skips the environment
+        // probe when the preview switch is off, and re-checking it here means
+        // the switch darkens commerce no matter how `betaPurchaseAccess` was set.
+        return LooxMembership.launchEnabled || (LooxMembership.betaPreviewEnabled && betaPurchaseAccess)
         #endif
     }
 
@@ -56,7 +60,8 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     /// TestFlight/App Review (`.sandbox`). Resolved once at start on RELEASE
     /// builds straight from `AppTransaction.shared` (store-distributed
     /// installs answer from the store record; anything without store context
-    /// throws and stays false — dark is the safe default).
+    /// throws and stays false — dark is the safe default). Never resolved at
+    /// all while `LooxMembership.betaPreviewEnabled` is off.
     private(set) var betaPurchaseAccess = false
 
     #if DEBUG
@@ -107,7 +112,12 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     func start() {
         guard updatesTask == nil else { return }
         #if !DEBUG
-        Task { [weak self] in await self?.resolveBetaPurchaseAccess() }
+        // With the preview switch off the environment is never probed: no
+        // AppTransaction request, nothing to log, nothing that could open a
+        // purchase surface.
+        if LooxMembership.betaPreviewEnabled {
+            Task { [weak self] in await self?.resolveBetaPurchaseAccess() }
+        }
         #endif
         updatesTask = Task { [weak self] in
             await self?.refresh()

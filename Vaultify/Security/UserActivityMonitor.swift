@@ -71,7 +71,11 @@ private struct UserActivityMonitor: UIViewRepresentable {
             }
         }
 
-        deinit { NotificationCenter.default.removeObserver(self) }
+        // `nonisolated`: this type is main-actor isolated by the project default,
+        // and a main-actor isolated deinit makes the Swift 6.2 runtime hop when
+        // the object is released off the main actor, which aborts the test host.
+        // `removeObserver` is thread-safe, so isolation buys nothing here.
+        nonisolated deinit { NotificationCenter.default.removeObserver(self) }
 
         @objc private func textDidChange() { onActivity() }
 

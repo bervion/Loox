@@ -74,7 +74,9 @@ struct ItemCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
             FaviconView(urlString: item.urlField?.value, category: item.category, size: 36, title: item.title)
-            Text(item.title.isEmpty ? "Untitled" : item.title)
+            // `appString`, not a bare literal: the ternary makes this the `Text(String)`
+            // overload, which renders verbatim and would ship English into VI and JA.
+            Text(verbatim: item.title.isEmpty ? appString("Untitled") : item.title)
                 .vaultType(.subhead).fontWeight(.medium).lineLimit(1).themedForeground()
             if let sub = item.subtitle, !sub.isEmpty {
                 Text(sub).vaultType(.caption).themedForeground(.secondary).lineLimit(1)

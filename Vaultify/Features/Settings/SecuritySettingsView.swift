@@ -71,11 +71,20 @@ struct SecuritySettingsView: View {
             }
             .listRowBackground(VaultColors.surface)
 
+            // The breach check is the one control on this screen that leaves the
+            // device, so it carries its own disclosure instead of sharing a footer
+            // that describes something else. Same sentence as the Watchtower toggle.
             Section {
                 Toggle(isOn: $settings.hibpEnabled) {
                     Label { Text("Check for known breaches") } icon: { SettingsIconBadge(systemName: "checkmark.shield.fill", tint: SettingsBadgeTint.green) }
                 }
                 .tint(switchTint)
+            } footer: {
+                Text("Uses k-anonymity. Only the first five characters of each password's SHA-1 hash are sent. Passwords never leave your device.")
+            }
+            .listRowBackground(VaultColors.surface)
+
+            Section {
                 Toggle(isOn: automaticPasskeyBinding) {
                     Label { Text("Automatic passkey upgrades") } icon: { SettingsIconBadge(systemName: "person.badge.key.fill", tint: SettingsBadgeTint.purple) }
                 }

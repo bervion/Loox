@@ -160,6 +160,12 @@ struct VaultifyApp: App {
                 // Cold launch: the scene delegate buffered the link before
                 // this view (and its onReceive) existed — drain it now.
                 .task {
+                    // An export writes a plaintext CSV or an encrypted backup to
+                    // the temp directory and hands it to the share sheet, which
+                    // reports no completion. Anything still there at launch is a
+                    // leftover from a share that was cancelled, or from a process
+                    // that died before its own cleanup ran.
+                    ExportTempFiles.purge()
                     if let url = PendingInviteLink.url { handleInviteLink(url) }
                     AnalyticsEngine.shared.refreshUserProperties(
                         tier: env.entitlements.tier,

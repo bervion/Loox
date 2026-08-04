@@ -88,6 +88,10 @@ private struct ThemePreviewCard: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        // The selection ring and the check glyph are purely visual (VaultIcon is
+        // accessibility-hidden), so without this trait VoiceOver reads every card
+        // identically and the active appearance is unknowable.
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private var primaryPalette: AppTheme {
