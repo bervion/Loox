@@ -838,10 +838,10 @@ private struct LeaveShareDialogs: ViewModifier {
             } message: {
                 Text(verbatim: screen.leaveError ?? "")
             }
-            .confirmationDialog("Remove it from this iPhone?",
+            .confirmationDialog("Remove it from this device?",
                                 isPresented: screen.$offerLocalRemoval,
                                 titleVisibility: .visible) {
-                Button("Remove From This iPhone", role: .destructive) {
+                Button("Remove From This Device", role: .destructive) {
                     Task { await screen.removeShareLocally() }
                 }
             } message: {

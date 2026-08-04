@@ -145,7 +145,7 @@ struct UITestConfigurationTests {
         }
 
         let configuration = UITestConfiguration(fixture: .vaultEditSaveRelock)
-        _ = AppEnvironment(uiTestConfiguration: configuration)
+        _ = TestAppEnvironment.make(uiTestConfiguration: configuration)
 
         for key in protectedKeys {
             #expect(standard.object(forKey: key) == nil, "Unexpected production write: \(key)")

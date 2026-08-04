@@ -798,7 +798,7 @@ struct HomeScreen: View {
                     .themedForeground(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 300)
-                Text("Everything is encrypted on this iPhone before it's stored.")
+                Text("Everything is encrypted on this device before it's stored.")
                     .vaultType(.footnote)
                     .themedForeground(.tertiary)
                     .multilineTextAlignment(.center)

@@ -65,6 +65,16 @@ let project = Project(
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                 "CFBundleLocalizations": ["en", "vi", "ja"],
+                // Analytics is opt-IN. `SettingsStore.analyticsEnabled` defaults to
+                // false, but that flag is read by `AnalyticsEngine` AFTER
+                // `FirebaseApp.configure()` has already run — configure() is the
+                // shared gate crash reporting also needs, so it cannot be skipped.
+                // Without this key, GA4 would start collecting on first launch and
+                // only be switched off a moment later, which is exactly the
+                // "collects nothing until you say so" claim the privacy policy and
+                // the About screen now make. The engine re-enables collection at
+                // runtime once consent is given.
+                "FIREBASE_ANALYTICS_COLLECTION_ENABLED": false,
                 // Export compliance: app uses only exempt encryption (standard
                 // algorithms protecting the user's own on-device data) → skips the
                 // per-upload encryption questionnaire in App Store Connect.

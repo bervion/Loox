@@ -149,7 +149,7 @@ final class EraseLifecycleTests: XCTestCase {
     // MARK: Environment-level erase
 
     func testEraseKeepsTheTokensOfLinksThatAreStillLive() {
-        let env = AppEnvironment(uiTestConfiguration: .disabled)
+        let env = TestAppEnvironment.make()
         let stillLive = makeRecord(shareId: "unrevoked")
         env.looxLinks.records.add(makeRecord(shareId: "revoked"))
         env.looxLinks.records.add(stillLive)
@@ -160,7 +160,7 @@ final class EraseLifecycleTests: XCTestCase {
     }
 
     func testEraseOnThisDeviceKeepsEveryLiveLinkKillable() {
-        let env = AppEnvironment(uiTestConfiguration: .disabled)
+        let env = TestAppEnvironment.make()
         env.looxLinks.records.add(makeRecord(shareId: "a"))
         env.looxLinks.records.add(makeRecord(shareId: "expired", expiresIn: -60))
 
@@ -172,7 +172,7 @@ final class EraseLifecycleTests: XCTestCase {
     }
 
     func testEraseClearsFaviconAndAttachmentResidue() throws {
-        let env = AppEnvironment(uiTestConfiguration: .disabled)
+        let env = TestAppEnvironment.make()
         let root = try XCTUnwrap(env.isolatedFileRoot)
         let attachments = root.appending(path: "Attachments")
         let favicons = root.appending(path: "Favicons")
@@ -189,7 +189,7 @@ final class EraseLifecycleTests: XCTestCase {
     }
 
     func testTeardownUnderTestIsolationTouchesNoRemoteServiceAndStillReports() async {
-        let env = AppEnvironment(uiTestConfiguration: .disabled)
+        let env = TestAppEnvironment.make()
         let report = await env.tearDownRemoteState(steps: EraseStep.allCases)
         // Every requested step is accounted for even when nothing ran, so the
         // flow can never treat a missing outcome as a silent success.
@@ -200,7 +200,7 @@ final class EraseLifecycleTests: XCTestCase {
     // MARK: Tutorial isolation
 
     func testIsolatedLaunchAnswersEveryTutorialFlow() throws {
-        _ = AppEnvironment(uiTestConfiguration: .disabled)
+        _ = TestAppEnvironment.make()
         let defaults = try XCTUnwrap(UserDefaults(suiteName: UITestConfiguration.settingsDefaultsSuite))
         let store = TutorialStore(defaults: defaults)
         for flowID in TutorialFlow.allFlowIDs {
@@ -210,19 +210,37 @@ final class EraseLifecycleTests: XCTestCase {
         }
     }
 
-    func testATestCanOptBackIntoTheTutorials() throws {
-        // Deliberately does NOT write UserDefaults.standard. Doing so wrote into
-        // the app host's real defaults, and when the host died before cleanup the
-        // flag survived on the simulator and broke every later launch. The opt-in
-        // is a launch argument precisely so it cannot outlive the process.
+    /// The opt-in is a launch argument, and that is the whole point.
+    ///
+    /// An earlier version of this test set a `UserDefaults` key instead. That
+    /// made the opt-in survive the process: when the host died before the test's
+    /// cleanup ran, the flag stayed in the app's real defaults on that simulator
+    /// and every later launch showed the first-run scrim, which broke both UI
+    /// tests until the device was wiped.
+    ///
+    /// A unit test cannot add a launch argument to the host process it is already
+    /// running inside, so "a test can opt back in" is not observable here — it is
+    /// asserted where it is actually exercised, by the UI tests that launch the
+    /// app with `AppEnvironment.tutorialLaunchArgument`. What this test can pin,
+    /// and what regressed before, is that the opt-in is not readable from any
+    /// persistent store.
+    func testTheTutorialOptInCannotOutliveTheProcess() throws {
         XCTAssertTrue(
             AppEnvironment.tutorialLaunchArgument.hasPrefix("-"),
             "the opt-in must be a launch argument, not a defaults key")
 
-        _ = AppEnvironment(uiTestConfiguration: .disabled)
+        // Writing the old key must no longer have any effect on a fresh
+        // environment; if a fallback is ever reintroduced, this fails.
+        let legacyKey = "ui-test-tutorials"
+        UserDefaults.standard.set(true, forKey: legacyKey)
+        defer { UserDefaults.standard.removeObject(forKey: legacyKey) }
+
+        _ = TestAppEnvironment.make()
         let defaults = try XCTUnwrap(UserDefaults(suiteName: UITestConfiguration.settingsDefaultsSuite))
         let store = TutorialStore(defaults: defaults)
-        XCTAssertTrue(store.shouldPresent(TutorialFlow.firstRun.id))
+        XCTAssertFalse(
+            store.shouldPresent(TutorialFlow.firstRun.id),
+            "a persisted key must not be able to re-enable the tours")
     }
 
     // MARK: Helpers

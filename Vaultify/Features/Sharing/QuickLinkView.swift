@@ -116,7 +116,7 @@ struct QuickLinkView: View {
             } footer: {
                 Text(oneTime
                      ? "The link disappears the first time it's opened. If nobody opens it, it expires on its own after 24 hours. The viewer asks for a tap first, so link previews can't use it up."
-                     : "Everything is encrypted on this iPhone. The server only ever holds the locked version, and the key that opens it travels inside the link, never to any server.")
+                     : "Everything is encrypted on this device. The server only ever holds the locked version, and the key that opens it travels inside the link, never to any server.")
             }
             .listRowBackground(VaultColors.surface)
 

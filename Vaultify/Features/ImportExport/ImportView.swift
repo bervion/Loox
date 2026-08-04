@@ -309,7 +309,12 @@ struct ImportView: View {
 
             if !parsed.isEmpty || !parsedPasskeys.isEmpty {
                 Section("Preview (\(parsed.count + parsedPasskeys.count))") {
+                    // No network icon lookups from the import preview. Rendering
+                    // rows here would otherwise enumerate every host in the file
+                    // being imported to the icon service in one burst, before the
+                    // user has even decided to import it.
                     ForEach(parsed.prefix(6)) { VaultItemRow(item: $0.item) }
+                        .faviconNetworkLookups(false)
                     if parsed.count > 6 { Text("and \(parsed.count - 6) more…").vaultType(.footnote).themedForeground(.secondary) }
                     if !parsedPasskeys.isEmpty {
                         Label {

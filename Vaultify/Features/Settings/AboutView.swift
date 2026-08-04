@@ -74,7 +74,7 @@ struct AboutView: View {
             // "No servers holding your vault" was retired: with iCloud sync on,
             // Apple does hold the ciphertext. The readable-by-nobody claim is the
             // one the architecture actually backs.
-            Text("No accounts to create. No server that can read your vault. No subscription holding your data hostage. Just your iPhone, your keys, your secrets.")
+            Text("No accounts to create. No server that can read your vault. No subscription holding your data hostage. Just your device, your keys, your secrets.")
                 .vaultType(.subhead)
                 .foregroundStyle(AboutInk.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -99,7 +99,7 @@ struct AboutView: View {
                         // "Every item", not "everything": a folder's icon, colour and
                         // sort order ride along CloudKit in the clear, so the absolute
                         // is not defensible. Item contents and folder names are sealed.
-                        body: "Every item is sealed with AES-256 before it touches storage. If it ever leaves your iPhone, to iCloud, to another device, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
+                        body: "Every item is sealed with AES-256 before it touches storage. If it ever leaves your device, to iCloud, to another one, it leaves already locked. We couldn't read it if we wanted to. Nobody can.")
             promiseCard(number: 2, tint: AboutInk.promiseTeal,
                         title: "Trust is verified, never assumed",
                         body: "Share a password, pair a device, open in a browser. Every handover makes both sides compare a code before anything moves. A little ceremony, on purpose. Secrets deserve it.")

@@ -32555,6 +32555,142 @@
           }
         }
       }
+    },
+    "Everything is encrypted on this device before it's stored.": {
+      "comment": "Home screen privacy reassurance",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi thứ được mã hoá ngay trên thiết bị này trước khi lưu."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてこの端末で暗号化してから保存されます。"
+          }
+        }
+      }
+    },
+    "Everything is encrypted on this device. The server only ever holds the locked version, and the key that opens it travels inside the link, never to any server.": {
+      "comment": "Quick Link explainer",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi thứ được mã hoá ngay trên thiết bị này. Máy chủ chỉ giữ bản đã khoá, còn khoá mở nằm trong chính đường link và không bao giờ tới máy chủ nào."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてこの端末で暗号化されます。サーバーが保持するのはロックされた状態のみで、解錠する鍵はリンクの中にあり、どのサーバーにも渡りません。"
+          }
+        }
+      }
+    },
+    "Remove it from this device?": {
+      "comment": "Confirmation dialog title when removing a shared item locally",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gỡ khỏi thiết bị này?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この端末から削除しますか？"
+          }
+        }
+      }
+    },
+    "Remove From This Device": {
+      "comment": "Destructive button in the local-removal confirmation dialog",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gỡ khỏi thiết bị này"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この端末から削除"
+          }
+        }
+      }
+    },
+    "No accounts to create. No server that can read your vault. No subscription holding your data hostage. Just your device, your keys, your secrets.": {
+      "comment": "About screen positioning statement",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không phải tạo tài khoản. Không máy chủ nào đọc được vault của bạn. Không gói đăng ký nào giữ dữ liệu của bạn làm con tin. Chỉ có thiết bị của bạn, khoá của bạn, bí mật của bạn."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "作成するアカウントはありません。あなたのVaultを読めるサーバーもありません。データを人質に取るサブスクリプションもありません。あるのはあなたの端末、あなたの鍵、あなたの秘密だけです。"
+          }
+        }
+      }
+    },
+    "Every item is sealed with AES-256 before it touches storage. If it ever leaves your device, to iCloud, to another one, it leaves already locked. We couldn't read it if we wanted to. Nobody can.": {
+      "comment": "About screen encryption card body",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi mục đều được niêm phong bằng AES-256 trước khi chạm tới bộ nhớ. Nếu nó rời thiết bị của bạn, lên iCloud hay sang máy khác, nó rời đi ở trạng thái đã khoá. Chúng tôi có muốn cũng không đọc được. Không ai đọc được."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての項目はストレージに触れる前にAES-256で封印されます。iCloudへ、別の端末へと出ていくときも、すでにロックされた状態で出ていきます。私たちが読みたくても読めません。誰にも読めません。"
+          }
+        }
+      }
+    },
+    "I shared an item with you in Loox Password. Open this link on your device to accept: %@": {
+      "comment": "Share invite message body sent to the recipient, who may be on any device",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mình đã chia sẻ một mục với bạn trong Loox Password. Mở link này trên thiết bị của bạn để nhận: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox Passwordで項目を共有しました。受け取るには、お使いの端末でこのリンクを開いてください: %@"
+          }
+        }
+      }
+    },
+    "Open Loox on your other device (Settings → iCloud Sync → Pair New Device) to scan the new device’s code.": {
+      "comment": "Pair-device sheet instruction; the existing device may be an iPad",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở Loox trên thiết bị còn lại của bạn (Cài đặt → Đồng bộ iCloud → Ghép thiết bị mới) để quét mã của thiết bị mới."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お使いのもう一方の端末でLooxを開き（設定 → iCloud同期 → 新しい端末をペアリング）、新しい端末のコードを読み取ってください。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

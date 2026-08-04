@@ -106,7 +106,7 @@ final class SyncOptInContractTests: XCTestCase {
     // MARK: Erase closes both planes
 
     func testEraseOnThisDeviceTurnsBothPlanesOff() {
-        let env = AppEnvironment(uiTestConfiguration: .disabled)
+        let env = TestAppEnvironment.make()
         env.settings.iCloudSyncEnabled = true
         env.settings.approvalModeEnabled = true
 
@@ -120,7 +120,7 @@ final class SyncOptInContractTests: XCTestCase {
     }
 
     func testEraseEverywhereTurnsBothPlanesOff() {
-        let env = AppEnvironment(uiTestConfiguration: .disabled)
+        let env = TestAppEnvironment.make()
         env.settings.iCloudSyncEnabled = true
         env.settings.approvalModeEnabled = true
 

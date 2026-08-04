@@ -44,6 +44,21 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
 
 /// Non-sensitive preference flags persisted in `UserDefaults`. No secrets here.
 @MainActor @Observable final class SettingsStore {
+
+    // Deallocation must not hop to the main actor.
+    //
+    // This is a `@MainActor @Observable final class`, so without an explicit
+    // `nonisolated deinit` the compiler synthesises an ISOLATED deallocating
+    // deinit, and the iOS 17.3 deployment floor routes that through the
+    // `swift_task_deinitOnExecutorMainActorBackDeploy` shim. On Xcode 27 that
+    // shim aborts inside libmalloc ("pointer being freed was not allocated")
+    // whenever one isolated deinit releases another — SettingsStore owns other
+    // main-actor objects, so it nests by construction.
+    //
+    // Nothing here needs isolation: releasing stored references is thread-safe,
+    // and the body is empty. The shipping app never deallocates these objects,
+    // which is why only the test host ever hit it.
+    nonisolated deinit {}
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let mirrorToSharedConfig: Bool
 
