@@ -1,17 +1,18 @@
 # Phase 5 — Membership launch (`launchEnabled = true`)
 
-Per D3, subscriptions ship live to real users in this release, not merely attached for
-review. This phase is the difference between "reviewer can buy in sandbox" and "customers
-can buy".
+**Decision, revised 2026-08-04 (R2 resolved):** attach the four IAPs to this submission and
+keep `LooxMembership.launchEnabled = false`. Apple requires a first subscription to be
+submitted *with* an app version; it does **not** require production purchases to be live on
+day one. The flip is **gated, not scheduled**: it happens only after a **signed TestFlight
+build** passes purchase and restore end to end together with the backend. If that is not
+green before the tag, the release ships with the flag off.
 
-> **Contested (R2).** Apple's rule is that a first subscription must be submitted *with* an
-> app version — it does **not** require flipping `launchEnabled = true` for every
-> production user on day one. A second reviewer recommends attaching the four IAPs,
-> ensuring the reviewer/sandbox path is complete, and turning production purchases on only
-> once policies are live, backend modes are settled, product states are Ready, purchase and
-> restore pass E2E, and the real-device matrix is green. That splits a first App Store
-> submission from a paid launch. D3 stands, but it is an owner acceptance of the larger
-> combined risk, and §5.6's ordering is what keeps it survivable.
+So this phase now has two halves:
+
+- **In scope for this release** — everything the reviewer and the four attached products
+  need: working policy links, correct product state in ASC, sandbox purchase/restore, and
+  the paywall rendering completely.
+- **Gated behind the E2E** — §5.6, the flag flip itself.
 
 **Good news up front:** the purchase stack is genuinely done and sandbox-tested. Paywall,
 restore, storefront repricing, in-hand-transaction tier grant and Ask-to-Buy all have
@@ -94,6 +95,21 @@ was run informally, record it; if not, it is a pre-flip task. Write the report t
 
 ### 5.4 — ASC mechanics (owner)
 
+**The four products.** Source of truth is `VaultifyCore/Subscription/LooxTier.swift:85-90`,
+mirrored in `Loox.storekit`. Subscription group **"Loox Membership", id `22241495`**.
+
+| Product ID | Reference name | Period | StoreKit price (USD tier) | Intro offer |
+|---|---|---|---|---|
+| `com.bervion.vaultify.subscription.max.annual` | Loox Max Annual | P1Y | 34.99 | **yes** — 7-day free trial |
+| `com.bervion.vaultify.subscription.max.monthly` | Loox Max Monthly | P1M | 4.99 | no |
+| `com.bervion.vaultify.subscription.plus.annual` | Loox Plus Annual | P1Y | 19.99 | no |
+| `com.bervion.vaultify.subscription.plus.monthly` | Loox Plus Monthly | P1M | 2.99 | no |
+
+Prices above are the local StoreKit config, which is a **dev fixture, not ASC truth**.
+Phase 5's checklist row on VN pricing records the values the owner kept
+(Max Annual 349k, Max Monthly 49k, Plus Annual 199k, Plus Monthly 29k) against Apple's
+comparable-price suggestions. Verify the live ASC values rather than trusting either file.
+
 Group "Loox Membership" `22241495` exists with all four products and EN/VI metadata; intro
 offer (7-day trial on Max Annual) and 16-day billing grace are configured.
 
@@ -114,12 +130,23 @@ offer (7-day trial on Max Annual) and 16-day billing grace are configured.
 - A backend outage renders as an outage, never as a downgrade to Free (§2.7).
 - Free still surfaces every Critical/High Watchtower finding.
 
-### 5.6 — Flip the flag
+### 5.6 — Flip the flag — GATED, NOT PART OF THIS SUBMISSION
 
-`VaultifyCore/Subscription/LooxMembership.swift:17` → `launchEnabled = true`, then release.
-Do this **last**, after Phase 1's Terms and Privacy are live and legally reviewed —
-`LooxMembership.swift:19-20` makes that a stated precondition, and selling auto-renewing
-subscriptions under placeholder terms is legal exposure independent of App Review.
+`VaultifyCore/Subscription/LooxMembership.swift:17` stays `false` for this release.
+
+Do not flip until **all** of these are true:
+
+- [ ] Terms and Privacy live, without placeholders, counsel signed off
+- [ ] Four products in a submittable state in ASC with review screenshots
+- [ ] Purchase and restore pass end to end on a **signed TestFlight build**, with the
+      backend in the loop, and the run is recorded in `reports/`
+- [ ] §8.2 attach E2E recorded (5.3)
+- [ ] Backend modes settled and observed, not assumed
+- [ ] Real-device matrix green
+
+`LooxMembership.swift:19-20` already states the policy-pages precondition. Selling
+auto-renewing subscriptions under placeholder terms is legal exposure independent of App
+Review, which is a second reason this flip trails the submission rather than riding it.
 
 ### 5.7 — After launch, not before
 
@@ -136,4 +163,5 @@ proposal itself.
 - [ ] Four products Ready to Submit with review screenshots, attached to the version
 - [ ] Sandbox purchase, restore, upgrade, downgrade and cancel all pass on a real device
 - [ ] Outage ≠ downgrade verified
-- [ ] `launchEnabled = true` committed only after the policy pages are live and signed off
+- [ ] `launchEnabled` remains `false` in the submitted build (revised decision, 2026-08-04)
+- [ ] The §5.6 gate list is tracked and unticked, so nobody flips the flag by habit

@@ -45,9 +45,9 @@ move or reuse the `v1.50.0` tag; this work ships as a new tag.
 | # | Decision | Choice | Impact |
 |---|---|---|---|
 | D1 | Analytics / Crashlytics | Analytics **opt-in (default OFF)**, Crashlytics **opt-out (default ON)** | Drives `SettingsStore` defaults, `AboutView` copy, privacy policy, ASC labels |
-| D2 | Favicon | **Keep current behavior** (default ON, Google s2) | Network design unchanged; local cache hygiene tracked separately as P2-FAV. **Contested — see R1** |
-| D3 | Subscriptions | **Ship live** — `launchEnabled = true`, 4 IAPs attached | Adds Phase 5; makes Terms/Privacy 3.1.2-blocking. **Contested — see R2** |
-| D4 | iPad multitasking | **Full support** (Split View / Stage Manager) | Adds Phase 6 + iPad 13" screenshot session. **Contested — see OPEN-1** |
+| D2 | Favicon | **Keep current behavior** (default ON, Google s2) | Network design unchanged; local cache hygiene tracked separately as P2-FAV. **Contested — see R1, still open** |
+| D3 | Subscriptions | **REVISED 2026-08-04 — attach the 4 IAPs, do NOT flip the production flag** | `launchEnabled` stays `false` at submission. See R2 below |
+| D4 | iPad multitasking | **Full support, Branch A confirmed 2026-08-04** | Phases 6 and 7 stay fully in scope, including the iPad 13" screenshot set. See OPEN-1 |
 
 ### Contested decisions — owner must re-confirm or accept the risk in writing
 
@@ -62,16 +62,25 @@ unstated default. None of them may be flipped by an implementer.
   become mandatory rather than optional. The label decision stays as ruled in Phase 1D
   (no `BrowsingHistory` entry), and that too is now an owner-visible call rather than an
   engineering one.
-- **R2 — `launchEnabled = true` at submission.** Reviewer position: attaching the four
-  IAPs to the submission satisfies Apple's first-subscription rule on its own; flipping
-  production purchases on for every user the same day is a separate, larger risk that
-  should wait until policies, backend modes, product states, purchase/restore E2E and the
-  real-device matrix are all green. If D3 stands, Phase 5 is fully in scope and the owner
-  accepts a day-one paid launch on top of a first submission.
-- **OPEN-1 — iPad in v1.** Unchanged below. If Branch A stands, Phases 6 and 7 may **not**
-  be trimmed: full Split View and Stage Manager, portrait/landscape and resize with the
-  editor open, hardware keyboard, iPad 13" screenshots in EN and VI, and AutoFill plus the
-  Safari extension exercised on a real iPad.
+- **R2 — `launchEnabled = true` at submission. RESOLVED 2026-08-04: do not flip.**
+  Reviewer position, now adopted by the owner: attaching the four IAPs to the submission
+  satisfies Apple's first-subscription rule on its own, and flipping production purchases
+  on for every user the same day is separable, larger risk.
+
+  **The decision:** attach the four IAPs to this submission and keep
+  `LooxMembership.launchEnabled = false`. The flip is gated, not scheduled — it happens
+  only after a **signed TestFlight build** passes purchase and restore end to end together
+  with the backend. If those gates are not green before the tag, the release ships with the
+  flag off and the flip moves to a later release. See
+  [phase-05-membership-launch.md](phase-05-membership-launch.md).
+
+- **OPEN-1 — iPad in v1. RESOLVED 2026-08-04: Branch A, iPhone + iPad.** This is the
+  intended product scope, not a calendar compromise. Phases 6 and 7 may **not** be trimmed
+  and partial iPad support is explicitly rejected: full Split View and Stage Manager,
+  rotation and resize including with the editor open, hardware keyboard, the full UI and
+  accessibility QA matrix, iPad 13" screenshots, and AutoFill plus the Safari extension
+  exercised on a real iPad. macOS still does not ship, and Apple Silicon Mac availability
+  must be turned off in App Store Connect.
 | D5 | iCloud sync on fresh create | **Explicit consent step**, no preselect | Depends on OPEN-2 |
 | D6 | Erase Vault | **Two modes** + durable/observable remote teardown | Scoped down per verification — see Phase 2 |
 | D7 | Sample data for review | **Review Notes + public test form**, no seeded fake credential | Phase 7 |
@@ -206,9 +215,10 @@ Independent lanes run in parallel. Serialize only the four real dependencies:
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| OPEN-1 | **Does iPad ship in v1 at all?** D4 chose full multitasking, but verification surfaced two facts the decision did not account for: iPad 13" screenshots are mandatory and do not exist (M1), and the iPad shell has four real defects. Dropping to `TARGETED_DEVICE_FAMILY = "1"` removes ~30% of remaining engineering **and** the screenshot session | Phase 6 scope, Phase 7 screenshots | Owner call; second reviewer recommends iPhone-only for a first submission. If the calendar is tight, ship iPhone-only and land iPad in a later release. If iPad stays, Phases 6 and 7 may not be trimmed. **M13 must be fixed either way** — it is an iPhone bug |
-| OPEN-2 | **What does the Emergency Kit mean when iCloud sync is off?** The printed PDF instructs the user to sign into the same iCloud and scan the Setup Code. With sync off that is false | Phase 2D | Make the kit's copy conditional, and make the consent step explain that cross-device recovery needs sync |
-| OPEN-3 | **Legal entity name, registered address, governing law** for the Terms rewrite | Phase 1B | Required input; nothing in either repo names them |
+| ~~OPEN-1~~ | **RESOLVED 2026-08-04 — Branch A.** iPhone + iPad, full scope, no partial iPad support. Original framing kept below for context | — | — |
+| ~~OPEN-2~~ | **RESOLVED 2026-08-04 — Emergency Kit contract approved.** Phase 2D unblocked; see [phase-00](phase-00-owner-inputs.md) | — | — |
+| OPEN-1 (context) | **Does iPad ship in v1 at all?** D4 chose full multitasking, but verification surfaced two facts the decision did not account for: iPad 13" screenshots are mandatory and do not exist (M1), and the iPad shell has four real defects. Dropping to `TARGETED_DEVICE_FAMILY = "1"` removes ~30% of remaining engineering **and** the screenshot session | Phase 6 scope, Phase 7 screenshots | Owner call; second reviewer recommends iPhone-only for a first submission. If the calendar is tight, ship iPhone-only and land iPad in a later release. If iPad stays, Phases 6 and 7 may not be trimmed. **M13 must be fixed either way** — it is an iPhone bug |
+| OPEN-3 | **Legal inputs for the policy pages.** Still blocking. Implementers must not invent, infer, or "reasonably assume" any of these values | Phase 1B | Owner supplies via the intake form; counsel signs the wording. Retention values must reflect **production behaviour**, and the Quick Link entry may not claim deletion at expiry until the cleanup cron is verified (OPEN-5) |
 | OPEN-4 | **Does the `ja` App Store localization ship in v1?** `metadata/apple/ja/release_notes.txt` exists but there is no Japanese description or keywords | Phase 7 | If yes, point the ja listing's Privacy Policy URL at the English page — Apple accepts one URL for all localizations. **Do not build `messages/ja.json`**, it is off the critical path |
 | OPEN-5 | **Is the Loox Link cleanup cron live in production?** `docs/fe-cloudflare-spec.md:42` marks it maintenance-only | Phase 1B retention section, M8 blast radius | Verify before writing the retention clause |
 

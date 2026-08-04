@@ -9,7 +9,19 @@ D1–D7 are recorded in `plan.md`. No further input needed on those.
 
 ## Still needed
 
-### OPEN-1 — Does iPad ship in v1?
+### OPEN-1 — RESOLVED 2026-08-04: Branch A, iPhone + iPad
+
+Owner ruling: iPad ships. This is the intended product scope, not a calendar compromise,
+and **partial iPad support is explicitly rejected**. Phases 6 and 7 keep their full iPad
+content: Split View, Stage Manager, rotation and resize including with the editor open,
+hardware keyboard, the UI and accessibility QA matrix, and the iPad 13" screenshot set.
+
+macOS still does not ship this round, and Apple Silicon Mac availability must be turned off
+in App Store Connect (M3 below).
+
+The original framing is kept below because it records why the screenshot and QA cost exists.
+
+### OPEN-1 (original framing) — Does iPad ship in v1?
 
 D4 chose full multitasking support. Verification then surfaced two facts that were not
 part of that decision:
@@ -32,7 +44,7 @@ screenshot requirement. Ship iPad in a later release with real QA.
 landscape into the iPad sidebar shell) is an **iPhone** bug. Lowering the device family
 does not change `horizontalSizeClass` on an iPhone 16 Pro Max in landscape.
 
-### OPEN-2 — Emergency Kit semantics with iCloud sync off — PROPOSED CONTRACT
+### OPEN-2 — APPROVED 2026-08-04. Phase 2D is unblocked, build to this contract
 
 Blocks Phase 2D entirely. `pushRecoveryEnvelopeIfNeeded()` is gated on
 `iCloudSyncEnabled` (`SyncCoordinator.swift:90`). If the consent step leaves sync off:
@@ -57,18 +69,24 @@ acknowledgement. It is precise enough to implement against:
 - Onboarding copy, the printed PDF, and Join-by-Recovery must all be corrected to this
   contract. Stop making the general claim that holding the Kit is enough to recover.
 
-This is a genuine reduction in what the product currently implies. Owner should confirm
-before Phase 2D writes the copy.
+This is a genuine reduction in what the product currently implies, and the owner approved
+it on 2026-08-04 with that understood. Onboarding, the printed PDF and Join-by-Recovery all
+get new copy in **EN, VI and JA**. Phase 2D builds to exactly this contract.
 
-### OPEN-3 — Legal inputs for the Terms rewrite
+### OPEN-3 — Legal inputs. STILL BLOCKING as of 2026-08-04
 
-Blocks Phase 1B. Nothing in either repo names them.
+Blocks Phase 1B. Nothing in either repo names these values, and **no implementer may
+invent, infer, or reasonably-assume any of them.**
 
-- Legal entity name and registered address
-- Governing law and jurisdiction
-- Consumer-rights/withdrawal position for the EU/VN markets you list
-- Named data-protection contact (the policy currently says `privacy@looxpassword.com` —
-  confirm that mailbox is monitored)
+Owner supplies them through the intake form:
+[reports/owner-intake-260804-legal-and-asc.md](reports/owner-intake-260804-legal-and-asc.md),
+Form A. Counsel signs the final wording.
+
+Retention values must reflect **production behaviour**, not intent. One constraint is hard:
+the merged privacy page currently claims a Quick Link "is deleted after expiry", and
+`docs/fe-cloudflare-spec.md:42` marks the cleanup job maintenance-only. Until the cron is
+verified in production (OPEN-5), the page may say only that the link **stops being served**.
+That wording correction is tracked as its own frontend change and does not wait for Form A.
 
 ### OPEN-4 — Does the `ja` App Store localization ship in v1?
 
