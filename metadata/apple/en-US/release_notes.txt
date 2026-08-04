@@ -1,1 +1,1 @@
-This update adds developer-focused vault types for storing technical credentials such as API keys and SSH details, alongside improved safeguards for how sensitive entries are protected and managed.
+Version 1.51.0: Performance improvements and bug fixes.

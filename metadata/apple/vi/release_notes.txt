@@ -1,1 +1,1 @@
-Bản cập nhật này bổ sung các loại mục lưu trữ dành cho nhà phát triển như khóa API và thông tin SSH, cùng với cơ chế bảo vệ được cải thiện cho các mục nhạy cảm.
+Phiên bản 1.51.0: Cải thiện hiệu suất và sửa lỗi.

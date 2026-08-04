@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.51.0] - 2026-08-04
+
+### Added
+- implement the release-readiness remediation plan (#194)
+
+### Changed
+- record owner rulings on iPad scope, Emergency Kit and purchase launch
+- fold second-reviewer pass into the remediation plan
+- update docs
+
+
 ## [1.50.0] - 2026-08-02
 
 ### Added
