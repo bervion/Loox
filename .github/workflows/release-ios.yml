@@ -18,6 +18,13 @@ env:
   # The workflow whose green run is the release evidence. A tag ships only if
   # THIS exact commit already has one.
   REQUIRED_WORKFLOW: ci.yml
+  # How long to wait for that run to finish. `make release` pushes the commit
+  # and the tag together, so this workflow routinely starts while ci.yml is
+  # still queued. The unit suite takes about 6 minutes on the self-hosted
+  # runner; 25 leaves room for a queue behind another job without letting a
+  # genuinely stuck run hold a runner all day.
+  RELEASE_EVIDENCE_TIMEOUT_SECONDS: '1500'
+  RELEASE_EVIDENCE_POLL_SECONDS: '20'
 
 jobs:
   release-ios:
@@ -54,36 +61,81 @@ jobs:
           # tag can reach signing with zero test evidence. Bind the evidence to
           # the COMMIT, not the branch: a green run on a later main commit says
           # nothing about the tagged tree.
-          response="$(curl --fail --silent --show-error \
-            -H "Authorization: Bearer $GH_API_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/$REQUIRED_WORKFLOW/runs?head_sha=$GITHUB_SHA&per_page=100")"
-          printf '%s' "$response" | HEAD_SHA="$GITHUB_SHA" WORKFLOW="$REQUIRED_WORKFLOW" /usr/bin/python3 -c '
+          #
+          # This WAITS rather than sampling once. `make release` pushes the
+          # release commit and its tag together, so ci.yml and this workflow
+          # start within seconds of each other — the first check reliably sees
+          # ci.yml still queued, and refusing there rejected a perfectly good
+          # release for being early. Waiting is the correct reading of "this
+          # commit must have a green run"; sampling once was really asking
+          # "…and it must already have finished".
+          #
+          # It still fails fast on a genuine red: a completed `failure` means
+          # re-running is a human decision, not something a release should sit
+          # and wait for.
+          deadline=$(( SECONDS + RELEASE_EVIDENCE_TIMEOUT_SECONDS ))
+          attempt=0
+          while :; do
+            attempt=$(( attempt + 1 ))
+            response="$(curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_API_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/$REQUIRED_WORKFLOW/runs?head_sha=$GITHUB_SHA&per_page=100")"
+
+            verdict="$(printf '%s' "$response" \
+              | HEAD_SHA="$GITHUB_SHA" WORKFLOW="$REQUIRED_WORKFLOW" ATTEMPT="$attempt" /usr/bin/python3 -c '
           import json, os, sys
 
-          runs = json.load(sys.stdin).get("workflow_runs", [])
-          sha = os.environ["HEAD_SHA"]
+          runs = [r for r in json.load(sys.stdin).get("workflow_runs", [])
+                  if r.get("head_sha") == os.environ["HEAD_SHA"]]
           workflow = os.environ["WORKFLOW"]
 
-          green = [r for r in runs
-                   if r.get("head_sha") == sha
-                   and r.get("status") == "completed"
-                   and r.get("conclusion") == "success"]
-          if green:
-              print("Release evidence: %s run %s succeeded for %s"
-                    % (workflow, green[0].get("run_number"), sha))
-              raise SystemExit(0)
+          def state(r):
+              return (r.get("status"), r.get("conclusion"))
 
-          print("No successful %s run for %s — refusing to sign or upload." % (workflow, sha),
-                file=sys.stderr)
+          if any(state(r) == ("completed", "success") for r in runs):
+              run = next(r for r in runs if state(r) == ("completed", "success"))
+              print("GREEN %s run %s" % (workflow, run.get("run_number")))
+              sys.exit(0)
+
+          if runs and all(r.get("status") == "completed" for r in runs) \
+             and any(r.get("conclusion") == "failure" for r in runs):
+              print("RED " + " ".join("run %s=%s" % (r.get("run_number"), r.get("conclusion"))
+                                      for r in runs))
+              sys.exit(0)
+
           if not runs:
-              print("  (that commit has no runs of this workflow at all)", file=sys.stderr)
-          for r in runs:
-              print("  run %s: status=%s conclusion=%s" %
-                    (r.get("run_number"), r.get("status"), r.get("conclusion")), file=sys.stderr)
-          raise SystemExit(1)
-          '
+              print("PENDING no %s run exists for this commit yet" % workflow)
+          else:
+              print("PENDING " + " ".join("run %s=%s/%s" % (r.get("run_number"), r.get("status"),
+                                                            r.get("conclusion") or "-")
+                                          for r in runs))
+          sys.exit(0)
+          ')"
+
+            case "$verdict" in
+              GREEN*)
+                echo "Release evidence: ${verdict#GREEN } succeeded for $GITHUB_SHA"
+                exit 0
+                ;;
+              RED*)
+                echo "$REQUIRED_WORKFLOW failed for $GITHUB_SHA — refusing to sign or upload." >&2
+                echo "  ${verdict#RED }" >&2
+                exit 1
+                ;;
+            esac
+
+            if (( SECONDS >= deadline )); then
+              echo "Timed out after ${RELEASE_EVIDENCE_TIMEOUT_SECONDS}s waiting for a green $REQUIRED_WORKFLOW run for $GITHUB_SHA." >&2
+              echo "  ${verdict#PENDING }" >&2
+              echo "  Re-run this job once that run is green; nothing here is signed or uploaded." >&2
+              exit 1
+            fi
+
+            echo "attempt ${attempt}: ${verdict#PENDING } — waiting ${RELEASE_EVIDENCE_POLL_SECONDS}s"
+            sleep "$RELEASE_EVIDENCE_POLL_SECONDS"
+          done
 
       - name: Install pinned Tuist
         uses: jdx/mise-action@c53b9236f0b3370f31520f8b142f141256d839c6 # v3.6.0
