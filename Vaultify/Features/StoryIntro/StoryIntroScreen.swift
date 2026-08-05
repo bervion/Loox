@@ -19,6 +19,8 @@ struct StoryIntroScreen: View {
     /// Read by the stage layer only — scroll writes never touch this view's
     /// own state, so the beat column is not re-evaluated per scroll tick.
     @State private var progress = StoryScrollProgressModel()
+    /// An exit is already under way (guards the 650ms seal-burst window).
+    @State private var exiting = false
 
     var body: some View {
         Group {
@@ -106,12 +108,21 @@ struct StoryIntroScreen: View {
             Text("Skip")
                 .vaultType(.callout)
                 .foregroundStyle(StoryPalette.textSecondary)
-                .padding(Space.s3) // pads the label out to a 44pt hit area
-                // Soft scrim so the fixed light label stays legible once the
-                // canvas has resolved into a light theme background.
-                .background(Color.black.opacity(0.25), in: Capsule())
+                .padding(Space.s3)
+                // The story's only exit rides over a canvas that resolves into
+                // the user's theme, so a fixed light label needs its own
+                // surface to keep contrast on a light background.
+                .background(StoryPalette.controlScrim, in: Capsule())
+                // Hold the 44pt floor at every Dynamic Type size, including
+                // the smallest, where the label alone falls short.
+                .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
+                .contentShape(Rectangle())
         }
         .padding(.trailing, Space.gutter)
+        // The seal's exit burst is playing; skipping now would log a second,
+        // contradicting outcome for the same session.
+        .disabled(exiting)
+        .opacity(exiting ? 0 : 1)
     }
 
     /// Single exit: BOTH finish and skip set the completion flag (never show
@@ -121,6 +132,11 @@ struct StoryIntroScreen: View {
     /// `playExit` is false for the reader, which has no stage to burst — it
     /// would only add dead time before the hand-off.
     private func complete(outcome: String, playExit: Bool = true) {
+        // One exit per session: the seal's burst keeps the screen alive for
+        // 650ms, and a Skip landing in that window would emit a second
+        // `story_intro_ended` contradicting the first.
+        guard !exiting else { return }
+        exiting = true
         AnalyticsEngine.shared.log(.storyIntroEnded(outcome: outcome,
                                                     furthestBeat: furthestBeat))
         guard outcome == "completed" else {
@@ -161,6 +177,9 @@ enum StoryPalette {
     static let nebulaDeep = Color(red: 0.22, green: 0.24, blue: 0.52)
     static let scrapFill = Color.white.opacity(0.08)
     static let scrapStroke = Color.white.opacity(0.14)
+    /// Surface behind the fixed-light Skip label, so it survives the canvas
+    /// resolving into a light theme.
+    static let controlScrim = Color.black.opacity(0.35)
     /// Consequence tinge: warm amber, deliberately short of red horror.
     static let warning = Color(red: 0.95, green: 0.62, blue: 0.30)
 }

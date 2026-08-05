@@ -26,10 +26,14 @@ nonisolated enum StoryField {
 
     /// The lone glowing dot the story opens on: centre-high, breathing at the
     /// LooxLogoBreathe cadence, handing its light over to the newborn scraps.
+    /// Beat windows all COMPLETE on the integer their page rests at
+    /// (`beatPosition` is 0…5 and each composed page sits exactly on its
+    /// index). A window that ends past the integer leaves the scene half-built
+    /// while the user is looking straight at it.
     static func originDot(t: TimeInterval, beat: Double) -> Sample {
         let breathe = 1 + 0.03 * sin(t * (.pi * 2 / 4))
         // Holds through the hook, dissolves as the swarm takes over.
-        let fade = 1 - smoothstep(beat, 0.55, 1.05)
+        let fade = 1 - smoothstep(beat, 0.45, 0.95)
         return Sample(position: origin, opacity: fade, scale: breathe)
     }
 
@@ -44,8 +48,10 @@ nonisolated enum StoryField {
     /// the LooxSwirl dismiss verb as the curtain-raise for the real app.
     static func sample(index: Int, t: TimeInterval, beat: Double, burst: Double = 0) -> Sample {
         let birthOrder = unitRandom(index, salt: 0x01)
-        let birthBeat = 0.40 + birthOrder * 0.85
-        let birth = smoothstep(beat, birthBeat, birthBeat + 0.30)
+        // Last scrap is fully born by 0.95, so the chaos page (index 1) rests
+        // on a complete swarm rather than one still spawning.
+        let birthBeat = 0.20 + birthOrder * 0.50
+        let birth = smoothstep(beat, birthBeat, birthBeat + 0.25)
         guard birth > 0 else { return Sample(position: origin, opacity: 0, scale: 1) }
 
         let scatter = CGPoint(x: 0.10 + 0.80 * unitRandom(index, salt: 0x02),
@@ -55,7 +61,8 @@ nonisolated enum StoryField {
         // as the consequence beat lands.
         let driftPhase = unitRandom(index, salt: 0x04) * .pi * 2
         let driftSpeed = 0.25 + 0.45 * unitRandom(index, salt: 0x05)
-        let stillness = 1 - smoothstep(beat, 1.85, 2.30)
+        // Drift is fully stilled by the consequence page (index 2).
+        let stillness = 1 - smoothstep(beat, 1.55, 1.95)
         let driftAmp = 0.016 * stillness
         let drifted = CGPoint(
             x: scatter.x + driftAmp * sin(t * driftSpeed + driftPhase),
@@ -66,14 +73,16 @@ nonisolated enum StoryField {
 
         // The turn: position becomes a scroll-scrubbed blend toward the ring —
         // reversing the scroll visibly scatters them again.
-        let gather = easeInOut(smoothstep(beat, 2.85, 3.90))
+        // The gather IS the turn: it runs from leaving the consequence page to
+        // arriving on the turn page (index 3), so the ring is closed at rest.
+        let gather = easeInOut(smoothstep(beat, 2.10, 3.0))
         let slot = index % ringCount
         var position = lerp(placed, ringPoint(slot: slot, t: t, beat: beat), gather)
 
-        // Only ring survivors persist into the sanctuary; the surplus dissolves
-        // as the ring settles.
+        // Only ring survivors persist into the sanctuary; the surplus is gone
+        // before the sanctuary page (index 4) settles.
         let survives = index < ringCount
-        let dissolve = survives ? 0 : smoothstep(beat, 3.70, 4.20)
+        let dissolve = survives ? 0 : smoothstep(beat, 3.30, 3.90)
         var opacity = Double(birth) * (1 - dissolve)
 
         if burst > 0 {
@@ -90,7 +99,7 @@ nonisolated enum StoryField {
     /// Sanctuary orbit: polar slots around the mark, drifting slowly with time,
     /// tightening as the commitment beat closes in.
     private static func ringPoint(slot: Int, t: TimeInterval, beat: Double) -> CGPoint {
-        let tighten = 1 - 0.35 * smoothstep(beat, 4.55, 5.0)
+        let tighten = 1 - 0.35 * smoothstep(beat, 4.30, 5.0)
         let radius = 0.24 * tighten
         let angle = (Double(slot) / Double(ringCount)) * .pi * 2 + t * 0.08
         return CGPoint(x: origin.x + radius * cos(angle),

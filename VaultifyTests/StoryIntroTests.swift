@@ -81,28 +81,110 @@ final class StoryIntroTests: XCTestCase {
         XCTAssertEqual(model.sealTime, firstSeal)
     }
 
+    /// The swarm is the chaos beat's whole message, and nothing else in the
+    /// suite would notice if it stopped being drawn: a break in birth or
+    /// scatter that left every scrap invisible, or collapsed on the origin,
+    /// would otherwise pass.
+    func testChaosBeatShowsAScatteredSwarm() {
+        let samples = (0..<StoryField.scrapCount)
+            .map { StoryField.sample(index: $0, t: 8, beat: 1) }
+            .filter { $0.opacity > 0 }
+        XCTAssertGreaterThan(samples.count, StoryField.scrapCount / 2,
+                             "the chaos page must rest on a fully born swarm")
+        let xs = samples.map(\.position.x), ys = samples.map(\.position.y)
+        let spread = max((xs.max() ?? 0) - (xs.min() ?? 0),
+                         (ys.max() ?? 0) - (ys.min() ?? 0))
+        XCTAssertGreaterThan(spread, 0.3, "scraps must be scattered, not stacked on the origin")
+    }
+
+    /// Every stage window must be COMPLETE on the integer its page rests at —
+    /// the defect class that left the consequence chip missing (the copy told
+    /// the user to tap something that was not drawn yet) and the sanctuary
+    /// half-built while the user looked straight at it.
+    func testConsequenceAndSanctuaryAreComposedAtRest() {
+        // Drift has stopped by the consequence page: sampling twice at
+        // different times must give the same position.
+        for index in [0, 11, 47] {
+            let a = StoryField.sample(index: index, t: 3, beat: 2)
+            let b = StoryField.sample(index: index, t: 9, beat: 2)
+            XCTAssertEqual(a.position.x, b.position.x, accuracy: 0.001)
+            XCTAssertEqual(a.position.y, b.position.y, accuracy: 0.001)
+        }
+        // The ring is closed by the turn page, so the sanctuary opens on it.
+        for index in 0..<StoryField.ringCount {
+            let sample = StoryField.sample(index: index, t: 5, beat: 3)
+            let dx = sample.position.x - StoryField.origin.x
+            let dy = sample.position.y - StoryField.origin.y
+            XCTAssertEqual((dx * dx + dy * dy).squareRoot(), 0.24, accuracy: 0.06)
+        }
+    }
+
     // MARK: Completion-flag semantics
 
     @MainActor
-    func testStoryFlagDefaultsSeenForUpgradingInstalls() {
-        let suite = "story-tests-upgrade"
-        let defaults = UserDefaults(suiteName: suite)!
-        defaults.removePersistentDomain(forName: suite)
+    func testStoryFlagDefaultsSeenForUpgradingInstalls() throws {
+        let (defaults, suite) = try freshDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set(true, forKey: "onboarding_completed")
         let settings = SettingsStore(defaults: defaults, mirrorToSharedConfig: false)
         XCTAssertTrue(settings.storyIntroCompleted,
                       "an already-onboarded install must not replay the story after updating")
-        defaults.removePersistentDomain(forName: suite)
     }
 
     @MainActor
-    func testStoryFlagDefaultsUnseenForFreshInstalls() {
-        let suite = "story-tests-fresh"
-        let defaults = UserDefaults(suiteName: suite)!
-        defaults.removePersistentDomain(forName: suite)
+    func testStoryFlagDefaultsUnseenForFreshInstalls() throws {
+        // A suite-scoped UserDefaults still searches the app's OWN domain, so a
+        // value left by a normal DEBUG launch would read straight through and
+        // make this pass or fail by accident. Clear both keys for the duration.
+        let standard = UserDefaults.standard
+        let keys = ["story_intro_completed", "story_intro_wants_first_item"]
+        let saved = keys.map { standard.object(forKey: $0) }
+        defer {
+            for (key, value) in zip(keys, saved) {
+                if let value { standard.set(value, forKey: key) } else { standard.removeObject(forKey: key) }
+            }
+        }
+        keys.forEach { standard.removeObject(forKey: $0) }
+
+        let (defaults, suite) = try freshDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
         let settings = SettingsStore(defaults: defaults, mirrorToSharedConfig: false)
         XCTAssertFalse(settings.storyIntroCompleted)
         XCTAssertFalse(settings.storyIntroWantsFirstItem)
+    }
+
+    /// The resolved default must be WRITTEN, not recomputed every launch: the
+    /// fallback keys off `onboardingCompleted`, which onboarding has just set,
+    /// so a story the user was interrupted in would otherwise read as seen
+    /// forever instead of replaying.
+    @MainActor
+    func testFreshInstallPinsTheStoryFlagSoAnInterruptedStoryReplays() throws {
+        let standard = UserDefaults.standard
+        let key = "story_intro_completed"
+        let saved = standard.object(forKey: key)
+        defer {
+            if let saved { standard.set(saved, forKey: key) } else { standard.removeObject(forKey: key) }
+        }
+        standard.removeObject(forKey: key)
+
+        let (defaults, suite) = try freshDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        _ = SettingsStore(defaults: defaults, mirrorToSharedConfig: false)
+        XCTAssertEqual(defaults.object(forKey: key) as? Bool, false,
+                       "a fresh install must persist false, not re-derive it after onboarding")
+
+        // Onboarding completes, the story is abandoned, the app relaunches.
+        defaults.set(true, forKey: "onboarding_completed")
+        let relaunched = SettingsStore(defaults: defaults, mirrorToSharedConfig: false)
+        XCTAssertFalse(relaunched.storyIntroCompleted, "the story must still be owed")
+    }
+
+    // MARK: Helpers
+
+    private func freshDefaults() throws -> (UserDefaults, String) {
+        let suite = "com.bervion.vaultify.story-test.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defaults.removePersistentDomain(forName: suite)
+        return (defaults, suite)
     }
 }

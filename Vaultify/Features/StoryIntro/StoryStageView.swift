@@ -17,7 +17,9 @@ struct StoryStageView: View {
     /// Beat-4 relief: the fixed-dark canvas cross-fades into the user's own
     /// theme background as the scraps converge — "light returns" IS the
     /// sanctuary (owner decision, concept-final §1).
-    private var themeMix: Double { StoryField.smoothstep(model.beatPosition, 2.9, 4.0) }
+    /// Resolved by the time the turn page (index 3) rests: the light returning
+    /// IS the gather's payoff, so it must have landed when the user stops there.
+    private var themeMix: Double { StoryField.smoothstep(model.beatPosition, 2.20, 3.0) }
 
     var body: some View {
         ZStack {
@@ -58,15 +60,28 @@ struct StoryStageView: View {
         } symbols: {
             // Rendered ONCE per Canvas pass and stamped per scrap — the glow is
             // pre-blurred here so no per-particle blur filter ever runs.
-            StoryScrapCard(icon: "dt_note_sticky").tag(StageSymbol.note)
-            StoryScrapCard(icon: "dt_message").tag(StageSymbol.chat)
-            StoryScrapCard(icon: "dt_globe", wide: true).tag(StageSymbol.browser)
-            StoryScrapCard(icon: "dt_key").tag(StageSymbol.key)
-            StoryScrapCard(icon: "dt_message", tint: StoryPalette.warning)
+            // `mix` carries the canvas crossfade into the cards: the ring of
+            // gathered scraps survives onto the user's own (possibly light)
+            // theme background, where fixed white-alpha would be invisible.
+            StoryScrapCard(icon: "dt_note_sticky", mix: themeMix, theme: theme)
+                .tag(StageSymbol.note)
+            StoryScrapCard(icon: "dt_message", mix: themeMix, theme: theme)
+                .tag(StageSymbol.chat)
+            StoryScrapCard(icon: "dt_globe", wide: true, mix: themeMix, theme: theme)
+                .tag(StageSymbol.browser)
+            StoryScrapCard(icon: "dt_key", mix: themeMix, theme: theme)
+                .tag(StageSymbol.key)
+            StoryScrapCard(icon: "dt_message", tint: StoryPalette.warning,
+                           mix: themeMix, theme: theme)
                 .tag(StageSymbol.chatWarning)
             Circle().fill(StoryPalette.textPrimary).frame(width: 10, height: 10)
                 .tag(StageSymbol.dot)
-            Circle().fill(StoryPalette.glow).frame(width: 88, height: 88).blur(radius: 18)
+            // The blur needs room INSIDE the symbol's bounds: blurring a circle
+            // that already fills its frame clips the bleed and renders a
+            // hard-edged disc instead of a glow.
+            Circle().fill(StoryPalette.glow).frame(width: 52, height: 52)
+                .blur(radius: 18)
+                .frame(width: 88, height: 88)
                 .tag(StageSymbol.glow)
             Image("BrandSymbol").resizable().scaledToFit()
                 .frame(width: 56, height: 56)
@@ -87,7 +102,8 @@ struct StoryStageView: View {
     /// concentric sigil arcs draw themselves around the orbit.
     private func drawSanctuary(_ ctx: inout GraphicsContext, size: CGSize,
                                t: TimeInterval, beat: Double, burst: Double) {
-        let appear = StoryField.smoothstep(beat, 3.75, 4.25) * (1 - burst)
+        // Assembled by the sanctuary page (index 4), not on the way out of it.
+        let appear = StoryField.smoothstep(beat, 3.50, 3.95) * (1 - burst)
         guard appear > 0.01 else { return }
 
         let breathe = 1 + 0.02 * sin(t * (.pi * 2 / 4))
@@ -96,8 +112,9 @@ struct StoryStageView: View {
         stamp(&ctx, symbol: .glow, at: mark, in: size, baseSize: 120)
         stamp(&ctx, symbol: .mark, at: mark, in: size, baseSize: 56)
 
-        // Sigil arcs: accent-tinted, trim-drawn, counter-rotating slowly.
-        let trim = StoryField.smoothstep(beat, 4.15, 4.85)
+        // Sigil arcs: accent-tinted, trim-drawn, counter-rotating slowly. Drawn
+        // in as the sanctuary arrives, complete on its resting frame.
+        let trim = StoryField.smoothstep(beat, 3.60, 4.0)
         guard trim > 0.01 else { return }
         let center = CGPoint(x: StoryField.origin.x * size.width,
                              y: StoryField.origin.y * size.height)
@@ -123,21 +140,28 @@ struct StoryStageView: View {
     /// then holds — sent is sent), and scrolling deeper into the beat plays a
     /// softer version for non-tappers. Reeling into the turn drains it away.
     private func rippleProgress(t: TimeInterval, beat: Double) -> Double {
-        let scrolled = StoryField.smoothstep(beat, 2.45, 2.95) * 0.7
+        // Non-tappers get the soft version WHILE the consequence page is on
+        // screen (index 2), not on the way out of it.
+        let scrolled = StoryField.smoothstep(beat, 1.95, 2.45) * 0.7
         let tapped: Double
         if let tap = model.sendTapTime {
-            tapped = StoryField.easeOut(min(max((t - tap) / 0.9, 0), 1))
+            // Under Reduce Motion the TimelineView is paused, so `t` is frozen
+            // and an elapsed-time ramp would never advance: the tap still has
+            // to DO something, so it lands its full state at once.
+            tapped = paused ? 1 : StoryField.easeOut(min(max((t - tap) / 0.9, 0), 1))
         } else {
             tapped = 0
         }
-        return max(scrolled, tapped) * (1 - StoryField.smoothstep(beat, 3.0, 3.6))
+        return max(scrolled, tapped) * (1 - StoryField.smoothstep(beat, 2.40, 2.90))
     }
 
     private func drawConsequence(_ ctx: inout GraphicsContext, size: CGSize,
                                  t: TimeInterval, beat: Double, ripple: Double) {
-        // The one shared chip, glowing centre-stage as the drift stills.
-        let appear = StoryField.smoothstep(beat, 2.05, 2.35)
-            * (1 - StoryField.smoothstep(beat, 3.0, 3.5))
+        // The one shared chip, glowing centre-stage as the drift stills — fully
+        // present when the consequence page (index 2) rests, because the copy
+        // there tells the user to tap it.
+        let appear = StoryField.smoothstep(beat, 1.60, 1.95)
+            * (1 - StoryField.smoothstep(beat, 2.30, 2.90))
         guard appear > 0.01 else { return }
 
         let chip = StoryField.Sample(position: StoryField.sharedChip,
@@ -247,15 +271,41 @@ private struct StoryScrapCard: View {
     var wide = false
     /// Warning-tinted variant for the consequence beat's ghost copies.
     var tint: Color?
+    /// 0 = fixed dark-canvas look, 1 = the user's theme (crossfaded, never a
+    /// hard switch, so nothing flashes mid-gather).
+    var mix: Double = 0
+    let theme: AppTheme
 
     var body: some View {
-        VaultIcon(icon, size: 16)
-            .foregroundStyle(tint ?? StoryPalette.textSecondary)
+        glyph
             .frame(width: wide ? 52 : 44, height: 34)
-            .background(StoryPalette.scrapFill)
+            .background {
+                ZStack {
+                    Color(rgb: theme.controlBackground)
+                    StoryPalette.scrapFill.opacity(1 - mix)
+                }
+            }
             .vaultCornerRadius(Radius.sm)
-            .overlay(
+            .overlay {
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .strokeBorder(tint?.opacity(0.4) ?? StoryPalette.scrapStroke, lineWidth: 1))
+                    .strokeBorder(strokeColor, lineWidth: 1)
+            }
+    }
+
+    /// Two passes with complementary opacity: a single interpolated Color is not
+    /// available here, and switching on a threshold would pop.
+    private var glyph: some View {
+        ZStack {
+            VaultIcon(icon, size: Metric.iconCompact)
+                .foregroundStyle(tint ?? theme.color(.iconSecondary))
+            VaultIcon(icon, size: Metric.iconCompact)
+                .foregroundStyle(tint ?? StoryPalette.textSecondary)
+                .opacity(1 - mix)
+        }
+    }
+
+    private var strokeColor: Color {
+        if let tint { return tint.opacity(0.4) }
+        return mix > 0.5 ? Color(rgb: theme.separator) : StoryPalette.scrapStroke
     }
 }

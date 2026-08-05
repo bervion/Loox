@@ -92,11 +92,15 @@ struct StoryBeatView: View {
             .multilineTextAlignment(.center)
             // Hero line only: blur entrance is the story's reveal verb, and
             // whole-block (never per-word) so VI and JA render identically.
+            // Interpolated on phase.VALUE, not `isIdentity`: with full-height
+            // pages that flag is true only at the snapped rest position, so a
+            // boolean would hard-blink the copy away the instant a drag begins
+            // instead of scrubbing with the finger.
             .scrollTransition(.interactive) { content, phase in
                 content
-                    .opacity(phase.isIdentity ? 1 : 0)
-                    .blur(radius: phase.isIdentity || reduceMotion ? 0 : 8)
-                    .offset(y: phase.isIdentity || reduceMotion ? 0 : 24)
+                    .opacity(Self.nearness(phase))
+                    .blur(radius: reduceMotion ? 0 : 8 * (1 - Self.nearness(phase)))
+                    .offset(y: reduceMotion ? 0 : 24 * (1 - Self.nearness(phase)))
             }
     }
 
@@ -107,9 +111,14 @@ struct StoryBeatView: View {
             .multilineTextAlignment(.center)
             .scrollTransition(.interactive) { content, phase in
                 content
-                    .opacity(phase.isIdentity ? 1 : 0)
-                    .offset(y: phase.isIdentity || reduceMotion ? 0 : 16)
+                    .opacity(Self.nearness(phase))
+                    .offset(y: reduceMotion ? 0 : 16 * (1 - Self.nearness(phase)))
             }
+    }
+
+    /// 1 on the resting page, easing to 0 a full page away.
+    private static func nearness(_ phase: ScrollTransitionPhase) -> Double {
+        1 - min(abs(phase.value), 1)
     }
 
     /// The product's Controlled Reveal physics taught as play: secrets open
@@ -117,11 +126,11 @@ struct StoryBeatView: View {
     private var peekRow: some View {
         VStack(spacing: Space.s3) {
             HStack(spacing: Space.s3) {
-                VaultIcon("dt_key", size: 16)
+                VaultIcon(Icons.key, size: Metric.iconCompact)
                     .themedForeground(.iconSecondary)
                 GlyphResolveText(text: Self.demoSecret, isRevealed: peeking)
                 Spacer(minLength: 0)
-                VaultIcon(peeking ? Icons.reveal : Icons.hide, size: 16)
+                VaultIcon(peeking ? Icons.reveal : Icons.hide, size: Metric.iconCompact)
                     .themedForeground(.iconSecondary)
             }
             .padding(Space.s4)
@@ -139,7 +148,7 @@ struct StoryBeatView: View {
                 .foregroundStyle(secondaryColor)
         }
         .scrollTransition(.interactive) { content, phase in
-            content.opacity(phase.isIdentity ? 1 : 0)
+            content.opacity(Self.nearness(phase))
         }
     }
 
@@ -148,9 +157,13 @@ struct StoryBeatView: View {
             .vaultType(.callout)
             .foregroundStyle(secondaryColor)
             .phaseAnimator([false, true]) { content, pulsing in
-                content.offset(y: pulsing && !reduceMotion ? -4 : 0)
+                content.offset(y: pulsing ? -4 : 0)
             } animation: { _ in
-                .easeInOut(duration: 1.1).repeatForever(autoreverses: true)
+                // Token-derived, and `.vault` returns nil under Reduce Motion,
+                // which stops the loop instead of just freezing its offset.
+                .vault(.easeInOut(duration: Motion.slow * 3)
+                        .repeatForever(autoreverses: true),
+                       reduceMotion: reduceMotion)
             }
     }
 }

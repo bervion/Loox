@@ -32889,13 +32889,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ひとつの金庫。あなただけのもの。"
+            "value": "ひとつの保管庫。あなただけのもの。"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một chiếc kho. Của riêng bạn."
+            "value": "Một kho duy nhất. Của riêng bạn."
           }
         }
       }
@@ -32969,7 +32969,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "すべてを金庫へ"
+            "value": "すべてを保管庫へ"
           }
         },
         "vi": {
@@ -33001,7 +33001,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "長押しで金庫へ"
+            "value": "長押しで保管庫へ"
           }
         },
         "vi": {
@@ -33017,7 +33017,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "金庫へ"
+            "value": "保管庫へ"
           }
         },
         "vi": {

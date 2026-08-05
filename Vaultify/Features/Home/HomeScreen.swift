@@ -245,7 +245,11 @@ struct HomeScreen: View {
                 // (tutorial disabled, or already answered on a recovery
                 // re-onboard): wait out the tour's settle delay, and if no
                 // spotlight appeared, consume the story hint here.
-                try? await Task.sleep(for: .seconds(2))
+                //
+                // `try?` alone would swallow cancellation and return at once
+                // when Home goes away, burning the one-shot hint on a screen
+                // nobody is looking at — so the sleep must be seen to finish.
+                guard (try? await Task.sleep(for: .seconds(2))) != nil else { return }
                 if !env.tutorial.isPresenting { consumeArrivalHintIfPending() }
             }
             // Primary arrival path: the firstRun tour just ended on this screen.
@@ -827,8 +831,10 @@ struct HomeScreen: View {
             .padding(.top, Space.s2)
             .scaleEffect(arrivalPulse ? 1.06 : 1)
             .animation(arrivalPulse
-                ? .easeInOut(duration: 0.5).repeatForever(autoreverses: true)
-                : .default, value: arrivalPulse)
+                ? .vault(.easeInOut(duration: Motion.medium * 2).repeatForever(autoreverses: true),
+                         reduceMotion: reduceMotion)
+                : .vault(Motion.standard, reduceMotion: reduceMotion),
+                value: arrivalPulse)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

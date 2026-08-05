@@ -43,6 +43,9 @@ struct StoryIntroReaderView: View {
                     .vaultType(.callout)
                     .foregroundStyle(StoryPalette.textSecondary)
                     .padding(Space.s3)
+                    .background(StoryPalette.controlScrim, in: Capsule())
+                    .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
+                    .contentShape(Rectangle())
             }
             .padding(.trailing, Space.gutter)
         }

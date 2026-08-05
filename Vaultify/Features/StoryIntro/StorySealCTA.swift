@@ -15,8 +15,8 @@ struct StorySealCTA: View {
 
     @Environment(\.appTheme) private var theme
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pressStart: Date?
-    @State private var holdTask: Task<Void, Never>?
     @State private var sealed = false
 
     private static let holdDuration: TimeInterval = 0.9
@@ -24,14 +24,28 @@ struct StorySealCTA: View {
     var body: some View {
         capsule
             .frame(height: Metric.controlLarge)
-            .scaleEffect(pressStart == nil ? 1 : Motion.pressScale)
-            .animation(Motion.spring, value: pressStart == nil)
-            .gesture(holdGesture)
+            .scaleEffect(pressStart == nil || reduceMotion ? 1 : Motion.pressScale)
+            .animation(.vault(Motion.spring, reduceMotion: reduceMotion), value: pressStart == nil)
+            // onLongPressGesture owns the whole hold: it fires `perform` only
+            // after the full duration AND reports pressing=false when the
+            // enclosing ScrollView takes the drag over. A DragGesture + timer
+            // pair cannot see that steal (no onEnded arrives), which sealed the
+            // vault for a user who merely touched the button and scrolled away.
+            .onLongPressGesture(minimumDuration: Self.holdDuration,
+                                maximumDistance: 30,
+                                perform: { seal() },
+                                onPressingChanged: { pressing in
+                                    pressStart = pressing ? Date() : nil
+                                })
             .onChange(of: scenePhase) { _, phase in
-                if phase != .active { cancelHold() }
+                // A banner or app switch mid-hold must not leave a press alive
+                // that completes the moment the user comes back.
+                if phase != .active { pressStart = nil }
             }
             .accessibilityRepresentation {
-                Button(title) { seal() }
+                // Activates on a single press, so it must not tell assistive
+                // technology to hold anything.
+                Button("Enter my vault") { seal() }
             }
             .padding(.horizontal, Space.s6)
             .padding(.bottom, Space.s4)
@@ -64,30 +78,10 @@ struct StorySealCTA: View {
         return min(max(date.timeIntervalSince(start) / Self.holdDuration, 0), 1)
     }
 
-    private var holdGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                guard pressStart == nil, !sealed else { return }
-                pressStart = Date()
-                holdTask = Task {
-                    try? await Task.sleep(for: .milliseconds(Int(Self.holdDuration * 1000)))
-                    guard !Task.isCancelled else { return }
-                    seal()
-                }
-            }
-            .onEnded { _ in cancelHold() }
-    }
-
-    private func cancelHold() {
-        holdTask?.cancel()
-        holdTask = nil
-        pressStart = nil
-    }
-
     private func seal() {
         guard !sealed else { return }
         sealed = true
-        cancelHold()
+        pressStart = nil
         // The story's ONLY haptic: one selection tap at the commitment, per
         // the haptics vocabulary (success stays reserved for copy actions).
         Haptics.tap()

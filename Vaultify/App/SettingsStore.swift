@@ -250,6 +250,14 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         // `onboarded`. A genuinely fresh install correctly defaults to false.
         storyIntroCompleted = d.object(forKey: Key.storyIntro) as? Bool ?? onboarded
         storyIntroWantsFirstItem = d.bool(forKey: Key.storyIntroFirstItem)
+        // PERSIST the resolved default immediately. Without this the fallback
+        // re-evaluates every launch against `onboarded`, which onboarding has
+        // just set to true — so a story the user was interrupted in (app
+        // terminated mid-scroll) would read as "already seen" forever. Writing
+        // it while `onboarded` is still false pins a fresh install to false.
+        if d.object(forKey: Key.storyIntro) == nil {
+            d.set(onboarded, forKey: Key.storyIntro)
+        }
         // Back-compat: this key didn't exist before `hasChosenAppearance` shipped, so
         // an already-onboarded install has no persisted value — fall back to
         // `onboarded` so an existing user is never force-lit. A genuinely fresh

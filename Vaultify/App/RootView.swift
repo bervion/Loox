@@ -53,8 +53,12 @@ struct RootView: View {
                 // Completing/skipping flips the flag; the route change below
                 // dissolves the story to reveal the app (the tutorial then
                 // arrives on its own after its settle delay).
+                // zIndex keeps the dissolving story ABOVE the app arriving
+                // beneath it — the seal's exit burst is the whole point of the
+                // 650ms the screen waits before flipping the flag.
                 StoryIntroScreen()
                     .transition(.controlledReveal)
+                    .zIndex(1)
             case .unlocked:
                 // The tutorial host wraps the unlocked app only: it reads the
                 // anchors those screens publish, and staying inside this branch
