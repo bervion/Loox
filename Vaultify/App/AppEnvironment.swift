@@ -133,6 +133,15 @@ import SwiftUI
     static var tutorialsRequestedByTest: Bool {
         ProcessInfo.processInfo.arguments.contains(tutorialLaunchArgument)
     }
+
+    /// Opt back INTO the story intro under test isolation — same launch-argument-only
+    /// contract as the tutorials arg above (a defaults fallback would leak across
+    /// tests; arguments die with the process).
+    static let storyLaunchArgument = "-ui-test-story"
+
+    static var storyRequestedByTest: Bool {
+        ProcessInfo.processInfo.arguments.contains(storyLaunchArgument)
+    }
     #endif
 
     init(uiTestConfiguration: UITestConfiguration = .current) {
@@ -176,6 +185,11 @@ import SwiftUI
             settings.preferredLanguage = "en"
             settings.onboardingCompleted = true
             settings.hasChosenAppearance = true
+            // The story intro is a full-screen route that would strand every
+            // existing UI test on a non-hittable cinematic — completed by
+            // default, opt back in per test via the launch argument.
+            settings.storyIntroCompleted = !Self.storyRequestedByTest
+            settings.storyIntroWantsFirstItem = false
         }
         #endif
         let session = VaultSession(

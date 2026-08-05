@@ -63,6 +63,15 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
     @ObservationIgnored private let mirrorToSharedConfig: Bool
 
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Key.onboarding) } }
+    /// One-time story intro (the post-onboarding cinematic). Set on BOTH finish
+    /// and skip so it never shows twice; restore paths set it too (returning
+    /// users skip the story), and a full vault reset clears it so re-onboarding
+    /// replays it.
+    var storyIntroCompleted: Bool { didSet { defaults.set(storyIntroCompleted, forKey: Key.storyIntro) } }
+    /// One-shot arrival bridge: the story's seal was COMPLETED (not skipped),
+    /// so after the firstRun tutorial ends Home pulses the Add button once,
+    /// then clears this.
+    var storyIntroWantsFirstItem: Bool { didSet { defaults.set(storyIntroWantsFirstItem, forKey: Key.storyIntroFirstItem) } }
     /// Whether the user has made an explicit appearance choice (onboarding's
     /// ChooseTheme step), or onboarding completed without one (e.g. restoring a
     /// vault, which skips that step) — see `ThemeStore.forceLight`. Gates the
@@ -235,6 +244,20 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
         // property has its first value.
         let onboarded = d.bool(forKey: Key.onboarding)
         onboardingCompleted = onboarded
+        // Back-compat like `hasChosenAppearance` below: the story key didn't
+        // exist before the story intro shipped, so an already-onboarded install
+        // must not get a surprise cinematic on its next unlock — fall back to
+        // `onboarded`. A genuinely fresh install correctly defaults to false.
+        storyIntroCompleted = d.object(forKey: Key.storyIntro) as? Bool ?? onboarded
+        storyIntroWantsFirstItem = d.bool(forKey: Key.storyIntroFirstItem)
+        // PERSIST the resolved default immediately. Without this the fallback
+        // re-evaluates every launch against `onboarded`, which onboarding has
+        // just set to true — so a story the user was interrupted in (app
+        // terminated mid-scroll) would read as "already seen" forever. Writing
+        // it while `onboarded` is still false pins a fresh install to false.
+        if d.object(forKey: Key.storyIntro) == nil {
+            d.set(onboarded, forKey: Key.storyIntro)
+        }
         // Back-compat: this key didn't exist before `hasChosenAppearance` shipped, so
         // an already-onboarded install has no persisted value — fall back to
         // `onboarded` so an existing user is never force-lit. A genuinely fresh
@@ -312,6 +335,8 @@ nonisolated enum AutoLockTimeout: Int, CaseIterable, Codable, Sendable, Identifi
 
     private nonisolated enum Key {
         static let onboarding = "onboarding_completed"
+        static let storyIntro = "story_intro_completed"
+        static let storyIntroFirstItem = "story_intro_wants_first_item"
         static let hasChosenAppearance = "has_chosen_appearance"
         static let autoLock = "auto_lock_timeout"
         static let shakeToLock = "shake_to_lock"

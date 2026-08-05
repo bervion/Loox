@@ -42,6 +42,11 @@ struct HomeScreen: View {
     /// clobber a selection the user makes after launch.
     @State private var didRestoreSelectedSpace = false
     @State private var scrolledUnder = false
+    /// Arrival bridge: after the story intro's seal and the firstRun tour, the
+    /// empty state's Add button pulses once to convert the narrative promise
+    /// into the first saved item (consumes `storyIntroWantsFirstItem`).
+    @State private var arrivalPulse = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Cached Watchtower issue count for the quick-action badge (recomputed on appear and
     /// when the item set changes — `PasswordAudit.analyze` is too costly to run per render).
     @State private var watchtowerIssueCount = 0
@@ -236,6 +241,20 @@ struct HomeScreen: View {
                 // the vault exists and its own surfaces are on screen. Repeat
                 // visits self-suppress once the flow has been answered.
                 env.tutorial.startIfNeeded(.firstRun)
+                // Fallback for the arrival pulse when no tour will present
+                // (tutorial disabled, or already answered on a recovery
+                // re-onboard): wait out the tour's settle delay, and if no
+                // spotlight appeared, consume the story hint here.
+                //
+                // `try?` alone would swallow cancellation and return at once
+                // when Home goes away, burning the one-shot hint on a screen
+                // nobody is looking at — so the sleep must be seen to finish.
+                guard (try? await Task.sleep(for: .seconds(2))) != nil else { return }
+                if !env.tutorial.isPresenting { consumeArrivalHintIfPending() }
+            }
+            // Primary arrival path: the firstRun tour just ended on this screen.
+            .onChange(of: env.tutorial.isPresenting) { wasPresenting, isPresenting in
+                if wasPresenting && !isPresenting { consumeArrivalHintIfPending() }
             }
             .analyticsScreen("home")
             // A tour asked for but not yet shown must not pop over another tab.
@@ -810,8 +829,28 @@ struct HomeScreen: View {
             .buttonStyle(.themedProminent)
             .padding(.horizontal, Space.s8)
             .padding(.top, Space.s2)
+            .scaleEffect(arrivalPulse ? 1.06 : 1)
+            .animation(arrivalPulse
+                ? .vault(.easeInOut(duration: Motion.medium * 2).repeatForever(autoreverses: true),
+                         reduceMotion: reduceMotion)
+                : .vault(Motion.standard, reduceMotion: reduceMotion),
+                value: arrivalPulse)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// One-shot arrival bridge (story intro → first item): pulse the empty
+    /// state's Add button briefly, then never again. The hint is consumed even
+    /// under Reduce Motion (no pulse) so it cannot linger for a later session.
+    private func consumeArrivalHintIfPending() {
+        guard env.settings.storyIntroWantsFirstItem else { return }
+        env.settings.storyIntroWantsFirstItem = false
+        guard !reduceMotion else { return }
+        arrivalPulse = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(1700))
+            arrivalPulse = false
+        }
     }
 
     /// Shown when the vault overall has data, but the ACTIVE persona has nothing

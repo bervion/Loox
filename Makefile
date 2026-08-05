@@ -94,7 +94,8 @@ submit-ios:
 # ── Local quality (compile check of app + embedded AutoFill extension) ──
 # A generic destination is valid HERE and only here: nothing is executed.
 check lint: gen
-	@export DEVELOPER_DIR="$$(scripts/ci/select-xcode.sh | tail -n 1)"; \
+	@set -e; set -o pipefail; \
+	export DEVELOPER_DIR="$$(scripts/ci/select-xcode.sh | tail -n 1)"; \
 	xcodebuild -workspace Vaultify.xcworkspace -scheme $(SCHEME) -configuration Debug \
 	  -destination 'generic/platform=iOS Simulator' -derivedDataPath $(DD) \
 	  CODE_SIGNING_ALLOWED=NO | tail -20

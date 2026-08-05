@@ -147,6 +147,9 @@ struct JoinVaultFlow: View {
     /// Leave onboarding — the unlocked app takes over (content arrives via sync).
     private func finish() {
         AnalyticsEngine.shared.log(.vaultRestored(method: method == .qr ? "qr" : "recovery"))
+        // Restoring an existing vault = a returning user: the first-run story
+        // intro would read as a lecture, so it is marked seen up front.
+        env.settings.storyIntroCompleted = true
         env.settings.onboardingCompleted = true
     }
 }
