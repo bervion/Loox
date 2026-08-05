@@ -35,6 +35,18 @@ nonisolated enum TOTPGenerator {
         period - Int(date.timeIntervalSince1970.truncatingRemainder(dividingBy: Double(period)))
     }
 
+    /// Period (seconds) for a stored value — the otpauth `period=` parameter
+    /// when present, else the RFC 6238 default of 30. Countdown UIs must pair
+    /// this with `secondsRemaining(period:date:)` so a custom-period code and
+    /// its ring/expiry warning stay in step (a hardcoded 30 makes a 60s code
+    /// look expired mid-validity).
+    static func period(forStoredValue value: String) -> Int {
+        if value.lowercased().hasPrefix("otpauth://"), let cfg = parse(uri: value) {
+            return cfg.period
+        }
+        return 30
+    }
+
     private static func code(key: Data, counter: UInt64, digits: Int, algorithm: HashAlgorithm) -> String {
         var bigEndianCounter = counter.bigEndian
         let message = withUnsafeBytes(of: &bigEndianCounter) { Data($0) }
@@ -60,9 +72,16 @@ nonisolated enum TOTPGenerator {
         let query = components.queryItems ?? []
         func value(_ name: String) -> String? { query.first { $0.name == name }?.value }
         guard let secretBase32 = value("secret"), let secret = base32Decode(secretBase32) else { return nil }
+        // Malformed query values degrade instead of trapping: period ≤ 0 would
+        // divide by zero in the counter math (a scanned QR is untrusted input),
+        // so it falls back to the RFC default; digits outside 1…9 would
+        // overflow the UInt32 modulus — clamp (RFC codes are 6–8; 9 is the
+        // UInt32-safe ceiling).
+        let rawDigits = Int(value("digits") ?? "") ?? 6
+        let rawPeriod = Int(value("period") ?? "") ?? 30
         return Config(secret: secret,
-                      digits: Int(value("digits") ?? "") ?? 6,
-                      period: Int(value("period") ?? "") ?? 30,
+                      digits: min(max(rawDigits, 1), 9),
+                      period: rawPeriod > 0 ? rawPeriod : 30,
                       algorithm: value("algorithm") ?? "sha1")
     }
 

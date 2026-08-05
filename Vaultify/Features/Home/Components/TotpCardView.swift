@@ -17,9 +17,13 @@ struct TotpCardView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let date = context.date
-            let code = TOTPGenerator.code(forStoredValue: item.totpField?.value ?? "", date: date)
-            let remaining = TOTPGenerator.secondsRemaining(date: date)
-            let progress = Double(remaining) / 30.0
+            let value = item.totpField?.value ?? ""
+            let code = TOTPGenerator.code(forStoredValue: value, date: date)
+            // Ring + expiry warning honor the otpauth period (a 60s code with a
+            // hardcoded 30 looked expired mid-validity).
+            let period = TOTPGenerator.period(forStoredValue: value)
+            let remaining = TOTPGenerator.secondsRemaining(period: period, date: date)
+            let progress = Double(remaining) / Double(period)
 
             cardContent(code: code, remaining: remaining, progress: progress)
         }
