@@ -23,7 +23,7 @@ Only `.login` is affected: the `.sshKey` and `.recoveryCodes` templates DO decla
 
 ## Other symptoms from the same defect
 
-- `LooxLinkEnvelope.swift:39` filters fields by `caps.quickShare`, and `valueLeavable` requires `!hasUnknownRole` → **Website and 2FA are silently dropped from a Quick View share**.
+- `LooxLinkEnvelope.swift:39` filters fields by `caps.quickShare`, and `valueLeavable` requires `!hasUnknownRole` → **the Website field is silently dropped from a Quick View share**. (Correction to an earlier draft of this report: the 2FA field is NOT a victim here — `quickShareKindAllows` at `ItemCapabilityResolver.swift:143` excludes the `.totp` kind outright, so it was never shareable, bug or no bug.)
 - `caps.searchIndex` false and `caps.plaintextExport` false for both fields. No consumers exist yet (grep found none outside the resolver), so no user-visible effect today — but both would be wrong the moment search indexing or the CSV path adopts the resolver.
 
 ## Fix (parity-exact, 2 lines)

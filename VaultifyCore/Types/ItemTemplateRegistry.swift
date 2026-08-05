@@ -55,6 +55,22 @@ nonisolated enum ItemTemplateRegistry {
                                             sensitivity: .private),
                     TemplateFieldDescriptor(roleID: .password, label: "Password", kind: .password,
                                             protected: true, sensitivity: .secret),
+                    // Website and One-time Code are NOT in the default field set
+                    // (`isDefault: false` — the Websites section starts as an
+                    // "Add Website" button, TOTP is added explicitly), but they
+                    // still need policy here: this list is also the role→policy
+                    // table `ItemCapabilityResolver` looks roles up in, and
+                    // `LegacySemanticsInference` stamps both roles on every
+                    // login. Without a descriptor they resolved as UNKNOWN roles,
+                    // which fails closed to `.reauthenticate` — Face ID on every
+                    // 2FA/website copy — and dropped them from Quick Share.
+                    // Values mirror what the app itself creates: the website
+                    // field is plain, the one-time code carries the seed.
+                    TemplateFieldDescriptor(roleID: .website, label: "Website", kind: .url,
+                                            sensitivity: .private, isDefault: false),
+                    TemplateFieldDescriptor(roleID: .totp, label: "One-time Code", kind: .totp,
+                                            protected: true, sensitivity: .secret,
+                                            isDefault: false),
                 ]),
             ],
             capabilities: {
