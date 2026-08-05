@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.52.1] - 2026-08-05
+
+### Fixed
+- rewrite Vietnamese translations for natural everyday usage (#197)
+
+
 ## [1.52.0] - 2026-08-05
 
 ### Fixed

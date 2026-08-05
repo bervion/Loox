@@ -1,1 +1,1 @@
-This update improves Home screen 2FA codes with a smoother carousel and a searchable code list, plus a timing fix for time-based codes. Release process reliability was also improved.
+This update improves the Vietnamese translations throughout the app for a more natural, everyday reading experience.
