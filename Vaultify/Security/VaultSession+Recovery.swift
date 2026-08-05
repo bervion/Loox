@@ -91,6 +91,10 @@ extension VaultSession {
         Level2BiometricKeyStore.delete()
         settings.biometricUnlockEnabled = false
         settings.onboardingCompleted = false
+        // Full re-onboarding replays the story intro (and drops any pending
+        // arrival-bridge hint from the previous vault's run).
+        settings.storyIntroCompleted = false
+        settings.storyIntroWantsFirstItem = false
         lockToOnboarding()
     }
 }

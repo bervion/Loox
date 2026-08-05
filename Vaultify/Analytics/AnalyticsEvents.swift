@@ -38,6 +38,14 @@ extension AnalyticsEvent {
     }
     /// A fresh vault finished creation (master password set). The activation moment.
     static let vaultCreated = AnalyticsEvent("vault_created")
+
+    /// The one-time story intro ended. `outcome`: "completed" | "skipped";
+    /// `furthest_beat` is the highest beat reached (1...6) — fixed indices from
+    /// `StoryBeat`, never content or timings.
+    static func storyIntroEnded(outcome: String, furthestBeat: Int) -> AnalyticsEvent {
+        AnalyticsEvent("story_intro_ended", ["outcome": .string(outcome),
+                                            "furthest_beat": .int(furthestBeat)])
+    }
     /// An existing vault was restored during onboarding. `method`: "qr" | "recovery".
     static func vaultRestored(method: String) -> AnalyticsEvent {
         AnalyticsEvent("vault_restored", ["method": .string(method)])
@@ -142,6 +150,7 @@ extension AnalyticsEvent {
             .tutorialBegin, .tutorialComplete, .vaultCreated,
             .tutorialStepShown(flow: "first-run", step: 0),
             .tutorialFlowEnded(flow: "first-run", outcome: "completed"),
+            .storyIntroEnded(outcome: "completed", furthestBeat: 6),
             .vaultRestored(method: "qr"),
             .vaultUnlocked(method: "biometric"), .vaultUnlockFailed(method: "password"),
             .itemCreated(.login), .itemUpdated(.note), .itemDeleted(.card), .itemViewed(.identity),

@@ -16,11 +16,17 @@ struct RootView: View {
     /// down from the biometric resting spot.
     @State private var celebrateFromCenter = false
 
-    private enum Route: Equatable { case onboarding, locked, unlocked }
+    private enum Route: Equatable { case onboarding, story, locked, unlocked }
 
     private var route: Route {
         if !env.settings.onboardingCompleted { return .onboarding }
-        return env.session.state == .unlocked ? .unlocked : .locked
+        guard env.session.state == .unlocked else { return .locked }
+        // One-time story intro sits between onboarding and the first Home
+        // visit. Locking mid-story falls back to `.locked` above, so an
+        // abandoned story simply replays on the next unlock until the flag
+        // is set (by finishing OR skipping).
+        if StoryIntroFeature.enabled && !env.settings.storyIntroCompleted { return .story }
+        return .unlocked
     }
 
     var body: some View {
@@ -41,6 +47,14 @@ struct RootView: View {
                     }
                 })
                     .transition(.controlledReveal).zIndex(1)
+            case .story:
+                // Rendered INSTEAD of the app — HomeScreen never mounts, so its
+                // `.task` cannot start the firstRun tutorial behind the story.
+                // Completing/skipping flips the flag; the route change below
+                // dissolves the story to reveal the app (the tutorial then
+                // arrives on its own after its settle delay).
+                StoryIntroScreen()
+                    .transition(.controlledReveal)
             case .unlocked:
                 // The tutorial host wraps the unlocked app only: it reads the
                 // anchors those screens publish, and staying inside this branch
