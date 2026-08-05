@@ -78,10 +78,10 @@ struct StoryBeatView: View {
 
     /// Dark-canvas beats keep fixed light text; themed beats read roles.
     private var primaryColor: Color {
-        themed ? Color(rgb: theme.textPrimary) : StoryPalette.textPrimary
+        themed ? theme.color(.primary) : StoryPalette.textPrimary
     }
     private var secondaryColor: Color {
-        themed ? Color(rgb: theme.textSecondary) : StoryPalette.textSecondary
+        themed ? theme.color(.secondary) : StoryPalette.textSecondary
     }
     private var themed: Bool { beat == .sanctuary || beat == .commitment }
 

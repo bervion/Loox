@@ -118,7 +118,9 @@ struct StoryIntroScreen: View {
     /// the story twice), and only a real completion earns the arrival-bridge
     /// hint (Home's one-shot Add-button pulse after the firstRun tutorial).
     /// The route change animates via RootView's existing crossfade.
-    private func complete(outcome: String) {
+    /// `playExit` is false for the reader, which has no stage to burst — it
+    /// would only add dead time before the hand-off.
+    private func complete(outcome: String, playExit: Bool = true) {
         AnalyticsEngine.shared.log(.storyIntroEnded(outcome: outcome,
                                                     furthestBeat: furthestBeat))
         guard outcome == "completed" else {
@@ -126,14 +128,15 @@ struct StoryIntroScreen: View {
             return
         }
         env.settings.storyIntroWantsFirstItem = true
+        guard playExit, !reduceMotion else {
+            env.settings.storyIntroCompleted = true
+            return
+        }
         // Sealed by hand: let the stage's exit burst play, then flip the flag
-        // so the route crossfade lands on Home as the bloom settles. Reduce
-        // Motion goes straight through.
+        // so the route crossfade lands on Home as the bloom settles.
         progress.noteSeal()
         Task {
-            if !reduceMotion {
-                try? await Task.sleep(for: .milliseconds(650))
-            }
+            try? await Task.sleep(for: .milliseconds(650))
             env.settings.storyIntroCompleted = true
         }
     }
