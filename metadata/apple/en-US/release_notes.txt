@@ -1,1 +1,1 @@
-A short welcome moment now greets you the first time you open Loox, right before you reach your vault. A smoother, more polished start to setting up your passwords.
+Version 1.52.3: Performance improvements and bug fixes.

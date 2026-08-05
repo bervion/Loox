@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.52.3] - 2026-08-05
+
+### Fixed
+- reduce motion, symbol centring, and a11y string (#199)
+
+### Changed
+- complete the v1.52.2 changelog entry
+
+
 ## [1.52.2] - 2026-08-05
 
 ### Added

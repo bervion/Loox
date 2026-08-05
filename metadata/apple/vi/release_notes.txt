@@ -1,1 +1,1 @@
-Loox giờ có một khoảnh khắc chào mừng ngắn ngay lần đầu mở ứng dụng, trước khi bạn vào kho mật khẩu. Một khởi đầu mượt mà và ấn tượng hơn.
+Phiên bản 1.52.3: Cải thiện hiệu suất và sửa lỗi.
