@@ -31,7 +31,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ đang yêu cầu mã xác minh hiện tại cho %2$@."
+            "value": "%1$@ đang yêu cầu mã xác minh hiện tại của %2$@."
           }
         }
       }
@@ -47,7 +47,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ đang yêu cầu đăng nhập bằng passkey được chia sẻ cho %2$@."
+            "value": "%1$@ muốn đăng nhập vào %2$@ bằng passkey được chia sẻ."
           }
         }
       }
@@ -203,7 +203,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ đang yêu cầu mã xác minh hiện tại cho %2$@."
+            "value": "%1$@ đang yêu cầu mã xác minh hiện tại của %2$@."
           }
         }
       }
@@ -227,7 +227,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ đang yêu cầu đăng nhập bằng passkey được chia sẻ cho %2$@."
+            "value": "%1$@ muốn đăng nhập vào %2$@ bằng passkey được chia sẻ."
           }
         }
       }
@@ -412,7 +412,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld bản sao giống hệt"
+            "value": "%lld mục giống hệt nhau"
           }
         }
       }
@@ -446,7 +446,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld mục trong rò rỉ dữ liệu"
+            "value": "%lld mục bị lộ trong rò rỉ dữ liệu"
           }
         }
       }
@@ -494,7 +494,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld mục không khớp mật khẩu"
+            "value": "%lld mục có mật khẩu khác nhau"
           }
         }
       }
@@ -851,7 +851,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã 2FA"
+            "value": "Mã xác minh"
           }
         }
       }
@@ -867,7 +867,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "mã 2FA"
+            "value": "mã xác minh"
           }
         }
       }
@@ -1000,7 +1000,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bản xuất CSV **không được mã hóa**. Bất kỳ ai có tệp đều đọc được mọi mật khẩu. Hãy xóa nó sau khi nhập."
+            "value": "Bản xuất CSV **không được mã hóa**. Bất kỳ ai có tệp đều đọc được mọi mật khẩu. Hãy xóa tệp sau khi nhập xong."
           }
         }
       }
@@ -1033,7 +1033,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một trình duyệt muốn xem các trường từ %@."
+            "value": "Một trình duyệt muốn xem các trường của %@."
           }
         }
       }
@@ -1049,7 +1049,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một mã dành riêng cho trường này. Hỏi lại mỗi lần hiển thị."
+            "value": "Mã dành riêng cho trường này. Bạn sẽ phải nhập mỗi lần xem."
           }
         }
       }
@@ -1098,7 +1098,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kho riêng tư, không cần máy chủ. Bí mật của bạn luôn được mã hóa trên thiết bị và không bao giờ rời đi khi chưa được bảo vệ."
+            "value": "Kho riêng tư, không cần máy chủ. Dữ liệu của bạn luôn được mã hóa ngay trên thiết bị và không bao giờ rời khỏi máy khi chưa được bảo vệ."
           }
         }
       }
@@ -1114,7 +1114,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Liên kết nhanh là ảnh chụp một lần của các trường bạn chọn. Chia sẻ với người dùng Loox luôn cập nhật và có thể yêu cầu bạn phê duyệt mỗi lần sử dụng."
+            "value": "Liên kết nhanh chỉ ghi lại nội dung các trường bạn chọn tại thời điểm tạo, không tự cập nhật. Chia sẻ với người dùng Loox luôn cập nhật và có thể yêu cầu bạn phê duyệt mỗi lần dùng."
           }
         }
       }
@@ -1130,7 +1130,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hộp thư thật mà các địa chỉ riêng tư sẽ chuyển tiếp đến."
+            "value": "Hộp thư thật để các địa chỉ riêng tư chuyển tiếp thư về."
           }
         }
       }
@@ -1200,7 +1200,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trình quản lý mật khẩu không cần máy chủ. Bí mật của bạn được mã hóa ngay trên thiết bị và không bao giờ rời đi ở dạng chưa mã hóa."
+            "value": "Trình quản lý mật khẩu không cần máy chủ. Dữ liệu của bạn được mã hóa ngay trên thiết bị và không bao giờ rời khỏi máy ở dạng chưa mã hóa."
           }
         }
       }
@@ -1234,7 +1234,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa API"
+            "value": "Khóa bí mật API"
           }
         }
       }
@@ -1427,7 +1427,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã chấp nhận. Đang hoàn tất trên máy họ"
+            "value": "Đã chấp nhận. Đang hoàn tất trên máy của họ"
           }
         }
       }
@@ -1690,7 +1690,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm mã 2FA"
+            "value": "Thêm mã xác minh"
           }
         }
       }
@@ -1724,7 +1724,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm trường"
+            "value": "Thêm trường thông tin"
           }
         }
       }
@@ -1795,7 +1795,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm thẻ để tự động điền tiện lợi."
+            "value": "Thêm thẻ để sẵn sàng tự động điền khi cần."
           }
         }
       }
@@ -1827,7 +1827,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm trường mã xác thực vào mục đăng nhập để hiển thị tại đây."
+            "value": "Thêm trường Mã xác minh vào mục đăng nhập bất kỳ để xem mã tại đây."
           }
         }
       }
@@ -1892,7 +1892,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm email vào hồ sơ của danh tính này. Đó là nơi email ẩn danh chuyển thư về."
+            "value": "Thêm email vào hồ sơ của danh tính này. Các email riêng tư sẽ chuyển thư về đó."
           }
         }
       }
@@ -1941,7 +1941,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm email cho trang"
+            "value": "Thêm email riêng cho trang"
           }
         }
       }
@@ -2123,7 +2123,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm mật khẩu đầu tiên và Loox sẽ bắt đầu trông coi bảo mật cho kho của bạn."
+            "value": "Thêm mật khẩu đầu tiên và Loox sẽ bắt đầu giám sát an toàn cho kho của bạn."
           }
         }
       }
@@ -2355,7 +2355,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Email ẩn danh"
+            "value": "Email riêng tư"
           }
         }
       }
@@ -2438,7 +2438,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi giải mã diễn ra ngay trên máy này. Loox không bao giờ thấy dữ liệu của bạn."
+            "value": "Mọi thao tác giải mã đều diễn ra ngay trên máy này. Loox không bao giờ thấy dữ liệu của bạn."
           }
         }
       }
@@ -2584,7 +2584,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lưới động"
+            "value": "Chuyển sắc động"
           }
         }
       }
@@ -2706,7 +2706,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bất kỳ ai có Bộ khôi phục này và quyền truy cập iCloud của bạn đều có thể khôi phục kho, không cần mật khẩu chính. Hãy giữ nó ngoại tuyến và riêng tư."
+            "value": "Bất kỳ ai có Bộ khôi phục này và quyền truy cập iCloud của bạn đều có thể khôi phục kho, không cần mật khẩu chính. Hãy cất giữ cẩn thận, đừng lưu trên mạng."
           }
         }
       }
@@ -2754,7 +2754,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Định danh ứng dụng"
+            "value": "App ID"
           }
         }
       }
@@ -2824,7 +2824,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Danh tính ký Apple"
+            "value": "Chứng chỉ ký Apple"
           }
         }
       }
@@ -2872,7 +2872,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chỗ chia sẻ Chế độ phê duyệt cho những người bạn tin. Họ yêu cầu, bạn phê duyệt, bí mật vẫn nằm trong kho của bạn."
+            "value": "Chia sẻ theo Chế độ phê duyệt với những người bạn tin tưởng. Họ yêu cầu, bạn phê duyệt, bí mật vẫn nằm trong kho của bạn."
           }
         }
       }
@@ -2977,7 +2977,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yêu cầu phê duyệt cần thông báo. Hãy cho phép thông báo trong Cài đặt để chia sẻ quyền \"hỏi mỗi lần\"."
+            "value": "Bạn cần bật thông báo để nhận yêu cầu phê duyệt. Hãy cho phép thông báo trong Cài đặt để chia sẻ quyền \"hỏi mỗi lần\"."
           }
         }
       }
@@ -3108,7 +3108,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phê duyệt gửi các trường đến trình duyệt của bạn"
+            "value": "Phê duyệt gửi thông tin sang trình duyệt"
           }
         }
       }
@@ -3333,7 +3333,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhờ chủ sở hữu mở phần chia sẻ của mục này và đọc mã an toàn của họ. Nếu hai mã trùng khớp, chia sẻ này thực sự đến từ họ."
+            "value": "Nhờ chủ sở hữu mở phần chia sẻ của mục này và đọc mã an toàn của họ. Nếu hai mã trùng khớp thì lượt chia sẻ này đúng là do họ gửi."
           }
         }
       }
@@ -3349,7 +3349,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã gửi yêu cầu Hỏi để mua. Bạn có thể hoàn tất sau khi được phê duyệt."
+            "value": "Đã gửi yêu cầu Hỏi để mua. Bạn có thể hoàn tất mua sau khi được duyệt."
           }
         }
       }
@@ -3402,7 +3402,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tệp đính kèm không khả dụng"
+            "value": "Tệp đính kèm hiện không mở được"
           }
         }
       }
@@ -3424,7 +3424,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tệp đính kèm không thể chia sẻ"
+            "value": "Không thể chia sẻ tệp đính kèm"
           }
         }
       }
@@ -3457,7 +3457,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phát hiện từ kiểm tra"
+            "value": "Kết quả kiểm tra"
           }
         }
       }
@@ -3489,7 +3489,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kiểm tra gần đây và mức độ cập nhật mục"
+            "value": "Tần suất kiểm tra và mức độ cập nhật các mục"
           }
         }
       }
@@ -3553,7 +3553,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã xác thực"
+            "value": "Mã xác minh"
           }
         }
       }
@@ -3585,7 +3585,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động khóa tính cả thời gian rời ứng dụng lẫn thời gian không thao tác trong ứng dụng. \"Ngay lập tức\" sẽ khóa khi bạn vừa rời đi; khoảng thời gian dài hơn cho phép bạn sao chép sang ứng dụng khác rồi quay lại mà không cần xác thực lại."
+            "value": "Tự động khóa tính cả thời gian rời ứng dụng lẫn thời gian không thao tác trong ứng dụng. \"Ngay lập tức\" sẽ khóa khi bạn vừa rời đi; khoảng thời gian dài hơn cho phép bạn sao chép nội dung sang ứng dụng khác rồi quay lại mà không cần xác thực lại."
           }
         }
       }
@@ -3602,7 +3602,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động khóa tính cả thời gian rời ứng dụng lẫn thời gian không thao tác trong ứng dụng. \"Ngay lập tức\" sẽ khóa khi bạn vừa rời đi; khoảng thời gian dài hơn cho phép bạn sao chép sang ứng dụng khác rồi quay lại mà không cần xác thực lại.\n\nTự động nâng cấp passkey có thể tạo passkey trong nền bằng khóa công khai chỉ ghi. Đọc hoặc dùng passkey vẫn cần mở khóa kho."
+            "value": "Tự động khóa tính cả thời gian rời ứng dụng lẫn thời gian không thao tác trong ứng dụng. \"Ngay lập tức\" sẽ khóa khi bạn vừa rời đi; khoảng thời gian dài hơn cho phép bạn sao chép nội dung sang ứng dụng khác rồi quay lại mà không cần xác thực lại.\n\nTự động nâng cấp passkey có thể tạo passkey trong nền với khóa công khai chỉ dùng để ghi. Để xem hoặc dùng passkey, bạn vẫn cần mở khóa kho."
           }
         }
       }
@@ -3618,7 +3618,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động gia hạn %@ mỗi tháng cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
+            "value": "Tự động gia hạn với giá %@ mỗi tháng cho đến khi bạn hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
           }
         }
       }
@@ -3634,7 +3634,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động gia hạn %@ mỗi năm cho đến khi hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
+            "value": "Tự động gia hạn với giá %@ mỗi năm cho đến khi bạn hủy. Bạn có thể hủy bất cứ lúc nào trong Cài đặt."
           }
         }
       }
@@ -3667,7 +3667,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động điền và mật khẩu"
+            "value": "Tự động điền & Mật khẩu"
           }
         }
       }
@@ -3700,7 +3700,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động điền nhận diện đăng nhập theo địa chỉ trang web, còn tên đăng nhập giúp phân biệt các tài khoản giống nhau. Bổ sung thông tin còn thiếu để mục đăng nhập này được điền chính xác."
+            "value": "Tự động điền ghép mục đăng nhập với ứng dụng và trang web dựa trên địa chỉ trang web, còn tên đăng nhập giúp phân biệt các tài khoản giống nhau. Bổ sung thông tin còn thiếu để mục đăng nhập này được điền chính xác."
           }
         }
       }
@@ -3717,7 +3717,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động điền sẽ chưa dùng chia sẻ này cho đến khi bạn quyết định tại đây."
+            "value": "Tự động điền sẽ chưa gợi ý mục chia sẻ này cho đến khi bạn quyết định tại đây."
           }
         }
       }
@@ -3765,7 +3765,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động nâng cấp passkey có thể tạo passkey trong nền bằng khóa công khai chỉ ghi. Đọc hoặc dùng passkey vẫn cần mở khóa kho."
+            "value": "Tự động nâng cấp passkey có thể tạo passkey trong nền với khóa công khai chỉ dùng để ghi. Để xem hoặc dùng passkey, bạn vẫn cần mở khóa kho."
           }
         }
       }
@@ -3927,7 +3927,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bản sao lưu không có bản ghi nào."
+            "value": "Bản sao lưu không có dữ liệu nào."
           }
         }
       }
@@ -3983,7 +3983,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cơ bản"
+            "value": "Chủ đề gốc"
           }
         }
       }
@@ -4051,7 +4051,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở khóa sinh trắc học thất bại."
+            "value": "Không mở khóa được bằng sinh trắc học."
           }
         }
       }
@@ -4101,7 +4101,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã xác minh bị hỏng"
+            "value": "Mã xác minh bị lỗi"
           }
         }
       }
@@ -4117,7 +4117,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "CSV (thường)"
+            "value": "CSV (không mã hóa)"
           }
         }
       }
@@ -4150,7 +4150,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiện chưa đọc được họ dùng được những gì. Kiểm tra kết nối rồi mở lại màn hình này."
+            "value": "Chưa tải được quyền truy cập hiện tại của họ. Kiểm tra kết nối rồi mở lại màn hình này."
           }
         }
       }
@@ -4249,7 +4249,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Viết hoa"
+            "value": "Viết hoa chữ cái đầu"
           }
         }
       }
@@ -4343,7 +4343,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phân loại"
+            "value": "Danh mục"
           }
         }
       }
@@ -4375,7 +4375,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chứng chỉ kèm hạn dùng và vân tay"
+            "value": "Chứng chỉ kèm hạn hiệu lực và fingerprint"
           }
         }
       }
@@ -4635,7 +4635,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kiểm tra xác nhận"
+            "value": "Kiểm tra đã xác nhận chưa"
           }
         }
       }
@@ -4732,7 +4732,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kiểm tra xác minh"
+            "value": "Kiểm tra đã xác minh chưa"
           }
         }
       }
@@ -4903,7 +4903,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chọn một đăng nhập"
+            "value": "Chọn mục đăng nhập"
           }
         }
       }
@@ -5225,7 +5225,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã yêu cầu mã"
+            "value": "Có yêu cầu lấy mã"
           }
         }
       }
@@ -5286,7 +5286,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sắp ra mắt: dịch vụ chuyển tiếp email riêng tư chỉ nhận."
+            "value": "Sắp ra mắt: dịch vụ chuyển tiếp email riêng tư, chỉ dùng để nhận thư."
           }
         }
       }
@@ -5391,7 +5391,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "So sánh mã này"
+            "value": "Đối chiếu mã này"
           }
         }
       }
@@ -5523,7 +5523,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xác nhận là bạn"
+            "value": "Xác nhận đây là bạn"
           }
         }
       }
@@ -5605,7 +5605,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xác nhận email nhận chuyển tiếp"
+            "value": "Xác nhận email nhận thư"
           }
         }
       }
@@ -5675,7 +5675,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đang xác nhận là bạn…"
+            "value": "Đang xác nhận đây là bạn…"
           }
         }
       }
@@ -5691,7 +5691,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đăng nhập xung đột"
+            "value": "Mục đăng nhập bị xung đột"
           }
         }
       }
@@ -5707,7 +5707,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kết nối internet để tắt các email ẩn danh trước khi xóa kho."
+            "value": "Kết nối internet để tắt các email riêng tư trước khi xóa kho."
           }
         }
       }
@@ -5835,7 +5835,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Do iOS quản lý. Loox chỉ hỏi một lần, vào lúc bạn bật nhắc nhở đầu tiên bên dưới."
+            "value": "Do iOS quản lý. Loox chỉ hỏi một lần, khi bạn bật lời nhắc đầu tiên bên dưới."
           }
         }
       }
@@ -5969,7 +5969,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sao chép lệnh cài đặt"
+            "value": "Sao chép đoạn lệnh thiết lập"
           }
         }
       }
@@ -6040,7 +6040,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không thể rời chia sẻ"
+            "value": "Không thể rời khỏi chia sẻ này"
           }
         }
       }
@@ -6079,7 +6079,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không tải được các chia sẻ"
+            "value": "Không tải được danh sách chia sẻ"
           }
         }
       }
@@ -6412,7 +6412,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không đọc được tệp này như một khóa"
+            "value": "Không đọc được khóa từ tệp này"
           }
         }
       }
@@ -6462,7 +6462,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không thể lưu đăng nhập."
+            "value": "Không thể lưu thông tin đăng nhập."
           }
         }
       }
@@ -6570,7 +6570,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đếm các tính năng được sử dụng để giúp cải thiện Loox. Không bao giờ gồm nội dung kho, tên mục, trang web hay từ khóa tìm kiếm. Không gắn với danh tính của bạn."
+            "value": "Thống kê tính năng nào được dùng để giúp cải thiện Loox. Không bao giờ gồm nội dung kho, tên mục, trang web hay từ khóa tìm kiếm. Không gắn với danh tính của bạn."
           }
         }
       }
@@ -6588,7 +6588,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo bản xuất"
+            "value": "Xuất dữ liệu"
           }
         }
       }
@@ -6698,7 +6698,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo bản xuất không mã hóa"
+            "value": "Xuất không mã hóa"
           }
         }
       }
@@ -6763,7 +6763,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo bản xuất không mã hóa?"
+            "value": "Xuất tệp không mã hóa?"
           }
         }
       }
@@ -6844,7 +6844,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo chia sẻ"
+            "value": "Chia sẻ"
           }
         }
       }
@@ -7032,7 +7032,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Việc tạo và quản lý liên kết tạm dừng. Kho của bạn vẫn hoạt động bình thường."
+            "value": "Tính năng tạo và quản lý liên kết đang tạm dừng. Kho của bạn vẫn hoạt động bình thường."
           }
         }
       }
@@ -7064,7 +7064,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "ID thông tin xác thực"
+            "value": "Credential ID"
           }
         }
       }
@@ -7096,7 +7096,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thông tin xác thực sắp hết hạn"
+            "value": "Mục sắp hết hạn"
           }
         }
       }
@@ -7112,7 +7112,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã 2FA hiện tại"
+            "value": "Mã xác minh hiện tại"
           }
         }
       }
@@ -7692,7 +7692,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xóa email ẩn danh này?"
+            "value": "Xóa email riêng tư này?"
           }
         }
       }
@@ -7988,7 +7988,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bỏ qua phát hiện này"
+            "value": "Bỏ qua cảnh báo này"
           }
         }
       }
@@ -8036,7 +8036,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Làm nhiều hơn với Loox"
+            "value": "Làm được nhiều hơn với Loox"
           }
         }
       }
@@ -8171,7 +8171,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mỗi trang có một địa chỉ riêng, nên một vụ rò rỉ ở trang đó không lần ra được bạn."
+            "value": "Mỗi trang có một địa chỉ riêng, nên nếu một trang bị lộ dữ liệu cũng không lần ra được bạn."
           }
         }
       }
@@ -8376,7 +8376,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miền email"
+            "value": "Tên miền email"
           }
         }
       }
@@ -8394,7 +8394,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Email ẩn danh"
+            "value": "Email riêng tư"
           }
         }
       }
@@ -8516,7 +8516,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã mã hóa"
+            "value": "Có mã hóa"
           }
         }
       }
@@ -8715,7 +8715,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập khóa hoặc quét QR"
+            "value": "Nhập khóa hoặc quét mã QR"
           }
         }
       }
@@ -8870,7 +8870,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập mã riêng của trường này để hiển thị."
+            "value": "Nhập mã riêng của trường này để xem nội dung."
           }
         }
       }
@@ -8937,7 +8937,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hãy nhập Mật khẩu cấp 2 thay thế."
+            "value": "Vui lòng nhập Mật khẩu cấp 2 để tiếp tục."
           }
         }
       }
@@ -8985,7 +8985,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập Mật khẩu cấp 2. %lld trường được bảo vệ sẽ trở lại hiển thị bình thường."
+            "value": "Nhập Mật khẩu cấp 2. %lld trường được bảo vệ sẽ hiển thị lại như bình thường."
           }
         }
       }
@@ -9001,7 +9001,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập Mật khẩu cấp 2. Trường được bảo vệ sẽ trở lại hiển thị bình thường."
+            "value": "Nhập Mật khẩu cấp 2. Trường được bảo vệ sẽ hiển thị lại như bình thường."
           }
         }
       }
@@ -9185,7 +9185,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thiết yếu"
+            "value": "Cơ bản"
           }
         }
       }
@@ -9218,7 +9218,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi tài khoản bạn có, tiền bạc, ảnh, những cuộc trò chuyện, đều phụ thuộc vào vài mật khẩu. Chúng tôi tin rằng thứ nắm giữ chúng phải chịu trách nhiệm với bạn, và không ai khác."
+            "value": "Mọi tài khoản bạn có, tiền bạc, ảnh, những cuộc trò chuyện, đều phụ thuộc vào vài mật khẩu. Chúng tôi tin rằng thứ nắm giữ chúng phải thuộc về bạn, và chỉ mình bạn."
           }
         }
       }
@@ -9250,7 +9250,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi phát hiện kèm Hàng đợi khắc phục, lịch sử và nhắc nhở, không chỉ các cảnh báo nghiêm trọng."
+            "value": "Đầy đủ mọi cảnh báo kèm công cụ khắc phục vấn đề, lịch sử và nhắc nhở, không chỉ các cảnh báo nghiêm trọng."
           }
         }
       }
@@ -9286,7 +9286,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi mật khẩu đều mạnh và duy nhất."
+            "value": "Mọi mật khẩu đều mạnh và không trùng lặp."
           }
         }
       }
@@ -9304,7 +9304,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chung"
+            "value": "Thông dụng"
           }
         }
       }
@@ -9386,7 +9386,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi thứ đều ở lại thiết bị này"
+            "value": "Mọi thứ luôn nằm trên thiết bị này"
           }
         }
       }
@@ -9803,7 +9803,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ gia đình"
+            "value": "Chia sẻ với gia đình"
           }
         }
       }
@@ -9905,7 +9905,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các trường"
+            "value": "Trường thông tin"
           }
         }
       }
@@ -10037,7 +10037,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vân tay khóa"
+            "value": "Fingerprint"
           }
         }
       }
@@ -10380,7 +10380,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lộ trong rò rỉ dữ liệu"
+            "value": "Bị lộ do rò rỉ dữ liệu"
           }
         }
       }
@@ -10468,7 +10468,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giám sát đầy đủ kèm khắc phục"
+            "value": "Giám sát toàn diện kèm công cụ khắc phục"
           }
         }
       }
@@ -10484,7 +10484,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bảo vệ đầy đủ"
+            "value": "Bảo vệ toàn diện"
           }
         }
       }
@@ -10602,7 +10602,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhận thông báo cục bộ vào ngày cần đổi mật khẩu. Thông báo chỉ hiện tên mục, không bao giờ hiện mật khẩu hay tên đăng nhập."
+            "value": "Nhận thông báo ngay trên máy vào ngày cần đổi mật khẩu. Thông báo chỉ hiện tên mục, không bao giờ hiện mật khẩu hay tên đăng nhập."
           }
         }
       }
@@ -10624,7 +10624,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhận nhắc nhở mỗi hai tuần để mở Loox và kiểm tra tình trạng kho. Thông báo không hiển thị điểm số hay chi tiết mục nào."
+            "value": "Hai tuần một lần, bạn sẽ nhận lời nhắc mở Loox để kiểm tra tình trạng kho. Thông báo không hiển thị điểm số hay chi tiết mục nào."
           }
         }
       }
@@ -10766,7 +10766,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhóm các mục theo công ty, dự án hoặc ngữ cảnh."
+            "value": "Nhóm các mục theo công ty, dự án hoặc mục đích sử dụng."
           }
         }
       }
@@ -10782,7 +10782,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giao hẳn khóa…"
+            "value": "Giao hẳn passkey…"
           }
         }
       }
@@ -10798,7 +10798,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giao hẳn bí mật…"
+            "value": "Giao hẳn khóa bí mật…"
           }
         }
       }
@@ -10836,7 +10836,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giao hẳn bí mật này?"
+            "value": "Giao hẳn khóa bí mật này?"
           }
         }
       }
@@ -10900,7 +10900,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tiền tố header"
+            "value": "Tiền tố trước token"
           }
         }
       }
@@ -10936,7 +10936,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đang tốt"
+            "value": "Tốt"
           }
         }
       }
@@ -10972,7 +10972,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ẩn nội dung trong App Switcher"
+            "value": "Ẩn nội dung khi chuyển đổi ứng dụng"
           }
         }
       }
@@ -11020,7 +11020,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hạn mức cao hơn ở mọi nơi, chỗ chia sẻ cho những người quanh bạn, và mọi dịch vụ đủ dùng hằng ngày."
+            "value": "Hạn mức cao hơn ở mọi nơi, thêm suất chia sẻ cho người thân bạn bè, và mọi dịch vụ đủ dùng hằng ngày."
           }
         }
       }
@@ -11124,7 +11124,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Số ngày giữa mỗi lần đổi mật khẩu."
+            "value": "Số ngày giữa các lần đổi mật khẩu."
           }
         }
       }
@@ -11140,7 +11140,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu của bạn chống đoán tốt đến đâu"
+            "value": "Mật khẩu của bạn khó đoán đến mức nào"
           }
         }
       }
@@ -11176,7 +11176,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gạch nối"
+            "value": "Dấu gạch nối"
           }
         }
       }
@@ -11352,7 +11352,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nếu bỏ qua bước kiểm tra này, bạn không thể chắc chia sẻ này đến từ ai."
+            "value": "Nếu bỏ qua bước kiểm tra này, bạn sẽ không thể chắc chắn ai đã gửi chia sẻ này."
           }
         }
       }
@@ -11384,7 +11384,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bỏ qua phát hiện này"
+            "value": "Bỏ qua cảnh báo này"
           }
         }
       }
@@ -11944,7 +11944,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bên phát hành"
+            "value": "Tổ chức phát hành"
           }
         }
       }
@@ -11992,7 +11992,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phiên tự đóng"
+            "value": "Phiên sẽ tự đóng"
           }
         }
       }
@@ -12089,7 +12089,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục được mã hóa đầu cuối trước khi đồng bộ. iCloud chỉ lưu bản mã; cả Apple lẫn bất kỳ ai khác đều không đọc được kho của bạn."
+            "value": "Các mục được mã hóa đầu cuối trước khi đồng bộ. iCloud chỉ lưu dữ liệu đã mã hóa; cả Apple lẫn bất kỳ ai khác đều không đọc được kho của bạn."
           }
         }
       }
@@ -12107,7 +12107,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục trong Thùng rác vẫn được mã hóa. Xóa chúng là vĩnh viễn."
+            "value": "Các mục trong Thùng rác vẫn được mã hóa. Xóa rồi thì không thể khôi phục."
           }
         }
       }
@@ -12215,7 +12215,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giữ Loox mở đến khi cập nhật xong. Có thể thử lại an toàn; địa chỉ đã xong sẽ không lặp lại."
+            "value": "Giữ Loox mở cho đến khi cập nhật xong. Bạn có thể yên tâm thử lại; các địa chỉ đã xử lý xong sẽ không bị lặp lại."
           }
         }
       }
@@ -12248,7 +12248,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giữ ở nơi an toàn và ngoại tuyến."
+            "value": "Cất ở nơi an toàn, đừng lưu trên mạng."
           }
         }
       }
@@ -12296,7 +12296,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã giao khóa"
+            "value": "Đã giao passkey"
           }
         }
       }
@@ -12329,7 +12329,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cặp khóa kèm vân tay, hỗ trợ nhập tệp"
+            "value": "Cặp khóa kèm fingerprint, hỗ trợ nhập tệp"
           }
         }
       }
@@ -12617,7 +12617,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rời chia sẻ"
+            "value": "Rời khỏi chia sẻ"
           }
         }
       }
@@ -12639,7 +12639,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rời chia sẻ này?"
+            "value": "Rời khỏi chia sẻ này?"
           }
         }
       }
@@ -12672,7 +12672,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ảnh chữ cái"
+            "value": "Biểu tượng chữ cái"
           }
         }
       }
@@ -12817,7 +12817,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vị trí"
+            "value": "Thuộc Nhóm"
           }
         }
       }
@@ -12938,7 +12938,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đăng nhập thiếu thông tin"
+            "value": "Mục đăng nhập thiếu thông tin"
           }
         }
       }
@@ -12954,7 +12954,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có thông tin xác thực"
+            "value": "Mục đăng nhập chưa lưu mật khẩu hay passkey"
           }
         }
       }
@@ -12970,7 +12970,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có tên người dùng"
+            "value": "Mục đăng nhập chưa có tên người dùng"
           }
         }
       }
@@ -12986,7 +12986,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có trang web"
+            "value": "Mục đăng nhập chưa có trang web"
           }
         }
       }
@@ -13125,7 +13125,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox Max là bản đầy đủ: đủ chỗ cho mọi địa chỉ, chia sẻ cho những người bạn tin, và dịch vụ đủ dùng mỗi ngày."
+            "value": "Loox Max là bản đầy đủ: thoải mái tạo email riêng tư, chia sẻ với những người bạn tin tưởng, và dịch vụ đủ dùng hằng ngày."
           }
         }
       }
@@ -13217,7 +13217,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox đang khóa"
+            "value": "Loox đang bị khóa"
           }
         }
       }
@@ -13266,7 +13266,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox xem xét độ mạnh mật khẩu, việc dùng lại và các vụ rò rỉ đã biết, rồi hướng dẫn bạn khắc phục."
+            "value": "Loox kiểm tra độ mạnh mật khẩu, mật khẩu bị dùng lại và các vụ rò rỉ đã biết, rồi hướng dẫn bạn cách khắc phục."
           }
         }
       }
@@ -13282,7 +13282,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox dùng thông báo để chuyển yêu cầu phê duyệt. Khi có người trong Nhóm này cần dùng một mục, yêu cầu sẽ hiện dưới dạng cảnh báo trên thiết bị này."
+            "value": "Loox dùng thông báo để gửi yêu cầu phê duyệt. Khi có người trong Nhóm này cần dùng một mục, yêu cầu sẽ hiện dưới dạng thông báo trên thiết bị này."
           }
         }
       }
@@ -13298,7 +13298,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox dùng thông báo để chuyển yêu cầu phê duyệt. Khi người được chia sẻ cần dùng mục này, yêu cầu sẽ hiện dưới dạng cảnh báo trên thiết bị này."
+            "value": "Loox dùng thông báo để gửi yêu cầu phê duyệt. Khi người được bạn chia sẻ cần dùng mục này, yêu cầu sẽ hiện dưới dạng thông báo trên thiết bị này."
           }
         }
       }
@@ -13382,7 +13382,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox sẽ xem xét:"
+            "value": "Loox sẽ kiểm tra:"
           }
         }
       }
@@ -13398,7 +13398,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox sẽ ngừng nhắc bạn về phát hiện này. Nó sẽ xuất hiện lại nếu nội dung kiểm tra thay đổi."
+            "value": "Loox sẽ ngừng nhắc bạn về cảnh báo này. Cảnh báo sẽ hiện lại nếu kết quả kiểm tra thay đổi."
           }
         }
       }
@@ -13414,7 +13414,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loox+ giữ đời sống số của bạn luôn được chăm sóc: điểm yếu được chỉ ra, địa chỉ riêng cho các trang hay rò rỉ, và một quy trình tự lo phần việc còn lại cho bạn."
+            "value": "Loox+ chăm sóc đời sống số cho bạn: chỉ ra điểm yếu, tạo địa chỉ email riêng cho những trang hay làm lộ thông tin, và tự động lo phần việc còn lại."
           }
         }
       }
@@ -13465,7 +13465,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Được tạo bởi một đội ngũ nhỏ đã quá mệt mỏi với việc phải giao bí mật của mình cho người lạ."
+            "value": "Sản phẩm của một đội ngũ nhỏ đã quá mệt mỏi vì phải giao bí mật của mình cho người lạ."
           }
         }
       }
@@ -13513,7 +13513,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thư gửi tới email ẩn danh sẽ chuyển về đây. Đổi địa chỉ này sẽ cập nhật cho mọi email ẩn danh của danh tính này."
+            "value": "Thư gửi tới các email riêng tư sẽ chuyển về đây. Đổi địa chỉ này sẽ cập nhật cho mọi email riêng tư của danh tính này."
           }
         }
       }
@@ -13529,7 +13529,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bảo trì"
+            "value": "Duy trì"
           }
         }
       }
@@ -13640,7 +13640,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quản lý nhóm"
+            "value": "Quản lý Nhóm"
           }
         }
       }
@@ -13656,7 +13656,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quản lý nhóm & thành viên"
+            "value": "Quản lý Nhóm & thành viên"
           }
         }
       }
@@ -13672,7 +13672,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quản lý email ẩn danh…"
+            "value": "Quản lý email riêng tư…"
           }
         }
       }
@@ -13903,7 +13903,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phông đơn cách"
+            "value": "Monospace"
           }
         }
       }
@@ -13968,7 +13968,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hầu hết kiểm tra diễn ra ngay trên thiết bị này."
+            "value": "Hầu hết các bước kiểm tra diễn ra ngay trên thiết bị này."
           }
         }
       }
@@ -13984,7 +13984,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hầu hết kiểm tra chạy ngay trên thiết bị này. Kiểm tra rò rỉ chỉ gửi năm ký tự đầu của mã băm mật khẩu, không bao giờ gửi mật khẩu."
+            "value": "Hầu hết các bước kiểm tra diễn ra ngay trên thiết bị này. Kiểm tra rò rỉ chỉ gửi năm ký tự đầu của mã băm mật khẩu, không bao giờ gửi chính mật khẩu."
           }
         }
       }
@@ -14563,7 +14563,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Email mới cho trang"
+            "value": "Email riêng mới cho trang này"
           }
         }
       }
@@ -14596,7 +14596,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Địa chỉ riêng mới sẽ dùng miền này."
+            "value": "Địa chỉ riêng mới sẽ dùng tên miền này."
           }
         }
       }
@@ -14757,7 +14757,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không có mã 2FA"
+            "value": "Không có mã xác minh"
           }
         }
       }
@@ -14773,7 +14773,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không tìm thấy mã 2FA"
+            "value": "Không tìm thấy mã xác minh"
           }
         }
       }
@@ -14791,7 +14791,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có Bộ khôi phục. Hãy tạo một bộ để bật khả năng khôi phục."
+            "value": "Chưa có Bộ khôi phục. Hãy tạo một bộ để có thể khôi phục kho khi cần."
           }
         }
       }
@@ -14842,7 +14842,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không có nhóm"
+            "value": "Không thuộc Nhóm nào"
           }
         }
       }
@@ -14880,7 +14880,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không có tài khoản nào ở đây dùng địa chỉ riêng tư."
+            "value": "Không có tài khoản nào ở đây dùng địa chỉ email riêng tư."
           }
         }
       }
@@ -14897,7 +14897,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không cần tạo tài khoản. Không máy chủ nào giữ kho của bạn. Không gói thuê bao nào giữ dữ liệu của bạn làm con tin. Chỉ có iPhone của bạn, chìa khóa của bạn, bí mật của bạn."
+            "value": "Không cần tạo tài khoản. Không có máy chủ nào giữ kho của bạn. Không có gói đăng ký nào giữ dữ liệu của bạn làm con tin. Chỉ có iPhone của bạn, chìa khóa của bạn, bí mật của bạn."
           }
         }
       }
@@ -15005,7 +15005,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có trường nào được bảo vệ. Mở một mục và chọn Bảo vệ trong menu của trường."
+            "value": "Chưa có trường nào được bảo vệ. Mở một mục và chọn \"Bảo vệ\" trong menu của trường."
           }
         }
       }
@@ -15022,7 +15022,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không có biểu tượng nào khớp"
+            "value": "Không tìm thấy biểu tượng phù hợp"
           }
         }
       }
@@ -15089,7 +15089,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không có loại mục nào khớp"
+            "value": "Không có loại mục nào phù hợp"
           }
         }
       }
@@ -15159,7 +15159,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không tìm thấy đăng nhập"
+            "value": "Không tìm thấy mục đăng nhập nào"
           }
         }
       }
@@ -15175,7 +15175,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có đăng nhập nào để liên kết."
+            "value": "Chưa có mục đăng nhập nào để liên kết."
           }
         }
       }
@@ -15207,7 +15207,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không còn theo dõi"
+            "value": "Không còn được theo dõi"
           }
         }
       }
@@ -15422,7 +15422,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa có cập nhật. Bước sẽ tự tiến lên khi họ thao tác."
+            "value": "Chưa có gì mới. Khi họ thao tác, tiến trình sẽ tự chuyển sang bước tiếp theo."
           }
         }
       }
@@ -15478,7 +15478,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không được phép"
+            "value": "Đã từ chối"
           }
         }
       }
@@ -15580,7 +15580,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chưa được yêu cầu"
+            "value": "Chưa yêu cầu"
           }
         }
       }
@@ -15596,7 +15596,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld năm chưa xem lại"
+            "value": "Đã %lld năm chưa xem lại"
           }
         }
       }
@@ -15635,7 +15635,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không được chia sẻ"
+            "value": "Chưa chia sẻ"
           }
         }
       }
@@ -15755,7 +15755,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiện chưa có trường nào được bảo vệ. Tắt chỉ xóa mật khẩu."
+            "value": "Hiện chưa có trường nào được bảo vệ. Tắt tính năng này chỉ xóa Mật khẩu cấp 2."
           }
         }
       }
@@ -16002,7 +16002,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tắt trong Cài đặt"
+            "value": "Đang tắt trong Cài đặt"
           }
         }
       }
@@ -16148,7 +16148,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khi Loox được bật, iOS sẽ gợi ý thông tin đăng nhập đã lưu ngay trên bàn phím trong ứng dụng khác và Safari."
+            "value": "Khi Loox được bật, iOS sẽ gợi ý thông tin đăng nhập đã lưu ngay phía trên bàn phím trong các ứng dụng khác và Safari."
           }
         }
       }
@@ -16180,7 +16180,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một con số trên 1000, tính từ độ mạnh mật khẩu, việc dùng lại, các vụ rò rỉ đã biết và mức độ bảo vệ hai lớp. Chạm vào để xem điều gì đã tác động."
+            "value": "Điểm số trên thang 1000, tính từ độ mạnh mật khẩu, mật khẩu dùng lại, các vụ rò rỉ đã biết và mức độ bảo vệ hai lớp. Chạm để xem yếu tố nào ảnh hưởng đến điểm của bạn."
           }
         }
       }
@@ -16196,7 +16196,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một mật khẩu cho mọi trường được bảo vệ. Loox sẽ hỏi lại khi bạn rời mục."
+            "value": "Một mật khẩu dùng chung cho mọi trường được bảo vệ. Loox sẽ hỏi lại khi bạn rời khỏi mục."
           }
         }
       }
@@ -16260,7 +16260,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã một lần"
+            "value": "Mã xác minh"
           }
         }
       }
@@ -16276,7 +16276,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã một lần"
+            "value": "Mã xác minh"
           }
         }
       }
@@ -16347,7 +16347,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chỉ những trường bạn chọn được chia sẻ, một lần duy nhất."
+            "value": "Chỉ những trường bạn chọn được chia sẻ, và chỉ một lần duy nhất."
           }
         }
       }
@@ -16363,7 +16363,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chỉ các trường bạn chọn được đưa vào. Mã một lần và giá trị được bảo vệ bằng Mật khẩu cấp 2 không bao giờ được chia sẻ qua liên kết."
+            "value": "Chỉ các trường bạn chọn được đưa vào. Mã xác minh và giá trị được bảo vệ bằng Mật khẩu cấp 2 không bao giờ được chia sẻ qua liên kết."
           }
         }
       }
@@ -16441,7 +16441,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở Loox để kiểm tra sức khỏe kho của bạn."
+            "value": "Mở Loox để kiểm tra mức độ an toàn của kho."
           }
         }
       }
@@ -16489,7 +16489,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở Cài đặt, chọn Cài đặt chung, rồi chọn Tự động điền và mật khẩu."
+            "value": "Mở Cài đặt, chọn Cài đặt chung, rồi chọn Tự động điền & Mật khẩu."
           }
         }
       }
@@ -16539,7 +16539,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở liên kết xác nhận Loox đã gửi tới %@, rồi kiểm tra lại."
+            "value": "Mở liên kết xác nhận trong email Loox đã gửi tới %@, rồi kiểm tra lại."
           }
         }
       }
@@ -16593,7 +16593,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở Loox sẽ kết thúc lần điền này, bạn sẽ phải bắt đầu lại."
+            "value": "Mở Loox sẽ dừng thao tác điền hiện tại, bạn sẽ phải bắt đầu lại."
           }
         }
       }
@@ -17018,7 +17018,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ghép nối thành công. Giờ hãy tạo mật khẩu chính để mở khóa Loox trên thiết bị này. Có thể giống thiết bị kia hoặc khác, và không bao giờ được đồng bộ."
+            "value": "Ghép nối thành công. Giờ hãy tạo mật khẩu chính để mở khóa Loox trên thiết bị này. Mật khẩu có thể giống hoặc khác với máy kia và chỉ lưu trên máy này, không bao giờ đồng bộ."
           }
         }
       }
@@ -17056,7 +17056,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nâng cấp passkey có thể tạo passkey ở chế độ nền. Việc dùng chúng vẫn cần mở khóa kho."
+            "value": "Tính năng nâng cấp passkey có thể tự tạo passkey trong nền. Khi dùng passkey, bạn vẫn cần mở khóa kho."
           }
         }
       }
@@ -17326,7 +17326,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng lại mật khẩu"
+            "value": "Mật khẩu dùng lại"
           }
         }
       }
@@ -17424,7 +17424,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu xuất hiện trong các vụ rò rỉ"
+            "value": "Mật khẩu xuất hiện trong các vụ rò rỉ dữ liệu"
           }
         }
       }
@@ -17456,7 +17456,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu, thẻ, ghi chú và nhiều hơn nữa"
+            "value": "Mật khẩu, thẻ, ghi chú và nhiều thứ khác"
           }
         }
       }
@@ -17685,7 +17685,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tính theo tháng, Loox Max theo năm xấp xỉ bằng Loox+ theo tháng"
+            "value": "Tính theo tháng, gói Loox Max theo năm có giá gần bằng gói Loox+ theo tháng"
           }
         }
       }
@@ -17718,7 +17718,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Email theo từng trang"
+            "value": "Email riêng cho từng trang"
           }
         }
       }
@@ -17858,7 +17858,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bảo mật cá nhân, duy trì liên tục"
+            "value": "Bảo mật cá nhân, luôn được duy trì"
           }
         }
       }
@@ -17960,7 +17960,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã ghim, Yêu thích, Mới tạo và Hay dùng luôn hiển thị khi có mục."
+            "value": "Đã ghim, Yêu thích, Mới tạo và Thường dùng luôn hiển thị khi có mục."
           }
         }
       }
@@ -18131,7 +18131,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "In Bộ khôi phục này và cất bản in ngoài máy tính."
+            "value": "In Bộ khôi phục này và cất bản in ở nơi an toàn, đừng lưu trên máy tính."
           }
         }
       }
@@ -18260,7 +18260,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Email riêng tư đang bảo trì. Việc tạo hoặc thay đổi địa chỉ tạm dừng. Kho của bạn vẫn hoạt động bình thường."
+            "value": "Email riêng tư đang bảo trì. Tạm thời chưa thể tạo hoặc thay đổi địa chỉ. Kho của bạn vẫn hoạt động bình thường."
           }
         }
       }
@@ -18309,7 +18309,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Địa chỉ riêng tư chưa chuyển tiếp được về %@ cho tới khi bạn xác nhận đó là hộp thư của mình. Chỉ cần một lần bấm và một email."
+            "value": "Địa chỉ riêng tư chưa thể chuyển tiếp về %@ cho tới khi bạn xác nhận đây là hộp thư của mình. Chỉ cần mở email xác nhận và bấm một lần là xong."
           }
         }
       }
@@ -18325,7 +18325,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Địa chỉ riêng tư sẽ chuyển tiếp về %@. Xác nhận hộp thư đó là của bạn là có thể bắt đầu tạo địa chỉ. Bạn quản lý mọi thứ này sau ở mục Email riêng tư."
+            "value": "Địa chỉ riêng tư sẽ chuyển tiếp về %@. Sau khi xác nhận hộp thư này là của bạn, bạn có thể bắt đầu tạo địa chỉ. Mọi thứ đều có thể quản lý sau trong mục Email riêng tư."
           }
         }
       }
@@ -18461,7 +18461,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hồ sơ"
+            "value": "Danh tính"
           }
         }
       }
@@ -18477,7 +18477,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hồ sơ không giới hạn số lượng"
+            "value": "Không giới hạn số danh tính"
           }
         }
       }
@@ -18559,7 +18559,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã bảo vệ. Quản lý trong màn hình mục"
+            "value": "Đã bảo vệ. Mở mục này để quản lý"
           }
         }
       }
@@ -18575,7 +18575,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã bảo vệ. Hiện bằng Mật khẩu cấp 2"
+            "value": "Đã bảo vệ. Nhập Mật khẩu cấp 2 để xem"
           }
         }
       }
@@ -18591,7 +18591,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã bảo vệ. Hiện bằng mã riêng"
+            "value": "Đã bảo vệ. Nhập mã riêng để xem"
           }
         }
       }
@@ -18623,7 +18623,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bảo vệ mã này sẽ dừng mã trực tiếp, tự động điền và chia sẻ cho tới khi bỏ bảo vệ."
+            "value": "Bảo vệ mã này sẽ tạm ngừng hiện mã xác minh, tự động điền và chia sẻ cho tới khi bạn bỏ bảo vệ."
           }
         }
       }
@@ -18671,7 +18671,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hồ sơ Provisioning"
+            "value": "Provisioning Profile"
           }
         }
       }
@@ -18688,7 +18688,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bút danh"
+            "value": "Biệt danh"
           }
         }
       }
@@ -18912,7 +18912,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lỗi dịch vụ Xem nhanh (%@)."
+            "value": "Lỗi dịch vụ khi gửi sang trình duyệt (%@)."
           }
         }
       }
@@ -18961,7 +18961,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tự động kiểm tra lại khi có kết nối trở lại."
+            "value": "Tự động kiểm tra lại khi có mạng trở lại."
           }
         }
       }
@@ -19000,7 +19000,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sẵn sàng trong tự động điền"
+            "value": "Sẵn sàng trong Tự động điền"
           }
         }
       }
@@ -19261,7 +19261,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ngày hết hạn đã lưu đã qua"
+            "value": "Đã quá ngày hết hạn ghi trong mục"
           }
         }
       }
@@ -19559,7 +19559,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã xóa"
+            "value": "Đã gỡ"
           }
         }
       }
@@ -19767,7 +19767,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giữ chỗ một email ẩn danh"
+            "value": "Đăng ký một email riêng tư"
           }
         }
       }
@@ -19998,7 +19998,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cô lập việc dùng lại"
+            "value": "Tránh dùng lại mật khẩu"
           }
         }
       }
@@ -20047,7 +20047,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu dùng chung"
+            "value": "Mật khẩu dùng lại"
           }
         }
       }
@@ -20146,7 +20146,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã xem xét"
+            "value": "Đã xem lại"
           }
         }
       }
@@ -20162,7 +20162,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đang xem xét kho của bạn một cách riêng tư"
+            "value": "Đang kiểm tra kho của bạn một cách riêng tư"
           }
         }
       }
@@ -20216,7 +20216,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thu hồi quyền"
+            "value": "Thu hồi quyền truy cập"
           }
         }
       }
@@ -20276,7 +20276,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thu hồi sẽ chặn ngay mọi yêu cầu sau này. Các giá trị bạn đã đánh dấu Chia sẻ thì đã được gửi và vẫn ở lại với họ."
+            "value": "Thu hồi sẽ chặn ngay mọi yêu cầu mới. Những thông tin bạn đã đánh dấu \"Đã chia sẻ\" thì đã được gửi đi và người nhận vẫn giữ."
           }
         }
       }
@@ -20357,7 +20357,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhắc nhở đổi mật khẩu"
+            "value": "Nhắc đổi mật khẩu"
           }
         }
       }
@@ -20421,7 +20421,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chạy lần kiểm tra đầu tiên để xem điểm sức khỏe kho của bạn."
+            "value": "Kiểm tra lần đầu để xem điểm an toàn của kho."
           }
         }
       }
@@ -20437,7 +20437,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chạy lần kiểm tra đầu tiên để bắt đầu theo dõi tiến bộ."
+            "value": "Kiểm tra lần đầu để bắt đầu theo dõi tiến triển."
           }
         }
       }
@@ -20581,7 +20581,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lưu đăng nhập"
+            "value": "Lưu thông tin đăng nhập"
           }
         }
       }
@@ -20614,7 +20614,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lưu bản PDF có thể in kèm khóa khôi phục và Mã thiết lập."
+            "value": "Lưu bản PDF chứa khóa khôi phục và Mã thiết lập, có thể in ra giấy."
           }
         }
       }
@@ -20904,7 +20904,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phạm vi"
+            "value": "Scopes"
           }
         }
       }
@@ -21024,7 +21024,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã giao bí mật"
+            "value": "Đã giao khóa bí mật"
           }
         }
       }
@@ -21349,7 +21349,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gửi chẩn đoán sự cố"
+            "value": "Gửi báo cáo sự cố"
           }
         }
       }
@@ -21399,7 +21399,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gửi lời mời, sau đó giữ màn hình này mở. Khi họ chấp nhận trên thiết bị của họ, bạn có thể kích hoạt chia sẻ."
+            "value": "Gửi lời mời rồi giữ nguyên màn hình này. Khi họ chấp nhận trên thiết bị của họ, bạn có thể kích hoạt chia sẻ."
           }
         }
       }
@@ -21422,7 +21422,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gửi lời mời, rồi giữ màn hình này mở. Khi họ chấp nhận trên thiết bị của họ, hai bạn sẽ cùng so sánh một mã ngắn."
+            "value": "Gửi lời mời rồi giữ nguyên màn hình này. Khi họ chấp nhận trên thiết bị của họ, hai bạn sẽ cùng đối chiếu một mã ngắn."
           }
         }
       }
@@ -21454,7 +21454,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tính năng Gửi sang trình duyệt không còn được cung cấp. Các mục đã lưu trong kho của bạn không thay đổi."
+            "value": "Loox không còn cung cấp tính năng gửi sang trình duyệt. Các mục đã lưu trong kho của bạn không thay đổi."
           }
         }
       }
@@ -21470,7 +21470,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tính năng Gửi sang trình duyệt đang tạm dừng. Kho của bạn vẫn hoạt động bình thường."
+            "value": "Tính năng gửi sang trình duyệt đang tạm dừng. Kho của bạn vẫn hoạt động bình thường."
           }
         }
       }
@@ -21486,7 +21486,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tính năng Gửi sang trình duyệt tạm thời không khả dụng. Kho của bạn không bị ảnh hưởng."
+            "value": "Tính năng gửi sang trình duyệt tạm thời không khả dụng. Kho của bạn không bị ảnh hưởng."
           }
         }
       }
@@ -21502,7 +21502,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã hết lượt Gửi sang trình duyệt trong 30 ngày"
+            "value": "Đã hết lượt gửi sang trình duyệt trong 30 ngày"
           }
         }
       }
@@ -21589,7 +21589,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đang gửi các trường đến trình duyệt của bạn…"
+            "value": "Đang gửi thông tin sang trình duyệt của bạn…"
           }
         }
       }
@@ -21650,7 +21650,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gửi báo cáo chẩn đoán khi Loox gặp sự cố, để lỗi được tìm ra và khắc phục. Báo cáo chỉ chứa trạng thái của ứng dụng và thiết bị, không bao giờ chứa nội dung trong kho của bạn. Không gắn với danh tính của bạn."
+            "value": "Gửi báo cáo chẩn đoán khi Loox gặp sự cố để giúp tìm và khắc phục lỗi. Báo cáo chỉ chứa trạng thái của ứng dụng và thiết bị, không bao giờ chứa nội dung trong kho của bạn. Không gắn với danh tính của bạn."
           }
         }
       }
@@ -21666,7 +21666,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã gửi đến trình duyệt của bạn"
+            "value": "Đã gửi sang trình duyệt của bạn"
           }
         }
       }
@@ -21716,7 +21716,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Số sê ri"
+            "value": "Số sê-ri"
           }
         }
       }
@@ -21732,7 +21732,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dịch vụ khả dụng"
+            "value": "Dịch vụ đang hoạt động"
           }
         }
       }
@@ -21748,7 +21748,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dịch vụ gián đoạn"
+            "value": "Dịch vụ bị gián đoạn"
           }
         }
       }
@@ -22013,7 +22013,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đang thiết lập kênh phê duyệt mã hóa…"
+            "value": "Đang thiết lập kênh phê duyệt được mã hóa…"
           }
         }
       }
@@ -22077,7 +22077,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lệnh cài đặt"
+            "value": "Đoạn lệnh thiết lập"
           }
         }
       }
@@ -22206,7 +22206,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chẩn đoán chia sẻ"
+            "value": "Chẩn đoán tính năng chia sẻ"
           }
         }
       },
@@ -22225,7 +22225,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ bản xuất"
+            "value": "Chia sẻ tệp đã xuất"
           }
         }
       }
@@ -22273,7 +22273,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Liên kết chia sẻ và Gửi sang trình duyệt tính theo 30 ngày gần nhất."
+            "value": "Liên kết chia sẻ và lượt gửi sang trình duyệt tính theo 30 ngày gần nhất."
           }
         }
       }
@@ -22369,7 +22369,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ một mục đăng nhập và phê duyệt từng yêu cầu trước khi người đó dùng được, qua iCloud. Độc lập với Đồng bộ iCloud ở trên."
+            "value": "Chia sẻ một mục đăng nhập qua iCloud và phê duyệt từng yêu cầu trước khi người đó dùng được. Hoạt động độc lập với Đồng bộ iCloud ở trên."
           }
         }
       }
@@ -22385,7 +22385,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ mật khẩu, ghép nối thiết bị, mở trên trình duyệt. Mỗi lần trao tay đều buộc hai bên đối chiếu mã trước khi bất cứ thứ gì di chuyển. Một nghi thức nhỏ, có chủ đích. Bí mật xứng đáng được như vậy."
+            "value": "Chia sẻ mật khẩu, ghép nối thiết bị, mở trên trình duyệt. Mỗi lần trao tay đều buộc hai bên đối chiếu mã trước khi bất kỳ dữ liệu nào được gửi đi. Một nghi thức nhỏ, có chủ đích. Bí mật xứng đáng được như vậy."
           }
         }
       }
@@ -22790,7 +22790,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Được chia sẻ"
+            "value": "Được chia sẻ với tôi"
           }
         }
       }
@@ -22851,7 +22851,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ bạn đã gửi"
+            "value": "Lượt chia sẻ bạn đã gửi"
           }
         }
       }
@@ -22969,7 +22969,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ nhưng bạn vẫn nắm quyền"
+            "value": "Chia sẻ nhưng bạn vẫn nắm quyền kiểm soát"
           }
         }
       }
@@ -23037,7 +23037,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ngắn hoặc độ ngẫu nhiên thấp, dễ bị bẻ khóa."
+            "value": "Mật khẩu ngắn hoặc quá dễ đoán, dễ bị bẻ khóa."
           }
         }
       }
@@ -23072,7 +23072,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiện"
+            "value": "Hiển thị"
           }
         }
       }
@@ -23188,7 +23188,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiển thị phía sau màn hình kho, khóa và giới thiệu."
+            "value": "Dùng làm nền cho màn hình kho, màn hình khóa và màn hình giới thiệu."
           }
         }
       }
@@ -23204,7 +23204,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiện thêm các trường"
+            "value": "Hiện thêm trường thông tin"
           }
         }
       }
@@ -23264,7 +23264,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đăng nhập iCloud để chia sẻ quyền truy cập. Tính năng này dùng kênh phê duyệt mã hóa; không bật đồng bộ kho."
+            "value": "Đăng nhập iCloud để chia sẻ quyền truy cập. Việc chia sẻ chỉ dùng kênh phê duyệt được mã hóa, không bật đồng bộ kho."
           }
         }
       }
@@ -23336,7 +23336,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hãy đăng nhập bằng passkey được chia sẻ từ gợi ý tự động điền trên website. Khóa riêng vẫn nằm ở chủ sở hữu nên không bao giờ mở ra tại đây."
+            "value": "Đăng nhập bằng passkey được chia sẻ qua gợi ý Tự động điền trên trang web. Khóa riêng tư vẫn nằm ở chủ sở hữu nên passkey không mở được trong app này."
           }
         }
       }
@@ -23368,7 +23368,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yêu cầu đăng nhập"
+            "value": "Có yêu cầu đăng nhập"
           }
         }
       }
@@ -23400,7 +23400,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tính năng chia sẻ một thiết bị cần người nhận cập nhật Loox trước."
+            "value": "Để chia sẻ ở chế độ một thiết bị, người nhận cần cập nhật Loox trước."
           }
         }
       }
@@ -23416,7 +23416,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Địa chỉ riêng theo trang"
+            "value": "Địa chỉ riêng cho từng trang web"
           }
         }
       }
@@ -23481,7 +23481,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã sao chép lệnh"
+            "value": "Đã sao chép đoạn lệnh"
           }
         }
       }
@@ -23546,7 +23546,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một số trường được bảo vệ không thể mở khóa, nên Mật khẩu cấp 2 vẫn được giữ bật. Hãy thử lại."
+            "value": "Không thể mở khóa một số trường được bảo vệ nên Mật khẩu cấp 2 vẫn đang bật. Hãy thử lại."
           }
         }
       }
@@ -23986,7 +23986,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vẫn đang chờ. Bạn có thể đóng màn hình này và hoàn tất sau, hoặc bấm Kiểm tra ngay."
+            "value": "Vẫn đang chờ. Bạn có thể đóng màn hình này và hoàn tất sau, hoặc bấm \"Kiểm tra ngay\"."
           }
         }
       }
@@ -24002,7 +24002,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ngừng nhắc về phát hiện này"
+            "value": "Ngừng nhắc về cảnh báo này"
           }
         }
       }
@@ -24066,7 +24066,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lưu thông tin thiết yếu, tạo mật khẩu mạnh và dùng mã một lần."
+            "value": "Lưu thông tin thiết yếu, tạo mật khẩu mạnh và mã xác minh."
           }
         }
       }
@@ -24100,7 +24100,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hãy lưu ở nơi an toàn và ngoại tuyến. Chỉ hiển thị một lần."
+            "value": "Hãy cất ở nơi an toàn, đừng lưu trên mạng. Mã này chỉ hiển thị một lần."
           }
         }
       }
@@ -24152,7 +24152,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trình tạo mật khẩu mạnh, mã một lần và kiểm tra bảo mật."
+            "value": "Trình tạo mật khẩu mạnh, mã xác minh và kiểm tra bảo mật."
           }
         }
       }
@@ -24216,7 +24216,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Người đăng ký"
+            "value": "Thành viên"
           }
         }
       }
@@ -24272,7 +24272,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hỗ trợ xuất CSV và bản sao lưu mã hóa Loox (.vaultify)."
+            "value": "Hỗ trợ tệp CSV xuất từ ứng dụng khác và bản sao lưu mã hóa của Loox (.vaultify)."
           }
         }
       }
@@ -24322,7 +24322,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chuyển sang email thật không xóa email riêng tư. Tạm dừng hoặc xóa nó trong mục Email riêng tư."
+            "value": "Chuyển sang email thật thì địa chỉ riêng tư vẫn hoạt động. Bạn có thể tạm dừng hoặc xóa trong mục Email riêng tư."
           }
         }
       }
@@ -24357,7 +24357,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ký hiệu (!@#…)"
+            "value": "Ký tự đặc biệt (!@#…)"
           }
         }
       }
@@ -24646,7 +24646,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đây không giống một mã thiết lập 2FA."
+            "value": "Mã này không giống mã thiết lập 2FA."
           }
         }
       }
@@ -24680,7 +24680,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa khôi phục đó không hợp lệ."
+            "value": "Khóa khôi phục không đúng."
           }
         }
       }
@@ -24696,7 +24696,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dịch vụ Xem nhanh đã gửi phản hồi không mong đợi."
+            "value": "Dịch vụ trả về phản hồi bất thường khi gửi sang trình duyệt."
           }
         }
       }
@@ -24714,7 +24714,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa kho chỉ được giải phóng sau khi xác thực Face ID / Touch ID."
+            "value": "Khóa kho chỉ được mở sau khi xác thực bằng Face ID / Touch ID."
           }
         }
       }
@@ -24749,7 +24749,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bản sao lưu được niêm phong bằng Argon2id + AES-256-GCM. Bạn sẽ cần mật khẩu này để khôi phục."
+            "value": "Bản sao lưu được mã hóa bằng Argon2id + AES-256-GCM. Bạn sẽ cần mật khẩu này để khôi phục."
           }
         }
       }
@@ -24837,7 +24837,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thiết bị sẽ tự đăng xuất và xóa dữ liệu Loox cục bộ khi online trở lại. Các mục trong kho của bạn không bị ảnh hưởng."
+            "value": "Thiết bị sẽ tự đăng xuất và xóa dữ liệu Loox trên máy khi có mạng trở lại. Các mục trong kho của bạn không bị ảnh hưởng."
           }
         }
       }
@@ -24853,7 +24853,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quy trình Giám sát đầy đủ luôn để mắt, còn địa chỉ riêng giữ hộp thư thật của bạn ngoài cơ sở dữ liệu của người lạ."
+            "value": "Tính năng Giám sát luôn theo dõi giúp bạn, còn địa chỉ email riêng tư giúp hộp thư thật của bạn không lọt vào cơ sở dữ liệu của người lạ."
           }
         }
       }
@@ -25016,7 +25016,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chủ sở hữu giới hạn mục này cho một thiết bị khác."
+            "value": "Chủ sở hữu chỉ cho phép dùng mục này trên một thiết bị khác."
           }
         }
       }
@@ -25038,7 +25038,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chủ sở hữu đã bắt đầu phê duyệt rồi Loox trên máy họ bị đóng."
+            "value": "Chủ sở hữu đang phê duyệt thì Loox trên máy họ bị đóng."
           }
         }
       }
@@ -25130,7 +25130,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ngày hết hạn đã lưu của thông tin này sắp đến hoặc đã qua. Loox chỉ hiển thị ngày đã lưu; kiểm tra nhà cung cấp để biết trạng thái thực."
+            "value": "Ngày hết hạn đã lưu của mục này sắp đến hoặc đã qua. Loox chỉ hiển thị ngày đã lưu; hãy kiểm tra với nhà cung cấp để biết trạng thái mới nhất."
           }
         }
       }
@@ -25148,7 +25148,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa khôi phục có thể khôi phục kho nếu bạn quên mật khẩu chính."
+            "value": "Khóa khôi phục giúp bạn lấy lại kho nếu quên mật khẩu chính."
           }
         }
       }
@@ -25248,7 +25248,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiện chưa lấy được mã an toàn. Hãy thử lại sau, hoặc dùng chia sẻ mà không xác minh."
+            "value": "Hiện chưa lấy được mã an toàn. Hãy thử lại sau, hoặc cứ dùng mục được chia sẻ mà không cần xác minh."
           }
         }
       }
@@ -25284,7 +25284,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cùng một mật khẩu bảo vệ nhiều mục."
+            "value": "Nhiều mục đang dùng chung một mật khẩu."
           }
         }
       }
@@ -25300,7 +25300,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa mã một lần đã lưu không tạo được mã. Đăng nhập bằng mã này sẽ thất bại."
+            "value": "Khóa bí mật đã lưu không tạo được mã xác minh nên sẽ không đăng nhập được."
           }
         }
       }
@@ -25316,7 +25316,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Địa chỉ trang web đã lưu không đọc được thành liên kết hợp lệ."
+            "value": "Địa chỉ trang web đã lưu không phải là một liên kết hợp lệ."
           }
         }
       }
@@ -25332,7 +25332,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Địa chỉ trang web đã lưu dùng http, gửi dữ liệu không mã hóa."
+            "value": "Địa chỉ trang web đã lưu dùng http nên dữ liệu gửi đi không được mã hóa."
           }
         }
       }
@@ -25364,7 +25364,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phiên chỉ kéo dài vài phút, không phải vài ngày. Khi kết thúc, trang sẽ trống, và bạn có thể kết thúc từ đây bất cứ lúc nào."
+            "value": "Phiên chỉ kéo dài vài phút, không phải vài ngày. Khi phiên kết thúc, trang sẽ trống và bạn có thể kết thúc phiên từ đây bất cứ lúc nào."
           }
         }
       }
@@ -25380,7 +25380,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dịch vụ chia sẻ đã gửi phản hồi không mong đợi."
+            "value": "Dịch vụ chia sẻ trả về phản hồi bất thường."
           }
         }
       }
@@ -25402,7 +25402,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Việc đăng xuất hoàn tất khi thiết bị online. Thiết bị không có mạng vẫn giữ bản sao cục bộ, được bảo vệ bằng Mật khẩu Loox của bạn."
+            "value": "Việc đăng xuất sẽ hoàn tất khi thiết bị có mạng. Thiết bị chưa có mạng vẫn giữ bản sao trên máy, được bảo vệ bằng Mật khẩu Loox của bạn."
           }
         }
       }
@@ -25468,7 +25468,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Địa chỉ trang web là địa chỉ IP thô. Nếu không phải chủ ý, hãy xem lại."
+            "value": "Địa chỉ trang web là một địa chỉ IP. Nếu không phải bạn chủ ý nhập vậy, hãy xem lại."
           }
         }
       }
@@ -25500,7 +25500,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thiết bị của họ cũng đã được thông báo tự động. Liên kết Messages bên dưới chỉ là phương án dự phòng."
+            "value": "Thiết bị của họ cũng đã được thông báo tự động. Liên kết gửi qua Tin nhắn bên dưới chỉ là phương án dự phòng."
           }
         }
       }
@@ -25550,7 +25550,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giao diện & Hình nền"
+            "value": "Chủ đề & Hình nền"
           }
         }
       }
@@ -25566,7 +25566,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tên giao diện"
+            "value": "Tên chủ đề"
           }
         }
       }
@@ -25614,7 +25614,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục này cùng trang và tên người dùng nhưng khác mật khẩu. Nhiều khả năng một mục đã cũ."
+            "value": "Các mục này dùng cùng một trang web và tên người dùng nhưng khác mật khẩu. Nhiều khả năng một trong số đó đã cũ."
           }
         }
       }
@@ -25702,7 +25702,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ có thể dùng mọi mục đăng nhập đã chia sẻ trong Nhóm này. Bạn có thể quản lý hoặc thu hồi quyền truy cập bất cứ lúc nào từ Gia đình."
+            "value": "Họ có thể dùng mọi mục đăng nhập đã chia sẻ trong Nhóm này. Bạn có thể quản lý hoặc thu hồi quyền truy cập bất cứ lúc nào trong mục Gia đình."
           }
         }
       }
@@ -25848,7 +25848,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ sẽ mất quyền truy cập mục này. Những mục khác bạn đã chia sẻ với họ vẫn giữ nguyên. Giá trị đã giao hẳn vẫn nằm trên máy của họ."
+            "value": "Họ sẽ mất quyền truy cập mục này. Những mục khác bạn đã chia sẻ với họ vẫn giữ nguyên. Những giá trị đã chuyển cho họ trước đó vẫn nằm trên máy của họ."
           }
         }
       }
@@ -25908,7 +25908,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ đã nhận một mã dùng một lần. Mã hết hạn theo chu kỳ hiện tại. Không có gì khác được chia sẻ."
+            "value": "Họ đã nhận một mã xác minh. Mã sẽ hết hạn khi chu kỳ hiện tại kết thúc. Không có gì khác được chia sẻ."
           }
         }
       }
@@ -25946,7 +25946,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ sẽ dùng được mà không cần hỏi bạn, trên máy của họ. Thu hồi sau chỉ dừng cập nhật; khóa đã giao thì không thể lấy lại."
+            "value": "Họ sẽ dùng được ngay trên máy của họ mà không cần hỏi bạn. Thu hồi sau này chỉ chặn cập nhật; khóa đã giao thì không thể lấy lại."
           }
         }
       }
@@ -26064,7 +26064,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ứng dụng không thể xác minh đây là bản cài Loox chính hãng. Vui lòng thử lại sau."
+            "value": "Ứng dụng không thể xác minh đây là bản cài đặt Loox chính thức. Vui lòng thử lại sau."
           }
         }
       }
@@ -26102,7 +26102,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mã này không còn khả dụng."
+            "value": "Mã này không còn dùng được."
           }
         }
       }
@@ -26242,7 +26242,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Danh tính này chưa có nhóm nào. Tạo một nhóm để bắt đầu thêm mục."
+            "value": "Danh tính này chưa có Nhóm nào. Tạo một Nhóm để bắt đầu thêm mục."
           }
         }
       }
@@ -26258,7 +26258,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lời mời này không khớp với chia sẻ của nó nên đã bị loại bỏ để đảm bảo an toàn."
+            "value": "Lời mời này không khớp với lượt chia sẻ tương ứng nên đã bị loại bỏ để đảm bảo an toàn."
           }
         }
       }
@@ -26340,7 +26340,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Việc này đang lâu hơn bình thường."
+            "value": "Quá trình này đang lâu hơn bình thường."
           }
         }
       }
@@ -26413,7 +26413,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đây là tài khoản Loox của bạn, danh tính cho kho này. Giữ email an toàn; bạn có thể cần đến nó khi thiết lập đồng bộ hoặc khôi phục truy cập."
+            "value": "Đây là tài khoản Loox của bạn, danh tính của kho này. Hãy giữ email này cẩn thận; bạn có thể cần đến nó khi thiết lập đồng bộ hoặc khôi phục truy cập."
           }
         }
       }
@@ -26429,7 +26429,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đây là danh tính duy nhất. Hãy thêm danh tính khác trước khi xóa cái này."
+            "value": "Đây là danh tính duy nhất của bạn. Hãy thêm danh tính khác trước khi xóa."
           }
         }
       }
@@ -26445,7 +26445,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mục này nên được xem lại nhanh."
+            "value": "Bạn nên xem lại mục này."
           }
         }
       }
@@ -26461,7 +26461,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mục này đã nhiều năm chưa được xem lại. Kiểm tra nhanh giúp nó luôn đáng tin."
+            "value": "Đã nhiều năm bạn chưa xem lại mục này. Kiểm tra nhanh để yên tâm là thông tin vẫn đúng."
           }
         }
       }
@@ -26563,7 +26563,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các trường của mục này đang được bảo vệ nâng cao nên không thể gửi gì đến trình duyệt."
+            "value": "Các trường của mục này đang được bảo vệ bằng Mật khẩu cấp 2 nên không thể gửi gì sang trình duyệt."
           }
         }
       }
@@ -26627,7 +26627,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đăng nhập này chưa lưu mật khẩu, passkey hay mã xác minh nào."
+            "value": "Mục đăng nhập này chưa lưu mật khẩu, passkey hay mã xác minh nào."
           }
         }
       }
@@ -26643,7 +26643,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đăng nhập này được bảo vệ bằng Mật khẩu cấp 2. Mở Loox để hiển thị."
+            "value": "Mục đăng nhập này được bảo vệ bằng Mật khẩu cấp 2. Mở Loox để xem."
           }
         }
       }
@@ -26729,7 +26729,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu này xuất hiện trong tập dữ liệu mật khẩu bị rò rỉ. Kẻ tấn công luôn thử mật khẩu rò rỉ trước tiên."
+            "value": "Mật khẩu này nằm trong danh sách mật khẩu đã bị rò rỉ. Kẻ tấn công thường thử những mật khẩu này trước tiên."
           }
         }
       }
@@ -26761,7 +26761,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu này theo các mẫu mà công cụ dò thử rất sớm, như từ thông dụng, ngày tháng hoặc dãy phím."
+            "value": "Mật khẩu này dùng những mẫu quen thuộc mà công cụ dò mật khẩu thường thử đầu tiên, như từ thông dụng, ngày tháng hoặc dãy phím liền nhau."
           }
         }
       }
@@ -26812,7 +26812,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thao tác này xóa vĩnh viễn khóa riêng của passkey và không thể hoàn tác. Bạn có thể mất quyền truy cập nếu đây là cách đăng nhập duy nhất."
+            "value": "Thao tác này xóa vĩnh viễn khóa riêng tư của passkey và không thể hoàn tác. Bạn có thể mất quyền truy cập nếu đây là cách đăng nhập duy nhất."
           }
         }
       }
@@ -26925,7 +26925,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không thể xác minh chia sẻ này."
+            "value": "Không thể xác minh mục chia sẻ này."
           }
         }
       }
@@ -26963,7 +26963,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chia sẻ này chưa được thiết lập."
+            "value": "Mục chia sẻ này chưa được thiết lập."
           }
         }
       }
@@ -26995,7 +26995,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Màn hình này sẽ vẫn mở trong khi mã đang được cấp."
+            "value": "Màn hình này sẽ giữ nguyên trong lúc cấp mã."
           }
         }
       }
@@ -27043,7 +27043,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chọn Loox trong danh sách nguồn. Cứ để iCloud Passwords bật nếu bạn vẫn dùng."
+            "value": "Tích chọn Loox trong danh sách ứng dụng. Nếu vẫn dùng iCloud Passwords thì cứ để bật."
           }
         }
       }
@@ -27232,7 +27232,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đã sao chép token. Bộ nhớ tạm sẽ tự xóa."
+            "value": "Đã sao chép token. Token sẽ tự động xóa khỏi bộ nhớ tạm."
           }
         }
       }
@@ -27248,7 +27248,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Token, khóa và thông tin dịch vụ"
+            "value": "Token, khóa và thông tin đăng nhập dịch vụ"
           }
         }
       }
@@ -27364,7 +27364,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Niềm tin phải được xác minh, không mặc định"
+            "value": "Niềm tin được kiểm chứng, chứ không mặc nhiên"
           }
         }
       }
@@ -27461,7 +27461,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tắt và mở niêm phong các trường"
+            "value": "Tắt và bỏ bảo vệ các trường"
           }
         }
       }
@@ -27772,7 +27772,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Riêng cho %@"
+            "value": "Dành riêng cho %@"
           }
         }
       }
@@ -27852,7 +27852,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở khóa Mật khẩu cấp 2 để xóa trường này, hoặc gỡ bảo vệ của nó trong màn hình mục trước."
+            "value": "Hãy mở khóa Mật khẩu cấp 2 để xóa trường này, hoặc gỡ bảo vệ của trường trong màn hình chi tiết mục trước khi xóa."
           }
         }
       }
@@ -27934,7 +27934,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở khóa thất bại."
+            "value": "Không thể mở khóa."
           }
         }
       }
@@ -27966,7 +27966,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở khóa toàn bộ quy trình Giám sát"
+            "value": "Mở khóa toàn bộ tính năng Giám sát"
           }
         }
       }
@@ -28099,7 +28099,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở khóa kho để xem chia sẻ này."
+            "value": "Mở khóa kho để xem mục được chia sẻ."
           }
         }
       }
@@ -28251,7 +28251,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tối đa %lld liên kết chia sẻ và %lld lượt duyệt qua trình duyệt trong mỗi 30 ngày."
+            "value": "Tối đa %lld liên kết chia sẻ và %lld lượt phê duyệt qua trình duyệt trong mỗi 30 ngày."
           }
         }
       }
@@ -28413,7 +28413,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng Loox để điền mật khẩu và mã một lần trong ứng dụng khác và Safari."
+            "value": "Dùng Loox để điền mật khẩu và mã xác minh trong các ứng dụng khác và Safari."
           }
         }
       }
@@ -28461,7 +28461,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thay vào đó, hãy dùng ảnh hoặc dán khóa thiết lập bên dưới."
+            "value": "Bạn có thể chọn ảnh chứa mã QR hoặc dán khóa thiết lập bên dưới."
           }
         }
       }
@@ -28483,7 +28483,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng ngay. Mã hết hạn theo chu kỳ hiện tại."
+            "value": "Dùng ngay. Mã sẽ hết hạn khi chu kỳ hiện tại kết thúc."
           }
         }
       }
@@ -28532,7 +28532,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng mà không xác minh"
+            "value": "Dùng không cần xác minh"
           }
         }
       }
@@ -28635,7 +28635,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng k-ẩn danh. Chỉ năm ký tự đầu của mã băm SHA-1 mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
+            "value": "Dùng kỹ thuật k-anonymity. Chỉ năm ký tự đầu trong mã băm SHA-1 của mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
           }
         }
       }
@@ -28652,7 +28652,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dùng k-ẩn danh. Chỉ năm ký tự đầu của mã băm SHA-1 mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
+            "value": "Dùng kỹ thuật k-anonymity. Chỉ năm ký tự đầu trong mã băm SHA-1 của mỗi mật khẩu được gửi đi. Mật khẩu không bao giờ rời khỏi thiết bị."
           }
         }
       }
@@ -28756,7 +28756,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sức khỏe kho"
+            "value": "Tình trạng kho"
           }
         }
       }
@@ -28822,7 +28822,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toàn vẹn kho"
+            "value": "Tính toàn vẹn của kho"
           }
         }
       }
@@ -28868,7 +28868,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Phương tiện"
+            "value": "Xe cộ"
           }
         }
       }
@@ -28955,7 +28955,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xác minh chia sẻ này"
+            "value": "Xác minh mục được chia sẻ này"
           }
         }
       }
@@ -29207,7 +29207,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn muốn bắt đầu mới?"
+            "value": "Bạn muốn bắt đầu lại từ đầu?"
           }
         }
       }
@@ -29273,7 +29273,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chúng tôi không tạo ra một nhu cầu mới. Chúng tôi lấy một trong những nhu cầu lâu đời nhất trên internet, giữ bí mật, và làm nó tốt hơn 10 lần."
+            "value": "Chúng tôi không tạo ra một nhu cầu mới. Chúng tôi chọn một trong những nhu cầu lâu đời nhất trên internet, đó là giữ bí mật, và làm cho nó tốt gấp 10 lần."
           }
         }
       }
@@ -29459,7 +29459,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trang web không đọc được"
+            "value": "Địa chỉ web không đọc được"
           }
         }
       }
@@ -29507,7 +29507,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các website sẽ không còn gợi ý passkey này. Bạn có thể mất quyền truy cập nếu đây là cách đăng nhập duy nhất."
+            "value": "Các trang web sẽ không còn gợi ý passkey này. Bạn có thể mất quyền truy cập nếu đây là cách đăng nhập duy nhất."
           }
         }
       }
@@ -29539,7 +29539,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chào mừng đến với Loox. Đây là danh tính của bạn. Nó tự động điền tên, email và thông tin vào biểu mẫu. Mọi thứ luôn được mã hóa trên thiết bị này; chỉnh sửa hoặc thêm bất cứ lúc nào."
+            "value": "Chào mừng bạn đến với Loox. Đây là danh tính của bạn, dùng để tự động điền tên, email và các thông tin khác vào biểu mẫu. Mọi thứ luôn được mã hóa trên thiết bị này; bạn có thể chỉnh sửa hoặc bổ sung bất cứ lúc nào."
           }
         }
       }
@@ -29643,7 +29643,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Họ được dùng gì"
+            "value": "Người nhận được dùng gì"
           }
         }
       }
@@ -29681,7 +29681,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khi một lần đăng nhập cần phê duyệt, chủ sở hữu phải đang mở Loox để trả lời."
+            "value": "Khi có lượt đăng nhập cần phê duyệt, chủ sở hữu phải đang mở Loox để phản hồi."
           }
         }
       }
@@ -29697,7 +29697,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khi tắt tự động cập nhật, chỉnh sửa của bạn chỉ đến người này khi bạn bấm Gửi cập nhật ngay."
+            "value": "Khi tắt tự động cập nhật, người này chỉ nhận được thay đổi của bạn khi bạn bấm \"Gửi cập nhật ngay\"."
           }
         }
       }
@@ -29735,7 +29735,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khi có người chia sẻ quyền truy cập với bạn, nó sẽ hiện ở đây."
+            "value": "Khi có người chia sẻ quyền truy cập với bạn, mục đó sẽ hiện ở đây."
           }
         }
       }
@@ -29833,7 +29833,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vì sao nâng cấp"
+            "value": "Vì sao nên nâng cấp"
           }
         }
       }
@@ -30014,7 +30014,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn đã đi hết danh sách cần xử lý."
+            "value": "Bạn đã xem hết danh sách cần xử lý."
           }
         }
       }
@@ -30047,7 +30047,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn cần kết nối internet để rời chia sẻ. Bạn vẫn còn quyền truy cập cho đến khi đó."
+            "value": "Bạn cần kết nối mạng để rời khỏi chia sẻ này. Trong lúc chờ, bạn vẫn còn quyền truy cập."
           }
         }
       }
@@ -30063,7 +30063,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn cần kết nối internet để thu hồi quyền truy cập. Chia sẻ vẫn hoạt động cho đến khi đó."
+            "value": "Bạn cần kết nối mạng để thu hồi quyền truy cập. Trong lúc chờ, chia sẻ vẫn hoạt động."
           }
         }
       }
@@ -30096,7 +30096,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn cần kết nối internet để xem mục được chia sẻ này. Các bí mật của mục vẫn được niêm phong cho đến khi quyền truy cập được xác minh."
+            "value": "Bạn cần kết nối mạng để xem mục được chia sẻ này. Nội dung bảo mật vẫn được khóa cho đến khi xác minh xong quyền truy cập."
           }
         }
       }
@@ -30145,7 +30145,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn sẽ đối chiếu một mã ngắn trước khi bất kỳ thứ gì được bàn giao."
+            "value": "Bạn sẽ đối chiếu một mã ngắn trước khi bất kỳ dữ liệu nào được gửi đi."
           }
         }
       }
@@ -30248,7 +30248,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn đã dùng hết hồ sơ trong gói"
+            "value": "Bạn đã dùng hết số danh tính trong gói"
           }
         }
       }
@@ -30298,7 +30298,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kho chính là thiết bị của bạn"
+            "value": "Thiết bị của bạn chính là kho"
           }
         }
       }
@@ -30346,7 +30346,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục được mã hóa đầu cuối trước khi đồng bộ. iCloud không bao giờ thấy tiêu đề, mật khẩu hay ghi chú. Chi tiết tổ chức như biểu tượng nhóm, màu sắc và mốc thời gian đồng bộ dưới dạng siêu dữ liệu thông thường."
+            "value": "Các mục được mã hóa đầu cuối trước khi đồng bộ. iCloud không bao giờ thấy tiêu đề, mật khẩu hay ghi chú. Thông tin sắp xếp như biểu tượng nhóm, màu sắc và mốc thời gian được đồng bộ dưới dạng siêu dữ liệu thông thường."
           }
         }
       }
@@ -30364,7 +30364,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mật khẩu chính được tăng cường bằng hàm tốn bộ nhớ (64 MiB, t=3)."
+            "value": "Mật khẩu chính được gia cố bằng hàm tiêu tốn nhiều bộ nhớ (64 MiB, t=3)."
           }
         }
       }
@@ -30420,7 +30420,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trường tự tạo, tùy ý"
+            "value": "Tự tạo trường theo ý bạn"
           }
         }
       }
@@ -30485,7 +30485,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn đã dùng hết chỗ chia sẻ trong gói"
+            "value": "Bạn đã dùng hết suất chia sẻ trong gói"
           }
         }
       }
@@ -30567,7 +30567,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Điểm sức khỏe kho của bạn"
+            "value": "Điểm an toàn của kho"
           }
         }
       }
@@ -30620,7 +30620,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Khóa kho của bạn sẽ được gửi mã hóa đầu cuối tới thiết bị đang hiển thị mã này. Chỉ phê duyệt thiết bị thuộc về bạn."
+            "value": "Khóa kho của bạn sẽ được mã hóa đầu cuối và gửi tới thiết bị đang hiển thị mã này. Chỉ phê duyệt nếu đó là thiết bị của bạn."
           }
         }
       }
@@ -30984,7 +30984,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bản dựng này chưa bật đồng bộ iCloud."
+            "value": "Phiên bản này chưa bật đồng bộ iCloud."
           }
         }
       }
@@ -31002,7 +31002,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đồng bộ iCloud cần bật khả năng iCloud trong Xcode."
+            "value": "Đồng bộ iCloud cần bật iCloud capability trong Xcode."
           }
         }
       }
@@ -31174,7 +31174,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "cải thiện được đề xuất"
+            "value": "gợi ý cải thiện"
           }
         }
       }
@@ -31344,7 +31344,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "＋ Tạo đăng nhập mới"
+            "value": "＋ Tạo thông tin đăng nhập mới"
           }
         }
       }
@@ -31355,7 +31355,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không cần tạo tài khoản. Không máy chủ nào đọc được kho của bạn. Không gói thuê bao nào giữ dữ liệu của bạn làm con tin. Chỉ có iPhone của bạn, chìa khóa của bạn, bí mật của bạn."
+            "value": "Không cần tạo tài khoản. Không máy chủ nào đọc được kho của bạn. Không gói đăng ký nào giữ dữ liệu của bạn làm con tin. Chỉ có iPhone của bạn, chìa khóa của bạn, bí mật của bạn."
           }
         },
         "ja": {
@@ -31406,7 +31406,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một số tính năng có dùng mạng: đồng bộ iCloud, liên kết chia sẻ, kiểm tra rò rỉ, biểu tượng trang web, gói thuê bao và báo cáo sự cố. Kho của bạn được niêm phong trước khi bất kỳ tính năng nào chạy, nên chỉ đọc được trên thiết bị của bạn."
+            "value": "Một số tính năng có dùng mạng: đồng bộ iCloud, liên kết chia sẻ, kiểm tra rò rỉ, biểu tượng trang web, gói đăng ký và báo cáo sự cố. Kho của bạn được niêm phong trước khi bất kỳ tính năng nào chạy, nên chỉ đọc được trên thiết bị của bạn."
           }
         },
         "ja": {
@@ -31423,7 +31423,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dữ liệu phân tích luôn tắt trừ khi bạn bật lên. Báo cáo sự cố đang bật để lỗi được tìm ra và sửa, và bạn có thể tắt trong Cài đặt. Không có tài khoản nào."
+            "value": "Dữ liệu phân tích luôn tắt trừ khi bạn bật lên. Báo cáo sự cố được bật sẵn để chúng tôi tìm và sửa lỗi, và bạn có thể tắt trong Cài đặt. Không có tài khoản nào."
           }
         },
         "ja": {
@@ -31440,7 +31440,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Liên kết nhanh: %lld vẫn đọc được"
+            "value": "%lld liên kết nhanh vẫn còn đọc được"
           }
         },
         "ja": {
@@ -31525,7 +31525,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nếu bạn xóa ngay bây giờ, những mục này vẫn hoạt động cho tới khi hết hạn."
+            "value": "Nếu bạn xóa ngay bây giờ, những thứ này vẫn hoạt động cho tới khi hết hạn."
           }
         },
         "ja": {
@@ -31559,7 +31559,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Một số mục vẫn còn hoạt động"
+            "value": "Một số thứ vẫn còn hoạt động"
           }
         },
         "ja": {
@@ -31610,7 +31610,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xóa ở mọi nơi sẽ tắt các liên kết nhanh và địa chỉ email riêng, dừng các thông tin đăng nhập đã chia sẻ, và xóa bản sao trên iCloud. Chỉ xóa trên thiết bị này sẽ gỡ dữ liệu Loox khỏi thiết bị này và giữ nguyên tất cả những thứ đó."
+            "value": "Xóa ở mọi nơi sẽ tắt các liên kết nhanh và địa chỉ email riêng, ngừng chia sẻ các thông tin đăng nhập, và xóa bản sao trên iCloud. Chỉ xóa trên thiết bị này sẽ gỡ dữ liệu Loox khỏi thiết bị này và giữ nguyên tất cả những thứ đó."
           }
         },
         "ja": {
@@ -31644,7 +31644,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các liên kết đã chia sẻ trước một lần xóa trước đó vẫn đọc được cho tới khi hết hạn. Cần có kết nối mạng để tắt chúng."
+            "value": "Những liên kết đã chia sẻ từ trước lần xóa kho vẫn đọc được cho tới khi hết hạn. Cần có kết nối mạng để tắt chúng."
           }
         },
         "ja": {
@@ -31712,7 +31712,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bạn có muốn Đồng bộ iCloud không?"
+            "value": "Bạn có muốn bật Đồng bộ iCloud không?"
           }
         },
         "ja": {
@@ -31729,7 +31729,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đây là cài đặt duy nhất quyết định Bộ khôi phục của bạn có dựng lại được kho ở nơi khác hay không."
+            "value": "Đây là cài đặt duy nhất quyết định Bộ khôi phục của bạn có khôi phục được kho trên thiết bị khác hay không."
           }
         },
         "ja": {
@@ -31763,7 +31763,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các mục của bạn được tải lên dưới dạng mã hóa đầu cuối, và Bộ khôi phục có thể khôi phục kho này trên thiết bị mới. Biểu tượng nhóm, màu sắc, thứ tự, mốc thời gian và tên thiết bị đi kèm dưới dạng dữ liệu iCloud thông thường."
+            "value": "Các mục của bạn được tải lên ở dạng đã mã hóa đầu cuối, và Bộ khôi phục có thể khôi phục kho này trên thiết bị mới. Biểu tượng nhóm, màu sắc, thứ tự, mốc thời gian và tên thiết bị được đồng bộ như dữ liệu iCloud thông thường."
           }
         },
         "ja": {
@@ -31882,7 +31882,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nó đặt lại mật khẩu chính trên thiết bị này, và khôi phục kho trên thiết bị mới đã đăng nhập cùng tài khoản iCloud. Nếu sau này bạn tắt Đồng bộ iCloud, nó quay lại chỉ dùng được trên thiết bị này."
+            "value": "Nó đặt lại mật khẩu chính trên thiết bị này, và khôi phục kho trên thiết bị mới đã đăng nhập cùng tài khoản iCloud. Nếu sau này bạn tắt Đồng bộ iCloud, Bộ khôi phục sẽ chỉ còn dùng được trên thiết bị này."
           }
         },
         "ja": {
@@ -31933,7 +31933,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lưu Bộ khôi phục để tiếp tục. Không có nó thì mật khẩu chính bị quên sẽ không đặt lại được."
+            "value": "Lưu Bộ khôi phục để tiếp tục. Không có nó, bạn sẽ không thể đặt lại mật khẩu chính nếu lỡ quên."
           }
         },
         "ja": {
@@ -32120,7 +32120,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trên thiết bị mới, cài Loox, chọn Khôi phục dữ liệu, rồi Dùng khóa khôi phục và quét mã này."
+            "value": "Trên thiết bị mới, cài Loox, chọn \"Khôi phục dữ liệu\", rồi \"Dùng khóa khôi phục\" và quét mã này."
           }
         },
         "ja": {
@@ -32154,7 +32154,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bất kỳ ai có Bộ khôi phục này và thiết bị của bạn đều có thể mở kho, không cần mật khẩu chính. Hãy giữ nó ngoại tuyến và riêng tư."
+            "value": "Bất kỳ ai có Bộ khôi phục này và thiết bị của bạn đều có thể mở kho, không cần mật khẩu chính. Hãy cất giữ cẩn thận, đừng lưu trên mạng."
           }
         },
         "ja": {
@@ -32171,7 +32171,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Để khôi phục trên thiết bị mới: cài Loox, đăng nhập cùng tài khoản iCloud, mở Khôi phục dữ liệu, rồi quét Mã thiết lập hoặc gõ khóa khôi phục."
+            "value": "Để khôi phục trên thiết bị mới: cài Loox, đăng nhập cùng tài khoản iCloud, mở \"Khôi phục dữ liệu\", rồi quét Mã thiết lập hoặc gõ khóa khôi phục."
           }
         },
         "ja": {
@@ -32205,7 +32205,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đồng bộ iCloud đang tắt khi tạo Bộ khôi phục này, nên khóa chỉ đặt lại mật khẩu chính cho kho trên thiết bị đã tạo nó."
+            "value": "Đồng bộ iCloud đã tắt khi tạo Bộ khôi phục này, nên khóa chỉ đặt lại được mật khẩu chính cho kho trên thiết bị đã tạo nó."
           }
         },
         "ja": {
@@ -32222,7 +32222,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bộ khôi phục này không phải bản sao lưu. Nó không lấy lại được kho sau khi bạn mất thiết bị đó, xóa ứng dụng hoặc thiết lập máy mới. Hãy bật Đồng bộ iCloud trong Loox cho việc đó."
+            "value": "Bộ khôi phục này không phải bản sao lưu. Nó không lấy lại được kho sau khi bạn mất thiết bị đó, xóa ứng dụng hoặc thiết lập máy mới. Để làm được vậy, hãy bật Đồng bộ iCloud trong Loox."
           }
         },
         "ja": {
@@ -32273,7 +32273,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Giá trị được bảo vệ có thể vẫn bị khoá"
+            "value": "Dữ liệu được bảo vệ có thể vẫn bị khóa"
           }
         },
         "ja": {
@@ -32290,7 +32290,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thiết bị này đã có Mật khẩu cấp 2 riêng. Mọi giá trị mà bản sao lưu đã niêm phong bằng một mật khẩu khác sẽ không mở được ở đây."
+            "value": "Thiết bị này đã có Mật khẩu cấp 2 riêng. Dữ liệu nào được bản sao lưu này niêm phong bằng một mật khẩu khác sẽ không mở được ở đây."
           }
         },
         "ja": {
@@ -32307,7 +32307,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cài đặt Mật khẩu cấp 2 trong bản sao lưu này đã bị từ chối, nên các giá trị mà nó niêm phong sẽ không mở được ở đây."
+            "value": "Cài đặt Mật khẩu cấp 2 trong bản sao lưu này đã bị từ chối, nên dữ liệu mà nó niêm phong sẽ không mở được ở đây."
           }
         },
         "ja": {
@@ -32324,7 +32324,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bản sao lưu này có giá trị đã niêm phong nhưng không kèm khoá Mật khẩu cấp 2, nên chúng sẽ không mở được ở đây."
+            "value": "Bản sao lưu này có dữ liệu đã niêm phong nhưng không kèm khóa Mật khẩu cấp 2, nên số dữ liệu đó sẽ không mở được ở đây."
           }
         },
         "ja": {
@@ -32341,7 +32341,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vẫn nhập chứ?"
+            "value": "Vẫn nhập?"
           }
         },
         "ja": {
@@ -32443,7 +32443,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tệp này quá lớn để nhập một cách an toàn."
+            "value": "Tệp này quá lớn để có thể nhập an toàn."
           }
         },
         "ja": {
@@ -32494,7 +32494,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xuất mà không có chúng"
+            "value": "Vẫn xuất"
           }
         },
         "ja": {
@@ -32528,7 +32528,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tệp này sẽ bị xoá khi bạn rời màn hình này, khi ứng dụng chuyển xuống nền và khi kho khoá lại."
+            "value": "Tệp này sẽ bị xóa khi bạn rời màn hình này, khi ứng dụng chuyển sang chạy nền và khi kho bị khóa."
           }
         },
         "ja": {
@@ -32545,7 +32545,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tệp đính kèm trong kho này có tổng dung lượng hơn %lld MB, vượt quá mức một bản sao lưu có thể chứa. Hãy xoá bớt tệp đính kèm rồi thử lại."
+            "value": "Tệp đính kèm trong kho này có tổng dung lượng hơn %lld MB, vượt quá mức một bản sao lưu có thể chứa. Hãy xóa bớt tệp đính kèm rồi thử lại."
           }
         },
         "ja": {
@@ -32562,7 +32562,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi thứ được mã hoá ngay trên thiết bị này trước khi lưu."
+            "value": "Mọi thứ được mã hóa ngay trên thiết bị này trước khi lưu."
           }
         },
         "ja": {
@@ -32579,7 +32579,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi thứ được mã hoá ngay trên thiết bị này. Máy chủ chỉ giữ bản đã khoá, còn khoá mở nằm trong chính đường link và không bao giờ tới máy chủ nào."
+            "value": "Mọi thứ được mã hóa ngay trên thiết bị này. Máy chủ chỉ giữ bản đã khóa, còn chìa khóa để mở nằm trong chính đường link và không bao giờ được gửi tới máy chủ nào."
           }
         },
         "ja": {
@@ -32630,7 +32630,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không phải tạo tài khoản. Không máy chủ nào đọc được vault của bạn. Không gói đăng ký nào giữ dữ liệu của bạn làm con tin. Chỉ có thiết bị của bạn, khoá của bạn, bí mật của bạn."
+            "value": "Không cần tạo tài khoản. Không máy chủ nào đọc được kho của bạn. Không gói đăng ký nào giữ dữ liệu của bạn làm con tin. Chỉ có thiết bị của bạn, chìa khóa của bạn, bí mật của bạn."
           }
         },
         "ja": {
@@ -32647,7 +32647,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mọi mục đều được niêm phong bằng AES-256 trước khi chạm tới bộ nhớ. Nếu nó rời thiết bị của bạn, lên iCloud hay sang máy khác, nó rời đi ở trạng thái đã khoá. Chúng tôi có muốn cũng không đọc được. Không ai đọc được."
+            "value": "Mọi mục đều được niêm phong bằng AES-256 trước khi được lưu trữ. Nếu nó rời thiết bị của bạn, lên iCloud hay sang máy khác, nó rời đi trong trạng thái đã khóa. Chúng tôi muốn đọc cũng không được. Không ai đọc được."
           }
         },
         "ja": {
@@ -32681,7 +32681,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mở Loox trên thiết bị còn lại của bạn (Cài đặt → Đồng bộ iCloud → Ghép thiết bị mới) để quét mã của thiết bị mới."
+            "value": "Mở Loox trên thiết bị hiện có của bạn (Cài đặt → Đồng bộ iCloud → Ghép thiết bị mới) để quét mã của thiết bị mới."
           }
         },
         "ja": {

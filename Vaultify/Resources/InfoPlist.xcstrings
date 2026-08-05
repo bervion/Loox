@@ -19,7 +19,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Loox dùng camera để quét mã QR thiết lập 2FA và thẻ thanh toán."
+            "value" : "Loox dùng camera để quét mã QR khi thiết lập 2FA và quét thẻ thanh toán."
           }
         }
       }
