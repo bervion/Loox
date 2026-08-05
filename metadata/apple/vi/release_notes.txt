@@ -1,1 +1,1 @@
-Phiên bản 1.51.0: Cải thiện hiệu suất và sửa lỗi.
+Bản cập nhật này cải thiện mã 2FA trên màn hình chính với carousel mượt hơn và danh sách mã có thể tìm kiếm, cùng bản sửa lỗi thời gian cho mã theo chu kỳ. Quy trình phát hành cũng được cải thiện.

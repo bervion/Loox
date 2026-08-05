@@ -1,1 +1,1 @@
-Version 1.51.0: Performance improvements and bug fixes.
+This update improves Home screen 2FA codes with a smoother carousel and a searchable code list, plus a timing fix for time-based codes. Release process reliability was also improved.

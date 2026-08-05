@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.52.0] - 2026-08-05
+
+### Fixed
+- wait for the required run instead of rejecting a release for being early (#195)
+
+### Changed
+- Home TOTP: full-bleed carousel, pushed 2FA list with search, otpauth period fix (#196)
+
+
 ## [1.51.0] - 2026-08-04
 
 ### Added
