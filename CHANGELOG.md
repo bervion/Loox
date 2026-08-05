@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.52.2] - 2026-08-05
+
+### Changed
+- Story intro: first-run cinematic between onboarding and Home (#198)
+
+
 ## [1.52.1] - 2026-08-05
 
 ### Fixed
