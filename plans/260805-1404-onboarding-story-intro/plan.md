@@ -16,7 +16,11 @@ One-time cinematic story screen after onboarding, before the Home tutorial. Pain
 | phase-03 beats 1–4 + tap-to-send | Done (a315252) |
 | phase-04 sanctuary peek, hold-to-seal, arrival bridge | Done (2ceffda) |
 | phase-05 reader + accessibility | Done (f812ce5) |
-| phase-06 l10n VI+JA, unit tests, macOS reader, docs | In progress (tests running) |
+| phase-06 l10n VI+JA, unit tests, macOS reader, docs | Done (683bf7b, 2d7ba40) |
+| Verification | **CI green on PR #198** (run 30991811746): app + extensions compile, 1332 tests pass incl. all 6 StoryIntroTests. First run caught 3 real compile errors in this code — fixed in 2d7ba40 |
+
+## Verification note
+Local `make check` could never validate this: the dev machine has Xcode 16.4 while the repo requires 26.5 (pre-existing VaultifyCore files use `nonisolated struct`), and the Makefile piped xcodebuild into `tail`, masking the exit code so a failed build printed "passed" (fixed in b37fbcb). CI on the self-hosted runner is the only compiler that sees this code.
 | macOS research (researcher-06) | Done — Arc/Dia use windowed discrete steps, not full-screen cinema; Reader ships now, stepped window = follow-up |
 
 ## Remaining before merge
