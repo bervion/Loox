@@ -31,6 +31,9 @@ struct LargeTypeView: View {
     private var displayText: String { isLiveTOTP && !liveCode.isEmpty ? liveCode : text }
     private var characters: [Character] { Array(displayText) }
     private var hasTOTP: Bool { !(totpSecret ?? "").isEmpty }
+    /// Window length of the live 2FA code — the otpauth period, not a hardcoded
+    /// 30, so a custom-period code's ring matches its real validity.
+    private var livePeriod: Int { TOTPGenerator.period(forStoredValue: liveTOTPSecret ?? "") }
     private let columns = [GridItem(.adaptive(minimum: 46), spacing: Space.s2)]
 
     var body: some View {
@@ -49,7 +52,7 @@ struct LargeTypeView: View {
                     // Centred in a square the size of the pill's height so its left / top /
                     // bottom margins come out equal (padding-guessing never balanced cleanly).
                     if isLiveTOTP {
-                        CountdownRing(remaining: liveRemaining, period: 30)
+                        CountdownRing(remaining: liveRemaining, period: livePeriod)
                             .frame(width: Metric.hitMin, height: Metric.hitMin)
                     }
                     copyButton
@@ -80,7 +83,7 @@ struct LargeTypeView: View {
     private func refreshTOTP() {
         guard let secret = liveTOTPSecret, !secret.isEmpty else { return }
         liveCode = TOTPGenerator.code(forStoredValue: secret) ?? ""
-        liveRemaining = TOTPGenerator.secondsRemaining(period: 30)
+        liveRemaining = TOTPGenerator.secondsRemaining(period: livePeriod)
     }
 
     private var copyButton: some View {
@@ -108,7 +111,9 @@ struct LargeTypeView: View {
     private func totpPill(_ secret: String) -> some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let code = TOTPGenerator.code(forStoredValue: secret, date: context.date) ?? ""
-            let remaining = TOTPGenerator.secondsRemaining(period: 30, date: context.date)
+            // Pill honors the otpauth period like every other countdown surface.
+            let period = TOTPGenerator.period(forStoredValue: secret)
+            let remaining = TOTPGenerator.secondsRemaining(period: period, date: context.date)
             Button { copyTOTP(code) } label: {
                 Group {
                     if totpCopied {
@@ -122,7 +127,7 @@ struct LargeTypeView: View {
                             Text(TOTPCodeView.format(code))
                                 .vaultType(.section).monospacedDigit()
                                 .themedForeground(.primary)
-                            CountdownRing(remaining: remaining, period: 30)
+                            CountdownRing(remaining: remaining, period: period)
                         }
                     }
                 }

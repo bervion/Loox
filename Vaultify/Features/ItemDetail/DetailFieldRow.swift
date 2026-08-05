@@ -234,8 +234,11 @@ struct DetailFieldRow: View {
             }
             if field.kind == .totp {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    CountdownRing(remaining: TOTPGenerator.secondsRemaining(date: context.date),
-                                  period: 30, onAccent: copied)
+                    // Honor the otpauth period so the ring matches the code's
+                    // actual window (a 60s code hardcoded to 30 double-cycles).
+                    let period = TOTPGenerator.period(forStoredValue: field.value)
+                    CountdownRing(remaining: TOTPGenerator.secondsRemaining(period: period, date: context.date),
+                                  period: period, onAccent: copied)
                 }
             }
             // Plain notes carry no menu (reading surface); a protected multiline

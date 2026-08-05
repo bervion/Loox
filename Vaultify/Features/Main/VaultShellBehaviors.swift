@@ -79,7 +79,7 @@ struct VaultShellBehaviors: ViewModifier {
             .sheet(item: $uiState.quickSheet) { sheet in
                 switch sheet {
                 case .generator: GeneratorScreen()
-                case .totpCodes: TotpListScreen()
+                case .totpCodes: TotpListScreen(presentedAsSheet: true)
                 }
             }
             // Owner approval ceremony (ADR-1): the shell only exists while the
