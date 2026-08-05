@@ -34,8 +34,10 @@ struct StoryStageView: View {
     }
 
     private func canvas(t: TimeInterval, beat: Double, veilFade: Double) -> some View {
-        Canvas { ctx, size in
+        let ripple = rippleProgress(t: t, beat: beat)
+        return Canvas { ctx, size in
             drawVeil(&ctx, size: size, t: t, fade: veilFade)
+            drawWarningPool(&ctx, size: size, ripple: ripple, beat: beat, veilFade: veilFade)
 
             let dot = StoryField.originDot(t: t, beat: beat)
             if dot.opacity > 0.01 {
@@ -49,6 +51,8 @@ struct StoryStageView: View {
                 let symbol = StageSymbol(scrap: StoryField.kind(index))
                 stamp(&ctx, symbol: symbol, at: sample, in: size, baseSize: 44)
             }
+
+            drawConsequence(&ctx, size: size, t: t, beat: beat, ripple: ripple)
         } symbols: {
             // Rendered ONCE per Canvas pass and stamped per scrap — the glow is
             // pre-blurred here so no per-particle blur filter ever runs.
@@ -56,6 +60,8 @@ struct StoryStageView: View {
             StoryScrapCard(icon: "dt_message").tag(StageSymbol.chat)
             StoryScrapCard(icon: "dt_globe", wide: true).tag(StageSymbol.browser)
             StoryScrapCard(icon: "dt_key").tag(StageSymbol.key)
+            StoryScrapCard(icon: "dt_message", tint: StoryPalette.warning)
+                .tag(StageSymbol.chatWarning)
             Circle().fill(StoryPalette.textPrimary).frame(width: 10, height: 10)
                 .tag(StageSymbol.dot)
             Circle().fill(StoryPalette.glow).frame(width: 88, height: 88).blur(radius: 18)
@@ -63,8 +69,81 @@ struct StoryStageView: View {
         }
     }
 
+    // MARK: Consequence beat (the shared password ripples out)
+
+    /// The send ripple: the user's tap drives it hard (a 0.9s one-shot that
+    /// then holds — sent is sent), and scrolling deeper into the beat plays a
+    /// softer version for non-tappers. Reeling into the turn drains it away.
+    private func rippleProgress(t: TimeInterval, beat: Double) -> Double {
+        let scrolled = StoryField.smoothstep(beat, 2.45, 2.95) * 0.7
+        let tapped: Double
+        if let tap = model.sendTapTime {
+            tapped = StoryField.easeOut(min(max((t - tap) / 0.9, 0), 1))
+        } else {
+            tapped = 0
+        }
+        return max(scrolled, tapped) * (1 - StoryField.smoothstep(beat, 3.0, 3.6))
+    }
+
+    private func drawConsequence(_ ctx: inout GraphicsContext, size: CGSize,
+                                 t: TimeInterval, beat: Double, ripple: Double) {
+        // The one shared chip, glowing centre-stage as the drift stills.
+        let appear = StoryField.smoothstep(beat, 2.05, 2.35)
+            * (1 - StoryField.smoothstep(beat, 3.0, 3.5))
+        guard appear > 0.01 else { return }
+
+        let chip = StoryField.Sample(position: StoryField.sharedChip,
+                                     opacity: appear, scale: 1.15)
+        let pulse = StoryField.Sample(position: StoryField.sharedChip,
+                                      opacity: appear * (0.7 + 0.3 * sin(t * 2.2)),
+                                      scale: 1)
+        stamp(&ctx, symbol: .glow, at: pulse, in: size, baseSize: 96)
+        stamp(&ctx, symbol: .chat, at: chip, in: size, baseSize: 48)
+
+        guard ripple > 0.01 else { return }
+        let center = CGPoint(x: StoryField.sharedChip.x * size.width,
+                             y: StoryField.sharedChip.y * size.height)
+        let reach = 0.34 * min(size.width, size.height)
+
+        // Three concentric rings expanding with the ripple.
+        for ring in 1...3 {
+            let radius = ripple * reach * Double(ring) / 3
+            let fade = (1 - ripple) * 0.45 * appear
+            guard radius > 1, fade > 0.01 else { continue }
+            let rect = CGRect(x: center.x - radius, y: center.y - radius,
+                              width: radius * 2, height: radius * 2)
+            ctx.stroke(Path(ellipseIn: rect),
+                       with: .color(StoryPalette.warning.opacity(fade)), lineWidth: 1)
+        }
+
+        // Ghost copies stamping in as the ripple crosses them — the reused
+        // password surfacing everywhere at once.
+        for clone in 0..<10 {
+            let angle = StoryField.unitRandom(clone, salt: 0x10) * .pi * 2
+            let distance = 0.10 + 0.22 * StoryField.unitRandom(clone, salt: 0x11)
+            let arrival = distance / 0.32
+            let reveal = StoryField.smoothstep(ripple, arrival, arrival + 0.25)
+            guard reveal > 0.01 else { continue }
+            let sample = StoryField.Sample(
+                position: CGPoint(x: StoryField.sharedChip.x + distance * cos(angle),
+                                  y: StoryField.sharedChip.y + distance * sin(angle) * 0.9),
+                opacity: reveal * appear * (0.35 + 0.4 * (1 - arrival)),
+                scale: 0.8)
+            stamp(&ctx, symbol: .chatWarning, at: sample, in: size, baseSize: 44)
+        }
+    }
+
+    /// Amber unease pooling under the consequence beat, gone with the turn.
+    private func drawWarningPool(_ ctx: inout GraphicsContext, size: CGSize,
+                                 ripple: Double, beat: Double, veilFade: Double) {
+        let strength = 0.20 * ripple * veilFade
+        guard strength > 0.01 else { return }
+        pool(&ctx, size: size, center: StoryField.sharedChip, radius: 0.55,
+             color: StoryPalette.warning, opacity: strength)
+    }
+
     private enum StageSymbol: Int, Hashable {
-        case note, chat, browser, key, dot, glow
+        case note, chat, browser, key, chatWarning, dot, glow
 
         init(scrap: StoryField.ScrapKind) {
             switch scrap {
@@ -118,15 +197,17 @@ struct StoryStageView: View {
 private struct StoryScrapCard: View {
     let icon: String
     var wide = false
+    /// Warning-tinted variant for the consequence beat's ghost copies.
+    var tint: Color?
 
     var body: some View {
         VaultIcon(icon, size: 16)
-            .foregroundStyle(StoryPalette.textSecondary)
+            .foregroundStyle(tint ?? StoryPalette.textSecondary)
             .frame(width: wide ? 52 : 44, height: 34)
             .background(StoryPalette.scrapFill)
             .vaultCornerRadius(Radius.sm)
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .strokeBorder(StoryPalette.scrapStroke, lineWidth: 1))
+                    .strokeBorder(tint?.opacity(0.4) ?? StoryPalette.scrapStroke, lineWidth: 1))
     }
 }

@@ -91,6 +91,10 @@ nonisolated enum StoryField {
     /// Centre-high anchor the story revolves around (unit space).
     static let origin = CGPoint(x: 0.5, y: 0.40)
 
+    /// Where the consequence beat's shared password chip glows (unit space) —
+    /// slightly above centre so the prompt copy sits beneath it.
+    static let sharedChip = CGPoint(x: 0.5, y: 0.42)
+
     // MARK: Pure math
 
     /// Deterministic per-index doubles in 0…1 (SplitMix64). Seeded, never

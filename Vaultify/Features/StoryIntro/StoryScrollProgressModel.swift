@@ -16,6 +16,18 @@ final class StoryScrollProgressModel {
     /// them. All stage choreography is a pure function of this scalar.
     var beatPosition: Double { journeyProgress * Double(StoryBeat.allCases.count - 1) }
 
+    /// The consequence beat's one optional interaction: the moment the user
+    /// "sent" the shared password (nil until they do). One-shot — like the real
+    /// mistake, it cannot be un-sent. The stage derives the ripple from this;
+    /// non-tappers get a softer scroll-driven ripple instead, so the beat plays
+    /// either way.
+    private(set) var sendTapTime: TimeInterval?
+
+    func noteSendTap() {
+        guard sendTapTime == nil else { return }
+        sendTapTime = Date().timeIntervalSinceReferenceDate
+    }
+
     func update(_ metrics: StoryScrollMetrics) {
         guard metrics.span > 0 else { return }
         // 2pt quantization: drops the sub-pixel offset churn a 120Hz scroll

@@ -28,11 +28,11 @@ struct StoryIntroScreen: View {
             ScrollView(.vertical) {
                 VStack(spacing: 0) {
                     ForEach(StoryBeat.allCases) { beat in
-                        StoryBeatPlaceholderView(beat: beat) {
-                            complete(outcome: "completed")
-                        }
-                        .containerRelativeFrame(.vertical)
-                        .id(beat.rawValue)
+                        StoryBeatView(beat: beat,
+                                      onSendTap: { progress.noteSendTap() },
+                                      onComplete: { complete(outcome: "completed") })
+                            .containerRelativeFrame(.vertical)
+                            .id(beat.rawValue)
                     }
                 }
                 .scrollTargetLayout()
@@ -110,39 +110,7 @@ enum StoryPalette {
     static let nebulaDeep = Color(red: 0.22, green: 0.24, blue: 0.52)
     static let scrapFill = Color.white.opacity(0.08)
     static let scrapStroke = Color.white.opacity(0.14)
+    /// Consequence tinge: warm amber, deliberately short of red horror.
+    static let warning = Color(red: 0.95, green: 0.62, blue: 0.30)
 }
 
-/// Phase-1 placeholder for a beat page: title copy only, plus the completion
-/// CTA on the final beat. Replaced beat-by-beat in phases 3–4.
-private struct StoryBeatPlaceholderView: View {
-    let beat: StoryBeat
-    let onComplete: () -> Void
-
-    var body: some View {
-        VStack(spacing: Space.s6) {
-            Spacer()
-            title
-                .vaultType(.largeTitle)
-                .foregroundStyle(StoryPalette.textPrimary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Space.gutter)
-            Spacer()
-            if beat == .commitment {
-                BrandCapsuleCTA(title: "Enter your vault", action: onComplete)
-            }
-        }
-        .vaultContentWidth(.form)
-        .frame(maxWidth: .infinity)
-    }
-
-    private var title: Text {
-        switch beat {
-        case .hook: Text("Where do your passwords live?")
-        case .chaos: Text("A little bit of everywhere")
-        case .consequence: Text("One leak opens every door")
-        case .turn: Text("Now pull them back")
-        case .sanctuary: Text("One vault. Yours alone.")
-        case .commitment: Text("Lock them in")
-        }
-    }
-}
