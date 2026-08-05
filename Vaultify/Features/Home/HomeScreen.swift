@@ -33,7 +33,6 @@ struct HomeScreen: View {
     @State private var showItemTypePicker = false
     @State private var pendingNewTarget: EditorTarget?
     @State private var showGenerator = false
-    @State private var showTotpList = false
     @State private var showFolderPicker = false
     /// Presents the "New Space" sheet from the persona-empty state's primary CTA
     /// (reuses the existing folder-creation flow — see `personaEmptyState`).
@@ -280,10 +279,6 @@ struct HomeScreen: View {
                 ItemTypePickerSheet { pendingNewTarget = $0; showItemTypePicker = false }
             }
             .sheet(isPresented: $showGenerator) { GeneratorScreen() }
-            // TOTP list is reachable from both the Authenticator section header and the
-            // Quick Actions tile, so its sheet anchors at the stable root — not on a section
-            // the user can now hide (which would strand the trigger).
-            .sheet(isPresented: $showTotpList) { TotpListScreen() }
             .sheet(isPresented: $showFolderPicker) { HomeFolderPickerSheet(selectedFolderId: $selectedFolderId) }
             // Persona-empty state's "Create a Space" CTA — reuses the standard Space
             // creation flow; the newly owned Space then satisfies the persona-scoped
@@ -547,7 +542,7 @@ struct HomeScreen: View {
                       label: LocalizedStringResource("2FA Codes").inAppLocalized,
                       tint: QuickActionsGroupCard.totpTint,
                       count: totpItems.count,
-                      action: { showTotpList = true }),
+                      action: { openTotpList() }),
             ]
         )
     }
@@ -560,7 +555,7 @@ struct HomeScreen: View {
                 title: LocalizedStringResource("Authenticator Codes").inAppLocalized,
                 action: LocalizedStringResource("View All").inAppLocalized
             ) {
-                showTotpList = true
+                openTotpList()
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -569,12 +564,14 @@ struct HomeScreen: View {
                         TotpCardView(item: item)
                     }
                 }
-                // 2pt padding so card shadows aren't clipped.
+                // 2pt vertical padding so card shadows aren't clipped; horizontal
+                // gutter so resting cards stay aligned with the section header.
                 .padding(.vertical, 2)
-                .padding(.horizontal, 2)
+                .padding(.horizontal, Space.gutter)
             }
-            // Bleed 2pt of the padding back so cards align with section header.
-            .padding(.horizontal, -2)
+            // Bleed the viewport out of the screen gutter so scrolling cards run
+            // under the screen edges (full-bleed) instead of clipping at the inset.
+            .padding(.horizontal, -Space.gutter)
         }
     }
 
@@ -640,15 +637,9 @@ struct HomeScreen: View {
     // MARK: Recently used
 
     private var recentlyUsedSection: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            homeSectionHeader(
-                title: LocalizedStringResource("Recently Used").inAppLocalized
-            )
-
-            groupedCard {
-                ForEach(Array(recentlyUsedItems.enumerated()), id: \.element.id) { idx, item in
-                    itemRow(item, context: "recent", showDivider: idx < recentlyUsedItems.count - 1)
-                }
+        titledGroupCard(LocalizedStringResource("Recently Used").inAppLocalized) {
+            ForEach(Array(recentlyUsedItems.enumerated()), id: \.element.id) { idx, item in
+                itemRow(item, context: "recent", showDivider: idx < recentlyUsedItems.count - 1)
             }
         }
     }
@@ -656,15 +647,9 @@ struct HomeScreen: View {
     // MARK: Favorites
 
     private var favoritesSection: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            homeSectionHeader(
-                title: LocalizedStringResource("Favorites").inAppLocalized
-            )
-
-            groupedCard {
-                ForEach(Array(favoriteItems.enumerated()), id: \.element.id) { idx, item in
-                    itemRow(item, context: "favorite", showDivider: idx < favoriteItems.count - 1)
-                }
+        titledGroupCard(LocalizedStringResource("Favorites").inAppLocalized) {
+            ForEach(Array(favoriteItems.enumerated()), id: \.element.id) { idx, item in
+                itemRow(item, context: "favorite", showDivider: idx < favoriteItems.count - 1)
             }
         }
     }
@@ -742,6 +727,15 @@ struct HomeScreen: View {
         let route = VaultRoute.filtered(ItemFilter(spaceId: selectedFolderId))
         if let navigator { navigator.push { vaultRouteDestination(route) } }
         else { uiState.homePath.append(route) }
+    }
+
+    /// Open the full 2FA list as a REAL push — rows + always-visible search,
+    /// replacing the old bottom-sheet grid (owner 260805). Reachable from both
+    /// the Authenticator section header and the Quick Actions tile, so hiding
+    /// the section never strands the trigger.
+    private func openTotpList() {
+        if let navigator { navigator.push { vaultRouteDestination(VaultRoute.totpCodes) } }
+        else { uiState.homePath.append(VaultRoute.totpCodes) }
     }
 
     /// Selected Space name, or the localized "All Spaces" fallback (nil filter).
@@ -913,15 +907,31 @@ struct HomeScreen: View {
         .padding(.bottom, Space.s1)
     }
 
-    /// Grouped card container (surface-base, Radius.lg). Card-diet: the hairline stroke is
-    /// dropped in favor of `.elevation(.level1)` — the soft shadow plus the
-    /// elevatedBackground/groupedBackground contrast still reads as grouped in both light
-    /// and dark mode without an extra border line.
+    /// Titled grouped card (surface-base, Radius.lg): the section title lives INSIDE
+    /// the card — same anatomy as Needs Attention and the All items card — so every
+    /// Home card section reads as one grouped answer instead of rows floating under
+    /// a grey caption. Card-diet: the hairline stroke is dropped in favor of
+    /// `.elevation(.level1)` — the soft shadow plus the elevatedBackground/
+    /// groupedBackground contrast still reads as grouped in light and dark mode.
     @ViewBuilder
-    private func groupedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: 0) {
+    private func titledGroupCard<Content: View>(
+        _ title: LocalizedStringResource,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: Space.s2) {
+                Text(title)
+                    .vaultType(.headline)
+                    .themedForeground(.primary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.top, Space.s4)
+            .padding(.bottom, Space.s2)
+
             content()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(rgb: env.theme.active.elevatedBackground))
         .vaultCornerRadius(Radius.lg)
         .elevation(.level1)

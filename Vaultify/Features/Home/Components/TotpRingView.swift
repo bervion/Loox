@@ -30,6 +30,9 @@ struct TotpRingView: View {
                 .foregroundStyle(tintColor)
                 .monospacedDigit()
                 .frame(width: size, height: size)
+                // Hidden like the ring branch below — a bare per-second number in
+                // the host row's combined VoiceOver label churns the announcement.
+                .accessibilityHidden(true)
         } else {
             ring
         }
