@@ -29,14 +29,19 @@ struct StoryIntroScreen: View {
                 // VoiceOver, and on macOS the pinned full-height pages give
                 // way to a plain readable page with the same copy and exits.
                 // The reader shows every beat's copy on one page, so reaching
-                // its CTA genuinely means the whole story was presented;
-                // skipping still reports where the user actually was.
+                // its CTA genuinely means the whole story was presented. A
+                // skip has no per-beat progress to report, so it files the
+                // reader sentinel rather than looking like a bail-out at the
+                // hook (which is what beat 1 would mean on the journey).
                 StoryIntroReaderView(
                     onComplete: {
                         furthestBeat = StoryBeat.commitment.rawValue
                         complete(outcome: "completed", playExit: false)
                     },
-                    onSkip: { complete(outcome: "skipped") })
+                    onSkip: {
+                        furthestBeat = Self.readerBeatSentinel
+                        complete(outcome: "skipped")
+                    })
             } else {
                 journey
             }
@@ -100,6 +105,9 @@ struct StoryIntroScreen: View {
     }
 
     private static let scrollSpace = "story-scroll"
+    /// `furthest_beat` value meaning "the reader presentation was used", which
+    /// has no per-beat progress to report.
+    private static let readerBeatSentinel = 0
 
     private var skipButton: some View {
         Button {

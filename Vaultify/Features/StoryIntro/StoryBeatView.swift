@@ -96,7 +96,7 @@ struct StoryBeatView: View {
             // pages that flag is true only at the snapped rest position, so a
             // boolean would hard-blink the copy away the instant a drag begins
             // instead of scrubbing with the finger.
-            .scrollTransition(.interactive) { content, phase in
+            .scrollTransition(.interactive) { [reduceMotion] content, phase in
                 content
                     .opacity(Self.nearness(phase))
                     .blur(radius: reduceMotion ? 0 : 8 * (1 - Self.nearness(phase)))
@@ -109,7 +109,7 @@ struct StoryBeatView: View {
             .vaultType(.body)
             .foregroundStyle(secondaryColor)
             .multilineTextAlignment(.center)
-            .scrollTransition(.interactive) { content, phase in
+            .scrollTransition(.interactive) { [reduceMotion] content, phase in
                 content
                     .opacity(Self.nearness(phase))
                     .offset(y: reduceMotion ? 0 : 16 * (1 - Self.nearness(phase)))
@@ -117,7 +117,12 @@ struct StoryBeatView: View {
     }
 
     /// 1 on the resting page, easing to 0 a full page away.
-    private static func nearness(_ phase: ScrollTransitionPhase) -> Double {
+    ///
+    /// `nonisolated` and the `[reduceMotion]` capture lists above are load
+    /// bearing: `scrollTransition`'s closure is `@Sendable`, so it does not
+    /// inherit this View's MainActor isolation. Without both, the closures
+    /// raise nine concurrency warnings that become errors under Swift 6.
+    nonisolated private static func nearness(_ phase: ScrollTransitionPhase) -> Double {
         1 - min(abs(phase.value), 1)
     }
 
@@ -152,18 +157,23 @@ struct StoryBeatView: View {
         }
     }
 
-    private func hint(_ key: LocalizedStringKey) -> some View {
-        Text(key)
+    @ViewBuilder private func hint(_ key: LocalizedStringKey) -> some View {
+        let base = Text(key)
             .vaultType(.callout)
             .foregroundStyle(secondaryColor)
-            .phaseAnimator([false, true]) { content, pulsing in
+        if reduceMotion {
+            // The animator is not attached at all. `Animation.vault` returning
+            // nil is the right token for `.animation(_:value:)`, NOT for a phase
+            // driver: a nil animation makes each phase transition INSTANT rather
+            // than absent, so the offset would flip continuously — the opposite
+            // of what Reduce Motion asks for.
+            base
+        } else {
+            base.phaseAnimator([false, true]) { content, pulsing in
                 content.offset(y: pulsing ? -4 : 0)
             } animation: { _ in
-                // Token-derived, and `.vault` returns nil under Reduce Motion,
-                // which stops the loop instead of just freezing its offset.
-                .vault(.easeInOut(duration: Motion.slow * 3)
-                        .repeatForever(autoreverses: true),
-                       reduceMotion: reduceMotion)
+                .easeInOut(duration: Motion.slow * 3).repeatForever(autoreverses: true)
             }
+        }
     }
 }
