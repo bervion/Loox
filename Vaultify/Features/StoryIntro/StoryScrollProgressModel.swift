@@ -28,6 +28,15 @@ final class StoryScrollProgressModel {
         sendTapTime = Date().timeIntervalSinceReferenceDate
     }
 
+    /// The seal landed: the stage plays its exit burst from this instant while
+    /// the screen finishes the flag flip behind it.
+    private(set) var sealTime: TimeInterval?
+
+    func noteSeal() {
+        guard sealTime == nil else { return }
+        sealTime = Date().timeIntervalSinceReferenceDate
+    }
+
     func update(_ metrics: StoryScrollMetrics) {
         guard metrics.span > 0 else { return }
         // 2pt quantization: drops the sub-pixel offset churn a 120Hz scroll

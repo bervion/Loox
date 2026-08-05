@@ -11,6 +11,7 @@ import SwiftUI
 /// beat choreography in phases 3–4 (see plans/260805-1404-onboarding-story-intro).
 struct StoryIntroScreen: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var visibleBeat: Int?
     /// Highest beat reached, for the `story_intro_ended` analytics event.
     @State private var furthestBeat = StoryBeat.hook.rawValue
@@ -84,10 +85,21 @@ struct StoryIntroScreen: View {
     private func complete(outcome: String) {
         AnalyticsEngine.shared.log(.storyIntroEnded(outcome: outcome,
                                                     furthestBeat: furthestBeat))
-        if outcome == "completed" {
-            env.settings.storyIntroWantsFirstItem = true
+        guard outcome == "completed" else {
+            env.settings.storyIntroCompleted = true
+            return
         }
-        env.settings.storyIntroCompleted = true
+        env.settings.storyIntroWantsFirstItem = true
+        // Sealed by hand: let the stage's exit burst play, then flip the flag
+        // so the route crossfade lands on Home as the bloom settles. Reduce
+        // Motion goes straight through.
+        progress.noteSeal()
+        Task {
+            if !reduceMotion {
+                try? await Task.sleep(for: .milliseconds(650))
+            }
+            env.settings.storyIntroCompleted = true
+        }
     }
 }
 

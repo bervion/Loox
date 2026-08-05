@@ -40,7 +40,9 @@ nonisolated enum StoryField {
     /// The full life of one scrap: born from the origin dot across the chaos
     /// beat, drifting until the consequence stills it, reeled into the ring by
     /// the turn's scroll scrub, then orbiting (survivors) or dissolving.
-    static func sample(index: Int, t: TimeInterval, beat: Double) -> Sample {
+    /// `burst` (0…1) is the seal's exit: the ring flings outward and fades —
+    /// the LooxSwirl dismiss verb as the curtain-raise for the real app.
+    static func sample(index: Int, t: TimeInterval, beat: Double, burst: Double = 0) -> Sample {
         let birthOrder = unitRandom(index, salt: 0x01)
         let birthBeat = 0.40 + birthOrder * 0.85
         let birth = smoothstep(beat, birthBeat, birthBeat + 0.30)
@@ -66,13 +68,20 @@ nonisolated enum StoryField {
         // reversing the scroll visibly scatters them again.
         let gather = easeInOut(smoothstep(beat, 2.85, 3.90))
         let slot = index % ringCount
-        let position = lerp(placed, ringPoint(slot: slot, t: t, beat: beat), gather)
+        var position = lerp(placed, ringPoint(slot: slot, t: t, beat: beat), gather)
 
         // Only ring survivors persist into the sanctuary; the surplus dissolves
         // as the ring settles.
         let survives = index < ringCount
         let dissolve = survives ? 0 : smoothstep(beat, 3.70, 4.20)
-        let opacity = Double(birth) * (1 - dissolve)
+        var opacity = Double(birth) * (1 - dissolve)
+
+        if burst > 0 {
+            let away = CGPoint(x: position.x - origin.x, y: position.y - origin.y)
+            position.x += away.x * burst * 1.6
+            position.y += away.y * burst * 1.6
+            opacity *= 1 - burst
+        }
 
         let scale = 0.75 + 0.5 * unitRandom(index, salt: 0x06)
         return Sample(position: position, opacity: opacity, scale: scale)

@@ -35,6 +35,7 @@ struct StoryStageView: View {
 
     private func canvas(t: TimeInterval, beat: Double, veilFade: Double) -> some View {
         let ripple = rippleProgress(t: t, beat: beat)
+        let burst = burstProgress(t: t)
         return Canvas { ctx, size in
             drawVeil(&ctx, size: size, t: t, fade: veilFade)
             drawWarningPool(&ctx, size: size, ripple: ripple, beat: beat, veilFade: veilFade)
@@ -46,13 +47,14 @@ struct StoryStageView: View {
             }
 
             for index in 0..<StoryField.scrapCount {
-                let sample = StoryField.sample(index: index, t: t, beat: beat)
+                let sample = StoryField.sample(index: index, t: t, beat: beat, burst: burst)
                 guard sample.opacity > 0.01 else { continue }
                 let symbol = StageSymbol(scrap: StoryField.kind(index))
                 stamp(&ctx, symbol: symbol, at: sample, in: size, baseSize: 44)
             }
 
             drawConsequence(&ctx, size: size, t: t, beat: beat, ripple: ripple)
+            drawSanctuary(&ctx, size: size, t: t, beat: beat, burst: burst)
         } symbols: {
             // Rendered ONCE per Canvas pass and stamped per scrap — the glow is
             // pre-blurred here so no per-particle blur filter ever runs.
@@ -66,6 +68,52 @@ struct StoryStageView: View {
                 .tag(StageSymbol.dot)
             Circle().fill(StoryPalette.glow).frame(width: 88, height: 88).blur(radius: 18)
                 .tag(StageSymbol.glow)
+            Image("BrandSymbol").resizable().scaledToFit()
+                .frame(width: 56, height: 56)
+                .tag(StageSymbol.mark)
+        }
+    }
+
+    /// Seal exit: 0…1 over 0.8s after the hold completes, easing the ring
+    /// outward while the route crossfade lands on Home behind it.
+    private func burstProgress(t: TimeInterval) -> Double {
+        guard let seal = model.sealTime else { return 0 }
+        return StoryField.easeOut(min(max((t - seal) / 0.8, 0), 1))
+    }
+
+    // MARK: Sanctuary (the mark and its sigils)
+
+    /// The Loox mark settles at the ring's centre as the theme resolves;
+    /// concentric sigil arcs draw themselves around the orbit.
+    private func drawSanctuary(_ ctx: inout GraphicsContext, size: CGSize,
+                               t: TimeInterval, beat: Double, burst: Double) {
+        let appear = StoryField.smoothstep(beat, 3.75, 4.25) * (1 - burst)
+        guard appear > 0.01 else { return }
+
+        let breathe = 1 + 0.02 * sin(t * (.pi * 2 / 4))
+        let mark = StoryField.Sample(position: StoryField.origin,
+                                     opacity: appear, scale: breathe)
+        stamp(&ctx, symbol: .glow, at: mark, in: size, baseSize: 120)
+        stamp(&ctx, symbol: .mark, at: mark, in: size, baseSize: 56)
+
+        // Sigil arcs: accent-tinted, trim-drawn, counter-rotating slowly.
+        let trim = StoryField.smoothstep(beat, 4.15, 4.85)
+        guard trim > 0.01 else { return }
+        let center = CGPoint(x: StoryField.origin.x * size.width,
+                             y: StoryField.origin.y * size.height)
+        let accent = Color(rgb: theme.accentFill)
+        for (index, factor) in [1.34, 1.52].enumerated() {
+            let radius = 0.24 * factor * min(size.width, size.height) * (1 + burst * 0.6)
+            let direction: Double = index == 0 ? 1 : -1
+            let start = Angle(radians: t * 0.10 * direction + Double(index) * 2.1)
+            var path = Path()
+            path.addArc(center: center, radius: radius,
+                        startAngle: start,
+                        endAngle: start + Angle(radians: trim * 4.4),
+                        clockwise: false)
+            ctx.stroke(path,
+                       with: .color(accent.opacity(0.35 * appear * trim)),
+                       style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
         }
     }
 
@@ -143,7 +191,7 @@ struct StoryStageView: View {
     }
 
     private enum StageSymbol: Int, Hashable {
-        case note, chat, browser, key, chatWarning, dot, glow
+        case note, chat, browser, key, chatWarning, dot, glow, mark
 
         init(scrap: StoryField.ScrapKind) {
             switch scrap {

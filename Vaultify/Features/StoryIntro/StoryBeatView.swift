@@ -14,6 +14,12 @@ struct StoryBeatView: View {
 
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Sanctuary's press-to-peek demo row.
+    @State private var peeking = false
+
+    /// Fictional demo secret for the peek row — a constant, never user
+    /// content, deliberately not localized.
+    private static let demoSecret = "mQ4-vE81-kz"
 
     var body: some View {
         VStack(spacing: Space.s5) {
@@ -21,7 +27,7 @@ struct StoryBeatView: View {
             content
             Spacer(minLength: 0)
             if beat == .commitment {
-                BrandCapsuleCTA(title: "Enter your vault", action: onComplete)
+                StorySealCTA(title: "Hold to enter your vault", onSealed: onComplete)
                     .padding(.bottom, Space.s8)
             }
         }
@@ -60,6 +66,8 @@ struct StoryBeatView: View {
         case .sanctuary:
             title("One vault. Yours alone.")
             body_("Encrypted on this device. No account. Nothing leaves unless you say so.")
+            peekRow
+                .padding(.top, Space.s6)
         case .commitment:
             title("Lock them in")
             body_("Loox remembers, so you can forget.")
@@ -102,6 +110,37 @@ struct StoryBeatView: View {
                     .opacity(phase.isIdentity ? 1 : 0)
                     .offset(y: phase.isIdentity || reduceMotion ? 0 : 16)
             }
+    }
+
+    /// The product's Controlled Reveal physics taught as play: secrets open
+    /// only under your finger, and hide the instant you let go.
+    private var peekRow: some View {
+        VStack(spacing: Space.s3) {
+            HStack(spacing: Space.s3) {
+                VaultIcon("dt_key", size: 16)
+                    .themedForeground(.iconSecondary)
+                GlyphResolveText(text: Self.demoSecret, isRevealed: peeking)
+                Spacer(minLength: 0)
+                VaultIcon(peeking ? Icons.reveal : Icons.hide, size: 16)
+                    .themedForeground(.iconSecondary)
+            }
+            .padding(Space.s4)
+            .background(Color(rgb: theme.controlBackground))
+            .vaultCornerRadius(Radius.md)
+            .onLongPressGesture(minimumDuration: 0.15, maximumDistance: 44,
+                                perform: {},
+                                onPressingChanged: { peeking = $0 })
+            .accessibilityRepresentation {
+                Toggle("Peek at the example secret", isOn: $peeking)
+            }
+
+            Text(peeking ? "Let go and it hides again" : "Hold a row to peek")
+                .vaultType(.footnote)
+                .foregroundStyle(secondaryColor)
+        }
+        .scrollTransition(.interactive) { content, phase in
+            content.opacity(phase.isIdentity ? 1 : 0)
+        }
     }
 
     private func hint(_ key: LocalizedStringKey) -> some View {
