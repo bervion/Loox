@@ -22,18 +22,35 @@ struct StoryIntroScreen: View {
 
     var body: some View {
         Group {
-            if dynamicTypeSize >= .accessibility1 || voiceOverOn {
-                // Reflow, never shrink: at accessibility sizes (or under
-                // VoiceOver) the pinned full-height pages give way to a plain
-                // readable page with the same copy and exits.
-                StoryIntroReaderView(onComplete: { complete(outcome: "completed") },
-                                     onSkip: { complete(outcome: "skipped") })
-                    .onAppear { furthestBeat = StoryBeat.commitment.rawValue }
+            if useReader {
+                // Reflow, never shrink: at accessibility sizes, under
+                // VoiceOver, and on macOS the pinned full-height pages give
+                // way to a plain readable page with the same copy and exits.
+                // The reader shows every beat's copy on one page, so reaching
+                // its CTA genuinely means the whole story was presented;
+                // skipping still reports where the user actually was.
+                StoryIntroReaderView(
+                    onComplete: {
+                        furthestBeat = StoryBeat.commitment.rawValue
+                        complete(outcome: "completed", playExit: false)
+                    },
+                    onSkip: { complete(outcome: "skipped") })
             } else {
                 journey
             }
         }
         .analyticsScreen("story_intro")
+    }
+
+    private var useReader: Bool {
+        #if os(macOS)
+        // Scroll-scrubbing and a timed mouse-hold feel poor with a pointer;
+        // researcher-06 found even Arc/Dia use windowed discrete steps, not
+        // full-screen cinema. A dedicated stepped window remains a follow-up.
+        return true
+        #else
+        return dynamicTypeSize >= .accessibility1 || voiceOverOn
+        #endif
     }
 
     private var journey: some View {

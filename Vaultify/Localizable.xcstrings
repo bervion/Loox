@@ -32691,6 +32691,342 @@
           }
         }
       }
+    },
+    "Where do your passwords live?": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードはどこにありますか？"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mật khẩu của bạn đang ở đâu?"
+          }
+        }
+      }
+    },
+    "Take a second and try to count them.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "少しだけ、数えてみてください。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thử dành một giây đếm xem sao."
+          }
+        }
+      }
+    },
+    "Scroll": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スクロール"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kéo lên"
+          }
+        }
+      }
+    },
+    "A little bit of everywhere": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あちこちに少しずつ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mỗi nơi một ít"
+          }
+        }
+      }
+    },
+    "Notes. Screenshots. That chat with yourself. A browser that keeps asking to save.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メモ。スクリーンショット。自分へのチャット。保存を聞いてくるブラウザ。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi chú. Ảnh màn hình. Đoạn chat tự nhắn cho mình. Trình duyệt thì cứ hỏi lưu."
+          }
+        }
+      }
+    },
+    "The more you clear, the more spill out": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "消すほど、あふれていく"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Càng dọn, chúng càng tràn ra"
+          }
+        }
+      }
+    },
+    "One leak opens every door": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ひとつの漏えいが、すべての扉を開く"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một chỗ lộ, mở mọi cánh cửa"
+          }
+        }
+      }
+    },
+    "Tap to send it, like we all do": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップして送る、誰もがしてきたように"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chạm để gửi, ai cũng từng làm vậy"
+          }
+        }
+      }
+    },
+    "Once it leaves, it never comes back.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送った瞬間、もう戻せない。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi đi rồi thì không lấy lại được."
+          }
+        }
+      }
+    },
+    "Now pull them back": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "さあ、取り戻そう"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giờ thì gom chúng về"
+          }
+        }
+      }
+    },
+    "Keep scrolling. You are gathering every stray password into one place.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スクロールを続けて。散らばったパスワードをひとつの場所へ集めています。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cứ kéo tiếp. Bạn đang gom từng mật khẩu rải rác về một chỗ."
+          }
+        }
+      }
+    },
+    "You are gathering every stray password into one place.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "散らばったパスワードをひとつの場所へ集めています。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn đang gom từng mật khẩu rải rác về một chỗ."
+          }
+        }
+      }
+    },
+    "One vault. Yours alone.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ひとつの金庫。あなただけのもの。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một chiếc kho. Của riêng bạn."
+          }
+        }
+      }
+    },
+    "Encrypted on this device. No account. Nothing leaves unless you say so.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この端末で暗号化。アカウント不要。許可なく外に出ることはありません。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mã hóa ngay trên máy. Không cần tài khoản. Không gì rời khỏi máy nếu bạn không cho phép."
+          }
+        }
+      }
+    },
+    "Hold a row to peek": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "長押しでのぞき見"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ một dòng để xem thử"
+          }
+        }
+      }
+    },
+    "Let go and it hides again": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "指を離せばすぐ隠れる"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thả tay là ẩn ngay"
+          }
+        }
+      }
+    },
+    "Peek at the example secret": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サンプルのシークレットを表示"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem thử mật khẩu ví dụ"
+          }
+        }
+      }
+    },
+    "Lock them in": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてを金庫へ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cất hết vào kho"
+          }
+        }
+      }
+    },
+    "Loox remembers, so you can forget.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looxが覚えるから、あなたは忘れていい。"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loox nhớ giúp bạn, để bạn thoải mái quên."
+          }
+        }
+      }
+    },
+    "Hold to enter your vault": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "長押しで金庫へ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ để vào kho của bạn"
+          }
+        }
+      }
+    },
+    "Enter your vault": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金庫へ"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vào kho của bạn"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -11,13 +11,19 @@ One-time cinematic story screen after onboarding, before the Home tutorial. Pain
 | Adversarial critique (design-dna, feasibility-perf, narrative-retention) | Done |
 | Final hybrid concept | Done → `concept-final.md` |
 | Owner decisions | Locked 2026-08-05 (dark canvas, Add pulse, no stats, Loox, macOS Arc-style research w/ Reader fallback) |
-| phase-01 foundation (flags, seam, skeleton) | Done (commit a6c22b2, compile green) |
-| phase-02 stage engine | In progress (progress model + particle field + stage view written) |
-| phase-03 beats 1–4 | Pending |
-| phase-04 beats 5–6 + arrival | Pending |
-| phase-05 accessibility + Reader | Pending |
-| phase-06 l10n, tests, macOS, polish | Pending |
-| macOS Arc-style research (researcher-06) | Running in background |
+| phase-01 foundation (flags, seam, skeleton) | Done (a6c22b2) |
+| phase-02 stage engine | Done (b83bf9e) |
+| phase-03 beats 1–4 + tap-to-send | Done (a315252) |
+| phase-04 sanctuary peek, hold-to-seal, arrival bridge | Done (2ceffda) |
+| phase-05 reader + accessibility | Done (f812ce5) |
+| phase-06 l10n VI+JA, unit tests, macOS reader, docs | In progress (tests running) |
+| macOS research (researcher-06) | Done — Arc/Dia use windowed discrete steps, not full-screen cinema; Reader ships now, stepped window = follow-up |
+
+## Remaining before merge
+- On-device Instruments pass (iPhone 12-class) during the beat-4 scrub
+- `.viewAligned` behavior check on an iOS 17.3 simulator (fallback designed: free scroll + settle)
+- JA native review of the drafted strings
+- Design-DNA checklist answers filed at PR review
 
 ## Files
 
