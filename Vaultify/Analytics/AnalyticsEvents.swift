@@ -41,7 +41,9 @@ extension AnalyticsEvent {
 
     /// The one-time story intro ended. `outcome`: "completed" | "skipped";
     /// `furthest_beat` is the highest beat reached (1...6) — fixed indices from
-    /// `StoryBeat`, never content or timings.
+    /// `StoryBeat`, never content or timings — or 0 when the reader
+    /// presentation was used (macOS, accessibility sizes, VoiceOver), which
+    /// shows every beat at once and so has no per-beat progress.
     static func storyIntroEnded(outcome: String, furthestBeat: Int) -> AnalyticsEvent {
         AnalyticsEvent("story_intro_ended", ["outcome": .string(outcome),
                                             "furthest_beat": .int(furthestBeat)])

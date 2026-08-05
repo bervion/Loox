@@ -233,9 +233,13 @@ struct StoryStageView: View {
         var layer = ctx
         layer.opacity = sample.opacity
         let side = baseSize * sample.scale
+        // Centre on the drawn HEIGHT, not the width: the scrap cards are 44x34
+        // (52x34 wide), so backing the origin off by half the width floated
+        // every one of them ~5pt above its sampled position.
+        let height = side * resolved.size.height / max(resolved.size.width, 1)
         let rect = CGRect(x: sample.position.x * size.width - side / 2,
-                          y: sample.position.y * size.height - side / 2,
-                          width: side, height: side * resolved.size.height / max(resolved.size.width, 1))
+                          y: sample.position.y * size.height - height / 2,
+                          width: side, height: height)
         layer.draw(resolved, in: rect)
     }
 
@@ -286,10 +290,7 @@ private struct StoryScrapCard: View {
                 }
             }
             .vaultCornerRadius(Radius.sm)
-            .overlay {
-                RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                    .strokeBorder(strokeColor, lineWidth: 1)
-            }
+            .overlay { stroke }
     }
 
     /// Two passes with complementary opacity: a single interpolated Color is not
@@ -304,8 +305,18 @@ private struct StoryScrapCard: View {
         }
     }
 
-    private var strokeColor: Color {
-        if let tint { return tint.opacity(0.4) }
-        return mix > 0.5 ? Color(rgb: theme.separator) : StoryPalette.scrapStroke
+    /// Crossfaded like the fill and the glyph — a threshold switch here would
+    /// pop the border mid-gather while everything around it interpolates.
+    @ViewBuilder private var stroke: some View {
+        let shape = RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+        if let tint {
+            shape.strokeBorder(tint.opacity(0.4), lineWidth: 1)
+        } else {
+            ZStack {
+                shape.strokeBorder(Color(rgb: theme.separator), lineWidth: 1)
+                shape.strokeBorder(StoryPalette.scrapStroke, lineWidth: 1)
+                    .opacity(1 - mix)
+            }
+        }
     }
 }

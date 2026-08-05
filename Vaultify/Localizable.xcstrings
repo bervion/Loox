@@ -33027,6 +33027,22 @@
           }
         }
       }
+    },
+    "Enter my vault": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保管庫に入る"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vào kho của tôi"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
