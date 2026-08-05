@@ -14,14 +14,16 @@ struct StoryIntroScreen: View {
     @State private var visibleBeat: Int?
     /// Highest beat reached, for the `story_intro_ended` analytics event.
     @State private var furthestBeat = StoryBeat.hook.rawValue
+    /// Read by the stage layer only — scroll writes never touch this view's
+    /// own state, so the beat column is not re-evaluated per scroll tick.
+    @State private var progress = StoryScrollProgressModel()
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             // Committed-dark cinematic canvas in BOTH appearance modes (owner
-            // decision; brand-animation fixed-color precedent). The phase-02
-            // stage veil replaces this flat fill and handles the beat-4
-            // crossfade into the user's theme background.
-            Color.black.ignoresSafeArea()
+            // decision; brand-animation fixed-color precedent), cross-fading
+            // into the user's theme across the turn beat.
+            StoryStageView(model: progress)
 
             ScrollView(.vertical) {
                 VStack(spacing: 0) {
@@ -34,10 +36,24 @@ struct StoryIntroScreen: View {
                     }
                 }
                 .scrollTargetLayout()
+                .background {
+                    // One measurement serves both numbers: the column is six
+                    // equal `containerRelativeFrame` pages, so the scrollable
+                    // span is exactly five sixths of the content height.
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: StoryScrollMetricsKey.self,
+                            value: StoryScrollMetrics(
+                                offset: -proxy.frame(in: .named(Self.scrollSpace)).minY,
+                                span: proxy.size.height * 5 / 6))
+                    }
+                }
             }
             .scrollTargetBehavior(.viewAligned)
             .scrollIndicators(.hidden)
             .scrollPosition(id: $visibleBeat)
+            .coordinateSpace(name: Self.scrollSpace)
+            .onPreferenceChange(StoryScrollMetricsKey.self) { progress.update($0) }
             .onChange(of: visibleBeat) { _, beat in
                 if let beat { furthestBeat = max(furthestBeat, beat) }
             }
@@ -46,6 +62,8 @@ struct StoryIntroScreen: View {
         }
         .analyticsScreen("story_intro")
     }
+
+    private static let scrollSpace = "story-scroll"
 
     private var skipButton: some View {
         Button {
@@ -87,6 +105,11 @@ enum StoryBeat: Int, CaseIterable, Identifiable {
 enum StoryPalette {
     static let textPrimary = Color.white
     static let textSecondary = Color.white.opacity(0.7)
+    static let glow = Color(red: 0.62, green: 0.74, blue: 1.0).opacity(0.55)
+    static let nebula = Color(red: 0.30, green: 0.40, blue: 0.72)
+    static let nebulaDeep = Color(red: 0.22, green: 0.24, blue: 0.52)
+    static let scrapFill = Color.white.opacity(0.08)
+    static let scrapStroke = Color.white.opacity(0.14)
 }
 
 /// Phase-1 placeholder for a beat page: title copy only, plus the completion

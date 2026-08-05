@@ -11,8 +11,8 @@ One-time cinematic story screen after onboarding, before the Home tutorial. Pain
 | Adversarial critique (design-dna, feasibility-perf, narrative-retention) | Done |
 | Final hybrid concept | Done → `concept-final.md` |
 | Owner decisions | Locked 2026-08-05 (dark canvas, Add pulse, no stats, Loox, macOS Arc-style research w/ Reader fallback) |
-| phase-01 foundation (flags, seam, skeleton) | In progress |
-| phase-02 stage engine | Pending |
+| phase-01 foundation (flags, seam, skeleton) | Done (commit a6c22b2, compile green) |
+| phase-02 stage engine | In progress (progress model + particle field + stage view written) |
 | phase-03 beats 1–4 | Pending |
 | phase-04 beats 5–6 + arrival | Pending |
 | phase-05 accessibility + Reader | Pending |
