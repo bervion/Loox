@@ -6,12 +6,13 @@ import SwiftUI
 /// and Home appears). Six full-height beats on one continuous vertical scroll;
 /// completing or skipping sets the flag and the route crossfade lands on Home.
 ///
-/// Phase 1 skeleton: beat scaffolding, skip/complete wiring, analytics.
-/// The stage layer (particles, veil, dark→theme crossfade) lands in phase 2,
-/// beat choreography in phases 3–4 (see plans/260805-1404-onboarding-story-intro).
+/// Accessibility sizes and VoiceOver swap the pinned journey for
+/// `StoryIntroReaderView` (same copy, same exits, zero choreography).
 struct StoryIntroScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverOn
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var visibleBeat: Int?
     /// Highest beat reached, for the `story_intro_ended` analytics event.
     @State private var furthestBeat = StoryBeat.hook.rawValue
@@ -20,6 +21,22 @@ struct StoryIntroScreen: View {
     @State private var progress = StoryScrollProgressModel()
 
     var body: some View {
+        Group {
+            if dynamicTypeSize >= .accessibility1 || voiceOverOn {
+                // Reflow, never shrink: at accessibility sizes (or under
+                // VoiceOver) the pinned full-height pages give way to a plain
+                // readable page with the same copy and exits.
+                StoryIntroReaderView(onComplete: { complete(outcome: "completed") },
+                                     onSkip: { complete(outcome: "skipped") })
+                    .onAppear { furthestBeat = StoryBeat.commitment.rawValue }
+            } else {
+                journey
+            }
+        }
+        .analyticsScreen("story_intro")
+    }
+
+    private var journey: some View {
         ZStack(alignment: .topTrailing) {
             // Committed-dark cinematic canvas in BOTH appearance modes (owner
             // decision; brand-animation fixed-color precedent), cross-fading
@@ -61,7 +78,6 @@ struct StoryIntroScreen: View {
 
             skipButton
         }
-        .analyticsScreen("story_intro")
     }
 
     private static let scrollSpace = "story-scroll"
@@ -74,6 +90,9 @@ struct StoryIntroScreen: View {
                 .vaultType(.callout)
                 .foregroundStyle(StoryPalette.textSecondary)
                 .padding(Space.s3) // pads the label out to a 44pt hit area
+                // Soft scrim so the fixed light label stays legible once the
+                // canvas has resolved into a light theme background.
+                .background(Color.black.opacity(0.25), in: Capsule())
         }
         .padding(.trailing, Space.gutter)
     }
@@ -112,8 +131,8 @@ enum StoryBeat: Int, CaseIterable, Identifiable {
 
 /// Fixed colors for text sitting on the committed-dark canvas — the one place
 /// the story does not read theme roles, mirroring how the brand-animation
-/// layers use fixed decorative color. Beats 4–6 switch to semantic roles once
-/// the phase-02 stage crossfades the canvas into the user's theme.
+/// layers use fixed decorative color. The sanctuary and commitment beats
+/// switch to semantic roles once the stage has resolved into the theme.
 enum StoryPalette {
     static let textPrimary = Color.white
     static let textSecondary = Color.white.opacity(0.7)
