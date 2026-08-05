@@ -23,7 +23,19 @@ One-time cinematic story screen after onboarding, before the Home tutorial. Pain
 Local `make check` could never validate this: the dev machine has Xcode 16.4 while the repo requires 26.5 (pre-existing VaultifyCore files use `nonisolated struct`), and the Makefile piped xcodebuild into `tail`, masking the exit code so a failed build printed "passed" (fixed in b37fbcb). CI on the self-hosted runner is the only compiler that sees this code.
 | macOS research (researcher-06) | Done — Arc/Dia use windowed discrete steps, not full-screen cinema; Reader ships now, stepped window = follow-up |
 
-## Remaining before merge
+## Shipped
+Merged to main as PR #198 (squash 6150879), released in **v1.52.2 (build 82)**.
+An adversarial review (4 lenses, findings each refuted by a second agent) ran
+before merge and caught three defects no compiler or unit test would have:
+the seal CTA sealing itself when the ScrollView stole the drag, every stage
+window landing half a page late (the consequence chip the copy tells you to
+tap did not exist at rest), and the copy hard-blinking instead of scrubbing
+because `phase.isIdentity` is a step function. All fixed in 5dd7000.
+
+The same PR carried the Face ID copy fix — see
+`plans/reports/debugger-260805-1559-faceid-on-copy-totp-website.md`.
+
+## Remaining (needs a real device / native reviewer)
 - On-device Instruments pass (iPhone 12-class) during the beat-4 scrub
 - `.viewAligned` behavior check on an iOS 17.3 simulator (fallback designed: free scroll + settle)
 - JA native review of the drafted strings

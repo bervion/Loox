@@ -2,8 +2,17 @@
 
 ## [1.52.2] - 2026-08-05
 
-### Changed
-- Story intro: first-run cinematic between onboarding and Home (#198)
+### Added
+- Story intro: a one-time cinematic between onboarding and the Home tutorial (#198)
+
+### Fixed
+- Copying a 2FA code or a website no longer asks for Face ID: the login template
+  declared field policy for only username and password, so the inferred `.totp`
+  and `.website` roles resolved as unknown and failed closed to device-owner
+  re-auth (#198)
+- The website field is eligible for Quick Share again, same cause (#198)
+- `make check` no longer prints success when the build fails: the recipe piped
+  xcodebuild into `tail`, so the pipeline reported `tail`'s exit status (#198)
 
 
 ## [1.52.1] - 2026-08-05
