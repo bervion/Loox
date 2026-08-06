@@ -33,7 +33,7 @@ final class StoryIntroTests: XCTestCase {
                 let dx = sample.position.x - StoryField.origin.x
                 let dy = sample.position.y - StoryField.origin.y
                 let distance = (dx * dx + dy * dy).squareRoot()
-                XCTAssertEqual(distance, 0.24, accuracy: 0.06,
+                XCTAssertEqual(distance, StoryField.ringRadius, accuracy: 0.03,
                                "survivors should sit on the sanctuary orbit")
             } else {
                 XCTAssertEqual(sample.opacity, 0, accuracy: 0.001,
@@ -115,7 +115,8 @@ final class StoryIntroTests: XCTestCase {
             let sample = StoryField.sample(index: index, t: 5, beat: 3)
             let dx = sample.position.x - StoryField.origin.x
             let dy = sample.position.y - StoryField.origin.y
-            XCTAssertEqual((dx * dx + dy * dy).squareRoot(), 0.24, accuracy: 0.06)
+            XCTAssertEqual((dx * dx + dy * dy).squareRoot(), StoryField.ringRadius,
+                           accuracy: 0.01)
         }
     }
 

@@ -17,11 +17,13 @@ nonisolated enum StoryField {
     }
 
     /// Where a scrap is and how it looks at this instant, in unit space
-    /// (0…1 both axes; the stage view scales to points).
+    /// (0…1 both axes; the stage view scales to points). `rotation` is a
+    /// small card tilt in radians — the mess is never perfectly aligned.
     struct Sample {
         var position: CGPoint
         var opacity: Double
         var scale: Double
+        var rotation: Double = 0
     }
 
     /// The lone glowing dot the story opens on: centre-high, breathing at the
@@ -46,7 +48,10 @@ nonisolated enum StoryField {
     /// the turn's scroll scrub, then orbiting (survivors) or dissolving.
     /// `burst` (0…1) is the seal's exit: the ring flings outward and fades —
     /// the LooxSwirl dismiss verb as the curtain-raise for the real app.
-    static func sample(index: Int, t: TimeInterval, beat: Double, burst: Double = 0) -> Sample {
+    /// `ringScale` corrects the orbit for the canvas aspect (see `ringPoint`);
+    /// the default keeps the field aspect-agnostic for tests and previews.
+    static func sample(index: Int, t: TimeInterval, beat: Double, burst: Double = 0,
+                       ringScale: CGSize = CGSize(width: 1, height: 1)) -> Sample {
         let birthOrder = unitRandom(index, salt: 0x01)
         // Last scrap is fully born by 0.95, so the chaos page (index 1) rests
         // on a complete swarm rather than one still spawning.
@@ -63,7 +68,7 @@ nonisolated enum StoryField {
         let driftSpeed = 0.25 + 0.45 * unitRandom(index, salt: 0x05)
         // Drift is fully stilled by the consequence page (index 2).
         let stillness = 1 - smoothstep(beat, 1.55, 1.95)
-        let driftAmp = 0.016 * stillness
+        let driftAmp = 0.022 * stillness
         let drifted = CGPoint(
             x: scatter.x + driftAmp * sin(t * driftSpeed + driftPhase),
             y: scatter.y + driftAmp * cos(t * driftSpeed * 0.8 + driftPhase * 1.3))
@@ -77,13 +82,25 @@ nonisolated enum StoryField {
         // arriving on the turn page (index 3), so the ring is closed at rest.
         let gather = easeInOut(smoothstep(beat, 2.10, 3.0))
         let slot = index % ringCount
-        var position = lerp(placed, ringPoint(slot: slot, t: t, beat: beat), gather)
+        var position = lerp(placed, ringPoint(slot: slot, t: t, beat: beat, scale: ringScale),
+                            gather)
 
         // Only ring survivors persist into the sanctuary; the surplus is gone
         // before the sanctuary page (index 4) settles.
         let survives = index < ringCount
         let dissolve = survives ? 0 : smoothstep(beat, 3.30, 3.90)
-        var opacity = Double(birth) * (1 - dissolve)
+
+        // Depth: the swarm reads in layers, not as a flat sheet of equal
+        // cards. Gathering lifts every survivor to full presence — the ring
+        // is one ordered thing, so the sanctuary orbit glows evenly.
+        let depth = 0.72 + 0.28 * unitRandom(index, salt: 0x08)
+        let presence = depth + (1 - depth) * gather
+
+        // The consequence beat's spotlight: the swarm recedes a step while
+        // the one shared chip takes the light — the mistake is singular,
+        // the mess is not. Matches the chip's own appear window.
+        let spotlight = smoothstep(beat, 1.55, 1.95) * (1 - smoothstep(beat, 2.30, 2.90))
+        var opacity = Double(birth) * presence * (1 - dissolve) * (1 - 0.30 * spotlight)
 
         if burst > 0 {
             let away = CGPoint(x: position.x - origin.x, y: position.y - origin.y)
@@ -92,25 +109,40 @@ nonisolated enum StoryField {
             opacity *= 1 - burst
         }
 
+        // A loose scatter of tilts (±8°) with a slow wobble while drifting;
+        // the gather straightens every card — order is the turn's whole point.
+        let baseTilt = (unitRandom(index, salt: 0x07) - 0.5) * 0.28
+        let wobble = 0.05 * stillness * sin(t * driftSpeed * 1.4 + driftPhase)
+        let rotation = (baseTilt + wobble) * (1 - gather)
+
         let scale = 0.75 + 0.5 * unitRandom(index, salt: 0x06)
-        return Sample(position: position, opacity: opacity, scale: scale)
+        return Sample(position: position, opacity: opacity, scale: scale, rotation: rotation)
     }
 
     /// Sanctuary orbit: polar slots around the mark, drifting slowly with time,
-    /// tightening as the commitment beat closes in.
-    private static func ringPoint(slot: Int, t: TimeInterval, beat: Double) -> CGPoint {
+    /// tightening as the commitment beat closes in. `scale` converts the unit
+    /// radius into a TRUE circle on the target canvas (unit space is stretched
+    /// by the screen aspect; without the correction the "ring" renders as a
+    /// tall ellipse that never nests inside the sanctuary's sigil arcs).
+    private static func ringPoint(slot: Int, t: TimeInterval, beat: Double,
+                                  scale: CGSize) -> CGPoint {
         let tighten = 1 - 0.35 * smoothstep(beat, 4.30, 5.0)
-        let radius = 0.24 * tighten
+        let radius = ringRadius * tighten
         let angle = (Double(slot) / Double(ringCount)) * .pi * 2 + t * 0.08
-        return CGPoint(x: origin.x + radius * cos(angle),
-                       y: origin.y + radius * sin(angle) * 0.92)
+        return CGPoint(x: origin.x + radius * cos(angle) * scale.width,
+                       y: origin.y + radius * sin(angle) * scale.height)
     }
 
-    /// Centre-high anchor the story revolves around (unit space).
-    static let origin = CGPoint(x: 0.5, y: 0.40)
+    /// Centre-high anchor the story revolves around (unit space). High enough
+    /// that the dot, the mark, and the sanctuary ring all sit clear of the
+    /// copy column, which lives in the lower half of every page.
+    static let origin = CGPoint(x: 0.5, y: 0.30)
+
+    /// Sanctuary orbit radius as a fraction of the canvas's SHORT side.
+    static let ringRadius = 0.21
 
     /// Where the consequence beat's shared password chip glows (unit space) —
-    /// slightly above centre so the prompt copy sits beneath it.
+    /// in the gap the consequence copy leaves between its title and prompt.
     static let sharedChip = CGPoint(x: 0.5, y: 0.42)
 
     // MARK: Pure math

@@ -67,21 +67,55 @@ struct StoryIntroScreen: View {
             // into the user's theme across the turn beat.
             StoryStageView(model: progress)
 
-            ScrollView(.vertical) {
-                VStack(spacing: 0) {
-                    ForEach(StoryBeat.allCases) { beat in
-                        StoryBeatView(beat: beat,
-                                      onSendTap: { progress.noteSendTap() },
-                                      onComplete: { complete(outcome: "completed") })
-                            .containerRelativeFrame(.vertical)
-                            .id(beat.rawValue)
-                    }
+            beatColumn
+                .onChange(of: visibleBeat) { _, beat in
+                    if let beat { furthestBeat = max(furthestBeat, beat) }
                 }
-                .scrollTargetLayout()
-                .background {
-                    // One measurement serves both numbers: the column is six
-                    // equal `containerRelativeFrame` pages, so the scrollable
-                    // span is exactly five sixths of the content height.
+
+            skipButton
+        }
+    }
+
+    /// Scroll-progress plumbing splits by OS: `onScrollGeometryChange` is the
+    /// supported feed on iOS 18+, and on those runtimes it is also the ONLY
+    /// working one — a `GeometryReader` in the content's background stops
+    /// re-measuring during scrolls there, which froze `beatPosition` at 0 and
+    /// silently killed the whole stage (no swarm, no gather, no theme resolve).
+    /// The preference pipeline stays solely for the 17.3 floor.
+    @ViewBuilder private var beatColumn: some View {
+        if #available(iOS 18.0, macOS 15.0, *) {
+            pagedScroll(legacyMetrics: false)
+                .onScrollGeometryChange(for: StoryScrollMetrics.self) { geometry in
+                    StoryScrollMetrics(
+                        offset: geometry.contentOffset.y + geometry.contentInsets.top,
+                        span: geometry.contentSize.height - geometry.containerSize.height)
+                } action: { _, metrics in
+                    progress.update(metrics)
+                }
+        } else {
+            pagedScroll(legacyMetrics: true)
+                .coordinateSpace(name: Self.scrollSpace)
+                .onPreferenceChange(StoryScrollMetricsKey.self) { progress.update($0) }
+        }
+    }
+
+    private func pagedScroll(legacyMetrics: Bool) -> some View {
+        ScrollView(.vertical) {
+            VStack(spacing: 0) {
+                ForEach(StoryBeat.allCases) { beat in
+                    StoryBeatView(beat: beat,
+                                  onSendTap: { progress.noteSendTap() },
+                                  onComplete: { complete(outcome: "completed") })
+                        .containerRelativeFrame(.vertical)
+                        .id(beat.rawValue)
+                }
+            }
+            .scrollTargetLayout()
+            .background {
+                // One measurement serves both numbers: the column is six
+                // equal `containerRelativeFrame` pages, so the scrollable
+                // span is exactly five sixths of the content height.
+                if legacyMetrics {
                     GeometryReader { proxy in
                         Color.clear.preference(
                             key: StoryScrollMetricsKey.self,
@@ -91,17 +125,10 @@ struct StoryIntroScreen: View {
                     }
                 }
             }
-            .scrollTargetBehavior(.viewAligned)
-            .scrollIndicators(.hidden)
-            .scrollPosition(id: $visibleBeat)
-            .coordinateSpace(name: Self.scrollSpace)
-            .onPreferenceChange(StoryScrollMetricsKey.self) { progress.update($0) }
-            .onChange(of: visibleBeat) { _, beat in
-                if let beat { furthestBeat = max(furthestBeat, beat) }
-            }
-
-            skipButton
         }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollIndicators(.hidden)
+        .scrollPosition(id: $visibleBeat)
     }
 
     private static let scrollSpace = "story-scroll"
@@ -110,27 +137,9 @@ struct StoryIntroScreen: View {
     private static let readerBeatSentinel = 0
 
     private var skipButton: some View {
-        Button {
+        StorySkipButton(model: progress, exiting: exiting) {
             complete(outcome: "skipped")
-        } label: {
-            Text("Skip")
-                .vaultType(.callout)
-                .foregroundStyle(StoryPalette.textSecondary)
-                .padding(Space.s3)
-                // The story's only exit rides over a canvas that resolves into
-                // the user's theme, so a fixed light label needs its own
-                // surface to keep contrast on a light background.
-                .background(StoryPalette.controlScrim, in: Capsule())
-                // Hold the 44pt floor at every Dynamic Type size, including
-                // the smallest, where the label alone falls short.
-                .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
-                .contentShape(Rectangle())
         }
-        .padding(.trailing, Space.gutter)
-        // The seal's exit burst is playing; skipping now would log a second,
-        // contradicting outcome for the same session.
-        .disabled(exiting)
-        .opacity(exiting ? 0 : 1)
     }
 
     /// Single exit: BOTH finish and skip set the completion flag (never show
@@ -173,6 +182,47 @@ enum StoryBeat: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
 }
 
+/// The story's only chrome control, split into its own view so the per-tick
+/// `beatPosition` read invalidates this one capsule and never the beat column.
+/// The label rides a canvas that resolves from committed-dark into the user's
+/// theme, so its colors blend along the same window: fixed light-on-scrim in
+/// the dark world, themed secondary-on-control once the light has returned.
+private struct StorySkipButton: View {
+    let model: StoryScrollProgressModel
+    let exiting: Bool
+    let action: () -> Void
+
+    @Environment(\.appTheme) private var theme
+
+    private var mix: Double {
+        StoryField.smoothstep(model.beatPosition, StoryStageView.themeResolveStart,
+                              StoryStageView.themeResolveEnd)
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Text("Skip")
+                .vaultType(.callout)
+                .foregroundStyle(Color(rgb: RGBMath.blend(0xFFFFFF, theme.secondaryText, mix))
+                    .opacity(0.7 + 0.3 * mix))
+                .padding(Space.s3)
+                .background(
+                    Color(rgb: RGBMath.blend(0x000000, theme.controlBackground, mix))
+                        .opacity(0.35 + 0.65 * mix),
+                    in: Capsule())
+                // Hold the 44pt floor at every Dynamic Type size, including
+                // the smallest, where the label alone falls short.
+                .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
+                .contentShape(Rectangle())
+        }
+        .padding(.trailing, Space.gutter)
+        // The seal's exit burst is playing; skipping now would log a second,
+        // contradicting outcome for the same session.
+        .disabled(exiting)
+        .opacity(exiting ? 0 : 1)
+    }
+}
+
 /// Fixed colors for text sitting on the committed-dark canvas — the one place
 /// the story does not read theme roles, mirroring how the brand-animation
 /// layers use fixed decorative color. The sanctuary and commitment beats
@@ -180,13 +230,17 @@ enum StoryBeat: Int, CaseIterable, Identifiable {
 enum StoryPalette {
     static let textPrimary = Color.white
     static let textSecondary = Color.white.opacity(0.7)
-    static let glow = Color(red: 0.62, green: 0.74, blue: 1.0).opacity(0.55)
+    /// The origin dot's aura: a cool halo, deliberately shy of a headlight —
+    /// it shares the frame with the hook's title.
+    static let glow = Color(red: 0.62, green: 0.74, blue: 1.0).opacity(0.45)
     static let nebula = Color(red: 0.30, green: 0.40, blue: 0.72)
     static let nebulaDeep = Color(red: 0.22, green: 0.24, blue: 0.52)
-    static let scrapFill = Color.white.opacity(0.08)
-    static let scrapStroke = Color.white.opacity(0.14)
-    /// Surface behind the fixed-light Skip label, so it survives the canvas
-    /// resolving into a light theme.
+    static let scrapFill = Color.white.opacity(0.10)
+    static let scrapStroke = Color.white.opacity(0.18)
+    static let scrapGlyph = Color.white.opacity(0.78)
+    /// Surface behind the reader presentation's fixed-light Skip label (its
+    /// poster never resolves into the theme, so a static scrim is enough
+    /// there; the journey's Skip blends live instead).
     static let controlScrim = Color.black.opacity(0.35)
     /// Consequence tinge: warm amber, deliberately short of red horror.
     static let warning = Color(red: 0.95, green: 0.62, blue: 0.30)

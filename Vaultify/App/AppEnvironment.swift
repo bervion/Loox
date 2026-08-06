@@ -142,6 +142,20 @@ import SwiftUI
     static var storyRequestedByTest: Bool {
         ProcessInfo.processInfo.arguments.contains(storyLaunchArgument)
     }
+
+    /// In-app language override for test isolation. The isolated launch pins the
+    /// language to English so string-based assertions stay stable; localization
+    /// walkthroughs (VI is the app's longest rendering) opt into another catalog
+    /// language with `-ui-test-language <code>` — `-AppleLanguages` alone cannot
+    /// reach the in-app toggle that `appString()`/`.inAppLocalized` read.
+    static let languageLaunchArgument = "-ui-test-language"
+
+    static var languageRequestedByTest: String? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: languageLaunchArgument),
+              arguments.indices.contains(index + 1) else { return nil }
+        return arguments[index + 1]
+    }
     #endif
 
     init(uiTestConfiguration: UITestConfiguration = .current) {
@@ -182,7 +196,7 @@ import SwiftUI
             settings.showWebsiteIcons = false
             settings.hideInAppSwitcher = false
             settings.autoLock = .immediate
-            settings.preferredLanguage = "en"
+            settings.preferredLanguage = Self.languageRequestedByTest ?? "en"
             settings.onboardingCompleted = true
             settings.hasChosenAppearance = true
             // The story intro is a full-screen route that would strand every
