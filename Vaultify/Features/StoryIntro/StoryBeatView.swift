@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// One full-height page of the story's copy column. Beats 1–4 sit on the
-/// committed-dark canvas and use the fixed StoryPalette; sanctuary and
+/// One full-height page of the story's copy column. Beats 1–3 sit on the
+/// committed-dark canvas and use the fixed StoryPalette; the turn rides the
+/// canvas WHILE it resolves, so its copy crossfades between the fixed light
+/// ink and the theme roles in lockstep with the surface; sanctuary and
 /// commitment land after the theme has resolved and read semantic roles.
 /// Entrances are render-side `scrollTransition`s (blur reserved for the hero
 /// title alone), so they scrub with the user's finger and cost nothing at rest.
@@ -23,6 +25,15 @@ struct StoryBeatView: View {
 
     var body: some View {
         VStack(spacing: Space.s5) {
+            // The stage's art (dot, ring, mark) lives in the upper part of the
+            // frame around `StoryField.origin`; this fixed block biases the
+            // copy toward the lower half so ink never sits inside the orbit.
+            if artClearance > 0 {
+                Color.clear
+                    .containerRelativeFrame(.vertical) { length, _ in
+                        length * artClearance
+                    }
+            }
             Spacer(minLength: 0)
             content
             Spacer(minLength: 0)
@@ -40,6 +51,18 @@ struct StoryBeatView: View {
         }
     }
 
+    /// Fraction of the page height reserved above the copy. The sanctuary and
+    /// commitment pages sit under the full orbit, the turn under the closing
+    /// ring, the hook under the dot's halo alone.
+    private var artClearance: Double {
+        switch beat {
+        case .hook: 0.06
+        case .chaos, .consequence: 0
+        case .turn: 0.10
+        case .sanctuary, .commitment: 0.24
+        }
+    }
+
     @ViewBuilder private var content: some View {
         switch beat {
         case .hook:
@@ -50,7 +73,7 @@ struct StoryBeatView: View {
         case .chaos:
             title("A little bit of everywhere")
             body_("Notes. Screenshots. That chat with yourself. A browser that keeps asking to save.")
-            body_("The more you clear, the more spill out")
+            body_("The more you clear, the more spill out", entranceDrop: 28)
                 .padding(.top, Space.s4)
         case .consequence:
             title("One leak opens every door")
@@ -58,11 +81,12 @@ struct StoryBeatView: View {
             // prompt sits just beneath it.
             Spacer().frame(height: Space.s10)
             hint("Tap to send it, like we all do")
-            body_("Once it leaves, it never comes back.")
+            body_("Once it leaves, it never comes back.", entranceDrop: 28)
                 .padding(.top, Space.s4)
         case .turn:
-            title("Now pull them back")
-            body_("Keep scrolling. You are gathering every stray password into one place.")
+            title("Now pull them back", resolvesWithCanvas: true)
+            body_("Keep scrolling. You are gathering every stray password into one place.",
+                  resolvesWithCanvas: true)
         case .sanctuary:
             title("One vault. Yours alone.")
             body_("Encrypted on this device. No account. Nothing leaves unless you say so.")
@@ -85,10 +109,28 @@ struct StoryBeatView: View {
     }
     private var themed: Bool { beat == .sanctuary || beat == .commitment }
 
-    private func title(_ key: LocalizedStringKey) -> some View {
+    /// `resolvesWithCanvas` is the turn page's contract: the canvas beneath it
+    /// crossfades dark→theme WHILE this copy is entering, so a single fixed
+    /// ink is wrong at one end or the other (fixed white vanished on light
+    /// themes the moment the mix completed). Two stacked layers with
+    /// complementary opacities track the surface exactly, driven by the same
+    /// scroll phase that drives the mix — still render-side, no model reads.
+    private func title(_ key: LocalizedStringKey,
+                       resolvesWithCanvas: Bool = false) -> some View {
+        ZStack {
+            titleLayer(key, ink: primaryColor,
+                       fade: resolvesWithCanvas ? .fixedInk : .none)
+            if resolvesWithCanvas {
+                titleLayer(key, ink: theme.color(.primary), fade: .themedInk)
+            }
+        }
+    }
+
+    private func titleLayer(_ key: LocalizedStringKey, ink: Color,
+                            fade: CanvasFade) -> some View {
         Text(key)
             .vaultType(.largeTitle)
-            .foregroundStyle(primaryColor)
+            .foregroundStyle(ink)
             .multilineTextAlignment(.center)
             // Hero line only: blur entrance is the story's reveal verb, and
             // whole-block (never per-word) so VI and JA render identically.
@@ -98,22 +140,55 @@ struct StoryBeatView: View {
             // instead of scrubbing with the finger.
             .scrollTransition(.interactive) { [reduceMotion] content, phase in
                 content
-                    .opacity(Self.nearness(phase))
+                    .opacity(Self.nearness(phase) * fade.weight(phase))
                     .blur(radius: reduceMotion ? 0 : 8 * (1 - Self.nearness(phase)))
                     .offset(y: reduceMotion ? 0 : 24 * (1 - Self.nearness(phase)))
             }
     }
 
-    private func body_(_ key: LocalizedStringKey) -> some View {
+    /// `entranceDrop` staggers sibling lines: a later line rises from deeper,
+    /// so a page's copy arrives as layered depth instead of one flat slab.
+    private func body_(_ key: LocalizedStringKey, entranceDrop: CGFloat = 16,
+                       resolvesWithCanvas: Bool = false) -> some View {
+        ZStack {
+            bodyLayer(key, ink: secondaryColor, entranceDrop: entranceDrop,
+                      fade: resolvesWithCanvas ? .fixedInk : .none)
+            if resolvesWithCanvas {
+                bodyLayer(key, ink: theme.color(.secondary),
+                          entranceDrop: entranceDrop, fade: .themedInk)
+            }
+        }
+    }
+
+    private func bodyLayer(_ key: LocalizedStringKey, ink: Color,
+                           entranceDrop: CGFloat, fade: CanvasFade) -> some View {
         Text(key)
             .vaultType(.body)
-            .foregroundStyle(secondaryColor)
+            .foregroundStyle(ink)
             .multilineTextAlignment(.center)
             .scrollTransition(.interactive) { [reduceMotion] content, phase in
                 content
-                    .opacity(Self.nearness(phase))
-                    .offset(y: reduceMotion ? 0 : 16 * (1 - Self.nearness(phase)))
+                    .opacity(Self.nearness(phase) * fade.weight(phase))
+                    .offset(y: reduceMotion ? 0 : entranceDrop * (1 - Self.nearness(phase)))
             }
+    }
+
+    /// How a copy layer weighs itself against the canvas crossfade.
+    private enum CanvasFade {
+        /// Single-ink copy: full weight, the phase only drives the entrance.
+        case none
+        /// The dark-world ink: fades OUT as the canvas resolves.
+        case fixedInk
+        /// The theme ink: fades IN as the canvas resolves.
+        case themedInk
+
+        nonisolated func weight(_ phase: ScrollTransitionPhase) -> Double {
+            switch self {
+            case .none: 1
+            case .fixedInk: 1 - StoryBeatView.canvasResolve(phase)
+            case .themedInk: StoryBeatView.canvasResolve(phase)
+            }
+        }
     }
 
     /// 1 on the resting page, easing to 0 a full page away.
@@ -124,6 +199,17 @@ struct StoryBeatView: View {
     /// raise nine concurrency warnings that become errors under Swift 6.
     nonisolated private static func nearness(_ phase: ScrollTransitionPhase) -> Double {
         1 - min(abs(phase.value), 1)
+    }
+
+    /// The stage's dark→theme mix as seen from the TURN page's own scroll
+    /// phase. The page rests at beat 3 and its phase.value runs +1→0 while
+    /// entering, so `beat = 3 − value` — the same coordinate the stage feeds
+    /// into its resolve window. Keeping the mapping here (not a model read)
+    /// leaves the beat column untouched by scroll ticks.
+    nonisolated private static func canvasResolve(_ phase: ScrollTransitionPhase) -> Double {
+        StoryField.smoothstep(3 - phase.value,
+                              StoryStageView.themeResolveStart,
+                              StoryStageView.themeResolveEnd)
     }
 
     /// The product's Controlled Reveal physics taught as play: secrets open
@@ -169,8 +255,12 @@ struct StoryBeatView: View {
             // of what Reduce Motion asks for.
             base
         } else {
+            // The lift and the brightening breathe together — a quiet beacon,
+            // not a bouncing arrow.
             base.phaseAnimator([false, true]) { content, pulsing in
-                content.offset(y: pulsing ? -4 : 0)
+                content
+                    .offset(y: pulsing ? -4 : 0)
+                    .opacity(pulsing ? 1 : 0.55)
             } animation: { _ in
                 .easeInOut(duration: Motion.slow * 3).repeatForever(autoreverses: true)
             }
