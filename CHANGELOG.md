@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.52.4] - 2026-08-06
+
+### Fixed
+- revive the scroll-scrubbed stage on iOS 18+ and polish the cinematic (#200)
+
+
 ## [1.52.3] - 2026-08-05
 
 ### Fixed
