@@ -47,6 +47,15 @@ Compile + unit tests không thấy được lớp lỗi runtime này. Chẩn đo
 
 Screenshots (ephemeral): /tmp/story-shots-{light,vi,rm}/ · trước-fix: scratchpad story/beat1-light.png + ảnh trong transcript phiên này
 
+## Round 2 (2026-08-06 chiều): CTA affordances, scrim, magazine type
+
+Owner feedback sau round 1: CTA (Scroll, hold peek row) thiếu animation dạy thao tác; cần lớp sau chữ để đọc được trên swarm; title ngắn nên phóng to kiểu magazine; chuẩn adaptive layout.
+
+- `Font.vaultDisplay(size:)` mới trong Typography.swift (pattern `vaultCode(size:)`): SF heavy trên `largeTitle`, size do caller cấp qua `@ScaledMetric(relativeTo: .largeTitle)` → giữ Dynamic Type. Story titles dùng 40pt + kerning −0.5 + minimumScaleFactor 0.85.
+- Scrim ellipse (đen, stop clear tại 72% bán kính để không lộ mép frame) sau khối chữ: chaos 0.45, consequence 0.28 (nhẹ để chip glow còn dẫn); các beat khác giữ art tránh chữ bằng layout. Chọn scrim thay material blur: glass chỉ cho control (DNA rule 2) + zero chi phí GPU.
+- Affordances: hint "Scroll" thêm chevron Polaris (ic_chevron_down xoay 180°) pulse cùng nhịp; peek row có sonar ping accent (phaseAnimator 3 pha, tắt khi đã peek hoặc Reduce Motion); seal CTA có sheen quét mỗi 3s khi idle (TimelineView thuần hàm thời gian, ẩn khi đang giữ/RM).
+- Verify: walkthrough SE3 375pt tiếng Việt (bề ngang hẹp nhất, label dài nhất — không tràn; sanctuary title đè nhẹ đáy ring trên SE, đen-đậm-trên-card-sáng vẫn rõ, chất layer magazine, chấp nhận) + iPhone 17 Pro EN; StoryIntroTests 10/10; make check pass. Sim SE tạm đã xóa sau khi verify.
+
 ## Unresolved
 
 - Dark-theme runtime walkthrough chưa chạy được trong isolation (cần cơ chế `-ui-test-theme` nếu muốn tự động hóa; hiện verify bằng phân tích + để owner xem trên máy)

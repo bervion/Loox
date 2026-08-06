@@ -19,6 +19,11 @@ struct StoryBeatView: View {
     /// Sanctuary's press-to-peek demo row.
     @State private var peeking = false
 
+    /// Magazine display size for the beat titles — the story's hero voice,
+    /// above the `largeTitle` role. Scaled off the largeTitle text style so
+    /// it follows Dynamic Type until the reader presentation takes over.
+    @ScaledMetric(relativeTo: .largeTitle) private var displaySize: CGFloat = 40
+
     /// Fictional demo secret for the peek row — a constant, never user
     /// content, deliberately not localized.
     private static let demoSecret = "mQ4-vE81-kz"
@@ -35,7 +40,30 @@ struct StoryBeatView: View {
                     }
             }
             Spacer(minLength: 0)
-            content
+            VStack(spacing: Space.s5) { content }
+                .padding(.vertical, Space.s6)
+                .padding(.horizontal, Space.s5)
+                .background {
+                    // Legibility vignette: a soft dark pool behind the copy
+                    // block on the beats whose swarm drifts through the text
+                    // zone. A scrim, not a material — glass stays reserved
+                    // for controls, and a gradient costs nothing per frame.
+                    // Consequence keeps it lighter so the glowing chip above
+                    // the prompt still carries the scene.
+                    if scrimStrength > 0 {
+                        // Fully clear by 72% of the radius: the gradient must
+                        // die INSIDE its own bounds or the frame's straight
+                        // edges print as a faint box over the swarm.
+                        EllipticalGradient(
+                            stops: [
+                                .init(color: Color.black.opacity(scrimStrength), location: 0),
+                                .init(color: .clear, location: 0.72),
+                            ],
+                            center: .center,
+                            startRadiusFraction: 0.28,
+                            endRadiusFraction: 1.0)
+                    }
+                }
             Spacer(minLength: 0)
             if beat == .commitment {
                 StorySealCTA(title: "Hold to enter your vault", onSealed: onComplete)
@@ -63,12 +91,23 @@ struct StoryBeatView: View {
         }
     }
 
+    /// Peak opacity of the legibility vignette behind this beat's copy. Only
+    /// the dark-world swarm beats need one; the other pages keep their art
+    /// clear of the text zone by layout.
+    private var scrimStrength: Double {
+        switch beat {
+        case .chaos: 0.45
+        case .consequence: 0.28
+        default: 0
+        }
+    }
+
     @ViewBuilder private var content: some View {
         switch beat {
         case .hook:
             title("Where do your passwords live?")
             body_("Take a second and try to count them.")
-            hint("Scroll")
+            hint("Scroll", chevron: true)
                 .padding(.top, Space.s8)
         case .chaos:
             title("A little bit of everywhere")
@@ -129,7 +168,14 @@ struct StoryBeatView: View {
     private func titleLayer(_ key: LocalizedStringKey, ink: Color,
                             fade: CanvasFade) -> some View {
         Text(key)
-            .vaultType(.largeTitle)
+            // Magazine hero voice: heavy display SF above the largeTitle role,
+            // tightened a touch — short lines carry the page like a cover.
+            .font(.vaultDisplay(size: displaySize))
+            .kerning(-0.5)
+            // The longest VI title at heavy display on a 375pt phone wraps to
+            // three lines; a small floor keeps it to the two-line magazine cut
+            // without ever shrinking into illegibility.
+            .minimumScaleFactor(0.85)
             .foregroundStyle(ink)
             .multilineTextAlignment(.center)
             // Hero line only: blur entrance is the story's reveal verb, and
@@ -227,6 +273,7 @@ struct StoryBeatView: View {
             .padding(Space.s4)
             .background(Color(rgb: theme.controlBackground))
             .vaultCornerRadius(Radius.md)
+            .overlay { peekPing }
             .onLongPressGesture(minimumDuration: 0.15, maximumDistance: 44,
                                 perform: {},
                                 onPressingChanged: { peeking = $0 })
@@ -243,10 +290,48 @@ struct StoryBeatView: View {
         }
     }
 
-    @ViewBuilder private func hint(_ key: LocalizedStringKey) -> some View {
-        let base = Text(key)
-            .vaultType(.callout)
-            .foregroundStyle(secondaryColor)
+    /// A slow accent sonar around the peek row: the ring swells off the row's
+    /// edge and dissolves, naming "touch and hold me" without words. Retired
+    /// the moment the user peeks (the affordance has done its job) and absent
+    /// under Reduce Motion.
+    private enum PingPhase: CaseIterable { case hidden, armed, fired }
+
+    @ViewBuilder private var peekPing: some View {
+        if !reduceMotion && !peeking {
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .strokeBorder(Color(rgb: theme.accentFill), lineWidth: 1.5)
+                .allowsHitTesting(false)
+                .phaseAnimator(PingPhase.allCases) { ring, phase in
+                    ring
+                        .opacity(phase == .armed ? 0.55 : 0)
+                        .scaleEffect(phase == .fired ? 1.07 : 1)
+                } animation: { target in
+                    switch target {
+                    // Arm instantly (invisible-to-visible at rest scale)…
+                    case .armed: .linear(duration: 0.01)
+                    // …swell and fade off the edge…
+                    case .fired: .easeOut(duration: 1.0)
+                    // …then dwell dark before the next ping.
+                    case .hidden: .linear(duration: 1.6)
+                    }
+                }
+        }
+    }
+
+    /// An instructional cue. With `chevron`, a rising glyph names the gesture's
+    /// direction above the label — the story's pages advance with an upward
+    /// pull, and words alone were not landing it.
+    @ViewBuilder private func hint(_ key: LocalizedStringKey,
+                                   chevron: Bool = false) -> some View {
+        let base = VStack(spacing: Space.s1) {
+            if chevron {
+                VaultIcon(Icons.chevronDown, size: Metric.iconInline)
+                    .rotationEffect(.degrees(180))
+            }
+            Text(key)
+                .vaultType(.callout)
+        }
+        .foregroundStyle(secondaryColor)
         if reduceMotion {
             // The animator is not attached at all. `Animation.vault` returning
             // nil is the right token for `.animation(_:value:)`, NOT for a phase
