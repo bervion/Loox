@@ -17,6 +17,16 @@ extension Font {
     static func vaultCode(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         .system(size: size, weight: weight).monospacedDigit()
     }
+
+    /// Magazine display face for full-bleed cinematic surfaces (story intro
+    /// hero titles; future hero pages) — SF heavy ABOVE the `largeTitle` role,
+    /// which caps at 34. Like `vaultCode(size:)`, the caller drives the size
+    /// and keeps Dynamic Type by deriving it via
+    /// `@ScaledMetric(relativeTo: .largeTitle)`. Not for chrome or content
+    /// screens: those stay on the `VaultType` role ladder.
+    static func vaultDisplay(size: CGFloat) -> Font {
+        .system(size: size, weight: .heavy)
+    }
 }
 
 /// Typography roles from the Vaultify Design System hierarchy (large title 34 ·

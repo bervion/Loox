@@ -55,6 +55,7 @@ struct StorySealCTA: View {
     private var capsule: some View {
         ZStack {
             Capsule().fill(Color(rgb: theme.accentFill))
+            idleShimmer
             GeometryReader { geo in
                 TimelineView(.animation(paused: pressStart == nil)) { context in
                     Capsule()
@@ -68,6 +69,35 @@ struct StorySealCTA: View {
             Text(title)
                 .vaultType(.body).fontWeight(.medium)
                 .foregroundStyle(Color(rgb: theme.accentForeground))
+        }
+    }
+
+    /// A sheen sweeping the idle capsule every ~3s — "I am the thing you act
+    /// on". Gone the moment a press starts (the hold's own progress fill takes
+    /// over) and absent under Reduce Motion. Pure function of wall-clock time,
+    /// same as the stage: no retained state, pauses with the TimelineView.
+    @ViewBuilder private var idleShimmer: some View {
+        if !reduceMotion && !sealed {
+            GeometryReader { geo in
+                TimelineView(.animation(minimumInterval: 1 / 40,
+                                        paused: pressStart != nil)) { context in
+                    let width = geo.size.width
+                    let cycle = context.date.timeIntervalSinceReferenceDate
+                        .truncatingRemainder(dividingBy: 3.0) / 3.0
+                    // Sweep across during the first 40% of the cycle, then rest.
+                    let travel = StoryField.smoothstep(cycle, 0, 0.4)
+                    LinearGradient(
+                        colors: [.clear,
+                                 Color(rgb: theme.accentForeground).opacity(0.18),
+                                 .clear],
+                        startPoint: .leading, endPoint: .trailing)
+                        .frame(width: width * 0.45)
+                        .offset(x: -width * 0.45 + travel * width * 1.45)
+                        .opacity(cycle < 0.45 ? 1 : 0)
+                }
+            }
+            .clipShape(Capsule())
+            .allowsHitTesting(false)
         }
     }
 
