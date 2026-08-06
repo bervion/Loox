@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.53.0] - 2026-08-06
+
+### Added
+- teachable CTAs, legibility scrim, magazine display titles (#201)
+
+
 ## [1.52.4] - 2026-08-06
 
 ### Fixed

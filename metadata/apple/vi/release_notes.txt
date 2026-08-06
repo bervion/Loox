@@ -1,1 +1,1 @@
-Phiên bản 1.52.4: Cải thiện hiệu suất và sửa lỗi.
+Phiên bản 1.53.0: Cải thiện hiệu suất và sửa lỗi.
