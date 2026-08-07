@@ -1,6 +1,33 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Loox"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Vaultify"
+          }
+        }
+      }
+    },
+    "Loox Theme" : {
+
+    },
     "NSCameraUsageDescription" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -43,6 +70,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loox dùng Face ID để mở khóa kho của bạn."
+          }
+        }
+      }
+    },
+    "NSHumanReadableCopyright" : {
+      "comment" : "Copyright (human-readable)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Copyright ©. All rights reserved."
           }
         }
       }
