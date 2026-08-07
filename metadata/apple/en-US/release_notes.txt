@@ -1,1 +1,1 @@
-Version 1.53.0: Performance improvements and bug fixes.
+This update improves the setup experience with clearer save confirmations and simple step indicators. Minor refinements throughout.

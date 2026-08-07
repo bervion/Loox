@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.54.0] - 2026-08-07
+
+### Added
+- gate the kit save on a sync answer, report the upload inline, add step glyphs (#202)
+
+### Changed
+- update docs
+
+
 ## [1.53.0] - 2026-08-06
 
 ### Added
