@@ -28,8 +28,10 @@ struct CreateMasterPasswordView: View {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     // Loox dots mark (the Home empty-avatar look), centred,
-                    // revealing its rings on appear.
-                    LooxDotsAvatar(size: 100, revealsOnAppear: true)
+                    // revealing its rings on appear, fronting the step's own glyph
+                    // so the header names the task before the title does.
+                    LooxDotsAvatar(size: 100, revealsOnAppear: true,
+                                   centerSystemIcon: "lock.shield.fill")
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Space.s6)
                     Text(title)

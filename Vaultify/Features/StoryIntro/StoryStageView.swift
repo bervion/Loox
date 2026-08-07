@@ -19,8 +19,12 @@ struct StoryStageView: View {
     /// consequence→turn transition (the outgoing white copy is mostly faded by
     /// then) and completes exactly as the turn page rests — the light
     /// returning IS the gather's payoff (owner decision, concept-final §1).
-    static let themeResolveStart = 2.5
-    static let themeResolveEnd = 3.0
+    ///
+    /// `nonisolated` because the copy column reads them from inside
+    /// `scrollTransition`'s `@Sendable` closure, which does not inherit the
+    /// View's MainActor isolation.
+    nonisolated static let themeResolveStart = 2.5
+    nonisolated static let themeResolveEnd = 3.0
 
     private var paused: Bool { reduceMotion || scenePhase != .active }
     private var themeMix: Double {
