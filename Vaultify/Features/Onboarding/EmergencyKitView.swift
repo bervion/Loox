@@ -41,6 +41,12 @@ struct EmergencyKitView: View {
 
     private var scope: EmergencyKitScope { sync.scope }
     private var savedPDF: Bool { savedScope == scope }
+    /// The printed page states what the kit can do, and only the sync answer decides
+    /// that — so saving waits for one. Preselecting an option would have answered the
+    /// question on the user's behalf, which is the pre-checked consent this screen
+    /// exists to avoid; gating the save instead keeps the choice theirs and makes
+    /// walking past it impossible.
+    private var answered: Bool { sync.consent != .notAnswered }
 
     private var info: EmergencyKitInfo {
         EmergencyKitInfo(recoveryKey: recoveryKey, ownerName: ownerName,
@@ -52,8 +58,10 @@ struct EmergencyKitView: View {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     // Loox dots mark (the Home empty-avatar look), centred,
-                    // revealing its rings on appear.
-                    LooxDotsAvatar(size: 100, revealsOnAppear: true)
+                    // revealing its rings on appear, fronting the step's own glyph
+                    // so the header names the task before the title does.
+                    LooxDotsAvatar(size: 100, revealsOnAppear: true,
+                                   centerSystemIcon: "cross.case.fill")
                         .frame(maxWidth: .infinity)
                         .padding(.bottom, Space.s6)
                     Text("Save your Emergency Kit")
@@ -103,7 +111,7 @@ struct EmergencyKitView: View {
                     // Red is reserved for destructive actions; a red "Save" read
                     // as a warning instead of the way forward.
                     BrandCapsuleCTA(title: "Save Kit PDF",
-                                    enabled: !recoveryKey.isEmpty && !sync.isUploading,
+                                    enabled: answered && !recoveryKey.isEmpty && !sync.isUploading,
                                     action: presentExporter)
                 }
             }
@@ -132,8 +140,8 @@ struct EmergencyKitView: View {
     // MARK: iCloud Sync consent
 
     /// Two options, neither preselected, and no answer means no upload. The default the
-    /// app ships with (`iCloudSyncEnabled == false`) is the safe one, so a user who walks
-    /// past this question keeps everything local.
+    /// app ships with (`iCloudSyncEnabled == false`) is the safe one, and the save gate
+    /// (`answered`) makes sure the user reaches it by choosing rather than by drifting.
     @ViewBuilder private var syncConsentSection: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             Text("Do you want iCloud Sync?")
@@ -144,6 +152,7 @@ struct EmergencyKitView: View {
 
             consentOption(
                 selected: sync.consent == .granted,
+                status: syncOptionStatus,
                 title: "Turn on iCloud Sync",
                 detail: "Your items upload end to end encrypted, and your Emergency Kit can restore this vault on a new device. Folder icons, colors, order, timestamps, and your device name travel as ordinary iCloud data.",
                 action: grantSync)
@@ -154,65 +163,172 @@ struct EmergencyKitView: View {
                 detail: "Nothing leaves this device. Your Emergency Kit then resets the master password here, and cannot bring the vault back once this device is gone.",
                 action: declineSync)
 
-            uploadStatus
+            // Names what the dimmed Save button is waiting for. A disabled control
+            // with no stated reason reads as a broken screen.
+            if !answered {
+                Text("Choose one to continue")
+                    .vaultType(.footnote).themedForeground(.secondary)
+            }
+        }
+    }
+
+    /// The awaited upload, reported ON the option that promised it. "Turned on" is not
+    /// the same as "your kit works somewhere else", and the difference only shows up
+    /// when the device is already lost — so the status belongs to the choice, not to a
+    /// page-level banner that left the chosen option still wearing its "all good" check.
+    private enum OptionStatus: Equatable {
+        case idle, uploading, uploaded
+        case failed(String)
+
+        var failureReason: String? {
+            if case .failed(let reason) = self { return reason }
+            return nil
+        }
+    }
+
+    private var syncOptionStatus: OptionStatus {
+        guard sync.consent == .granted else { return .idle }
+        switch sync.upload {
+        case .notStarted: return .idle
+        case .uploading: return .uploading
+        case .uploaded: return .uploaded
+        case .failed(let reason): return .failed(reason)
         }
     }
 
     private func consentOption(selected: Bool,
+                               status: OptionStatus = .idle,
                                title: LocalizedStringKey,
                                detail: LocalizedStringKey,
                                action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: Space.s3) {
-                VaultIcon(selected ? Icons.checkCircle : "sf:circle", size: Metric.iconInline)
-                    .foregroundStyle(selected ? Color(rgb: theme.accent) : theme.color(.iconSecondary))
-                VStack(alignment: .leading, spacing: Space.s1) {
-                    Text(title)
-                        .vaultType(.callout).fontWeight(.semibold).themedForeground(.primary)
-                    Text(detail)
-                        .vaultType(.footnote).themedForeground(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.leading)
+        let failed = status.failureReason != nil
+        return VStack(alignment: .leading, spacing: 0) {
+            Button(action: action) {
+                HStack(alignment: .top, spacing: Space.s3) {
+                    consentMark(selected: selected, status: status)
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text(title)
+                            .vaultType(.callout).fontWeight(.semibold).themedForeground(.primary)
+                        Text(detail)
+                            .vaultType(.footnote)
+                            // Secondary gray is tuned for the neutral card. On the
+                            // tinted selected surface it becomes gray on colour, the
+                            // one pairing the eye slides off, so the chosen option
+                            // reads its own body copy at primary rank instead.
+                            .themedForeground(selected ? .primary : .secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
+                .padding(Space.s4)
+                .frame(maxWidth: .infinity, minHeight: Metric.hitMin, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .padding(Space.s4)
-            .frame(maxWidth: .infinity, minHeight: Metric.hitMin, alignment: .leading)
-            .background(Color(rgb: selected ? theme.accentSoft : theme.secondaryBackground),
-                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .strokeBorder(Color(rgb: theme.accent).opacity(selected ? 0.55 : 0),
-                              lineWidth: 1.5))
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .disabled(sync.isUploading)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+
+            statusFooter(status)
         }
-        .buttonStyle(.plain)
-        .disabled(sync.isUploading)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .background(Color(rgb: optionSurface(selected: selected, failed: failed)),
+                    in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+            .strokeBorder(optionBorder(selected: selected, failed: failed), lineWidth: 1.5))
     }
 
-    /// The awaited upload, reported. "Turned on" is not the same as "your kit works
-    /// somewhere else", and the difference only shows up when the device is already lost.
-    @ViewBuilder private var uploadStatus: some View {
-        switch sync.upload {
-        case .notStarted:
+    private func optionSurface(selected: Bool, failed: Bool) -> UInt32 {
+        if failed { return theme.destructiveSoft }
+        return selected ? theme.accentSoft : theme.secondaryBackground
+    }
+
+    private func optionBorder(selected: Bool, failed: Bool) -> Color {
+        if failed { return Color(rgb: theme.destructive) }
+        return Color(rgb: theme.accent).opacity(selected ? 0.55 : 0)
+    }
+
+    /// Filled disc with the on-colour glyph when chosen, hollow ring when not: the
+    /// answer should read from arm's length, and a failed upload must stop wearing a
+    /// check the moment it fails.
+    @ViewBuilder private func consentMark(selected: Bool, status: OptionStatus) -> some View {
+        let side = Metric.iconInline
+        ZStack {
+            if status == .uploading {
+                ProgressView().controlSize(.small)
+            } else if selected, status.failureReason != nil {
+                Circle().fill(Color(rgb: theme.destructive))
+                VaultIcon(Icons.close, size: side * 0.6)
+                    .foregroundStyle(theme.color(.onDestructive))
+            } else if selected {
+                Circle().fill(Color(rgb: theme.accentFill))
+                VaultIcon(Icons.check, size: side * 0.6)
+                    .foregroundStyle(theme.color(.onAccent))
+            } else {
+                Circle().strokeBorder(theme.color(.iconSecondary), lineWidth: 1.5)
+            }
+        }
+        .frame(width: side, height: side)
+        // Purely visual: the button's `.isSelected` trait is what VoiceOver reads.
+        .accessibilityHidden(true)
+    }
+
+    /// Progress and failure sit inside the option's own card, indented to the copy
+    /// column so they read as the rest of that option's sentence.
+    @ViewBuilder private func statusFooter(_ status: OptionStatus) -> some View {
+        switch status {
+        case .idle:
             EmptyView()
         case .uploading:
-            HStack(spacing: Space.s2) {
-                ProgressView()
+            footerRow {
                 Text("Sending your recovery file to iCloud")
                     .vaultType(.footnote).themedForeground(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(minHeight: Metric.hitMin, alignment: .leading)
         case .uploaded:
-            VaultInfoBanner(.info, icon: Icons.checkCircle,
-                            text: "Your recovery file reached iCloud. This kit can now restore your vault on a new device.")
+            footerRow {
+                Text("Your recovery file reached iCloud")
+                    .vaultType(.footnote).fontWeight(.medium).themedForeground(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         case .failed(let reason):
-            VaultInfoBanner(.error,
-                            title: "Your recovery file did not reach iCloud",
-                            verbatimText: reason,
-                            actionLabel: "Try again",
-                            action: retryUpload)
+            footerRow {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text(verbatim: reason)
+                        .vaultType(.footnote)
+                        .foregroundStyle(Color(rgb: theme.destructiveText))
+                        .fixedSize(horizontal: false, vertical: true)
+                    // Text-rank destructive on the plain background, the same chip
+                    // the banners use: the raw fill hue measures too low on its own
+                    // light chip. The banners sit on a SOLID fill where the chip
+                    // separates itself; this surface is soft, so the chip carries a
+                    // hairline of its own or it dissolves into the card.
+                    Button(action: retryUpload) {
+                        Text("Try again")
+                            .vaultType(.footnote).fontWeight(.semibold)
+                            .foregroundStyle(Color(rgb: theme.destructiveText))
+                            .padding(.horizontal, Space.s4)
+                            .frame(minHeight: Metric.controlSmall)
+                            .background(Color(rgb: theme.background),
+                                        in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+                                .strokeBorder(Color(rgb: theme.destructiveText).opacity(0.35),
+                                              lineWidth: 1))
+                            .contentShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
+    }
+
+    private func footerRow<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // Card inset + mark + the HStack's gap, so the footer starts under the
+            // title rather than under the mark.
+            .padding(.leading, Space.s4 + Metric.iconInline + Space.s3)
+            .padding(.trailing, Space.s4)
+            .padding(.bottom, Space.s4)
     }
 
     // MARK: What the kit can do
