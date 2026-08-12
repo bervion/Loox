@@ -233,8 +233,10 @@ enum StoryPalette {
     /// The origin dot's aura: a cool halo, deliberately shy of a headlight —
     /// it shares the frame with the hook's title.
     static let glow = Color(red: 0.62, green: 0.74, blue: 1.0).opacity(0.45)
-    static let nebula = Color(red: 0.30, green: 0.40, blue: 0.72)
-    static let nebulaDeep = Color(red: 0.22, green: 0.24, blue: 0.52)
+    /// Bloom behind the display titles. Cool rather than white: pure white
+    /// bloom on white ink just fattens the glyphs, while a cold cast reads as
+    /// light coming off the page — the magazine-cover note, at a whisper.
+    static let titleGlow = Color(red: 0.60, green: 0.78, blue: 1.0)
     static let scrapFill = Color.white.opacity(0.10)
     static let scrapStroke = Color.white.opacity(0.18)
     static let scrapGlyph = Color.white.opacity(0.78)

@@ -51,13 +51,13 @@ struct StoryIntroReaderView: View {
         }
     }
 
-    /// Committed-dark poster, motion-free.
+    /// Committed-dark poster: the journey's sky held on a single frame. Sampled
+    /// at a fixed instant with meteors off, so it is genuinely motion-free —
+    /// this presentation exists for people who should not be given motion.
     private var poster: some View {
         ZStack {
             Color.black
-            RadialGradient(colors: [StoryPalette.nebula.opacity(0.30), .clear],
-                           center: .init(x: 0.35, y: 0.2),
-                           startRadius: 0, endRadius: 420)
+            StoryGalaxyCanvas(t: 0, beat: 0, fade: 1, parallax: false, live: false)
         }
         .ignoresSafeArea()
         .accessibilityHidden(true)

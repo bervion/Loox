@@ -19,13 +19,19 @@ extension Font {
     }
 
     /// Magazine display face for full-bleed cinematic surfaces (story intro
-    /// hero titles; future hero pages) — SF heavy ABOVE the `largeTitle` role,
-    /// which caps at 34. Like `vaultCode(size:)`, the caller drives the size
-    /// and keeps Dynamic Type by deriving it via
-    /// `@ScaledMetric(relativeTo: .largeTitle)`. Not for chrome or content
-    /// screens: those stay on the `VaultType` role ladder.
+    /// hero titles; future hero pages) — SF at its heaviest weight, ABOVE the
+    /// `largeTitle` role, which caps at 34 and at `.bold`. Like
+    /// `vaultCode(size:)`, the caller drives the size and keeps Dynamic Type by
+    /// deriving it via `@ScaledMetric(relativeTo: .largeTitle)`. Not for chrome
+    /// or content screens: those stay on the `VaultType` role ladder.
+    ///
+    /// `.black` rather than a licensed display face on purpose: the app bundles
+    /// no third-party typeface, and SF Pro Black covers Latin and full
+    /// Vietnamese diacritic stacking in one call. Japanese falls back to
+    /// Hiragino Sans, which ships no Black — JA titles land around W6, so the
+    /// hero weight is deliberately lighter there rather than synthesised.
     static func vaultDisplay(size: CGFloat) -> Font {
-        .system(size: size, weight: .heavy)
+        .system(size: size, weight: .black)
     }
 }
 

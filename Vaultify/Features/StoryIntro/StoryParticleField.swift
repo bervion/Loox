@@ -9,8 +9,8 @@ import SwiftUI
 nonisolated enum StoryField {
 
     static let scrapCount = 90
-    /// Scraps that survive the convergence and form the sanctuary ring.
-    static let ringCount = 24
+    /// Scraps that survive the convergence and become the bubble cluster.
+    static var ringCount: Int { StoryOrbitLattice.slotCount }
 
     enum ScrapKind: Int, CaseIterable {
         case note, chat, browser, key
@@ -19,11 +19,16 @@ nonisolated enum StoryField {
     /// Where a scrap is and how it looks at this instant, in unit space
     /// (0…1 both axes; the stage view scales to points). `rotation` is a
     /// small card tilt in radians — the mess is never perfectly aligned.
+    /// `bubbleMix` crossfades the scrap card into its brand bubble as the
+    /// gather lands (0 = card, 1 = bubble), and `bubbleScale` is that bubble's
+    /// own size multiplier, which grows from the card's toward its ring slot's.
     struct Sample {
         var position: CGPoint
         var opacity: Double
         var scale: Double
         var rotation: Double = 0
+        var bubbleMix: Double = 0
+        var bubbleScale: Double = 1
     }
 
     /// The lone glowing dot the story opens on: centre-high, breathing at the
@@ -44,14 +49,19 @@ nonisolated enum StoryField {
     }
 
     /// The full life of one scrap: born from the origin dot across the chaos
-    /// beat, drifting until the consequence stills it, reeled into the ring by
-    /// the turn's scroll scrub, then orbiting (survivors) or dissolving.
-    /// `burst` (0…1) is the seal's exit: the ring flings outward and fades —
+    /// beat, drifting until the consequence stills it, reeled into the cluster
+    /// by the turn's scroll scrub, then orbiting as a bubble (survivors) or
+    /// dissolving into the halo on the way in (the surplus).
+    /// `burst` (0…1) is the seal's exit: the cluster flings outward and fades —
     /// the LooxSwirl dismiss verb as the curtain-raise for the real app.
-    /// `ringScale` corrects the orbit for the canvas aspect (see `ringPoint`);
-    /// the default keeps the field aspect-agnostic for tests and previews.
+    /// `ringScale` corrects the orbit for the canvas aspect; the default keeps
+    /// the field aspect-agnostic for tests and previews.
+    /// A nominal orbit reach for tests and previews that do not model a canvas.
+    /// Roughly what a 6.1" phone produces.
+    static let nominalReach: CGFloat = 61
     static func sample(index: Int, t: TimeInterval, beat: Double, burst: Double = 0,
-                       ringScale: CGSize = CGSize(width: 1, height: 1)) -> Sample {
+                       ringScale: CGSize = CGSize(width: 1, height: 1),
+                       reach: CGFloat = StoryField.nominalReach) -> Sample {
         let birthOrder = unitRandom(index, salt: 0x01)
         // Last scrap is fully born by 0.95, so the chaos page (index 1) rests
         // on a complete swarm rather than one still spawning.
@@ -76,22 +86,37 @@ nonisolated enum StoryField {
         // Birth path: out of the origin dot toward the scatter home.
         let placed = lerp(origin, drifted, easeOut(birth))
 
-        // The turn: position becomes a scroll-scrubbed blend toward the ring —
-        // reversing the scroll visibly scatters them again.
-        // The gather IS the turn: it runs from leaving the consequence page to
-        // arriving on the turn page (index 3), so the ring is closed at rest.
-        let gather = easeInOut(smoothstep(beat, 2.10, 3.0))
-        let slot = index % ringCount
-        var position = lerp(placed, ringPoint(slot: slot, t: t, beat: beat, scale: ringScale),
-                            gather)
-
-        // Only ring survivors persist into the sanctuary; the surplus is gone
-        // before the sanctuary page (index 4) settles.
+        // Only lattice slots persist into the sanctuary.
         let survives = index < ringCount
-        let dissolve = survives ? 0 : smoothstep(beat, 3.30, 3.90)
+        let scale = 0.75 + 0.5 * unitRandom(index, salt: 0x06)
+
+        // The turn: position becomes a scroll-scrubbed blend toward the
+        // cluster — reversing the scroll visibly scatters them again. Each
+        // scrap leaves on its OWN beat inside the window, so the cluster
+        // assembles in waves rather than snapping shut in a single frame; the
+        // last survivor is home by beat 3, the turn page's rest.
+        let lead = unitRandom(index, salt: 0x09)
+        let gatherStart = 2.10 + 0.34 * lead
+        let gatherEnd = survives ? 2.86 + 0.14 * lead : gatherStart + 0.55
+        let flight = smoothstep(beat, gatherStart, gatherEnd)
+        let gather = easeInOut(flight)
+
+        let target = survives
+            ? StoryOrbitLattice.point(slot: index, t: t,
+                                      tighten: StoryOrbitLattice.tighten(beat), scale: ringScale)
+            : haloPoint(index: index, t: t, scale: ringScale)
+        var position = lerp(placed, target, gather)
+        applySwirl(&position, index: index, gather: gather)
+
+        // The surplus is ABSORBED, not stacked: it fades on the way in, so the
+        // orbits close on exactly one bubble per slot. (Letting it ride all the
+        // way in is what put three cards on every slot at the turn.) The window
+        // must END before beat 3 for EVERY seed — the turn page rests there,
+        // and a straggler still at 2% is a scrap floating over a clean cluster.
+        let dissolve = survives ? 0 : smoothstep(beat, gatherStart + 0.15, gatherStart + 0.50)
 
         // Depth: the swarm reads in layers, not as a flat sheet of equal
-        // cards. Gathering lifts every survivor to full presence — the ring
+        // cards. Gathering lifts every survivor to full presence — the cluster
         // is one ordered thing, so the sanctuary orbit glows evenly.
         let depth = 0.72 + 0.28 * unitRandom(index, salt: 0x08)
         let presence = depth + (1 - depth) * gather
@@ -115,31 +140,53 @@ nonisolated enum StoryField {
         let wobble = 0.05 * stillness * sin(t * driftSpeed * 1.4 + driftPhase)
         let rotation = (baseTilt + wobble) * (1 - gather)
 
-        let scale = 0.75 + 0.5 * unitRandom(index, salt: 0x06)
-        return Sample(position: position, opacity: opacity, scale: scale, rotation: rotation)
+        // Card → bubble: complete a little BEFORE arrival, so the cluster is
+        // already speaking the brand's bubble language as it closes. The size
+        // comes off the same `reach` the orbits do and carries the commitment
+        // beat's contraction — radii shrinking while the bubbles held their
+        // size is what closed the gaps between orbits.
+        let restSize = survives
+            ? StoryOrbitLattice.bubbleSize(slot: index, reach: reach)
+            : Double(reach) * 0.10 / Double(StoryOrbitLattice.bubbleBase)
+        let targetSize = restSize * StoryOrbitLattice.tighten(beat)
+        return Sample(position: position, opacity: opacity, scale: scale,
+                      rotation: rotation,
+                      bubbleMix: smoothstep(flight, 0.30, 0.78),
+                      bubbleScale: scale + (targetSize - scale) * flight)
     }
 
-    /// Sanctuary orbit: polar slots around the mark, drifting slowly with time,
-    /// tightening as the commitment beat closes in. `scale` converts the unit
-    /// radius into a TRUE circle on the target canvas (unit space is stretched
-    /// by the screen aspect; without the correction the "ring" renders as a
-    /// tall ellipse that never nests inside the sanctuary's sigil arcs).
-    private static func ringPoint(slot: Int, t: TimeInterval, beat: Double,
-                                  scale: CGSize) -> CGPoint {
-        let tighten = 1 - 0.35 * smoothstep(beat, 4.30, 5.0)
-        let radius = ringRadius * tighten
-        let angle = (Double(slot) / Double(ringCount)) * .pi * 2 + t * 0.08
+    /// Curved flight: a tangential bulge peaking mid-gather, so scraps swirl
+    /// into the cluster instead of sliding along straight rails. Zero at both
+    /// ends of the window, so rest positions stay exactly on the lattice.
+    private static func applySwirl(_ position: inout CGPoint, index: Int, gather: Double) {
+        guard gather > 0.001, gather < 0.999 else { return }
+        let direction: Double = index % 2 == 0 ? 1 : -1
+        let arc = sin(gather * .pi) * 0.075 * direction
+            * (0.4 + 0.9 * unitRandom(index, salt: 0x0A))
+        let dx = position.x - origin.x, dy = position.y - origin.y
+        let length = max((dx * dx + dy * dy).squareRoot(), 0.0001)
+        position.x += -dy / length * arc
+        position.y += dx / length * arc
+    }
+
+    /// Where the surplus is absorbed: a loose shell OUTSIDE the cluster, so
+    /// what is fading never overlaps what is arriving.
+    private static func haloPoint(index: Int, t: TimeInterval, scale: CGSize) -> CGPoint {
+        let radius = ringRadius * (1.70 + 0.75 * unitRandom(index, salt: 0x0B))
+        let angle = unitRandom(index, salt: 0x0C) * .pi * 2 + t * 0.05
         return CGPoint(x: origin.x + radius * cos(angle) * scale.width,
                        y: origin.y + radius * sin(angle) * scale.height)
     }
 
     /// Centre-high anchor the story revolves around (unit space). High enough
-    /// that the dot, the mark, and the sanctuary ring all sit clear of the
+    /// that the dot, the mark, and the bubble cluster all sit clear of the
     /// copy column, which lives in the lower half of every page.
     static let origin = CGPoint(x: 0.5, y: 0.30)
 
-    /// Sanctuary orbit radius as a fraction of the canvas's SHORT side.
-    static let ringRadius = 0.21
+    /// Base orbit radius as a fraction of the canvas's SHORT side. The lattice
+    /// multiplies this per ring (0.52…1.30), so the cluster's outer edge lands
+    /// where the single 0.21 ring used to — same footprint, three orbits.
+    static let ringRadius = 0.19
 
     /// Where the consequence beat's shared password chip glows (unit space) —
     /// in the gap the consequence copy leaves between its title and prompt.
