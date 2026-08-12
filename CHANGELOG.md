@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.55.0] - 2026-08-12
+
+### Added
+- galaxy backdrop, brand bubble cluster, magazine display type (#203)
+
+
 ## [1.54.0] - 2026-08-07
 
 ### Added

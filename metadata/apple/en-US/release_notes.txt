@@ -1,1 +1,1 @@
-This update improves the setup experience with clearer save confirmations and simple step indicators. Minor refinements throughout.
+This update brings a refreshed visual style with a new starry backdrop, an updated brand look, and a cleaner display font for a more polished experience.
