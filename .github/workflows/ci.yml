@@ -57,14 +57,19 @@ jobs:
             "$RUNNER_TEMP/vaultify-unit-dd" \
             "$RUNNER_TEMP/unit.xcresult"
 
+      # The receipt is the summary JSON alone. The full xcresult bundle is
+      # thousands of files per run and once filled the account-wide artifact
+      # quota, which then blocks EVERY upload for up to 12h after cleanup —
+      # an infra condition that must never redden a quality run whose tests
+      # passed (the release gate reads this job's conclusion, not the
+      # artifact). Bundles stay on the runner for forensic pickup.
       - name: Upload machine-readable unit receipt
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: unit-test-receipt-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/unit.xcresult.summary.json
-            ${{ runner.temp }}/unit.xcresult
+          path: ${{ runner.temp }}/unit.xcresult.summary.json
           if-no-files-found: warn
           retention-days: 14
 
