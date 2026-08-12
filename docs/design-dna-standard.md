@@ -93,6 +93,22 @@ One physical event = one haptic, from the SERVICE layer, never doubled by a view
 | Risky state entered (e.g. reveal extra-protected) | `Haptics.warning` |
 | Selection / toggle / minor action | `Haptics.tap` |
 | Scroll, navigation, appear | none |
+| Continuous direct manipulation | `Haptics.prepareSelection` once, then throttled `Haptics.selectionTick` per detent |
+
+**Continuous manipulation** is the one texture allowed, and it is not an
+exception to the "scroll gets nothing" rule — it is the line between navigating
+and handling. A drag that moves the VIEW (a list, a page, a tab) stays silent. A
+drag that moves the CONTENT — a slider, a wheel, the story intro's turn beat
+where the finger reels every stray password into the vault — earns a detented
+ratchet, because the user is manipulating an object and a real object answers
+back. Quantise the gesture into detents and tick on each crossing, in both
+directions; never tick per frame. `Haptics.selectionTick` throttles to 25 Hz so
+nothing is dropped at the system's 32 Hz ceiling.
+
+The same rule licenses a rising texture under a timed HOLD (`StorySealCTA`): a
+control that takes most of a second and says nothing until it completes reads as
+broken, so the ticks accelerate as the sweep fills and resolve into the single
+`tap` that marks the commit.
 
 ## Multi-device acceptance matrix
 

@@ -224,6 +224,77 @@ final class StoryIntroTests: XCTestCase {
         }
     }
 
+    // MARK: Haptic score
+
+    /// Silence everywhere except the turn. The DNA vocabulary gives scrolling
+    /// and navigation no haptic, so the ratchet must exist ONLY across the beat
+    /// where the finger is manipulating the swarm rather than turning a page.
+    func testOnlyTheTurnCarriesAHapticTexture() {
+        let window = StoryField.gatherWindow
+        for beat in stride(from: 0.0, through: 5.0, by: 0.01) {
+            let detent = StoryScrollProgressModel.gatherDetent(at: beat)
+            if beat > window.start, beat < window.end {
+                XCTAssertNotNil(detent, "the turn must be detented at beat \(beat)")
+            } else {
+                XCTAssertNil(detent, "beat \(beat) is navigation — it must be silent")
+            }
+        }
+    }
+
+    /// The ratchet spans the window evenly and stays in range, so the texture
+    /// cannot bunch at one end or overrun the detent count.
+    func testGatherDetentsAreMonotonicAndBounded() {
+        let window = StoryField.gatherWindow
+        var previous = -1
+        var seen = Set<Int>()
+        for step in 1..<1000 {
+            let beat = window.start + (window.end - window.start) * Double(step) / 1000
+            guard let detent = StoryScrollProgressModel.gatherDetent(at: beat) else { continue }
+            XCTAssertGreaterThanOrEqual(detent, previous, "the ratchet must not run backwards")
+            XCTAssertLessThan(detent, StoryScrollProgressModel.gatherDetents)
+            previous = detent
+            seen.insert(detent)
+        }
+        XCTAssertEqual(seen.count, StoryScrollProgressModel.gatherDetents,
+                       "every detent must be reachable across the turn")
+    }
+
+    /// Dragging back visibly scatters the swarm again, so the texture has to
+    /// answer in reverse too — every adjacent pair of detents must be distinct
+    /// in both directions.
+    ///
+    /// Sampled at each detent's CENTRE, never at its edge: the boundaries fall
+    /// on exact multiples where a single ULP decides which side a beat lands
+    /// on, so an edge sample tests floating-point luck rather than the ratchet.
+    func testGatherRatchetTicksInBothDirections() {
+        let window = StoryField.gatherWindow
+        let span = window.end - window.start
+        let count = StoryScrollProgressModel.gatherDetents
+        let centres = (0..<count).map { index in
+            window.start + span * (Double(index) + 0.5) / Double(count)
+        }
+        let indices = centres.map { StoryScrollProgressModel.gatherDetent(at: $0) }
+        XCTAssertEqual(indices, (0..<count).map { $0 },
+                       "each detent's centre must report that detent")
+        for (down, up) in zip(indices, indices.dropFirst()) {
+            XCTAssertNotEqual(down, up, "the ratchet must tick in both directions")
+        }
+    }
+
+    /// Standing still must be silent. `update` returns before scoring when the
+    /// progress has not moved, so parking the finger on a detent boundary
+    /// cannot buzz repeatedly.
+    @MainActor
+    func testAStationaryFingerNeverTicks() {
+        let model = StoryScrollProgressModel()
+        let metrics = StoryScrollMetrics(offset: 500, span: 1000)
+        model.update(metrics)
+        let settled = model.journeyProgress
+        for _ in 0..<50 { model.update(metrics) }
+        XCTAssertEqual(model.journeyProgress, settled,
+                       "a repeated identical metric must be a no-op")
+    }
+
     // MARK: Galaxy backdrop
 
     /// The sky is scrubbed like everything else: same instant, same frame.

@@ -52,6 +52,12 @@ nonisolated enum StoryField {
     /// Roughly what a 6.1" phone produces.
     static let nominalReach: CGFloat = 61
 
+    /// The turn's gather in beat coordinates: the earliest a scrap can leave,
+    /// and the beat by which the last survivor is home. The haptic ratchet in
+    /// `StoryScrollProgressModel` reads these same two numbers, so what the
+    /// finger feels cannot drift from what the eye sees.
+    static let gatherWindow = (start: 2.10, end: 3.00)
+
     /// The full life of one scrap: born from the origin dot across the chaos
     /// beat, drifting until the consequence stills it, reeled into the cluster
     /// by the turn's scroll scrub, then orbiting as a bubble (survivors) or
@@ -97,8 +103,8 @@ nonisolated enum StoryField {
         // assembles in waves rather than snapping shut in a single frame; the
         // last survivor is home by beat 3, the turn page's rest.
         let lead = unitRandom(index, salt: 0x09)
-        let gatherStart = 2.10 + 0.34 * lead
-        let gatherEnd = survives ? 2.86 + 0.14 * lead : gatherStart + 0.55
+        let gatherStart = gatherWindow.start + 0.34 * lead
+        let gatherEnd = survives ? gatherWindow.end - 0.14 * (1 - lead) : gatherStart + 0.55
         let flight = smoothstep(beat, gatherStart, gatherEnd)
         let gather = easeInOut(flight)
 

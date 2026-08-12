@@ -318,7 +318,13 @@ struct StoryBeatView: View {
             .overlay { peekPing }
             .onLongPressGesture(minimumDuration: 0.15, maximumDistance: 44,
                                 perform: {},
-                                onPressingChanged: { peeking = $0 })
+                                onPressingChanged: { pressing in
+                                    peeking = pressing
+                                    // One tap as the secret opens; letting go
+                                    // is the absence of feedback, which is the
+                                    // point — nothing was committed.
+                                    if pressing { Haptics.tap() }
+                                })
             .accessibilityRepresentation {
                 Toggle("Peek at the example secret", isOn: $peeking)
             }

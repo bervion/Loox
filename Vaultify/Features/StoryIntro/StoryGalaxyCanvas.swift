@@ -1,47 +1,45 @@
 import SwiftUI
 
 /// The story's sky: graded deep space, drifting nebula clouds, a parallaxing
-/// star field, a few flare stars and the odd meteor. Drawn behind the stage's
-/// own Canvas and driven by the SAME timeline tick, so the two layers never
-/// disagree about the frame.
+/// star field, a few flare stars and the odd meteor.
+///
+/// Pure drawing on a `GraphicsContext`, NOT a view. The stage used to stack a
+/// second `Canvas` behind its own, which meant two full-screen layers
+/// rasterised and composited every frame for one picture; the stage now calls
+/// `draw` first inside its single Canvas instead.
 ///
 /// `fade` is the committed-dark veil's strength (1 while the story is in the
 /// dark world, 0 once the canvas has resolved into the user's theme) — the
 /// whole sky rides it out, because stars on a light theme would be litter.
-struct StoryGalaxyCanvas: View {
-    let t: TimeInterval
-    let beat: Double
-    let fade: Double
-    /// Reduce Motion is OFF. Gates the multi-rate scroll parallax, which
-    /// pausing the timeline does NOT stop (it rides `beat`, not `t`) and which
-    /// is exactly the vestibular effect Reduce Motion exists to remove.
-    var parallax = true
-    /// The timeline is running. Gates meteors only: frozen, one caught
-    /// mid-streak hangs in the sky as a scratch. Deliberately separate from
-    /// `parallax` — the app switcher pauses the timeline while the screen is
-    /// still fully visible, and zeroing the parallax there would snap the whole
-    /// sky sideways in front of the user.
-    var live = true
+enum StorySky {
 
-    /// The parallax coordinate: the live beat, or a frozen sky.
-    private var drift: Double { parallax ? beat : 0 }
-
-    var body: some View {
-        Canvas(opaque: false, rendersAsynchronously: false) { ctx, size in
-            guard fade > 0.01 else { return }
-            drawSpace(&ctx, size: size)
-            for cloud in StoryGalaxy.clouds { draw(cloud, &ctx, size: size) }
-            drawStars(&ctx, size: size)
-            drawFlareStars(&ctx, size: size)
-            if live { drawMeteors(&ctx, size: size) }
+    /// - Parameters:
+    ///   - parallax: Reduce Motion is OFF. Gates the multi-rate scroll
+    ///     parallax, which pausing the timeline does NOT stop (it rides `beat`,
+    ///     not `t`) and which is the vestibular effect Reduce Motion removes.
+    ///   - live: the timeline is running. Gates meteors only: frozen, one
+    ///     caught mid-streak hangs in the sky as a scratch. Deliberately
+    ///     separate from `parallax` — the app switcher pauses the timeline
+    ///     while the screen is still fully visible, and zeroing the parallax
+    ///     there would snap the whole sky sideways in front of the user.
+    static func draw(_ ctx: inout GraphicsContext, size: CGSize,
+                     t: TimeInterval, beat: Double, fade: Double,
+                     parallax: Bool, live: Bool) {
+        guard fade > 0.01 else { return }
+        let drift = parallax ? beat : 0
+        drawSpace(&ctx, size: size, fade: fade)
+        for cloud in StoryGalaxy.clouds {
+            draw(cloud, &ctx, size: size, t: t, drift: drift, fade: fade)
         }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+        drawStars(&ctx, size: size, t: t, drift: drift, fade: fade)
+        drawFlareStars(&ctx, size: size, t: t, drift: drift, fade: fade)
+        if live { drawMeteors(&ctx, size: size, t: t, fade: fade) }
     }
 
     /// Graded void rather than flat black: a top-lit navy that falls to near
     /// black gives the sky somewhere to be, so the clouds read as inside it.
-    private func drawSpace(_ ctx: inout GraphicsContext, size: CGSize) {
+    private static func drawSpace(_ ctx: inout GraphicsContext, size: CGSize,
+                                  fade: Double) {
         let rect = CGRect(origin: .zero, size: size)
         ctx.fill(Path(rect), with: .linearGradient(
             Gradient(colors: [StoryGalaxy.spaceTop.opacity(fade),
@@ -53,7 +51,8 @@ struct StoryGalaxyCanvas: View {
     /// One nebula pool. Drawn into an anisotropically scaled layer so the cloud
     /// is an ellipse, never a disc — a circular pool is exactly what read as a
     /// sun sitting behind the copy.
-    private func draw(_ cloud: StoryGalaxy.Cloud, _ ctx: inout GraphicsContext, size: CGSize) {
+    private static func draw(_ cloud: StoryGalaxy.Cloud, _ ctx: inout GraphicsContext,
+                             size: CGSize, t: TimeInterval, drift: Double, fade: Double) {
         let unit = StoryGalaxy.cloudCenter(cloud, t: t, beat: drift)
         let center = CGPoint(x: unit.x * size.width, y: unit.y * size.height)
         // Off the SHORT side: a full-screen-diagonal pool is mostly overdraw,
@@ -73,7 +72,8 @@ struct StoryGalaxyCanvas: View {
 
     /// The star field as `brightnessBuckets` accumulated paths: one fill per
     /// bucket instead of one per star, so 170 twinkling stars cost six draws.
-    private func drawStars(_ ctx: inout GraphicsContext, size: CGSize) {
+    private static func drawStars(_ ctx: inout GraphicsContext, size: CGSize,
+                                  t: TimeInterval, drift: Double, fade: Double) {
         var buckets = [Path](repeating: Path(), count: StoryGalaxy.brightnessBuckets)
         for index in 0..<StoryGalaxy.starCount {
             let star = StoryGalaxy.star(index: index, t: t, beat: drift)
@@ -95,7 +95,8 @@ struct StoryGalaxyCanvas: View {
     /// Distant bright stars: a soft halo plus a four-point cross. The cross is
     /// two thin strokes, not a symbol — at this size a resolved image would
     /// cost more than the geometry.
-    private func drawFlareStars(_ ctx: inout GraphicsContext, size: CGSize) {
+    private static func drawFlareStars(_ ctx: inout GraphicsContext, size: CGSize,
+                                       t: TimeInterval, drift: Double, fade: Double) {
         for index in 0..<StoryGalaxy.flareStarCount {
             let star = StoryGalaxy.flareStar(index: index, t: t, beat: drift)
             let center = CGPoint(x: star.position.x * size.width,
@@ -125,7 +126,8 @@ struct StoryGalaxyCanvas: View {
 
     /// Shooting stars: a tapered streak that brightens toward the head, plus a
     /// small head glow. Rare and quick by design.
-    private func drawMeteors(_ ctx: inout GraphicsContext, size: CGSize) {
+    private static func drawMeteors(_ ctx: inout GraphicsContext, size: CGSize,
+                                    t: TimeInterval, fade: Double) {
         for index in 0..<StoryGalaxy.meteorCount {
             guard let meteor = StoryGalaxy.meteor(index: index, t: t) else { continue }
             let head = CGPoint(x: meteor.head.x * size.width, y: meteor.head.y * size.height)
@@ -149,5 +151,24 @@ struct StoryGalaxyCanvas: View {
                 StoryGalaxy.softGradient(StoryGalaxy.starInk, peak: 0.85 * alpha),
                 center: head, startRadius: 0, endRadius: glow))
         }
+    }
+}
+
+/// The sky as a standalone view, for the reader presentation's static poster.
+/// The journey does not use this — its stage draws the sky into its own Canvas.
+struct StoryGalaxyCanvas: View {
+    var t: TimeInterval = 0
+    var beat: Double = 0
+    var fade: Double = 1
+    var parallax = false
+    var live = false
+
+    var body: some View {
+        Canvas(opaque: false, rendersAsynchronously: false) { ctx, size in
+            StorySky.draw(&ctx, size: size, t: t, beat: beat, fade: fade,
+                          parallax: parallax, live: live)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }

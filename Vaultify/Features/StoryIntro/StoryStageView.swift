@@ -36,8 +36,8 @@ struct StoryStageView: View {
         ZStack {
             Color.black
             Color(rgb: theme.background).opacity(themeMix)
-            // One timeline drives BOTH canvases, so the sky and the swarm can
-            // never disagree about the frame.
+            // ONE Canvas for the whole stage — sky, swarm and cluster — so the
+            // frame is rasterised and composited once.
             //
             // Capped at 60 on purpose, including on ProMotion. This stage draws
             // ~300 elements plus a 170-star sky every pass — an order more than
@@ -47,13 +47,8 @@ struct StoryStageView: View {
             // 60 divides 120 exactly, so there is no judder from the cap
             // itself. Raise it only with a frame trace from a real device.
             TimelineView(.animation(minimumInterval: 1.0 / 60, paused: paused)) { context in
-                let t = context.date.timeIntervalSinceReferenceDate
-                let beat = model.beatPosition
-                ZStack {
-                    StoryGalaxyCanvas(t: t, beat: beat, fade: 1 - themeMix,
-                                      parallax: !reduceMotion, live: !paused)
-                    canvas(t: t, beat: beat, veilFade: 1 - themeMix)
-                }
+                canvas(t: context.date.timeIntervalSinceReferenceDate,
+                       beat: model.beatPosition, veilFade: 1 - themeMix)
             }
         }
         .ignoresSafeArea()
@@ -82,6 +77,12 @@ struct StoryStageView: View {
             let ringScale = CGSize(
                 width: reach / (StoryField.ringRadius * max(size.width, 1)),
                 height: reach / (StoryField.ringRadius * max(size.height, 1)))
+
+            // The sky, drawn into THIS context. It used to be a Canvas of its
+            // own stacked behind the stage — two full-screen layers rasterised
+            // and composited every frame to make one picture.
+            StorySky.draw(&ctx, size: size, t: t, beat: beat, fade: veilFade,
+                          parallax: !reduceMotion, live: !paused)
 
             StoryStageLight.warningPool(&ctx, size: size, ripple: ripple, veilFade: veilFade)
 

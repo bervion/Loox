@@ -18,6 +18,8 @@ struct StorySealCTA: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pressStart: Date?
     @State private var sealed = false
+    /// Drives the hold's rising haptic texture; cancelled on release.
+    @State private var holdTexture: Task<Void, Never>?
 
     private static let holdDuration: TimeInterval = 0.9
 
@@ -36,12 +38,17 @@ struct StorySealCTA: View {
                                 perform: { seal() },
                                 onPressingChanged: { pressing in
                                     pressStart = pressing ? Date() : nil
+                                    if pressing { startHoldTexture() } else { stopHoldTexture() }
                                 })
             .onChange(of: scenePhase) { _, phase in
                 // A banner or app switch mid-hold must not leave a press alive
                 // that completes the moment the user comes back.
-                if phase != .active { pressStart = nil }
+                if phase != .active {
+                    pressStart = nil
+                    stopHoldTexture()
+                }
             }
+            .onDisappear { stopHoldTexture() }
             .accessibilityRepresentation {
                 // Activates on a single press, so it must not tell assistive
                 // technology to hold anything.
@@ -108,12 +115,40 @@ struct StorySealCTA: View {
         return min(max(date.timeIntervalSince(start) / Self.holdDuration, 0), 1)
     }
 
+    /// The hold's rising texture: selection ticks that accelerate as the sweep
+    /// fills, so the vault is felt closing rather than only watched. The story
+    /// asks the user to commit with a sustained press — a control that takes
+    /// 0.9 seconds and says nothing for the first 0.85 of them feels broken.
+    ///
+    /// The interval runs 125ms → 50ms (8 Hz → 20 Hz), under the system's 32 Hz
+    /// ceiling, and `Haptics.selectionTick` throttles on top of that.
+    private func startHoldTexture() {
+        Haptics.prepareSelection()
+        holdTexture?.cancel()
+        holdTexture = Task {
+            let began = Date()
+            while !Task.isCancelled {
+                let elapsed = Date().timeIntervalSince(began)
+                guard elapsed < Self.holdDuration else { return }
+                Haptics.selectionTick()
+                try? await Task.sleep(for: .seconds(0.125 - 0.075 * (elapsed / Self.holdDuration)))
+            }
+        }
+    }
+
+    private func stopHoldTexture() {
+        holdTexture?.cancel()
+        holdTexture = nil
+    }
+
     private func seal() {
         guard !sealed else { return }
         sealed = true
         pressStart = nil
-        // The story's ONLY haptic: one selection tap at the commitment, per
-        // the haptics vocabulary (success stays reserved for copy actions).
+        // The texture stops and one tap lands on top of it — the click of a
+        // latch after the effort, not a fanfare. `success` stays reserved for
+        // copy actions per the haptics vocabulary.
+        stopHoldTexture()
         Haptics.tap()
         onSealed()
     }
