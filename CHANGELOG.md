@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.55.1] - 2026-08-12
+
+### Fixed
+- receipt artifact is the summary JSON alone and can never redden quality (#204)
+
+
 ## [1.55.0] - 2026-08-12
 
 ### Added

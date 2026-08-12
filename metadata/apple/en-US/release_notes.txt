@@ -1,1 +1,1 @@
-This update brings a refreshed visual style with a new starry backdrop, an updated brand look, and a cleaner display font for a more polished experience.
+Version 1.55.1: Performance improvements and bug fixes.
