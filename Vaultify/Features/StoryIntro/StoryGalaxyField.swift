@@ -102,8 +102,10 @@ nonisolated enum StoryGalaxy {
         let phase = StoryField.unitRandom(index, salt: 0x23) * .pi * 2
         let speed = 0.5 + 1.5 * StoryField.unitRandom(index, salt: 0x24)
         // Squared sine: mostly dim with brief sparkles, rather than the whole
-        // sky pulsing in unison.
-        let twinkle = 0.40 + 0.60 * pow(0.5 + 0.5 * sin(t * speed + phase), 2)
+        // sky pulsing in unison. Squared by multiplication — this is 170 calls
+        // a frame, and `pow` is a libm call.
+        let wave = 0.5 + 0.5 * sin(t * speed + phase)
+        let twinkle = 0.40 + 0.60 * wave * wave
         let jitter = 0.85 + 0.30 * StoryField.unitRandom(index, salt: 0x25)
         return Star(position: CGPoint(x: x, y: y - beat * layerParallax[layer]),
                     radius: layerRadius[layer] * jitter,
@@ -117,7 +119,8 @@ nonisolated enum StoryGalaxy {
         let x = 0.06 + 0.88 * StoryField.unitRandom(index, salt: 0x31)
         let y = 0.02 + 0.92 * StoryField.unitRandom(index, salt: 0x32)
         let phase = StoryField.unitRandom(index, salt: 0x33) * .pi * 2
-        let breathe = 0.55 + 0.45 * pow(0.5 + 0.5 * sin(t * 0.55 + phase), 2)
+        let wave = 0.5 + 0.5 * sin(t * 0.55 + phase)
+        let breathe = 0.55 + 0.45 * wave * wave
         let size = 5.0 + 6.0 * StoryField.unitRandom(index, salt: 0x34)
         return Star(position: CGPoint(x: x, y: y - beat * 0.004),
                     radius: size, brightness: breathe)

@@ -37,10 +37,16 @@ struct StoryStageView: View {
             Color.black
             Color(rgb: theme.background).opacity(themeMix)
             // One timeline drives BOTH canvases, so the sky and the swarm can
-            // never disagree about the frame. No `minimumInterval`: the brand
-            // animation runs at the display's own cadence and the story is the
-            // same picture, so it gets ProMotion's 120Hz too.
-            TimelineView(.animation(paused: paused)) { context in
+            // never disagree about the frame.
+            //
+            // Capped at 60 on purpose, including on ProMotion. This stage draws
+            // ~300 elements plus a 170-star sky every pass — an order more than
+            // the brand loop's ten circles — so uncapping doubles the per-frame
+            // cost of the heaviest screen in the app on the weakest device that
+            // runs it. A steady 60 reads smoother than an unstable 80–120, and
+            // 60 divides 120 exactly, so there is no judder from the cap
+            // itself. Raise it only with a frame trace from a real device.
+            TimelineView(.animation(minimumInterval: 1.0 / 60, paused: paused)) { context in
                 let t = context.date.timeIntervalSinceReferenceDate
                 let beat = model.beatPosition
                 ZStack {
@@ -141,6 +147,13 @@ struct StoryStageView: View {
                            size: CGSize, t: TimeInterval, beat: Double,
                            burst: Double, ringScale: CGSize, reach: CGFloat) {
         for index in 0..<StoryField.scrapCount {
+            // The surplus is fully absorbed by beat 2.94 at the latest (see the
+            // dissolve window in `StoryField.sample`, pinned by
+            // `testSurplusIsAbsorbedBeforeTheClusterCloses`), so past the turn
+            // there are 58 samples a frame whose only outcome is a rejected
+            // opacity. Skipping them is a third of this loop on the last two
+            // beats, and draws nothing different.
+            if beat >= 3, index >= StoryField.ringCount { continue }
             let sample = StoryField.sample(index: index, t: t, beat: beat,
                                            burst: burst, ringScale: ringScale,
                                            reach: reach)
@@ -336,10 +349,12 @@ struct StoryStageView: View {
 
         static let bubbleCount = 6
 
-        static var allCases: [StageSymbol] {
+        /// Stored, not computed: the Canvas walks this every pass to resolve
+        /// its symbols, and a computed property rebuilt the array — a map, a
+        /// concat and an allocation — on every frame.
+        static let allCases: [StageSymbol] =
             [.note, .chat, .browser, .key, .chatWarning, .dot, .mark]
-                + (0..<bubbleCount).map { StageSymbol.bubble($0) }
-        }
+            + (0..<bubbleCount).map { StageSymbol.bubble($0) }
 
         /// Any particle index maps onto one of the six lobes, so callers can
         /// pass a raw index and still land on a symbol that was resolved.

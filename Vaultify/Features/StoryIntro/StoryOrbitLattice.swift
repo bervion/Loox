@@ -60,11 +60,13 @@ nonisolated enum StoryOrbitLattice {
     /// little further (out to `artFloor`), but they are 2pt arcs while these
     /// are solid brand colour, so the turn beat — which has no sigils yet —
     /// clears to here rather than to the full floor.
-    static var bubbleFloor: Double {
+    /// Stored, not computed: `StoryBeatView` reads it while laying out every
+    /// beat page, and it is a constant folded out of three other constants.
+    static let bubbleFloor: Double = {
         let outermost = rings.map { $0.radius + $0.diameter / 2 }.max() ?? 0
         return StoryField.origin.y
             + outermost / (sigilRadii.max() ?? 1) * (artFloor - StoryField.origin.y)
-    }
+    }()
 
     /// The cluster's base orbit reach in points. Bounded twice: by the canvas's
     /// short side (so it stays a cluster, not a band) and by `artFloor` (so it

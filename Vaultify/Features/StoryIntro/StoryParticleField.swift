@@ -48,6 +48,10 @@ nonisolated enum StoryField {
         ScrapKind(rawValue: index % ScrapKind.allCases.count) ?? .note
     }
 
+    /// A nominal orbit reach for tests and previews that do not model a canvas.
+    /// Roughly what a 6.1" phone produces.
+    static let nominalReach: CGFloat = 61
+
     /// The full life of one scrap: born from the origin dot across the chaos
     /// beat, drifting until the consequence stills it, reeled into the cluster
     /// by the turn's scroll scrub, then orbiting as a bubble (survivors) or
@@ -56,9 +60,6 @@ nonisolated enum StoryField {
     /// the LooxSwirl dismiss verb as the curtain-raise for the real app.
     /// `ringScale` corrects the orbit for the canvas aspect; the default keeps
     /// the field aspect-agnostic for tests and previews.
-    /// A nominal orbit reach for tests and previews that do not model a canvas.
-    /// Roughly what a 6.1" phone produces.
-    static let nominalReach: CGFloat = 61
     static func sample(index: Int, t: TimeInterval, beat: Double, burst: Double = 0,
                        ringScale: CGSize = CGSize(width: 1, height: 1),
                        reach: CGFloat = StoryField.nominalReach) -> Sample {
@@ -211,10 +212,19 @@ nonisolated enum StoryField {
         return u * u * (3 - 2 * u)
     }
 
-    static func easeOut(_ x: Double) -> Double { 1 - pow(1 - x, 3) }
+    // Cubes by multiplication, not `pow`. These two run ~180 times per frame
+    // (once per scrap for the birth curve, once for the gather) on top of the
+    // galaxy's own sampling, and `pow` is a general-purpose call the optimiser
+    // cannot reduce to three multiplies on its own.
+    static func easeOut(_ x: Double) -> Double {
+        let u = 1 - x
+        return 1 - u * u * u
+    }
 
     static func easeInOut(_ x: Double) -> Double {
-        x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2
+        if x < 0.5 { return 4 * x * x * x }
+        let u = -2 * x + 2
+        return 1 - u * u * u / 2
     }
 
     static func lerp(_ a: CGPoint, _ b: CGPoint, _ u: Double) -> CGPoint {
