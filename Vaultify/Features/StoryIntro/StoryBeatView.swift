@@ -16,13 +16,14 @@ struct StoryBeatView: View {
 
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// Sanctuary's press-to-peek demo row.
     @State private var peeking = false
 
     /// Magazine display size for the beat titles — the story's hero voice,
     /// above the `largeTitle` role. Scaled off the largeTitle text style so
     /// it follows Dynamic Type until the reader presentation takes over.
-    @ScaledMetric(relativeTo: .largeTitle) private var displaySize: CGFloat = 40
+    @ScaledMetric(relativeTo: .largeTitle) private var displaySize: CGFloat = 46
 
     /// Fictional demo secret for the peek row — a constant, never user
     /// content, deliberately not localized.
@@ -80,14 +81,23 @@ struct StoryBeatView: View {
     }
 
     /// Fraction of the page height reserved above the copy. The sanctuary and
-    /// commitment pages sit under the full orbit, the turn under the closing
-    /// ring, the hook under the dot's halo alone.
+    /// commitment pages sit under the full cluster, the turn under the closing
+    /// orbits, the hook under the dot's halo alone.
+    ///
+    /// The cluster pages take theirs from `StoryOrbitLattice`, the same numbers
+    /// that bound how far down the frame the art may grow. Two independent
+    /// constants is how the sigils ended up sweeping through the sanctuary
+    /// title on a small phone: one of them moved and the other did not.
     private var artClearance: Double {
         switch beat {
-        case .hook: 0.06
-        case .chaos, .consequence: 0
-        case .turn: 0.10
-        case .sanctuary, .commitment: 0.24
+        case .chaos, .consequence: return 0
+        case .hook: return 0.06 * largeTextRelief
+        // The turn has the bubbles but not yet the sigils, so it clears to the
+        // outermost BUBBLE. Its copy is two short lines, so it never needs the
+        // large-text relief — and taking it would put the title inside solid
+        // brand colour rather than behind a faint arc.
+        case .turn: return StoryOrbitLattice.bubbleFloor
+        case .sanctuary, .commitment: return StoryOrbitLattice.artFloor * largeTextRelief
         }
     }
 
@@ -101,6 +111,11 @@ struct StoryBeatView: View {
         default: 0
         }
     }
+
+    /// At large Dynamic Type the clearance yields before the copy does: text
+    /// that is clipped is worse than text overlapping a faint arc, and past
+    /// `.accessibility1` the reader presentation takes over entirely.
+    private var largeTextRelief: Double { dynamicTypeSize >= .xxLarge ? 0.55 : 1 }
 
     @ViewBuilder private var content: some View {
         switch beat {
@@ -157,27 +172,51 @@ struct StoryBeatView: View {
     private func title(_ key: LocalizedStringKey,
                        resolvesWithCanvas: Bool = false) -> some View {
         ZStack {
+            // The sanctuary and commitment beats land AFTER the canvas has
+            // resolved into the user's theme, so their bloom is the accent at a
+            // whisper: the fixed cool glow is invisible on a light background,
+            // and on a dark one it would flip hue mid-story.
             titleLayer(key, ink: primaryColor,
+                       glow: themed ? Color(rgb: theme.accentFill) : StoryPalette.titleGlow,
+                       glowStrength: themed ? Self.themedGlow : Self.darkGlow,
                        fade: resolvesWithCanvas ? .fixedInk : .none)
             if resolvesWithCanvas {
-                titleLayer(key, ink: theme.color(.primary), fade: .themedInk)
+                // The turn's second layer lands on the user's own background,
+                // where a cold bloom would be a smudge — it takes the accent at
+                // a fraction of the strength instead.
+                titleLayer(key, ink: theme.color(.primary),
+                           glow: Color(rgb: theme.accentFill),
+                           glowStrength: Self.themedGlow, fade: .themedInk)
             }
         }
     }
 
-    private func titleLayer(_ key: LocalizedStringKey, ink: Color,
-                            fade: CanvasFade) -> some View {
+    /// Bloom strength on the committed-dark canvas, and on the user's own
+    /// (possibly light) background once the story has resolved into it.
+    private static let darkGlow = 0.55
+    private static let themedGlow = 0.18
+
+    private func titleLayer(_ key: LocalizedStringKey, ink: Color, glow: Color,
+                            glowStrength: Double, fade: CanvasFade) -> some View {
         Text(key)
-            // Magazine hero voice: heavy display SF above the largeTitle role,
-            // tightened a touch — short lines carry the page like a cover.
+            // Magazine hero voice: SF at its heaviest above the largeTitle
+            // role, tightened a touch — short lines carry the page like a
+            // cover. Tracking stays modest because VI stacks diacritics above
+            // the cap height and JA falls back to Hiragino, neither of which
+            // survives the tight tracking a Latin-only cover would take.
             .font(.vaultDisplay(size: displaySize))
-            .kerning(-0.5)
-            // The longest VI title at heavy display on a 375pt phone wraps to
-            // three lines; a small floor keeps it to the two-line magazine cut
-            // without ever shrinking into illegibility.
-            .minimumScaleFactor(0.85)
+            .kerning(-0.6)
+            // The longest VI/JA title at black display on a 375pt phone wraps
+            // to three lines; a floor keeps the magazine cut without ever
+            // shrinking into illegibility.
+            .minimumScaleFactor(0.75)
             .foregroundStyle(ink)
             .multilineTextAlignment(.center)
+            // Two-stop bloom: a wide halo for the light-off-the-page read, a
+            // tight one to keep the counters from washing out. Part of the
+            // content, so the entrance fades and blurs it in lockstep.
+            .shadow(color: glow.opacity(glowStrength), radius: 18)
+            .shadow(color: glow.opacity(glowStrength * 0.55), radius: 5)
             // Hero line only: blur entrance is the story's reveal verb, and
             // whole-block (never per-word) so VI and JA render identically.
             // Interpolated on phase.VALUE, not `isIdentity`: with full-height
@@ -210,6 +249,9 @@ struct StoryBeatView: View {
                            entranceDrop: CGFloat, fade: CanvasFade) -> some View {
         Text(key)
             .vaultType(.body)
+            // A step up from regular: body copy on a moving cinematic canvas
+            // needs more stem than the same size does on a settled screen.
+            .fontWeight(.medium)
             .foregroundStyle(ink)
             .multilineTextAlignment(.center)
             .scrollTransition(.interactive) { [reduceMotion] content, phase in
@@ -276,7 +318,13 @@ struct StoryBeatView: View {
             .overlay { peekPing }
             .onLongPressGesture(minimumDuration: 0.15, maximumDistance: 44,
                                 perform: {},
-                                onPressingChanged: { peeking = $0 })
+                                onPressingChanged: { pressing in
+                                    peeking = pressing
+                                    // One tap as the secret opens; letting go
+                                    // is the absence of feedback, which is the
+                                    // point — nothing was committed.
+                                    if pressing { Haptics.tap() }
+                                })
             .accessibilityRepresentation {
                 Toggle("Peek at the example secret", isOn: $peeking)
             }
