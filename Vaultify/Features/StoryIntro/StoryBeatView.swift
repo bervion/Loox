@@ -78,6 +78,12 @@ struct StoryBeatView: View {
         .onTapGesture {
             if beat == .consequence { onSendTap() }
         }
+        // Stable, language-free hook for the walkthrough UI test: the rig
+        // asserts each page's frame is actually on screen after every turn,
+        // which is what catches "the story never appeared" — a lesson from the
+        // day the fixture started booting into the deliberate-lock gate and an
+        // assertion-free walkthrough kept photographing it in green.
+        .accessibilityIdentifier("story.beat.\(beat.rawValue)")
     }
 
     /// Fraction of the page height reserved above the copy. The sanctuary and

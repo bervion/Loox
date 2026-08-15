@@ -102,17 +102,25 @@ nonisolated enum StoryOrbitLattice {
         return (rings[0], 0)
     }
 
+    /// A slot's current angular position on its orbit. Split out of `point`
+    /// so the stage's glint lap can read WHERE a bubble is without recomputing
+    /// its whole sample.
+    static func angle(slot: Int, t: TimeInterval) -> Double {
+        let (ring, position) = placement(slot: slot)
+        return (Double(position) / Double(ring.count)) * .pi * 2
+            + ring.phase + t * ring.spin
+    }
+
     /// A survivor's live orbit point in unit space. `scale` converts the unit
     /// radius into a TRUE circle on the target canvas (unit space is stretched
     /// by the screen aspect).
     static func point(slot: Int, t: TimeInterval, tighten: Double,
                       scale: CGSize) -> CGPoint {
-        let (ring, position) = placement(slot: slot)
+        let (ring, _) = placement(slot: slot)
         let radius = StoryField.ringRadius * ring.radius * tighten
-        let angle = (Double(position) / Double(ring.count)) * .pi * 2
-            + ring.phase + t * ring.spin
-        return CGPoint(x: StoryField.origin.x + radius * cos(angle) * scale.width,
-                       y: StoryField.origin.y + radius * sin(angle) * scale.height)
+        let theta = angle(slot: slot, t: t)
+        return CGPoint(x: StoryField.origin.x + radius * cos(theta) * scale.width,
+                       y: StoryField.origin.y + radius * sin(theta) * scale.height)
     }
 
     /// A slot's bubble size as a multiple of `bubbleBase`, for a cluster of the

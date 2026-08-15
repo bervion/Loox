@@ -28,16 +28,12 @@ struct StoryStageView: View {
     nonisolated static let themeResolveEnd = 3.0
 
     private var paused: Bool { reduceMotion || scenePhase != .active }
-    private var themeMix: Double {
-        StoryField.smoothstep(model.beatPosition, Self.themeResolveStart, Self.themeResolveEnd)
-    }
 
     var body: some View {
         ZStack {
             Color.black
-            Color(rgb: theme.background).opacity(themeMix)
-            // ONE Canvas for the whole stage — sky, swarm and cluster — so the
-            // frame is rasterised and composited once.
+            // ONE Canvas for the whole stage — veil, sky, swarm and cluster —
+            // so the frame is rasterised and composited once.
             //
             // Capped at 60 on purpose, including on ProMotion. This stage draws
             // ~300 elements plus a 170-star sky every pass — an order more than
@@ -46,9 +42,19 @@ struct StoryStageView: View {
             // runs it. A steady 60 reads smoother than an unstable 80–120, and
             // 60 divides 120 exactly, so there is no judder from the cap
             // itself. Raise it only with a frame trace from a real device.
+            //
+            // While LIVE, the closure POLLS `beatPosition` (deliberately
+            // untracked): a scroll write invalidates no SwiftUI view at all,
+            // and the next 60fps tick simply samples the newer value — the
+            // same fidelity as the capped canvas ever had, minus a whole
+            // body/diff/symbol pass per 120Hz scroll event. While PAUSED
+            // (Reduce Motion / background) the timeline has no tick to poll
+            // on, so the closure reads the OBSERVED `coarseBeat` instead and
+            // scrubbing re-renders per quantum — RM's instant-swap aesthetic
+            // at a tenth of the invalidations.
             TimelineView(.animation(minimumInterval: 1.0 / 60, paused: paused)) { context in
                 canvas(t: context.date.timeIntervalSinceReferenceDate,
-                       beat: model.beatPosition, veilFade: 1 - themeMix)
+                       beat: paused ? model.coarseBeat : model.beatPosition)
             }
         }
         .ignoresSafeArea()
@@ -56,10 +62,21 @@ struct StoryStageView: View {
         .accessibilityHidden(true)
     }
 
-    private func canvas(t: TimeInterval, beat: Double, veilFade: Double) -> some View {
+    private func canvas(t: TimeInterval, beat: Double) -> some View {
+        let themeMix = StoryField.smoothstep(beat, Self.themeResolveStart, Self.themeResolveEnd)
+        let veilFade = 1 - themeMix
         let ripple = rippleProgress(t: t, beat: beat)
-        let burst = burstProgress(t: t)
+        let seal = sealPhases(t: t)
+        let burst = seal.fling
         return Canvas { ctx, size in
+            // The theme veil, first: the committed-dark base resolving into
+            // the user's background. Drawn here rather than stacked as a
+            // SwiftUI layer so no view outside this Canvas depends on the
+            // scroll position.
+            if themeMix > 0.001 {
+                ctx.fill(Path(CGRect(origin: .zero, size: size)),
+                         with: .color(Color(rgb: theme.background).opacity(themeMix)))
+            }
             // Every symbol resolved ONCE per pass. Resolving inside the
             // particle loop meant ~120 lookups a frame for 13 distinct images.
             var symbols: [StageSymbol: GraphicsContext.ResolvedSymbol] = [:]
@@ -73,7 +90,12 @@ struct StoryStageView: View {
             // never nests inside the sigil arcs). The height cap keeps the
             // cluster clear of the copy column on squat canvases (iPad
             // landscape), where the short side is no longer the tight axis.
-            let reach = StoryOrbitLattice.reach(size)
+            // The seal's anticipation: one sharp breath IN before the fling —
+            // the cluster tightens ~5% for a tenth of a second, then releases.
+            // Squeezing `reach` contracts the whole lattice (bubbles, mark,
+            // sigils, motes) self-similarly, the same way the commitment
+            // beat's tighten does, so no clearance is ever violated.
+            let reach = StoryOrbitLattice.reach(size) * (1 - 0.05 * seal.inhale)
             let ringScale = CGSize(
                 width: reach / (StoryField.ringRadius * max(size.width, 1)),
                 height: reach / (StoryField.ringRadius * max(size.height, 1)))
@@ -100,24 +122,33 @@ struct StoryStageView: View {
             }
 
             drawSwarm(&ctx, symbols: symbols, size: size, t: t, beat: beat,
-                      burst: burst, ringScale: ringScale, reach: reach)
+                      burst: burst, themeMix: themeMix,
+                      ringScale: ringScale, reach: reach)
             drawMotes(&ctx, symbols: symbols, size: size, t: t, beat: beat,
                       burst: burst, ringScale: ringScale, reach: reach)
             drawConsequence(&ctx, symbols: symbols, size: size, t: t, beat: beat,
                             ripple: ripple, veilFade: veilFade)
             drawSanctuary(&ctx, symbols: symbols, size: size, t: t, beat: beat,
-                          burst: burst)
+                          seal: seal)
         } symbols: {
-            StoryScrapCard(icon: "dt_note_sticky", mix: themeMix, theme: theme)
-                .tag(StageSymbol.note)
-            StoryScrapCard(icon: "dt_message", mix: themeMix, theme: theme)
-                .tag(StageSymbol.chat)
-            StoryScrapCard(icon: "dt_globe", wide: true, mix: themeMix, theme: theme)
-                .tag(StageSymbol.browser)
-            StoryScrapCard(icon: "dt_key", mix: themeMix, theme: theme)
-                .tag(StageSymbol.key)
+            // Every scrap kind is resolved TWICE — its committed-dark look and
+            // its themed look — and the stage crossfades the two RASTERS by
+            // opacity at stamp time. Parameterising one symbol by the live mix
+            // (the previous shape) re-rasterised five card views on every
+            // scroll event across the whole resolve window: the exact stretch
+            // the finger is scrubbing hardest. These are static for the whole
+            // story; only a theme change re-resolves them.
+            ForEach(StoryField.ScrapKind.allCases, id: \.rawValue) { kind in
+                StoryScrapCard(icon: Self.icon(for: kind), wide: kind == .browser,
+                               mix: 0, theme: theme)
+                    .tag(StageSymbol.scrap(kind, themed: false))
+                StoryScrapCard(icon: Self.icon(for: kind), wide: kind == .browser,
+                               mix: 1, theme: theme)
+                    .tag(StageSymbol.scrap(kind, themed: true))
+            }
+            // Ghost copies exist only in the dark world — one fixed variant.
             StoryScrapCard(icon: "dt_message", tint: StoryPalette.warning,
-                           mix: themeMix, theme: theme)
+                           mix: 0, theme: theme)
                 .tag(StageSymbol.chatWarning)
             Circle().fill(StoryPalette.textPrimary).frame(width: 10, height: 10)
                 .tag(StageSymbol.dot)
@@ -146,7 +177,10 @@ struct StoryStageView: View {
     private func drawSwarm(_ ctx: inout GraphicsContext,
                            symbols: [StageSymbol: GraphicsContext.ResolvedSymbol],
                            size: CGSize, t: TimeInterval, beat: Double,
-                           burst: Double, ringScale: CGSize, reach: CGFloat) {
+                           burst: Double, themeMix: Double,
+                           ringScale: CGSize, reach: CGFloat) {
+        // The glint lap only exists once the cluster is resting.
+        let rest = StoryField.smoothstep(beat, 3.40, 3.90) * (1 - burst)
         for index in 0..<StoryField.scrapCount {
             // The surplus is fully absorbed by beat 2.94 at the latest (see the
             // dissolve window in `StoryField.sample`, pinned by
@@ -162,19 +196,41 @@ struct StoryStageView: View {
 
             if sample.bubbleMix < 0.99 {
                 var card = sample
-                card.opacity = sample.opacity * (1 - sample.bubbleMix)
+                let cardOpacity = sample.opacity * (1 - sample.bubbleMix)
                 let kind = StoryField.kind(index)
                 // The browser card is drawn 52pt wide; stamping every kind at
                 // 44 squashed it to 44x28.8 instead — the same width as its
                 // siblings and shorter, which is the opposite of a pill.
-                stamp(&ctx, symbols[StageSymbol(scrap: kind)], at: card, in: size,
-                      baseSize: kind == .browser ? 52 : 44)
+                let base: CGFloat = kind == .browser ? 52 : 44
+                // Raster crossfade of the two static variants — the same
+                // complementary-opacity blend the card view used to do
+                // internally, without re-rasterising anything mid-scroll.
+                if themeMix < 0.999 {
+                    card.opacity = cardOpacity * (1 - themeMix)
+                    stamp(&ctx, symbols[.scrap(kind, themed: false)], at: card,
+                          in: size, baseSize: base)
+                }
+                if themeMix > 0.001 {
+                    card.opacity = cardOpacity * themeMix
+                    stamp(&ctx, symbols[.scrap(kind, themed: true)], at: card,
+                          in: size, baseSize: base)
+                }
             }
             if sample.bubbleMix > 0.01 {
                 var orb = sample
                 orb.opacity = sample.opacity * sample.bubbleMix
                 orb.scale = sample.bubbleScale
                 orb.rotation = 0
+                // One soft highlight travelling the orbits — a slow lap of
+                // light so the resting vault reads alive, never parked. The
+                // pow window keeps it to one bright region ~25° wide; the
+                // counter-rotating rings make its path feel organic.
+                if rest > 0.01, index < StoryField.ringCount {
+                    let lap = StoryOrbitLattice.angle(slot: index, t: t) + t * 0.9
+                    let glint = pow(max(0, cos(lap)), 8)
+                    orb.opacity = min(1, orb.opacity * (1 + 0.30 * glint * rest))
+                    orb.scale *= 1 + 0.05 * glint * rest
+                }
                 stamp(&ctx, symbols[StageSymbol.lobe(index)], at: orb, in: size,
                       baseSize: StoryOrbitLattice.bubbleBase)
             }
@@ -196,11 +252,27 @@ struct StoryStageView: View {
         }
     }
 
-    /// Seal exit: 0…1 over 0.8s after the hold completes, easing the cluster
-    /// outward while the route crossfade lands on Home behind it.
-    private func burstProgress(t: TimeInterval) -> Double {
-        guard let seal = model.sealTime else { return 0 }
-        return StoryField.easeOut(min(max((t - seal) / 0.8, 0), 1))
+    /// Seal exit over 0.8s, shaped in three phases instead of one ease-out:
+    /// a sharp INHALE (the cluster tightens for the first ~0.12s — the breath
+    /// before the release), the FLING outward across the rest of the window,
+    /// and a FLASH — one bright pulse at the mark decaying over ~0.15s, landing
+    /// with the seal's haptic tap as a single audiovisual click. Easing
+    /// straight out (the previous shape) read as the cluster leaking away;
+    /// anticipation is what makes the release feel like a latch.
+    private func sealPhases(t: TimeInterval) -> SealPhases {
+        guard let seal = model.sealTime else { return SealPhases(inhale: 0, fling: 0, flash: 0) }
+        let raw = min(max((t - seal) / 0.8, 0), 1)
+        let inhale = StoryField.smoothstep(raw, 0, 0.15)
+            * (1 - StoryField.smoothstep(raw, 0.15, 0.42))
+        let fling = StoryField.easeOut(StoryField.smoothstep(raw, 0.15, 1))
+        let flash = raw > 0 ? 1 - StoryField.smoothstep(raw, 0.04, 0.22) : 0
+        return SealPhases(inhale: inhale, fling: fling, flash: flash)
+    }
+
+    struct SealPhases {
+        var inhale: Double
+        var fling: Double
+        var flash: Double
     }
 
     // MARK: Sanctuary (the mark and its sigils)
@@ -209,7 +281,9 @@ struct StoryStageView: View {
     /// concentric sigil arcs draw themselves around the orbits.
     private func drawSanctuary(_ ctx: inout GraphicsContext,
                                symbols: [StageSymbol: GraphicsContext.ResolvedSymbol],
-                               size: CGSize, t: TimeInterval, beat: Double, burst: Double) {
+                               size: CGSize, t: TimeInterval, beat: Double,
+                               seal: SealPhases) {
+        let burst = seal.fling
         // Assembled by the sanctuary page (index 4), not on the way out of it.
         let appear = StoryField.smoothstep(beat, 3.50, 3.95) * (1 - burst)
         guard appear > 0.01 else { return }
@@ -220,8 +294,9 @@ struct StoryStageView: View {
         let flare = 1 + burst * 1.6
         // The mark is sized FROM the cluster and contracts with it, so the
         // inner orbit always has somewhere to be (a constant 56pt sat on top
-        // of those bubbles on a small phone).
-        let draw = StoryOrbitLattice.tighten(beat)
+        // of those bubbles on a small phone). The inhale squeeze rides along —
+        // the mark takes the same breath as its orbits.
+        let draw = StoryOrbitLattice.tighten(beat) * (1 - 0.05 * seal.inhale)
         let markSide = StoryOrbitLattice.markDiameter(reach: StoryOrbitLattice.reach(size)) * draw
         let mark = StoryField.Sample(position: StoryField.origin,
                                      opacity: appear, scale: breathe)
@@ -233,12 +308,23 @@ struct StoryStageView: View {
         StoryStageLight.bloom(&ctx, center: center,
                               radius: markSide * 1.3 * breathe * flare,
                               color: Color(rgb: theme.accentFill), opacity: 0.5 * appear)
+        // The seal's click made visible: one bright accent pulse over the mark
+        // decaying in ~0.15s, timed with the haptic tap. White washed out on
+        // light themes; the accent carries on both canvases.
+        if seal.flash > 0.01 {
+            StoryStageLight.bloom(&ctx, center: center,
+                                  radius: markSide * (0.9 + 0.5 * seal.flash),
+                                  color: Color(rgb: theme.accentFill),
+                                  opacity: 0.55 * seal.flash)
+        }
         stamp(&ctx, symbols[.mark], at: mark, in: size, baseSize: markSide)
 
         // Sigil arcs: accent-tinted, trim-drawn, counter-rotating slowly. Drawn
         // in as the sanctuary arrives, complete on its resting frame. They sit
         // OUTSIDE the outermost bubble orbit and tighten with it, so the
         // cluster keeps its silhouette while the commitment beat draws it in.
+        // The seal CLOSES them: both arcs sweep to full circles as the cluster
+        // flings — the lock turning shut is the exit's second voice.
         let trim = StoryField.smoothstep(beat, 3.60, 4.0)
         guard trim > 0.01 else { return }
         let accent = Color(rgb: theme.accentFill)
@@ -247,14 +333,15 @@ struct StoryStageView: View {
             let radius = reach * factor * (1 + burst * 0.6)
             let direction: Double = index == 0 ? 1 : -1
             let start = Angle(radians: t * 0.10 * direction + Double(index) * 2.1)
+            let sweep = trim * 4.4 + burst * (2 * .pi - 4.4)
             var path = Path()
             path.addArc(center: center, radius: radius,
                         startAngle: start,
-                        endAngle: start + Angle(radians: trim * 4.4),
+                        endAngle: start + Angle(radians: sweep),
                         clockwise: false)
             ctx.stroke(path,
-                       with: .color(accent.opacity(0.5 * appear * trim)),
-                       style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                       with: .color(accent.opacity((0.5 + 0.35 * seal.inhale) * appear * trim)),
+                       style: StrokeStyle(lineWidth: 2 + burst * 0.8, lineCap: .round))
         }
     }
 
@@ -308,7 +395,7 @@ struct StoryStageView: View {
         StoryStageLight.bloom(&ctx, center: center, radius: 72,
                               color: StoryPalette.warning.opacity(0.5),
                               opacity: appear * (0.7 + 0.3 * sin(t * 2.2)))
-        stamp(&ctx, symbols[.chat], at: chip, in: size, baseSize: 48)
+        stamp(&ctx, symbols[.scrap(.chat, themed: false)], at: chip, in: size, baseSize: 48)
 
         guard ripple > 0.01 else { return }
         let reach = 0.34 * min(size.width, size.height)
@@ -344,7 +431,11 @@ struct StoryStageView: View {
     // MARK: Symbols
 
     enum StageSymbol: Hashable, CaseIterable {
-        case note, chat, browser, key, chatWarning, dot, mark
+        /// Each scrap kind exists as a committed-dark raster AND a themed one;
+        /// the stage crossfades the two by opacity so neither ever re-resolves
+        /// while the theme is mid-flight under the finger.
+        case scrap(StoryField.ScrapKind, themed: Bool)
+        case chatWarning, dot, mark
         /// One per lobe of the brand mark's six-circle gradient set.
         case bubble(Int)
 
@@ -354,7 +445,10 @@ struct StoryStageView: View {
         /// its symbols, and a computed property rebuilt the array — a map, a
         /// concat and an allocation — on every frame.
         static let allCases: [StageSymbol] =
-            [.note, .chat, .browser, .key, .chatWarning, .dot, .mark]
+            StoryField.ScrapKind.allCases.flatMap {
+                [StageSymbol.scrap($0, themed: false), .scrap($0, themed: true)]
+            }
+            + [.chatWarning, .dot, .mark]
             + (0..<bubbleCount).map { StageSymbol.bubble($0) }
 
         /// Any particle index maps onto one of the six lobes, so callers can
@@ -362,14 +456,16 @@ struct StoryStageView: View {
         static func lobe(_ index: Int) -> StageSymbol {
             .bubble(((index % bubbleCount) + bubbleCount) % bubbleCount)
         }
+    }
 
-        init(scrap: StoryField.ScrapKind) {
-            switch scrap {
-            case .note: self = .note
-            case .chat: self = .chat
-            case .browser: self = .browser
-            case .key: self = .key
-            }
+    /// Polaris asset for a scrap kind — lives here beside the symbol table
+    /// that resolves it.
+    private static func icon(for kind: StoryField.ScrapKind) -> String {
+        switch kind {
+        case .note: "dt_note_sticky"
+        case .chat: "dt_message"
+        case .browser: "dt_globe"
+        case .key: "dt_key"
         }
     }
 

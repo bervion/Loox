@@ -9,12 +9,29 @@ import Observation
 @Observable
 final class StoryScrollProgressModel {
     /// 0…1 across the whole journey (0 = top of beat 1, 1 = bottom of beat 6).
-    private(set) var journeyProgress: Double = 0
+    /// `@ObservationIgnored` ON PURPOSE: this is written on every scroll event,
+    /// and the one live consumer — the stage's Canvas — POLLS it from inside a
+    /// 60fps TimelineView tick. Tracking it would re-invalidate SwiftUI once
+    /// per 120Hz scroll event ON TOP of those ticks: the whole stage body, its
+    /// TimelineView and all of its symbol views re-evaluated per finger move,
+    /// which is exactly the scroll stutter this split removes.
+    @ObservationIgnored private(set) var journeyProgress: Double = 0
 
     /// Continuous beat coordinate 0…5: whole numbers are composed pages
     /// (0 = hook … 5 = commitment), fractions are the transitions between
     /// them. All stage choreography is a pure function of this scalar.
+    /// NOT observed (see `journeyProgress`) — views that need invalidation on
+    /// beat changes read `coarseBeat` instead.
     var beatPosition: Double { journeyProgress * Double(StoryBeat.allCases.count - 1) }
+
+    /// The OBSERVED beat, quantized to 0.02 (≈250 steps across the journey —
+    /// sub-6pt of scroll per step). For consumers that genuinely need SwiftUI
+    /// invalidation: the Skip capsule's color blend, and the stage's scrub
+    /// path while the TimelineView is paused (Reduce Motion / background),
+    /// where the Canvas has no tick of its own to poll on. Coarse steps are
+    /// imperceptible on both, and cut per-tick invalidations by an order of
+    /// magnitude while the finger is down.
+    private(set) var coarseBeat: Double = 0
 
     /// The consequence beat's one optional interaction: the moment the user
     /// "sent" the shared password (nil until they do). One-shot — like the real
@@ -56,6 +73,14 @@ final class StoryScrollProgressModel {
 
         guard progress != journeyProgress else { return }
         journeyProgress = progress
+
+        // Publish the coarse mirror only when it crosses a quantum (or lands
+        // exactly on an end stop, so 0 and 5 are always faithfully published).
+        let beat = beatPosition
+        if abs(beat - coarseBeat) >= Self.coarseQuantum || beat == 0
+            || beat == Double(StoryBeat.allCases.count - 1) {
+            coarseBeat = beat
+        }
 
         guard !resized else {
             // Re-seat the ratchet silently, so the next real drag ticks from
@@ -122,6 +147,9 @@ final class StoryScrollProgressModel {
     /// texture under the thumb; far fewer feels like a rattle, and far more is
     /// wasted under the 32 Hz ceiling the generator throttles at anyway.
     nonisolated static let gatherDetents = 14
+
+    /// Step between `coarseBeat` publishes, in beat units.
+    nonisolated static let coarseQuantum = 0.02
 
     /// Which detent the finger last crossed, or nil when outside the turn.
     /// `@ObservationIgnored` on both: they are written on nearly every scroll
