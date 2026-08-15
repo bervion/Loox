@@ -195,7 +195,10 @@ private struct StorySkipButton: View {
     @Environment(\.appTheme) private var theme
 
     private var mix: Double {
-        StoryField.smoothstep(model.beatPosition, StoryStageView.themeResolveStart,
+        // `coarseBeat`, not `beatPosition`: the observed, quantized mirror.
+        // The capsule then re-evaluates ~25 times across the resolve window
+        // instead of once per scroll event for the whole journey.
+        StoryField.smoothstep(model.coarseBeat, StoryStageView.themeResolveStart,
                               StoryStageView.themeResolveEnd)
     }
 

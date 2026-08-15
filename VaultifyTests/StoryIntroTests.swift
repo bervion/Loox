@@ -170,6 +170,26 @@ final class StoryIntroTests: XCTestCase {
     }
 
     @MainActor
+    func testCoarseBeatPublishesPerQuantumAndAtEndStops() {
+        let model = StoryScrollProgressModel()
+        let quantum = StoryScrollProgressModel.coarseQuantum
+        // A sub-quantum wiggle updates the live beat but not the coarse mirror
+        // (the whole point: scroll churn must not invalidate observers).
+        model.update(StoryScrollMetrics(offset: 2, span: 1000))
+        XCTAssertGreaterThan(model.beatPosition, 0)
+        XCTAssertLessThan(model.beatPosition, quantum)
+        XCTAssertEqual(model.coarseBeat, 0, "sub-quantum moves must not publish")
+        // Crossing the quantum publishes, and tracks within one step after.
+        model.update(StoryScrollMetrics(offset: 200, span: 1000))
+        XCTAssertEqual(model.coarseBeat, model.beatPosition, accuracy: quantum)
+        // The end stops always land exactly, whatever the quantum phase.
+        model.update(StoryScrollMetrics(offset: 1000, span: 1000))
+        XCTAssertEqual(model.coarseBeat, 5)
+        model.update(StoryScrollMetrics(offset: 0, span: 1000))
+        XCTAssertEqual(model.coarseBeat, 0)
+    }
+
+    @MainActor
     func testSendTapAndSealAreOneShot() {
         let model = StoryScrollProgressModel()
         XCTAssertNil(model.sendTapTime)
