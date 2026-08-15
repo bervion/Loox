@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.56.1] - 2026-08-15
+
+### Fixed
+- scroll-tick invalidation jank, seal payoff, walkthrough that can fail (#206)
+
+
 ## [1.56.0] - 2026-08-15
 
 ### Added
