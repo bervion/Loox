@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.56.0] - 2026-08-15
+
+### Added
+- real brand mark, app-matched item avatars, web design pass (#205)
+
+
 ## [1.55.1] - 2026-08-12
 
 ### Fixed

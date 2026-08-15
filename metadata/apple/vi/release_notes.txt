@@ -1,1 +1,1 @@
-Phiên bản 1.55.1: Cải thiện hiệu suất và sửa lỗi.
+Phiên bản 1.56.0: Cải thiện hiệu suất và sửa lỗi.
