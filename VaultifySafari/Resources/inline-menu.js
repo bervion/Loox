@@ -57,11 +57,20 @@
     "  to { opacity: 1; transform: none; } }",
     "@media (prefers-reduced-motion: reduce) { .panel { animation: none; } }",
     "button { appearance: none; border: none; background: transparent;",
-    "  display: block; width: 100%; text-align: left; cursor: pointer;",
-    "  border-radius: 10px; padding: 10px 12px; min-height: 44px;",
+    "  display: flex; align-items: center; gap: 10px; width: 100%;",
+    "  text-align: left; cursor: pointer;",
+    "  border-radius: 8px; padding: 8px 10px; min-height: 44px;",
     "  font-size: 15px; color: inherit; box-sizing: border-box; }",
+    "button:active { background: rgba(60, 60, 67, 0.10); }",
     "button:disabled { opacity: 0.5; }",
     "button:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }",
+    /* Category glyph tiles — the app's duotone-avatar look, tinted with
+       VaultColors.category values (identity #9C6ADE/#BD93F9, card
+       #1A8B5E/#34C789 light/dark). */
+    ".row-icon { flex: none; width: 28px; height: 28px; }",
+    ".row-icon.identity { color: #9C6ADE; }",
+    ".row-icon.card { color: #1A8B5E; }",
+    ".row-text { flex: 1; min-width: 0; }",
     ".row-title { display: block; font-weight: 500; overflow: hidden;",
     "  text-overflow: ellipsis; white-space: nowrap; }",
     ".row-subtitle { display: block; font-size: 13px; color: #4b4b50;",
@@ -78,6 +87,9 @@
     "  .row-subtitle, .status, .footer button.quiet { color: #c7c7cc; }",
     "  .footer { border-top-color: rgba(235, 235, 245, 0.18); }",
     "  .footer button, button:focus-visible { color: #4c8dff; outline-color: #4c8dff; }",
+    "  button:active { background: rgba(235, 235, 245, 0.16); }",
+    "  .row-icon.identity { color: #BD93F9; }",
+    "  .row-icon.card { color: #34C789; }",
     "}",
   ].join("\n");
 
@@ -268,20 +280,54 @@
     setStatus(reply && reply.error === "unlockCancelled" ? "" : t("popup_fill_failed"));
   }
 
-  function makeRow(title, subtitle, ariaLabel, action) {
+  // Category glyphs as code-built SVG (createElementNS — the no-innerHTML
+  // contract holds for icon markup too). Same 24x24 paths as the popup's
+  // makeIcon; the faint second shape gives the app's duotone read.
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const GLYPH_PATHS = {
+    identity: [
+      { d: "M12 12a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4Z", opacity: "1" },
+      { d: "M12 13.8c-4.1 0-7.4 2.3-7.4 5.2 0 .9.7 1.6 1.6 1.6h11.6c.9 0 1.6-.7 1.6-1.6 0-2.9-3.3-5.2-7.4-5.2Z", opacity: "0.45" },
+    ],
+    card: [
+      { d: "M2.8 8.2c0-1.7 1.3-3 3-3h12.4c1.7 0 3 1.3 3 3v.9H2.8v-.9Z", opacity: "1" },
+      { d: "M2.8 11h18.4v4.8c0 1.7-1.3 3-3 3H5.8c-1.7 0-3-1.3-3-3V11Zm2.6 4.1h5v1.4h-5v-1.4Z", opacity: "0.45" },
+    ],
+  };
+
+  function makeGlyph(category) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("class", `row-icon ${category}`);
+    svg.setAttribute("aria-hidden", "true");
+    for (const shape of GLYPH_PATHS[category] || []) {
+      const path = document.createElementNS(SVG_NS, "path");
+      path.setAttribute("d", shape.d);
+      path.setAttribute("fill", "currentColor");
+      path.setAttribute("fill-opacity", shape.opacity);
+      svg.appendChild(path);
+    }
+    return svg;
+  }
+
+  function makeRow(title, subtitle, ariaLabel, action, iconCategory) {
     const button = document.createElement("button");
     button.type = "button";
     button.setAttribute("aria-label", ariaLabel);
+    if (iconCategory) button.appendChild(makeGlyph(iconCategory));
+    const text = document.createElement("span");
+    text.className = "row-text";
     const titleEl = document.createElement("span");
     titleEl.className = "row-title";
     titleEl.textContent = title;
-    button.appendChild(titleEl);
+    text.appendChild(titleEl);
     if (subtitle) {
       const subtitleEl = document.createElement("span");
       subtitleEl.className = "row-subtitle";
       subtitleEl.textContent = subtitle;
-      button.appendChild(subtitleEl);
+      text.appendChild(subtitleEl);
     }
+    button.appendChild(text);
     button.addEventListener("click", action);
     return button;
   }
@@ -331,6 +377,7 @@
         subtitle,
         t("inline_fill_item_label", [title]),
         () => fillTapped(String(item.id), category),
+        category,
       ));
     }
 

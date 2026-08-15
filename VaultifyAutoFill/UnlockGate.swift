@@ -53,9 +53,13 @@ struct UnlockGate<Content: View>: View {
             Group {
                 if let vaultKey { content(vaultKey) }
                 else if biometricInProgress {
-                    // Brand mark while Face ID runs (auto-triggered), not a bare spinner.
-                    VStack(spacing: 20) {
-                        BrandLogoMark.hero
+                    // The living six-circle mark while Face ID runs (auto-triggered) —
+                    // the brand SYMBOL, not the wordmark: an extension sheet is a
+                    // brand-focal surface and the word "LOOX" alone read as
+                    // placeholder text there.
+                    VStack(spacing: 24) {
+                        LooxLogoBreatheView()
+                            .frame(width: 96, height: 96)
                         ProgressView().controlSize(.large)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -82,8 +86,17 @@ struct UnlockGate<Content: View>: View {
     /// VaultifyCore, so this uses system materials/styles.
     private var unlockForm: some View {
         VStack(spacing: 20) {
-            BrandLogoMark.hero
-                .padding(.top, 32)
+            // Symbol above, compact wordmark below — the app's lock-screen
+            // lockup, scaled for a sheet. One VoiceOver element saying the
+            // brand name; the wordmark image must not read out its asset name.
+            VStack(spacing: 12) {
+                LooxLogoBreatheView()
+                    .frame(width: 84, height: 84)
+                BrandLogoMark.compact
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "Loox"))
+            .padding(.top, 24)
 
             VStack(spacing: 12) {
                 SecureField("Master password", text: $masterPassword)

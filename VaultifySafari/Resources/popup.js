@@ -78,9 +78,83 @@ function handleListFailure(reply) {
 
 // --- Rendering (metadata only; copy + fill buttons per row) ---
 
-function makeRow(title, subtitle, buttons) {
+// Letter-avatar contract shared with the app (MonogramAvatar.swift): djb2 over
+// unicode scalars in 64-bit signed wrapping arithmetic — BigInt reproduces the
+// Swift overflow exactly, so an item keeps the SAME hue here as in its Home
+// row. Saturation/brightness (0.58/0.66 HSB) convert to hsl(h, 41%, 47%).
+const U64 = (1n << 64n) - 1n;
+const S63 = 1n << 63n;
+function monogramHue(title) {
+  let h = 5381n;
+  for (const ch of title) h = ((h << 5n) + h + BigInt(ch.codePointAt(0))) & U64;
+  if (h >= S63) h -= 1n << 64n;
+  if (h < 0n) h = -h;
+  return Number(h % 360n);
+}
+
+function monogramInitials(title) {
+  const words = title.split(" ").filter(Boolean);
+  if (!words.length) return null;
+  const first = [...words[0]][0];
+  const second = words.length >= 2 ? [...words[1]][0] : "";
+  return (first + second).toUpperCase();
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// Category glyphs (identity / card) as code-built SVG — createElementNS keeps
+// the no-innerHTML contract. Paths sit in a 24x24 unit space and tint via the
+// CSS category variables; the faint second shape gives the app's duotone read.
+const GLYPH_PATHS = {
+  identity: [
+    { d: "M12 12a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4Z", opacity: "1" },
+    { d: "M12 13.8c-4.1 0-7.4 2.3-7.4 5.2 0 .9.7 1.6 1.6 1.6h11.6c.9 0 1.6-.7 1.6-1.6 0-2.9-3.3-5.2-7.4-5.2Z", opacity: "0.45" },
+  ],
+  card: [
+    { d: "M2.8 8.2c0-1.7 1.3-3 3-3h12.4c1.7 0 3 1.3 3 3v.9H2.8v-.9Z", opacity: "1" },
+    { d: "M2.8 11h18.4v4.8c0 1.7-1.3 3-3 3H5.8c-1.7 0-3-1.3-3-3V11Zm2.6 4.1h5v1.4h-5v-1.4Z", opacity: "0.45" },
+  ],
+};
+
+// The row's leading avatar: logins wear the title monogram (or a neutral tile
+// for empty titles), identities and cards wear their category glyph — the same
+// visual language the app's vault rows speak.
+function makeIcon(kind, title) {
+  const icon = document.createElement("div");
+  icon.className = "item-icon";
+  if (kind === "login") {
+    const initials = monogramInitials(title);
+    const tile = document.createElement("span");
+    tile.className = "mono-tile";
+    if (initials) {
+      tile.style.background = `hsl(${monogramHue(title)}, 41%, 47%)`;
+      tile.textContent = initials;
+    } else {
+      tile.classList.add("empty");
+    }
+    icon.appendChild(tile);
+    return icon;
+  }
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", `glyph glyph-${kind}`);
+  svg.setAttribute("aria-hidden", "true");
+  for (const shape of GLYPH_PATHS[kind] || []) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", shape.d);
+    path.setAttribute("fill", "currentColor");
+    path.setAttribute("fill-opacity", shape.opacity);
+    svg.appendChild(path);
+  }
+  icon.appendChild(svg);
+  return icon;
+}
+
+function makeRow(title, subtitle, buttons, iconKind) {
   const row = document.createElement("div");
   row.className = "item-row";
+
+  if (iconKind) row.appendChild(makeIcon(iconKind, title));
 
   const text = document.createElement("div");
   text.className = "item-text";
@@ -272,6 +346,7 @@ function render(data, fillSummary) {
         ? [copyButton(t("popup_copy_username_label"),
                       () => copyToClipboard(String(login.username)))]
         : [],
+      "login",
     ));
     container.appendChild(makeSection("popup_section_logins", rows));
   }
@@ -286,6 +361,7 @@ function render(data, fillSummary) {
         copyButton(t("popup_copy_email_label"),
                    () => copyItemField(String(identity.id), "email")),
       ],
+      "identity",
     ));
     container.appendChild(makeSection("popup_section_identities", rows));
   }
@@ -299,7 +375,7 @@ function render(data, fillSummary) {
       return makeRow(String(card.title || ""), subtitle, [
         fillButton("popup_fill_card_label", String(card.id), "card",
                    fillSummary.card > 0),
-      ]);
+      ], "card");
     });
     container.appendChild(makeSection("popup_section_cards", rows));
   }

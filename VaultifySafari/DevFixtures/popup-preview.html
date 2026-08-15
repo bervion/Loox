@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!-- Visual preview harness for the popup: stubs the `browser` API with canned
+     metadata (no vault, no native round trip) and loads the REAL popup
+     css/js/markup so design passes can be screenshotted in any browser.
+     Query ?lang=vi switches to the Vietnamese strings from _locales/vi.
+     Never shipped: DevFixtures is not part of the web-extension bundle. -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../Resources/popup.css">
+  <style>body { max-width: 380px; margin: 0 auto; }</style>
+  <script>
+    const LANG = new URLSearchParams(location.search).get("lang") === "vi" ? "vi" : "en";
+    const MESSAGES = {
+      en: {
+        popup_title: "Loox", popup_section_logins: "Logins",
+        popup_section_identities: "Identities", popup_section_cards: "Cards",
+        popup_copy_button: "Copy", popup_fill_button: "Fill",
+        popup_card_ending: "Ends in $1", popup_hide_site_button: "Hide on this site",
+        popup_generate_button: "Use generated password",
+        popup_copy_username_label: "Copy username", popup_fill_identity_label: "Fill identity",
+        popup_copy_email_label: "Copy email", popup_fill_card_label: "Fill card",
+      },
+      vi: {
+        popup_title: "Loox", popup_section_logins: "Đăng nhập",
+        popup_section_identities: "Danh tính", popup_section_cards: "Thẻ",
+        popup_copy_button: "Sao chép", popup_fill_button: "Điền",
+        popup_card_ending: "Đuôi $1", popup_hide_site_button: "Ẩn trên trang này",
+        popup_generate_button: "Dùng mật khẩu mạnh được tạo tự động",
+        popup_copy_username_label: "Sao chép tên đăng nhập", popup_fill_identity_label: "Điền danh tính",
+        popup_copy_email_label: "Sao chép email", popup_fill_card_label: "Điền thẻ",
+      },
+    };
+    const REPLIES = {
+      activeTabOrigin: { ok: true, data: { origin: "https://github.com" } },
+      siteSettings: { ok: true, data: { hidden: false } },
+      classifyPage: { ok: true, data: { identity: 2, card: 1, pageType: "none" } },
+      listItems: { ok: true, data: {
+        logins: [
+          { id: "1", title: "GitHub", username: "octocat" },
+          { id: "2", title: "Google Work", username: "an@bervion.dev" },
+          { id: "3", title: "Máy chủ nhà", username: "" },
+        ],
+        identities: [{ id: "i1", title: "Kiyo Nguyen" }],
+        cards: [{ id: "c1", title: "Vietcombank Visa", brand: "Visa", last4: "4242" }],
+      } },
+    };
+    window.browser = {
+      i18n: { getMessage: (key, subs) => {
+        let msg = MESSAGES[LANG][key] || key;
+        (subs || []).forEach((s, i) => { msg = msg.replace(`$${i + 1}`, s); });
+        return msg;
+      } },
+      runtime: { sendMessage: (m) => Promise.resolve(REPLIES[m.cmd] || { ok: false, error: "stub" }) },
+    };
+  </script>
+</head>
+<body>
+  <main class="popup">
+    <header class="popup-header">
+      <svg class="brand-mark" viewBox="0 0 357 337" width="28" height="26" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg1" x1="0.25" y1="0.933" x2="0.75" y2="0.067">
+            <stop offset="0" stop-color="#E6F3FF"/><stop offset="1" stop-color="#00B2FF"/>
+          </linearGradient>
+          <linearGradient id="lg2" x1="0" y1="0.5" x2="1" y2="0.5">
+            <stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#00B2FF"/>
+          </linearGradient>
+          <linearGradient id="lg3" x1="0.75" y1="0.933" x2="0.25" y2="0.067">
+            <stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#2979FF"/>
+          </linearGradient>
+          <linearGradient id="lg4" x1="0.25" y1="0.067" x2="0.75" y2="0.933">
+            <stop offset="0" stop-color="#00B2FF"/><stop offset="1" stop-color="#2979FF"/>
+          </linearGradient>
+          <linearGradient id="lg5" x1="0.75" y1="0.067" x2="0.25" y2="0.933">
+            <stop offset="0" stop-color="#2979FF"/><stop offset="1" stop-color="#0D47FF"/>
+          </linearGradient>
+          <linearGradient id="lg6" x1="1" y1="0.5" x2="0" y2="0.5">
+            <stop offset="0" stop-color="#00B2FF"/><stop offset="1" stop-color="#0D47FF"/>
+          </linearGradient>
+          <radialGradient id="glow">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.4"/>
+            <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="139.5" cy="235.6" r="100.5" fill="url(#lg1)"/>
+        <circle cx="100.5" cy="168.05" r="100.5" fill="url(#lg2)" opacity="0.85"/>
+        <circle cx="217.5" cy="235.6" r="100.5" fill="url(#lg3)" opacity="0.85"/>
+        <circle cx="139.5" cy="100.5" r="100.5" fill="url(#lg4)" opacity="0.85"/>
+        <circle cx="217.5" cy="100.5" r="100.5" fill="url(#lg5)" opacity="0.85"/>
+        <circle cx="256.5" cy="168.05" r="100.5" fill="url(#lg6)" opacity="0.85"/>
+        <circle cx="195.5" cy="186.05" r="118.5" fill="url(#glow)"/>
+        <path fill="#ffffff" d="M 178.5 60.55
+          C 178.5 132.22 214.33 168.05 286 168.05
+          C 214.33 168.05 178.5 203.88 178.5 275.55
+          C 178.5 203.88 142.67 168.05 71 168.05
+          C 142.67 168.05 178.5 132.22 178.5 60.55 Z"/>
+      </svg>
+      <div class="popup-heading">
+        <h1 data-i18n="popup_title"></h1>
+        <p class="site" id="site-host" hidden></p>
+      </div>
+    </header>
+    <div id="signup-assist" hidden>
+      <button id="generate-button" type="button" data-i18n="popup_generate_button"></button>
+    </div>
+    <section id="state-locked" class="state" hidden>
+      <div class="status"><span class="status-dot locked"></span><span data-i18n="popup_status_locked"></span></div>
+      <p class="hint" data-i18n="popup_locked_hint"></p>
+      <button id="unlock-button" data-i18n="popup_unlock_button" type="button"></button>
+    </section>
+    <section id="state-unlocking" class="state" hidden>
+      <p class="hint centered" data-i18n="popup_unlocking"></p>
+    </section>
+    <section id="state-list" class="state" hidden><div id="sections"></div></section>
+    <section id="state-empty" class="state" hidden>
+      <p class="hint centered" data-i18n="popup_no_matches"></p>
+    </section>
+    <section id="state-unsupported" class="state" hidden>
+      <p class="hint centered" data-i18n="popup_unsupported_page"></p>
+    </section>
+    <section id="state-error" class="state" hidden>
+      <p class="hint centered" id="error-message"></p>
+      <button id="retry-button" data-i18n="popup_retry_button" type="button"></button>
+    </section>
+    <p class="feedback" id="feedback" aria-live="polite"></p>
+    <footer id="site-settings" hidden>
+      <p class="hint" id="site-hidden-hint" data-i18n="popup_site_hidden_hint" hidden></p>
+      <button id="site-toggle-button" type="button" class="site-toggle"></button>
+    </footer>
+  </main>
+  <script src="../Resources/popup.js"></script>
+</body>
+</html>

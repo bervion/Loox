@@ -8,7 +8,49 @@
 <body>
   <main class="popup">
     <header class="popup-header">
-      <img src="images/icon-48.png" alt="" class="popup-logo" width="24" height="24">
+      <!-- The Loox six-circle symbol, traced from LooxAnimationGeometry.swift
+           (SVG unit space 357x337; circle centers, per-circle linear gradients,
+           radial glow, four-point sparkle). Update BOTH if the brand mark ever
+           changes. Breathe animation lives in popup.css and collapses under
+           prefers-reduced-motion. -->
+      <svg class="brand-mark" viewBox="0 0 357 337" width="28" height="26" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg1" x1="0.25" y1="0.933" x2="0.75" y2="0.067">
+            <stop offset="0" stop-color="#E6F3FF"/><stop offset="1" stop-color="#00B2FF"/>
+          </linearGradient>
+          <linearGradient id="lg2" x1="0" y1="0.5" x2="1" y2="0.5">
+            <stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#00B2FF"/>
+          </linearGradient>
+          <linearGradient id="lg3" x1="0.75" y1="0.933" x2="0.25" y2="0.067">
+            <stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#2979FF"/>
+          </linearGradient>
+          <linearGradient id="lg4" x1="0.25" y1="0.067" x2="0.75" y2="0.933">
+            <stop offset="0" stop-color="#00B2FF"/><stop offset="1" stop-color="#2979FF"/>
+          </linearGradient>
+          <linearGradient id="lg5" x1="0.75" y1="0.067" x2="0.25" y2="0.933">
+            <stop offset="0" stop-color="#2979FF"/><stop offset="1" stop-color="#0D47FF"/>
+          </linearGradient>
+          <linearGradient id="lg6" x1="1" y1="0.5" x2="0" y2="0.5">
+            <stop offset="0" stop-color="#00B2FF"/><stop offset="1" stop-color="#0D47FF"/>
+          </linearGradient>
+          <radialGradient id="glow">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.4"/>
+            <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="139.5" cy="235.6" r="100.5" fill="url(#lg1)"/>
+        <circle cx="100.5" cy="168.05" r="100.5" fill="url(#lg2)" opacity="0.85"/>
+        <circle cx="217.5" cy="235.6" r="100.5" fill="url(#lg3)" opacity="0.85"/>
+        <circle cx="139.5" cy="100.5" r="100.5" fill="url(#lg4)" opacity="0.85"/>
+        <circle cx="217.5" cy="100.5" r="100.5" fill="url(#lg5)" opacity="0.85"/>
+        <circle cx="256.5" cy="168.05" r="100.5" fill="url(#lg6)" opacity="0.85"/>
+        <circle cx="195.5" cy="186.05" r="118.5" fill="url(#glow)"/>
+        <path fill="#ffffff" d="M 178.5 60.55
+          C 178.5 132.22 214.33 168.05 286 168.05
+          C 214.33 168.05 178.5 203.88 178.5 275.55
+          C 178.5 203.88 142.67 168.05 71 168.05
+          C 142.67 168.05 178.5 132.22 178.5 60.55 Z"/>
+      </svg>
       <div class="popup-heading">
         <h1 data-i18n="popup_title"></h1>
         <p class="site" id="site-host" hidden></p>

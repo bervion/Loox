@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!-- Visual preview harness for the inline suggestion menu: stubs the page
+     collaborators (LooxPageScan / LooxSignupDetector / LooxFillEngine) and the
+     `browser` API, then loads the REAL inline-menu.js. Focusing the field with
+     a genuine user gesture (isTrusted) summons the menu for screenshots.
+     Never shipped: DevFixtures is not part of the web-extension bundle. -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0;
+           padding: 32px 20px; background: #fafafa; color: #111; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1a1a1c; color: #eee; }
+    }
+    label { display: block; font-size: 13px; margin-bottom: 6px; }
+    input { width: 280px; padding: 10px 12px; font-size: 15px;
+            border: 1px solid #bbb; border-radius: 8px; }
+  </style>
+  <script>
+    const field = () => document.getElementById("email");
+    window.LooxPageScan = {
+      classify: () => [{ element: field(), tier: 1, category: "identity", key: "email" }],
+    };
+    window.LooxSignupDetector = { scan: () => ({ pageType: "none", form: null }) };
+    window.LooxFillEngine = { isVisible: () => true };
+    window.browser = {
+      i18n: { getMessage: (key, subs) => ({
+        inline_menu_label: "Loox suggestions",
+        inline_fill_item_label: `Fill ${subs && subs[0]} on this page`,
+        inline_open_app: "Open Loox",
+        inline_hide_site: "Hide on this site",
+        popup_filling: "Filling…",
+        popup_fill_done: "Filled",
+        popup_fill_none: "Nothing to fill",
+        popup_fill_failed: "Couldn't fill",
+      }[key] || key) },
+      runtime: { sendMessage: (m) => Promise.resolve(
+        m.cmd === "inlineItems"
+          ? { ok: true, data: {
+              identities: [{ id: "i1", title: "Kiyo Nguyen" }, { id: "i2", title: "Work Profile" }],
+              cards: [{ id: "c1", title: "Vietcombank Visa", brand: "Visa", last4: "4242" }],
+            } }
+          : { ok: true, data: { filled: 3 } }
+      ) },
+    };
+  </script>
+</head>
+<body>
+  <h2>Checkout fixture</h2>
+  <label for="email">Email</label>
+  <input id="email" type="email" autocomplete="email">
+  <script src="../Resources/inline-menu.js"></script>
+</body>
+</html>
