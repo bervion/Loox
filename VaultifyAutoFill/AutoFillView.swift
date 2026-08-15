@@ -205,25 +205,14 @@ private struct CredentialListView: View {
     }
 
     private func row(_ row: CredentialRow) -> some View {
-        HStack {
+        HStack(spacing: 12) {
             Button { select(row) } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: row.title.isEmpty ? appString("Untitled") : row.title)
-                        .foregroundStyle(.primary)
-                    if let user = row.username, !user.isEmpty {
-                        HStack(spacing: 4) {
-                            Text(user).font(.caption).foregroundStyle(.secondary)
-                            if row.isShared {
-                                Text("Shared").font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    } else if row.isShared {
-                        Text("Shared").font(.caption).foregroundStyle(.secondary)
-                    }
-                    if row.isSealedLogin {
-                        Label("Extra Protection", systemImage: "lock.fill")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
+                HStack(spacing: 12) {
+                    // Same letter-avatar the app's vault list shows for this item
+                    // (identical initials + hue via MonogramAvatar), so picking a
+                    // login here feels like tapping the row you know from Home.
+                    CredentialAvatarView(title: row.title)
+                    rowText(row)
                 }
             }
             .buttonStyle(.plain)
@@ -255,6 +244,27 @@ private struct CredentialListView: View {
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel(Text("Request code"))
+            }
+        }
+    }
+
+    private func rowText(_ row: CredentialRow) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: row.title.isEmpty ? appString("Untitled") : row.title)
+                .foregroundStyle(.primary)
+            if let user = row.username, !user.isEmpty {
+                HStack(spacing: 4) {
+                    Text(user).font(.caption).foregroundStyle(.secondary)
+                    if row.isShared {
+                        Text("Shared").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            } else if row.isShared {
+                Text("Shared").font(.caption).foregroundStyle(.secondary)
+            }
+            if row.isSealedLogin {
+                Label("Extra Protection", systemImage: "lock.fill")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
     }

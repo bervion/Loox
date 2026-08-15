@@ -74,22 +74,14 @@ struct ItemThumbnail: View {
     }
 
     /// Up to two uppercase initials from the title's first two words.
+    /// Delegates to `MonogramAvatar` (VaultifyCore) — the one algorithm every
+    /// surface shares, so app rows and extension rows can never drift apart.
     static func initials(from title: String) -> String? {
-        let words = title.split(separator: " ")
-        guard let first = words.first?.first else { return nil }
-        if words.count >= 2, let second = words[1].first {
-            return String([first, second]).uppercased()
-        }
-        return String(first).uppercased()
+        MonogramAvatar.initials(from: title)
     }
 
-    /// Deterministic colour from the title (stable across launches — Swift's `hashValue`
-    /// is randomised per process, so use a small FNV-style hash instead).
+    /// Deterministic colour from the title — shared contract in `MonogramAvatar`.
     static func color(for title: String) -> Color {
-        var hash = 5381
-        for scalar in title.unicodeScalars { hash = ((hash << 5) &+ hash) &+ Int(scalar.value) }
-        let hue = Double(abs(hash) % 360) / 360
-        // Mid brightness keeps white initials legible across every hue.
-        return Color(hue: hue, saturation: 0.58, brightness: 0.66)
+        MonogramAvatar.color(for: title)
     }
 }

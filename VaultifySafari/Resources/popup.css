@@ -2,7 +2,12 @@
    tokens (`Design System/tokens/colors.css`) — this web layer cannot import
    the token files, so update here when the tokens change. Light values come
    from `:root`, dark values from `[data-theme="dark"]`, mapped onto
-   prefers-color-scheme. Hit targets stay at 44px minimum. */
+   prefers-color-scheme. Hit targets stay at 44px minimum.
+
+   Corner scale: CSS corners are circular arcs, not iOS continuous curves —
+   the same number reads visibly ROUNDER here. Radii therefore sit one step
+   under the native tokens (rows/cards 10, in-row controls 8, standalone
+   buttons 12) so the popup reads like the app instead of like a web bubble. */
 
 :root {
   color-scheme: light dark;
@@ -14,6 +19,9 @@
   --on-accent: #ffffff;                /* --on-accent */
   --locked: #b06f00;                   /* --warning */
   --separator: rgba(60, 60, 67, 0.18); /* --separator */
+  --pressed: rgba(60, 60, 67, 0.10);   /* --surface-pressed */
+  --cat-identity: #9C6ADE;             /* VaultColors.category(.identity) */
+  --cat-card: #1A8B5E;                 /* VaultColors.category(.card) */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,6 +34,9 @@
     --on-accent: #ffffff;                   /* --on-accent */
     --locked: #ffd60a;                      /* --warning */
     --separator: rgba(235, 235, 245, 0.18); /* --separator */
+    --pressed: rgba(235, 235, 245, 0.16);   /* --surface-pressed */
+    --cat-identity: #BD93F9;
+    --cat-card: #34C789;
   }
 }
 
@@ -35,6 +46,13 @@ body {
   color: var(--text);
   font: -apple-system-body;
   font-family: -apple-system, system-ui, sans-serif;
+}
+
+/* The `hidden` attribute maps to a UA-origin display:none, which any author
+   `display: flex` on the same element silently defeats — every "hidden" state
+   section was actually stacked on the page. Reassert it at author origin. */
+[hidden] {
+  display: none !important;
 }
 
 .popup {
@@ -52,7 +70,23 @@ body {
 .popup-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+/* The six-circle symbol breathes like the native mark (LooxLogoBreatheView's
+   ~4s cycle), and holds still when the user asks for less motion. */
+.brand-mark {
+  flex: none;
+  animation: brand-breathe 4s ease-in-out infinite alternate;
+}
+
+@keyframes brand-breathe {
+  from { transform: scale(1); }
+  to { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-mark { animation: none; }
 }
 
 .popup-heading h1 {
@@ -68,10 +102,6 @@ body {
   word-break: break-all;
 }
 
-.popup-logo {
-  border-radius: 6px;
-}
-
 .state {
   display: flex;
   flex-direction: column;
@@ -83,7 +113,7 @@ body {
   align-items: center;
   gap: 8px;
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 12px 14px;
   font-size: 15px;
   font-weight: 500;
@@ -124,6 +154,10 @@ button {
   cursor: pointer;
 }
 
+button:active {
+  filter: brightness(0.92);
+}
+
 button:disabled {
   opacity: 0.5;
 }
@@ -134,7 +168,7 @@ button:disabled {
 }
 
 .item-section h2 {
-  margin: 4px 0 6px;
+  margin: 4px 2px 6px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -151,11 +185,48 @@ button:disabled {
   align-items: center;
   gap: 10px;
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 10px 12px;
   margin-bottom: 6px;
   min-height: 44px;
 }
+
+/* Leading avatar — the app's vault-row language: a 36px tile. Logins wear
+   white initials on the title's stable hue (hash parity with the native
+   MonogramAvatar); identities/cards wear their category's tinted glyph with
+   no backing tile, the app's duotone-avatar look. */
+.item-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mono-tile {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px; /* 26% of the tile, ItemThumbnail's square */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff; /* generated avatar — exempt from the no-raw-white rule */
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mono-tile.empty {
+  background: var(--pressed);
+}
+
+.glyph {
+  width: 30px;
+  height: 30px;
+}
+
+.glyph-identity { color: var(--cat-identity); }
+.glyph-card { color: var(--cat-card); }
 
 .item-text {
   flex: 1;
@@ -164,7 +235,7 @@ button:disabled {
 
 .item-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -189,7 +260,12 @@ button:disabled {
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--separator);
-  border-radius: 10px;
+  border-radius: 8px;
+}
+
+.copy-button:active {
+  filter: none;
+  background: var(--pressed);
 }
 
 .fill-button {
@@ -200,7 +276,7 @@ button:disabled {
   font-weight: 600;
   background: var(--accent);
   color: var(--on-accent);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .feedback {
@@ -226,4 +302,9 @@ button:disabled {
   color: var(--accent);
   border: 1px solid var(--separator);
   font-weight: 600;
+}
+
+.site-toggle:active {
+  filter: none;
+  background: var(--pressed);
 }
