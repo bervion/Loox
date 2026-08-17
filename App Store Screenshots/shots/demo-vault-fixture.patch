@@ -1,0 +1,171 @@
+diff --git a/Vaultify/App/UITestConfiguration.swift b/Vaultify/App/UITestConfiguration.swift
+index 95c526c..3ab4a77 100644
+--- a/Vaultify/App/UITestConfiguration.swift
++++ b/Vaultify/App/UITestConfiguration.swift
+@@ -13,6 +13,8 @@ nonisolated struct UITestConfiguration: Equatable, Sendable {
+         /// lock: the test drives Settings "Lock Now" itself and then verifies
+         /// the slide-to-unlock requirement survives a kill and relaunch.
+         case vaultPanicRestart = "vault-panic-restart"
++        /// Curated demo vault used to shoot App Store screenshots.
++        case screenshots = "screenshots"
+     }
+ 
+     let fixture: Fixture?
+diff --git a/Vaultify/App/UITestFixtures.swift b/Vaultify/App/UITestFixtures.swift
+index aefa5de..727bfcb 100644
+--- a/Vaultify/App/UITestFixtures.swift
++++ b/Vaultify/App/UITestFixtures.swift
+@@ -15,6 +15,10 @@ enum UITestFixtures {
+         store: VaultStore,
+         repository: VaultRepository
+     ) throws {
++        if configuration.fixture == .screenshots {
++            try installScreenshotVault(store: store, repository: repository)
++            return
++        }
+         guard configuration.fixture == .vaultEditSaveRelock || configuration.fixture == .vaultPanicRestart else { return }
+         guard let key = repository.session.vaultKey else { throw AuthError.locked }
+ 
+@@ -73,5 +77,142 @@ enum UITestFixtures {
+             try repository.add(item)
+         }
+     }
++
++    // MARK: - Screenshot vault
++
++    /// A believable vault for App Store screenshots: two Spaces, verification
++    /// codes on the accounts that really have them, and a deliberate weak /
++    /// reused pair so Watchtower has something true to report. Every value is
++    /// synthetic and every domain is a reserved example domain.
++    private static func installScreenshotVault(
++        store: VaultStore,
++        repository: VaultRepository
++    ) throws {
++        guard let key = repository.session.vaultKey else { throw AuthError.locked }
++        repository.reload()
++        if repository.items.contains(where: { $0.id == "shot-mail" }) { return }
++
++        // Anchored to the shooting date so the list's month headers read as recent.
++        let now = Date.now
++        let day: TimeInterval = 86_400
++
++        let spaces: [(String, String, String, FolderColor)] = [
++            ("shot-space-personal", "Personal", "dt_user", .blue),
++            ("shot-space-work", "Work", "dt_briefcase", .purple),
++        ]
++        for (index, space) in spaces.enumerated() {
++            let folder = Folder(
++                id: space.0,
++                name: space.1,
++                iconAsset: space.2,
++                color: space.3,
++                sortIndex: index,
++                createdAt: now,
++                updatedAt: now,
++                personaId: repository.activePersona?.id
++            )
++            store.context.insert(
++                FolderRecord(
++                    id: folder.id,
++                    sealed: try repository.sealFolder(folder, key: key),
++                    iconAsset: folder.iconAsset,
++                    colorRaw: folder.color.rawValue,
++                    sortIndex: folder.sortIndex,
++                    createdAt: folder.createdAt,
++                    updatedAt: folder.updatedAt
++                )
++            )
++        }
++        try store.context.save()
++        repository.reload()
++
++        // (id, title, space, user, password, site, base32 TOTP secret, favourite, age in days, icon)
++        let logins: [(String, String, String, String, String, String, String?, Bool, Double, String)] = [
++            ("shot-mail", "Personal Mail", "shot-space-personal", "an.nguyen@example.com",
++             "7Rk-Wq2f-Tdb9-Xm4L", "mail.example.com", "JBSWY3DPEHPK3PXP", true, 12, "dt_envelope"),
++            ("shot-cloud", "Cloud Drive", "shot-space-personal", "an.nguyen@example.com",
++             "Zt6-Pl9v-Hs3k-Qw8N", "drive.example.com", "KRSXG5CTMVRXEZLU", true, 34, "dt_cloud"),
++            ("shot-bank", "Bank", "shot-space-personal", "an.nguyen",
++             "Fj2-Nx7c-Ryd4-Vb6M", "bank.example.com", nil, false, 58, "dt_bank"),
++            ("shot-shopping", "Shopping", "shot-space-personal", "an.nguyen@example.com",
++             "summer2019", "shop.example.com", nil, false, 620, "dt_cart"),
++            ("shot-streaming", "Streaming", "shot-space-personal", "an.nguyen@example.com",
++             "summer2019", "watch.example.net", nil, false, 480, "dt_film"),
++            ("shot-code", "Code Hosting", "shot-space-work", "annguyen",
++             "Cq4-Mz8t-Kwe2-Lp5R", "code.example.org", "MFRGGZDFMZTWQ2LK", true, 21, "dt_code"),
++            ("shot-design", "Design Tool", "shot-space-work", "an.nguyen@example.com",
++             "Dv9-Hb3s-Xqn6-Ytu1", "design.example.com", "GEZDGNBVGY3TQOJQGEZA", false, 40, "dt_palette"),
++            ("shot-chat", "Team Chat", "shot-space-work", "an.nguyen@example.com",
++             "Wm5-Ldx7-Pcv2-Bzr8", "chat.example.com", "NB2W45DFOIZDUMJA", false, 15, "dt_comments"),
++        ]
++
++        try AnalyticsEngine.shared.runSuppressed {
++            for (offset, login) in logins.enumerated() {
++                var fields: [DynamicField] = [
++                    DynamicField(id: "\(login.0)-user", label: "Username", kind: .username, value: login.3),
++                    DynamicField(id: "\(login.0)-pass", label: "Password", kind: .password, value: login.4),
++                    DynamicField(id: "\(login.0)-url", label: "Website", kind: .url, value: login.5),
++                ]
++                if let secret = login.6 {
++                    fields.append(
++                        DynamicField(id: "\(login.0)-totp", label: "One-time code", kind: .totp, value: secret)
++                    )
++                }
++                let created = now - login.8 * day
++                try repository.add(
++                    VaultItem(
++                        id: login.0,
++                        category: .login,
++                        title: login.1,
++                        folderId: login.2,
++                        fields: fields,
++                        favorite: login.7,
++                        iconAsset: login.9,
++                        lastUsedAt: now - Double(offset) * 3_600,
++                        useCount: 40 - offset * 3,
++                        rotateDays: login.0 == "shot-bank" ? 90 : 0,
++                        passwordChangedAt: created,
++                        createdAt: created,
++                        updatedAt: created
++                    )
++                )
++            }
++
++            try repository.add(
++                VaultItem(
++                    id: "shot-card",
++                    category: .card,
++                    title: "Everyday Card",
++                    folderId: "shot-space-personal",
++                    fields: [
++                        DynamicField(id: "shot-card-holder", label: "Cardholder", kind: .text, value: "AN NGUYEN"),
++                        DynamicField(id: "shot-card-number", label: "Number", kind: .number, value: "4111 1111 1111 1111"),
++                        DynamicField(id: "shot-card-exp", label: "Expires", kind: .text, value: "09/29"),
++                        DynamicField(id: "shot-card-cvv", label: "Security code", kind: .password, value: "123"),
++                    ],
++                    iconAsset: "dt_credit_card",
++                    createdAt: now - 90 * day,
++                    updatedAt: now - 90 * day
++                )
++            )
++
++            try repository.add(
++                VaultItem(
++                    id: "shot-note",
++                    category: .note,
++                    title: "Wi-Fi at home",
++                    folderId: "shot-space-personal",
++                    fields: [
++                        DynamicField(id: "shot-note-body", label: "Note", kind: .multiline,
++                                     value: "Network: Nguyen-5G\nGuest network resets every Sunday.")
++                    ],
++                    iconAsset: "dt_wifi",
++                    createdAt: now - 150 * day,
++                    updatedAt: now - 150 * day
++                )
++            )
++        }
++        repository.reload()
++    }
+ }
+ #endif
