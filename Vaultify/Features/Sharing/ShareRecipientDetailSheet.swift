@@ -51,30 +51,14 @@ struct ShareRecipientDetailSheet: View {
             }
         }
         .task { await loadGrant() }
-        .confirmationDialog("Stop sharing this item?", isPresented: $confirmRevoke,
-                            titleVisibility: .visible) {
-            Button("Stop sharing", role: .destructive) { Task { await revoke() } }
-        } message: {
-            // Honest about BOTH the scope and the limit: only this item goes
-            // away, and anything already handed over cannot be pulled back.
-            Text("They lose access to this item. Anything else you shared with them stays. Values already handed over stay on their device.")
-        }
         .alert("Something went wrong", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: errorMessage ?? "")
         }
-        .confirmationDialog("Hand over this passkey?", isPresented: Binding(
-            get: { pendingHandOver != nil }, set: { if !$0 { pendingHandOver = nil } }),
-            titleVisibility: .visible) {
-            Button("Hand over: can't be taken back", role: .destructive) {
-                if let pending = pendingHandOver { capabilities?[pending.id] = pending.capability }
-                pendingHandOver = nil
-            }
-        } message: {
-            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a key already handed over can't be pulled back.")
-        }
+        .animation(Motion.standard, value: confirmRevoke)
+        .animation(Motion.standard, value: pendingHandOver?.id)
     }
 
     // MARK: Sections
@@ -163,6 +147,18 @@ struct ShareRecipientDetailSheet: View {
                                                  credentialID: passkey.credentialID), proposed)
                                          })
                 }
+                // Hand-over confirmation (INV-08) — inline, because a dialog
+                // raised from inside a sheet never reaches its action.
+                if let pending = pendingHandOver {
+                    InlineConfirm(
+                        message: "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a key already handed over can't be pulled back.",
+                        confirmTitle: "Hand over: can't be taken back",
+                        onCancel: { pendingHandOver = nil },
+                        onConfirm: {
+                            capabilities?[pending.id] = pending.capability
+                            pendingHandOver = nil
+                        })
+                }
                 Button {
                     Task { await applyCapabilities() }
                 } label: {
@@ -199,6 +195,18 @@ struct ShareRecipientDetailSheet: View {
             .onlineActionAppearance(online: env.reachability.hasSatisfiedNetworkPath)
             .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
                                  message: "You need an internet connection to revoke access. The share stays active until then.")
+            // Honest about BOTH the scope and the limit: only this item goes
+            // away, and anything already handed over cannot be pulled back.
+            if confirmRevoke {
+                InlineConfirm(
+                    message: "They lose access to this item. Anything else you shared with them stays. Values already handed over stay on their device.",
+                    confirmTitle: "Stop sharing",
+                    onCancel: { confirmRevoke = false },
+                    onConfirm: {
+                        confirmRevoke = false
+                        Task { await revoke() }
+                    })
+            }
         }
         .listRowBackground(VaultColors.surface)
     }
