@@ -124,38 +124,10 @@ struct ShareAccessSheet: View {
             step = .checking
             Task { await enter() }
         }
-        .confirmationDialog("Revoke access?", isPresented: revokeDialogBinding,
-                            titleVisibility: .visible) {
-            Button("Revoke access", role: .destructive) {
-                if let target = revokeTarget {
-                    Task { await revoke(target) }
-                }
-            }
-        } message: {
-            // Forward-secrecy honesty (H5): future access ends now; already-
-            // delivered shared values cannot be clawed back.
-            Text("They can't request codes anymore. Values that were already shared stay on their device.")
-        }
         .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
                              message: "You need an internet connection to revoke access. The share stays active until then.")
-        // Hand-over confirmation (INV-08): the one honest moment to say a
-        // delivered secret is not revocable by us.
-        .confirmationDialog("Hand over this secret?", isPresented: handOverDialogBinding,
-                            titleVisibility: .visible) {
-            Button("Hand over: can't be taken back", role: .destructive) {
-                if let pending = pendingHandOver {
-                    capabilities[pending.id] = pending.capability
-                }
-                pendingHandOver = nil
-            }
-        } message: {
-            Text("They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a secret already handed over can't be pulled back. To truly revoke it, change it at the website.")
-        }
-    }
-
-    private var revokeDialogBinding: Binding<Bool> {
-        Binding(get: { revokeTarget != nil },
-                set: { if !$0 { revokeTarget = nil } })
+        .animation(Motion.standard, value: revokeTarget?.id)
+        .animation(Motion.standard, value: pendingHandOver?.id)
     }
 
     private func revoke(_ share: ItemShareRecord) async {
@@ -608,6 +580,18 @@ struct ShareAccessSheet: View {
                                                      credentialID: passkey.credentialID), proposed)
                                              })
                     }
+                    // Hand-over confirmation (INV-08): the one honest moment to say
+                    // a delivered secret is not revocable by us.
+                    if let pending = pendingHandOver {
+                        InlineConfirm(
+                            message: "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a secret already handed over can't be pulled back. To truly revoke it, change it at the website.",
+                            confirmTitle: "Hand over: can't be taken back",
+                            onCancel: { pendingHandOver = nil },
+                            onConfirm: {
+                                capabilities[pending.id] = pending.capability
+                                pendingHandOver = nil
+                            })
+                    }
                 } header: {
                     Text("What they can use")
                 } footer: {
@@ -628,9 +612,20 @@ struct ShareAccessSheet: View {
                 if !existing.isEmpty {
                     Section {
                         ForEach(existing) { share in
-                            LabeledContent(share.recipientLabel) {
-                                Text(statusLabel(for: share.status).inAppLocalized)
-                                    .themedForeground(.secondary)
+                            VStack(alignment: .leading, spacing: Space.s2) {
+                                LabeledContent(share.recipientLabel) {
+                                    Text(statusLabel(for: share.status).inAppLocalized)
+                                        .themedForeground(.secondary)
+                                }
+                                // Forward-secrecy honesty (H5): future access ends
+                                // now; already-delivered values cannot be clawed back.
+                                if revokeTarget?.id == share.id {
+                                    InlineConfirm(
+                                        message: "They can't request codes anymore. Values that were already shared stay on their device.",
+                                        confirmTitle: "Revoke access",
+                                        onCancel: { revokeTarget = nil },
+                                        onConfirm: { Task { await revoke(share) } })
+                                }
                             }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
@@ -692,11 +687,6 @@ struct ShareAccessSheet: View {
         let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
         return Binding(get: { capabilities[slot] ?? .passkey(.none) },
                        set: { capabilities[slot] = $0 })
-    }
-
-    private var handOverDialogBinding: Binding<Bool> {
-        Binding(get: { pendingHandOver != nil },
-                set: { if !$0 { pendingHandOver = nil } })
     }
 
     /// Design 10f: the owner is never made to watch a spinner here — the

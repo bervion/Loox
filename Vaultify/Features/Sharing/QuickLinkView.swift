@@ -38,24 +38,10 @@ struct QuickLinkView: View {
                 seeded = true
                 selectedFieldIDs = LooxLinkEnvelope.defaultSelectedFieldIDs(of: item)
             }
-            .confirmationDialog("Revoke link?", isPresented: revokeDialogBinding,
-                                titleVisibility: .visible) {
-                Button("Revoke Link", role: .destructive) {
-                    if let target = revokeTarget {
-                        Task { await revoke(target) }
-                    }
-                }
-            } message: {
-                Text("Anyone who has the link loses access immediately.")
-            }
+            .animation(Motion.standard, value: revokeTarget?.shareId)
             .alert(Text(verbatim: revokeError ?? ""), isPresented: revokeErrorBinding) {
                 Button("OK", role: .cancel) {}
             }
-    }
-
-    private var revokeDialogBinding: Binding<Bool> {
-        Binding(get: { revokeTarget != nil },
-                set: { if !$0 { revokeTarget = nil } })
     }
 
     private var revokeErrorBinding: Binding<Bool> {
@@ -124,21 +110,32 @@ struct QuickLinkView: View {
             if !active.isEmpty {
                 Section {
                     ForEach(active) { record in
-                        LabeledContent {
-                            Text("Expires \(record.expiresAt.formatted(Date.RelativeFormatStyle(presentation: .named).locale(appResourceLocale)))")
-                                .vaultType(.footnote).themedForeground(.secondary)
-                        } label: {
-                            HStack(spacing: Space.s2) {
-                                Text(record.createdAt.formatted(date: .abbreviated, time: .shortened))
-                                    .vaultType(.body).themedForeground()
-                                if record.oneTime {
-                                    Text("One-time")
-                                        .vaultType(.caption).themedForeground(.accentText)
-                                        .padding(.horizontal, Space.s2)
-                                        .padding(.vertical, 2)
-                                        .background(VaultColors.fill)
-                                        .vaultCornerRadius(Radius.xs)
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            LabeledContent {
+                                Text("Expires \(record.expiresAt.formatted(Date.RelativeFormatStyle(presentation: .named).locale(appResourceLocale)))")
+                                    .vaultType(.footnote).themedForeground(.secondary)
+                            } label: {
+                                HStack(spacing: Space.s2) {
+                                    Text(record.createdAt.formatted(date: .abbreviated, time: .shortened))
+                                        .vaultType(.body).themedForeground()
+                                    if record.oneTime {
+                                        Text("One-time")
+                                            .vaultType(.caption).themedForeground(.accentText)
+                                            .padding(.horizontal, Space.s2)
+                                            .padding(.vertical, 2)
+                                            .background(VaultColors.fill)
+                                            .vaultCornerRadius(Radius.xs)
+                                    }
                                 }
+                            }
+                            // Confirmation lives in the row, not in a dialog — see
+                            // `InlineConfirm` for why a dialog cannot work here.
+                            if revokeTarget?.shareId == record.shareId {
+                                InlineConfirm(
+                                    message: "Anyone who has the link loses access immediately.",
+                                    confirmTitle: "Revoke Link",
+                                    onCancel: { revokeTarget = nil },
+                                    onConfirm: { Task { await revoke(record) } })
                             }
                         }
                         .swipeActions(edge: .trailing) {

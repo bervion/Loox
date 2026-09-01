@@ -13,40 +13,63 @@ struct ItemDetailScreen: View {
     // iPad-Mac sidebar (isNavigatorRoot == false) keeps using `dismiss()`.
     @Environment(AppNavigator.self) private var navigator: AppNavigator?
     @Environment(\.isNavigatorRoot) private var isNavigatorRoot
-    @State private var editing: EditorTarget?
+    /// Every sheet this screen presents, behind ONE `.sheet(item:)`.
+    ///
+    /// Stacking several `.sheet` modifiers on a single view is not safe in
+    /// SwiftUI: when the modifier chain re-evaluates, the presentation host is
+    /// reassigned and the presented view is torn down and rebuilt with fresh
+    /// `@State`. That silently reset multi-step flows mid-ceremony — a share
+    /// sheet could jump back to its first screen, and a revoke confirmation
+    /// could lose the view that owned its action before it ran.
+    private enum SheetRoute: Identifiable {
+        case editor(EditorTarget)
+        /// Attention banner's "Update password": the editor opens with the
+        /// generator already up. Separate from `.editor` on purpose — the plain
+        /// Edit entry must not inherit the generator.
+        case passwordUpdate(VaultItem)
+        case locatedIn
+        case shareAccess
+        /// "Send to Browser" (Loox Quick View) chooser.
+        case quickViewChooser
+        /// Optional safety-code comparison, opened from the card. Never automatic.
+        case verify
+        /// Per-recipient management sheet (multi-recipient shares).
+        case recipientDetail(ItemShareRecord)
+        /// Resume stepper for a recipient still pending.
+        case resumeShare(ItemShareRecord)
+
+        var id: String {
+            switch self {
+            case .editor(let target): "editor-\(target.id)"
+            case .passwordUpdate(let item): "passwordUpdate-\(item.id)"
+            case .locatedIn: "locatedIn"
+            case .shareAccess: "shareAccess"
+            case .quickViewChooser: "quickViewChooser"
+            case .verify: "verify"
+            case .recipientDetail(let share): "recipientDetail-\(share.id)"
+            case .resumeShare(let share): "resumeShare-\(share.id)"
+            }
+        }
+    }
+
+    @State private var sheetRoute: SheetRoute?
     @State private var confirmTrash = false
     @State private var confirmDelete = false
-    @State private var showLocatedIn = false
     @State private var showLastIdentityBlock = false
-    @State private var showShareAccess = false
     @State fileprivate var confirmLeave = false
     @State fileprivate var leaveError: String?
     /// Server refused the leave — offer the device-local removal instead.
     @State fileprivate var offerLocalRemoval = false
     /// Realtime-action offline notice (leaving needs iCloud to be true).
     @State fileprivate var showLeaveOfflineNotice = false
-    /// Per-recipient management sheet (V1.2 follow-up: multi-recipient shares).
-    @State private var selectedShare: ItemShareRecord?
-    /// Resume stepper (design 12b/12c) for a recipient still pending.
-    @State private var resumeShare: ItemShareRecord?
     /// Safety code for a shared item (optional out-of-band comparison).
     @State private var safetyCode: String?
-    /// Optional safety-code comparison, opened from the card below. Never
-    /// presented automatically.
-    @State private var showVerifySheet = false
-    /// "Send to Browser" (Loox Quick View) chooser sheet.
-    @State private var showQuickViewChooser = false
     /// Non-nil when the entry is tapped but blocked (e.g. guard2-only item) —
     /// shown as an explainer rather than a silently disabled control.
     @State private var quickViewBlockedReason: String?
     /// True once the password row has scrolled past the top of the viewport —
     /// drives the T3 bottom "Copy Password" cluster's fade-in.
     @State private var passwordFieldOffscreen = false
-    /// Set by the attention banner's "Update password": the editor opens with the
-    /// generator already up, so replacing the password is the first thing offered.
-    /// A separate binding from `editing` on purpose — the plain Edit entry must not
-    /// inherit the generator.
-    @State private var passwordUpdateTarget: VaultItem?
     /// This item's findings from the last saved audit (leak / reuse / 2FA available),
     /// loaded once per visit and re-read after an edit. Offline: the report is read
     /// from the store, never re-run, so opening an item makes no network request.
@@ -101,7 +124,7 @@ struct ItemDetailScreen: View {
     /// never overwrite (the reveal gate owns that field).
     private func passwordUpdateAction(for item: VaultItem) -> (() -> Void)? {
         guard let field = item.passwordField, !field.isExtraProtected else { return nil }
-        return { passwordUpdateTarget = item }
+        return { sheetRoute = .passwordUpdate(item) }
     }
 
     private func folder(for item: VaultItem) -> Folder? {
@@ -228,7 +251,7 @@ struct ItemDetailScreen: View {
                 // Trashed items aren't shareable — restore first.
                 if !item.isTrashed {
                     ToolbarItem(placement: .platformPrimaryAction) {
-                        Button { showShareAccess = true } label: {
+                        Button { sheetRoute = .shareAccess } label: {
                             VaultIcon(Icons.share, size: Metric.iconInline)
                         }
                     }
@@ -238,7 +261,7 @@ struct ItemDetailScreen: View {
                         // An unsupported-schema item is read-only recovery: an
                         // Edit that silently strips newer data must not exist.
                         if !item.isUnsupportedSchema {
-                            Button { editing = .edit(item) } label: { Label { Text("Edit") } icon: { VaultIcon(Icons.edit) } }
+                            Button { sheetRoute = .editor(.edit(item)) } label: { Label { Text("Edit") } icon: { VaultIcon(Icons.edit) } }
                                 .accessibilityIdentifier("item.detail.edit")
                         }
                         // Pin + favorite moved here from beside the Space pill —
@@ -254,7 +277,7 @@ struct ItemDetailScreen: View {
                                 if let reason = quickViewDisabledReason(for: item) {
                                     quickViewBlockedReason = reason
                                 } else {
-                                    showQuickViewChooser = true
+                                    sheetRoute = .quickViewChooser
                                 }
                             } label: { Label { Text("Send to Browser") } icon: { VaultIcon(Icons.globe) } }
                         }
@@ -315,19 +338,33 @@ struct ItemDetailScreen: View {
                 }
             }
         }
-        .sheet(item: $editing) { ItemEditorScreen(target: $0) }
-        // Anchored here, not on the banner: fixing the password removes the banner
-        // mid-dismiss, which would strand its sheet binding.
-        .sheet(item: $passwordUpdateTarget) {
-            ItemEditorScreen(target: .edit($0), autoOpenPasswordGenerator: true)
-        }
-        .sheet(isPresented: $showLocatedIn) { LocatedInSheet(itemID: itemID) }
-        .sheet(isPresented: $showShareAccess) { ShareAccessSheet(itemID: itemID) }
-        .sheet(isPresented: $showQuickViewChooser) {
-            if let item {
-                QuickViewEntryChooserSheet(
-                    itemID: itemID,
-                    defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
+        // ONE presentation host for the whole screen — see `SheetRoute`.
+        .sheet(item: $sheetRoute) { route in
+            switch route {
+            case .editor(let target):
+                ItemEditorScreen(target: target)
+            case .passwordUpdate(let target):
+                ItemEditorScreen(target: .edit(target), autoOpenPasswordGenerator: true)
+            case .locatedIn:
+                LocatedInSheet(itemID: itemID)
+            case .shareAccess:
+                ShareAccessSheet(itemID: itemID)
+            case .quickViewChooser:
+                if let item {
+                    QuickViewEntryChooserSheet(
+                        itemID: itemID,
+                        defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
+                }
+            case .verify:
+                SafetyCodeVerifySheet(itemID: itemID) { decision in
+                    env.sharedItems.recordVerification(decision, forItem: itemID,
+                                                       vaultKey: env.session.vaultKey?.bytes)
+                    sheetRoute = nil
+                }
+            case .recipientDetail(let share):
+                ShareRecipientDetailSheet(share: share)
+            case .resumeShare(let share):
+                ShareResumeStepperSheet(share: share)
             }
         }
         .alert("Can't send to a browser", isPresented: quickViewBlockedAlert) {
@@ -335,15 +372,6 @@ struct ItemDetailScreen: View {
         } message: {
             Text(verbatim: quickViewBlockedReason ?? "")
         }
-        .sheet(isPresented: $showVerifySheet) {
-            SafetyCodeVerifySheet(itemID: itemID) { decision in
-                env.sharedItems.recordVerification(decision, forItem: itemID,
-                                                   vaultKey: env.session.vaultKey?.bytes)
-                showVerifySheet = false
-            }
-        }
-        .sheet(item: $selectedShare) { ShareRecipientDetailSheet(share: $0) }
-        .sheet(item: $resumeShare) { ShareResumeStepperSheet(share: $0) }
         .confirmationDialog("Move this item to Trash?", isPresented: $confirmTrash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) {
                 Haptics.error()
@@ -475,7 +503,7 @@ struct ItemDetailScreen: View {
                     // Space + owning identity in one pill. Pin/favorite moved to
                     // the header "…" menu — this line can run long (two names)
                     // and side controls would crowd it into truncation.
-                    Button { showLocatedIn = true } label: {
+                    Button { sheetRoute = .locatedIn } label: {
                         HStack(spacing: Space.s2) {
                             SpaceIdentityLine(folder: folder(for: item))
                             VaultIcon(Icons.chevronDown, size: 11).themedForeground(.secondary)
@@ -498,7 +526,7 @@ struct ItemDetailScreen: View {
                 ItemAttentionBanner(item: item,
                                     auditFindings: auditFindings,
                                     onUpdatePassword: passwordUpdateAction(for: item),
-                                    onEditItem: { editing = .edit(item) },
+                                    onEditItem: { sheetRoute = .editor(.edit(item)) },
                                     onIgnored: { auditFindings = ItemAuditFindings.load(itemID: itemID, env: env) })
             }
 
@@ -659,7 +687,7 @@ struct ItemDetailScreen: View {
                 Text(safetyCodeExplanation)
                     .vaultType(.footnote).themedForeground(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button { showVerifySheet = true } label: {
+                Button { sheetRoute = .verify } label: {
                     Text("Compare safety code")
                         .vaultType(.body).fontWeight(.medium)
                         .themedForeground(.accentText)
@@ -706,7 +734,7 @@ struct ItemDetailScreen: View {
                     // icon stays, but sharing again from where the recipients
                     // already live is the natural next tap.
                     if !item.isTrashed {
-                        Button { showShareAccess = true } label: {
+                        Button { sheetRoute = .shareAccess } label: {
                             HStack(spacing: Space.s3) {
                                 VaultIcon(Icons.addCircle, size: Metric.iconInline)
                                     .themedForeground(.accentText)
@@ -732,7 +760,7 @@ struct ItemDetailScreen: View {
     private func shareRow(_ share: ItemShareRecord) -> some View {
         let isPending = share.status != .active
         return Button {
-            if isPending { resumeShare = share } else { selectedShare = share }
+            sheetRoute = isPending ? .resumeShare(share) : .recipientDetail(share)
         } label: {
             VStack(alignment: .leading, spacing: Space.s2) {
                 HStack(spacing: Space.s3) {
