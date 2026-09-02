@@ -192,12 +192,16 @@ preflight_profile() {
          | grep -q "com.apple.developer.devicecheck.appattest-environment"; then
         success "Profile for $bundle_id grants App Attest"
       else
-        # A warning, not a refusal. Apple treats appattest-environment as an
-        # entitlement a profile need not enumerate, so codesign may well accept
-        # it — but if it does not, this line is the first place to look.
-        echo "${YELLOW}[!]${NC} Profile for $bundle_id does not enumerate App Attest."
-        echo "    If codesign rejects the entitlement, enable App Attest for this App ID"
-        echo "    and regenerate:  bundle exec fastlane match appstore --force"
+        # Measured, not assumed: codesign rejects the build outright —
+        #   "Provisioning profile … doesn't include the App Attest capability"
+        # — about ten minutes into the archive. Fail here instead.
+        error "Profile 'match AppStore $bundle_id' does not grant App Attest.
+    codesign will reject the archive. App Attest is NOT settable through the App
+    Store Connect API (it rejects capabilityType APP_ATTEST), so this is a manual
+    step, once:
+      1. developer.apple.com → Certificates, Identifiers & Profiles → Identifiers
+      2. open $bundle_id → tick App Attest → Save
+      3. bundle exec fastlane match appstore --force"
       fi
       break 2
     done
