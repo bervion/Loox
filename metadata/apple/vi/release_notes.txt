@@ -1,1 +1,1 @@
-Phiên bản 1.56.1: Cải thiện hiệu suất và sửa lỗi.
+Bản cập nhật này khắc phục lỗi thu hồi quyền chia sẻ đôi khi không có hiệu lực, đồng thời cải thiện độ tin cậy khi xác minh chia sẻ an toàn. Khuyến khích mọi người cập nhật.

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.56.2] - 2026-09-02
+
+### Fixed
+- declare the App Attest environment, surface attestation failures, add a local release path (#209)
+- confirm destructive actions inline so revoke reaches the server (#208)
+
+### Changed
+- rebuild the screenshot deck on SF Pro with real captures (#207)
+
+
 ## [1.56.1] - 2026-08-15
 
 ### Fixed

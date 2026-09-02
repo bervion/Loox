@@ -1,1 +1,1 @@
-Version 1.56.1: Performance improvements and bug fixes.
+This update fixes an issue where revoking shared access didn't always take effect, and improves the reliability of secure sharing verification. Recommended for all users.
