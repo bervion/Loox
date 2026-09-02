@@ -64,6 +64,25 @@ The Safari extension ships **embedded in the app** — no separate App Store rec
 
 Version numbers need no extra step: the appex inherits `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` from the `Project.swift` project base, which `release.sh` bumps.
 
+### 1b. App ID capability — App Attest (manual, once)
+
+The app's entitlements declare `com.apple.developer.devicecheck.appattest-environment`,
+and codesign refuses any entitlement the provisioning profile does not grant. Without
+this the archive dies with *"Provisioning profile … doesn't include the App Attest
+capability"* about ten minutes in.
+
+**It cannot be automated.** The App Store Connect API rejects `capabilityType
+APP_ATTEST` — it is not in the list the API manages — and `produce` still authenticates
+with an Apple ID and 2FA. Do it by hand, once:
+
+1. developer.apple.com → Certificates, Identifiers & Profiles → Identifiers
+2. open `com.bervion.vaultify` → tick **App Attest** → Save
+3. `bundle exec fastlane match appstore --force` to mint profiles that carry it
+
+Skipping this does not just fail the build. Without the entitlement in the signed app,
+`DCAppAttestService.attestKey` fails on device, and every quick link and private email
+alias fails with a generic error while the server never sees a request.
+
 ### 2. App Store Connect — create the app record
 App Store Connect → Apps → **＋** → New App. Platform iOS, bundle id `com.bervion.vaultify`. The app must exist before TestFlight accepts a build.
 
