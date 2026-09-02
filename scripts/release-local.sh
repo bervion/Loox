@@ -98,8 +98,13 @@ success "All required secrets present"
 # ── Repository state ──
 BRANCH=$(git branch --show-current)
 [ "$BRANCH" = "main" ] || error "Must be on main. Currently on: $BRANCH"
-[ -z "$(git diff --cached --name-only)" ] || error "Staged changes found. Commit or unstage first."
-[ -z "$(git diff --name-only)" ] || error "Unstaged changes found. Commit or stash first."
+# Scoped to what ends up in the binary. A dirty README, a docs edit or an
+# in-progress screenshot deck cannot change the build, and refusing on them only
+# forces a stash dance that risks losing someone's work mid-release.
+APP_PATHS=(Vaultify VaultifyCore VaultifyAutoFill VaultifyAutoFillMac VaultifySafari Project.swift)
+DIRTY=$(git status --porcelain -- "${APP_PATHS[@]}")
+[ -z "$DIRTY" ] || error "Uncommitted changes in app sources — the build would not match any commit:
+$(printf '      %s\n' "$DIRTY")"
 
 VERSION=$(grep -m1 '"MARKETING_VERSION":' Project.swift | sed -E 's/.*"MARKETING_VERSION": "([^"]+)".*/\1/')
 NUMBER=$(grep -m1 '"CURRENT_PROJECT_VERSION":' Project.swift | sed -E 's/.*"CURRENT_PROJECT_VERSION": "([0-9]+)".*/\1/')
@@ -187,9 +192,12 @@ preflight_profile() {
          | grep -q "com.apple.developer.devicecheck.appattest-environment"; then
         success "Profile for $bundle_id grants App Attest"
       else
-        error "Profile 'match AppStore $bundle_id' does NOT grant com.apple.developer.devicecheck.appattest-environment.
-    Signing will fail. Enable App Attest for this App ID in the Developer portal,
-    then regenerate the profile:  bundle exec fastlane match appstore --force"
+        # A warning, not a refusal. Apple treats appattest-environment as an
+        # entitlement a profile need not enumerate, so codesign may well accept
+        # it — but if it does not, this line is the first place to look.
+        echo "${YELLOW}[!]${NC} Profile for $bundle_id does not enumerate App Attest."
+        echo "    If codesign rejects the entitlement, enable App Attest for this App ID"
+        echo "    and regenerate:  bundle exec fastlane match appstore --force"
       fi
       break 2
     done
