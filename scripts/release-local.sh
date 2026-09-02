@@ -55,6 +55,25 @@ if [ -f "$ENV_FILE" ]; then
   set -a; . "$ENV_FILE"; set +a
 fi
 
+# The .p8 is multi-line. Pasted into an env file unquoted it does not just fail
+# to load — `source` runs its continuation lines as commands and echoes key
+# material into the terminal. Reading the file directly removes the hazard, so
+# the env var is the fallback rather than the requirement.
+if [ -z "${APP_STORE_CONNECT_API_KEY_KEY:-}" ]; then
+  p8=$(ls fastlane/AuthKey_*.p8 2>/dev/null | head -1 || true)
+  if [ -n "$p8" ]; then
+    APP_STORE_CONNECT_API_KEY_KEY=$(cat "$p8"); export APP_STORE_CONNECT_API_KEY_KEY
+    : "${APP_STORE_CONNECT_API_KEY_KEY_ID:=$(basename "$p8" .p8 | sed 's/^AuthKey_//')}"
+    export APP_STORE_CONNECT_API_KEY_KEY_ID
+    log "Loaded the App Store Connect key from $p8"
+  fi
+fi
+case "${APP_STORE_CONNECT_API_KEY_KEY:-}" in
+  *"BEGIN PRIVATE KEY"*) ;;
+  "") ;;
+  *) error "APP_STORE_CONNECT_API_KEY_KEY is set but is not a PEM key — it was probably truncated by an unquoted multi-line value in $ENV_FILE" ;;
+esac
+
 missing=()
 for var in MATCH_PASSWORD MATCH_GIT_BASIC_AUTHORIZATION \
            APP_STORE_CONNECT_API_KEY_KEY_ID APP_STORE_CONNECT_API_KEY_ISSUER_ID \
