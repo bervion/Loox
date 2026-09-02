@@ -182,6 +182,38 @@ or commit changes before tagging.
 
 ---
 
+## Releasing from your own Mac (runner fallback)
+
+`make release` tags and lets the self-hosted runner build. When that runner cannot do
+the job — it has run out of disk and blocked a shipped-bug fix for a day — build and
+upload from the dev Mac instead:
+
+```bash
+scripts/release-local.sh --dry-run   # everything except the upload
+scripts/release-local.sh             # verify, build, sign, upload
+```
+
+It mirrors `release-ios.yml` step for step so the artifact is the one CI would have
+produced: same `scripts/ci/prepare-project.sh`, same `fastlane build_and_upload`, same
+match profiles. It is not a way around the release gates — it refuses unless HEAD is
+on `main`, the tree is clean, and HEAD is the commit tagged `vX.Y.Z`, and it runs the
+same unit target CI gates on. `--skip-tests` exists for when CI is already green for
+that exact commit, and it says so on screen.
+
+Still run `make release` first: that is what bumps the version, writes the notes and
+creates the tag. This script only replaces the runner half.
+
+**Secrets** go in `fastlane/.env.release` (gitignored) or the environment:
+`MATCH_PASSWORD`, `MATCH_GIT_BASIC_AUTHORIZATION`, `APP_STORE_CONNECT_API_KEY_KEY_ID`,
+`APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_KEY` (the .p8
+contents), `TUIST_LOOX_LINK_PROD_TOKEN`. They are the same values as the GitHub
+secrets in §5.
+
+`CI` is deliberately left unset so fastlane uses your login keychain rather than
+building a throwaway one — the opposite of what a shared runner needs.
+
+---
+
 ## How it works
 
 - `.github/workflows/ci.yml` — on push to `main` / PRs: compiles the app scheme

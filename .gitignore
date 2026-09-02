@@ -60,3 +60,5 @@ fastlane/api_key.json
 __pycache__/
 
 kits
+# Local release secrets (App Store Connect key, match password) — never commit
+fastlane/.env*
