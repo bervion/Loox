@@ -49,7 +49,7 @@ nonisolated enum RelayAttestation {
                           baseURL: URL) async throws -> Assertion {
         do {
             return try await assertOnce(transcript: transcript, baseURL: baseURL)
-        } catch let error as DCError where error.code == .invalidKey {
+        } catch let error as DCError where appAttestKeyIsDead(error) {
             // Reinstall/restore/env-mismatch: the stored key is dead. One fresh
             // key + re-register, then one more attempt — that's the budget.
             keyStore(baseURL: baseURL).reset()

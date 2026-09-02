@@ -16,17 +16,37 @@ struct RootView: View {
     /// down from the biometric resting spot.
     @State private var celebrateFromCenter = false
 
-    private enum Route: Equatable { case onboarding, story, locked, unlocked }
+    enum Route: Equatable { case onboarding, story, locked, unlocked }
 
-    private var route: Route {
-        if !env.settings.onboardingCompleted { return .onboarding }
-        guard env.session.state == .unlocked else { return .locked }
+    /// Pure so the decision can be tested; the view only supplies the inputs.
+    static func resolveRoute(sessionState: VaultSession.State,
+                             onboardingCompleted: Bool,
+                             storyIntroCompleted: Bool) -> Route {
+        // The session is the authority on whether a vault exists at all: it
+        // reports `.onboarding` when the key bundle is missing
+        // (`VaultSession.swift` — `VaultKeyBundle.exists ? .locked : .onboarding`,
+        // and again when the bundle fails to load during unlock).
+        //
+        // Gating only on the settings flag stranded anyone whose bundle went
+        // away — an interrupted erase, a restore that kept UserDefaults but not
+        // the container. The flag stays true, so the app routed to `.locked`
+        // forever while every unlock answered "No vault found on this device."
+        // and the only way out was deleting the app.
+        if sessionState == .onboarding { return .onboarding }
+        if !onboardingCompleted { return .onboarding }
+        guard sessionState == .unlocked else { return .locked }
         // One-time story intro sits between onboarding and the first Home
         // visit. Locking mid-story falls back to `.locked` above, so an
         // abandoned story simply replays on the next unlock until the flag
         // is set (by finishing OR skipping).
-        if StoryIntroFeature.enabled && !env.settings.storyIntroCompleted { return .story }
+        if StoryIntroFeature.enabled && !storyIntroCompleted { return .story }
         return .unlocked
+    }
+
+    private var route: Route {
+        Self.resolveRoute(sessionState: env.session.state,
+                          onboardingCompleted: env.settings.onboardingCompleted,
+                          storyIntroCompleted: env.settings.storyIntroCompleted)
     }
 
     var body: some View {

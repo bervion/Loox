@@ -139,6 +139,13 @@ if [ "$SKIP_TESTS" -eq 1 ]; then
   echo "${YELLOW}[!]${NC} Skipping tests. Only do this when ci.yml is already green for $TAG_SHA."
 else
   log "Running the unit suite (the same target CI gates on)"
+  # Pin the same toolchain CI resolves. A beta Xcode double-frees during the
+  # back-deployed `@MainActor` deinit and aborts the test host ~75 times a run,
+  # so the suite fails with zero assertion failures — a red herring that cost a
+  # day of chasing a bug that was never in the code.
+  DEVELOPER_DIR=$(scripts/ci/select-xcode.sh 2>/dev/null | tail -n 1)
+  export DEVELOPER_DIR
+  log "Toolchain: $DEVELOPER_DIR"
   SIM_UDID=$(xcrun simctl list devices available --json \
     | /usr/bin/python3 -c '
 import json,sys
