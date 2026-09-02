@@ -74,6 +74,18 @@ case "${APP_STORE_CONNECT_API_KEY_KEY:-}" in
   *) error "APP_STORE_CONNECT_API_KEY_KEY is set but is not a PEM key — it was probably truncated by an unquoted multi-line value in $ENV_FILE" ;;
 esac
 
+# match expects a full HTTP Basic credential: base64("user:token"). Handed a raw
+# PAT it builds a malformed header, the clone fails, and fastlane prints the
+# whole git command — token included — into the terminal and any CI log. Check
+# the shape here so a wrong value never reaches fastlane.
+if [ -n "${MATCH_GIT_BASIC_AUTHORIZATION:-}" ]; then
+  if ! printf '%s' "$MATCH_GIT_BASIC_AUTHORIZATION" | base64 -d 2>/dev/null | grep -q ':'; then
+    error "MATCH_GIT_BASIC_AUTHORIZATION is not base64 of \"user:token\".
+    It looks like a raw token, which fastlane will echo in full when the clone fails.
+    Build it with:  printf '%s' 'YOUR_GH_USER:YOUR_PAT' | base64"
+  fi
+fi
+
 missing=()
 for var in MATCH_PASSWORD MATCH_GIT_BASIC_AUTHORIZATION \
            APP_STORE_CONNECT_API_KEY_KEY_ID APP_STORE_CONNECT_API_KEY_ISSUER_ID \
@@ -101,8 +113,21 @@ if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
   error "No tag $TAG for this version. Run 'make release' (it bumps, tags and pushes), then re-run this."
 fi
 TAG_SHA=$(git rev-list -n1 "$TAG")
-[ "$TAG_SHA" = "$(git rev-parse HEAD)" ] || error "HEAD is not the commit tagged $TAG. Check out the tag first."
-success "HEAD is $TAG"
+HEAD_SHA=$(git rev-parse HEAD)
+# What has to match the tag is the SOURCE that goes into the binary, not the
+# whole tree — tooling commits landing on main after a tag do not change what
+# ships. Insisting on an identical HEAD only forced a version bump to fix a bug
+# in this very script.
+if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
+  git merge-base --is-ancestor "$TAG_SHA" "$HEAD_SHA" \
+    || error "HEAD does not descend from $TAG. Check out the tag first."
+  DRIFT=$(git diff --name-only "$TAG_SHA" "$HEAD_SHA" -- Vaultify VaultifyCore VaultifyAutoFill VaultifyAutoFillMac VaultifySafari Project.swift)
+  [ -z "$DRIFT" ] || error "App sources changed since $TAG, so the build would not match the tag:
+$(printf '      %s\n' $DRIFT)"
+  success "HEAD is ahead of $TAG, but every app source matches it"
+else
+  success "HEAD is $TAG"
+fi
 
 # ── Evidence ──
 if [ "$SKIP_TESTS" -eq 1 ]; then
@@ -143,24 +168,31 @@ success "Project generated"
 log "Syncing signing assets (match, readonly)"
 bundle exec fastlane certificates
 
-PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+# Xcode 16 moved the install location; older toolchains still use the second.
+PROFILE_DIRS=(
+  "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+  "$HOME/Library/MobileDevice/Provisioning Profiles"
+)
 preflight_profile() {
-  local bundle_id="$1" found=""
-  for f in "$PROFILE_DIR"/*.mobileprovision; do
-    [ -f "$f" ] || continue
-    local plist name
-    plist=$(security cms -D -i "$f" 2>/dev/null) || continue
-    name=$(printf '%s' "$plist" | plutil -extract Name raw - 2>/dev/null) || continue
-    [ "$name" = "match AppStore $bundle_id" ] || continue
-    found="$f"
-    if printf '%s' "$plist" | plutil -extract Entitlements xml1 -o - - 2>/dev/null        | grep -q "com.apple.developer.devicecheck.appattest-environment"; then
-      success "Profile for $bundle_id grants App Attest"
-    else
-      error "Profile 'match AppStore $bundle_id' does NOT grant com.apple.developer.devicecheck.appattest-environment.
+  local bundle_id="$1" dir f plist name found=""
+  for dir in "${PROFILE_DIRS[@]}"; do
+    [ -d "$dir" ] || continue
+    for f in "$dir"/*.mobileprovision; do
+      [ -f "$f" ] || continue
+      plist=$(security cms -D -i "$f" 2>/dev/null) || continue
+      name=$(printf '%s' "$plist" | plutil -extract Name raw - 2>/dev/null) || continue
+      [ "$name" = "match AppStore $bundle_id" ] || continue
+      found="$f"
+      if printf '%s' "$plist" | plutil -extract Entitlements xml1 -o - - 2>/dev/null \
+         | grep -q "com.apple.developer.devicecheck.appattest-environment"; then
+        success "Profile for $bundle_id grants App Attest"
+      else
+        error "Profile 'match AppStore $bundle_id' does NOT grant com.apple.developer.devicecheck.appattest-environment.
     Signing will fail. Enable App Attest for this App ID in the Developer portal,
     then regenerate the profile:  bundle exec fastlane match appstore --force"
-    fi
-    break
+      fi
+      break 2
+    done
   done
   [ -n "$found" ] || error "No 'match AppStore $bundle_id' profile found after match ran"
 }
