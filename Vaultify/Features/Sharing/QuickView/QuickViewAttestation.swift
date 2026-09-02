@@ -53,7 +53,7 @@ nonisolated enum QuickViewAttestation {
         do {
             return try await assertUploadOnce(api: api, sessionID: sessionID,
                                               sessionIDBytes: sessionIDBytes, uploadBody: uploadBody)
-        } catch let error as DCError where error.code == .invalidKey {
+        } catch let error as DCError where appAttestKeyIsDead(error) {
             logger.warning("upload assertion key invalid, re-keying once")
             resetKey()
             do {

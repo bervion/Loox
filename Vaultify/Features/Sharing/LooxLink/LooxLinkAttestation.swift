@@ -35,7 +35,7 @@ nonisolated enum LooxLinkAttestation {
         do {
             return try await assertOnce(api: api, ciphertext: ciphertext, iv: iv,
                                         expiresInSeconds: expiresInSeconds, oneTime: oneTime)
-        } catch let error as DCError where error.code == .invalidKey {
+        } catch let error as DCError where appAttestKeyIsDead(error) {
             // Reinstall/restore/env-mismatch: the stored key is dead. One
             // fresh key + re-register, then one more attempt — that's the budget.
             resetKey()
@@ -68,7 +68,7 @@ nonisolated enum LooxLinkAttestation {
         -> LooxLinkAPIClient.AssertionHeaders {
         do {
             return try await assertShortenOnce(api: api, shareId: shareId, shortenToken: shortenToken)
-        } catch let error as DCError where error.code == .invalidKey {
+        } catch let error as DCError where appAttestKeyIsDead(error) {
             resetKey()
             return try await assertShortenOnce(api: api, shareId: shareId, shortenToken: shortenToken)
         }

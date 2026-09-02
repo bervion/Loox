@@ -32,27 +32,48 @@ struct InlineConfirm: View {
                 .themedForeground(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            // Side by side: the destructive choice must never be the only
-            // thing under the thumb after a swipe already committed one step.
-            HStack(spacing: Space.s3) {
-                Button {
-                    Haptics.tap()
-                    onCancel()
-                } label: {
-                    Text("Cancel").frame(maxWidth: .infinity)
+            // Side by side while both labels fit, stacked when they do not.
+            // "Hand over: can't be taken back" wraps to three lines in English
+            // and longer in Vietnamese: side by side it left one capsule twice
+            // the height of the other and pushed them into each other. Either
+            // way Cancel sits last in reading order and lowest under the thumb —
+            // the destructive choice is never the easy one to hit.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Space.s3) {
+                    cancelButton
+                    confirmButton
                 }
-                .buttonStyle(.themedTinted)
-
-                Button(role: .destructive) {
-                    Haptics.error()
-                    onConfirm()
-                } label: {
-                    Text(confirmTitle).frame(maxWidth: .infinity)
+                VStack(spacing: Space.s3) {
+                    confirmButton
+                    cancelButton
                 }
-                .buttonStyle(.themedDestructive)
             }
         }
         .padding(.vertical, Space.s2)
         .transition(.opacity)
+    }
+
+    private var cancelButton: some View {
+        Button {
+            Haptics.tap()
+            onCancel()
+        } label: {
+            Text("Cancel").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.themedTinted)
+    }
+
+    private var confirmButton: some View {
+        Button(role: .destructive) {
+            Haptics.error()
+            onConfirm()
+        } label: {
+            // A wrapped label must not make one capsule taller than the other
+            // when they sit side by side.
+            Text(confirmTitle)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.themedDestructive)
     }
 }
