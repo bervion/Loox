@@ -1,1 +1,1 @@
-This update fixes an issue where revoking shared access didn't always take effect, and improves the reliability of secure sharing verification. Recommended for all users.
+This update improves reliability when reinstalling Loox, so your vault stays accessible without extra steps.

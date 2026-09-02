@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.56.3] - 2026-09-02
+
+### Fixed
+- recover from a reinstall, and stop stranding a vault with no key bundle (#213)
+
+### Changed
+- fail early on a profile without App Attest, and document the manual step (#212)
+- scope the release guards to what actually ships (#211)
+- reject a malformed match credential before fastlane echoes it (#210)
+
+
 ## [1.56.2] - 2026-09-02
 
 ### Fixed

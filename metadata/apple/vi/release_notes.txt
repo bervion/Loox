@@ -1,1 +1,1 @@
-Bản cập nhật này khắc phục lỗi thu hồi quyền chia sẻ đôi khi không có hiệu lực, đồng thời cải thiện độ tin cậy khi xác minh chia sẻ an toàn. Khuyến khích mọi người cập nhật.
+Bản cập nhật này giúp Loox hoạt động ổn định hơn khi bạn cài đặt lại ứng dụng, vault của bạn luôn truy cập được mà không cần thêm thao tác.
