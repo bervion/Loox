@@ -45,9 +45,21 @@ let project = Project(
         // signing (fastlane), so it must match the build: sandbox APNs for Debug, production
         // for Release/App Store. The entitlements use `$(APS_ENVIRONMENT)`; a hardcoded
         // "development" would make TestFlight register with sandbox APNs (no production pushes).
+        // App Attest picks its environment the same way and for the same reason:
+        // entitlements are embedded as-is under manual signing, and `attestKey`
+        // fails when the app declares no environment at all. Debug builds attest
+        // against Apple's development servers, Release/TestFlight against
+        // production — a mismatch fails at `attestKey`, before any request is
+        // sent, which reads on screen as a generic "couldn't prove it's genuine".
         configurations: [
-            .debug(name: "Debug", settings: ["APS_ENVIRONMENT": "development"]),
-            .release(name: "Release", settings: ["APS_ENVIRONMENT": "production"]),
+            .debug(name: "Debug", settings: [
+                "APS_ENVIRONMENT": "development",
+                "APP_ATTEST_ENVIRONMENT": "development",
+            ]),
+            .release(name: "Release", settings: [
+                "APS_ENVIRONMENT": "production",
+                "APP_ATTEST_ENVIRONMENT": "production",
+            ]),
         ],
         defaultSettings: .recommended
     ),
