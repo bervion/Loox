@@ -74,6 +74,18 @@ case "${APP_STORE_CONNECT_API_KEY_KEY:-}" in
   *) error "APP_STORE_CONNECT_API_KEY_KEY is set but is not a PEM key — it was probably truncated by an unquoted multi-line value in $ENV_FILE" ;;
 esac
 
+# match expects a full HTTP Basic credential: base64("user:token"). Handed a raw
+# PAT it builds a malformed header, the clone fails, and fastlane prints the
+# whole git command — token included — into the terminal and any CI log. Check
+# the shape here so a wrong value never reaches fastlane.
+if [ -n "${MATCH_GIT_BASIC_AUTHORIZATION:-}" ]; then
+  if ! printf '%s' "$MATCH_GIT_BASIC_AUTHORIZATION" | base64 -d 2>/dev/null | grep -q ':'; then
+    error "MATCH_GIT_BASIC_AUTHORIZATION is not base64 of \"user:token\".
+    It looks like a raw token, which fastlane will echo in full when the clone fails.
+    Build it with:  printf '%s' 'YOUR_GH_USER:YOUR_PAT' | base64"
+  fi
+fi
+
 missing=()
 for var in MATCH_PASSWORD MATCH_GIT_BASIC_AUTHORIZATION \
            APP_STORE_CONNECT_API_KEY_KEY_ID APP_STORE_CONNECT_API_KEY_ISSUER_ID \
