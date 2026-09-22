@@ -706,3 +706,11 @@ Acceptance:
 
 - Wire a meaningful Watchtower **badge** on the native tab item once a
   cheap shared issue-count provider exists (today the count is computed inside `WatchtowerScreen`).
+
+### Quiet informational banners
+
+`VaultInfoBanner.subtle()` is the opt-in treatment for contextual notices: semantic
+soft/neutral backgrounds, contrast-adjusted foregrounds, `Radius.sm`, and a 44pt action.
+Use a warning for an outstanding prerequisite and neutral info for standing guidance.
+Private Email groups these notices together; its verification action navigates explicitly
+without wrapping the whole banner in a List disclosure row.

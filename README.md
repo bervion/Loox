@@ -16,6 +16,7 @@ never vault contents) with an opt-out in Settings → General.
 - 🎨 **Themes & wallpapers** — Day / Night / Tinted themes, accent colors, gradient · pattern · animated-mesh backgrounds, auto-night, and custom themes you can export / import (`.vaultheme`)
 - 👥 **Approval Mode sharing** — share access, not secrets; per-field capability delegation via iCloud, with owner approval via Face ID for TOTP access
 - 🧑‍💻 **Developer vault** — SSH keys (import with `ssh-keygen`-parity fingerprints), API secrets, Git hosting accounts with typed links, App Store Connect / APNs keys, signing identities, provisioning profiles, and TLS certificates; a fail-closed capability model keeps developer secrets out of AutoFill, password health, and share links
+- **Private Email** — selected domains remain visible before activation; forwarding requires verification. Create reusable addresses directly and add labels later in details. Its encrypted identity uses iCloud independently of vault sync.
 - 🌏 **EN / VI** with an in-app language toggle
 - ☁️ **Optional** iCloud (CloudKit) sync — off by default, compile-gated
 - 📱 iPhone + iPad, iOS 17.3+, plus a native macOS app (15+)

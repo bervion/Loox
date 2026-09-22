@@ -14,6 +14,9 @@ import SwiftUI
 /// `fill` darkens each hue just enough for the on-color to clear 4.5:1 (body
 /// sentences, not a button label), so the pairing holds on every theme.
 ///
+/// `.subtle()` opts contextual notices into semantic soft surfaces with dark/light
+/// text and modest corners; solid severity banners remain the default.
+///
 /// Feature banners (e.g. `CapabilityBannerView`) keep their own content logic
 /// and render through this surface rather than re-drawing the anatomy.
 struct VaultInfoBanner: View {
@@ -34,6 +37,7 @@ struct VaultInfoBanner: View {
         }
     }
 
+    private var usesSubtleSurface = false
     private let variant: Variant
     /// Polaris asset name; defaults per variant.
     private let icon: String?
@@ -93,12 +97,20 @@ struct VaultInfoBanner: View {
         self.action = action
     }
 
+    /// Quiet notices use a soft surface and modest corners. Prominent warnings
+    /// keep the existing solid treatment unless the caller opts in.
+    func subtle() -> Self {
+        var banner = self
+        banner.usesSubtleSurface = true
+        return banner
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: Space.s3) {
             // 1pt optical nudge: the glyph's cap height sits above the first
             // text baseline without it (VaultIcon is already a11y-hidden).
             VaultIcon(icon ?? defaultIcon, size: Metric.iconCompact)
-                .foregroundStyle(onFillColor)
+                .foregroundStyle(usesSubtleSurface ? tintColor : onFillColor)
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: Space.s1) {
                 copyStack
@@ -112,7 +124,7 @@ struct VaultInfoBanner: View {
                             .vaultType(.footnote).fontWeight(.semibold)
                             .foregroundStyle(tintColor)
                             .padding(.horizontal, Space.s4)
-                            .frame(minHeight: Metric.controlSmall)
+                            .frame(minHeight: usesSubtleSurface ? Metric.hitMin : Metric.controlSmall)
                             .background(Color(rgb: env.theme.active.background),
                                         in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                             .contentShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
@@ -122,10 +134,10 @@ struct VaultInfoBanner: View {
                 }
             }
         }
-        .padding(Space.s3)
+        .padding(usesSubtleSurface ? Space.s4 : Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(rgb: variant.fill(env.theme.active)))
-        .vaultCornerRadius(Radius.md)
+        .background(Color(rgb: usesSubtleSurface ? variant.subtleFill(env.theme.active) : variant.fill(env.theme.active)))
+        .vaultCornerRadius(usesSubtleSurface ? Radius.sm : Radius.md)
     }
 
     /// Title + body read as one VoiceOver element, prefixed with the severity
@@ -136,6 +148,7 @@ struct VaultInfoBanner: View {
                 title.resolved
                     .vaultType(.subhead).fontWeight(.semibold)
                     .foregroundStyle(onFillColor)
+                    .fixedSize(horizontal: false, vertical: usesSubtleSurface)
             }
             text.resolved
                 .vaultType(.footnote)
@@ -156,10 +169,17 @@ struct VaultInfoBanner: View {
 
     /// TEXT-rank status color — only for the action chip, which sits on the
     /// plain background rather than the severity fill.
-    private var tintColor: Color { variant.tintColor(env.theme.active) }
+    private var tintColor: Color {
+        usesSubtleSurface ? Color(rgb: variant.subtleTint(env.theme.active)) : variant.tintColor(env.theme.active)
+    }
 
     /// Copy and glyphs on the painted surface.
-    private var onFillColor: Color { Color(rgb: variant.onFill(env.theme.active)) }
+    private var onFillColor: Color {
+        let theme = env.theme.active
+        return Color(rgb: usesSubtleSurface
+                     ? RGBMath.ensureContrast(theme.primaryText, on: variant.subtleFill(theme), floor: 4.5)
+                     : variant.onFill(theme))
+    }
 
     private var defaultIcon: String { variant.defaultIcon }
 }
@@ -170,6 +190,25 @@ struct VaultInfoBanner: View {
 /// so both banner shapes speak the same vocabulary (and the measured contrast
 /// contract above holds for both).
 extension VaultInfoBanner.Variant {
+    /// Existing semantic surfaces: neutral context, amber prerequisite, red error.
+    func subtleFill(_ theme: AppTheme) -> UInt32 {
+        switch self {
+        case .info: return theme.secondaryBackground
+        case .warning: return theme.warningSoft
+        case .error: return theme.destructiveSoft
+        }
+    }
+
+    func subtleTint(_ theme: AppTheme) -> UInt32 {
+        let hue: UInt32 = switch self {
+        case .info: theme.accentText
+        case .warning: theme.warningText
+        case .error: theme.destructiveText
+        }
+        let onSurface = RGBMath.ensureContrast(hue, on: subtleFill(theme), floor: 4.5)
+        return RGBMath.ensureContrast(onSurface, on: theme.background, floor: 4.5)
+    }
+
     /// TEXT-rank status color for the glyph and the action label.
     func tintColor(_ theme: AppTheme) -> Color {
         switch self {

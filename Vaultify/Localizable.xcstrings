@@ -1,6 +1,155 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Confirm %@ to receive forwarded mail." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm %@ to receive forwarded mail."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "転送メールを受け取るには、%@ を確認してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác nhận %@ để nhận thư chuyển tiếp."
+          }
+        }
+      }
+    },
+    "Confirm your inbox" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm your inbox"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信トレイを確認"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác nhận hộp thư"
+          }
+        }
+      }
+    },
+    "Couldn’t access iCloud for Private Email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t access iCloud for Private Email"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể truy cập iCloud cho Email riêng tư"
+          }
+        }
+      }
+    },
+    "For incoming mail only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For incoming mail only"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信専用"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ dùng để nhận thư"
+          }
+        }
+      }
+    },
+    "Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox không thể tải danh tính Email riêng tư từ iCloud. Kiểm tra tài khoản iCloud trong Cài đặt iPhone rồi thử lại. Bạn không cần bật đồng bộ kho. Nếu lỗi vẫn tiếp diễn, hãy liên hệ hỗ trợ."
+          }
+        }
+      }
+    },
+    "Private Email needs an authenticated iCloud account. Check your iCloud sign-in in Settings, then try again. Vault sync can stay off." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Email needs an authenticated iCloud account. Check your iCloud sign-in in Settings, then try again. Vault sync can stay off."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư cần tài khoản iCloud đã xác thực. Kiểm tra đăng nhập iCloud trong Cài đặt rồi thử lại. Bạn không cần bật đồng bộ kho."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートメールには認証済みのiCloudアカウントが必要です。「設定」でiCloudへのサインインを確認してから、もう一度お試しください。保管庫の同期はオフのままで利用できます。"
+          }
+        }
+      }
+    },
+    "Replying from your inbox may reveal your real email." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replying from your inbox may reveal your real email."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信トレイから返信すると、実際のメールアドレスが相手に伝わる場合があります。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trả lời từ hộp thư nhận có thể làm lộ email thật."
+          }
+        }
+      }
+    },
     "" : {
 
     },
@@ -8798,6 +8947,12 @@
     },
     "Email Domain" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email Domain"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",

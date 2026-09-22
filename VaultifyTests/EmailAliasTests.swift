@@ -26,13 +26,17 @@ final class EmailAliasTests: XCTestCase {
         }
     }
 
-    func testAddressEmitsFullAddressOnlyWhenFlagOnAndActive() {
+    func testAddressKeepsDomainBeforeActivationAndWhilePaused() {
         XCTAssertEqual(
             AliasAddress.display(localPart: "abc", status: .active, relayDomain: "relay.x", flag: true),
             "abc@relay.x")
         XCTAssertEqual(
             AliasAddress.display(localPart: "abc", status: .reserved, relayDomain: "relay.x", flag: true),
-            "abc")  // reserved never gets the suffix
+            "abc@relay.x")
+        for status in AliasStatus.allCases {
+            XCTAssertEqual(AliasAddress.display(localPart: "abc", status: status,
+                                                relayDomain: "relay.x", flag: true), "abc@relay.x")
+        }
     }
 
     func testLifecycleBlocksActiveWhenFlagOff() {
