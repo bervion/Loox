@@ -36,6 +36,34 @@ final class RelayRetryPolicyTests: XCTestCase {
                        .principalUnavailable)
     }
 
+    func testEscrowFromAnotherVaultOffersAReset() {
+        let failure = RelayService.Failure.principalFailure(
+            for: RelayPrincipalIdentity.EscrowFailure.cannotOpenWithVaultKey)
+        XCTAssertEqual(failure, .principalFromAnotherVault)
+        XCTAssertTrue(failure.offersPrivateEmailReset)
+        // Not the iCloud copy, which sent users to Settings for a problem that
+        // was not there.
+        XCTAssertNotEqual(failure.userTitle, RelayService.Failure.principalUnavailable.userTitle)
+        XCTAssertNotEqual(failure.userMessage, RelayService.Failure.principalUnavailable.userMessage)
+    }
+
+    func testOnlyAnUnopenableEscrowMayBeReplaced() {
+        XCTAssertTrue(RelayPrincipalEscrowService.isUnopenableWithThisVault(
+            RelayPrincipalIdentity.EscrowFailure.cannotOpenWithVaultKey))
+        // A newer format, damaged key material and CloudKit trouble keep the
+        // escrow: replacing it would orphan aliases that may still be reachable.
+        let kept: [any Error] = [
+            RelayPrincipalIdentity.EscrowFailure.unknownVersion,
+            RelayPrincipalIdentity.EscrowFailure.invalidKeyMaterial,
+            RelayPrincipalIdentity.EscrowFailure.identityMismatch,
+            CKError(.networkFailure), CKError(.notAuthenticated), CKError(.unknownItem),
+        ]
+        for error in kept {
+            XCTAssertFalse(RelayPrincipalEscrowService.isUnopenableWithThisVault(error), "\(error)")
+            XCTAssertFalse(RelayService.Failure.principalFailure(for: error).offersPrivateEmailReset, "\(error)")
+        }
+    }
+
     func testEscrowFailureDoesNotClaimRelayOutage() {
         XCTAssertNotEqual(RelayService.Failure.principalUnavailable.userTitle,
                           RelayService.Failure.rejected("server_503").userTitle)
@@ -65,7 +93,8 @@ final class RelayRetryPolicyTests: XCTestCase {
 
     func testUserMessageNeverLeaksBackendVocabulary() {
         let failures: [RelayService.Failure] = [
-            .vaultLocked, .principalUnavailable, .iCloudAuthenticationRequired, .missingDestination, .network,
+            .vaultLocked, .principalUnavailable, .iCloudAuthenticationRequired, .principalFromAnotherVault,
+            .missingDestination, .network,
             .rejected("unauthorized"), .rejected("rate_limited"),
             .rejected("nonce_replay"), .rejected("epoch_stale"), .rejected("server_503"),
             .rejected("alias_cap_reached"),

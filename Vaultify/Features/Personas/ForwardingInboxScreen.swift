@@ -17,6 +17,7 @@ struct ForwardingInboxScreen: View {
     @State private var rotationTotal = 0
     @State private var errorTitle = ""
     @State private var errorMessage: String?
+    @State private var errorOffersReset = false
     @State private var pendingDeleteInbox: ForwardingInbox?
     @State private var verification = ForwardingInboxVerification()
 
@@ -55,14 +56,11 @@ struct ForwardingInboxScreen: View {
         } message: {
             Text("A real inbox your private addresses can forward to.")
         }
-        .alert(Text(verbatim: errorTitle), isPresented: errorBinding) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(verbatim: errorMessage ?? "") }
+        .relayFailureAlert(title: errorTitle, message: errorMessage, isPresented: errorBinding,
+                           offersReset: errorOffersReset) { resetPrivateEmail() }
         // Verification reports through its own controller — success included, so
         // a sent email is confirmed on screen and not just in the user's inbox.
-        .alert(Text(verbatim: verification.outcome?.title ?? ""), isPresented: outcomeBinding) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(verbatim: verification.outcome?.body ?? "") }
+        .relayOutcomeAlert(verification, relay: env.relay)
         .confirmationDialog("Delete this inbox?", isPresented: deleteInboxBinding,
                             titleVisibility: .visible, presenting: pendingDeleteInbox) { inbox in
             Button("Delete", role: .destructive) {
@@ -275,6 +273,7 @@ struct ForwardingInboxScreen: View {
                 // Finished aliases are checkpointed — the section re-offers the rest.
                 errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
+                errorOffersReset = failure.offersPrivateEmailReset
                 Haptics.error()
             } catch {
                 errorTitle = appString("Couldn’t reach the relay")
@@ -285,12 +284,19 @@ struct ForwardingInboxScreen: View {
     }
 
     private var errorBinding: Binding<Bool> {
-        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+        Binding(get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil; errorOffersReset = false } })
     }
 
-    private var outcomeBinding: Binding<Bool> {
-        Binding(get: { verification.outcome != nil },
-                set: { if !$0 { verification.outcome = nil } })
+    /// The failure alert's deliberate recovery: reset Private Email when this
+    /// vault can't open its key, then report the result in the same alert.
+    private func resetPrivateEmail() {
+        Task {
+            let result = await PrivateEmailReset.run(using: env.relay)
+            errorOffersReset = result.offersReset
+            errorTitle = result.title
+            errorMessage = result.message
+        }
     }
 
     private var deleteInboxBinding: Binding<Bool> {

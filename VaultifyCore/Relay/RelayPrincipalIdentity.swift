@@ -19,7 +19,14 @@ nonisolated struct RelayPrincipalIdentity: Sendable {
     let principalID: Data
     let epoch: UInt64
 
-    enum EscrowFailure: Error, Equatable { case unknownVersion, invalidKeyMaterial, identityMismatch }
+    enum EscrowFailure: Error, Equatable {
+        case unknownVersion, invalidKeyMaterial, identityMismatch
+        /// The envelope fails authentication under this Vault Key: it was sealed by
+        /// another vault (typically one an app reinstall replaced), or it is damaged.
+        /// AES-GCM cannot tell the two apart, and either way this vault can never
+        /// open it.
+        case cannotOpenWithVaultKey
+    }
 
     private static let escrowVersion: UInt8 = 1
 
@@ -96,7 +103,12 @@ nonisolated struct RelayPrincipalIdentity: Sendable {
     /// key; after rotation the public key has changed, so the stored id is trusted.
     static func fromEscrow(_ envelope: Data, vaultKey: [UInt8]) throws -> RelayPrincipalIdentity {
         guard envelope.first == escrowVersion else { throw EscrowFailure.unknownVersion }
-        let body = try AESGCM.open(envelope.dropFirst(), key: vaultKey)
+        let body: Data
+        do {
+            body = try AESGCM.open(envelope.dropFirst(), key: vaultKey)
+        } catch CryptoKitError.authenticationFailure {
+            throw EscrowFailure.cannotOpenWithVaultKey
+        }
         var r = CanonicalReader(body)
         let principalID = try r.blob()
         let epoch = try r.u64()

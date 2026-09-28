@@ -39,6 +39,17 @@ final class RelayPrincipalIdentityTests: XCTestCase {
         XCTAssertThrowsError(try RelayPrincipalIdentity.fromEscrow(sealed, vaultKey: [UInt8](repeating: 0x99, count: 32)))
     }
 
+    /// An app reinstall gives the device a new vault, so the escrow the old vault
+    /// sealed must fail as `cannotOpenWithVaultKey`. A bare CryptoKit error was
+    /// reported to the user as an iCloud problem, with no way out.
+    func testEscrowFromAnotherVaultIsRecognisedAsUnopenable() throws {
+        let sealed = try RelayPrincipalIdentity.generate().escrowSealed(vaultKey: vaultKey)
+        let reinstalledVault = [UInt8](repeating: 0x99, count: 32)
+        XCTAssertThrowsError(try RelayPrincipalIdentity.fromEscrow(sealed, vaultKey: reinstalledVault)) { error in
+            XCTAssertEqual(error as? RelayPrincipalIdentity.EscrowFailure, .cannotOpenWithVaultKey)
+        }
+    }
+
     func testCorruptEnvelopeThrowsNotRegenerates() throws {
         let id = RelayPrincipalIdentity.generate()
         var sealed = try id.escrowSealed(vaultKey: vaultKey)

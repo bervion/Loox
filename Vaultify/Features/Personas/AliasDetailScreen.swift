@@ -12,6 +12,7 @@ struct AliasDetailScreen: View {
     @State private var busy = false
     @State private var errorTitle = ""
     @State private var errorMessage: String?
+    @State private var errorOffersReset = false
     @State private var confirmDelete = false
     @State private var confirmPause = false
     @State private var editingDestination = false
@@ -38,9 +39,8 @@ struct AliasDetailScreen: View {
         .platformNavigationBarTitleDisplayMode(.inline)
         // Title follows the failure, so a consent gate or a maintenance window
         // is not announced as a connection problem.
-        .alert(Text(verbatim: errorTitle), isPresented: errorBinding) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(verbatim: errorMessage ?? "") }
+        .relayFailureAlert(title: errorTitle, message: errorMessage, isPresented: errorBinding,
+                           offersReset: errorOffersReset) { resetPrivateEmail() }
     }
 
     @ViewBuilder private func content(_ alias: EmailAlias) -> some View {
@@ -214,6 +214,7 @@ struct AliasDetailScreen: View {
             catch let failure as RelayService.Failure {
                 errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
+                errorOffersReset = failure.offersPrivateEmailReset
                 Haptics.error()
             } catch {
                 errorTitle = appString("Couldn’t reach the relay")
@@ -224,6 +225,18 @@ struct AliasDetailScreen: View {
     }
 
     private var errorBinding: Binding<Bool> {
-        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+        Binding(get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil; errorOffersReset = false } })
+    }
+
+    /// The failure alert's deliberate recovery: reset Private Email when this
+    /// vault can't open its key, then report the result in the same alert.
+    private func resetPrivateEmail() {
+        Task {
+            let result = await PrivateEmailReset.run(using: env.relay)
+            errorOffersReset = result.offersReset
+            errorTitle = result.title
+            errorMessage = result.message
+        }
     }
 }

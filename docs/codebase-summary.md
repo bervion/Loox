@@ -177,7 +177,15 @@ Implemented & verified running (EN + VI): onboarding (redesigned first-run welco
 `RelayPrincipalEscrowService` requires CloudKit even when vault-item sync is off. Only
 `unknownItem`/`zoneNotFound` permit initial escrow creation; other read failures propagate,
 and malformed existing envelopes fail closed. `principalUnavailable` has its own EN/VI
-message rather than claiming a relay outage. The `relay` OSLog category records stage and
+message rather than claiming a relay outage. An escrow sealed under another vault's key
+(an app reinstall) fails as `EscrowFailure.cannotOpenWithVaultKey`, surfaces as
+`principalFromAnotherVault`, and every Private Email alert (`relayFailureAlert`, or
+`relayOutcomeAlert` on the three verification surfaces incl. `PrivateEmailIntroSheet`) then
+offers **Reset Private Email** (`RelayService.resetPrincipal()`, single-flight →
+`replaceUnopenablePrincipal`): the only non-rotation overwrite of the escrow, user-confirmed,
+re-checked, and a compare-and-swap on the fetched record (a concurrent writer wins and is
+adopted if this vault opens it). The sharing identity (`ParticipantEscrowService`) instead regenerates on its
+own, because no live data depends on an identity nobody can open. The `relay` OSLog category records stage and
 error codes for escrow, App Attest and signed-command failures, without email/key contents.
 
 Private Email creation reserves and activates reusable addresses directly, without a label

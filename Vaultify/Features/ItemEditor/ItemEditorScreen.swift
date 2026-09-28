@@ -40,6 +40,7 @@ struct ItemEditorScreen: View {
     @State private var aliasMissingEmail = false
     @State private var aliasErrorTitle = ""
     @State private var aliasErrorMessage: String?
+    @State private var aliasErrorOffersReset = false
     /// The inbox that still needs confirming, when that is what stands between
     /// the user and their first private address.
     @State private var aliasNeedsVerification: ForwardingInbox?
@@ -511,11 +512,9 @@ struct ItemEditorScreen: View {
             // hardcoded to a connection problem, so the relay's consent gate —
             // "confirm your forwarding email first" — reached the user as
             // "check your connection", and no amount of retrying could fix it.
-            .alert(Text(verbatim: aliasErrorTitle), isPresented: aliasErrorBinding) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(verbatim: aliasErrorMessage ?? "")
-            }
+            .relayFailureAlert(title: aliasErrorTitle, message: aliasErrorMessage,
+                               isPresented: aliasErrorBinding,
+                               offersReset: aliasErrorOffersReset) { resetPrivateEmail() }
             // The confirmation gate is not an error: it is the feature's one
             // setup step, so it opens the explainer instead of an alert.
             .sheet(item: $aliasNeedsVerification) { PrivateEmailIntroSheet(inbox: $0) }
@@ -735,6 +734,7 @@ struct ItemEditorScreen: View {
             } catch let failure as RelayService.Failure {
                 aliasErrorTitle = failure.userTitle
                 aliasErrorMessage = failure.userMessage
+                aliasErrorOffersReset = failure.offersPrivateEmailReset
                 Haptics.error()
             } catch {
                 aliasErrorTitle = appString("Couldn’t reach the relay")
@@ -746,7 +746,18 @@ struct ItemEditorScreen: View {
 
     private var aliasErrorBinding: Binding<Bool> {
         Binding(get: { aliasErrorMessage != nil },
-                set: { if !$0 { aliasErrorMessage = nil } })
+                set: { if !$0 { aliasErrorMessage = nil; aliasErrorOffersReset = false } })
+    }
+
+    /// The alias failure alert's deliberate recovery: reset Private Email when
+    /// this vault can't open its key, then report the result in the same alert.
+    private func resetPrivateEmail() {
+        Task {
+            let result = await PrivateEmailReset.run(using: env.relay)
+            aliasErrorOffersReset = result.offersReset
+            aliasErrorTitle = result.title
+            aliasErrorMessage = result.message
+        }
     }
 
     /// Fill a reused alias suggestion into the login's email field. An existing

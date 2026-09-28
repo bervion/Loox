@@ -81,12 +81,9 @@ struct PrivateEmailIntroSheet: View {
                     .accessibilityLabel(Text("Close"))
                 }
             }
-            .alert(Text(verbatim: verification.outcome?.title ?? ""),
-                   isPresented: outcomeBinding) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(verbatim: verification.outcome?.body ?? "")
-            }
+            // The first signed relay call in a fresh vault is this sheet's
+            // "Send confirmation email", so it must offer the reset too.
+            .relayOutcomeAlert(verification, relay: env.relay)
         }
         .platformPresentationDetents([.large])
         .presentationDragIndicator(.hidden)
@@ -196,10 +193,5 @@ struct PrivateEmailIntroSheet: View {
         return inbox.verificationStatus == .pending
             ? appString("Send the email again")
             : appString("Send confirmation email")
-    }
-
-    private var outcomeBinding: Binding<Bool> {
-        Binding(get: { verification.outcome != nil },
-                set: { if !$0 { verification.outcome = nil } })
     }
 }
