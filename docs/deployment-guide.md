@@ -287,3 +287,16 @@ unavailable (`notAuthenticated`), before the relay call. On Simulator, check iCl
 inside Simulator Settings. This is distinct from a missing Production schema. Use a real
 iPhone for the complete App Attest-protected relay flow; simulator logs cannot establish
 the cause of a separate TestFlight failure. The app surfaces an account-specific message.
+
+`Principal escrow failed: domain=...EscrowFailure code=3` (`cannotOpenWithVaultKey`) means
+the escrow loaded but this vault's key cannot open it. Deleting the app deletes the vault
+and its key, while the escrow (and its Keychain cache) survives, so the next install's new
+vault can never open it: the usual cause is reinstalling without restoring the vault. The
+app says so ("Can’t open your Private Email identity") and offers **Start New Identity**,
+which overwrites the escrow with a new principal only after the user confirms and only if
+this vault still cannot open it. Aliases owned by the old principal keep forwarding but can
+no longer be managed. If the old vault is still on another device, restore it instead.
+
+The Production schema is not the cause when the record type is listed: CloudKit Console's
+Production **Record Types** page shows "No record types found" for a few seconds while it
+loads, which is easy to misread as a missing deploy.

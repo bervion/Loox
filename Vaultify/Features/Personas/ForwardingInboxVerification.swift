@@ -21,6 +21,9 @@ import SwiftUI
     struct Outcome: Equatable {
         var title: String
         var body: String
+        /// The failure is a Private Email identity this vault can't open, so the
+        /// alert offers the deliberate replacement (`startNewIdentity`).
+        var offersNewIdentity = false
     }
 
     /// Fallback wait before the confirmation email may be sent again, used only
@@ -103,10 +106,19 @@ import SwiftUI
         }
     }
 
+    /// The recovery the failure alert offered: replace a Private Email identity
+    /// this vault can't open. The answer lands on the same surface as every
+    /// other outcome.
+    func startNewIdentity(relay: RelayService) async {
+        let result = await RelayIdentityRecovery.startNewIdentity(using: relay)
+        outcome = Outcome(title: result.title, body: result.message)
+    }
+
     private func report(_ error: Error) {
         Haptics.error()
         if let failure = error as? RelayService.Failure {
-            outcome = Outcome(title: failure.userTitle, body: failure.userMessage)
+            outcome = Outcome(title: failure.userTitle, body: failure.userMessage,
+                              offersNewIdentity: failure.offersNewIdentity)
         } else {
             outcome = Outcome(title: appString("Couldn’t reach the relay"),
                               body: appString("Check your connection and iCloud, then try again."))

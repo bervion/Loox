@@ -14,6 +14,10 @@ import os
         case vaultLocked
         case principalUnavailable   // escrow could not be loaded
         case iCloudAuthenticationRequired // CKError.notAuthenticated, before any relay call
+        /// The escrow loaded, but this vault's key can never open it (an app
+        /// reinstall replaced the vault that sealed it). Recoverable only by the
+        /// user choosing `startNewPrincipal()`.
+        case principalFromAnotherVault
         case missingDestination     // the persona's profile has no email to forward to
         case network                // transport-level failure
         /// Verified operator state (maintenance/disabled/retired) — distinct
@@ -34,6 +38,22 @@ import os
     init(repository: VaultRepository, session: VaultSession) {
         self.repository = repository
         self.session = session
+    }
+
+    /// Replace a Private Email identity this vault cannot open with a new one
+    /// (`RelayPrincipalEscrowService.replaceUnopenablePrincipal`). Only ever
+    /// called from the user's explicit choice in a `principalFromAnotherVault`
+    /// alert: aliases owned by the old identity stop being manageable.
+    func startNewPrincipal() async throws {
+        guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
+        do {
+            _ = try await escrow.replaceUnopenablePrincipal(vaultKey: vaultKey.bytes)
+        } catch {
+            let detail = error as NSError
+            Self.log.error("Principal replacement failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
+            throw Failure.principalFailure(for: error)
+        }
+        Self.log.notice("Principal replaced: the previous escrow could not be opened by this vault")
     }
 
     /// Activate a reserved alias: mint it (if not already), point it at the

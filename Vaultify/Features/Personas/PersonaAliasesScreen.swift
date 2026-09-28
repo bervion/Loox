@@ -11,6 +11,7 @@ struct PersonaAliasesScreen: View {
     @State private var busyAliasID: String?
     @State private var errorTitle = ""
     @State private var errorMessage: String?
+    @State private var errorOffersNewIdentity = false
     @State private var missingEmail = false
     @State private var pendingPause: EmailAlias?
     @State private var pendingDelete: EmailAlias?
@@ -117,11 +118,8 @@ struct PersonaAliasesScreen: View {
         }
         // Title follows the failure: a consent gate and an outage are different
         // problems with different fixes, and a shared heading hid that.
-        .alert(Text(verbatim: errorTitle), isPresented: errorBinding) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(verbatim: errorMessage ?? "")
-        }
+        .relayFailureAlert(title: errorTitle, message: errorMessage, isPresented: errorBinding,
+                           offersNewIdentity: errorOffersNewIdentity) { startNewIdentity() }
         .alert(Text("Add an email first"), isPresented: $missingEmail) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -295,6 +293,7 @@ struct PersonaAliasesScreen: View {
             catch let failure as RelayService.Failure {
                 errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
+                errorOffersNewIdentity = failure.offersNewIdentity
                 Haptics.error()
             } catch {
                 errorTitle = appString("Couldn’t reach the relay")
@@ -305,7 +304,18 @@ struct PersonaAliasesScreen: View {
     }
 
     private var errorBinding: Binding<Bool> {
-        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+        Binding(get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil; errorOffersNewIdentity = false } })
+    }
+
+    /// The failure alert's deliberate recovery: replace a Private Email identity
+    /// this vault can't open, then report the result in the same alert.
+    private func startNewIdentity() {
+        Task {
+            let result = await RelayIdentityRecovery.startNewIdentity(using: env.relay)
+            errorTitle = result.title
+            errorMessage = result.message
+        }
     }
 
     private var pauseBinding: Binding<Bool> {
