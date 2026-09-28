@@ -5,12 +5,33 @@ There are exactly two workflows:
 
 | File | Trigger | Runner |
 |---|---|---|
-| `.github/workflows/ci.yml` | pull requests to `main`, non-tag pushes to `main` | self-hosted `vaultify-ci` |
-| `.github/workflows/release-ios.yml` | `v*` tags | self-hosted `vaultify-release` |
+| `.github/workflows/ci.yml` | pull requests to `main`, non-tag pushes to `main` | self-hosted `vaultify-ci` (temporarily GitHub-hosted, see below) |
+| `.github/workflows/release-ios.yml` | `v*` tags | self-hosted `vaultify-release` (temporarily GitHub-hosted, see below) |
 
 Nothing else exists. Earlier revisions of this runbook described a `release-evidence.yml`
 workflow, a `quality/release/readiness.yaml` gate file and seven extra CI jobs; none of
 them were ever committed. Treat any gate not listed below as absent, not as pending.
+
+### Temporary: GitHub-hosted runners
+
+Since 2026-09-28 both workflows run on GitHub's `macos-26` (arm64) image, because the
+self-hosted Mac mini is offline. What differs while this lasts:
+
+- Every job starts on a fresh VM with no package or build cache, so a CI run takes far
+  longer than the ~6 minutes on the Mac mini, and `release-ios.yml` waits up to 45 minutes
+  (`RELEASE_EVIDENCE_TIMEOUT_SECONDS`) for it.
+- The repository is private, so every job is billed: macOS minutes cost about ten times
+  Linux minutes and drain the plan's included minutes fast. Once those run out without a
+  payment method or budget, jobs are blocked (Settings → Billing).
+- The image carries several Xcodes; `select-xcode.sh` still picks the lowest at or above
+  the pin (26.5). `create-simulator.sh` likewise picks the lowest iOS runtime at or above
+  26.0, which on this image is 26.0 rather than the Mac mini's 26.5.
+- The CI/release separation below holds by construction: each job gets its own VM.
+
+To go back, restore both `runs-on` lines (`[self-hosted, macOS, ARM64, vaultify-ci]` and
+`[self-hosted, macOS, ARM64, vaultify-release]`), `RELEASE_EVIDENCE_TIMEOUT_SECONDS` to
+`1500` and the release `timeout-minutes` to `90`, then delete this section and the table
+notes.
 
 ## Pull-request and main CI
 

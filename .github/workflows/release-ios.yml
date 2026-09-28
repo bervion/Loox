@@ -23,7 +23,10 @@ env:
   # still queued. The unit suite takes about 6 minutes on the self-hosted
   # runner; 25 leaves room for a queue behind another job without letting a
   # genuinely stuck run hold a runner all day.
-  RELEASE_EVIDENCE_TIMEOUT_SECONDS: '1500'
+  # TEMPORARY: a GitHub-hosted run starts cold (packages, Firebase, a fresh
+  # simulator), so wait as long as ci.yml's own 45-minute timeout. Restore
+  # 1500 with the self-hosted runner.
+  RELEASE_EVIDENCE_TIMEOUT_SECONDS: '2700'
   RELEASE_EVIDENCE_POLL_SECONDS: '20'
 
 jobs:
@@ -34,8 +37,11 @@ jobs:
     # different actor remains blocked as well.
     if: github.actor == 'bervion' && github.triggering_actor == 'bervion'
     environment: production-ios-release
-    runs-on: [self-hosted, macOS, ARM64, vaultify-release]
-    timeout-minutes: 90
+    # TEMPORARY: GitHub-hosted while the self-hosted Mac mini is offline. Restore
+    # `[self-hosted, macOS, ARM64, vaultify-release]` and 90 minutes when it is
+    # back. The extra 30 cover the longer evidence wait plus a cold archive.
+    runs-on: macos-26
+    timeout-minutes: 120
     steps:
       - name: Checkout immutable tag
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5

@@ -2,6 +2,8 @@
 
 Vaultify ships to TestFlight via **GitHub Actions on a self-hosted macOS runner**, signed with **fastlane match**, uploaded with an **App Store Connect API key**.
 
+> **Temporary (since 2026-09-28):** the self-hosted Mac mini is offline, so `ci.yml` and `release-ios.yml` run on GitHub-hosted `macos-26`. See `docs/runbooks/ci-release-operations.md` ("Temporary: GitHub-hosted runners") for what changes and how to switch back.
+
 ```
 make release  →  bump version + AI notes + tag vX.Y.Z  →  push
                                                             │
