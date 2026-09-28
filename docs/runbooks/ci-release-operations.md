@@ -14,24 +14,28 @@ them were ever committed. Treat any gate not listed below as absent, not as pend
 
 ### Temporary: GitHub-hosted runners
 
-Since 2026-09-28 both workflows run on GitHub's `macos-26` (arm64) image, because the
-self-hosted Mac mini is offline. What differs while this lasts:
+Since 2026-09-28 the macOS jobs of both workflows run on GitHub's `macos-26` (arm64) image,
+because the self-hosted Mac mini is offline. What differs while this lasts:
 
-- Every job starts on a fresh VM with no package or build cache, so a CI run takes far
-  longer than the ~6 minutes on the Mac mini, and `release-ios.yml` waits up to 45 minutes
-  (`RELEASE_EVIDENCE_TIMEOUT_SECONDS`) for it.
+- Every job starts on a fresh VM. mise and Bundler are cached by their actions, but Swift
+  packages and DerivedData are not, so a CI run takes far longer than the ~6 minutes on
+  the Mac mini.
+- A red run leaves only its log and the uploaded summary JSON; the `.xcresult` bundle goes
+  with the VM. Reproduce a failure locally with `make test`.
 - The repository is private, so every job is billed: macOS minutes cost about ten times
-  Linux minutes and drain the plan's included minutes fast. Once those run out without a
-  payment method or budget, jobs are blocked (Settings → Billing).
+  Linux minutes and drain the plan's included minutes fast. When jobs sit queued or never
+  start, check Settings → Billing (included minutes, spending limit).
+  `scripts/release-local.sh` releases from your own Mac without Actions minutes.
 - The image carries several Xcodes; `select-xcode.sh` still picks the lowest at or above
-  the pin (26.5). `create-simulator.sh` likewise picks the lowest iOS runtime at or above
-  26.0, which on this image is 26.0 rather than the Mac mini's 26.5.
+  the pin (26.5). `create-simulator.sh` picks the lowest installed iOS runtime at or above
+  26.0, which is 26.2 on the image at the time of writing rather than the Mac mini's 26.5.
+  The job log prints both selections.
 - The CI/release separation below holds by construction: each job gets its own VM.
 
-To go back, restore both `runs-on` lines (`[self-hosted, macOS, ARM64, vaultify-ci]` and
-`[self-hosted, macOS, ARM64, vaultify-release]`), `RELEASE_EVIDENCE_TIMEOUT_SECONDS` to
-`1500` and the release `timeout-minutes` to `90`, then delete this section and the table
-notes.
+To go back, restore the two `runs-on` lines marked `TEMPORARY`
+(`[self-hosted, macOS, ARM64, vaultify-ci]` and `[self-hosted, macOS, ARM64,
+vaultify-release]`), then delete this section and the table notes. The Linux release gate
+job and its 50-minute evidence wait are fine on either runner and can stay.
 
 ## Pull-request and main CI
 
@@ -104,14 +108,17 @@ review the diff instead of accepting it.
 ## Release boundary
 
 A `v*` tag triggers `release-ios.yml`. Signing and upload run only on a self-hosted runner
-carrying every label below:
+carrying every label below (temporarily GitHub-hosted `macos-26`, see above):
 
 ```text
 self-hosted, macOS, ARM64, vaultify-release
 ```
 
-The job is attached to the `production-ios-release` environment and proceeds only when both
-`github.actor` and `github.triggering_actor` equal `bervion`. It then verifies, in order:
+Both jobs proceed only when `github.actor` and `github.triggering_actor` equal `bervion`.
+Checks 1 and 2 run first, in the **Tag and CI evidence** job on `ubuntu-latest`, which holds
+no secrets; its wait for CI is a polling loop, so it stays off the macOS runner. The **Sign
+and upload to TestFlight** job is attached to the `production-ios-release` environment,
+starts only after that job succeeds, and runs checks 3 to 6. In order:
 
 1. the tagged commit is reachable from `origin/main`;
 2. **the exact tag SHA has a completed, successful `ci.yml` run** — evidence is bound to the
