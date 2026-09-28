@@ -21,30 +21,28 @@ env:
   # How long to wait for that run to finish. `make release` pushes the commit
   # and the tag together, so this workflow routinely starts while ci.yml is
   # still queued. The unit suite takes about 6 minutes on the self-hosted
-  # runner; 25 leaves room for a queue behind another job without letting a
-  # genuinely stuck run hold a runner all day.
-  RELEASE_EVIDENCE_TIMEOUT_SECONDS: '1500'
+  # runner, but a cold GitHub-hosted run can use most of ci.yml's 45-minute
+  # timeout plus queue time. 50 minutes covers both; the wait runs on a Linux
+  # runner, so the ceiling is cheap, and a genuinely stuck run still ends here.
+  RELEASE_EVIDENCE_TIMEOUT_SECONDS: '3000'
   RELEASE_EVIDENCE_POLL_SECONDS: '20'
 
 jobs:
-  release-ios:
-    name: Sign and upload to TestFlight
-    # Creating the immutable release tag is the owner approval fallback on
-    # plans that do not support protected-environment reviewers. A rerun by a
-    # different actor remains blocked as well.
+  release-gate:
+    name: Tag and CI evidence
+    # Same owner condition as the signing job. These checks hold no secrets,
+    # and the evidence wait is a polling loop that can last most of a CI run,
+    # so they run on Linux: on a macOS runner every idle minute is billed at
+    # the macOS rate, and signing never starts unless both pass.
     if: github.actor == 'bervion' && github.triggering_actor == 'bervion'
-    environment: production-ios-release
-    runs-on: [self-hosted, macOS, ARM64, vaultify-release]
-    timeout-minutes: 90
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
     steps:
       - name: Checkout immutable tag
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Select pinned Xcode
-        run: scripts/ci/select-xcode.sh
 
       - name: Verify tag is reachable from main
         run: |
@@ -136,6 +134,28 @@ jobs:
             echo "attempt ${attempt}: ${verdict#PENDING } — waiting ${RELEASE_EVIDENCE_POLL_SECONDS}s"
             sleep "$RELEASE_EVIDENCE_POLL_SECONDS"
           done
+
+  release-ios:
+    name: Sign and upload to TestFlight
+    needs: release-gate
+    # Creating the immutable release tag is the owner approval fallback on
+    # plans that do not support protected-environment reviewers. A rerun by a
+    # different actor remains blocked as well.
+    if: github.actor == 'bervion' && github.triggering_actor == 'bervion'
+    environment: production-ios-release
+    # TEMPORARY: GitHub-hosted while the self-hosted Mac mini is offline. Restore
+    # `[self-hosted, macOS, ARM64, vaultify-release]` when it is back.
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - name: Checkout immutable tag
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select pinned Xcode
+        run: scripts/ci/select-xcode.sh
 
       - name: Install pinned Tuist
         uses: jdx/mise-action@c53b9236f0b3370f31520f8b142f141256d839c6 # v3.6.0

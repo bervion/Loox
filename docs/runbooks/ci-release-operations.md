@@ -5,12 +5,36 @@ There are exactly two workflows:
 
 | File | Trigger | Runner |
 |---|---|---|
-| `.github/workflows/ci.yml` | pull requests to `main`, non-tag pushes to `main` | self-hosted `vaultify-ci` |
-| `.github/workflows/release-ios.yml` | `v*` tags | self-hosted `vaultify-release` |
+| `.github/workflows/ci.yml` | pull requests to `main`, non-tag pushes to `main` | self-hosted `vaultify-ci` (temporarily GitHub-hosted, see below) |
+| `.github/workflows/release-ios.yml` | `v*` tags | self-hosted `vaultify-release` (temporarily GitHub-hosted, see below) |
 
 Nothing else exists. Earlier revisions of this runbook described a `release-evidence.yml`
 workflow, a `quality/release/readiness.yaml` gate file and seven extra CI jobs; none of
 them were ever committed. Treat any gate not listed below as absent, not as pending.
+
+### Temporary: GitHub-hosted runners
+
+Since 2026-09-28 the macOS jobs of both workflows run on GitHub's `macos-26` (arm64) image,
+because the self-hosted Mac mini is offline. What differs while this lasts:
+
+- Every job starts on a fresh VM. mise and Bundler are cached by their actions, but Swift
+  packages and DerivedData are not, so a CI run takes far longer than the ~6 minutes on
+  the Mac mini.
+- A red run leaves only its log and the uploaded summary JSON; the `.xcresult` bundle goes
+  with the VM. Reproduce a failure locally with `make test`.
+- The repository is private, so every job is billed: macOS minutes cost about ten times
+  Linux minutes and drain the plan's included minutes fast. When jobs sit queued or never
+  start, check Settings → Billing (included minutes, spending limit).
+  `scripts/release-local.sh` releases from your own Mac without Actions minutes.
+- The image carries several Xcodes and iOS runtimes; `select-xcode.sh` and
+  `create-simulator.sh` still pick the lowest at or above the pins (Xcode 26.5, iOS 26.5),
+  the same pair the Mac mini ran. The job log prints both selections.
+- The CI/release separation below holds by construction: each job gets its own VM.
+
+To go back, restore the two `runs-on` lines marked `TEMPORARY`
+(`[self-hosted, macOS, ARM64, vaultify-ci]` and `[self-hosted, macOS, ARM64,
+vaultify-release]`), then delete this section and the table notes. The Linux release gate
+job and its 50-minute evidence wait are fine on either runner and can stay.
 
 ## Pull-request and main CI
 
@@ -36,6 +60,11 @@ signing material, and any future third-party contribution model requires revisit
 Checkout credentials are not persisted, and the job checks out the PR head rather than the
 synthetic merge ref so the receipt binds to the candidate SHA.
 
+The suite builds ad-hoc signed (`CODE_SIGN_IDENTITY=-`, as `release-local.sh` does), which
+needs no certificate or secret. An unsigned build carries no entitlements, so the
+data-protection Keychain answers `errSecMissingEntitlement` (-34018) and the Keychain-backed
+suites cannot pass.
+
 ## Toolchain pin policy
 
 `scripts/ci/toolchain-pin.sh` is the single source of truth. Both other scripts source it,
@@ -44,7 +73,7 @@ so the Xcode pin and the simulator-runtime pin cannot drift apart.
 | Constant | Value | Meaning |
 |---|---|---|
 | `MINIMUM_XCODE_VERSION` | `26.5` | oldest Xcode allowed to test or release |
-| `MINIMUM_IOS_RUNTIME_VERSION` | `26.0` | oldest simulator runtime allowed to host the suites |
+| `MINIMUM_IOS_RUNTIME_VERSION` | `26.5` | oldest simulator runtime allowed to host the suites; on 26.2 the back-deployed `@MainActor` deinit double-frees and aborts the test host |
 | `SIMULATOR_DEVICE_TYPE` | `iPhone 17 Pro` | device the suites run on |
 
 This is a **minimum**, not an exact match. An exact `26.5` string pin was the previous
@@ -83,14 +112,17 @@ review the diff instead of accepting it.
 ## Release boundary
 
 A `v*` tag triggers `release-ios.yml`. Signing and upload run only on a self-hosted runner
-carrying every label below:
+carrying every label below (temporarily GitHub-hosted `macos-26`, see above):
 
 ```text
 self-hosted, macOS, ARM64, vaultify-release
 ```
 
-The job is attached to the `production-ios-release` environment and proceeds only when both
-`github.actor` and `github.triggering_actor` equal `bervion`. It then verifies, in order:
+Both jobs proceed only when `github.actor` and `github.triggering_actor` equal `bervion`.
+Checks 1 and 2 run first, in the **Tag and CI evidence** job on `ubuntu-latest`, which holds
+no secrets; its wait for CI is a polling loop, so it stays off the macOS runner. The **Sign
+and upload to TestFlight** job is attached to the `production-ios-release` environment,
+starts only after that job succeeds, and runs checks 3 to 6. In order:
 
 1. the tagged commit is reachable from `origin/main`;
 2. **the exact tag SHA has a completed, successful `ci.yml` run** — evidence is bound to the
@@ -166,6 +198,14 @@ not execute the app on iOS 17.3.
 - **"No installed iOS simulator runtime satisfies the policy":** the step prints the runtime
   inventory. Either install the runtime through Xcode, or move
   `MINIMUM_IOS_RUNTIME_VERSION` deliberately and re-record snapshot references.
+- **`vaultify.icon` "is a directory", or actool "no icon stack named vaultify" / "attempt
+  to insert nil object":** Launch Services on that machine does not know the Icon Composer
+  `.icon` type, which Tuist needs to keep the app icon and actool needs to compile it.
+  `prepare-project.sh` registers the selected Xcode's `Icon Composer.app` on every run. If
+  the icon is still dropped, run that `lsregister -f` command as the runner user in its
+  logged-in session and re-run the job. If actool still crashes afterwards, `killall
+  ibtoold` (actool reuses that daemon) and re-run. Do not glob the icon to silence Tuist;
+  that only moves the failure into actool.
 - **Runner is queued:** verify the online runner has all four required labels.
 - **Protected reviewer API returns HTTP 422:** the current plan cannot enforce that rule.
   Keep the owner-tag fallback and record the residual gate; do not report it as resolved.

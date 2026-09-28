@@ -20,7 +20,9 @@ env:
 jobs:
   unit-tests:
     name: Unit tests
-    runs-on: [self-hosted, macOS, ARM64, vaultify-ci]
+    # TEMPORARY: GitHub-hosted while the self-hosted Mac mini is offline. Restore
+    # `[self-hosted, macOS, ARM64, vaultify-ci]` when it is back (see the runbook).
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - name: Checkout candidate
