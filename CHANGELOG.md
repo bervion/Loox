@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.56.5] - 2026-09-28
+
+### Fixed
+- recover when a reinstall leaves an identity this vault can't open (#216)
+
+
 ## [1.56.4] - 2026-09-28
 
 ### Fixed

@@ -1,1 +1,1 @@
-Bản cập nhật này giúp thông báo lỗi iCloud rõ ràng hơn và thiết lập alias email đơn giản hơn. Đồng thời cải thiện độ ổn định tổng thể.
+Đã khắc phục lỗi có thể khiến bạn không truy cập được Kho sau khi cài đặt lại ứng dụng trên thiết bị này.

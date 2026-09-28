@@ -1,1 +1,1 @@
-This update clarifies iCloud error messages and makes setting up email aliases simpler. Includes stability improvements behind the scenes.
+Fixed an issue that could prevent access to your vault after reinstalling the app on this device.
