@@ -166,6 +166,14 @@ not execute the app on iOS 17.3.
 - **"No installed iOS simulator runtime satisfies the policy":** the step prints the runtime
   inventory. Either install the runtime through Xcode, or move
   `MINIMUM_IOS_RUNTIME_VERSION` deliberately and re-record snapshot references.
+- **`vaultify.icon` "is a directory", or actool "no icon stack named vaultify" / "attempt
+  to insert nil object":** Launch Services on that machine does not know the Icon Composer
+  `.icon` type, which Tuist needs to keep the app icon and actool needs to compile it.
+  `prepare-project.sh` registers the selected Xcode's `Icon Composer.app` on every run. If
+  the icon is still dropped, run that `lsregister -f` command as the runner user in its
+  logged-in session and re-run the job. If actool still crashes afterwards, `killall
+  ibtoold` (actool reuses that daemon) and re-run. Do not glob the icon to silence Tuist;
+  that only moves the failure into actool.
 - **Runner is queued:** verify the online runner has all four required labels.
 - **Protected reviewer API returns HTTP 422:** the current plan cannot enforce that rule.
   Keep the owner-tag fallback and record the residual gate; do not report it as resolved.

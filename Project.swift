@@ -166,6 +166,11 @@ let project = Project(
             resources: [
                 "Vaultify/Assets.xcassets",
                 "VaultifyCore/SharedAssets.xcassets",
+                // A directory entry on purpose, not the `/**` glob Tuist's warning
+                // suggests. Tuist and actool both resolve `.icon` through Launch
+                // Services, so when Icon Composer is unregistered this entry drops
+                // at generation, where prepare-project.sh names it, instead of
+                // crashing actool later.
                 "Vaultify/vaultify.icon",
                 "Vaultify/Localizable.xcstrings",
                 "Vaultify/LaunchScreen.storyboard",
