@@ -1,10 +1,47 @@
 import XCTest
+import CloudKit
 @testable import Vaultify
 
 /// Relay failure handling: the bounded silent-retry decision table and the
 /// user-facing copy mapping (backend vocabulary must never surface).
 @MainActor
 final class RelayRetryPolicyTests: XCTestCase {
+
+    func testEscrowGenesisRequiresConfirmedAbsence() {
+        for code in [CKError.Code.unknownItem, .zoneNotFound] {
+            XCTAssertTrue(RelayPrincipalEscrowService.isMissingEscrow(CKError(code)))
+        }
+        for code in [CKError.Code.notAuthenticated, .networkFailure, .serviceUnavailable,
+                     .permissionFailure, .serverRejectedRequest, .partialFailure] {
+            XCTAssertFalse(RelayPrincipalEscrowService.isMissingEscrow(CKError(code)))
+        }
+        XCTAssertFalse(RelayPrincipalEscrowService.isMissingEscrow(URLError(.timedOut)))
+    }
+
+    func testUnauthenticatedEscrowHasAccountSpecificFailure() {
+        let error = NSError(domain: CKErrorDomain, code: CKError.Code.notAuthenticated.rawValue)
+        XCTAssertEqual(RelayService.Failure.principalFailure(for: error), .iCloudAuthenticationRequired)
+        XCTAssertEqual(RelayService.Failure.iCloudAuthenticationRequired.userTitle,
+                       appString("Sign in to iCloud"))
+        XCTAssertNotEqual(RelayService.Failure.iCloudAuthenticationRequired.userMessage,
+                          RelayService.Failure.principalUnavailable.userMessage)
+    }
+
+    func testOtherEscrowErrorsDoNotSuggestSigningIn() {
+        for code in [CKError.Code.networkFailure, .permissionFailure, .serverRejectedRequest] {
+            XCTAssertEqual(RelayService.Failure.principalFailure(for: CKError(code)), .principalUnavailable)
+        }
+        // A numeric 9 from another error domain is not CloudKit authentication.
+        XCTAssertEqual(RelayService.Failure.principalFailure(for: NSError(domain: "Other", code: 9)),
+                       .principalUnavailable)
+    }
+
+    func testEscrowFailureDoesNotClaimRelayOutage() {
+        XCTAssertNotEqual(RelayService.Failure.principalUnavailable.userTitle,
+                          RelayService.Failure.rejected("server_503").userTitle)
+        XCTAssertNotEqual(RelayService.Failure.principalUnavailable.userMessage,
+                          RelayService.Failure.rejected("server_503").userMessage)
+    }
 
     func testNonceReplayRetriesExactlyOnce() {
         XCTAssertEqual(RelayRetryPolicy.action(for: .nonceReplay, attempt: 1), .retry)
@@ -28,7 +65,7 @@ final class RelayRetryPolicyTests: XCTestCase {
 
     func testUserMessageNeverLeaksBackendVocabulary() {
         let failures: [RelayService.Failure] = [
-            .vaultLocked, .principalUnavailable, .missingDestination, .network,
+            .vaultLocked, .principalUnavailable, .iCloudAuthenticationRequired, .missingDestination, .network,
             .rejected("unauthorized"), .rejected("rate_limited"),
             .rejected("nonce_replay"), .rejected("epoch_stale"), .rejected("server_503"),
             .rejected("alias_cap_reached"),

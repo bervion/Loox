@@ -14,8 +14,7 @@ struct PersonaAliasesScreen: View {
     @State private var missingEmail = false
     @State private var pendingPause: EmailAlias?
     @State private var pendingDelete: EmailAlias?
-    @State private var promptReusableLabel = false
-    @State private var reusableLabelDraft = ""
+    @State private var verificationInboxID: String?
     @State private var defaultDomainID = PrivateEmailDomainDefault.domainID
     @State private var paywallContext: LooxPaywallContext?
 
@@ -37,10 +36,13 @@ struct PersonaAliasesScreen: View {
                 .listRowBackground(VaultColors.surface)
             }
 
-            verificationBanner
-
             Section {
-                receiveOnlyBanner
+                VStack(spacing: Space.s3) {
+                    verificationBanner
+                    receiveOnlyBanner
+                }
+                // Keep the List section mask outside the modest banner corners.
+                .padding(.vertical, Space.s3)
             }
             .listRowBackground(Color.clear)
             // Full row width: with the default list insets the banner's own
@@ -70,7 +72,7 @@ struct PersonaAliasesScreen: View {
             .listRowBackground(VaultColors.surface)
 
             // Default mail domain for every create flow that doesn't ask
-            // (reusable-address alert, editor prefill, item-editor quick
+            // (reusable-address creation, editor prefill, item-editor quick
             // action). Reading appliedRevision re-renders this screen when a
             // registry lands AFTER first render — otherwise the picker would
             // stay invisible until the next launch.
@@ -85,6 +87,9 @@ struct PersonaAliasesScreen: View {
             }
         }
         .navigationTitle(Text("Private Email"))
+        .navigationDestination(item: $verificationInboxID) { inboxID in
+            ForwardingInboxDetailScreen(inboxID: inboxID)
+        }
         // Non-blocking, contextual — never at app startup (INV-CAP-02).
         .task {
             await gate.refresh()
@@ -138,36 +143,25 @@ struct PersonaAliasesScreen: View {
         }
     }
 
-    /// The one prerequisite, said out loud. Creating an address while the
-    /// destination is unconfirmed fails at the relay, and the screen used to
-    /// carry no hint that a confirmation was outstanding — so the failure
-    /// arrived as a surprise, worded like a network problem. Tapping it goes to
-    /// the inbox that needs confirming, where the send button lives.
+    /// Explicit action avoids the List disclosure chevron beside a banner.
     @ViewBuilder private var verificationBanner: some View {
         if let inbox = gate.unverifiedDestination {
-            Section {
-                NavigationLink {
-                    ForwardingInboxDetailScreen(inboxID: inbox.id)
-                } label: {
-                    VaultInfoBanner(
-                        .warning, icon: Icons.mail,
-                        title: "Confirm your forwarding email",
-                        verbatimText: appString("Private addresses can’t forward to \(EmailMask.masked(inbox.email)) until you confirm it’s yours. It takes one tap and an email."))
-                }
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
+            VaultInfoBanner(
+                .warning, icon: Icons.alert,
+                title: "Confirm your inbox",
+                verbatimText: appString("Confirm \(EmailMask.masked(inbox.email)) to receive forwarded mail."),
+                actionLabel: "Confirm email",
+                action: { verificationInboxID = inbox.id })
+                .subtle()
         }
     }
 
-    /// Standing privacy caution about how forwarding works. It reads as a
-    /// WARNING, not as neutral accent context: on the info tint it was visually
-    /// identical to the capability banner above it, so a blocked state stacked
-    /// two matching accent cards and stopped reading as an alert.
+    /// Neutral context has less visual weight than the outstanding prerequisite.
     private var receiveOnlyBanner: some View {
-        VaultInfoBanner(.warning, icon: Icons.mail,
-                        title: "Mail sent to an active alias forwards to your inbox. Receive-only.",
-                        text: "Replies from your destination inbox may reveal your real email address.")
+        VaultInfoBanner(.info, icon: Icons.info,
+                        title: "For incoming mail only",
+                        text: "Replying from your inbox may reveal your real email.")
+            .subtle()
     }
 
     /// Create affordances render only while creation can actually run — a
@@ -183,16 +177,9 @@ struct PersonaAliasesScreen: View {
             }
             if canCreate {
                 Button {
-                    guardQuota { guardEmail(persona) { promptReusableLabel = true } }
+                    guardQuota { guardEmail(persona) { createReusable(persona) } }
                 } label: {
                     Label { Text("Create reusable address") } icon: { VaultIcon(Icons.addCircle) }
-                }
-                .alert("New reusable address", isPresented: $promptReusableLabel) {
-                    TextField("Label", text: $reusableLabelDraft)
-                    Button("Cancel", role: .cancel) { reusableLabelDraft = "" }
-                    Button("Save") { createReusable(persona) }
-                } message: {
-                    Text("Optional label like “Clients”.")
                 }
             }
         }
@@ -215,7 +202,7 @@ struct PersonaAliasesScreen: View {
     }
 
     private func aliasRow(_ alias: EmailAlias, subtitle: String?) -> some View {
-        // Full working address only when live+active — AliasAddress guarantees it.
+        // Keep the selected domain visible; the status below indicates forwarding readiness.
         let address = AliasAddress.display(localPart: alias.localPart, status: alias.status,
                                            relayDomain: alias.emailDomain)
         return NavigationLink {
@@ -252,10 +239,8 @@ struct PersonaAliasesScreen: View {
     }
 
     private func createReusable(_ persona: Persona) {
-        let label = reusableLabelDraft.trimmingCharacters(in: .whitespaces)
-        reusableLabelDraft = ""
         if let id = try? env.repository.createPersonaAlias(for: persona,
-                                                           label: label.isEmpty ? nil : label,
+                                                           label: nil,
                                                            domainID: PrivateEmailDomainDefault.domainID),
            let created = env.repository.aliases.first(where: { $0.id == id }) {
             activate(created)

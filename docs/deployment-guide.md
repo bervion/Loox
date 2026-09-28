@@ -265,3 +265,25 @@ unique and increasing for every upload (each `make release`/`make beta`/`make ho
 
 ## Open questions
 - Certs repo name assumed `bervion/vaultify-ios-certificates` — update `fastlane/Matchfile` if you use a different name.
+
+## Private Email on TestFlight
+
+TestFlight uses CloudKit Production. Verify the private `Vault` zone supports record type
+`RelayPrincipalEscrow` and its `sealed` field in the deployed Production schema. A missing
+schema, inaccessible iCloud account, or an escrow that cannot be opened with this vault key
+can block both email verification and alias creation before any relay request is sent.
+Do not delete or replace an existing escrow to troubleshoot: it owns existing relay aliases.
+Vault-item sync does not need to be enabled for this escrow.
+
+Use the `com.bervion.vaultify` / `relay` log category to distinguish `Principal escrow failed`,
+`App Attest failed`, and `Relay command failed`. Logs contain error codes, not inboxes or keys.
+A successful `GET https://api-relay.looxpassword.com/v1/relay/service-state` confirms only
+service availability, not successful CloudKit access, App Attest, or mail delivery. Validate
+on a physical TestFlight device: confirm inbox, open the verification link, refresh status,
+activate an alias, then verify forwarding. Simulator tests cannot validate App Attest.
+
+`Principal escrow failed: domain=CKErrorDomain code=9` means CloudKit authentication is
+unavailable (`notAuthenticated`), before the relay call. On Simulator, check iCloud sign-in
+inside Simulator Settings. This is distinct from a missing Production schema. Use a real
+iPhone for the complete App Attest-protected relay flow; simulator logs cannot establish
+the cause of a separate TestFlight failure. The app surfaces an account-specific message.

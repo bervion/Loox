@@ -8,9 +8,8 @@ import Foundation
 /// first-writer-wins (a pinned principalID is never silently replaced); rotation
 /// is a deliberate last-writer-wins overwrite.
 ///
-/// Gated on `CloudSyncService.isConfigured` (VAULTIFY_ICLOUD); no user path calls
-/// it yet (`RelayFeature.activeAliasesEnabled` is false), so a non-iCloud build
-/// simply throws `.notConfigured`.
+/// Requires configured CloudKit, independently of the vault-item sync toggle.
+/// Production installs require the escrow record type in the Production schema.
 @MainActor final class RelayPrincipalEscrowService {
     enum Failure: Error { case notConfigured, vaultLocked, escrowUnavailable }
 
@@ -114,8 +113,24 @@ import Foundation
     }
 
     private func fetchEscrowEnvelope() async throws -> Data? {
-        guard let record = try? await database.record(for: escrowRecordID()) else { return nil }
-        return record[ApprovalRecordMapping.Field.sealed] as? Data
+        let record: CKRecord
+        do {
+            record = try await database.record(for: escrowRecordID())
+        } catch {
+            // Only confirmed absence permits genesis. Account, schema and network
+            // failures must not be mistaken for an empty escrow.
+            if Self.isMissingEscrow(error) { return nil }
+            throw error
+        }
+        guard let envelope = record[ApprovalRecordMapping.Field.sealed] as? Data else {
+            throw Failure.escrowUnavailable
+        }
+        return envelope
+    }
+
+    static func isMissingEscrow(_ error: any Error) -> Bool {
+        guard let error = error as? CKError else { return false }
+        return error.code == .unknownItem || error.code == .zoneNotFound
     }
 
     /// Vault erase teardown. The REMOTE escrow record dies with the `"Vault"` zone

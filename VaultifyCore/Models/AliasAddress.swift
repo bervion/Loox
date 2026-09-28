@@ -1,16 +1,14 @@
 import Foundation
 
-/// Renders an alias address and mints local-parts. The ONLY place a full
-/// `local@domain` address is ever produced — and only when the relay is live and
-/// the alias is active, so no surface can show a working-looking address before
-/// the backend exists.
+/// Renders the selected address independently of forwarding activation.
+/// Status badges communicate whether it can receive mail.
 nonisolated enum AliasAddress {
 
-    /// The user-facing address. Pre-relay (or any non-active alias) this is just
-    /// the bare local-part — never `@domain`, which would imply a live address.
+    /// Keep the selected domain visible before verification and while paused.
+    /// The pre-relay feature flag still suppresses addresses for disabled builds.
     static func display(localPart: String, status: AliasStatus,
                         relayDomain: String, flag: Bool = RelayFeature.activeAliasesEnabled) -> String {
-        guard flag, status == .active else { return localPart }
+        guard flag else { return localPart }
         return "\(localPart)@\(relayDomain)"
     }
 

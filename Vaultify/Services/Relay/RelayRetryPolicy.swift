@@ -1,4 +1,5 @@
 import Foundation
+import CloudKit
 
 /// Pure decision table for relay-command failures: which failures earn ONE
 /// silent rebuild-and-retry (fresh nonce + issued_at, re-signed), which need an
@@ -43,6 +44,13 @@ nonisolated enum RelayRetryPolicy {
 }
 
 extension RelayService.Failure {
+    static func principalFailure(for error: any Error) -> Self {
+        if let cloudError = error as? CKError, cloudError.code == .notAuthenticated {
+            return .iCloudAuthenticationRequired
+        }
+        return .principalUnavailable
+    }
+
     /// Headline for a relay failure. Every screen used to title these alerts
     /// "Couldn’t reach the relay" whatever went wrong, so a consent gate, an
     /// announced maintenance window and a locked vault all announced themselves
@@ -70,7 +78,11 @@ extension RelayService.Failure {
             return appString("Too many requests")
         case .rejected("alias_cap_reached"):
             return appString("Address limit reached")
-        case .capabilityBlocked, .principalUnavailable, .rejected:
+        case .iCloudAuthenticationRequired:
+            return appString("Sign in to iCloud")
+        case .principalUnavailable:
+            return appString("Couldn’t access iCloud for Private Email")
+        case .capabilityBlocked, .rejected:
             return appString("Couldn’t reach the relay")
         }
     }
@@ -108,7 +120,11 @@ extension RelayService.Failure {
         case .rejected("alias_cap_reached"):
             // Backend cap counts active + paused; permanent deletes free space.
             return appString("You’ve reached the limit for private addresses. Permanently delete addresses you no longer use.")
-        case .principalUnavailable, .rejected:
+        case .iCloudAuthenticationRequired:
+            return appString("Private Email needs an authenticated iCloud account. Check your iCloud sign-in in Settings, then try again. Vault sync can stay off.")
+        case .principalUnavailable:
+            return appString("Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support.")
+        case .rejected:
             return appString("Check your connection and iCloud, then try again.")
         }
     }

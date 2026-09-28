@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Orchestrates relay alias lifecycle against the live backend: resolves the
 /// Relay Principal (escrow), signs the canonical command, calls the control API,
@@ -11,7 +12,8 @@ import Foundation
 @MainActor final class RelayService {
     enum Failure: Error, Equatable {
         case vaultLocked
-        case principalUnavailable   // escrow not reachable (no iCloud / offline)
+        case principalUnavailable   // escrow could not be loaded
+        case iCloudAuthenticationRequired // CKError.notAuthenticated, before any relay call
         case missingDestination     // the persona's profile has no email to forward to
         case network                // transport-level failure
         /// Verified operator state (maintenance/disabled/retired) — distinct
@@ -19,6 +21,8 @@ import Foundation
         case capabilityBlocked(CapabilityServiceMode, retryAfter: Int?)
         case rejected(String)       // backend refused (mapped reason, for UI copy)
     }
+
+    private static let log = Logger(subsystem: "com.bervion.vaultify", category: "relay")
 
     private let repository: VaultRepository
     private let session: VaultSession
@@ -168,6 +172,8 @@ import Foundation
             return try await RelayAttestation.assertion(forCommandTranscript: transcript,
                                                         baseURL: RelayConfig.apiBaseURL)
         } catch {
+            let detail = error as NSError
+            Self.log.error("App Attest failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
             // Server is at `required`, so a mutation without a valid assertion is
             // rejected anyway — hard-fail locally with a clear error rather than
             // sending a request that 401s. (Unsupported devices are handled by
@@ -283,7 +289,11 @@ import Foundation
             attempt += 1
             let principal: RelayPrincipalIdentity
             do { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
-            catch { throw Failure.principalUnavailable }
+            catch {
+                let detail = error as NSError
+                Self.log.error("Principal escrow failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
+                throw Failure.principalFailure(for: error)
+            }
             // Publish the wire identity (std-b64 WITH padding — the exact
             // `principal_id` string the server hashes) for entitlement
             // binding requests; the attach flow reads it lazily.
@@ -309,6 +319,7 @@ import Foundation
                 capabilities?.noteSuccess(.privateEmail)
                 return responseData
             } catch let failure as RelayAPIClient.Failure {
+                Self.log.error("Relay command failed: kind=\(kind.rawValue) failure=\(String(describing: failure), privacy: .public)")
                 if case .aliasExists = failure {
                     capabilities?.noteServiceResponded(.privateEmail)
                     throw failure  // mint's retry loop handles it

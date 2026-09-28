@@ -23,9 +23,7 @@ enum PrivateEmailDomainDefault {
 }
 
 /// Form section offering the mail-domain choice for a new alias. Renders
-/// nothing while only one domain is creatable — the single-domain vault keeps
-/// its current zero-question create flow, and the picker appears the day the
-/// registry offers a second active domain.
+/// the domain even when only one is available; multiple domains enable a picker.
 struct AliasDomainPickerSection: View {
     @Binding var domainID: String
     /// Optional explainer under the section (e.g. the default-domain row on
@@ -61,6 +59,16 @@ struct AliasDomainPickerSection: View {
             } footer: {
                 // No section header: the picker row already says "Email Domain" —
                 // header + row label doubled the same words two lines apart.
+                if let footer { Text(footer) }
+            }
+        } else if let host = choices.first?.emailAddressDomain {
+            Section {
+                LabeledContent {
+                    Text(verbatim: "@" + host).themedForeground(.secondary)
+                } label: {
+                    Text("Email Domain")
+                }
+            } footer: {
                 if let footer { Text(footer) }
             }
         }
