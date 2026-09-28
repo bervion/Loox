@@ -1,1 +1,1 @@
-This update improves reliability when reinstalling Loox, so your vault stays accessible without extra steps.
+This update clarifies iCloud error messages and makes setting up email aliases simpler. Includes stability improvements behind the scenes.

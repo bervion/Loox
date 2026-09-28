@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.56.4] - 2026-09-28
+
+### Fixed
+- clarify iCloud errors and simplify alias setup (#214)
+
+### Changed
+- run on GitHub-hosted macOS and register Icon Composer (#215)
+
+
 ## [1.56.3] - 2026-09-02
 
 ### Fixed

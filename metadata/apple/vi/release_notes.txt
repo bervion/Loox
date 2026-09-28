@@ -1,1 +1,1 @@
-Bản cập nhật này giúp Loox hoạt động ổn định hơn khi bạn cài đặt lại ứng dụng, vault của bạn luôn truy cập được mà không cần thêm thao tác.
+Bản cập nhật này giúp thông báo lỗi iCloud rõ ràng hơn và thiết lập alias email đơn giản hơn. Đồng thời cải thiện độ ổn định tổng thể.
