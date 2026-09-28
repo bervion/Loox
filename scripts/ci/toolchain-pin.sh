@@ -17,8 +17,11 @@
 # Oldest Xcode allowed to produce a Vaultify test run or release build.
 MINIMUM_XCODE_VERSION="26.5"
 
-# Oldest iOS simulator runtime allowed to host the test suites.
-MINIMUM_IOS_RUNTIME_VERSION="26.0"
+# Oldest iOS simulator runtime allowed to host the test suites. Not lower than
+# 26.5: on the 26.2 runtime the back-deployed `@MainActor` deinit double-frees
+# ("pointer being freed was not allocated") and aborts the test host in suites
+# whose code never changed, the same red herring release-local.sh warns about.
+MINIMUM_IOS_RUNTIME_VERSION="26.5"
 
 # Device type the suites are recorded and replayed on. Snapshot references are
 # scale-pinned in code, so this only fixes screen geometry, not raster scale.
