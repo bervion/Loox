@@ -103,8 +103,14 @@ import Foundation
     func replaceUnopenablePrincipal(vaultKey: [UInt8]) async throws -> RelayPrincipalIdentity {
         guard CloudSyncService.isConfigured else { throw Failure.notConfigured }
         guard !vaultKey.isEmpty else { throw Failure.vaultLocked }
-        guard let existing = try await fetchEscrowEnvelope() else {
+        let record: CKRecord
+        do {
+            record = try await database.record(for: escrowRecordID())
+        } catch let error where Self.isMissingEscrow(error) {
             return try await ensurePrincipal(vaultKey: vaultKey)   // nothing to replace
+        }
+        guard let existing = record[ApprovalRecordMapping.Field.sealed] as? Data else {
+            throw Failure.escrowUnavailable
         }
         do {
             // Re-checked here rather than trusted from the earlier failure: another
@@ -117,12 +123,19 @@ import Foundation
         }
         let identity = RelayPrincipalIdentity.generate()
         let envelope = try identity.escrowSealed(vaultKey: vaultKey)
-        let record = CKRecord(recordType: RelayConfig.escrowRecordType, recordID: escrowRecordID())
+        // Compare-and-swap on the fetched record: if another device wrote the
+        // escrow since, this save fails instead of splitting the vault's aliases
+        // across two principals.
         record[ApprovalRecordMapping.Field.sealed] = envelope as CKRecordValue
-        // `.allKeys` overwrites the server copy without comparing change tags:
-        // the last-writer-wins replacement the user just confirmed.
-        let saved = try await database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
-        for (_, result) in saved.saveResults { _ = try result.get() }
+        do {
+            let saved = try await database.modifyRecords(saving: [record], deleting: [],
+                                                         savePolicy: .ifServerRecordUnchanged)
+            for (_, result) in saved.saveResults { _ = try result.get() }
+        } catch let error where Self.isExistingRecordCollision(error) {
+            // Someone wrote first: adopt theirs if this vault opens it; otherwise
+            // the failure surfaces again and the user decides against the new state.
+            return try await adoptExisting(vaultKey: vaultKey)
+        }
         try? KeychainStore.set(envelope, account: Self.cacheAccount)
         return identity
     }
@@ -169,8 +182,9 @@ import Foundation
     }
 
     /// The escrow exists, but this vault's key can never open it: the only case
-    /// in which the user may replace it (`replaceUnopenablePrincipal`).
-    static func isUnopenableWithThisVault(_ error: any Error) -> Bool {
+    /// in which the user may replace it (`replaceUnopenablePrincipal`). Pure, so
+    /// the nonisolated failure mapping (`principalFailure(for:)`) can call it.
+    nonisolated static func isUnopenableWithThisVault(_ error: any Error) -> Bool {
         (error as? RelayPrincipalIdentity.EscrowFailure) == .cannotOpenWithVaultKey
     }
 

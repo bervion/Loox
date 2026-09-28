@@ -36,11 +36,11 @@ final class RelayRetryPolicyTests: XCTestCase {
                        .principalUnavailable)
     }
 
-    func testEscrowFromAnotherVaultOffersANewIdentity() {
+    func testEscrowFromAnotherVaultOffersAReset() {
         let failure = RelayService.Failure.principalFailure(
             for: RelayPrincipalIdentity.EscrowFailure.cannotOpenWithVaultKey)
         XCTAssertEqual(failure, .principalFromAnotherVault)
-        XCTAssertTrue(failure.offersNewIdentity)
+        XCTAssertTrue(failure.offersPrivateEmailReset)
         // Not the iCloud copy, which sent users to Settings for a problem that
         // was not there.
         XCTAssertNotEqual(failure.userTitle, RelayService.Failure.principalUnavailable.userTitle)
@@ -60,7 +60,7 @@ final class RelayRetryPolicyTests: XCTestCase {
         ]
         for error in kept {
             XCTAssertFalse(RelayPrincipalEscrowService.isUnopenableWithThisVault(error), "\(error)")
-            XCTAssertFalse(RelayService.Failure.principalFailure(for: error).offersNewIdentity, "\(error)")
+            XCTAssertFalse(RelayService.Failure.principalFailure(for: error).offersPrivateEmailReset, "\(error)")
         }
     }
 

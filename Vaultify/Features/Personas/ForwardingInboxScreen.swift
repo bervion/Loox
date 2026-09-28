@@ -17,7 +17,7 @@ struct ForwardingInboxScreen: View {
     @State private var rotationTotal = 0
     @State private var errorTitle = ""
     @State private var errorMessage: String?
-    @State private var errorOffersNewIdentity = false
+    @State private var errorOffersReset = false
     @State private var pendingDeleteInbox: ForwardingInbox?
     @State private var verification = ForwardingInboxVerification()
 
@@ -57,15 +57,10 @@ struct ForwardingInboxScreen: View {
             Text("A real inbox your private addresses can forward to.")
         }
         .relayFailureAlert(title: errorTitle, message: errorMessage, isPresented: errorBinding,
-                           offersNewIdentity: errorOffersNewIdentity) { startNewIdentity() }
+                           offersReset: errorOffersReset) { resetPrivateEmail() }
         // Verification reports through its own controller — success included, so
         // a sent email is confirmed on screen and not just in the user's inbox.
-        .relayFailureAlert(title: verification.outcome?.title ?? "",
-                           message: verification.outcome?.body,
-                           isPresented: outcomeBinding,
-                           offersNewIdentity: verification.outcome?.offersNewIdentity ?? false) {
-            Task { await verification.startNewIdentity(relay: env.relay) }
-        }
+        .relayOutcomeAlert(verification, relay: env.relay)
         .confirmationDialog("Delete this inbox?", isPresented: deleteInboxBinding,
                             titleVisibility: .visible, presenting: pendingDeleteInbox) { inbox in
             Button("Delete", role: .destructive) {
@@ -278,7 +273,7 @@ struct ForwardingInboxScreen: View {
                 // Finished aliases are checkpointed — the section re-offers the rest.
                 errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
-                errorOffersNewIdentity = failure.offersNewIdentity
+                errorOffersReset = failure.offersPrivateEmailReset
                 Haptics.error()
             } catch {
                 errorTitle = appString("Couldn’t reach the relay")
@@ -290,22 +285,18 @@ struct ForwardingInboxScreen: View {
 
     private var errorBinding: Binding<Bool> {
         Binding(get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil; errorOffersNewIdentity = false } })
+                set: { if !$0 { errorMessage = nil; errorOffersReset = false } })
     }
 
-    /// The failure alert's deliberate recovery: replace a Private Email identity
-    /// this vault can't open, then report the result in the same alert.
-    private func startNewIdentity() {
+    /// The failure alert's deliberate recovery: reset Private Email when this
+    /// vault can't open its key, then report the result in the same alert.
+    private func resetPrivateEmail() {
         Task {
-            let result = await RelayIdentityRecovery.startNewIdentity(using: env.relay)
+            let result = await PrivateEmailReset.run(using: env.relay)
+            errorOffersReset = result.offersReset
             errorTitle = result.title
             errorMessage = result.message
         }
-    }
-
-    private var outcomeBinding: Binding<Bool> {
-        Binding(get: { verification.outcome != nil },
-                set: { if !$0 { verification.outcome = nil } })
     }
 
     private var deleteInboxBinding: Binding<Bool> {

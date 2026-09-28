@@ -292,10 +292,12 @@ the cause of a separate TestFlight failure. The app surfaces an account-specific
 the escrow loaded but this vault's key cannot open it. Deleting the app deletes the vault
 and its key, while the escrow (and its Keychain cache) survives, so the next install's new
 vault can never open it: the usual cause is reinstalling without restoring the vault. The
-app says so ("Can’t open your Private Email identity") and offers **Start New Identity**,
-which overwrites the escrow with a new principal only after the user confirms and only if
-this vault still cannot open it. Aliases owned by the old principal keep forwarding but can
-no longer be managed. If the old vault is still on another device, restore it instead.
+app says so ("Private Email was set up with another vault") and offers **Reset Private
+Email**, which replaces the escrow with a new principal only after the user confirms, only if
+this vault still cannot open it, and only if no other device wrote it in the meantime.
+Aliases owned by the old principal keep forwarding but can no longer be managed. If the old
+vault is still on another device, restore it instead. Deleting the app without **Erase
+Everywhere** first is what leaves the old escrow behind.
 
 The Production schema is not the cause when the record type is listed: CloudKit Console's
 Production **Record Types** page shows "No record types found" for a few seconds while it

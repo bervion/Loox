@@ -11,7 +11,7 @@ struct PersonaAliasesScreen: View {
     @State private var busyAliasID: String?
     @State private var errorTitle = ""
     @State private var errorMessage: String?
-    @State private var errorOffersNewIdentity = false
+    @State private var errorOffersReset = false
     @State private var missingEmail = false
     @State private var pendingPause: EmailAlias?
     @State private var pendingDelete: EmailAlias?
@@ -119,7 +119,7 @@ struct PersonaAliasesScreen: View {
         // Title follows the failure: a consent gate and an outage are different
         // problems with different fixes, and a shared heading hid that.
         .relayFailureAlert(title: errorTitle, message: errorMessage, isPresented: errorBinding,
-                           offersNewIdentity: errorOffersNewIdentity) { startNewIdentity() }
+                           offersReset: errorOffersReset) { resetPrivateEmail() }
         .alert(Text("Add an email first"), isPresented: $missingEmail) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -293,7 +293,7 @@ struct PersonaAliasesScreen: View {
             catch let failure as RelayService.Failure {
                 errorTitle = failure.userTitle
                 errorMessage = failure.userMessage
-                errorOffersNewIdentity = failure.offersNewIdentity
+                errorOffersReset = failure.offersPrivateEmailReset
                 Haptics.error()
             } catch {
                 errorTitle = appString("Couldn’t reach the relay")
@@ -305,14 +305,15 @@ struct PersonaAliasesScreen: View {
 
     private var errorBinding: Binding<Bool> {
         Binding(get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil; errorOffersNewIdentity = false } })
+                set: { if !$0 { errorMessage = nil; errorOffersReset = false } })
     }
 
-    /// The failure alert's deliberate recovery: replace a Private Email identity
-    /// this vault can't open, then report the result in the same alert.
-    private func startNewIdentity() {
+    /// The failure alert's deliberate recovery: reset Private Email when this
+    /// vault can't open its key, then report the result in the same alert.
+    private func resetPrivateEmail() {
         Task {
-            let result = await RelayIdentityRecovery.startNewIdentity(using: env.relay)
+            let result = await PrivateEmailReset.run(using: env.relay)
+            errorOffersReset = result.offersReset
             errorTitle = result.title
             errorMessage = result.message
         }

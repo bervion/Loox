@@ -56,9 +56,9 @@ extension RelayService.Failure {
         return .principalUnavailable
     }
 
-    /// Whether the alert for this failure offers the deliberate "start a new
-    /// identity" recovery. Only an identity this vault can never open qualifies.
-    var offersNewIdentity: Bool { self == .principalFromAnotherVault }
+    /// Whether the alert for this failure offers the deliberate "Reset Private
+    /// Email" recovery. Only a principal this vault can never open qualifies.
+    var offersPrivateEmailReset: Bool { self == .principalFromAnotherVault }
 
     /// Headline for a relay failure. Every screen used to title these alerts
     /// "Couldn’t reach the relay" whatever went wrong, so a consent gate, an
@@ -92,7 +92,7 @@ extension RelayService.Failure {
         case .principalUnavailable:
             return appString("Couldn’t access iCloud for Private Email")
         case .principalFromAnotherVault:
-            return appString("Can’t open your Private Email identity")
+            return appString("Private Email was set up with another vault")
         case .capabilityBlocked, .rejected:
             return appString("Couldn’t reach the relay")
         }
@@ -136,7 +136,7 @@ extension RelayService.Failure {
         case .principalUnavailable:
             return appString("Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support.")
         case .principalFromAnotherVault:
-            return appString("It was created by a vault that’s no longer on this device, so Loox can’t open it. If that vault is still on another device, restore it here instead. Otherwise, start a new identity. Addresses made with the old one keep forwarding, but you won’t be able to manage them here.")
+            return appString("The vault on this device can’t open it, usually because Loox was reinstalled. If the original vault is still on another device, restore it here instead. Otherwise, reset Private Email. Addresses you made before keep forwarding, but you won’t be able to manage them here.")
         case .rejected:
             return appString("Check your connection and iCloud, then try again.")
         }

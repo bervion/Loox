@@ -1,87 +1,87 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Can’t open your Private Email identity" : {
+    "Private Email is ready" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can’t open your Private Email identity"
+            "value" : "Private Email is ready"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "プライベートメールのIDを開けません"
+            "value" : "プライベートメールを使用できます"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không mở được danh tính Email riêng tư"
+            "value" : "Email riêng tư đã sẵn sàng"
           }
         }
       }
     },
-    "It was created by a vault that’s no longer on this device, so Loox can’t open it. If that vault is still on another device, restore it here instead. Otherwise, start a new identity. Addresses made with the old one keep forwarding, but you won’t be able to manage them here." : {
+    "Private Email was set up with another vault" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "It was created by a vault that’s no longer on this device, so Loox can’t open it. If that vault is still on another device, restore it here instead. Otherwise, start a new identity. Addresses made with the old one keep forwarding, but you won’t be able to manage them here."
+            "value" : "Private Email was set up with another vault"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このIDは、このデバイスにはもうない保管庫で作成されたため、Looxで開けません。その保管庫がまだ別のデバイスにある場合は、代わりにこちらに復元してください。ない場合は、新しいIDを作成してください。以前のIDで作成したアドレスは引き続き転送されますが、ここでは管理できなくなります。"
+            "value" : "プライベートメールは別の保管庫で設定されています"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Danh tính này được tạo bởi một kho không còn trên thiết bị này, nên Loox không mở được. Nếu kho đó vẫn còn trên thiết bị khác, hãy khôi phục kho đó về đây. Nếu không, hãy tạo danh tính mới. Các địa chỉ tạo bằng danh tính cũ vẫn tiếp tục chuyển tiếp thư, nhưng bạn sẽ không quản lý được chúng ở đây."
+            "value" : "Email riêng tư được thiết lập bằng kho khác"
           }
         }
       }
     },
-    "New Private Email identity ready" : {
+    "Reset Private Email" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートメールをリセット"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt lại Email riêng tư"
+          }
+        }
+      }
+    },
+    "The vault on this device can’t open it, usually because Loox was reinstalled. If the original vault is still on another device, restore it here instead. Otherwise, reset Private Email. Addresses you made before keep forwarding, but you won’t be able to manage them here." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New Private Email identity ready"
+            "value" : "The vault on this device can’t open it, usually because Loox was reinstalled. If the original vault is still on another device, restore it here instead. Otherwise, reset Private Email. Addresses you made before keep forwarding, but you won’t be able to manage them here."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "プライベートメールの新しいIDを作成しました"
+            "value" : "この端末の保管庫ではプライベートメールを開けません。多くの場合、Looxを再インストールしたことが原因です。元の保管庫が別のデバイスにある場合は、代わりにこちらに復元してください。ない場合は、プライベートメールをリセットしてください。以前に作成したアドレスへのメールは引き続き転送されますが、ここでは管理できなくなります。"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đã tạo danh tính Email riêng tư mới"
-          }
-        }
-      }
-    },
-    "Start New Identity" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新しいIDを作成"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tạo danh tính mới"
+            "value" : "Kho trên thiết bị này không mở được Email riêng tư, thường là do Loox đã được cài lại. Nếu kho ban đầu vẫn còn trên thiết bị khác, hãy khôi phục kho đó về đây. Nếu không, hãy đặt lại Email riêng tư. Các địa chỉ bạn đã tạo trước đây vẫn tiếp tục chuyển tiếp thư, nhưng bạn sẽ không quản lý được chúng ở đây."
           }
         }
       }

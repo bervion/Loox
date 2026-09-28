@@ -16,7 +16,7 @@ import os
         case iCloudAuthenticationRequired // CKError.notAuthenticated, before any relay call
         /// The escrow loaded, but this vault's key can never open it (an app
         /// reinstall replaced the vault that sealed it). Recoverable only by the
-        /// user choosing `startNewPrincipal()`.
+        /// user choosing `resetPrincipal()`.
         case principalFromAnotherVault
         case missingDestination     // the persona's profile has no email to forward to
         case network                // transport-level failure
@@ -40,20 +40,35 @@ import os
         self.session = session
     }
 
-    /// Replace a Private Email identity this vault cannot open with a new one
+    /// The reset in flight, so a second tap joins it instead of racing it.
+    private var principalReset: Task<Data, Error>?
+
+    /// Reset Private Email when this vault cannot open its principal
     /// (`RelayPrincipalEscrowService.replaceUnopenablePrincipal`). Only ever
     /// called from the user's explicit choice in a `principalFromAnotherVault`
-    /// alert: aliases owned by the old identity stop being manageable.
-    func startNewPrincipal() async throws {
+    /// alert: aliases owned by the old principal stop being manageable.
+    func resetPrincipal() async throws {
+        if let running = principalReset {
+            do { _ = try await running.value } catch { throw Failure.principalFailure(for: error) }
+            return
+        }
         guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
+        let keyBytes = vaultKey.bytes
+        let reset = Task { () async throws -> Data in
+            try await self.escrow.replaceUnopenablePrincipal(vaultKey: keyBytes).principalID
+        }
+        principalReset = reset
+        defer { principalReset = nil }
         do {
-            _ = try await escrow.replaceUnopenablePrincipal(vaultKey: vaultKey.bytes)
+            let principalID = try await reset.value
+            // Entitlement attach reads this before the next signed command does.
+            RelayPrincipalWireIdentity.currentB64 = principalID.base64EncodedString()
         } catch {
             let detail = error as NSError
-            Self.log.error("Principal replacement failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
+            Self.log.error("Principal reset failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
             throw Failure.principalFailure(for: error)
         }
-        Self.log.notice("Principal replaced: the previous escrow could not be opened by this vault")
+        Self.log.notice("Principal reset: the escrow this vault could not open was replaced or adopted")
     }
 
     /// Activate a reserved alias: mint it (if not already), point it at the

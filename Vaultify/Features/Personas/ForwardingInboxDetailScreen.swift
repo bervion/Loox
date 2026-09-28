@@ -35,12 +35,7 @@ struct ForwardingInboxDetailScreen: View {
         .navigationTitle(Text("Inbox"))
         // One surface for both answers: "we sent it" is as much a result as a
         // failure, and a send that reported nothing looked like a dead button.
-        .relayFailureAlert(title: verification.outcome?.title ?? "",
-                           message: verification.outcome?.body,
-                           isPresented: outcomeBinding,
-                           offersNewIdentity: verification.outcome?.offersNewIdentity ?? false) {
-            Task { await verification.startNewIdentity(relay: env.relay) }
-        }
+        .relayOutcomeAlert(verification, relay: env.relay)
         .confirmationDialog("Delete this inbox?", isPresented: $confirmDelete,
                             titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
@@ -161,10 +156,5 @@ struct ForwardingInboxDetailScreen: View {
         case .unverified, .revoked:
             Text("Not verified").themedForeground(.secondary)
         }
-    }
-
-    private var outcomeBinding: Binding<Bool> {
-        Binding(get: { verification.outcome != nil },
-                set: { if !$0 { verification.outcome = nil } })
     }
 }
