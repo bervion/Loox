@@ -26,10 +26,9 @@ because the self-hosted Mac mini is offline. What differs while this lasts:
   Linux minutes and drain the plan's included minutes fast. When jobs sit queued or never
   start, check Settings → Billing (included minutes, spending limit).
   `scripts/release-local.sh` releases from your own Mac without Actions minutes.
-- The image carries several Xcodes; `select-xcode.sh` still picks the lowest at or above
-  the pin (26.5). `create-simulator.sh` picks the lowest installed iOS runtime at or above
-  26.0, which is 26.2 on the image at the time of writing rather than the Mac mini's 26.5.
-  The job log prints both selections.
+- The image carries several Xcodes and iOS runtimes; `select-xcode.sh` and
+  `create-simulator.sh` still pick the lowest at or above the pins (Xcode 26.5, iOS 26.5),
+  the same pair the Mac mini ran. The job log prints both selections.
 - The CI/release separation below holds by construction: each job gets its own VM.
 
 To go back, restore the two `runs-on` lines marked `TEMPORARY`
@@ -61,6 +60,11 @@ signing material, and any future third-party contribution model requires revisit
 Checkout credentials are not persisted, and the job checks out the PR head rather than the
 synthetic merge ref so the receipt binds to the candidate SHA.
 
+The suite builds ad-hoc signed (`CODE_SIGN_IDENTITY=-`, as `release-local.sh` does), which
+needs no certificate or secret. An unsigned build carries no entitlements, so the
+data-protection Keychain answers `errSecMissingEntitlement` (-34018) and the Keychain-backed
+suites cannot pass.
+
 ## Toolchain pin policy
 
 `scripts/ci/toolchain-pin.sh` is the single source of truth. Both other scripts source it,
@@ -69,7 +73,7 @@ so the Xcode pin and the simulator-runtime pin cannot drift apart.
 | Constant | Value | Meaning |
 |---|---|---|
 | `MINIMUM_XCODE_VERSION` | `26.5` | oldest Xcode allowed to test or release |
-| `MINIMUM_IOS_RUNTIME_VERSION` | `26.0` | oldest simulator runtime allowed to host the suites |
+| `MINIMUM_IOS_RUNTIME_VERSION` | `26.5` | oldest simulator runtime allowed to host the suites; on 26.2 the back-deployed `@MainActor` deinit double-frees and aborts the test host |
 | `SIMULATOR_DEVICE_TYPE` | `iPhone 17 Pro` | device the suites run on |
 
 This is a **minimum**, not an exact match. An exact `26.5` string pin was the previous

@@ -23,6 +23,11 @@ esac
 # RUNNER_TEMP, and xcodebuild refuses to write over an existing one.
 rm -rf "$RESULT_BUNDLE" "$RESULT_BUNDLE.summary.json"
 
+# Ad-hoc signing, the same flags release-local.sh tests with. It needs no
+# certificate or secret, but it embeds the app's entitlements: an unsigned
+# build has none, so every data-protection Keychain call fails with
+# errSecMissingEntitlement (-34018) and the Keychain-backed suites
+# (AppAttestKeyStoreTests) cannot pass.
 set +e
 xcodebuild \
   -workspace Vaultify.xcworkspace \
@@ -32,7 +37,8 @@ xcodebuild \
   -derivedDataPath "$DERIVED_DATA" \
   -resultBundlePath "$RESULT_BUNDLE" \
   -only-testing:"$TEST_TARGET" \
-  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGN_IDENTITY="-" \
+  CODE_SIGNING_REQUIRED=YES \
   test
 TEST_STATUS=$?
 set -e
