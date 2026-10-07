@@ -2,12 +2,13 @@
 
 > Tài liệu mô tả **toàn bộ tính năng, màn hình, và các trạng thái hiển thị** của app
 > Loox Password (codename Vaultify) + AutoFill extension, để team design hiểu cần
-> thiết kế UI/UX như thế nào. Nguồn: khảo sát trực tiếp code ngày 2026-07-10.
+> thiết kế UI/UX như thế nào. Baseline: khảo sát code ngày 2026-07-10;
+> Private Email và Member được đồng bộ với native source ngày 2026-10-07.
 
 ## 0. Tổng quan sản phẩm
 
-- **Loox Password** — trình quản lý mật khẩu & passkey **offline, zero-backend**, mã hoá đầu-cuối trên thiết bị. iPhone-only, iOS 17.3+, có thêm AutoFill Credential Provider extension (điền mật khẩu/passkey/2FA vào app khác & Safari).
-- **Ngôn ngữ:** EN + VI (toggle trong app). Mọi text đều phải có 2 bản dịch.
+- **Loox Password** — vault mật khẩu & passkey mã hoá, hoạt động offline; CloudKit sync, sharing và Private Email là tính năng online tùy chọn. Tuist khai báo iPhone/iPad iOS 17.3+ và app macOS 15+, cùng extensions tương ứng.
+- **Ngôn ngữ:** EN + VI + JA (toggle trong app). UI mới phải có đủ bản dịch trong catalog.
 - **Nguyên tắc UI:** Apple-native SwiftUI, bộ icon **Polaris SVG** (không dùng SF Symbols, trừ ngoại lệ `faceid`), design token (Space/Radius/Metric/Elevation/Motion), semantic color theo theme (Day/Night + 7 accent preset), hỗ trợ Dynamic Type, Reduce Motion, Reduce Transparency, hit target 44pt.
 - **Pattern lặp lại toàn app:**
   - *Tap-to-copy*: chạm field → copy, row nháy màu accent + label "Copied" ~1.2s, haptic.
@@ -301,12 +302,15 @@ Sheet Form; title = tên category. 3 mode: tạo mới / sửa / khôi phục dr
 - **Editor sheet**: Name + Type (Personal/Professional/Pseudonymous/Anonymous/Custom) + Privacy (Standard / Isolated / **Strictly anonymous** — footer mô tả động; strictly anonymous: không bao giờ gợi ý/tìm kiếm chéo danh tính khác).
 
 ### 12.3 Private Email (alias) — theo persona
-- **Màn Private Email**: banner capability (khi lỗi/bảo trì — xem 12.4) + banner "receive-only" + link "Forwarding to {email che}" + picker domain mặc định *(chỉ khi >1 domain)* + section **Reusable addresses** + **Site-specific addresses**.
-- **Row alias**: địa chỉ + subtitle + nhãn trạng thái: "Forwarding active" / "Tap to activate" / "Forwarding paused" / "Draft"; swipe Delete + Pause.
-- **Chi tiết alias**: Address (copy, Status, Website, Label sửa được) / Forwarding (đổi hộp thư nhận) / Actions (Activate / Pause / **Delete permanently** — dialog cảnh báo không hoàn tác).
-- **Tạo alias theo site**: chọn login để gắn + domain; chưa có login → "No logins to bind yet."
+- **Màn Private Email**: nhóm **Địa chỉ theo dịch vụ** / **Địa chỉ dùng nhiều nơi**, trạng thái và một CTA tạo; lối vào **Dịch vụ liên kết**, hộp thư nhận, domain và notice chỉ nhận thư phía dưới nội dung chính.
+- **Row alias**: địa chỉ xuống dòng khi dài, tên gợi nhớ/website hoặc chưa liên kết và trạng thái chữ riêng.
+- **Chi tiết alias**: copy/activate/resume phù hợp trạng thái; actual forwarding checkpoint tách desired recipient. Management menu có sửa tên, liên kết Login, pause/delete với xác nhận.
+- **Tạo email riêng**: chọn loại, tên gợi nhớ/website/Login tùy chọn, domain và inbox xác minh. Chưa có Login vẫn tạo được; lỗi giữ input và reservation, retry cùng địa chỉ/inbox. Domain mất eligibility trước mint yêu cầu chọn lại rõ ràng.
+- **Dịch vụ liên kết**: global/per-alias list, mở Login và gỡ đúng association có xác nhận. Một alias dùng cho nhiều Login; gỡ chỉ thay canonical Private email field/pointer tại vault-local, giữ email/username thật và forwarding. Legacy Email/username match chỉ xuất hiện trong review riêng.
 - **Forwarding inboxes**: list hộp thư nhận (email che + chip xác minh: "Verified" xanh / "Awaiting confirmation" vàng / "Not verified") + tag "Default"; menu Check verification / Resend / Set as default / Delete; section **rotation** khi cần cập nhật alias hàng loạt (progress "x of y").
-- Lỗi mạng chung: alert "Couldn't reach the relay."
+- **Inbox detail**: mở có chủ đích trong vault unlocked để đọc/copy email local đầy đủ, có Ẩn/Hiện. Background/lock/exit conceal tức thời; foreground không tự reveal lại. Coordinator chung refresh pending visible, chỉ ghi verified từ server cho đúng email/destination/generation.
+- **Domain picker**: accepted signed registry hiển thị cả domain chưa cho tạo với readiness reason; current `loox.pw` chưa được native patch bật. Aliases đã mint giữ suffix; unknown nonlegacy không được copy nhầm domain legacy.
+- Lỗi local field/ownership, CloudKit, App Attest và mạng giữ nguyên nguyên nhân/recovery phù hợp. Native/device acceptance xem [implementation report](../plans/261007-1825-loox-member-and-private-email-ux-overhaul/reports/implementation-progress.md).
 
 ### 12.4 Capability banner (component dùng chung cho tính năng online)
 Banner bo tròn accent nhạt (KHÔNG đỏ — đỏ dành cho destructive): **Offline** ("No Internet Connection…") / **Temporarily unavailable** (+ nút Try Again) / **Maintenance** / **Currently unavailable** (operator tắt) / **No longer available** (retired). Available/user-off → không render banner.
@@ -350,6 +354,7 @@ hữu bấm Activate — tại thời điểm hỏi, bên nhận chưa có mã n
 giao không rút lại được); **"Hand over this secret/passkey?"** → "Hand Over — Can't Be Taken Back".
 
 ### 13.2 Quick Link (link mã hoá cho bất kỳ ai)
+- **Loox Member → Share Links**: root riêng theo active persona, chọn item trước khi mở flow Quick Link bên dưới; chỉ quản lý metadata link còn hạn trên thiết bị này. Historical rows không copy lại working URL vì key fragment không lưu.
 - **Config**: toggle từng field (preview che "••••••••" với secret; TOTP & extra-protected không bao giờ chia sẻ được) + Toggle **One-time link** (OFF → Picker hạn: 5/10/15/30 phút, 1h, 24h, 7 ngày, 30 ngày; footer copy khác nhau cho one-time vs có hạn) + **Active links** (ngày tạo + badge "One-time" + hạn còn lại; swipe revoke + dialog "Anyone who has the link loses access immediately."; footnote "chỉ revoke được từ máy này").
 - Nút Create theo trạng thái capability: Available → "Create Link"; Offline / Maintenance / Retired / User-off → thông điệp thay nút (lịch sử link vẫn hiển thị).
 - **Result** (nơi duy nhất key giải mã tồn tại): check xanh "Link ready" + URL rút gọn giữa + cảnh báo phạm vi + dòng hạn ("disappears after it's opened once" vàng, hoặc "Expires …") + **Copy Link** / Share Link / **Shorten Link** *(khi backend cấp token)* / Done. Shorten lỗi → "Short links are temporarily unavailable" (share vẫn thành công).
@@ -396,7 +401,9 @@ Info (**Item** kèm icon category + Recipient/Status/ngày) + chế độ cập 
 ### 13.7 Family (Profile → Family, hub tile cùng tên)
 Không có thực thể "nhóm gia đình" trong code: thành viên là phép gom `SharingStore.shares` theo
 người nhận — **lời mời CHÍNH LÀ quan hệ**, không có gì để "tham gia" trước. Màn hình vì thế có
-hành động **"Invite someone"** làm primary duy nhất, thay vì chỉ liệt kê hệ quả của việc chia sẻ.
+hành động **"Share with family"** làm primary, mở scope chooser một item hoặc Space.
+Item đi vào Approval Mode sharing rõ ràng, không vòng qua Quick Link. Counts/list dùng
+current persona ownership; thiếu folder hoặc item mồ côi không gán sang persona mặc định.
 
 - Row người: avatar chữ cái + email + phụ đề tách bạch "đã chia sẻ" và "đang chờ" (trước là một
   con số trần, đọc như badge chưa đọc và gộp cả lời mời chưa accept).
@@ -405,6 +412,7 @@ hành động **"Invite someone"** làm primary duy nhất, thay vì chỉ liệ
   `ShareResumeStepperSheet`, row active mở `ShareRecipientDetailSheet`; có empty state.
 
 ### 13.6 "Open on Computer" (Quick View — giao field 1 lần cho trình duyệt)
+- **Loox Member → Send to Browser**: root riêng có hướng dẫn viewer, item chooser và lịch sử local attempts. History không giữ fields/codes/keys hay mô tả hoạt động từ browser; entry vẫn theo signed rollout/capability/commerce gates hiện có.
 - **Chooser**: "Scan QR Code" / "Enter Code" (footer "You'll pick exactly what to share on the next screen.").
 - **Scan**: camera tối, hint "Point the camera at the code on your computer".
 - **Enter Code**: ô `XXXX-XXXX` mono tự format; lỗi định dạng: "That code doesn't look right."

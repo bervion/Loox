@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "registry_version": 7,
+  "key_id": "cap-2026-02",
+  "env": "staging",
+  "issued_at": 1788230293888,
+  "expires_at": 1803782293888,
+  "domains": [
+    {
+      "id": "relay-main",
+      "display_name": "relay.looxpassword.com",
+      "email_address_domain": "relay.looxpassword.com",
+      "short_link_host": null,
+      "capabilities": [
+        "email"
+      ],
+      "lifecycle": "active",
+      "is_primary_email_choice": true,
+      "is_primary_short_link_choice": false
+    },
+    {
+      "id": "email-pw",
+      "display_name": "loox.pw (Private Email)",
+      "email_address_domain": "loox.pw",
+      "short_link_host": null,
+      "capabilities": [
+        "email"
+      ],
+      "lifecycle": "createDisabled",
+      "is_primary_email_choice": false,
+      "is_primary_short_link_choice": false
+    },
+    {
+      "id": "short-pw",
+      "display_name": "s-staging.loox.pw (short links)",
+      "email_address_domain": null,
+      "short_link_host": "s-staging.loox.pw",
+      "capabilities": [
+        "short_link"
+      ],
+      "lifecycle": "active",
+      "is_primary_email_choice": false,
+      "is_primary_short_link_choice": true
+    }
+  ],
+  "signature": "WnPnywYd4ftvRDqfa2JeulQpg8duOEyNjeMeJBHlcojYm14EqPUyFfEd9lqPmpsto83/oiDz7HlPbScFgZuLNw=="
+}

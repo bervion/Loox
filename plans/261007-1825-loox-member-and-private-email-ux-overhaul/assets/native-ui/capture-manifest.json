@@ -1,0 +1,44 @@
+[
+  {
+    "file": "member-family-destination.png",
+    "test": "PrivateEmailMemberUXUITests/testMemberTilesOpenDedicatedDestinations()",
+    "device": "Vaultify Quality local-1-3920",
+    "timestamp": 1791382479.309,
+    "receipt": "/tmp/vaultify-ux-ui-clean.xcresult"
+  },
+  {
+    "file": "member-browser-destination.png",
+    "test": "PrivateEmailMemberUXUITests/testMemberTilesOpenDedicatedDestinations()",
+    "device": "Vaultify Quality local-1-3920",
+    "timestamp": 1791382475.717,
+    "receipt": "/tmp/vaultify-ux-ui-clean.xcresult"
+  },
+  {
+    "file": "member-links-destination.png",
+    "test": "PrivateEmailMemberUXUITests/testMemberTilesOpenDedicatedDestinations()",
+    "device": "Vaultify Quality local-1-3920",
+    "timestamp": 1791382472.123,
+    "receipt": "/tmp/vaultify-ux-ui-clean.xcresult"
+  },
+  {
+    "file": "recipient-detail-revealed.png",
+    "test": "PrivateEmailMemberUXUITests/testRecipientIsReadableInDetailAndHideConcealsIt()",
+    "device": "Vaultify Quality local-1-3920",
+    "timestamp": 1791382489.509,
+    "receipt": "/tmp/vaultify-ux-ui-clean.xcresult"
+  },
+  {
+    "file": "linked-service-other-login-preserved.png",
+    "test": "PrivateEmailMemberUXUITests/testUnlinkOneServicePreservesOtherLoginAndForwardingAddress()",
+    "device": "Vaultify Quality local-1-3920",
+    "timestamp": 1791382535.683,
+    "receipt": "/tmp/vaultify-ux-ui-clean.xcresult"
+  },
+  {
+    "file": "linked-service-unlink-confirmation.png",
+    "test": "PrivateEmailMemberUXUITests/testUnlinkOneServicePreservesOtherLoginAndForwardingAddress()",
+    "device": "Vaultify Quality local-1-3920",
+    "timestamp": 1791382517.448,
+    "receipt": "/tmp/vaultify-ux-ui-clean.xcresult"
+  }
+]

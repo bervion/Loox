@@ -7,9 +7,12 @@ effort: ~10-14d
 branch: main
 tags: [ios, swiftui, ui-ux, flow, design-system]
 created: 2026-07-10
+blockedBy: [261007-1825-loox-member-and-private-email-ux-overhaul]
 ---
 
 # Loox UI/UX Flow Completion
+
+> Scope reconciliation 2026-10-07: phần Email riêng tư và Loox Member/feature roots tiếp tục ở [plan mới](../261007-1825-loox-member-and-private-email-ux-overhaul/plan.md). Source hiện đã có relay/inbox/domain registry; mô tả Private Email deferred/loox.email dưới đây là lịch sử tháng 7. Phần QA hoàn tất của các surface thay đổi phụ thuộc plan mới; các scope khác giữ nguyên.
 
 Đối chiếu 13 đợt design (research/) với ~70 màn hiện có → hoàn thiện FLOW, không làm lại giao diện.
 Design = tham khảo flow/IA/copy. Mọi UI mới dùng token/typography/ThemeRole/Polaris hiện có. Localize EN+VI. iOS 17.6.

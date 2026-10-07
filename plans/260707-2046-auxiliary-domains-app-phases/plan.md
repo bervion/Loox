@@ -1,5 +1,7 @@
 # Auxiliary Domains — App Phases A1/A2/A3/A5
 
+> Follow-up 2026-10-07: email-domain activation và device QA hiện được quản lý ở [plan Email riêng tư/Member](../261007-1825-loox-member-and-private-email-ux-overhaul/plan.md). Live production registry v14 có email-pw `createDisabled`; các host/vexla/registry version trong A6 bên dưới là lịch sử, không dùng làm current acceptance. Model/picker/authz reuse, không triển khai lại.
+
 **Refs:** `plans/reports/backend-proposal-260707-2031-…` (SIGNED), `audit-260707-2020-…`, app-team proposal `proposal-260707-2020-…`
 **Locked:** DEC-01 (no retroactive shorten), DEC-02 (persist short URL fragment-free only), DEC-03 (A4 waits for `relay-authz-v2-contract.md`), DEC-04 (apex `@loox.pw`). BE: shorten auth = scoped `shorten_token` (transient only); registry trust root = capability-manifest P256 root; reserved local-parts → indistinguishable 409.
 **Out of scope:** A4 (V2 encoder — gated), A6 (device browser QA — manual), remote signed-registry fetch (byte layout unfrozen; bundled registry now, verifier lands with registry contract doc — same pattern as `CapabilityManifestVerifier`).

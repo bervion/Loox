@@ -1,0 +1,157 @@
+{
+  "Linked services": {
+    "en": "Linked services",
+    "vi": "Dịch vụ liên kết",
+    "ja": "関連付けられたサービス"
+  },
+  "Linked service": {
+    "en": "Linked service",
+    "vi": "Dịch vụ liên kết",
+    "ja": "関連付けられたサービス"
+  },
+  "No linked services": {
+    "en": "No linked services",
+    "vi": "Chưa có dịch vụ liên kết",
+    "ja": "関連付けられたサービスはありません"
+  },
+  "Link a saved login to see which services use this private address.": {
+    "en": "Link a saved login to see which services use this private address.",
+    "vi": "Liên kết mục đăng nhập đã lưu để biết dịch vụ nào dùng địa chỉ này.",
+    "ja": "保存したログインを関連付けて、このアドレスを使用するサービスを確認できます。"
+  },
+  "Only logins linked in this vault appear here. Loox does not discover accounts on other services.": {
+    "en": "Only logins linked in this vault appear here. Loox does not discover accounts on other services.",
+    "vi": "Danh sách chỉ gồm các mục đã liên kết trong vault. Loox không tự phát hiện tài khoản trên dịch vụ khác.",
+    "ja": "この保管庫で関連付けたログインのみ表示します。Looxは他のサービスのアカウントを自動検出しません。"
+  },
+  "Review saved logins": {
+    "en": "Review saved logins",
+    "vi": "Rà soát mục đã lưu",
+    "ja": "保存したログインを確認"
+  },
+  "Review older logins that saved this address as their email or username. Nothing changes until you choose Link.": {
+    "en": "Review older logins that saved this address as their email or username. Nothing changes until you choose Link.",
+    "vi": "Rà soát mục cũ đã lưu địa chỉ này ở email hoặc tên đăng nhập. Chỉ thay đổi khi bạn chọn Liên kết.",
+    "ja": "メールまたはユーザー名にこのアドレスを保存した古いログインを確認します。「関連付け」を選ぶまで変更しません。"
+  },
+  "Open login": {
+    "en": "Open login",
+    "vi": "Mở mục đăng nhập",
+    "ja": "ログインを開く"
+  },
+  "Unlink": {
+    "en": "Unlink",
+    "vi": "Gỡ liên kết",
+    "ja": "関連付けを解除"
+  },
+  "Unlink this service?": {
+    "en": "Unlink this service?",
+    "vi": "Gỡ liên kết dịch vụ này?",
+    "ja": "このサービスとの関連付けを解除しますか？"
+  },
+  "This removes the private email from this vault item. Forwarding and the service account stay unchanged.": {
+    "en": "This removes the private email from this vault item. Forwarding and the service account stay unchanged.",
+    "vi": "Thao tác này gỡ email riêng tư khỏi mục trong vault. Chuyển tiếp thư và tài khoản dịch vụ giữ nguyên.",
+    "ja": "保管庫の項目からプライベートメールを削除します。転送とサービスのアカウントは変更されません。"
+  },
+  "Unlinking keeps this address receiving mail. Manage forwarding in Private Email.": {
+    "en": "Unlinking keeps this address receiving mail. Manage forwarding in Private Email.",
+    "vi": "Gỡ liên kết vẫn giữ địa chỉ này nhận thư. Quản lý chuyển tiếp trong Email riêng tư.",
+    "ja": "関連付けを解除しても、このアドレスはメールを受信し続けます。転送はプライベートメールで管理できます。"
+  },
+  "Couldn’t update the link": {
+    "en": "Couldn’t update the link",
+    "vi": "Không cập nhật được liên kết",
+    "ja": "関連付けを更新できませんでした"
+  },
+  "Linking adds a separate Private email field. Your existing email and username stay unchanged.": {
+    "en": "Linking adds a separate Private email field. Your existing email and username stay unchanged.",
+    "vi": "Liên kết thêm một trường Email riêng tư riêng biệt. Email và tên đăng nhập hiện có giữ nguyên.",
+    "ja": "関連付けると、別のプライベートメール欄を追加します。既存のメールとユーザー名は変更されません。"
+  },
+  "No matching saved logins": {
+    "en": "No matching saved logins",
+    "vi": "Chưa có mục đã lưu phù hợp",
+    "ja": "一致する保存済みログインはありません"
+  },
+  "Link this login?": {
+    "en": "Link this login?",
+    "vi": "Liên kết mục đăng nhập này?",
+    "ja": "このログインを関連付けますか？"
+  },
+  "Link": {
+    "en": "Link",
+    "vi": "Liên kết",
+    "ja": "関連付け"
+  },
+  "Link a login": {
+    "en": "Link a login",
+    "vi": "Liên kết mục đăng nhập",
+    "ja": "ログインを関連付け"
+  },
+  "Create login": {
+    "en": "Create login",
+    "vi": "Tạo mục đăng nhập",
+    "ja": "ログインを作成"
+  },
+  "Saved logins": {
+    "en": "Saved logins",
+    "vi": "Mục đăng nhập đã lưu",
+    "ja": "保存したログイン"
+  },
+  "No saved logins yet": {
+    "en": "No saved logins yet",
+    "vi": "Chưa có mục đăng nhập nào",
+    "ja": "保存したログインはありません"
+  },
+  "Manage private email": {
+    "en": "Manage private email",
+    "vi": "Quản lý email riêng tư",
+    "ja": "プライベートメールを管理"
+  },
+  "This private address no longer exists. Choose another address.": {
+    "en": "This private address no longer exists. Choose another address.",
+    "vi": "Địa chỉ riêng tư này không còn tồn tại. Hãy chọn địa chỉ khác.",
+    "ja": "このプライベートアドレスは存在しません。別のアドレスを選んでください。"
+  },
+  "This address’s domain could not be verified. Open Private Email to review it.": {
+    "en": "This address’s domain could not be verified. Open Private Email to review it.",
+    "vi": "Không xác minh được tên miền của địa chỉ này. Mở Email riêng tư để kiểm tra.",
+    "ja": "このアドレスのドメインを確認できません。プライベートメールを開いて確認してください。"
+  },
+  "This login is unavailable in the current identity.": {
+    "en": "This login is unavailable in the current identity.",
+    "vi": "Mục đăng nhập này không có trong hồ sơ hiện tại.",
+    "ja": "このログインは現在のプロフィールでは利用できません。"
+  },
+  "This link changed while the screen was open. Reopen the login and try again.": {
+    "en": "This link changed while the screen was open. Reopen the login and try again.",
+    "vi": "Liên kết đã thay đổi khi màn hình đang mở. Mở lại mục đăng nhập rồi thử lại.",
+    "ja": "画面を開いている間に関連付けが変更されました。ログインを開き直して再試行してください。"
+  },
+  "Open the login and unlock its protected field before changing this link.": {
+    "en": "Open the login and unlock its protected field before changing this link.",
+    "vi": "Mở mục đăng nhập và mở khóa trường được bảo vệ trước khi đổi liên kết.",
+    "ja": "関連付けを変更する前に、ログインを開いて保護された欄を解除してください。"
+  },
+  "This login has more than one Private email field. Open it to review the fields.": {
+    "en": "This login has more than one Private email field. Open it to review the fields.",
+    "vi": "Mục này có nhiều trường Email riêng tư. Mở mục đăng nhập để rà soát.",
+    "ja": "このログインには複数のプライベートメール欄があります。開いて確認してください。"
+  },
+  "This login already uses another private address. Choose another login or unlink it first.": {
+    "en": "This login already uses another private address. Choose another login or unlink it first.",
+    "vi": "Mục này đang dùng địa chỉ riêng tư khác. Chọn mục khác hoặc gỡ liên kết trước.",
+    "ja": "このログインは別のプライベートアドレスを使用しています。別のログインを選ぶか、先に関連付けを解除してください。"
+  },
+  "Couldn’t save the login": {
+    "en": "Couldn’t save the login",
+    "vi": "Không lưu được mục đăng nhập",
+    "ja": "ログインを保存できませんでした"
+  },
+  "Your changes are still here. Try saving again.": {
+    "en": "Your changes are still here. Try saving again.",
+    "vi": "Các thay đổi vẫn được giữ lại. Hãy thử lưu lại.",
+    "ja": "変更内容は保持されています。もう一度保存してください。"
+  }
+}

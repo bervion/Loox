@@ -1,0 +1,747 @@
+{
+  "Create private email": {
+    "en": "Create private email",
+    "vi": "Tạo email riêng",
+    "ja": "プライベートメールを作成"
+  },
+  "Address type": {
+    "en": "Address type",
+    "vi": "Loại địa chỉ",
+    "ja": "アドレスの種類"
+  },
+  "For a service": {
+    "en": "For a service",
+    "vi": "Dùng cho một dịch vụ",
+    "ja": "サービス専用"
+  },
+  "Use in many places": {
+    "en": "Use in many places",
+    "vi": "Dùng ở nhiều nơi",
+    "ja": "複数の場所で使用"
+  },
+  "Label (optional)": {
+    "en": "Label (optional)",
+    "vi": "Nhãn (tùy chọn)",
+    "ja": "ラベル（任意）"
+  },
+  "Website (optional)": {
+    "en": "Website (optional)",
+    "vi": "Trang web (tùy chọn)",
+    "ja": "ウェブサイト（任意）"
+  },
+  "Link later": {
+    "en": "Link later",
+    "vi": "Liên kết sau",
+    "ja": "後で関連付ける"
+  },
+  "You can create an address now and link a saved login later.": {
+    "en": "You can create an address now and link a saved login later.",
+    "vi": "Bạn có thể tạo địa chỉ trước và liên kết mục đăng nhập sau.",
+    "ja": "アドレスを先に作成し、保存したログインを後で関連付けられます。"
+  },
+  "Reserved address": {
+    "en": "Reserved address",
+    "vi": "Địa chỉ đã đặt chỗ",
+    "ja": "予約済みアドレス"
+  },
+  "Domain unavailable": {
+    "en": "Domain unavailable",
+    "vi": "Chưa xác định được tên miền",
+    "ja": "ドメインを確認できません"
+  },
+  "Retry continues setting up this address.": {
+    "en": "Retry continues setting up this address.",
+    "vi": "Thử lại sẽ tiếp tục thiết lập địa chỉ này.",
+    "ja": "再試行すると、このアドレスの設定を続けます。"
+  },
+  "Receive at": {
+    "en": "Receive at",
+    "vi": "Nhận thư tại",
+    "ja": "受信先"
+  },
+  "Default inbox": {
+    "en": "Default inbox",
+    "vi": "Hộp thư mặc định",
+    "ja": "既定の受信先"
+  },
+  "Inbox details": {
+    "en": "Inbox details",
+    "vi": "Chi tiết hộp thư",
+    "ja": "受信先の詳細"
+  },
+  "Add a forwarding inbox": {
+    "en": "Add a forwarding inbox",
+    "vi": "Thêm hộp thư nhận",
+    "ja": "受信先を追加"
+  },
+  "Create address": {
+    "en": "Create address",
+    "vi": "Tạo địa chỉ",
+    "ja": "アドレスを作成"
+  },
+  "Retry setup": {
+    "en": "Retry setup",
+    "vi": "Thử lại thiết lập",
+    "ja": "設定を再試行"
+  },
+  "Receive only": {
+    "en": "Receive only",
+    "vi": "Chỉ nhận thư",
+    "ja": "受信専用"
+  },
+  "Check the website": {
+    "en": "Check the website",
+    "vi": "Kiểm tra trang web",
+    "ja": "ウェブサイトを確認"
+  },
+  "Enter a website such as github.com.": {
+    "en": "Enter a website such as github.com.",
+    "vi": "Nhập trang web, ví dụ github.com.",
+    "ja": "github.comなどのウェブサイトを入力してください。"
+  },
+  "Couldn’t create the address": {
+    "en": "Couldn’t create the address",
+    "vi": "Không tạo được địa chỉ",
+    "ja": "アドレスを作成できませんでした"
+  },
+  "Your draft is saved. Check the inbox and domain, then retry.": {
+    "en": "Your draft is saved. Check the inbox and domain, then retry.",
+    "vi": "Bản nháp được giữ lại. Kiểm tra hộp thư và tên miền rồi thử lại.",
+    "ja": "下書きは保持されています。受信先とドメインを確認して再試行してください。"
+  },
+  "Addresses for services": {
+    "en": "Addresses for services",
+    "vi": "Địa chỉ theo dịch vụ",
+    "ja": "サービスごとのアドレス"
+  },
+  "Addresses for many places": {
+    "en": "Addresses for many places",
+    "vi": "Địa chỉ dùng nhiều nơi",
+    "ja": "複数の場所で使うアドレス"
+  },
+  "Give each service its own address.": {
+    "en": "Give each service its own address.",
+    "vi": "Dùng một địa chỉ riêng cho từng dịch vụ.",
+    "ja": "サービスごとに専用のアドレスを使えます。"
+  },
+  "Keep one address for several services.": {
+    "en": "Keep one address for several services.",
+    "vi": "Dùng chung một địa chỉ cho nhiều dịch vụ.",
+    "ja": "複数のサービスで同じアドレスを使えます。"
+  },
+  "Receiving mail": {
+    "en": "Receiving mail",
+    "vi": "Nhận thư",
+    "ja": "メールの受信"
+  },
+  "For new addresses": {
+    "en": "For new addresses",
+    "vi": "Dành cho địa chỉ mới",
+    "ja": "新しいアドレスの受信先"
+  },
+  "Manage forwarding inboxes": {
+    "en": "Manage forwarding inboxes",
+    "vi": "Quản lý hộp thư nhận",
+    "ja": "受信先を管理"
+  },
+  "Private address": {
+    "en": "Private address",
+    "vi": "Địa chỉ riêng tư",
+    "ja": "プライベートアドレス"
+  },
+  "Manage address": {
+    "en": "Manage address",
+    "vi": "Quản lý địa chỉ",
+    "ja": "アドレスを管理"
+  },
+  "Finish setup": {
+    "en": "Finish setup",
+    "vi": "Hoàn tất thiết lập",
+    "ja": "設定を完了"
+  },
+  "Activate address": {
+    "en": "Activate address",
+    "vi": "Bật địa chỉ",
+    "ja": "アドレスを有効化"
+  },
+  "Resume forwarding": {
+    "en": "Resume forwarding",
+    "vi": "Tiếp tục chuyển tiếp",
+    "ja": "転送を再開"
+  },
+  "Copy address": {
+    "en": "Copy address",
+    "vi": "Sao chép địa chỉ",
+    "ja": "アドレスをコピー"
+  },
+  "This domain is not available locally. Connect to refresh its signed mapping.": {
+    "en": "This domain is not available locally. Connect to refresh its signed mapping.",
+    "vi": "Chưa xác định được tên miền của địa chỉ này. Kết nối mạng để cập nhật thông tin đã xác thực.",
+    "ja": "このアドレスのドメインを確認できません。ネット接続して認証済み情報を更新してください。"
+  },
+  "Last confirmed destination": {
+    "en": "Last confirmed destination",
+    "vi": "Hộp thư đã thiết lập",
+    "ja": "設定済みの受信先"
+  },
+  "Not forwarding yet": {
+    "en": "Not forwarding yet",
+    "vi": "Chưa chuyển tiếp thư",
+    "ja": "まだ転送していません"
+  },
+  "Selected inbox": {
+    "en": "Selected inbox",
+    "vi": "Hộp thư đã chọn",
+    "ja": "選択した受信先"
+  },
+  "Forwarding update pending": {
+    "en": "Forwarding update pending",
+    "vi": "Chờ cập nhật chuyển tiếp",
+    "ja": "転送の更新待ち"
+  },
+  "Apply inbox change": {
+    "en": "Apply inbox change",
+    "vi": "Cập nhật hộp thư nhận",
+    "ja": "受信先の変更を適用"
+  },
+  "Choose receiving inbox": {
+    "en": "Choose receiving inbox",
+    "vi": "Chọn hộp thư nhận",
+    "ja": "受信先を選択"
+  },
+  "Couldn’t update the address": {
+    "en": "Couldn’t update the address",
+    "vi": "Không cập nhật được địa chỉ",
+    "ja": "アドレスを更新できませんでした"
+  },
+  "The address changed. Open it again and retry.": {
+    "en": "The address changed. Open it again and retry.",
+    "vi": "Địa chỉ đã thay đổi. Mở lại và thử lại.",
+    "ja": "アドレスが変更されました。開き直して再試行してください。"
+  },
+  "Check your connection and retry. This address is kept for you.": {
+    "en": "Check your connection and retry. This address is kept for you.",
+    "vi": "Kiểm tra kết nối rồi thử lại. Địa chỉ này vẫn được giữ lại.",
+    "ja": "接続を確認して再試行してください。このアドレスは保持されています。"
+  },
+  "This pauses mail for every service using this address. Linked vault items stay unchanged.": {
+    "en": "This pauses mail for every service using this address. Linked vault items stay unchanged.",
+    "vi": "Mọi dịch vụ dùng địa chỉ này sẽ ngừng chuyển tiếp thư. Các mục liên kết trong vault giữ nguyên.",
+    "ja": "このアドレスを使うすべてのサービスのメール転送を停止します。保管庫の関連項目は変更されません。"
+  },
+  "No domains available for new addresses": {
+    "en": "No domains available for new addresses",
+    "vi": "Chưa có tên miền để tạo địa chỉ mới",
+    "ja": "新しいアドレスを作成できるドメインがありません"
+  },
+  "Not ready for new addresses": {
+    "en": "Not ready for new addresses",
+    "vi": "Chưa mở cho địa chỉ mới",
+    "ja": "新しいアドレスの作成は準備中です"
+  },
+  "Existing addresses keep their original domain.": {
+    "en": "Existing addresses keep their original domain.",
+    "vi": "Địa chỉ hiện có giữ nguyên tên miền.",
+    "ja": "既存のアドレスは元のドメインを維持します。"
+  },
+  "Check the linked login": {
+    "en": "Check the linked login",
+    "vi": "Kiểm tra mục đăng nhập liên kết",
+    "ja": "関連付けたログインを確認"
+  },
+  "Linked services": {
+    "en": "Linked services",
+    "vi": "Dịch vụ liên kết",
+    "ja": "関連付けられたサービス"
+  },
+  "Linked service": {
+    "en": "Linked service",
+    "vi": "Dịch vụ liên kết",
+    "ja": "関連付けられたサービス"
+  },
+  "No linked services": {
+    "en": "No linked services",
+    "vi": "Chưa có dịch vụ liên kết",
+    "ja": "関連付けられたサービスはありません"
+  },
+  "Link a saved login to see which services use this private address.": {
+    "en": "Link a saved login to see which services use this private address.",
+    "vi": "Liên kết mục đăng nhập đã lưu để biết dịch vụ nào dùng địa chỉ này.",
+    "ja": "保存したログインを関連付けて、このアドレスを使用するサービスを確認できます。"
+  },
+  "Only logins linked in this vault appear here. Loox does not discover accounts on other services.": {
+    "en": "Only logins linked in this vault appear here. Loox does not discover accounts on other services.",
+    "vi": "Danh sách chỉ gồm các mục đã liên kết trong vault. Loox không tự phát hiện tài khoản trên dịch vụ khác.",
+    "ja": "この保管庫で関連付けたログインのみ表示します。Looxは他のサービスのアカウントを自動検出しません。"
+  },
+  "Review saved logins": {
+    "en": "Review saved logins",
+    "vi": "Rà soát mục đã lưu",
+    "ja": "保存したログインを確認"
+  },
+  "Review older logins that saved this address as their email or username. Nothing changes until you choose Link.": {
+    "en": "Review older logins that saved this address as their email or username. Nothing changes until you choose Link.",
+    "vi": "Rà soát mục cũ đã lưu địa chỉ này ở email hoặc tên đăng nhập. Chỉ thay đổi khi bạn chọn Liên kết.",
+    "ja": "メールまたはユーザー名にこのアドレスを保存した古いログインを確認します。「関連付け」を選ぶまで変更しません。"
+  },
+  "Open login": {
+    "en": "Open login",
+    "vi": "Mở mục đăng nhập",
+    "ja": "ログインを開く"
+  },
+  "Unlink": {
+    "en": "Unlink",
+    "vi": "Gỡ liên kết",
+    "ja": "関連付けを解除"
+  },
+  "Unlink this service?": {
+    "en": "Unlink this service?",
+    "vi": "Gỡ liên kết dịch vụ này?",
+    "ja": "このサービスとの関連付けを解除しますか？"
+  },
+  "This removes the private email from this vault item. Forwarding and the service account stay unchanged.": {
+    "en": "This removes the private email from this vault item. Forwarding and the service account stay unchanged.",
+    "vi": "Thao tác này gỡ email riêng tư khỏi mục trong vault. Chuyển tiếp thư và tài khoản dịch vụ giữ nguyên.",
+    "ja": "保管庫の項目からプライベートメールを削除します。転送とサービスのアカウントは変更されません。"
+  },
+  "Unlinking keeps this address receiving mail. Manage forwarding in Private Email.": {
+    "en": "Unlinking keeps this address receiving mail. Manage forwarding in Private Email.",
+    "vi": "Gỡ liên kết vẫn giữ địa chỉ này nhận thư. Quản lý chuyển tiếp trong Email riêng tư.",
+    "ja": "関連付けを解除しても、このアドレスはメールを受信し続けます。転送はプライベートメールで管理できます。"
+  },
+  "Couldn’t update the link": {
+    "en": "Couldn’t update the link",
+    "vi": "Không cập nhật được liên kết",
+    "ja": "関連付けを更新できませんでした"
+  },
+  "Linking adds a separate Private email field. Your existing email and username stay unchanged.": {
+    "en": "Linking adds a separate Private email field. Your existing email and username stay unchanged.",
+    "vi": "Liên kết thêm một trường Email riêng tư riêng biệt. Email và tên đăng nhập hiện có giữ nguyên.",
+    "ja": "関連付けると、別のプライベートメール欄を追加します。既存のメールとユーザー名は変更されません。"
+  },
+  "No matching saved logins": {
+    "en": "No matching saved logins",
+    "vi": "Chưa có mục đã lưu phù hợp",
+    "ja": "一致する保存済みログインはありません"
+  },
+  "Link this login?": {
+    "en": "Link this login?",
+    "vi": "Liên kết mục đăng nhập này?",
+    "ja": "このログインを関連付けますか？"
+  },
+  "Link": {
+    "en": "Link",
+    "vi": "Liên kết",
+    "ja": "関連付け"
+  },
+  "Link a login": {
+    "en": "Link a login",
+    "vi": "Liên kết mục đăng nhập",
+    "ja": "ログインを関連付け"
+  },
+  "Create login": {
+    "en": "Create login",
+    "vi": "Tạo mục đăng nhập",
+    "ja": "ログインを作成"
+  },
+  "Saved logins": {
+    "en": "Saved logins",
+    "vi": "Mục đăng nhập đã lưu",
+    "ja": "保存したログイン"
+  },
+  "No saved logins yet": {
+    "en": "No saved logins yet",
+    "vi": "Chưa có mục đăng nhập nào",
+    "ja": "保存したログインはありません"
+  },
+  "Manage private email": {
+    "en": "Manage private email",
+    "vi": "Quản lý email riêng tư",
+    "ja": "プライベートメールを管理"
+  },
+  "This private address no longer exists. Choose another address.": {
+    "en": "This private address no longer exists. Choose another address.",
+    "vi": "Địa chỉ riêng tư này không còn tồn tại. Hãy chọn địa chỉ khác.",
+    "ja": "このプライベートアドレスは存在しません。別のアドレスを選んでください。"
+  },
+  "This address’s domain could not be verified. Open Private Email to review it.": {
+    "en": "This address’s domain could not be verified. Open Private Email to review it.",
+    "vi": "Không xác minh được tên miền của địa chỉ này. Mở Email riêng tư để kiểm tra.",
+    "ja": "このアドレスのドメインを確認できません。プライベートメールを開いて確認してください。"
+  },
+  "This login is unavailable in the current identity.": {
+    "en": "This login is unavailable in the current identity.",
+    "vi": "Mục đăng nhập này không có trong hồ sơ hiện tại.",
+    "ja": "このログインは現在のプロフィールでは利用できません。"
+  },
+  "This link changed while the screen was open. Reopen the login and try again.": {
+    "en": "This link changed while the screen was open. Reopen the login and try again.",
+    "vi": "Liên kết đã thay đổi khi màn hình đang mở. Mở lại mục đăng nhập rồi thử lại.",
+    "ja": "画面を開いている間に関連付けが変更されました。ログインを開き直して再試行してください。"
+  },
+  "Open the login and unlock its protected field before changing this link.": {
+    "en": "Open the login and unlock its protected field before changing this link.",
+    "vi": "Mở mục đăng nhập và mở khóa trường được bảo vệ trước khi đổi liên kết.",
+    "ja": "関連付けを変更する前に、ログインを開いて保護された欄を解除してください。"
+  },
+  "This login has more than one Private email field. Open it to review the fields.": {
+    "en": "This login has more than one Private email field. Open it to review the fields.",
+    "vi": "Mục này có nhiều trường Email riêng tư. Mở mục đăng nhập để rà soát.",
+    "ja": "このログインには複数のプライベートメール欄があります。開いて確認してください。"
+  },
+  "This login already uses another private address. Choose another login or unlink it first.": {
+    "en": "This login already uses another private address. Choose another login or unlink it first.",
+    "vi": "Mục này đang dùng địa chỉ riêng tư khác. Chọn mục khác hoặc gỡ liên kết trước.",
+    "ja": "このログインは別のプライベートアドレスを使用しています。別のログインを選ぶか、先に関連付けを解除してください。"
+  },
+  "Couldn’t save the login": {
+    "en": "Couldn’t save the login",
+    "vi": "Không lưu được mục đăng nhập",
+    "ja": "ログインを保存できませんでした"
+  },
+  "Your changes are still here. Try saving again.": {
+    "en": "Your changes are still here. Try saving again.",
+    "vi": "Các thay đổi vẫn được giữ lại. Hãy thử lưu lại.",
+    "ja": "変更内容は保持されています。もう一度保存してください。"
+  },
+  "Couldn’t check verification. Your saved status is unchanged.": {
+    "en": "Couldn’t check verification. Your saved status is unchanged.",
+    "vi": "Không kiểm tra được trạng thái xác minh. Trạng thái đã lưu vẫn được giữ.",
+    "ja": "確認状況を取得できませんでした。保存済みの状態は変更されません。"
+  },
+  "Check again later": {
+    "en": "Check again later",
+    "vi": "Kiểm tra lại sau",
+    "ja": "後でもう一度確認"
+  },
+  "Try checking again in %llds.": {
+    "en": "Try checking again in %llds.",
+    "vi": "Kiểm tra lại sau %lld giây.",
+    "ja": "%lld秒後にもう一度確認してください。"
+  },
+  "Hide email": {
+    "en": "Hide email",
+    "vi": "Ẩn email",
+    "ja": "メールアドレスを隠す"
+  },
+  "Show email": {
+    "en": "Show email",
+    "vi": "Hiện email",
+    "ja": "メールアドレスを表示"
+  },
+  "Copy email": {
+    "en": "Copy email",
+    "vi": "Sao chép email",
+    "ja": "メールアドレスをコピー"
+  },
+  "Default for new addresses": {
+    "en": "Default for new addresses",
+    "vi": "Mặc định cho địa chỉ mới",
+    "ja": "新しいアドレスの既定の受信先"
+  },
+  "New addresses forward here. Existing addresses keep their current inbox.": {
+    "en": "New addresses forward here. Existing addresses keep their current inbox.",
+    "vi": "Địa chỉ mới sẽ chuyển tiếp đến đây. Địa chỉ hiện có vẫn dùng hộp thư cũ.",
+    "ja": "新しいアドレスはここに転送されます。既存のアドレスは現在の受信先を維持します。"
+  },
+  "This inbox is no longer in your vault.": {
+    "en": "This inbox is no longer in your vault.",
+    "vi": "Hộp thư này không còn trong vault.",
+    "ja": "この受信先は保管庫にありません。"
+  },
+  "Delete inbox": {
+    "en": "Delete inbox",
+    "vi": "Xóa hộp thư",
+    "ja": "受信先を削除"
+  },
+  "Inbox actions": {
+    "en": "Inbox actions",
+    "vi": "Thao tác hộp thư",
+    "ja": "受信先の操作"
+  },
+  "Open the confirmation link in your inbox, then return here.": {
+    "en": "Open the confirmation link in your inbox, then return here.",
+    "vi": "Mở liên kết xác nhận trong hộp thư, rồi quay lại đây.",
+    "ja": "受信箱の確認リンクを開いてから、ここに戻ってください。"
+  },
+  "Forwarding here": {
+    "en": "Forwarding here",
+    "vi": "Đang chuyển tiếp đến đây",
+    "ja": "ここに転送中"
+  },
+  "Update pending": {
+    "en": "Update pending",
+    "vi": "Đang chờ cập nhật",
+    "ja": "更新待ち"
+  },
+  "Private addresses": {
+    "en": "Private addresses",
+    "vi": "Địa chỉ riêng tư",
+    "ja": "プライベートアドレス"
+  },
+  "Completed": {
+    "en": "Completed",
+    "vi": "Hoàn tất",
+    "ja": "完了"
+  },
+  "Cancelled": {
+    "en": "Cancelled",
+    "vi": "Đã hủy",
+    "ja": "キャンセル済み"
+  },
+  "Failed": {
+    "en": "Failed",
+    "vi": "Thất bại",
+    "ja": "失敗"
+  },
+  "Open item": {
+    "en": "Open item",
+    "vi": "Mở mục",
+    "ja": "項目を開く"
+  },
+  "Revoke Link?": {
+    "en": "Revoke Link?",
+    "vi": "Thu hồi liên kết?",
+    "ja": "リンクを取り消しますか？"
+  },
+  "No eligible items in this profile": {
+    "en": "No eligible items in this profile",
+    "vi": "Hồ sơ này chưa có mục phù hợp",
+    "ja": "このプロフィールに共有できる項目はありません"
+  },
+  "No matching items": {
+    "en": "No matching items",
+    "vi": "Không có mục phù hợp",
+    "ja": "一致する項目はありません"
+  },
+  "Only saved items with readable fields appear here. Extra-protected values are excluded.": {
+    "en": "Only saved items with readable fields appear here. Extra-protected values are excluded.",
+    "vi": "Chỉ hiển thị mục đã lưu có trường đọc được. Giá trị được bảo vệ bổ sung không được chia sẻ.",
+    "ja": "読み取り可能なフィールドがある保存済み項目のみ表示します。追加保護された値は共有されません。"
+  },
+  "Choose a saved item from this profile. You will choose its permissions next.": {
+    "en": "Choose a saved item from this profile. You will choose its permissions next.",
+    "vi": "Chọn mục đã lưu trong hồ sơ này. Bạn sẽ chọn quyền truy cập ở bước tiếp theo.",
+    "ja": "このプロフィールの保存済み項目を選びます。次の画面でアクセス権を選びます。"
+  },
+  "Search items": {
+    "en": "Search items",
+    "vi": "Tìm mục",
+    "ja": "項目を検索"
+  },
+  "Choose an item": {
+    "en": "Choose an item",
+    "vi": "Chọn mục",
+    "ja": "項目を選択"
+  },
+  "Connect to the internet to start sharing. Saved records remain available.": {
+    "en": "Connect to the internet to start sharing. Saved records remain available.",
+    "vi": "Kết nối internet để bắt đầu chia sẻ. Bạn vẫn xem được thông tin đã lưu.",
+    "ja": "共有を開始するにはインターネットに接続してください。保存済みの記録は引き続き表示できます。"
+  },
+  "This feature is turned off in Connected Services.": {
+    "en": "This feature is turned off in Connected Services.",
+    "vi": "Tính năng này đang tắt trong Dịch vụ kết nối.",
+    "ja": "この機能は接続サービスでオフになっています。"
+  },
+  "Sharing is paused for maintenance. Your saved records remain available.": {
+    "en": "Sharing is paused for maintenance. Your saved records remain available.",
+    "vi": "Chia sẻ đang tạm dừng để bảo trì. Bạn vẫn xem được thông tin đã lưu.",
+    "ja": "メンテナンスのため共有を一時停止しています。保存済みの記録は引き続き表示できます。"
+  },
+  "This service is no longer offered. Your saved items remain unchanged.": {
+    "en": "This service is no longer offered. Your saved items remain unchanged.",
+    "vi": "Dịch vụ này đã ngừng cung cấp. Các mục đã lưu của bạn được giữ nguyên.",
+    "ja": "このサービスの提供は終了しました。保存済みの項目は変更されません。"
+  },
+  "Sharing is temporarily unavailable. You can try again later.": {
+    "en": "Sharing is temporarily unavailable. You can try again later.",
+    "vi": "Chia sẻ tạm thời không khả dụng. Bạn có thể thử lại sau.",
+    "ja": "共有は一時的に利用できません。後でもう一度お試しください。"
+  },
+  "Share selected fields with an encrypted link that expires automatically.": {
+    "en": "Share selected fields with an encrypted link that expires automatically.",
+    "vi": "Chia sẻ các trường bạn chọn bằng liên kết mã hóa có thời hạn.",
+    "ja": "選択したフィールドを、自動的に期限が切れる暗号化リンクで共有します。"
+  },
+  "Save an item with readable fields before creating a link.": {
+    "en": "Save an item with readable fields before creating a link.",
+    "vi": "Lưu mục có trường đọc được trước khi tạo liên kết.",
+    "ja": "リンクを作成する前に、読み取り可能なフィールドがある項目を保存してください。"
+  },
+  "No links on this device": {
+    "en": "No links on this device",
+    "vi": "Thiết bị này chưa có liên kết",
+    "ja": "この端末にリンクはありません"
+  },
+  "Create a link to share one of this profile's saved items.": {
+    "en": "Create a link to share one of this profile's saved items.",
+    "vi": "Tạo liên kết để chia sẻ một mục đã lưu trong hồ sơ này.",
+    "ja": "リンクを作成して、このプロフィールの保存済み項目を共有します。"
+  },
+  "Links within their expiry period": {
+    "en": "Links within their expiry period",
+    "vi": "Liên kết còn thời hạn",
+    "ja": "有効期間内のリンク"
+  },
+  "Only links created on this device appear here. This list does not indicate whether a link has been opened. To share again, create a new link.": {
+    "en": "Only links created on this device appear here. This list does not indicate whether a link has been opened. To share again, create a new link.",
+    "vi": "Chỉ hiển thị liên kết tạo trên thiết bị này. Danh sách không cho biết liên kết đã được mở hay chưa. Để chia sẻ lại, hãy tạo liên kết mới.",
+    "ja": "この端末で作成したリンクのみ表示します。リンクが開かれたかどうかは表示されません。再度共有するには新しいリンクを作成してください。"
+  },
+  "Share Link": {
+    "en": "Share Link",
+    "vi": "Liên kết chia sẻ",
+    "ja": "共有リンク"
+  },
+  "The original link is no longer held by the app. Create a new link if you need to share this item again.": {
+    "en": "The original link is no longer held by the app. Create a new link if you need to share this item again.",
+    "vi": "Ứng dụng không còn giữ liên kết gốc. Hãy tạo liên kết mới nếu cần chia sẻ mục này lần nữa.",
+    "ja": "元のリンクはアプリに保存されていません。この項目を再度共有するには新しいリンクを作成してください。"
+  },
+  "This link is no longer available in this profile.": {
+    "en": "This link is no longer available in this profile.",
+    "vi": "Liên kết này không còn trong hồ sơ hiện tại.",
+    "ja": "このプロフィールでは、このリンクを利用できません。"
+  },
+  "Anyone who has the link loses access after revocation succeeds.": {
+    "en": "Anyone who has the link loses access after revocation succeeds.",
+    "vi": "Người có liên kết sẽ mất quyền truy cập khi thu hồi thành công.",
+    "ja": "取り消しが完了すると、このリンクを持つ人はアクセスできなくなります。"
+  },
+  "Open the Loox viewer in your browser, then scan its QR code or enter its code. You choose which fields to send.": {
+    "en": "Open the Loox viewer in your browser, then scan its QR code or enter its code. You choose which fields to send.",
+    "vi": "Mở trang nhận Loox trên trình duyệt, rồi quét mã QR hoặc nhập mã. Bạn chọn các trường cần gửi.",
+    "ja": "ブラウザでLooxの受信ページを開き、QRコードを読み取るかコードを入力します。送信するフィールドは自分で選べます。"
+  },
+  "Send to Browser is not available for this app version yet.": {
+    "en": "Send to Browser is not available for this app version yet.",
+    "vi": "Gửi tới trình duyệt chưa khả dụng trên phiên bản ứng dụng này.",
+    "ja": "このアプリのバージョンでは、ブラウザへの送信をまだ利用できません。"
+  },
+  "Save an item with readable fields before sending it to a browser.": {
+    "en": "Save an item with readable fields before sending it to a browser.",
+    "vi": "Lưu mục có trường đọc được trước khi gửi tới trình duyệt.",
+    "ja": "ブラウザに送信する前に、読み取り可能なフィールドがある項目を保存してください。"
+  },
+  "No browser attempts on this device": {
+    "en": "No browser attempts on this device",
+    "vi": "Thiết bị này chưa có lần gửi nào",
+    "ja": "この端末にブラウザへの送信履歴はありません"
+  },
+  "Completed, cancelled, and failed attempts appear here after you use this feature.": {
+    "en": "Completed, cancelled, and failed attempts appear here after you use this feature.",
+    "vi": "Các lần gửi hoàn tất, đã hủy hoặc thất bại sẽ xuất hiện sau khi bạn dùng tính năng này.",
+    "ja": "この機能を使うと、完了、キャンセル、失敗した送信がここに表示されます。"
+  },
+  "Recent attempts": {
+    "en": "Recent attempts",
+    "vi": "Các lần gửi gần đây",
+    "ja": "最近の送信"
+  },
+  "History is stored on this device. It does not show browser activity or retain the fields, codes, or session keys you sent.": {
+    "en": "History is stored on this device. It does not show browser activity or retain the fields, codes, or session keys you sent.",
+    "vi": "Lịch sử lưu trên thiết bị này. Lịch sử không hiển thị hoạt động trình duyệt hay giữ lại các trường, mã hoặc khóa phiên đã gửi.",
+    "ja": "履歴はこの端末に保存されます。ブラウザの操作は表示されず、送信したフィールド、コード、セッションキーは保存されません。"
+  },
+  "People appear here when you share an item or a Space with them.": {
+    "en": "People appear here when you share an item or a Space with them.",
+    "vi": "Người thân xuất hiện ở đây khi bạn chia sẻ mục hoặc Không gian với họ.",
+    "ja": "項目やスペースを共有した相手がここに表示されます。"
+  },
+  "Share with family": {
+    "en": "Share with family",
+    "vi": "Chia sẻ với người thân",
+    "ja": "家族と共有"
+  },
+  "Share a saved item or a Space to start. You choose what each person can use.": {
+    "en": "Share a saved item or a Space to start. You choose what each person can use.",
+    "vi": "Bắt đầu bằng cách chia sẻ mục đã lưu hoặc Không gian. Bạn chọn nội dung mỗi người được dùng.",
+    "ja": "保存済みの項目やスペースを共有して始めます。相手が使える内容は自分で選べます。"
+  },
+  "There are no shared items with this person in the current profile.": {
+    "en": "There are no shared items with this person in the current profile.",
+    "vi": "Hồ sơ hiện tại không còn mục nào chia sẻ với người này.",
+    "ja": "現在のプロフィールでは、この相手との共有項目はありません。"
+  },
+  "Share one item": {
+    "en": "Share one item",
+    "vi": "Chia sẻ một mục",
+    "ja": "1つの項目を共有"
+  },
+  "Choose a saved item and the permissions for one person.": {
+    "en": "Choose a saved item and the permissions for one person.",
+    "vi": "Chọn mục đã lưu và quyền truy cập cho một người.",
+    "ja": "保存済みの項目と、1人の相手へのアクセス権を選びます。"
+  },
+  "Share eligible items from one Space with one person.": {
+    "en": "Share eligible items from one Space with one person.",
+    "vi": "Chia sẻ các mục phù hợp trong một Không gian với một người.",
+    "ja": "1つのスペース内で共有できる項目を、1人の相手と共有します。"
+  },
+  "Sharing uses Approval Mode over iCloud. It does not turn on vault sync.": {
+    "en": "Sharing uses Approval Mode over iCloud. It does not turn on vault sync.",
+    "vi": "Chia sẻ dùng Chế độ phê duyệt qua iCloud. Đồng bộ kho không được bật.",
+    "ja": "共有にはiCloudの承認モードを使います。保管庫の同期は有効になりません。"
+  },
+  "This item is no longer available in this profile.": {
+    "en": "This item is no longer available in this profile.",
+    "vi": "Mục này không còn trong hồ sơ hiện tại.",
+    "ja": "このプロフィールでは、この項目を利用できません。"
+  },
+  "Plan limits apply across all profiles.": {
+    "en": "Plan limits apply across all profiles.",
+    "vi": "Giới hạn gói áp dụng cho tất cả hồ sơ.",
+    "ja": "プランの上限はすべてのプロフィールで共有されます。"
+  },
+  "%lld links on this device": {
+    "en": "%lld links on this device",
+    "vi": "%lld liên kết trên thiết bị này",
+    "ja": "この端末に%lld件のリンク"
+  },
+  "%lld recent attempts": {
+    "en": "%lld recent attempts",
+    "vi": "%lld lần gửi gần đây",
+    "ja": "最近の送信%lld件"
+  },
+  "%lld people": {
+    "en": "%lld people",
+    "vi": "%lld người",
+    "ja": "%lld人"
+  },
+  "%lld waiting": {
+    "en": "%lld waiting",
+    "vi": "%lld mục đang chờ",
+    "ja": "%lld件待機中"
+  },
+  "Service paused": {
+    "en": "Service paused",
+    "vi": "Dịch vụ tạm dừng",
+    "ja": "サービス一時停止中"
+  },
+  "Service retired": {
+    "en": "Service retired",
+    "vi": "Dịch vụ đã ngừng",
+    "ja": "サービス終了"
+  },
+  "Not available yet": {
+    "en": "Not available yet",
+    "vi": "Chưa khả dụng",
+    "ja": "まだ利用できません"
+  },
+  "Select an available domain before creating an address.": {
+    "en": "Select an available domain before creating an address.",
+    "vi": "Chọn tên miền khả dụng trước khi tạo địa chỉ.",
+    "ja": "アドレスを作成する前に、利用可能なドメインを選択してください。"
+  },
+  "Manage linked service": {
+    "en": "Manage linked service",
+    "vi": "Quản lý dịch vụ liên kết",
+    "ja": "連携サービスを管理"
+  },
+  "Manage share link": {
+    "en": "Manage share link",
+    "vi": "Quản lý liên kết chia sẻ",
+    "ja": "共有リンクを管理"
+  }
+}

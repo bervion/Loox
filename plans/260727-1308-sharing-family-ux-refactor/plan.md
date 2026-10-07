@@ -1,5 +1,7 @@
 # Sharing / Family / Pairing — UX refactor proposal
 
+> Follow-up 2026-10-07: Member navigation và Family entry/detail polish tiếp tục ở [plan mới](../261007-1825-loox-member-and-private-email-ux-overhaul/plan.md). Current `FamilyScreen` vẫn derive people từ shares; “People model done” bên dưới không phải bằng chứng independent family roster đã tồn tại. Reuse sharing ceremonies, không mở lại transport/crypto trong UI scope.
+
 - Status: **APPROVED 2026-07-27 — in progress on `refactor/sharing-family-ux`.**
 - Created: 2026-07-27
 - Base: `main` @ v1.41.1 (clean)

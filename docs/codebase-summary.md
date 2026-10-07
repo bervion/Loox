@@ -5,9 +5,11 @@
 > App/keychain groups, scheme/target/module/folder names, log subsystems, the `.vaultify` backup
 > extension, and the HPKE envelope info string (crypto binding — must never change).
 
-Native **SwiftUI** rewrite of the Flutter Vaultify — a zero-backend, on-device password
-manager. **iPhone + iPad + native macOS**, iOS 17.3+ / macOS 15+, Apple-native UI/UX, with the **Polaris SVG icon set**
-(vector-PDF template assets) instead of SF Symbols. ~17,000 LOC across ~200 Swift files.
+Native **SwiftUI** rewrite of the Flutter Vaultify: an offline-first encrypted vault with
+optional CloudKit sync, sharing and relay services. **iPhone + iPad + native macOS**,
+iOS 17.3+ / macOS 15+, with the **Polaris SVG icon set**. A filtered Repomix source
+compaction on 2026-10-07 contains 788 Swift files and 112,932 lines, including tests;
+resources, vendored C, generated projects and secret files are excluded.
 
 ## Architecture
 
@@ -19,23 +21,25 @@ Vaultify/
 │   ├── RootView.swift        routes onboarding / locked / unlocked; scene-phase auto-lock + privacy shield
 │   └── SettingsStore.swift   UserDefaults flags (appearance, auto-lock, biometric, HIBP, clipboard, language)
 ├── Security/
-│   ├── CArgon2/              vendored phc-winner-argon2 reference C (ref.c) — bridged via Vaultify-Bridging-Header.h
-│   ├── Crypto/               Argon2 (KAT), AESGCM (CryptoKit), KeyHierarchy, SecureBytes (mlock+zero), KdfParams, CryptoRandom
-│   ├── Keychain/             KeychainStore, VaultKeyBundle, BiometricKeyStore (.biometryCurrentSet), BiometricAuth
 │   ├── RecoveryKey.swift      Crockford base32 Emergency Kit key
 │   ├── VaultSession.swift     @Observable lock lifecycle: create/unlock/biometric/lock, off-main KDF
 │   └── VaultSession+Recovery.swift  recovery, change master password, reset
 ├── Data/
-│   ├── Models/              ItemCategory, FieldKind, DynamicField, VaultItem + ItemSecret (+tags), Folder/FolderSecret/FolderColor (pure, Sendable)
-│   ├── Store/               ItemRecord (@Model, +lastUsedAt), FolderRecord (@Model, sealed name), PasskeyRecord (@Model, sealed passkey), AuditReportRecord + FindingStateRecord (@Model, sealed audit data, CK types AuditReport/AuditFindingState), VaultStore (ModelContainer, +AuditSync LWW)
 ├── Audit/               Vault Audit engine: AuditFinding (fingerprint SHA-256, severity/category/status), AuditRule protocol + registry (11 local rules: strength/reuse/2FA/passkey-opportunity/duplicates/conflict/OTP/incomplete/URL-hygiene/stale/metadata), AuditCoordinator (cancellable, network rules fail soft), ScoringEngine + ScoringWeights (1000 điểm, 6 pillar 300/220/180/140/100/60), AuditReport(+Payload sealed), FixQueuePlanner, AuditHistoryDiff, ServiceCapabilityCatalog (curated TOTP/passkey/settings-URL, versioned), TwoFactorCatalog, DomainNormalizer, Strength/ (zxcvbn-lite: PasswordStrengthEngine DP min-guess cover, Dictionary/Pattern matchers, CommonPasswords/CommonWords datasets, PasswordGrade 5 mức; PasswordStrength legacy 3 mức delegate)
 │   └── Repositories/        VaultRepository (@Observable, + VaultRepository+Folders): decrypt→cache, CRUD, trash, favorites, folders, recents, tags, passkey metadata
-├── DesignSystem/           Tokens/ (Space·Radius·Metric·Elevation·Motion), Typography (VaultType roles + vaultCode SF/tabular), Icons/ (IconResolver + VaultIcon + Icons Polaris chrome tokens + IconCatalog duotone set with SF additions), VaultColors (dynamic light/dark), PasswordStrength, Components (ThemedCard/ButtonStyles/ToggleStyle, themedForeground), Theme/ (ThemeStore/Holder/Environment)
+├── DesignSystem/           Tokens/ (Space·Radius·Metric·Elevation·Motion), Typography (VaultType roles + vaultCode), Polaris Icons/, semantic-color Components/, Theme/
 ├── Services/
 │   ├── PasswordGenerator + DicewareWordList (EFF 7776), TOTPGenerator (RFC 6238), Haptics, ClipboardService
 │   ├── Watchtower/          AuditReportStore (sealed reports + finding states, status lifecycle), PwnedPasswordChecker (HIBP prefix-grouped, bounded concurrency, device-local HMAC cache = AuditLocalCache), HIBPService (single-lookup facade), Rules/PwnedPasswordRule (network rule), PasswordAudit (legacy quick stats for Home/Search), RotationNotificationService
 │   └── ImportExport/        VaultBackup (CSV + Argon2id/AES-GCM encrypted backup incl. passkeys)
 └── Features/                Onboarding (WelcomeLandingView: looping Loox brand animation + "Loox Password" wordmark + launch-burst CTA + equal-height 16:9 capability carousel + restore link, BrandAnimation/ engine; NameStepView for default identity), Unlock, Main (native icon-only visual `TabView`: Home·Items·Watchtower·Search), Home (redesigned: folder switcher + quick actions + TOTP quick-view + "Needs attention" + Favorites + All items + avatar button; Components: HomeHeaderBar/QuickActionTile/TotpCardView/TotpRowView/TotpRingView/AttentionCell; TotpListScreen = pushed full 2FA list, rows + always-visible search), Items (Spaces/Categories/Tags/Archive/Recently Deleted), Folders, ItemDetail, Passkeys, ItemEditor, Generator, Search, Watchtower — user-facing "Security" (WatchtowerScoreRing 0-1000 thật + band 800/500, VaultAuditFlowScreen preflight→running→result, AuditFixQueueScreen deterministic remediation walk + dismiss states, WhyThisScoreScreen 6-pillar, AuditFullReportScreen, AuditHistoryScreen + diff, 3 nhóm Act now/Improve/Maintain, AuditRunController glue), Profile (ProfileScreen: avatar + default-identity toggle + fields + payment-cards), Settings, ImportExport, Components
+
+VaultifyCore/                 Shared with app and extensions
+├── CArgon2/                  Vendored reference C implementation (ref.c)
+├── Crypto/, Keychain/        KDF, AES-GCM, secure buffers, shared keys
+├── Models/, Store/           Sealed payloads, SwiftData records and vault storage
+├── Relay/                    Signed-command and principal contracts
+└── Theme/, Platform/         Shared theme values and platform adapters
 ```
 
 ## Security model
@@ -169,9 +173,10 @@ Implemented & verified running (EN + VI): onboarding (redesigned first-run welco
 
 **Personas (identities) & isolation:** one human owns several personas (`Persona`/`PersonaRecord`, sealed `PersonaSecret`; new `VaultPersona` CloudKit type mirroring `VaultFolder`). `reload()` seeds a bootstrap Personal persona (fixed id → multi-device LWW merge) linking the default identity + primary Space; exactly-one-default invariant (`normalizeDefaultPersona`). Active persona = device-local `SettingsStore.activePersonaID` (not synced); it drives `primarySpaceId`, the Home Space persistence bucket, Search's default scope, and surfaces in Profile + the Home header. **Hard Space partition:** each Space belongs to exactly one persona (sealed `Folder.personaId`); an item belongs to its Space's persona, Unfiled → default (`personaID(forItem:)`). `reload()`→`migratePartition` backfills unowned Spaces to the default and reconciles any `primarySpaceID` that dangled into another persona's Space (the pre-partition leak). The fail-closed filters `spaces(for:)`/`items(for:)`/`activePersonaSpaces`/`activePersonaItems` (`VaultRepository+PersonaPartition.swift`) are the single source every browse surface scopes through, so switching persona re-filters Home/Items/Search to that persona's Spaces+items and a strictAnonymous persona can never see another's data. `addFolder` stamps the active persona; `addPersona` seeds an owned starter Space; `deletePersona` reassigns owned Spaces+items to the default (never destroys data). AutoFill stays cross-persona by host (credential availability ≠ in-app organization). Each persona has a `PersonaIsolationPolicy` (standard/isolated/strictAnonymous). **strictAnonymous** enforces INV-R03: `allSpacesSearchAllowed` is false, `defaultSearchScope` is fail-closed (never All Spaces; empty rather than global), Shared-with-Me is suppressed, and username suggestions/prefill never fall back to another persona's or the global default identity's email. The AutoFill extension honors isolation via an App-Group mirror of `{policy, primaryProfileItemID}` (opaque only; email resolved in-extension under the Vault Key by `VaultReader.autofillPrefillUsername`). **QuickType per-persona note:** `CredentialIdentityService` publishes `username+host` for every owned login into the system index host-scoped and persona-agnostic — a strictAnonymous login is still offered on its own site (site-scoped, not in-app cross-persona correlation). Per-item persona suppression needs an unbuilt per-item persona tag and is intentionally deferred. Persona management (create/edit/policy/delete with a last/default guard) lives in Settings → Personas.
 
-**Deferred:** subscription launch (flag `LooxMembership.launchEnabled` OFF; ASC group 22241495 live, pending review screenshots + submit; backend entitlement API per proposal v3; recipient-seat + theme gates; §12 checklist); AAGUID community-registry submission (external PR); credential-exchange UI wiring + on-device verification. CloudKit sync (full, pending iCloud enablement; the `VaultPasskey` sync PLANE is implemented and wired — what is outstanding is the CloudKit **Production** schema deploy, an ops action, without which passkey pushes are rejected and no passkey ever reaches a second device); rotation reminder per-item cadence deferred pending full enablement. Manual pre-TestFlight QA still needs on-device QuickType deletion, iOS 18 RP-triggered automatic-upgrade smoke coverage, and the Approval Mode two-device round-trip run (share → accept with sender identity → automatic activation → ask-each-time ceremony → per-item revoke).
+**Deferred:** subscription launch (flag `LooxMembership.launchEnabled` OFF; ASC group 22241495 live, pending review screenshots + submit; backend entitlement API per proposal v3; recipient-seat + theme gates; §12 checklist); AAGUID community-registry submission (external PR); credential-exchange UI wiring + on-device verification. CloudKit is compiled with `VAULTIFY_ICLOUD`; vault-item sync remains opt-in. Production schema readiness for new/changed record types requires a separate operational receipt; this source update does not establish live schema completeness; rotation reminder per-item cadence deferred pending full enablement. Manual pre-TestFlight QA still needs on-device QuickType deletion, iOS 18 RP-triggered automatic-upgrade smoke coverage, and the Approval Mode two-device round-trip run (share → accept with sender identity → automatic activation → ask-each-time ceremony → per-item revoke).
 
-**Last updated:** 2026-08-02
+**Last updated:** 2026-10-07. Native source implementation is described below;
+physical-device, production-mail and release acceptance are tracked separately.
 
 ### Private Email failure diagnosis
 `RelayPrincipalEscrowService` requires CloudKit even when vault-item sync is off. Only
@@ -194,10 +199,12 @@ Release uses only the `com.bervion.vaultify` / `relay-diagnostics` Console categ
 The log excludes email addresses, request bodies, principal/device identifiers and
 cryptographic material; clearing it does not change vault, enrollment or alias state.
 
-Private Email creation reserves and activates reusable addresses directly, without a label
-prompt. Optional labels remain editable in `AliasDetailScreen`. The two introductory notices
-use `VaultInfoBanner.subtle()`: a soft warning with an explicit inbox-confirmation action,
-and neutral receive-only guidance. Both have short EN/VI/JA copy and modest corners.
+Private Email uses one composer for service and reusable addresses. Label, website and
+Login are optional; a successful mint is checkpointed before destination routing so retry
+keeps the issued address. `AliasDetailScreen` distinguishes the last confirmed destination
+from a desired change, supports linked-Login management and retains local recovery actions
+after partial failure. `VaultInfoBanner.subtle()` uses an elevated neutral surface for
+receive-only guidance and a warning/action for verification prerequisites.
 
 CloudKit escrow `notAuthenticated` is mapped separately to `iCloudAuthenticationRequired`;
 its localized message directs users to iCloud sign-in without enabling vault sync. Other
@@ -240,3 +247,68 @@ and failure metadata when verifying the new binary.
 Physical-iPhone Apple attestation and mail delivery remain unverified by us. The
 [deployment runbook](deployment-guide.md#private-email-device-setup-and-verification)
 records active version ids, bundle hash, validation, rollback and the device matrix.
+
+### Private Email and Member UI implementation (2026-10-07)
+
+Normal Debug and Release now share the production relay **and** signed domain registry.
+`DomainRegistryClient` accepts injected URL/environment values for isolated tests. Domain
+signature, environment, freshness and rollback verification remain in place. Unavailable
+entries in an accepted registry appear in the picker with a readiness explanation;
+`loox.pw` was `createDisabled` in the captured production registry and this change does
+not enable it or change the production catch-all.
+
+`EmailAlias` seals an optional hostname snapshot, signed registry mapping proof and
+relation revision. Minted identity is immutable. Historical verified mappings resolve
+an issued address offline but do not authorize creation; unknown or unproved nonlegacy
+namespaces resolve to no address. Legacy `relay-main` retains its bundled hostname.
+Repository backfill runs only with a trusted mapping and preserves old sealed decoding.
+
+`AppEnvironment.destinationVerification` owns `DestinationVerificationCoordinator` and
+its shared verification controller. Visible consumers register inbox IDs. Foreground and
+unlock transitions wake relevant pending work; lock, background and identity changes
+cancel it. Requests share a 30-GET rolling-60-second budget, per-identity deduplication,
+8-second normal polling and bounded backoff honoring Retry-After. Persistence compares
+inbox ID, email, destination and generation, rejects stale writes, avoids downgrading a
+verified identity and skips unchanged sealed writes. `CapabilityStore` finishes admitted
+requests once; status reachability does not reopen operator-disabled mutations.
+
+The overview and alias detail mask recipients with an explicit reveal control. Deliberate
+navigation into unlocked inbox detail exposes the local email for reading/copying.
+Inactive scene, vault lock and exit conceal immediately; foreground return does not reveal
+again automatically. Actual destination checkpoints and desired changes have separate
+presentation. Creation retry displays the reserved inbox and keeps its original namespace.
+
+`AliasLinkedServicesScreen` offers global and per-alias Login lists, details and unlink
+confirmation. The canonical sealed `Private email` field determines associations, so one
+alias can serve multiple Logins. `boundItemId` remains a primary/legacy hint. Unlink removes
+one exact canonical field and a matching primary pointer in one local SwiftData save;
+ordinary username/Email, sibling Logins, the alias and forwarding remain intact. Revision
+and editor-baseline checks reject stale resurrection. Protected, duplicate and conflicting
+fields require recovery; legacy Email/username matches appear only in explicit review.
+CloudKit records sync independently, so this is a local atomicity guarantee.
+
+`UIStateStore.DraftState` seals the original Login baseline with optional alias context.
+Restored editors compare live relations against that original state instead of their
+unsaved edits. Successful atomic relation commits retain normal password-reminder effects.
+Relay lifecycle commands serialize per alias, patch live state after awaits and require an
+acknowledgment before marking a paused alias active. A policy-rejected resume stays paused.
+
+Member tiles now open `ShareLinksScreen`, `SendToBrowserScreen` and `FamilyScreen`.
+`MemberFeatureProjection` uses known ownership for counts, lists, choosers and histories;
+missing non-nil folders and orphan records do not fall back to another persona. Links
+retain expiry/revoke metadata but not historical working URL keys. Browser history records
+local outcomes without session codes, fields or keys. Family remains derived from outgoing
+item shares, with explicit item or Space selection and approval-only item entry; it does
+not create family accounts, billing roles or seats. Existing exposure, commerce, App Attest,
+SAS, Face ID and Approval Mode gates are reused.
+
+Normal explanatory/status copy in these screens uses derived opt-in `.secondaryBody`,
+`.successBody` and `.warningBody` roles with a 4.5:1 content-surface floor. These add no
+stored palette fields or global accent/control/icon changes. New UI copy is catalogued
+in EN/VI/JA. Final local acceptance passed: 1456 unit cases with one expected Simulator
+skip, 12 snapshot cases producing 40 renders, and three new UI journeys with six mounted
+captures. Code review closed all nine source findings; representative native review closed
+the observed accessibility3 truncations. These results and signed generic-device Debug
+compilation do not establish physical App Attest/mail or a new TestFlight release.
+Exact receipts and remaining physical/device/mail/Family/full runtime matrix gates live in
+the [implementation progress report](../plans/261007-1825-loox-member-and-private-email-ux-overhaul/reports/implementation-progress.md).

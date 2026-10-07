@@ -164,19 +164,28 @@ Required semantic tokens:
 | `accent` | Brand/action tint |
 | `onAccent` | Text/icon on accent |
 | `accentSoft` | Low-emphasis selected background |
-| `accentText` | TEXT-rank accent (Controlled Contrast): same hue, guarded to 4.5:1 on controlBackground and accentSoft. Use for links, tinted-button labels, interactive glyphs. Raw `accent` is FILL rank only (guarded 3:1 vs canvas in `recolored()`) |
+| `accentText` | Existing accent/control role: same hue, guarded to the user-locked 3:1 floor on controlBackground and accentSoft. Preserve the brand/control pairing; this is not a universal 4.5:1 body-text guarantee |
 | `separator` | Hairlines and dividers |
 | `shadowAmbient` | Soft outer shadow |
 
 ### Contrast Rules
 
 - `textPrimary` on every background/surface: minimum 4.5:1.
-- `textSecondary` on every background/surface: minimum 4.5:1 when it is real content.
+- Normal-sized explanatory/status content must meet 4.5:1. Use the opt-in body roles below rather than assuming a control/icon color meets that floor.
 - `textTertiary`: use only for metadata; still aim for 3:1 minimum.
 - `accent` used as text/icon: minimum 3:1 for icons, 4.5:1 for text.
 - `onAccent` must be selected by comparing black and white contrast against `accent`, not by simple brightness threshold.
 - Placeholder text must not be used as the only label.
 - Disabled text can be below 4.5:1 only when the disabled state is obvious and nonessential.
+
+Private Email and Member content use opt-in `ThemeRole.secondaryBody`, `.successBody`
+and `.warningBody`. They resolve to derived `AppTheme.secondaryBodyText`,
+`successBodyText` and `warningBodyText` in `VaultifyCore/Theme/AppTheme+Tokens.swift`.
+The derivation guards 4.5:1 on background, secondary/grouped/elevated/control backgrounds
+and pressed surfaces. These roles change no stored palette fields and apply only at
+call sites that select them; the existing accent, icon and control 3:1 pairing stays intact.
+Use them for normal-sized explanatory or status copy on content surfaces. Continue to
+verify the actual foreground/background pair for each new use and custom theme.
 
 ### Mode Requirements
 
@@ -712,5 +721,6 @@ Acceptance:
 `VaultInfoBanner.subtle()` is the opt-in treatment for contextual notices: semantic
 soft/neutral backgrounds, contrast-adjusted foregrounds, `Radius.sm`, and a 44pt action.
 Use a warning for an outstanding prerequisite and neutral info for standing guidance.
-Private Email groups these notices together; its verification action navigates explicitly
-without wrapping the whole banner in a List disclosure row.
+Neutral info uses the elevated surface token so it stays distinct from the grouped canvas.
+Private Email puts standing receive-only guidance below its main content; its verification
+action navigates explicitly without wrapping the whole banner in a List disclosure row.

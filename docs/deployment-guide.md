@@ -22,7 +22,7 @@ make release  →  bump version + AI notes + tag vX.Y.Z  →  push
 | App Group | `group.com.bervion.vaultify` |
 | Team ID | `WDNL2F75V7` |
 | Certs repo (match) | `github.com/bervion/vaultify-ios-certificates` (private) |
-| App locales | en, vi |
+| App locales | en, vi, ja |
 
 ---
 
@@ -192,8 +192,8 @@ make submit-ios  # submit the latest TestFlight build to App Store review
 
 **Version bump** is driven by conventional commit prefixes since the last tag:
 `feat!`/`BREAKING CHANGE` → major · `feat` → minor · `fix`/`perf`/other → patch.
-`make release` writes `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION` into the pbxproj
-(app and extension together), generates EN/VI release notes via the Claude CLI,
+`make release` writes `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION` into `Project.swift`
+(app and extensions together), generates EN/VI release notes via the Claude CLI,
 updates `CHANGELOG.md`, commits, tags `vX.Y.Z`, and pushes. The tag triggers
 `release-ios.yml`.
 
@@ -244,7 +244,7 @@ building a throwaway one — the opposite of what a shared runner needs.
   app + AutoFill ext + Safari ext) → force Manual signing per target → `build_app`
   (app-store export with all three profiles) → `upload_to_testflight`.
 
-The build number is whatever is committed in the pbxproj at the tagged commit, so it is
+The build number is whatever is committed in `Project.swift` at the tagged commit, so it is
 unique and increasing for every upload (each `make release`/`make beta`/`make hotfix` bumps it).
 
 ---
@@ -270,6 +270,8 @@ unique and increasing for every upload (each `make release`/`make beta`/`make ho
 
 Normal **Debug and Release/TestFlight use production App Attest** and the production
 relay API (`https://api-relay.looxpassword.com`), whose mail ingress is production-only.
+The signed domain registry also uses production
+(`https://config.looxpassword.com/v1/domain-registry`) in both normal configurations.
 Debug's **APNs remains development**. CloudKit's configuration is separate: Debug
 uses Development, while TestFlight uses Production. Link and Quick View retain their
 existing staging API defaults in Debug.
@@ -399,3 +401,42 @@ in its recovery material, restore that vault to regain access to the same relay 
 The Production schema is not the cause when the record type is listed: CloudKit Console's
 Production **Record Types** page shows "No record types found" for a few seconds while it
 loads, which is easy to misread as a missing deploy.
+
+### UI overhaul acceptance and domain readiness
+
+The 2026-10-07 native UI changes are separate from the previously released
+**1.56.6 (95)** attestation fixes. They have not bumped the app version or uploaded a new
+candidate. Follow the existing release boundary after validating the final source tree.
+The [implementation report](../plans/261007-1825-loox-member-and-private-email-ux-overhaul/reports/implementation-progress.md)
+separates synthetic native evidence from physical and production checks.
+
+| Check | Required observable result |
+|---|---|
+| Inbox verification | Confirm in the browser, return to a relevant unlocked app screen and observe server-verified state. Pending visible polling resumes without a restart; no resend is triggered by a status check. |
+| Recipient privacy | Open inbox detail to identify/copy its local email. Background, lock and exit conceal it; returning to foreground keeps it concealed. Alias detail separates last confirmed destination from a pending desired change. |
+| Create/retry | Create without a Login, then link one later. A mint followed by routing failure retries the same reserved namespace/inbox. A domain losing creation eligibility before mint requires an explicit valid selection. |
+| Linked services | Link one address to multiple owned Logins. Unlink one with confirmation; ordinary Email/username, sibling associations and alias forwarding remain intact. Restore an edited Login draft without losing its original relation baseline. |
+| Resume forwarding | A paused alias is active only after backend resume acknowledgment on its original namespace. A policy refusal leaves it paused and surfaces the error. |
+| Member destinations | Share Links, Send to Browser and Family open their own roots. Persona changes affect counts, lists and choosers consistently. Link history cannot reconstruct a working key; Browser history cannot replay a session. |
+| Family | With two iCloud accounts/devices, exercise item and Space invitation, acceptance, ceremony, use, update and revoke. Approval Mode on with vault-item sync off must work. |
+| Upgrade/offline | Existing aliases retain their suffix. A valid historical signed mapping resolves an issued nonlegacy alias; an unknown/unproved mapping remains unavailable for copy. |
+
+`loox.pw` activation is a separate operational gate. The captured production registry
+v14 contains `email-pw=createDisabled`; unavailable signed entries can now be shown in
+the app with a readiness explanation. This native change neither enables creation nor
+changes server routing/defaults. A registry that has not been accepted still uses the
+bundled fallback, which contains the legacy domain only.
+
+Before enabling `email-pw`, obtain read-only access to the correct live D1 configuration,
+verify namespace and ingress routing, and prove actual production-apex delivery to a
+verified controlled inbox while preserving a legacy-delivery regression receipt. An
+OAuth login, health endpoint, simulator fixture or signed registry alone is not a mail
+receipt. Keep the production catch-all on production during isolated staging checks.
+Coordinate server lifecycle and a signed registry with a strictly increasing version
+only after delivery proof. A UI-only release can keep `email-pw` disabled.
+
+Rollback of new creation uses server and signed-registry `createDisabled` while preserving
+existing ingress. Publish a new higher signed version; do not replay an older registry,
+retire a namespace with issued aliases, delete vault data or replace the relay principal
+to repair presentation. Native views/routes can be reverted independently of the sealed
+backward-compatible fields and state guards.

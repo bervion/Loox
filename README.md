@@ -1,23 +1,24 @@
 # Vaultify
 
-Private, offline, **zero-backend** password & passkey manager for iOS. Built with native
-SwiftUI. Your vault is encrypted with Argon2id and never leaves the device — no account,
-no server. The only telemetry is anonymous usage statistics (GA4, no ad identifiers,
-never vault contents) with an opt-out in Settings → General.
+Private, offline-first password & passkey manager built with native SwiftUI. The vault
+uses Argon2id and AES-GCM and works without an account. Optional CloudKit sync, sharing
+and Private Email use their own network services. Anonymous usage statistics exclude
+vault contents and can be disabled in Settings → General.
 
 ## Highlights
 
-- 🔐 **On-device only** — vault is an encrypted file in a shared App Group container; no backend
+- 🔐 **Local encrypted vault** — shared App Group storage for the app and extensions
 - 🧬 **Argon2id** key derivation (vendored reference C) + AES-GCM vault encryption
 - 👤 **Face ID** unlock (app + AutoFill extension)
 - 🔑 **iOS AutoFill** for passwords **and passkeys** (Credential Provider extension) — Face ID unlock + create new login
 - 🧭 **Safari extension** — fill identities and cards on any https page, generated-password signup assist, in-page save prompt (per-site controls included)
 - 🗂 **Spaces & tags** — group logins by company/project (color + icon), with a Home dashboard (Quick Access, recents, tags)
-- 🎨 **Themes & wallpapers** — Day / Night / Tinted themes, accent colors, gradient · pattern · animated-mesh backgrounds, auto-night, and custom themes you can export / import (`.vaultheme`)
+- 🎨 **Themes** — live Day / Night appearance and seven accent presets; decorative wallpapers are currently disabled
 - 👥 **Approval Mode sharing** — share access, not secrets; per-field capability delegation via iCloud, with owner approval via Face ID for TOTP access
 - 🧑‍💻 **Developer vault** — SSH keys (import with `ssh-keygen`-parity fingerprints), API secrets, Git hosting accounts with typed links, App Store Connect / APNs keys, signing identities, provisioning profiles, and TLS certificates; a fail-closed capability model keeps developer secrets out of AutoFill, password health, and share links
-- **Private Email** — selected domains remain visible before activation; forwarding requires verification. Create reusable addresses directly and add labels later in details. Its encrypted identity uses iCloud independently of vault sync.
-- 🌏 **EN / VI** with an in-app language toggle
+- **Private Email** — create service or reusable addresses with optional labels, websites and Login links. View linked services and unlink a Login locally without stopping forwarding. Inbox detail can reveal/copy the saved email; verification refreshes while relevant screens are visible. Signed unavailable domains remain visible with their readiness state.
+- **Loox Member** — dedicated Share Links, Send to Browser and Family screens scoped to the active persona. Family uses existing item/Space sharing relationships.
+- 🌏 **EN / VI / JA** with an in-app language toggle
 - ☁️ **Optional** iCloud (CloudKit) sync — off by default, compile-gated
 - 📱 iPhone + iPad, iOS 17.3+, plus a native macOS app (15+)
 
@@ -59,7 +60,7 @@ Project.swift              # Tuist manifest — source of truth for the Xcode pr
 Vaultify/                  # App target
 ├── App/                   #   @main entry, root scene
 ├── Features/              #   feature screens (vault, items, settings, …)
-├── DesignSystem/          #   Icons (SF via VaultIcon), components, theme
+├── DesignSystem/          #   Polaris icons, tokens, components, theme
 ├── Services/              #   app services (e.g. Sync/CloudSyncService — iCloud opt-in)
 ├── Security/              #   biometrics / unlock
 ├── Data/, Resources/      #   stores, Localizable.xcstrings, Assets.xcassets
@@ -95,7 +96,8 @@ For Private Email, generate with `make gen`, open `Vaultify.xcworkspace`, and ru
 **Vaultify** scheme in **Debug** on a physical iPhone signed into iCloud. The app's
 signing profile must grant App Attest. Normal Debug and Release/TestFlight use
 **production App Attest**; Debug APNs remains development. Debug Link and Quick View
-still use their staging APIs. Optional Apple sandbox enrollment settings, device
+still use their staging APIs. Private Email's relay and signed domain registry both use
+production in normal Debug and Release. Optional Apple sandbox enrollment settings, device
 checks, and the backend deployment audit are in the
 [Private Email device runbook](docs/deployment-guide.md#private-email-device-setup-and-verification).
 
@@ -128,8 +130,9 @@ secrets, self-hosted runner) is documented in **[docs/deployment-guide.md](docs/
 
 - Master password → **Argon2id** → vault key; vault is an encrypted file in the
   `group.com.bervion.vaultify` App Group container (so the AutoFill extension can read it)
-- Vault data never touches a server we run — there is none. Optional iCloud sync is
-  **off** unless built with the `VAULTIFY_ICLOUD` flag and the iCloud capability enabled.
+- Vault-item CloudKit sync is opt-in and requires the `VAULTIFY_ICLOUD` configuration.
+  Private Email's sealed relay identity uses iCloud separately; Approval Mode sharing
+  has its own setting. The relay and browser/link services do not receive the master password.
 - Usage analytics: GA4 via `FirebaseAnalyticsCore` (no AdSupport/IDFA), app target only —
   never the AutoFill/Safari extensions. Events carry item *types*, count buckets and
   setting states; never item names, values, websites, or search terms (contract in
