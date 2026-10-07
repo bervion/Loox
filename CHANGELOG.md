@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.56.6] - 2026-10-07
+
+### Fixed
+
+- Support inbox verification before creating the first Private Email alias.
+- Recover once when a device's App Attest registration is missing, without replacing the relay identity or existing aliases.
+- Scope device verification state by environment and coordinate concurrent enrollment requests.
+- Report network and service failures separately from device verification failures.
+
+### Changed
+
+- Align normal on-device Debug App Attest with the production relay and add localized Debug diagnostics.
+- Document the verified relay recovery deployment and device testing procedure.
+
 ## [1.56.5] - 2026-09-28
 
 ### Fixed

@@ -1,1 +1,1 @@
-Đã khắc phục lỗi có thể khiến bạn không truy cập được Kho sau khi cài đặt lại ứng dụng trên thiết bị này.
+Cải thiện thiết lập hộp thư cho Email riêng tư và khôi phục khi thiết bị cần xác minh lại. Bao gồm bản sửa lỗi truy cập Kho sau khi cài đặt lại ứng dụng.

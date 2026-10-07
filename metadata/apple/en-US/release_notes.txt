@@ -1,1 +1,1 @@
-Fixed an issue that could prevent access to your vault after reinstalling the app on this device.
+Improved Private Email inbox setup and recovery when device verification needs to be renewed. Includes a fix for accessing your vault after reinstalling the app.

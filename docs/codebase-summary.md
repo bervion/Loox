@@ -233,10 +233,10 @@ production at 100% traffic on 2026-10-07**. Downloaded active bundles match the
 patched code hash; live negative checks confirm `attestation_key_unknown` for an
 unknown device key, with missing assertions and invalid principal signatures still
 rejected. Existing kind-7 principal genesis support and captured live settings were
-preserved. Native client fixes remain in this working tree and have not been
-uploaded to TestFlight by this task; the source version is still **1.56.5 (94)**.
-The user reports Debug working and TestFlight still failing, so the installed
-TestFlight version and its failure logs are required to diagnose that binary.
+preserved. Release **1.56.6 (95)** includes the native client fixes. The pre-release
+investigation used a working Debug binary and TestFlight **1.56.4**. Confirm App
+Store Connect processing has finished and record the installed TestFlight build
+and failure metadata when verifying the new binary.
 Physical-iPhone Apple attestation and mail delivery remain unverified by us. The
 [deployment runbook](deployment-guide.md#private-email-device-setup-and-verification)
 records active version ids, bundle hash, validation, rollback and the device matrix.

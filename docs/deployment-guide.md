@@ -344,10 +344,10 @@ original code hash
 Any rollback should promote those captured versions while preserving the live
 bindings and nonversioned settings.
 
-**Native/device status:** the client fixes remain in the working tree; this task
-has not uploaded a new app to TestFlight. The source version is still **1.56.5 (94)**,
-so matching that version number does not establish that an installed binary contains
-these changes. The user reports Debug working while TestFlight still fails. Record
+**Native/device status:** release **1.56.6 (95)** includes the client fixes. The
+pre-release investigation used a working Debug binary and TestFlight **1.56.4**;
+the Debug binary still displayed **1.56.5 (94)** before the release bump. Confirm
+the new build has finished App Store Connect processing before testing it. Record
 the actual installed TestFlight version and available Console relay failure metadata
 (error domain/code, stage, HTTP status and backend code) before diagnosing that
 binary. Older binaries may have only the `relay` category; `relay-diagnostics`
