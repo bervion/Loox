@@ -83,13 +83,19 @@ final class AliasSuggestionTests: XCTestCase {
         let repo = makeRepo()
         let persona = repo.activePersona!
         let id = try repo.createPerSiteAlias(for: persona, boundItemId: nil, domain: "github.com")
-        var alias = repo.aliases.first { $0.id == id }!
+        let alias = repo.aliases.first { $0.id == id }!
         XCTAssertNil(alias.boundItemId)
         XCTAssertEqual(alias.boundDomain, "github.com")
         XCTAssertEqual(alias.status, .reserved)
-        // Bind on save (the editor's bindPendingAlias step).
-        alias.boundItemId = "item-9"
-        try repo.updateAlias(alias)
+        // Saving an owned Login establishes a canonical field association.
+        // A dangling primary pointer is not an item or an ownership proof.
+        XCTAssertTrue(repo.aliases(forItem: "item-9").isEmpty)
+        let login = VaultItem(id: "item-9", category: .login, title: "GitHub",
+            fields: [DynamicField(label: "Username", kind: .username, value: "original-user")])
+        try repo.add(login)
+        try repo.linkAliasToLogin(aliasID: id, itemID: login.id)
         XCTAssertEqual(repo.aliases(forItem: "item-9").count, 1)
+        XCTAssertEqual(repo.item(id: login.id)?.privateEmailValue, alias.resolvedAddress)
+        XCTAssertEqual(repo.item(id: login.id)?.usernameField?.value, "original-user")
     }
 }

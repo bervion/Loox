@@ -46,6 +46,7 @@ final class ForwardingInboxTests: XCTestCase {
         XCTAssertEqual(secret.source, .manual)   // defaulted
         XCTAssertFalse(secret.isDefault)         // defaulted
         XCTAssertNil(secret.personaId)
+        XCTAssertEqual(secret.verificationGeneration, 0)
     }
 
     func testAliasSecretInboxFieldsBackwardDecodeNil() throws {
@@ -83,6 +84,43 @@ final class ForwardingInboxTests: XCTestCase {
         // Email follows the profile.
         repo.setDestinationEmail("new@real.com", for: persona)
         XCTAssertEqual(repo.forwardingInboxes.first { $0.personaId == persona.id }?.email, "new@real.com")
+    }
+
+    func testProfileEmailChangeInvalidatesVerifiedDestinationAndGeneration() throws {
+        let repo = makeRepo()
+        let persona = try makePersonaWithEmail(repo)
+        var original = repo.forwardingInboxes.first { $0.personaId == persona.id }!
+        original.relayDestinationID = "old-destination"
+        original.verificationStatus = .verified
+        try repo.updateInbox(original)
+        let verifiedGeneration = try XCTUnwrap(repo.inbox(id: original.id)).verificationGeneration
+        repo.setDestinationEmail("new@real.com", for: persona)
+        let changed = repo.forwardingInboxes.first { $0.personaId == persona.id }!
+        XCTAssertEqual(changed.email, "new@real.com")
+        XCTAssertNil(changed.relayDestinationID)
+        XCTAssertEqual(changed.verificationStatus, .unverified)
+        XCTAssertEqual(changed.verificationGeneration, verifiedGeneration + 1)
+    }
+
+    func testMakingStalePendingSnapshotDefaultPreservesLiveVerificationIdentity() throws {
+        let repo = makeRepo()
+        let id = try repo.addManualInbox(email: "fixture@example.test")
+        var pending = try XCTUnwrap(repo.inbox(id: id))
+        pending.relayDestinationID = "synthetic-destination"
+        pending.verificationStatus = .pending
+        try repo.updateInbox(pending)
+        let snapshot = try XCTUnwrap(repo.inbox(id: id))
+        let verifiedState = RelayAPIClient.DestinationState(destinationId: "synthetic-destination",
+            status: "verified", maskedEmail: nil, resendAfterSeconds: nil)
+        XCTAssertTrue(try repo.applyDestinationState(verifiedState, snapshot: snapshot, allowDestinationChange: false))
+        let verified = try XCTUnwrap(repo.inbox(id: id))
+        try repo.setDefaultInbox(snapshot)
+        let actual = try XCTUnwrap(repo.inbox(id: id))
+        XCTAssertTrue(actual.isDefault)
+        XCTAssertEqual(actual.verificationStatus, .verified)
+        XCTAssertEqual(actual.relayDestinationID, verified.relayDestinationID)
+        XCTAssertEqual(actual.verificationGeneration, verified.verificationGeneration)
+        XCTAssertEqual(actual.email, verified.email)
     }
 
     // MARK: Resolution priority

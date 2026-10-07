@@ -33,7 +33,7 @@ final class TutorialTooltipSnapshotTests: XCTestCase {
     func testSpotlightOverTheHealthRing() throws {
         assertSnapshot(of: try overlay(spotlight: CGRect(x: 65, y: 90, width: 260, height: 218),
                                        shape: .circle, skip: "Skip"),
-                       as: .scaledImage(width: 390, height: 700),
+                       as: .scaledImage(width: 390, height: 700, precision: 0.9999),
                        named: "circle-ring")
     }
 
@@ -41,7 +41,12 @@ final class TutorialTooltipSnapshotTests: XCTestCase {
     /// stray centring is unmissable.
     func testClosingStepCardWithoutSkip() throws {
         assertSnapshot(of: try overlay(spotlight: nil, shape: .rounded, skip: nil),
-                       as: .scaledImage(width: 390, height: 700),
+                       // Xcode 27/iOS 26.5 changes 74 of 1,092,000 pixels by
+                       // at most 2/255 versus the pinned @2x reference. This
+                       // bounded raster tolerance permits at most 436 RGBA
+                       // byte differences and may also tolerate tiny visual
+                       // changes. References remain unchanged.
+                       as: .scaledImage(width: 390, height: 700, precision: 0.9999),
                        named: "centered-no-skip")
     }
 }

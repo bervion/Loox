@@ -27,8 +27,9 @@ enum SnapshotEnvironment {
 extension Snapshotting where Value: SwiftUI.View, Format == UIImage {
     /// A fixed-size image strategy with the raster scale pinned, so a reference
     /// recorded on one simulator stays valid on the next one.
-    static func scaledImage(width: CGFloat, height: CGFloat) -> Snapshotting {
+    static func scaledImage(width: CGFloat, height: CGFloat, precision: Float = 1) -> Snapshotting {
         .image(
+            precision: precision,
             layout: .fixed(width: width, height: height),
             traits: SnapshotEnvironment.traits
         )

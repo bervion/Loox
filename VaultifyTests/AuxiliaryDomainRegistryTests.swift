@@ -2,7 +2,7 @@ import XCTest
 @testable import Vaultify
 
 /// The trusted auxiliary-domain set: bundled registry invariants, lifecycle
-/// filtering, unknown-ID fallbacks, and the sealed alias blob's domain field
+/// filtering, unknown-ID rejection, and the sealed alias blob's domain field
 /// (a pre-domain blob must decode as the legacy namespace, never fail).
 final class AuxiliaryDomainRegistryTests: XCTestCase {
 
@@ -22,10 +22,9 @@ final class AuxiliaryDomainRegistryTests: XCTestCase {
             RelayConfig.emailDomain)
     }
 
-    func testUnknownDomainIDFallsBackToLegacyHostNeverBlank() {
+    func testUnknownDomainIDDoesNotBecomeLegacyAddress() {
         let host = AuxiliaryDomainRegistry.emailDomain(forDomainID: "no-such-domain")
-        XCTAssertEqual(host, RelayConfig.emailDomain)
-        XCTAssertFalse(host.isEmpty)
+        XCTAssertNil(host)
     }
 
     func testOnlyActivePrivateEmailDomainsAreCreatable() {
@@ -62,14 +61,13 @@ final class AuxiliaryDomainRegistryTests: XCTestCase {
         XCTAssertEqual(decoded.relayDomainID, "some-future-domain")
     }
 
-    func testAliasEmailDomainUsesRegistryWithLegacyFallback() {
+    func testAliasEmailDomainUsesTrustedMappingOnly() {
         let known = EmailAlias(personaId: "p1", tier: .perSite, localPart: "a",
                                relayDomainID: AuxiliaryDomainRegistry.legacyEmailDomainID)
         XCTAssertEqual(known.emailDomain, RelayConfig.emailDomain)
-        // An alias minted by a future build (unknown ID here) still renders
-        // under the legacy host rather than a blank suffix.
         let future = EmailAlias(personaId: "p1", tier: .perSite, localPart: "a",
                                 relayDomainID: "from-a-newer-build")
-        XCTAssertEqual(future.emailDomain, RelayConfig.emailDomain)
+        XCTAssertNil(future.emailDomain)
+        XCTAssertNil(future.resolvedAddress)
     }
 }
