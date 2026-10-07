@@ -91,6 +91,19 @@ docs/                      # codebase-summary.md, deployment-guide.md
 6. **Commit** `Project.swift` + source — **never** the generated project. Use
    [conventional commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `chore:` …).
 
+For Private Email, generate with `make gen`, open `Vaultify.xcworkspace`, and run the
+**Vaultify** scheme in **Debug** on a physical iPhone signed into iCloud. The app's
+signing profile must grant App Attest. Normal Debug and Release/TestFlight use
+**production App Attest**; Debug APNs remains development. Debug Link and Quick View
+still use their staging APIs. Optional Apple sandbox enrollment settings, device
+checks, and the backend deployment audit are in the
+[Private Email device runbook](docs/deployment-guide.md#private-email-device-setup-and-verification).
+
+Debug exposes **Settings → Private Email diagnostics** with configuration
+and a sanitized local log (`Documents/relay-diagnostics.log`). Release/TestFlight
+records sanitized Console metadata under `com.bervion.vaultify` / `relay-diagnostics`.
+App Attest enrollment changes keep the vault's relay principal and aliases intact.
+
 ## Releasing → TestFlight
 
 Fully automated. From `main` with a clean tree:

@@ -266,7 +266,109 @@ unique and increasing for every upload (each `make release`/`make beta`/`make ho
 ## Open questions
 - Certs repo name assumed `bervion/vaultify-ios-certificates` — update `fastlane/Matchfile` if you use a different name.
 
-## Private Email on TestFlight
+## Private Email device setup and verification
+
+Normal **Debug and Release/TestFlight use production App Attest** and the production
+relay API (`https://api-relay.looxpassword.com`), whose mail ingress is production-only.
+Debug's **APNs remains development**. CloudKit's configuration is separate: Debug
+uses Development, while TestFlight uses Production. Link and Quick View retain their
+existing staging API defaults in Debug.
+
+For a normal Xcode device run:
+
+1. Run `make gen` after pulling changes, switching branches, or changing generation
+   settings. Open **`Vaultify.xcworkspace`**.
+2. Select the app scheme **Vaultify**, its **Debug** configuration, and a physical
+   iPhone. Simulator cannot exercise App Attest.
+3. Sign with team `WDNL2F75V7` and a current app provisioning profile that grants
+   **App Attest**, plus the existing iCloud/CloudKit capability. If App Attest was
+   just enabled on the App ID, refresh the development profile too; the App Store
+   profile used by TestFlight must also grant it (§1b).
+4. Sign into iCloud on the iPhone and unlock the existing vault. Vault-item sync may
+   remain off; Private Email's encrypted relay identity uses its own CloudKit path.
+5. Open **Settings → Private Email diagnostics** in Debug. Its Configuration section
+   should show relay host `api-relay.looxpassword.com`, App Attest environment
+   `production`, and App Attest supported. Retry the inbox-confirmation action and
+   refresh the log to locate the failing stage.
+
+Apple sandbox enrollment tests are opt-in at **project generation time**:
+
+```bash
+TUIST_APP_ATTEST_DEBUG_ENVIRONMENT=development make gen
+```
+
+This changes only Apple's attestation environment in Debug. The relay API stays
+production in every normal app configuration, keeping persisted aliases and
+destination ids on the backend that owns them. Release remains production even if
+the variable is present during generation. Run `make gen` again without it to return
+to normal device testing. Use this option for targeted enrollment tests, not the
+normal inbox-confirmation or mail-forwarding checks.
+
+App Attest key id, registration and install markers are scoped by relay host **and
+Apple's attestation environment**. Ambiguous host-only predecessor state starts a
+fresh device-key enrollment, preserving the relay principal, escrow and aliases.
+An explicit `attestation_key_unknown` response permits one re-enrollment retry with
+a fresh command transcript. The reset atomically matches the rejected key id so a
+late response cannot clear a newer enrollment. A generic 401 does not retry. Do not
+delete the app, erase the vault, or replace its relay principal as part of this
+verification.
+
+The inbox-first path (`beginDestinationVerification`, kind 7) now carries its
+genesis public key at epoch 1. The deployed backend already supported kind-7
+principal genesis. The **recovery-only hotfix was deployed on 2026-10-07** and these
+versions were verified active at 100% traffic:
+
+| Relay environment | Active version | Traffic |
+|---|---|---|
+| Production | `e2959c69-8dc7-4a2c-b7f3-22bf6328ee3b` | 100% |
+| Staging | `4aa037db-0e70-4d98-8617-6017e259c9b3` | 100% |
+
+Downloaded active code from both environments matches SHA-256
+`67963ab0371fa54c780bf84a94d438f79ecbd44e18d1c54c0086ee949bc5c74c`.
+Compiled baseline tests had **9 passes and 2 expected recovery-signal failures per
+environment**; patched tests passed **11/11 per environment**. Three live negative
+checks per environment verified: unknown App Attest key returns **401
+`attestation_key_unknown`**, a missing assertion remains `unauthorized`, and an
+invalid principal signature remains `bad_signature`. `/health/ready` was `true`
+on both environments. These checks did not send email or reset identities, DB
+schema or vault data.
+
+The upload used captured live bindings, and the promotion configuration contained
+only version/traffic selection; nonversioned Worker settings were not synchronized.
+Captured live configuration remained unchanged. The local audit receipt is
+`/tmp/vaultify-relay-auth-release-20261007/deployment-receipt.json`. It records the
+previous production version `ee6a8439-04bb-4143-a597-b3f3a368fce6` and staging version
+`4b6d56f4-8f21-44f3-9d6d-632e34e07b60` for version rollback, together with their
+original code hash
+`c13d41c249cfe8aa991bfcc8f7b44623390da3d68ceb8195641c330f290c0d57`.
+Any rollback should promote those captured versions while preserving the live
+bindings and nonversioned settings.
+
+**Native/device status:** the client fixes remain in the working tree; this task
+has not uploaded a new app to TestFlight. The source version is still **1.56.5 (94)**,
+so matching that version number does not establish that an installed binary contains
+these changes. The user reports Debug working while TestFlight still fails. Record
+the actual installed TestFlight version and available Console relay failure metadata
+(error domain/code, stage, HTTP status and backend code) before diagnosing that
+binary. Older binaries may have only the `relay` category; `relay-diagnostics`
+requires a binary containing the new client diagnostics. Physical-iPhone Apple
+attestation and production mail delivery remain **unverified by us**; backend
+negative checks do not establish those device results.
+
+| Device run | App Attest / relay | Required verification |
+|---|---|---|
+| Xcode Debug, normal generation | Production / production | Confirm inbox first, open its verification email, refresh to verified, activate an alias, then verify external mail forwarding. Inspect the Debug diagnostics log. |
+| Xcode Debug, optional Apple sandbox generation | Development / production | Confirm supported device and production relay host, then inspect targeted enrollment results. Return to normal generation for inbox confirmation and forwarding. |
+| TestFlight on physical iPhone | Production / production | Repeat inbox confirmation and forwarding with CloudKit Production schema deployed. Also verify an existing alias remains visible and manageable after the new device-key enrollment. Collect Console `relay-diagnostics` metadata. |
+
+Debug diagnostics store only sanitized technical metadata in
+`Documents/relay-diagnostics.log`; the Settings entry can copy, refresh or clear that
+log. Release/TestFlight binaries containing the new diagnostics have no diagnostics
+file or Settings entry. Use Console with subsystem **`com.bervion.vaultify`**,
+category **`relay-diagnostics`**. Logs omit inboxes,
+vault values, principal/device identifiers, request bodies and keys.
+
+### CloudKit and escrow diagnosis
 
 TestFlight uses CloudKit Production. Verify the private `Vault` zone supports record type
 `RelayPrincipalEscrow` and its `sealed` field in the deployed Production schema. A missing
@@ -275,8 +377,6 @@ can block both email verification and alias creation before any relay request is
 Do not delete or replace an existing escrow to troubleshoot: it owns existing relay aliases.
 Vault-item sync does not need to be enabled for this escrow.
 
-Use the `com.bervion.vaultify` / `relay` log category to distinguish `Principal escrow failed`,
-`App Attest failed`, and `Relay command failed`. Logs contain error codes, not inboxes or keys.
 A successful `GET https://api-relay.looxpassword.com/v1/relay/service-state` confirms only
 service availability, not successful CloudKit access, App Attest, or mail delivery. Validate
 on a physical TestFlight device: confirm inbox, open the verification link, refresh status,
@@ -292,12 +392,9 @@ the cause of a separate TestFlight failure. The app surfaces an account-specific
 the escrow loaded but this vault's key cannot open it. Deleting the app deletes the vault
 and its key, while the escrow (and its Keychain cache) survives, so the next install's new
 vault can never open it: the usual cause is reinstalling without restoring the vault. The
-app says so ("Private Email was set up with another vault") and offers **Reset Private
-Email**, which replaces the escrow with a new principal only after the user confirms, only if
-this vault still cannot open it, and only if no other device wrote it in the meantime.
-Aliases owned by the old principal keep forwarding but can no longer be managed. If the old
-vault is still on another device, restore it instead. Deleting the app without **Erase
-Everywhere** first is what leaves the old escrow behind.
+app surfaces "Private Email was set up with another vault". Preserve that escrow and the
+existing vault while diagnosing. If the original vault is available on another device or
+in its recovery material, restore that vault to regain access to the same relay identity.
 
 The Production schema is not the cause when the record type is listed: CloudKit Console's
 Production **Record Types** page shows "No record types found" for a few seconds while it
