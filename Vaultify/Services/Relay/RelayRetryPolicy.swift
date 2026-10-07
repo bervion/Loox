@@ -11,6 +11,8 @@ nonisolated enum RelayRetryPolicy {
         case retry
         /// Drop the principal cache, re-read the escrow, re-sign, try once more.
         case refreshEpochThenRetry
+        /// Re-enroll this device only when the server explicitly lost its key.
+        case reenrollThenRetry
         /// Give up with a mapped reason (drives user-facing copy).
         case fail(String)
     }
@@ -22,6 +24,8 @@ nonisolated enum RelayRetryPolicy {
         case .epochStale:
             return attempt == 1 ? .refreshEpochThenRetry : .fail("epoch_stale")
         case .unauthorized: return .fail("unauthorized")
+        case .attestationKeyUnknown:
+            return attempt == 1 ? .reenrollThenRetry : .fail("unauthorized")
         case .rateLimited:  return .fail("rate_limited")
         // Both defensive here: RelayService intercepts refresh-required with
         // its own attach-then-fresh-nonce loop before the policy runs, and
@@ -44,6 +48,17 @@ nonisolated enum RelayRetryPolicy {
 }
 
 extension RelayService.Failure {
+    /// Enrollment transport failures are not evidence that the device failed
+    /// Apple's integrity checks. Preserve actionable failure categories.
+    static func attestationFailure(for error: any Error) -> Self {
+        switch error as? RelayAPIClient.Failure {
+        case .transport: return .network
+        case .server(429), .rateLimited: return .rejected("rate_limited")
+        case .server(let status): return .rejected("server_\(status)")
+        default: return .rejected("unauthorized")
+        }
+    }
+
     static func principalFailure(for error: any Error) -> Self {
         if let cloudError = error as? CKError, cloudError.code == .notAuthenticated {
             return .iCloudAuthenticationRequired

@@ -12,6 +12,13 @@ import ProjectDescription
 // Retired once App Attest becomes the create auth (loox-link epic C7).
 let looxLinkAppToken = Environment.looxLinkProdToken.getString(default: "")
 
+// Relay mail ingress is production-only, so a normal on-device Debug run uses
+// the same App Attest environment as TestFlight. Sandbox attestation remains
+// opt-in for isolated API testing; it must never change Release signing.
+let debugAppAttestEnvironment = Environment.appAttestDebugEnvironment.getString(default: "production")
+precondition(["development", "production"].contains(debugAppAttestEnvironment),
+             "TUIST_APP_ATTEST_DEBUG_ENVIRONMENT must be development or production")
+
 let project = Project(
     name: "Vaultify",
     options: .options(
@@ -47,14 +54,13 @@ let project = Project(
         // "development" would make TestFlight register with sandbox APNs (no production pushes).
         // App Attest picks its environment the same way and for the same reason:
         // entitlements are embedded as-is under manual signing, and `attestKey`
-        // fails when the app declares no environment at all. Debug builds attest
-        // against Apple's development servers, Release/TestFlight against
-        // production — a mismatch fails at `attestKey`, before any request is
-        // sent, which reads on screen as a generic "couldn't prove it's genuine".
+        // fails when the app declares no environment at all. Debug uses
+        // production by default, matching the live relay. A sandbox override
+        // affects Debug only; distribution always uses production.
         configurations: [
             .debug(name: "Debug", settings: [
                 "APS_ENVIRONMENT": "development",
-                "APP_ATTEST_ENVIRONMENT": "development",
+                "APP_ATTEST_ENVIRONMENT": .string(debugAppAttestEnvironment),
             ]),
             .release(name: "Release", settings: [
                 "APS_ENVIRONMENT": "production",
@@ -76,6 +82,9 @@ let project = Project(
                 "CFBundleDisplayName": "Loox",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+                // The key cache needs the actual signing environment, not just
+                // DEBUG, because Debug may use either Apple environment.
+                "LooxAppAttestEnvironment": "$(APP_ATTEST_ENVIRONMENT)",
                 "CFBundleLocalizations": ["en", "vi", "ja"],
                 // Analytics is opt-IN. `SettingsStore.analyticsEnabled` defaults to
                 // false, but that flag is read by `AnalyticsEngine` AFTER

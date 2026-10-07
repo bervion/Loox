@@ -1,263 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Private Email is ready" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Private Email is ready"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プライベートメールを使用できます"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email riêng tư đã sẵn sàng"
-          }
-        }
-      }
-    },
-    "Private Email was set up with another vault" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Private Email was set up with another vault"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プライベートメールは別の保管庫で設定されています"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email riêng tư được thiết lập bằng kho khác"
-          }
-        }
-      }
-    },
-    "Reset Private Email" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プライベートメールをリセット"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đặt lại Email riêng tư"
-          }
-        }
-      }
-    },
-    "The vault on this device can’t open it, usually because Loox was reinstalled. If the original vault is still on another device, restore it here instead. Otherwise, reset Private Email. Addresses you made before keep forwarding, but you won’t be able to manage them here." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The vault on this device can’t open it, usually because Loox was reinstalled. If the original vault is still on another device, restore it here instead. Otherwise, reset Private Email. Addresses you made before keep forwarding, but you won’t be able to manage them here."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "この端末の保管庫ではプライベートメールを開けません。多くの場合、Looxを再インストールしたことが原因です。元の保管庫が別のデバイスにある場合は、代わりにこちらに復元してください。ない場合は、プライベートメールをリセットしてください。以前に作成したアドレスへのメールは引き続き転送されますが、ここでは管理できなくなります。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kho trên thiết bị này không mở được Email riêng tư, thường là do Loox đã được cài lại. Nếu kho ban đầu vẫn còn trên thiết bị khác, hãy khôi phục kho đó về đây. Nếu không, hãy đặt lại Email riêng tư. Các địa chỉ bạn đã tạo trước đây vẫn tiếp tục chuyển tiếp thư, nhưng bạn sẽ không quản lý được chúng ở đây."
-          }
-        }
-      }
-    },
-    "You can try again now." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You can try again now."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "もう一度お試しください。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bạn có thể thử lại ngay."
-          }
-        }
-      }
-    },
-    "Confirm %@ to receive forwarded mail." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confirm %@ to receive forwarded mail."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "転送メールを受け取るには、%@ を確認してください。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Xác nhận %@ để nhận thư chuyển tiếp."
-          }
-        }
-      }
-    },
-    "Confirm your inbox" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confirm your inbox"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "受信トレイを確認"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Xác nhận hộp thư"
-          }
-        }
-      }
-    },
-    "Couldn’t access iCloud for Private Email" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn’t access iCloud for Private Email"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không thể truy cập iCloud cho Email riêng tư"
-          }
-        }
-      }
-    },
-    "For incoming mail only" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For incoming mail only"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "受信専用"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chỉ dùng để nhận thư"
-          }
-        }
-      }
-    },
-    "Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loox không thể tải danh tính Email riêng tư từ iCloud. Kiểm tra tài khoản iCloud trong Cài đặt iPhone rồi thử lại. Bạn không cần bật đồng bộ kho. Nếu lỗi vẫn tiếp diễn, hãy liên hệ hỗ trợ."
-          }
-        }
-      }
-    },
-    "Private Email needs an authenticated iCloud account. Check your iCloud sign-in in Settings, then try again. Vault sync can stay off." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Private Email needs an authenticated iCloud account. Check your iCloud sign-in in Settings, then try again. Vault sync can stay off."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email riêng tư cần tài khoản iCloud đã xác thực. Kiểm tra đăng nhập iCloud trong Cài đặt rồi thử lại. Bạn không cần bật đồng bộ kho."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プライベートメールには認証済みのiCloudアカウントが必要です。「設定」でiCloudへのサインインを確認してから、もう一度お試しください。保管庫の同期はオフのままで利用できます。"
-          }
-        }
-      }
-    },
-    "Replying from your inbox may reveal your real email." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replying from your inbox may reveal your real email."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "受信トレイから返信すると、実際のメールアドレスが相手に伝わる場合があります。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trả lời từ hộp thư nhận có thể làm lộ email thật."
-          }
-        }
-      }
-    },
     "" : {
 
     },
@@ -955,86 +698,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã chia sẻ %1$lld mục, %2$lld đang chờ"
-          }
-        }
-      }
-    },
-    "Apple couldn't verify this app right now. Try again in a moment." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple が現在このアプリを検証できません。少し時間をおいて再試行してください。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple chưa xác minh được ứng dụng lúc này. Hãy thử lại sau giây lát."
-          }
-        }
-      }
-    },
-    "Apple's app verification failed on this device. Please report this." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このデバイスで Apple のアプリ検証に失敗しました。この問題をご報告ください。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Khâu xác minh ứng dụng của Apple thất bại trên thiết bị này. Vui lòng báo lại cho chúng tôi."
-          }
-        }
-      }
-    },
-    "The app sent something Apple's verification rejected. Please report this." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple の検証がアプリの送信内容を拒否しました。この問題をご報告ください。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ứng dụng gửi dữ liệu bị khâu xác minh của Apple từ chối. Vui lòng báo lại cho chúng tôi."
-          }
-        }
-      }
-    },
-    "This device can't verify the app, so share links are unavailable on it." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このデバイスではアプリを検証できないため、共有リンクは利用できません。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thiết bị này không xác minh được ứng dụng, nên không dùng được liên kết chia sẻ."
-          }
-        }
-      }
-    },
-    "This install needs to verify itself again. Try once more, and reinstall Loox if it keeps failing." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このインストールは再検証が必要です。もう一度お試しいただき、それでも失敗する場合は Loox を再インストールしてください。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bản cài này cần xác minh lại. Hãy thử thêm một lần, và cài lại Loox nếu vẫn lỗi."
           }
         }
       }
@@ -3229,6 +2892,52 @@
         }
       }
     },
+    "App Attest environment" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Attest environment"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Attestの環境"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Môi trường App Attest"
+          }
+        }
+      }
+    },
+    "App Attest supported" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Attest supported"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Attestの対応"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hỗ trợ App Attest"
+          }
+        }
+      }
+    },
     "App ID, entitlements, devices, and expiry" : {
       "localizations" : {
         "ja" : {
@@ -3277,6 +2986,29 @@
         }
       }
     },
+    "App version" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App version"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリのバージョン"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phiên bản ứng dụng"
+          }
+        }
+      }
+    },
     "App Version" : {
       "localizations" : {
         "en" : {
@@ -3315,6 +3047,22 @@
         }
       }
     },
+    "Apple couldn't verify this app right now. Try again in a moment." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple が現在このアプリを検証できません。少し時間をおいて再試行してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple chưa xác minh được ứng dụng lúc này. Hãy thử lại sau giây lát."
+          }
+        }
+      }
+    },
     "Apple Signing Identity" : {
       "localizations" : {
         "ja" : {
@@ -3327,6 +3075,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chứng chỉ ký Apple"
+          }
+        }
+      }
+    },
+    "Apple's app verification failed on this device. Please report this." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスで Apple のアプリ検証に失敗しました。この問題をご報告ください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khâu xác minh ứng dụng của Apple thất bại trên thiết bị này. Vui lòng báo lại cho chúng tôi."
           }
         }
       }
@@ -5698,6 +5462,52 @@
         }
       }
     },
+    "Clear log" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear log"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログを消去"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa nhật ký"
+          }
+        }
+      }
+    },
+    "Clear relay diagnostics?" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear relay diagnostics?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リレーの診断ログを消去しますか？"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa nhật ký chẩn đoán Relay?"
+          }
+        }
+      }
+    },
     "Close" : {
       "comment" : "The label for the close button in the Generator tab.",
       "isCommentAutoGenerated" : true,
@@ -6025,6 +5835,29 @@
         }
       }
     },
+    "Configuration" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuration"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定情報"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cấu hình"
+          }
+        }
+      }
+    },
     "Confirm" : {
       "comment" : "Label for the confirmation password field in the export view.",
       "isCommentAutoGenerated" : true,
@@ -6039,6 +5872,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xác nhận"
+          }
+        }
+      }
+    },
+    "Confirm %@ to receive forwarded mail." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm %@ to receive forwarded mail."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "転送メールを受け取るには、%@ を確認してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác nhận %@ để nhận thư chuyển tiếp."
           }
         }
       }
@@ -6219,6 +6075,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xác nhận email nhận thư trước khi dùng địa chỉ riêng này. Mở hộp thư chuyển tiếp và nhấn “Xác nhận email”."
+          }
+        }
+      }
+    },
+    "Confirm your inbox" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm your inbox"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信トレイを確認"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác nhận hộp thư"
           }
         }
       }
@@ -6561,6 +6440,29 @@
         }
       }
     },
+    "Copy log" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy log"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログをコピー"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép nhật ký"
+          }
+        }
+      }
+    },
     "Copy Password" : {
       "localizations" : {
         "ja" : {
@@ -6643,6 +6545,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không thể chấp nhận lời mời"
+          }
+        }
+      }
+    },
+    "Couldn’t access iCloud for Private Email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t access iCloud for Private Email"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể truy cập iCloud cho Email riêng tư"
           }
         }
       }
@@ -8524,6 +8443,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thiết bị"
+          }
+        }
+      }
+    },
+    "diagnostic log" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "diagnostic log"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "診断ログ"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nhật ký chẩn đoán"
+          }
+        }
+      }
+    },
+    "Diagnostic log" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostic log"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "診断ログ"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhật ký chẩn đoán"
+          }
+        }
+      }
+    },
+    "Diagnostics are stored only in Debug. The log records technical steps without email addresses or vault data." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics are stored only in Debug. The log records technical steps without email addresses or vault data."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "診断ログはDebug版でのみ保存されます。技術的な処理の段階を記録し、メールアドレスや保管庫のデータは含みません。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhật ký chỉ được lưu trong bản Debug, ghi các bước kỹ thuật và không chứa địa chỉ email hay dữ liệu trong kho."
           }
         }
       }
@@ -11072,6 +11060,29 @@
         }
       }
     },
+    "For incoming mail only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For incoming mail only"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信専用"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ dùng để nhận thư"
+          }
+        }
+      }
+    },
     "For this app" : {
       "localizations" : {
         "ja" : {
@@ -11687,6 +11698,7 @@
       }
     },
     "Hand over this passkey?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11709,6 +11721,7 @@
       }
     },
     "Hand over this secret?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -14279,6 +14292,29 @@
       },
       "shouldTranslate" : false
     },
+    "Log actions" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log actions"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログの操作"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thao tác nhật ký"
+          }
+        }
+      }
+    },
     "Log Out Device" : {
       "localizations" : {
         "en" : {
@@ -14593,6 +14629,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loox không xác nhận được ai đã gửi lời mời này. Chỉ chấp nhận nếu bạn đang chờ lời mời đó."
+          }
+        }
+      }
+    },
+    "Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox couldn’t load your Private Email identity from iCloud. Check your iCloud account in iPhone Settings and try again. You don’t need to enable vault sync. If this continues, contact support."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox không thể tải danh tính Email riêng tư từ iCloud. Kiểm tra tài khoản iCloud trong Cài đặt iPhone rồi thử lại. Bạn không cần bật đồng bộ kho. Nếu lỗi vẫn tiếp diễn, hãy liên hệ hỗ trợ."
           }
         }
       }
@@ -14916,6 +14969,7 @@
       }
     },
     "Mail sent to an active alias forwards to your inbox. Receive-only." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -16011,6 +16065,7 @@
       }
     },
     "New reusable address" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -16809,6 +16864,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không tìm thấy mã QR trong ảnh đó."
+          }
+        }
+      }
+    },
+    "No relay diagnostics yet. Try the Private Email action again, then refresh this log." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No relay diagnostics yet. Try the Private Email action again, then refresh this log."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リレーの診断ログはまだありません。プライベートメールの操作をもう一度試してから、このログを更新してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa có nhật ký Relay. Thử lại thao tác Email riêng tư, rồi làm mới nhật ký này."
           }
         }
       }
@@ -18291,6 +18369,7 @@
       }
     },
     "Optional label like “Clients”." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -19926,6 +20005,7 @@
       }
     },
     "Private addresses can’t forward to %@ until you confirm it’s yours. It takes one tap and an email." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -20023,6 +20103,29 @@
         }
       }
     },
+    "Private Email diagnostics" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Email diagnostics"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートメールの診断"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chẩn đoán email riêng tư"
+          }
+        }
+      }
+    },
     "Private Email is currently unavailable. Loox has temporarily disabled this feature. Your vault and other features continue to work normally." : {
       "localizations" : {
         "ja" : {
@@ -20071,6 +20174,29 @@
         }
       }
     },
+    "Private Email is ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Email is ready"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートメールを使用できます"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư đã sẵn sàng"
+          }
+        }
+      }
+    },
     "Private Email is turned off in Settings." : {
       "localizations" : {
         "ja" : {
@@ -20099,6 +20225,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Email riêng tư đang bảo trì. Tạm thời chưa thể tạo hoặc thay đổi địa chỉ. Kho của bạn vẫn hoạt động bình thường."
+          }
+        }
+      }
+    },
+    "Private Email needs an authenticated iCloud account. Check your iCloud sign-in in Settings, then try again. Vault sync can stay off." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Email needs an authenticated iCloud account. Check your iCloud sign-in in Settings, then try again. Vault sync can stay off."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートメールには認証済みのiCloudアカウントが必要です。「設定」でiCloudへのサインインを確認してから、もう一度お試しください。保管庫の同期はオフのままで利用できます。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư cần tài khoản iCloud đã xác thực. Kiểm tra đăng nhập iCloud trong Cài đặt rồi thử lại. Bạn không cần bật đồng bộ kho."
+          }
+        }
+      }
+    },
+    "Private Email was set up with another vault" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Email was set up with another vault"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートメールは別の保管庫で設定されています"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email riêng tư được thiết lập bằng kho khác"
           }
         }
       }
@@ -21240,6 +21412,29 @@
         }
       }
     },
+    "Refresh" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Làm mới"
+          }
+        }
+      }
+    },
     "Regenerate" : {
       "localizations" : {
         "ja" : {
@@ -21310,6 +21505,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Từ chối"
+          }
+        }
+      }
+    },
+    "Relay host" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relay host"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リレーのホスト"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Máy chủ Relay"
           }
         }
       }
@@ -21491,6 +21709,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư trả lời từ hộp thư của bạn có thể để lộ email thật."
+          }
+        }
+      }
+    },
+    "Replying from your inbox may reveal your real email." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replying from your inbox may reveal your real email."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信トレイから返信すると、実際のメールアドレスが相手に伝わる場合があります。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trả lời từ hộp thư nhận có thể làm lộ email thật."
           }
         }
       }
@@ -21684,6 +21925,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã giữ chỗ"
+          }
+        }
+      }
+    },
+    "Reset Private Email" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートメールをリセット"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt lại Email riêng tư"
           }
         }
       }
@@ -22104,6 +22361,7 @@
       }
     },
     "Revoke access?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -22146,6 +22404,7 @@
       }
     },
     "Revoke link?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -26127,6 +26386,7 @@
       }
     },
     "Stop sharing this item?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -26338,6 +26598,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gợi ý và tìm kiếm có thể bao gồm các danh tính khác của bạn."
+          }
+        }
+      }
+    },
+    "Supported" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supported"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "対応"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Được hỗ trợ"
           }
         }
       }
@@ -26801,6 +27084,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Địa chỉ ngừng hoạt động ngay lập tức và không thể khôi phục."
+          }
+        }
+      }
+    },
+    "The app sent something Apple's verification rejected. Please report this." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple の検証がアプリの送信内容を拒否しました。この問題をご報告ください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ứng dụng gửi dữ liệu bị khâu xác minh của Apple từ chối. Vui lòng báo lại cho chúng tôi."
           }
         }
       }
@@ -27653,6 +27952,29 @@
         }
       }
     },
+    "The vault on this device can’t open it, usually because Loox was reinstalled. If the original vault is still on another device, restore it here instead. Otherwise, reset Private Email. Addresses you made before keep forwarding, but you won’t be able to manage them here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The vault on this device can’t open it, usually because Loox was reinstalled. If the original vault is still on another device, restore it here instead. Otherwise, reset Private Email. Addresses you made before keep forwarding, but you won’t be able to manage them here."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この端末の保管庫ではプライベートメールを開けません。多くの場合、Looxを再インストールしたことが原因です。元の保管庫が別のデバイスにある場合は、代わりにこちらに復元してください。ない場合は、プライベートメールをリセットしてください。以前に作成したアドレスへのメールは引き続き転送されますが、ここでは管理できなくなります。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kho trên thiết bị này không mở được Email riêng tư, thường là do Loox đã được cài lại. Nếu kho ban đầu vẫn còn trên thiết bị khác, hãy khôi phục kho đó về đây. Nếu không, hãy đặt lại Email riêng tư. Các địa chỉ bạn đã tạo trước đây vẫn tiếp tục chuyển tiếp thư, nhưng bạn sẽ không quản lý được chúng ở đây."
+          }
+        }
+      }
+    },
     "The website address contains unusual characters that can imitate another site. Worth a quick review." : {
       "localizations" : {
         "ja" : {
@@ -28415,6 +28737,22 @@
         }
       }
     },
+    "This device can't verify the app, so share links are unavailable on it." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスではアプリを検証できないため、共有リンクは利用できません。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị này không xác minh được ứng dụng, nên không dùng được liên kết chia sẻ."
+          }
+        }
+      }
+    },
     "This device has no Emergency Kit to upload yet." : {
       "comment" : "VaultKeyEscrowService.Failure.noRecoveryKit — new case for the awaited envelope push. appString().",
       "localizations" : {
@@ -28575,6 +28913,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Danh tính này chưa có Nhóm nào. Tạo một Nhóm để bắt đầu thêm mục."
+          }
+        }
+      }
+    },
+    "This install needs to verify itself again. Try once more, and reinstall Loox if it keeps failing." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このインストールは再検証が必要です。もう一度お試しいただき、それでも失敗する場合は Loox を再インストールしてください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản cài này cần xác minh lại. Hãy thử thêm một lần, và cài lại Loox nếu vẫn lỗi."
           }
         }
       }
@@ -29324,6 +29678,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khóa khôi phục này là cách bạn vào lại kho nếu quên mật khẩu chính. Hãy cất ở nơi an toàn và riêng tư."
+          }
+        }
+      }
+    },
+    "This removes only the local diagnostic log." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This removes only the local diagnostic log."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この端末の診断ログのみを消去します。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thao tác này chỉ xóa nhật ký chẩn đoán trên thiết bị."
           }
         }
       }
@@ -30679,6 +31056,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bỏ ghim"
+          }
+        }
+      }
+    },
+    "Unsupported" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsupported"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "非対応"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không được hỗ trợ"
           }
         }
       }
@@ -32636,6 +33036,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Có thể gửi lại sau %lld giây"
+          }
+        }
+      }
+    },
+    "You can try again now." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can try again now."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一度お試しください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn có thể thử lại ngay."
           }
         }
       }

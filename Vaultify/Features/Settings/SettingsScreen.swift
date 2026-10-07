@@ -230,6 +230,10 @@ struct SettingsScreen: View {
 
             #if DEBUG
             Section {
+                NavigationLink { RelayDiagnosticsView() } label: {
+                    Label { Text("Private Email diagnostics") }
+                        icon: { SettingsIconBadge(icon: Icons.mail, tint: SettingsBadgeTint.gray) }
+                }
                 NavigationLink { ShareDiagnosticsView() } label: {
                     Label { Text(verbatim: "Share Diagnostics") } icon: { SettingsIconBadge(systemName: "ladybug.fill", tint: SettingsBadgeTint.gray) }
                 }

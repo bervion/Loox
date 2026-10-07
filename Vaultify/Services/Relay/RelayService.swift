@@ -200,20 +200,27 @@ import os
     /// canonical transcript the principal signature covers. Shadow-safe: while
     /// `attestationRequired` is false any failure is swallowed so the principal
     /// signature remains the live auth (a register bug must not brick a mutation
-    /// the assertion isn't yet enforcing). Unsupported devices (simulator) skip it.
+    /// the assertion isn't yet enforcing). Unsupported devices fail locally
+    /// while assertions are required; they never get an unauthenticated bypass.
     private func relayAssertion(forTranscript transcript: Data) async throws -> RelayAttestation.Assertion? {
-        guard RelayConfig.attestationEnabled, RelayAttestation.isSupported else { return nil }
+        guard RelayConfig.attestationEnabled else { return nil }
+        RelayDiagnostics.record("stage=attestation supported=\(RelayAttestation.isSupported) environment=\(AppAttestEnvironment.current.rawValue) host=\(RelayConfig.apiBaseURL.host ?? "unknown")")
+        guard RelayAttestation.isSupported else {
+            if RelayConfig.attestationRequired { throw Failure.rejected("unauthorized") }
+            return nil
+        }
         do {
             return try await RelayAttestation.assertion(forCommandTranscript: transcript,
                                                         baseURL: RelayConfig.apiBaseURL)
         } catch {
             let detail = error as NSError
+            RelayDiagnostics.record("stage=attestation phase=failed errorDomain=\(detail.domain) code=\(detail.code)")
             Self.log.error("App Attest failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
             // Server is at `required`, so a mutation without a valid assertion is
             // rejected anyway — hard-fail locally with a clear error rather than
-            // sending a request that 401s. (Unsupported devices are handled by
-            // the guard above.)
-            if RelayConfig.attestationRequired { throw Failure.rejected("unauthorized") }
+            // sending a request that 401s. Transport/server failures retain
+            // their real category instead of blaming the device's identity.
+            if RelayConfig.attestationRequired { throw Failure.attestationFailure(for: error) }
             return nil
         }
     }
@@ -283,7 +290,7 @@ import os
                 // externally reachable identity — never leave it implied).
                 try await send(kind: .createAlias, aliasID: current.localPart,
                                domainID: current.relayDomainID,
-                               path: "/v1/relay/aliases", genesis: true)
+                               path: "/v1/relay/aliases")
                 return current
             } catch RelayAPIClient.Failure.aliasExists {
                 current.localPart = AliasAddress.randomLocalPart()
@@ -312,7 +319,7 @@ import os
     @discardableResult
     private func send(kind: RelayCommandKind, aliasID: String?, domainID: String? = nil,
                       destination: String? = nil,
-                      path: String, method: String = "POST", genesis: Bool = false) async throws -> Data {
+                      path: String, method: String = "POST") async throws -> Data {
         guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
         // Circuit breaker: during a confirmed outage, don't burn signed requests.
         guard capabilities?.allowRequest(.privateEmail) ?? true else {
@@ -322,10 +329,12 @@ import os
         var attempt = 0
         while true {
             attempt += 1
+            RelayDiagnostics.record("stage=command phase=begin kind=\(kind.rawValue) attempt=\(attempt)")
             let principal: RelayPrincipalIdentity
             do { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
             catch {
                 let detail = error as NSError
+                RelayDiagnostics.record("stage=escrow phase=failed errorDomain=\(detail.domain) code=\(detail.code)")
                 Self.log.error("Principal escrow failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
                 throw Failure.principalFailure(for: error)
             }
@@ -342,7 +351,8 @@ import os
             // V2 everywhere (dual-accept is live server-side): the namespace,
             // when present, is inside the signed bytes — never a loose field.
             let signed = try RelayCommandCanonical.signV2(command, using: principal)
-            let genesisKey = (genesis && principal.epoch == 1) ? principal.signingPublicKey : nil
+            let genesisKey = RelayAPIClient.genesisPublicKey(for: principal, kind: kind)
+            RelayDiagnostics.record("stage=command phase=signed kind=\(kind.rawValue) epoch=\(principal.epoch) commandVersion=2 genesisKey=\(genesisKey != nil)")
             let attest = try await relayAssertion(forTranscript: signed.transcript)
 
             do {
@@ -352,6 +362,7 @@ import os
                     attestKeyId: attest?.keyId, assertionB64: attest?.assertionB64,
                     path: path, method: method)
                 capabilities?.noteSuccess(.privateEmail)
+                RelayDiagnostics.record("stage=command phase=succeeded kind=\(kind.rawValue) attempt=\(attempt)")
                 return responseData
             } catch let failure as RelayAPIClient.Failure {
                 Self.log.error("Relay command failed: kind=\(kind.rawValue) failure=\(String(describing: failure), privacy: .public)")
@@ -378,6 +389,13 @@ import os
                 }
                 switch RelayRetryPolicy.action(for: failure, attempt: attempt) {
                 case .retry:
+                    continue
+                case .reenrollThenRetry:
+                    RelayDiagnostics.record("stage=attestation phase=recover reason=key_unknown attempt=\(attempt)")
+                    if let rejectedKeyId = attest?.keyId {
+                        RelayAttestation.resetRegistration(baseURL: RelayConfig.apiBaseURL,
+                                                           rejectedKeyId: rejectedKeyId)
+                    }
                     continue
                 case .refreshEpochThenRetry:
                     _ = try? await escrow.refreshFromCloud(vaultKey: vaultKey.bytes)

@@ -91,6 +91,20 @@ final class RelayRetryPolicyTests: XCTestCase {
         }
     }
 
+    func testUnknownAttestationKeyReenrollsExactlyOnce() {
+        XCTAssertEqual(RelayRetryPolicy.action(for: .attestationKeyUnknown, attempt: 1), .reenrollThenRetry)
+        for attempt in [2, 3] {
+            XCTAssertEqual(RelayRetryPolicy.action(for: .attestationKeyUnknown, attempt: attempt), .fail("unauthorized"))
+        }
+    }
+
+    func testEnrollmentNetworkAndServerFailuresDoNotBlameDeviceIdentity() {
+        XCTAssertEqual(RelayService.Failure.attestationFailure(for: RelayAPIClient.Failure.transport), .network)
+        XCTAssertEqual(RelayService.Failure.attestationFailure(for: RelayAPIClient.Failure.server(429)), .rejected("rate_limited"))
+        XCTAssertEqual(RelayService.Failure.attestationFailure(for: RelayAPIClient.Failure.server(503)), .rejected("server_503"))
+        XCTAssertEqual(RelayService.Failure.attestationFailure(for: NSError(domain: "DeviceCheck", code: 2)), .rejected("unauthorized"))
+    }
+
     func testUserMessageNeverLeaksBackendVocabulary() {
         let failures: [RelayService.Failure] = [
             .vaultLocked, .principalUnavailable, .iCloudAuthenticationRequired, .principalFromAnotherVault,

@@ -2,6 +2,21 @@ import CryptoKit
 import DeviceCheck
 import Foundation
 
+/// Concurrent commands share enrollment, rather than racing to attest separate
+/// keys for the same backend/environment. A failed enrollment can be retried by
+/// a later request; a completed task is never retained as a stale cache.
+actor AppAttestEnrollmentCoordinator {
+    private var pending: [String: Task<String, Error>] = [:]
+
+    func key(scope: String, enroll: @escaping @Sendable () async throws -> String) async throws -> String {
+        if let existing = pending[scope] { return try await existing.value }
+        let task = Task { try await enroll() }
+        pending[scope] = task
+        defer { pending[scope] = nil }
+        return try await task.value
+    }
+}
+
 /// App Attest admission for the relay control plane (INV-R02). Proves "this
 /// request came from a genuine Loox app instance" — a layer distinct from the
 /// Relay Principal signature (logical authorization) and from backend replay
@@ -21,6 +36,7 @@ import Foundation
 /// (reinstall/restore/env change) resets to a fresh key + re-register, budgeted
 /// to a single retry — never an endless generate→attest loop.
 nonisolated enum RelayAttestation {
+    private static let enrollment = AppAttestEnrollmentCoordinator()
     // `-v2`: a one-time clean-slate key reset done during go-live triage. The
     // client crypto here was correct all along — the real cause of the early
     // assertion_signature_invalid was a server-side verifier bug (it verified
@@ -42,6 +58,12 @@ nonisolated enum RelayAttestation {
 
     static var isSupported: Bool { DCAppAttestService.shared.isSupported }
 
+    /// Forget only this backend/environment's enrollment. The relay principal
+    /// and its existing aliases remain owned by the same vault.
+    static func resetRegistration(baseURL: URL, rejectedKeyId: String) {
+        _ = keyStore(baseURL: baseURL).reset(ifKeyIdMatches: rejectedKeyId)
+    }
+
     /// Assertion binding one relay command. `transcript` is the canonical
     /// `LOOX-RELAY-AUTHZ-V1` bytes the principal signature also covers, so the
     /// assertion and the signature bind the exact same command.
@@ -50,9 +72,9 @@ nonisolated enum RelayAttestation {
         do {
             return try await assertOnce(transcript: transcript, baseURL: baseURL)
         } catch let error as DCError where appAttestKeyIsDead(error) {
+            RelayDiagnostics.record("stage=attestation phase=recover reason=dead_key code=\(error.code.rawValue)")
             // Reinstall/restore/env-mismatch: the stored key is dead. One fresh
             // key + re-register, then one more attempt — that's the budget.
-            keyStore(baseURL: baseURL).reset()
             return try await assertOnce(transcript: transcript, baseURL: baseURL)
         }
     }
@@ -60,19 +82,36 @@ nonisolated enum RelayAttestation {
     private static func assertOnce(transcript: Data, baseURL: URL) async throws -> Assertion {
         let keyId = try await registeredKeyId(baseURL: baseURL)
         let clientDataHash = Data(SHA256.hash(data: transcript))
-        let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: clientDataHash)
-        return Assertion(keyId: keyId, assertionB64: assertion.base64EncodedString())
+        RelayDiagnostics.record("stage=attestation phase=assert")
+        do {
+            let assertion = try await DCAppAttestService.shared.generateAssertion(keyId, clientDataHash: clientDataHash)
+            return Assertion(keyId: keyId, assertionB64: assertion.base64EncodedString())
+        } catch let error as DCError where appAttestKeyIsDead(error) {
+            // A late failure for the old key must not delete a replacement
+            // another command has already enrolled.
+            _ = keyStore(baseURL: baseURL).reset(ifKeyIdMatches: keyId)
+            throw error
+        }
     }
 
     /// Key id of a key loox-relay has verified — registering with loox-relay
     /// first if this device hasn't yet (separate trust state from loox-link).
     private static func registeredKeyId(baseURL: URL) async throws -> String {
+        let scope = "\(baseURL.host ?? "unknown")#\(AppAttestEnvironment.current.rawValue)"
+        return try await enrollment.key(scope: scope) {
+            try await enrollOnce(baseURL: baseURL)
+        }
+    }
+
+    private static func enrollOnce(baseURL: URL) async throws -> String {
         let store = keyStore(baseURL: baseURL)
+        RelayDiagnostics.record("stage=attestation phase=cache cached=\(store.storedKeyId != nil)")
         let keyId: String
         if let stored = store.storedKeyId {
             keyId = stored
         } else {
             store.purgeLegacy()
+            RelayDiagnostics.record("stage=attestation phase=generate")
             keyId = try await DCAppAttestService.shared.generateKey()
             try store.persist(keyId: keyId)
         }
@@ -81,6 +120,7 @@ nonisolated enum RelayAttestation {
         // registration and sign every assertion with a key the server has
         // never seen — the failure has no recovery path server-side.
         if !store.isRegistered(keyId: keyId) {
+            RelayDiagnostics.record("stage=attestation phase=register registered=false")
             do {
                 try await register(keyId: keyId, baseURL: baseURL)
             } catch {
@@ -89,10 +129,13 @@ nonisolated enum RelayAttestation {
                 // 4xx), retrying would call attestKey on the same key and fail
                 // forever. Drop the key so the next attempt starts from a fresh
                 // generateKey instead of re-attesting a burned one.
-                store.reset()
+                _ = store.reset(ifKeyIdMatches: keyId)
+                let detail = error as NSError
+                RelayDiagnostics.record("stage=attestation phase=registerFailed errorDomain=\(detail.domain) code=\(detail.code)")
                 throw error
             }
             try store.markRegistered(keyId: keyId)
+            RelayDiagnostics.record("stage=attestation phase=registered registered=true")
         }
         return keyId
     }
@@ -101,11 +144,13 @@ nonisolated enum RelayAttestation {
     /// the challenge decoded from base64url (frozen contract, matches
     /// `register.ts`).
     private static func register(keyId: String, baseURL: URL) async throws {
+        RelayDiagnostics.record("stage=attestation phase=challenge")
         let challenge = try await RelayAPIClient.attestChallenge(baseURL: baseURL)
         guard let rawChallenge = base64urlDecode(challenge.challenge) else {
             throw RelayAPIClient.Failure.server(0)
         }
         let clientDataHash = Data(SHA256.hash(data: rawChallenge))
+        RelayDiagnostics.record("stage=attestation phase=attest")
         let attestation = try await DCAppAttestService.shared.attestKey(keyId, clientDataHash: clientDataHash)
         try await RelayAPIClient.registerAttestation(
             attestationObjectB64: attestation.base64EncodedString(),

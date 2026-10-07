@@ -9,6 +9,9 @@ nonisolated enum RelayAPIClient {
 
     enum Failure: Error, Equatable {
         case unauthorized          // 401 — bad signature / unknown principal
+        /// 401 attestation_key_unknown — principal authorization succeeded,
+        /// but this backend no longer has the device's App Attest enrollment.
+        case attestationKeyUnknown
         case nonceReplay           // 409 nonce_replay — retry with a fresh nonce
         case epochStale            // 409 epoch_stale — refresh principal state
         case aliasExists           // 409 alias_exists — regenerate the local-part
@@ -37,6 +40,15 @@ nonisolated enum RelayAPIClient {
         case transport             // network unreachable
     }
 
+    /// Inbox-first verification and alias creation can both register a new
+    /// principal. Other commands and rotated identities must never do so.
+    static func genesisPublicKey(for principal: RelayPrincipalIdentity,
+                                 kind: RelayCommandKind) -> Data? {
+        guard principal.epoch == 1,
+              kind == .createAlias || kind == .beginDestinationVerification else { return nil }
+        return principal.signingPublicKey
+    }
+
     /// JSON body per the relay contract: snake_case keys, base64 blobs. The
     /// transcript the signature covers is rebuilt server-side from these fields —
     /// they MUST mirror the signed command exactly.
@@ -58,7 +70,8 @@ nonisolated enum RelayAPIClient {
         if let domainID = command.domainID { body["domain_id"] = domainID }
         if let destination = command.destination { body["destination"] = destination }
         if let newKey = command.newPublicKey { body["new_public_key"] = newKey.base64EncodedString() }
-        // Genesis only: the first createAlias registers the principal.
+        // Genesis: either alias creation or inbox-first verification registers
+        // the principal with the same key that signed the command.
         if let genesisPublicKey { body["public_key"] = genesisPublicKey.base64EncodedString() }
         return body
     }
@@ -100,9 +113,10 @@ nonisolated enum RelayAPIClient {
         catch { throw Failure.transport }
 
         guard let http = response as? HTTPURLResponse else { throw Failure.transport }
+        RelayDiagnostics.record("stage=api operation=command kind=\(command.kind.rawValue) http=\(http.statusCode) backendCode=\(diagnosticCode(from: data))")
         switch http.statusCode {
         case 200...299: return data
-        case 401: throw Failure.unauthorized
+        case 401: throw unauthorizedFailure(from: data)
         case 403:
             let code = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
                 .flatMap { $0?["error"] as? String } ?? ""
@@ -157,7 +171,7 @@ nonisolated enum RelayAPIClient {
         var request = URLRequest(url: baseURL.appending(path: "/v1/relay/attestation/challenges"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let (data, _) = try await perform(request)
+        let (data, _) = try await perform(request, operation: "challenge")
         return try JSONDecoder().decode(AttestChallenge.self, from: data)
     }
 
@@ -170,7 +184,7 @@ nonisolated enum RelayAPIClient {
         request.setValue(challengeId, forHTTPHeaderField: "X-Loox-Challenge-Id")
         request.setValue(keyId, forHTTPHeaderField: "X-Loox-App-Attest-Key-Id")
         request.httpBody = try JSONEncoder().encode(["attestation_object_b64": attestationObjectB64])
-        _ = try await perform(request)
+        _ = try await perform(request, operation: "register")
     }
 
     // MARK: - Destination verification (DEC-DST-01)
@@ -197,19 +211,52 @@ nonisolated enum RelayAPIClient {
     static func destinationStatus(id: String, baseURL: URL = RelayConfig.apiBaseURL) async throws -> DestinationState {
         var request = URLRequest(url: baseURL.appending(path: "/v1/relay/destinations/\(id)"))
         request.httpMethod = "GET"
-        let (data, response) = try await perform(request)
+        let (data, response) = try await perform(request, operation: "destinationStatus")
         _ = response
         return try JSONDecoder().decode(DestinationState.self, from: data)
     }
 
     /// Shared 2xx-or-throw round trip for the attest endpoints.
-    private static func perform(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+    private static func perform(_ request: URLRequest, operation: String) async throws -> (Data, HTTPURLResponse) {
         let data: Data, response: URLResponse
         do { (data, response) = try await URLSession.shared.data(for: request) }
-        catch { throw Failure.transport }
+        catch {
+            RelayDiagnostics.record("stage=api operation=\(operation) failure=transport")
+            throw Failure.transport
+        }
         guard let http = response as? HTTPURLResponse else { throw Failure.transport }
+        RelayDiagnostics.record("stage=api operation=\(operation) http=\(http.statusCode) backendCode=\(diagnosticCode(from: data))")
         guard (200...299).contains(http.statusCode) else { throw Failure.server(http.statusCode) }
         return (data, http)
+    }
+
+    /// Generic 401s must never cause key churn. Only the explicit enrollment
+    /// loss signal earns one fresh key, without changing the relay principal.
+    static func unauthorizedFailure(from data: Data) -> Failure {
+        let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        return body?["error"] as? String == "attestation_key_unknown" ? .attestationKeyUnknown : .unauthorized
+    }
+
+    /// Never log response bodies or arbitrary server strings: even an error
+    /// payload can contain personal data. Unknown protocol codes are redacted.
+    static func diagnosticCode(from data: Data) -> String {
+        guard let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let code = (body["error"] as? String) ?? (body["code"] as? String) else { return "none" }
+        let allowed: Set<String> = [
+            "unauthorized", "principal_unknown", "genesis_required", "principal_id_mismatch", "bad_signature",
+            "epoch_stale", "nonce_replay", "key_unknown", "attestation_key_unknown", "attestation_required",
+            "assertion_missing", "assertion_invalid", "assertion_signature_invalid", "counter_replay",
+            "challenge_unknown", "challenge_expired", "challenge_used", "invalid_attestation",
+            "invalid_app_id", "environment_mismatch", "rate_limited", "destination_not_verified",
+            "challenge_invalid", "key_id_mismatch", "attestation_failed", "app_id_mismatch",
+            "nonce_mismatch", "nonce_extension_missing", "cert_chain_invalid", "not_apple_rooted",
+            "cbor_parse", "authdata_parse", "cose_key_parse", "bad_fmt", "counter_not_zero",
+            "no_attested_credential", "principal_suspended", "verification_unavailable",
+            "invalid_destination", "destination_rate_limited",
+            "quota_exceeded", "entitlement_refresh_required", "alias_exists", "alias_cap_reached",
+            "capability_disabled", "capability_maintenance", "capability_retired",
+        ]
+        return allowed.contains(code) ? code : "unrecognized"
     }
 
     /// 503 problem+json capacity codes (e.g. `global_create_capacity_reached`):
