@@ -83,7 +83,7 @@ struct RootView: View {
                 // The tutorial host wraps the unlocked app only: it reads the
                 // anchors those screens publish, and staying inside this branch
                 // keeps every overlay off the lock screen and onboarding.
-                AdaptiveRootView()
+                unlockedContent
                     .tutorialHost(env.tutorial)
                     .transition(.identity)
             }
@@ -107,8 +107,11 @@ struct RootView: View {
         .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: route)
         .animation(.easeInOut(duration: 0.3), value: env.theme.active)
         .onChange(of: env.session.state) { _, newState in
+            env.destinationVerification.setLifecycle(active: scenePhase == .active,
+                                                     unlocked: newState == .unlocked)
             if newState == .unlocked {
                 env.repository.reload()
+                try? env.repository.backfillTrustedAliasDomains()
                 // Re-apply the last screen/tab/draft now that the vault (and its key) is
                 // available — after reload so restored nav can resolve item ids.
                 env.uiState.restore()
@@ -131,6 +134,7 @@ struct RootView: View {
         // (items, Spaces, personas) without waiting for the next foreground.
         // The sync coordinator dedupes, so a flappy network stays cheap.
         .onChange(of: env.reachability.hasSatisfiedNetworkPath) { _, satisfied in
+            env.destinationVerification.stateChanged()
             if satisfied, env.session.state == .unlocked {
                 env.syncNow()
             }
@@ -154,12 +158,20 @@ struct RootView: View {
             // without an explicit appearance pick. A no-op if already released.
             if completed { env.markAppearanceChosen() }
         }
+        .onChange(of: env.repository.forwardingInboxes) { _, _ in
+            env.destinationVerification.stateChanged()
+        }
+        .onChange(of: env.capabilities.preferences) { _, _ in env.destinationVerification.stateChanged() }
+        .onChange(of: env.capabilities.modes) { _, _ in env.destinationVerification.stateChanged() }
+        .onChange(of: env.capabilities.disabledOperations) { _, _ in env.destinationVerification.stateChanged() }
         .onChange(of: scenePhase) { _, phase in handleScenePhase(phase) }
         .onChange(of: colorScheme) { _, scheme in env.theme.systemColorSchemeChanged(scheme) }
         // Above the UIKit navigation shell on purpose: pushing a detail screen must not
         // disarm the panic gesture.
         .shakeToLockMonitor()
         .onAppear {
+            env.destinationVerification.setLifecycle(active: scenePhase == .active,
+                                                     unlocked: env.session.state == .unlocked)
             env.theme.systemColorSchemeChanged(colorScheme)
             env.theme.applyInterfaceStyle()
             // Owner-reported: a device could render dark on a light theme until
@@ -170,6 +182,8 @@ struct RootView: View {
     }
 
     private func handleScenePhase(_ phase: ScenePhase) {
+        env.destinationVerification.setLifecycle(active: phase == .active,
+                                                 unlocked: env.session.state == .unlocked)
         switch phase {
         case .active:
             obscured = false
@@ -217,6 +231,26 @@ struct RootView: View {
         @unknown default:
             break
         }
+    }
+
+    @ViewBuilder private var unlockedContent: some View {
+        #if DEBUG
+        if env.uiTestConfiguration.fixture == .privateEmailMemberUX {
+            NavigationStack {
+                PersonaAliasesScreen()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            NavigationLink { LooxHubScreen() } label: { Text(verbatim: "Member") }
+                                .accessibilityIdentifier("ui-test.member")
+                        }
+                    }
+            }
+        } else {
+            AdaptiveRootView()
+        }
+        #else
+        AdaptiveRootView()
+        #endif
     }
 }
 

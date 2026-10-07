@@ -37,6 +37,8 @@ struct ItemEditorScreen: View {
     // allocates a backend alias (INV-PE03) — provisioning runs only on tap.
     @State private var creatingAlias = false
     @State private var pendingAliasID: String?
+    @State private var pendingAliasPersonaID: String?
+    @State private var pendingAliasRevision: UInt64?
     @State private var aliasMissingEmail = false
     @State private var aliasErrorTitle = ""
     @State private var aliasErrorMessage: String?
@@ -79,17 +81,35 @@ struct ItemEditorScreen: View {
             item = existing
         case .draft(let prefilled):
             item = prefilled
+        case .aliasLogin(let prefilled, let aliasID, let personaID, let revision):
+            item = prefilled
+            _pendingAliasID = State(initialValue: aliasID)
+            _pendingAliasPersonaID = State(initialValue: personaID)
+            _pendingAliasRevision = State(initialValue: revision)
+        case .restored(let recovered):
+            item = recovered.item
+            _pendingAliasID = State(initialValue: recovered.aliasID)
+            _pendingAliasPersonaID = State(initialValue: recovered.aliasPersonaID)
+            _pendingAliasRevision = State(initialValue: recovered.aliasRelationRevision)
         }
         _draft = State(initialValue: item)
-        _original = State(initialValue: item)
+        if case .restored(let recovered) = target {
+            _original = State(initialValue: recovered.editorBaseline)
+        } else {
+            _original = State(initialValue: item)
+        }
     }
 
     private var isNew: Bool {
-        switch target { case .new, .draft: return true; case .edit: return false }
+        switch target {
+        case .new, .draft, .aliasLogin: return true
+        case .edit: return false
+        case .restored(let recovered): return recovered.isNew
+        }
     }
     /// Unsaved work worth protecting. A resumed draft counts even while it matches
     /// its baseline: it was already unsaved when this editor inherited it.
-    private var hasChanges: Bool { draft != original || resumedUnsavedDraft }
+    private var hasChanges: Bool { draft != original || resumedUnsavedDraft || pendingAliasID != nil }
     private var canSave: Bool {
         !draft.title.trimmingCharacters(in: .whitespaces).isEmpty || draft.fields.contains { !$0.isEmpty }
     }
@@ -190,7 +210,13 @@ struct ItemEditorScreen: View {
                         onScanTOTP: { scanningFieldID = $0 },
                         onAddAttachment: { showAttachmentPicker = true },
                         onProtectedDeleteBlocked: { blockedProtectedDelete = true },
-                        onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock)
+                        onRequestExtraProtectionUnlock: reofferExtraProtectionUnlock,
+                        onAliasDetached: {
+                            pendingAliasID = nil
+                            pendingAliasPersonaID = nil
+                            pendingAliasRevision = nil
+                            captureDraftForRestore()
+                        })
                 } else if let template = editorTemplate {
                     TemplateEditorSections(
                         draft: $draft,
@@ -477,11 +503,9 @@ struct ItemEditorScreen: View {
                                 selectAliasSuggestion(alias)
                                 showEmailSuggestions = false
                             } label: {
-                                Text(verbatim: AliasAddress.display(
-                                    localPart: alias.localPart, status: alias.status,
-                                    relayDomain: alias.emailDomain))
+                                Text(verbatim: alias.resolvedAddress ?? appString("Unknown domain"))
                                     .vaultType(.body).themedForeground(.primary)
-                                    .lineLimit(1).truncationMode(.middle)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                     }
@@ -675,7 +699,8 @@ struct ItemEditorScreen: View {
     /// attached-alias recognition + detach lives in `LoginEditorSections` instead).
     private var attachedPrivateEmailMatch: PrivateEmailMatch? {
         guard draft.category == .login else { return nil }
-        for field in draft.fields where field.kind == .email || field.kind == .username {
+        for field in draft.fields where field.kind == .email
+            && field.label == AliasWriteback.privateEmailLabel && !field.isExtraProtected && !field.protected {
             if let match = PrivateEmailMatch.resolve(kind: field.kind, value: field.value,
                                                      repository: env.repository) {
                 return match
@@ -689,7 +714,8 @@ struct ItemEditorScreen: View {
     /// inline "Create private email" affordance hides cleanly instead of
     /// offering a tap that's guaranteed to fail while the relay is unavailable.
     private var createAliasAvailable: Bool {
-        env.capabilities.availability(.privateEmail, operation: .create) == .available
+        let minted = pendingAliasID.flatMap { id in env.repository.aliases.first { $0.id == id } }?.backendMinted == true
+        return env.capabilities.availability(.privateEmail, operation: minted ? .mutate : .create) == .available
     }
 
     /// Reserve → activate a per-site alias and fill it in. On failure the alias
@@ -704,38 +730,46 @@ struct ItemEditorScreen: View {
             aliasMissingEmail = true
             return
         }
-        // Ask before sending: the relay will refuse to route to an unconfirmed
-        // inbox, and the refusal is a setup step the user can clear in a minute.
-        // Explaining it beats minting an alias that cannot forward.
         if let unverified = PrivateEmailGate(env).unverifiedDestination {
             aliasNeedsVerification = unverified
             return
         }
+        // A failed route keeps its exact reservation/checkpoint for this editor.
         creatingAlias = true
-        let host = draft.autofillHost
-        // An existing item's id is already stable — bind immediately instead of
-        // deferring to save (which only ever runs `bindPendingAlias()` for new items).
-        let boundItemId = isNew ? nil : draft.id
         Task {
             defer { creatingAlias = false }
             do {
-                let id = try env.repository.createPerSiteAlias(for: persona, boundItemId: boundItemId,
-                                                               domain: host,
-                                                               domainID: PrivateEmailDomainDefault.domainID)
-                guard let alias = env.repository.aliases.first(where: { $0.id == id }) else { return }
-                try await env.relay.activate(alias)
-                if let live = env.repository.aliases.first(where: { $0.id == id }),
-                   live.status == .active {
-                    fillEmail(AliasAddress.display(localPart: live.localPart, status: live.status,
-                                                   relayDomain: live.emailDomain))
-                    if isNew { pendingAliasID = id }
-                    showEmailSuggestions = false   // filled — the sheet's job is done
+                let id: String
+                if let pending = pendingAliasID {
+                    id = pending
+                } else {
+                    id = try env.repository.createPerSiteAlias(for: persona, boundItemId: nil,
+                        domain: draft.autofillHost, domainID: PrivateEmailDomainDefault.domainID)
+                    pendingAliasID = id
+                    pendingAliasPersonaID = persona.id
+                    pendingAliasRevision = env.repository.aliases.first { $0.id == id }?.relationRevision
+                    captureDraftForRestore()
                 }
+                let alias = try env.repository.validatePendingAlias(aliasID: id,
+                    personaID: pendingAliasPersonaID, relationRevision: pendingAliasRevision)
+                if alias.status != .active { try await env.relay.activate(alias) }
+                guard let live = env.repository.aliases.first(where: { $0.id == id }),
+                      live.status == .active, let address = live.resolvedAddress else { return }
+                draft = try AliasWriteback.linking(draft, address: address)
+                pendingAliasRevision = live.relationRevision
+                showEmailSuggestions = false
+                captureDraftForRestore()
+            } catch let failure as VaultRepository.AliasLinkFailure {
+                showAliasLinkError(failure)
+            } catch let failure as AliasWriteback.Failure {
+                showAliasLinkError(.field(failure))
             } catch let failure as RelayService.Failure {
                 aliasErrorTitle = failure.userTitle
                 aliasErrorMessage = failure.userMessage
                 aliasErrorOffersReset = failure.offersPrivateEmailReset
                 Haptics.error()
+            } catch is CancellationError {
+                return
             } catch {
                 aliasErrorTitle = appString("Couldn’t reach the relay")
                 aliasErrorMessage = appString("Check your connection and iCloud, then try again.")
@@ -760,45 +794,33 @@ struct ItemEditorScreen: View {
         }
     }
 
-    /// Fill a reused alias suggestion into the login's email field. An existing
-    /// item's id is already stable, so an unbound reusable alias binds right
-    /// away (mirrors `createPrivateEmail`'s immediate bind); a brand-new item
-    /// defers binding to `bindPendingAlias()` at save, since it has no id yet.
+    /// Selecting an address only edits the draft; cancel never binds or alters
+    /// a stored Login. The canonical field is separate from ordinary credentials.
     private func selectAliasSuggestion(_ alias: EmailAlias) {
-        fillEmail(AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                                       relayDomain: alias.emailDomain))
-        guard alias.boundItemId == nil else { return }
-        if isNew {
+        do {
+            guard alias.personaId == env.repository.activePersona?.id,
+                  let address = alias.resolvedAddress else { throw VaultRepository.AliasLinkFailure.unresolvedAddress }
+            draft = try AliasWriteback.linking(draft, address: address)
             pendingAliasID = alias.id
-        } else {
-            var updated = alias
-            updated.boundItemId = draft.id
-            if updated.boundDomain == nil { updated.boundDomain = draft.autofillHost }
-            try? env.repository.updateAlias(updated)
-        }
+            pendingAliasPersonaID = alias.personaId
+            pendingAliasRevision = alias.relationRevision
+            captureDraftForRestore()
+        } catch let failure as AliasWriteback.Failure { showAliasLinkError(.field(failure)) }
+        catch let failure as VaultRepository.AliasLinkFailure { showAliasLinkError(failure) }
+        catch { showAliasLinkError(.staleRelation) }
     }
 
-    /// Put the alias address where AutoFill will use it: email field, else
-    /// username field, else a new Email field.
-    private func fillEmail(_ value: String) {
-        if let idx = draft.fields.firstIndex(where: { $0.kind == .email }) {
-            draft.fields[idx].value = value
-        } else if let idx = draft.fields.firstIndex(where: { $0.kind == .username }) {
-            draft.fields[idx].value = value
-        } else {
-            draft.fields.insert(DynamicField(label: "Email", kind: .email, value: value), at: 0)
-        }
+    private func showAliasLinkError(_ failure: VaultRepository.AliasLinkFailure) {
+        aliasErrorTitle = appString("Couldn’t update the link")
+        aliasErrorMessage = failure.userMessage
+        aliasErrorOffersReset = false
+        Haptics.error()
     }
 
-    /// Bind the freshly provisioned (or reused-unbound) alias to the saved login,
-    /// so returning to this site reuses this exact address (never re-mints).
-    private func bindPendingAlias() {
-        guard let id = pendingAliasID,
-              var alias = env.repository.aliases.first(where: { $0.id == id }),
-              alias.boundItemId == nil else { return }
-        alias.boundItemId = draft.id
-        if alias.boundDomain == nil { alias.boundDomain = draft.autofillHost }
-        try? env.repository.updateAlias(alias)
+    private func bindPendingAlias() throws {
+        guard let id = pendingAliasID else { return }
+        try env.repository.linkAliasToLogin(aliasID: id, itemID: draft.id,
+            expectedAliasRevision: pendingAliasRevision)
     }
 
     /// Login always shows a Notes section, so guarantee the single `.multiline` note
@@ -896,8 +918,10 @@ struct ItemEditorScreen: View {
     /// something worth resuming (a saveable new item, or any edit of an existing one),
     /// so a freshly-opened empty "new item" editor isn't re-presented on relaunch.
     private func captureDraftForRestore() {
-        uiState.editorDraft = (canSave || !isNew)
-            ? UIStateStore.DraftState(item: draft, isNew: isNew)
+        uiState.editorDraft = (canSave || !isNew || pendingAliasID != nil)
+            ? UIStateStore.DraftState(item: draft, isNew: isNew,
+                aliasID: pendingAliasID, aliasPersonaID: pendingAliasPersonaID,
+                aliasRelationRevision: pendingAliasRevision, originalItem: original)
             : nil
     }
 
@@ -924,23 +948,47 @@ struct ItemEditorScreen: View {
             }
         }
         do {
+            if let pendingAliasID {
+                let alias = try env.repository.validatePendingAlias(aliasID: pendingAliasID,
+                    personaID: pendingAliasPersonaID, relationRevision: pendingAliasRevision)
+                guard let persona = env.repository.personas.first(where: { $0.id == alias.personaId }),
+                      draft.folderId.map({ id in env.repository.spaces(for: persona).contains { $0.id == id } })
+                        ?? persona.isDefault else { throw VaultRepository.AliasLinkFailure.wrongPersona }
+                guard let address = alias.resolvedAddress else { throw VaultRepository.AliasLinkFailure.unresolvedAddress }
+                draft = try AliasWriteback.linking(draft, address: address)
+            }
+            if !isNew || env.repository.item(id: draft.id) != nil {
+                try env.repository.validateAliasEditorBaseline(original)
+            }
             // Artifacts commit in the SAME context save as the item edit
             // (`deferSave: true`): the item and its bytes land together.
             for staged in stagedArtifacts {
                 try env.artifactStore.commit(staged, ownerItemId: draft.id, deferSave: true)
             }
-            if isNew {
+            if isNew, env.repository.item(id: draft.id) == nil {
                 try env.repository.add(draft)
-                bindPendingAlias()
             } else {
-                try env.repository.update(draft)
+                if draft.category == .login {
+                    try env.repository.updateLoginFromEditor(draft, baseline: original)
+                } else { try env.repository.update(draft) }
                 republishSharedDisplayIfNeeded(for: draft)
             }
+            // Persisted item may be retried if pointer persistence fails; never
+            // add a second record or dismiss a partially completed handoff.
+            if let saved = env.repository.item(id: draft.id) { original = saved; draft = saved }
             stagedArtifacts = []
+            try bindPendingAlias()
             userClosedEditor = true
             Haptics.success()
             dismiss()
+        } catch let failure as VaultRepository.AliasLinkFailure {
+            showAliasLinkError(failure)
+        } catch let failure as AliasWriteback.Failure {
+            showAliasLinkError(.field(failure))
         } catch {
+            aliasErrorTitle = appString("Couldn’t save the login")
+            aliasErrorMessage = appString("Your changes are still here. Try saving again.")
+            aliasErrorOffersReset = false
             Haptics.error()
         }
     }

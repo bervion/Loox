@@ -46,6 +46,15 @@ struct ShareSpaceSheet: View {
     /// failure re-invokes `reconcile` directly instead of re-running the
     /// ceremony (createShare/wait/fingerprint) a second time.
     @State private var resolvedRecipient: SpaceShareRecipientContext?
+    @State private var ownerPersonaID: String?
+
+    private var ownedSpaces: [Folder] {
+        guard let persona = env.repository.activePersona else { return [] }
+        return env.repository.spaces(for: persona)
+    }
+    private var scopeIsValid: Bool {
+        ownerPersonaID != nil && env.repository.activePersona?.id == ownerPersonaID && env.session.state == .unlocked
+    }
 
     private var normalizedRecipient: String {
         recipientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -53,12 +62,12 @@ struct ShareSpaceSheet: View {
 
     private var selectedSpace: Folder? {
         guard let selectedSpaceId else { return nil }
-        return env.repository.activePersonaSpaces.first { $0.id == selectedSpaceId }
+        return ownedSpaces.first { $0.id == selectedSpaceId }
     }
 
     private var spaceItems: [VaultItem] {
         guard let selectedSpace else { return [] }
-        return env.repository.items(inFolder: selectedSpace.id)
+        return env.repository.memberOwnedItems.filter { $0.folderId == selectedSpace.id }
     }
 
     private var eligibleCount: Int {
@@ -74,7 +83,7 @@ struct ShareSpaceSheet: View {
     private var existingZoneName: String? {
         SpaceShareZoneDedupe.existingZoneName(
             recipientShares: env.sharingStore.shares(forRecipient: normalizedRecipient),
-            activePersonaItemIds: Set(env.repository.activePersonaItems.map(\.id)))
+            activePersonaItemIds: Set(env.repository.memberOwnedItems.map(\.id)))
     }
 
     private var pollingZoneName: String? {
@@ -87,6 +96,7 @@ struct ShareSpaceSheet: View {
             content
         }
         .task {
+            ownerPersonaID = env.repository.activePersona?.id
             guard case .checking = step else { return }
             await checkPrerequisites()
         }
@@ -97,6 +107,8 @@ struct ShareSpaceSheet: View {
         .onReceive(NotificationCenter.default.publisher(for: .shareAcceptanceHint)) { _ in
             Task { await checkProfileNow() }
         }
+        .onChange(of: env.repository.activePersona?.id) { _, _ in dismiss() }
+        .onChange(of: env.session.state) { _, state in if state != .unlocked { dismiss() } }
     }
 
     @ViewBuilder private var toolbarTrailing: some View {
@@ -179,11 +191,11 @@ struct ShareSpaceSheet: View {
     private var configForm: some View {
         Form {
             Section {
-                if env.repository.activePersonaSpaces.isEmpty {
+                if ownedSpaces.isEmpty {
                     Label { Text("No Spaces yet") } icon: { VaultIcon(Icons.folder, size: Metric.iconTileLarge) }
                         .themedForeground(.secondary)
                 } else {
-                    ForEach(env.repository.activePersonaSpaces) { space in
+                    ForEach(ownedSpaces) { space in
                         Button { selectedSpaceId = space.id } label: {
                             spaceRow(space)
                         }
@@ -264,13 +276,14 @@ struct ShareSpaceSheet: View {
     // MARK: Ceremony (identical shape to ShareAccessSheet — createShare → wait → fingerprint)
 
     private func createShare() async {
-        guard case .config = step, selectedSpace != nil else { return }
+        guard case .config = step, scopeIsValid, selectedSpace != nil else { return }
         step = .creating
         pollExhausted = false
         participantHasAccepted = false
         do {
             let setup = try await env.approvalShare.createShare(
                 recipientEmail: normalizedRecipient, existingZoneName: existingZoneName)
+            guard scopeIsValid, selectedSpace != nil else { return }
             var inviteURL = setup.shareURL
             if let shareURL = setup.shareURL,
                let minted = try? await env.inviteLinks.createInviteLink(shareURL: shareURL) {
@@ -423,16 +436,17 @@ struct ShareSpaceSheet: View {
     /// CURRENT items, so re-running it after a partial failure only retries
     /// what didn't already land.
     private func publishFanOut() async {
-        guard let recipient = resolvedRecipient, let selectedSpace else { return }
+        guard scopeIsValid, let recipient = resolvedRecipient, let selectedSpace else { return }
         step = .publishing
         do {
             let executor = SpaceShareMembershipExecutor(
                 publisher: LiveSpaceShareGrantPublisher(service: env.approvalShare, store: env.store),
                 store: env.sharingStore)
             let summary = try await executor.reconcile(
-                spaceItems: env.repository.items(inFolder: selectedSpace.id),
+                spaceItems: env.repository.memberOwnedItems.filter { $0.folderId == selectedSpace.id },
                 recipient: recipient,
                 nowUnixMs: Int64(Date().timeIntervalSince1970 * 1000))
+            guard scopeIsValid else { return }
             step = .result(summary)
         } catch {
             step = .failed(SharingErrorMessage.text(for: error))

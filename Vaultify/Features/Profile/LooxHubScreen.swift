@@ -27,7 +27,14 @@ struct LooxHubScreen: View {
             VStack(alignment: .leading, spacing: Space.s6) {
                 header
                 if env.entitlements.purchasesEnabled { planSection }
-                if showsQuotas { quotaCard }
+                if showsQuotas {
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        quotaCard
+                        Text("Plan limits apply across all profiles.")
+                            .vaultType(.footnote).themedForeground(.secondaryBody)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 savedSection
                 featuresSection
                 // Approval Mode stays a control (not a nav tile): app-wide flag,
@@ -80,7 +87,7 @@ struct LooxHubScreen: View {
                     ProfileRowTile(style: .brandMark)
                     Text("Your plan").vaultType(.body).themedForeground()
                     Spacer(minLength: Space.s2)
-                    Text(verbatim: tier.displayName).vaultType(.subhead).themedForeground(.secondary)
+                    Text(verbatim: tier.displayName).vaultType(.subhead).themedForeground(.secondaryBody)
                 }
                 .padding(.horizontal, Space.s4)
                 .frame(minHeight: Metric.rowHeight)
@@ -112,7 +119,7 @@ struct LooxHubScreen: View {
                     .themedForeground()
                 Text(verbatim: memberName)
                     .vaultType(.largeTitle)
-                    .themedForeground(.secondary)
+                    .themedForeground(.secondaryBody)
                     .lineLimit(2)
                     // 0.7 is the design-DNA floor for shrink-to-fit; below it a long
                     // VI name at large Dynamic Type stops being legible.
@@ -192,7 +199,7 @@ struct LooxHubScreen: View {
             categoryTile(.identity, tint: SettingsBadgeTint.purple)
             categoryTile(.card, tint: SettingsBadgeTint.green)
             LooxFeatureTile(title: "Passkey", icon: Icons.passkey, tint: SettingsBadgeTint.indigo,
-                            metric: appString("\(env.repository.passkeys.count) items"),
+                            metric: appString("\(env.repository.passkeyItemIDs(in: env.repository.memberOwnedItems).count) items"),
                             destination: { FilteredItemsScreen(filter: ItemFilter(passkeysOnly: true)) })
             LooxFeatureTile(title: "Security Score", icon: Icons.watchtower, tint: SettingsBadgeTint.red,
                             metric: securityScoreMetric,
@@ -203,7 +210,7 @@ struct LooxHubScreen: View {
 
     private func categoryTile(_ category: ItemCategory, tint: Color) -> some View {
         LooxFeatureTile(title: category.title, icon: category.iconAsset, tint: tint,
-                        metric: appString("\(env.repository.count(forCategory: category)) items"),
+                        metric: appString("\(env.repository.memberOwnedItems.filter { $0.category == category }.count) items"),
                         destination: { vaultRouteDestination(.category(category)) })
     }
 
@@ -232,29 +239,27 @@ struct LooxHubScreen: View {
         LooxHubSectionCard(title: featuresTitle) {
             LooxFeatureTile(title: "Private Email", icon: Icons.mail, tint: SettingsBadgeTint.teal,
                             metric: serviceMetric(.privateEmail,
-                                                  appString("\(retainedAliasCount) in use")),
+                                                  appString("\(profileRetainedAliasCount) in use")),
                             status: serviceStatus(.privateEmail)) {
                 PersonaAliasesScreen()
             }
             LooxFeatureTile(title: "Share Links", icon: Icons.share, tint: SettingsBadgeTint.green,
                             metric: serviceMetric(.shareLink,
-                                                  appString("\(linkCreates30d) in 30 days")),
+                                                  appString("\(profileLinkCount) links on this device")),
                             status: serviceStatus(.shareLink)) {
-                NotificationsScreen()
+                ShareLinksScreen()
             }
-            // Quick View's user-facing name; its activity shares the
-            // notifications surface, so the tile lands there too.
             LooxFeatureTile(title: "Send to Browser", icon: Icons.scanCode, tint: SettingsBadgeTint.indigo,
                             metric: serviceMetric(.quickView,
-                                                  appString("\(quickViewCompletions30d) in 30 days")),
+                                                  appString("\(profileBrowserAttemptCount) recent attempts")),
                             status: serviceStatus(.quickView)) {
-                NotificationsScreen()
+                SendToBrowserScreen()
             }
             // Same name as the Profile row and the screen's own title: one
             // feature carries one name, or the user cannot tell whether
             // "Sharing" and "Family" are two different places.
             LooxFeatureTile(title: "Family", icon: Icons.organization, tint: SettingsBadgeTint.orange,
-                            metric: appString("\(outgoingRecipientCount) in use")) {
+                            metric: appString("\(profileRecipientCount) people")) {
                 FamilyScreen()
             }
             LooxFeatureTile(title: "Profiles", icon: Icons.person, tint: SettingsBadgeTint.blue,
@@ -300,7 +305,34 @@ struct LooxHubScreen: View {
     /// "Off in Settings" line — a paying subscriber must be able to see WHERE
     /// the feature went, or the hidden state reads as a broken plan.
     private func serviceMetric(_ id: CapabilityID, _ liveMetric: String) -> String {
-        env.capabilities.userPreference(id) ? liveMetric : appString("Off in Settings")
+        switch env.capabilities.availability(id, operation: .create) {
+        case .disabledByUser: appString("Off in Settings")
+        case .offline: appString("Offline")
+        case .maintenance: appString("Maintenance")
+        case .temporarilyUnavailable, .unknown: appString("Temporarily unavailable")
+        case .disabledByOperator: appString("Service paused")
+        case .retired: appString("Service retired")
+        case .available:
+            if id == .quickView,
+               !QuickViewExposureProvider.entryVisible(manifestExposure: env.capabilities.quickViewExposure) {
+                appString("Not available yet")
+            } else { liveMetric }
+        }
+    }
+
+    private var profileRetainedAliasCount: Int {
+        guard let id = env.repository.activePersona?.id else { return 0 }
+        return env.repository.aliases.filter { $0.personaId == id && ($0.status == .active || $0.status == .paused) }.count
+    }
+    private var profileLinkCount: Int {
+        MemberFeatureProjection.links(env.looxLinks.records.records, ownedItems: env.repository.memberOwnedItems).count
+    }
+    private var profileBrowserAttemptCount: Int {
+        MemberFeatureProjection.browserAttempts(env.quickViewHistory.rows, ownedItems: env.repository.memberOwnedItems).count
+    }
+    private var profileRecipientCount: Int {
+        Set(MemberFeatureProjection.outgoingShares(env.sharingStore.shares, ownedItems: env.repository.memberOwnedItems)
+            .map(\.recipientLabel)).count
     }
 
     // MARK: Live usage counts (device-local, display-only)
@@ -357,6 +389,7 @@ struct LooxHubScreen: View {
     private struct LooxHubSectionCard<Tiles: View>: View {
         @Environment(AppEnvironment.self) private var env
         @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         let title: LocalizedStringResource
         var trailing: LocalizedStringResource? = nil
         var trailingAction: (() -> Void)? = nil
@@ -366,7 +399,8 @@ struct LooxHubScreen: View {
         /// sized for iPad collapsed to ONE stacked column on phone widths.
         /// Regular stays adaptive (3-4 across a wide detail pane).
         private var columns: [GridItem] {
-            horizontalSizeClass == .regular
+            if dynamicTypeSize.isAccessibilitySize { return [GridItem(.flexible())] }
+            return horizontalSizeClass == .regular
                 ? [GridItem(.adaptive(minimum: 200, maximum: 400), spacing: Space.s3)]
                 : [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())]
         }
@@ -374,15 +408,16 @@ struct LooxHubScreen: View {
         var body: some View {
             VStack(alignment: .leading, spacing: Space.s3) {
                 HStack {
-                    Text(title).vaultType(.headline).themedForeground()
+                    Text(title.inAppLocalized).vaultType(.headline).themedForeground()
                     Spacer(minLength: Space.s2)
                     if let trailing, let trailingAction {
                         Button(action: trailingAction) {
                             HStack(spacing: Space.s1) {
-                                Text(trailing).vaultType(.subhead)
-                                VaultIcon(Icons.chevronRight, size: 12)
+                                Text(trailing.inAppLocalized).vaultType(.subhead)
+                                VaultIcon(Icons.chevronRight, size: Metric.iconInline)
                             }
-                            .themedForeground(.secondary)
+                            .themedForeground(.secondaryBody)
+                            .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
                             .contentShape(.rect)
                         }
                         .buttonStyle(.plain)

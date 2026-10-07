@@ -50,6 +50,12 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
     /// `abc@loox.pw` are different externally reachable identities, so
     /// "changing domain" means creating a new alias, never mutating this.
     var relayDomainID: String
+    /// Immutable hostname and its signed mapping, sealed with the alias so a
+    /// synced alias can render offline without trusting a raw synced string.
+    var relayHostnameSnapshot: String?
+    var relayDomainMappingProof: Data?
+    /// Local association intent. Async writers must revalidate before writeback.
+    var relationRevision: UInt64
     var sortIndex: Int
     var createdAt: Date
     var updatedAt: Date
@@ -67,6 +73,9 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
          disabledAt: Date? = nil,
          backendMinted: Bool = false,
          relayDomainID: String = AuxiliaryDomainRegistry.legacyEmailDomainID,
+         relayHostnameSnapshot: String? = nil,
+         relayDomainMappingProof: Data? = nil,
+         relationRevision: UInt64 = 0,
          sortIndex: Int = 0,
          createdAt: Date = .now,
          updatedAt: Date = .now) {
@@ -83,15 +92,35 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
         self.disabledAt = disabledAt
         self.backendMinted = backendMinted
         self.relayDomainID = relayDomainID
+        self.relayHostnameSnapshot = relayHostnameSnapshot
+        self.relayDomainMappingProof = relayDomainMappingProof
+        self.relationRevision = relationRevision
         self.sortIndex = sortIndex
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
 
-    /// The mail domain this alias's address renders under (via the trusted
-    /// registry, falling back to the legacy domain for unknown IDs).
-    var emailDomain: String {
-        AuxiliaryDomainRegistry.emailDomain(forDomainID: relayDomainID)
+    /// Historical proof resolves an issued address only. It never opens new
+    /// creation or overrides the current registry's lifecycle/freshness gates.
+    var emailDomain: String? {
+        if relayDomainID == AuxiliaryDomainRegistry.legacyEmailDomainID {
+            return RelayConfig.emailDomain
+        }
+        if let snapshot = relayHostnameSnapshot {
+            if let proof = relayDomainMappingProof {
+                return DomainRegistryMappingProof.hostname(
+                    envelope: proof, domainID: relayDomainID, snapshot: snapshot)
+            }
+            // A snapshot without proof is usable only while the same mapping
+            // is independently present in the current trusted registry.
+            return AuxiliaryDomainRegistry.emailDomain(forDomainID: relayDomainID) == snapshot ? snapshot : nil
+        }
+        return AuxiliaryDomainRegistry.emailDomain(forDomainID: relayDomainID)
+    }
+
+    var resolvedAddress: String? {
+        guard !localPart.isEmpty, let emailDomain else { return nil }
+        return localPart + "@" + emailDomain
     }
 
     var secret: EmailAliasSecret {
@@ -101,7 +130,10 @@ nonisolated struct EmailAlias: Identifiable, Equatable, Sendable {
                          forwardingInboxID: forwardingInboxID,
                          forwardingTarget: forwardingTarget,
                          disabledAt: disabledAt, backendMinted: backendMinted,
-                         relayDomainID: relayDomainID)
+                         relayDomainID: relayDomainID,
+                         relayHostnameSnapshot: relayHostnameSnapshot,
+                         relayDomainMappingProof: relayDomainMappingProof,
+                         relationRevision: relationRevision)
     }
 }
 
@@ -122,13 +154,19 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
     var disabledAt: Date?
     var backendMinted: Bool
     var relayDomainID: String
+    var relayHostnameSnapshot: String?
+    var relayDomainMappingProof: Data?
+    var relationRevision: UInt64
 
     init(personaId: String, tier: AliasTier, localPart: String,
          boundItemId: String? = nil, boundDomain: String? = nil,
          label: String? = nil, status: AliasStatus = .draft,
          forwardingInboxID: String? = nil, forwardingTarget: String? = nil,
          disabledAt: Date? = nil, backendMinted: Bool = false,
-         relayDomainID: String = AuxiliaryDomainRegistry.legacyEmailDomainID) {
+         relayDomainID: String = AuxiliaryDomainRegistry.legacyEmailDomainID,
+         relayHostnameSnapshot: String? = nil,
+         relayDomainMappingProof: Data? = nil,
+         relationRevision: UInt64 = 0) {
         self.personaId = personaId
         self.tier = tier
         self.localPart = localPart
@@ -141,6 +179,9 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
         self.disabledAt = disabledAt
         self.backendMinted = backendMinted
         self.relayDomainID = relayDomainID
+        self.relayHostnameSnapshot = relayHostnameSnapshot
+        self.relayDomainMappingProof = relayDomainMappingProof
+        self.relationRevision = relationRevision
     }
 
     init(from decoder: any Decoder) throws {
@@ -160,5 +201,8 @@ nonisolated struct EmailAliasSecret: Codable, Sendable {
         // aliases by construction (there was only one domain to mint on).
         relayDomainID = try c.decodeIfPresent(String.self, forKey: .relayDomainID)
             ?? AuxiliaryDomainRegistry.legacyEmailDomainID
+        relayHostnameSnapshot = try c.decodeIfPresent(String.self, forKey: .relayHostnameSnapshot)
+        relayDomainMappingProof = try c.decodeIfPresent(Data.self, forKey: .relayDomainMappingProof)
+        relationRevision = try c.decodeIfPresent(UInt64.self, forKey: .relationRevision) ?? 0
     }
 }

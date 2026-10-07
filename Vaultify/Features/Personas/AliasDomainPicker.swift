@@ -22,55 +22,73 @@ enum PrivateEmailDomainDefault {
     }
 }
 
-/// Form section offering the mail-domain choice for a new alias. Renders
-/// the domain even when only one is available; multiple domains enable a picker.
+/// A short row opens the full domain list. Long suffixes wrap on their own
+/// line; unavailable signed entries explain readiness without enabling create.
 struct AliasDomainPickerSection: View {
     @Binding var domainID: String
-    /// Optional explainer under the section (e.g. the default-domain row on
-    /// the Private Email screen says what the choice applies to).
     var footer: LocalizedStringKey?
-
-    private var choices: [AuxiliaryDomainDescriptor] {
-        AuxiliaryDomainRegistry.creatableEmailDomains
-    }
+    @Environment(AppEnvironment.self) private var env
 
     var body: some View {
-        if choices.count > 1 {
+        let _ = env.domainRegistry.appliedRevision
+        Section {
+            NavigationLink { AliasDomainPickerScreen(domainID: $domainID) } label: {
+                PrivateEmailFieldValue(label: "Email Domain",
+                    value: AuxiliaryDomainRegistry.emailDomain(forDomainID: domainID).map { "@" + $0 }
+                           ?? appString("No domains available for new addresses"))
+            }
+            if !AuxiliaryDomainRegistry.creatableEmailDomains.contains(where: { $0.id == domainID }) {
+                Text("Select an available domain before creating an address.")
+                    .vaultType(.footnote).themedForeground(.warningBody)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } footer: { if let footer { Text(footer).themedForeground(.secondaryBody) } }
+    }
+}
+
+private struct AliasDomainPickerScreen: View {
+    @Binding var domainID: String
+    @Environment(AppEnvironment.self) private var env
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let _ = env.domainRegistry.appliedRevision
+        List {
             Section {
-                Picker("Email Domain", selection: $domainID) {
-                    ForEach(choices) { domain in
-                        // Display names come from the trusted registry verbatim
-                        // (product names, not translatable copy).
-                        VStack(alignment: .leading) {
-                            Text(verbatim: domain.displayName)
-                            if let host = domain.emailAddressDomain {
-                                Text(verbatim: "@" + host)
-                                    .vaultType(.footnote).themedForeground(.secondary)
+                ForEach(AuxiliaryDomainRegistry.current.filter(\.offersPrivateEmail)) { domain in
+                    Button {
+                        guard domain.lifecycle.allowsCreation,
+                              AuxiliaryDomainRegistry.creatableEmailDomains.contains(where: { $0.id == domain.id }) else { return }
+                        domainID = domain.id
+                        PrivateEmailDomainDefault.domainID = domain.id
+                        Haptics.tap()
+                        dismiss()
+                    } label: {
+                        HStack(alignment: .top, spacing: Space.s3) {
+                            VStack(alignment: .leading, spacing: Space.s1) {
+                                Text(verbatim: "@" + (domain.emailAddressDomain ?? ""))
+                                    .vaultType(.body).themedForeground(.primary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(verbatim: domain.displayName).vaultType(.caption).themedForeground(.secondaryBody)
+                                if !domain.lifecycle.allowsCreation {
+                                    Text("Not ready for new addresses").vaultType(.footnote).themedForeground(.secondaryBody)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                            if domain.lifecycle.allowsCreation && domainID == domain.id {
+                                VaultIcon(Icons.check, size: Metric.iconInline).themedForeground(.accentText)
                             }
-                        }
-                        .tag(domain.id)
-                    }
+                        }.frame(minHeight: Metric.hitMin)
+                    }.buttonStyle(.plain).disabled(!domain.lifecycle.allowsCreation)
                 }
-                .onChange(of: domainID) { _, selected in
-                    // An explicit pick becomes the remembered default for the
-                    // next alias ("remember my choice", not a one-off).
-                    PrivateEmailDomainDefault.domainID = selected
+                if AuxiliaryDomainRegistry.creatableEmailDomains.isEmpty {
+                    Text("No domains available for new addresses").vaultType(.subhead).themedForeground(.secondaryBody)
                 }
-            } footer: {
-                // No section header: the picker row already says "Email Domain" —
-                // header + row label doubled the same words two lines apart.
-                if let footer { Text(footer) }
-            }
-        } else if let host = choices.first?.emailAddressDomain {
-            Section {
-                LabeledContent {
-                    Text(verbatim: "@" + host).themedForeground(.secondary)
-                } label: {
-                    Text("Email Domain")
-                }
-            } footer: {
-                if let footer { Text(footer) }
-            }
+            } footer: { Text("Existing addresses keep their original domain.").themedForeground(.secondaryBody) }
+            .listRowBackground(VaultColors.surface)
         }
+        .themedFormBackground()
+        .navigationTitle(Text("Email Domain"))
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 }

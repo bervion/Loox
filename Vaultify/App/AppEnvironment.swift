@@ -18,6 +18,8 @@ import SwiftUI
     let repository: VaultRepository
     /// Email-relay control plane (alias activate/disable/delete, erase teardown).
     let relay: RelayService
+    let forwardingInboxService: ForwardingInboxService
+    let destinationVerification: DestinationVerificationCoordinator
     let clipboard: ClipboardService
     let cloudSync: CloudSyncService
     /// Schedules sync runs (immediate on unlock/activate, debounced after mutations).
@@ -266,6 +268,18 @@ import SwiftUI
         self.reachability = reachability
         let capabilities = CapabilityStore(reachability: reachability, defaults: settingsDefaults)
         self.capabilities = capabilities
+        let relay = self.relay
+        let forwardingInboxService = ForwardingInboxService(repository: repository, session: session,
+                                                            capabilities: capabilities,
+                                                            begin: { try await relay.beginDestinationVerification($0) })
+        self.forwardingInboxService = forwardingInboxService
+        let destinationVerification = DestinationVerificationCoordinator(
+            inboxes: { repository.forwardingInboxes },
+            policy: { !testIsolationEnabled && capabilities.canRefreshDestinationStatus },
+            begin: { try await forwardingInboxService.begin($0) },
+            refresh: { try await forwardingInboxService.refresh($0) })
+        self.destinationVerification = destinationVerification
+        destinationVerification.verification.coordinator = destinationVerification
         self.capabilityManifest = CapabilityManifestClient(
             store: capabilities,
             defaults: settingsDefaults
@@ -340,6 +354,10 @@ import SwiftUI
         self.entitlements = LooxEntitlementStore(defaults: settingsDefaults)
         // All stored properties are set — safe to wire the capability sinks
         // (weak refs; one independent breaker per service, INV-CAP-03).
+        domainRegistry.onApplied = { [weak repository, weak session] in
+            guard session?.vaultKey != nil else { return }
+            try? repository?.backfillTrustedAliasDomains()
+        }
         erase.attach(to: self)
         relay.capabilities = capabilities
         looxLinks.capabilities = capabilities

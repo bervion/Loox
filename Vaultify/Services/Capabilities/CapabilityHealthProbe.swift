@@ -29,6 +29,9 @@ import Foundation
     }
 
     static func probe(_ id: CapabilityID, store: CapabilityStore) async {
+        #if DEBUG
+        guard !CloudSyncService.isHostingUnitTests, !UITestConfiguration.current.isEnabled else { return }
+        #endif
         guard store.allowRequest(id) else { return }   // breaker open — don't poke
         var request = URLRequest(url: readyURL(for: id))
         request.timeoutInterval = 10

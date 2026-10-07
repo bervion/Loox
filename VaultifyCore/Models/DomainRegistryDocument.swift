@@ -140,6 +140,51 @@ nonisolated enum DomainRegistryVerifier {
                        expectedEnv: String,
                        now: Date,
                        highestAcceptedVersion: UInt64) throws -> DomainRegistryDocument {
+        let document = try authenticate(documentData: documentData, trustedKeys: trustedKeys,
+                                        expectedEnv: expectedEnv)
+        let nowMs = Int64(now.timeIntervalSince1970 * 1000)
+        guard nowMs >= document.issuedAt else { throw VerifyError.notYetValid }
+        guard nowMs < document.expiresAt else { throw VerifyError.expired }
+        guard document.registryVersion >= highestAcceptedVersion else {
+            throw VerifyError.rollback(received: document.registryVersion,
+                                       highestAccepted: highestAcceptedVersion)
+        }
+        return document
+    }
+
+    /// Address-only provenance. An expired registry may prove an issued
+    /// namespace; it cannot be applied as current config or allow mutations.
+    static func historicalMappings(documentData: Data,
+                                   trustedKeys: [String: Data],
+                                   expectedEnv: String,
+                                   now: Date = .now) throws -> [String: String] {
+        let document = try authenticate(documentData: documentData, trustedKeys: trustedKeys,
+                                        expectedEnv: expectedEnv)
+        guard document.issuedAt <= Int64(now.timeIntervalSince1970 * 1000),
+              document.expiresAt > document.issuedAt else { throw VerifyError.notYetValid }
+        var mappings: [String: String] = [:]
+        let uniqueIDs = Set(document.domains.map(\.id))
+        guard uniqueIDs.count == document.domains.count else { throw VerifyError.malformedDocument }
+        for domain in document.domains {
+            guard domain.capabilities.contains("email"), let hostname = domain.emailAddressDomain,
+                  isEmailHostname(hostname) else { continue }
+            mappings[domain.id] = hostname
+        }
+        return mappings
+    }
+
+    static func isEmailHostname(_ hostname: String) -> Bool {
+        guard hostname == hostname.lowercased(), hostname.utf8.count <= 253 else { return false }
+        let labels = hostname.split(separator: ".", omittingEmptySubsequences: false)
+        guard labels.count >= 2 else { return false }
+        return labels.allSatisfy { label in
+            !label.isEmpty && label.utf8.count <= 63 && label.first != "-" && label.last != "-"
+                && label.utf8.allSatisfy { (97...122).contains($0) || (48...57).contains($0) || $0 == 45 }
+        }
+    }
+
+    private static func authenticate(documentData: Data, trustedKeys: [String: Data],
+                                     expectedEnv: String) throws -> DomainRegistryDocument {
         guard let document = try? JSONDecoder().decode(DomainRegistryDocument.self, from: documentData) else {
             throw VerifyError.malformedDocument
         }
@@ -161,15 +206,32 @@ nonisolated enum DomainRegistryVerifier {
         guard document.env == expectedEnv else {
             throw VerifyError.wrongEnvironment(document.env)
         }
-        let nowMs = Int64(now.timeIntervalSince1970 * 1000)
-        guard nowMs >= document.issuedAt else { throw VerifyError.notYetValid }
-        guard nowMs < document.expiresAt else { throw VerifyError.expired }
-        // Reject only a strictly older version; an equal version is an idempotent
-        // re-serve admitted for the client store's hash-gated recovery.
-        guard document.registryVersion >= highestAcceptedVersion else {
-            throw VerifyError.rollback(received: document.registryVersion,
-                                       highestAccepted: highestAcceptedVersion)
-        }
         return document
+    }
+}
+
+/// Bounded in-memory verification cache. No trust flag or hostname from sync
+/// is accepted without verifying the sealed envelope against the bundled key.
+nonisolated enum DomainRegistryMappingProof {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var verified: [Data: [String: String]] = [:]
+
+    static func hostname(envelope: Data, domainID: String, snapshot: String) -> String? {
+        guard DomainRegistryVerifier.isEmailHostname(snapshot) else { return nil }
+        let mappings: [String: String]
+        if let cached = lock.withLock({ verified[envelope] }) {
+            mappings = cached
+        } else {
+            guard let checked = try? DomainRegistryVerifier.historicalMappings(
+                documentData: envelope,
+                trustedKeys: CapabilityManifestVerifier.bundledTrustedKeys,
+                expectedEnv: RelayConfig.environment) else { return nil }
+            mappings = checked
+            lock.withLock {
+                if verified.count >= 32 { verified.removeAll(keepingCapacity: true) }
+                verified[envelope] = checked
+            }
+        }
+        return mappings[domainID] == snapshot ? snapshot : nil
     }
 }

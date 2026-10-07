@@ -110,7 +110,12 @@ nonisolated enum RelayAPIClient {
 
         let (data, response): (Data, URLResponse)
         do { (data, response) = try await URLSession.shared.data(for: request) }
-        catch { throw Failure.transport }
+        catch {
+            if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
+                throw CancellationError()
+            }
+            throw Failure.transport
+        }
 
         guard let http = response as? HTTPURLResponse else { throw Failure.transport }
         RelayDiagnostics.record("stage=api operation=command kind=\(command.kind.rawValue) http=\(http.statusCode) backendCode=\(diagnosticCode(from: data))")
@@ -205,15 +210,56 @@ nonisolated enum RelayAPIClient {
         }
     }
 
-    /// `GET /v1/relay/destinations/{id}` — read-only, budget-free (the opaque
-    /// 128-bit id is the read capability; no signed command). Poll freely.
+    enum DestinationStatusFailure: Error, Equatable {
+        case throttled(retryAfter: Int)
+        case retryLater(statusCode: Int, retryAfter: Int)
+        case malformed
+    }
+
+    /// The opaque destination ID is the read capability. The caller still
+    /// enforces the app-wide rolling request budget and server Retry-After.
     /// Unknown id → 404 (indistinguishable `not_found`).
     static func destinationStatus(id: String, baseURL: URL = RelayConfig.apiBaseURL) async throws -> DestinationState {
         var request = URLRequest(url: baseURL.appending(path: "/v1/relay/destinations/\(id)"))
         request.httpMethod = "GET"
-        let (data, response) = try await perform(request, operation: "destinationStatus")
-        _ = response
-        return try JSONDecoder().decode(DestinationState.self, from: data)
+        let data: Data, response: URLResponse
+        do { (data, response) = try await URLSession.shared.data(for: request) }
+        catch {
+            if error is CancellationError || (error as? URLError)?.code == .cancelled {
+                throw CancellationError()
+            }
+            throw Failure.transport
+        }
+        try Task.checkCancellation()
+        guard let http = response as? HTTPURLResponse else { throw Failure.transport }
+        if http.statusCode == 429 {
+            throw DestinationStatusFailure.throttled(retryAfter: retryAfter(from: http) ?? 60)
+        }
+        if let signal = capabilitySignal(from: http, data: data), !(200...299).contains(http.statusCode) {
+            throw signal
+        }
+        guard (200...299).contains(http.statusCode) else {
+            if let retry = retryAfter(from: http) {
+                throw DestinationStatusFailure.retryLater(statusCode: http.statusCode, retryAfter: retry)
+            }
+            throw Failure.server(http.statusCode)
+        }
+        guard let state = try? JSONDecoder().decode(DestinationState.self, from: data),
+              state.destinationId == id,
+              let status = DestinationVerificationStatus(rawValue: state.status), status != .unverified else {
+            throw DestinationStatusFailure.malformed
+        }
+        return state
+    }
+
+    static func retryAfter(from http: HTTPURLResponse, now: Date = .now) -> Int? {
+        guard let value = http.value(forHTTPHeaderField: "Retry-After") else { return nil }
+        if let seconds = Int(value) { return max(0, seconds) }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        return formatter.date(from: value).map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) }
     }
 
     /// Shared 2xx-or-throw round trip for the attest endpoints.
@@ -221,6 +267,7 @@ nonisolated enum RelayAPIClient {
         let data: Data, response: URLResponse
         do { (data, response) = try await URLSession.shared.data(for: request) }
         catch {
+            if error is CancellationError || (error as? URLError)?.code == .cancelled { throw CancellationError() }
             RelayDiagnostics.record("stage=api operation=\(operation) failure=transport")
             throw Failure.transport
         }

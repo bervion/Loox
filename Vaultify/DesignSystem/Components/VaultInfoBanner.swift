@@ -193,7 +193,7 @@ extension VaultInfoBanner.Variant {
     /// Existing semantic surfaces: neutral context, amber prerequisite, red error.
     func subtleFill(_ theme: AppTheme) -> UInt32 {
         switch self {
-        case .info: return theme.secondaryBackground
+        case .info: return theme.surfaceElevated
         case .warning: return theme.warningSoft
         case .error: return theme.destructiveSoft
         }

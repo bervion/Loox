@@ -8,12 +8,17 @@ enum EditorTarget: Identifiable {
     /// A brand-new item pre-filled from outside (e.g. an imported `otpauth://` 2FA setup).
     /// Saved as a new item like `.new`, but starts from the provided draft.
     case draft(VaultItem)
+    /// Explicit private-address context survives sealed draft restoration.
+    case aliasLogin(VaultItem, aliasID: String, personaID: String, relationRevision: UInt64)
+    case restored(UIStateStore.DraftState)
 
     var id: String {
         switch self {
         case .new(let category): return "new-\(category.rawValue)"
         case .edit(let item): return "edit-\(item.id)"
         case .draft(let item): return "draft-\(item.id)"
+        case .aliasLogin(let item, _, _, _): return "alias-login-\(item.id)"
+        case .restored(let draft): return "restored-\(draft.id)"
         }
     }
 

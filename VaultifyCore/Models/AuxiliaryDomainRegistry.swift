@@ -68,13 +68,19 @@ nonisolated enum AuxiliaryDomainRegistry {
     /// a plain lock keeps the whole thing honest without actor ceremony.
     private static let remoteLock = NSLock()
     nonisolated(unsafe) private static var remoteDescriptors: [AuxiliaryDomainDescriptor]?
+    nonisolated(unsafe) private static var remoteEnvelope: Data?
 
     /// Replace the trusted set with a VERIFIED registry's domains. Callers
     /// must have checked the signature/env/anti-rollback first (see
     /// `DomainRegistryVerifier`) — this is trust application, not validation.
-    static func applyRemote(_ descriptors: [AuxiliaryDomainDescriptor]) {
-        remoteLock.withLock { remoteDescriptors = descriptors.isEmpty ? nil : descriptors }
+    static func applyRemote(_ descriptors: [AuxiliaryDomainDescriptor], signedEnvelope: Data? = nil) {
+        remoteLock.withLock {
+            remoteDescriptors = descriptors.isEmpty ? nil : descriptors
+            remoteEnvelope = descriptors.isEmpty ? nil : signedEnvelope
+        }
     }
+
+    static var signedMappingEnvelope: Data? { remoteLock.withLock { remoteEnvelope } }
 
     /// Domain ID stamped on every alias created before domains were explicit,
     /// and the decode fallback for sealed alias blobs missing the field.
@@ -116,11 +122,13 @@ nonisolated enum AuxiliaryDomainRegistry {
             ?? legacyEmailDomainID
     }
 
-    /// The mail domain to display/copy for an alias. Unknown or retired IDs
-    /// still resolve to their recorded descriptor when present; a completely
-    /// unknown ID falls back to the legacy domain so an address is never
-    /// rendered blank (the alias's real address is immutable server-side).
-    static func emailDomain(forDomainID id: String) -> String {
-        descriptor(id: id)?.emailAddressDomain ?? RelayConfig.emailDomain
+    /// Unknown namespaces must never become a different reachable address.
+    /// Legacy is a bundled immutable mapping, even if omitted remotely.
+    static func emailDomain(forDomainID id: String) -> String? {
+        if id == legacyEmailDomainID { return RelayConfig.emailDomain }
+        guard let descriptor = descriptor(id: id), descriptor.offersPrivateEmail,
+              let hostname = descriptor.emailAddressDomain,
+              DomainRegistryVerifier.isEmailHostname(hostname) else { return nil }
+        return hostname
     }
 }

@@ -1,160 +1,230 @@
 import SwiftUI
 
-/// Detail for one forwarding inbox: identity (masked email, label, source),
-/// verification status, and every action as a VISIBLE row — the list screen
-/// previously hid activate/default/delete behind a long-press context menu,
-/// which nothing advertised. The context menu stays for power users; this is
-/// the discoverable path.
+/// A deliberate, unlocked detail visit can identify the local recipient in
+/// full. Disclosure is ephemeral: inactive, lock and exit conceal immediately;
+/// foreground never reveals it again. Overview remains masked.
 struct ForwardingInboxDetailScreen: View {
     let inboxID: String
-
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
-    @State private var verification = ForwardingInboxVerification()
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var confirmDelete = false
+    @State private var revealed = false
+    @State private var initialDisclosureHandled = false
+    @State private var verificationScope: UUID?
 
-    private var inbox: ForwardingInbox? {
-        env.repository.forwardingInboxes.first { $0.id == inboxID }
-    }
+    private var inbox: ForwardingInbox? { env.repository.inbox(id: inboxID) }
     private var gate: PrivateEmailGate { PrivateEmailGate(env) }
+    private var verification: ForwardingInboxVerification { env.destinationVerification.verification }
+    private var canReveal: Bool { env.session.state == .unlocked && scenePhase == .active }
 
     var body: some View {
         List {
-            // Inherits the parent's treatment: same banner, same explanation,
-            // same way back to Settings. The inbox itself stays readable and
-            // deletable in every state.
-            PrivateEmailBannerSection()
             if let inbox {
                 identitySection(inbox)
-                actionsSection(inbox)
-                if inbox.source == .manual {
-                    deleteSection(inbox)
+                verificationSection(inbox)
+                routingSection(inbox)
+                if !inbox.isDefault {
+                    Section {
+                        Button { try? env.repository.setDefaultInbox(inbox) } label: {
+                            Label { Text("Set as default") } icon: { VaultIcon(Icons.checkCircle) }
+                        }
+                        .frame(minHeight: Metric.hitMin)
+                    } footer: { Text("New addresses forward here. Existing addresses keep their current inbox.").themedForeground(.secondaryBody) }
+                    .listRowBackground(VaultColors.surface)
+                }
+            } else {
+                Section { Text("This inbox is no longer in your vault.").themedForeground(.secondaryBody) }
+                    .listRowBackground(VaultColors.surface)
+            }
+            PrivateEmailBannerSection()
+        }
+        .navigationTitle(Text("Inbox"))
+        .platformNavigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if inbox?.source == .manual {
+                ToolbarItem(placement: .platformPrimaryAction) {
+                    Menu {
+                        Button(role: .destructive) { confirmDelete = true } label: {
+                            Label { Text("Delete inbox") } icon: { VaultIcon(Icons.trash) }
+                        }
+                        .disabled(env.repository.aliases.contains { $0.forwardingInboxID == inboxID })
+                    } label: { VaultIcon(Icons.moreHorizontal) }
+                    .accessibilityLabel(Text("Inbox actions"))
                 }
             }
         }
-        .navigationTitle(Text("Inbox"))
-        // One surface for both answers: "we sent it" is as much a result as a
-        // failure, and a send that reported nothing looked like a dead button.
         .relayOutcomeAlert(verification, relay: env.relay)
-        .confirmationDialog("Delete this inbox?", isPresented: $confirmDelete,
-                            titleVisibility: .visible) {
+        .confirmationDialog("Delete this inbox?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 Haptics.error()
                 if let inbox { try? env.repository.deleteInbox(inbox) }
                 dismiss()
             }
-        } message: {
-            Text("You can add it again later if you need to.")
+        } message: { Text("You can add it again later if you need to.") }
+        .onAppear {
+            if !initialDisclosureHandled {
+                revealed = canReveal
+                initialDisclosureHandled = true
+            }
+            verificationScope = env.destinationVerification.register([inboxID], priority: true)
+        }
+        .onChange(of: scenePhase) { _, phase in if phase != .active { revealed = false } }
+        .onChange(of: env.session.state) { _, state in if state != .unlocked { revealed = false } }
+        .onChange(of: inbox?.email) { _, _ in revealed = false }
+        .onDisappear {
+            revealed = false
+            if let verificationScope { env.destinationVerification.unregister(verificationScope) }
+            verificationScope = nil
         }
     }
 
-    @ViewBuilder private func identitySection(_ inbox: ForwardingInbox) -> some View {
+    private func identitySection(_ inbox: ForwardingInbox) -> some View {
         Section {
-            LabeledContent { Text(verbatim: EmailMask.masked(inbox.email)) }
-                label: { Text("Email") }
-            if let label = inbox.label, !label.isEmpty {
-                LabeledContent { Text(verbatim: label) } label: { Text("Label") }
+            VStack(alignment: .leading, spacing: Space.s3) {
+                if let label = inbox.label, !label.isEmpty {
+                    Text(verbatim: label).vaultType(.headline).themedForeground(.primary)
+                }
+                Text(verbatim: revealed && canReveal ? inbox.email : EmailMask.masked(inbox.email))
+                    .vaultType(.body).themedForeground(.primary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                statusLabel(inbox)
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: Space.s1) { disclosureButton; copyButton(inbox) }
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: Space.s3) { disclosureButton; copyButton(inbox) }
+                        VStack(alignment: .leading, spacing: Space.s1) { disclosureButton; copyButton(inbox) }
+                    }
+                }
             }
-            LabeledContent { statusText(inbox) } label: { Text("Status") }
+            .padding(.vertical, Space.s2)
             if inbox.isDefault {
-                LabeledContent { Text("New addresses forward here") }
-                    label: { Text("Default") }
+                Label { Text("Default for new addresses").vaultType(.subhead) }
+                    icon: { VaultIcon(Icons.checkCircle).themedForeground(.accentText) }
             }
-        } footer: {
-            Text("A real inbox your private addresses can forward to.")
-        }
+        } footer: { Text("A real inbox your private addresses can forward to.").themedForeground(.secondaryBody) }
         .listRowBackground(VaultColors.surface)
     }
 
-    /// Verification is a signed relay command, so the offer follows the gate
-    /// while the status row above keeps reporting what we know. Setting the
-    /// default is local and stays available. With neither on offer the section
-    /// itself goes away rather than leaving an empty card.
-    @ViewBuilder private func actionsSection(_ inbox: ForwardingInbox) -> some View {
-        let offersVerification = gate.allows(.mutate) && inbox.verificationStatus != .verified
-        if offersVerification || !inbox.isDefault {
+    private var disclosureButton: some View {
+        Button {
+            if revealed { revealed = false }
+            else if canReveal { withAnimation(.vault(Motion.standard, reduceMotion: reduceMotion)) { revealed = true } }
+            Haptics.tap()
+        } label: {
+            Label {
+                Text(verbatim: revealed ? appString("Hide email") : appString("Show email"))
+                    .vaultType(.subhead).fixedSize(horizontal: false, vertical: true)
+            }
+                icon: { VaultIcon(revealed ? Icons.hide : Icons.reveal) }
+                .frame(minHeight: Metric.hitMin)
+        }
+        .buttonStyle(.borderless)
+        .disabled(!canReveal)
+    }
+    private func copyButton(_ inbox: ForwardingInbox) -> some View {
+        Button {
+            guard canReveal, revealed, env.repository.inbox(id: inbox.id)?.email == inbox.email else { return }
+            env.clipboard.copy(inbox.email, label: appString("Email"), sensitive: true)
+        } label: {
+            Label { Text("Copy email").vaultType(.subhead).fixedSize(horizontal: false, vertical: true) }
+                icon: { VaultIcon(Icons.copy) }
+                .frame(minHeight: Metric.hitMin)
+        }
+        .buttonStyle(.borderless)
+        .disabled(!revealed || !canReveal)
+    }
+
+    @ViewBuilder private func verificationSection(_ inbox: ForwardingInbox) -> some View {
+        if inbox.verificationStatus != .verified {
             Section {
-                if offersVerification {
-                    switch inbox.verificationStatus {
-                    case .verified:
-                        EmptyView()
-                    case .pending:
-                        verificationRow(inbox, title: "Check verification",
-                                        icon: Icons.checkCircle, activity: .checking) {
-                            await verification.check(inbox, relay: env.relay)
-                        }
-                        resendRow(inbox, title: "Resend email")
-                    case .unverified, .revoked:
-                        resendRow(inbox, title: "Confirm email")
+                if inbox.verificationStatus == .pending {
+                    Text("Open the confirmation link in your inbox, then return here.")
+                        .vaultType(.subhead).themedForeground(.secondaryBody)
+                        .fixedSize(horizontal: false, vertical: true)
+                    actionButton(inbox, title: "Check verification", activity: .checking) {
+                        await verification.check(inbox, relay: env.relay)
                     }
+                    .disabled(!env.capabilities.canRefreshDestinationStatus || verification.isBusy(inbox))
+                    if gate.allows(.mutate) { resendRow(inbox, title: "Resend email") }
+                } else if gate.allows(.mutate) {
+                    actionButton(inbox, title: "Send confirmation email", activity: .sending) {
+                        await verification.send(to: inbox, relay: env.relay)
+                    }
+                    .disabled(!verification.canSend(to: inbox))
                 }
-                if !inbox.isDefault {
-                    Button { try? env.repository.setDefaultInbox(inbox) } label: {
-                        Label { Text("Set as default") } icon: { VaultIcon(Icons.checkCircle) }
-                    }
+                if let error = env.destinationVerification.errors[inbox.id] {
+                    Text(verbatim: error).vaultType(.footnote).themedForeground(.secondaryBody)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .listRowBackground(VaultColors.surface)
         }
     }
-
-    /// A verification action as a row that reports its own state: the glyph
-    /// becomes a spinner while the call runs, and the row is inert until it
-    /// finishes. Nothing here can be fired twice by an impatient second tap.
-    private func verificationRow(_ inbox: ForwardingInbox, title: LocalizedStringKey,
-                                 icon: String, activity: ForwardingInboxVerification.Activity,
-                                 run: @escaping () async -> Void) -> some View {
-        let busy = verification.isBusy(inbox) && verification.activity == activity
-        return Button { Task { await run() } } label: {
-            Label {
-                Text(title)
-            } icon: {
-                if busy { ProgressView().controlSize(.small) } else { VaultIcon(icon) }
-            }
+    private func actionButton(_ inbox: ForwardingInbox, title: LocalizedStringKey,
+                              activity: ForwardingInboxVerification.Activity,
+                              action: @escaping () async -> Void) -> some View {
+        Button { Task { await action() } } label: {
+            Text(title).frame(maxWidth: .infinity).fixedSize(horizontal: false, vertical: true)
+                .prominentButtonLoading(verification.isBusy(inbox) && verification.activity == activity,
+                                        tint: Color.platformBackground)
         }
-        .disabled(verification.isBusy(inbox))
+        .buttonStyle(.themedProminent)
     }
-
-    /// Sending is the metered one: each tap puts another email in the user's
-    /// inbox, so the row states how long the relay wants us to wait and refuses
-    /// to send until then.
-    @ViewBuilder private func resendRow(_ inbox: ForwardingInbox,
-                                        title: LocalizedStringKey) -> some View {
+    @ViewBuilder private func resendRow(_ inbox: ForwardingInbox, title: LocalizedStringKey) -> some View {
         let wait = verification.resendWait(for: inbox)
         if wait > 0 {
-            Label {
-                Text(verbatim: appString("You can send again in \(wait)s"))
-                    .themedForeground(.secondary)
-            } icon: {
-                VaultIcon(Icons.clock).themedForeground(.secondary)
-            }
+            Text(verbatim: appString("You can send again in \(wait)s"))
+                .vaultType(.footnote).themedForeground(.secondaryBody)
+                .fixedSize(horizontal: false, vertical: true)
         } else {
-            verificationRow(inbox, title: title, icon: Icons.refresh, activity: .sending) {
-                await verification.send(to: inbox, relay: env.relay)
+            Button { Task { await verification.send(to: inbox, relay: env.relay) } } label: {
+                Text(title).vaultType(.subhead).frame(minHeight: Metric.hitMin)
             }
+            .disabled(verification.isBusy(inbox))
         }
     }
-
-    @ViewBuilder private func deleteSection(_ inbox: ForwardingInbox) -> some View {
-        Section {
-            Button(role: .destructive) { confirmDelete = true } label: {
-                Label { Text("Delete").foregroundStyle(env.theme.active.color(.destructive)) }
-                    icon: { VaultIcon(Icons.trash).foregroundStyle(env.theme.active.color(.destructive)) }
-            }
+    @ViewBuilder private func routingSection(_ inbox: ForwardingInbox) -> some View {
+        let aliases = env.repository.activePersona.map { env.repository.aliases(forPersona: $0.id) } ?? []
+        let actual = aliases.filter { $0.backendMinted && $0.forwardingTarget == inbox.email && $0.status != .disabled }
+        let waiting = aliases.filter {
+            $0.backendMinted && $0.status != .disabled && env.repository.resolvedDestination(for: $0) == inbox.email && $0.forwardingTarget != inbox.email
         }
-        .listRowBackground(VaultColors.surface)
+        if !actual.isEmpty || !waiting.isEmpty {
+            Section {
+                ForEach(actual) { alias in
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text(verbatim: alias.label ?? alias.localPart).vaultType(.body).themedForeground(.primary)
+                        Text(alias.status == .active ? "Forwarding here" : "Forwarding paused")
+                            .vaultType(.caption)
+                            .themedForeground(alias.status == .active ? .successBody : .secondaryBody)
+                    }
+                }
+                ForEach(waiting) { alias in
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text(verbatim: alias.label ?? alias.localPart).vaultType(.body).themedForeground(.primary)
+                        Text("Update pending").vaultType(.caption).themedForeground(.warningBody)
+                    }
+                }
+            } header: { Text("Private addresses") }
+            .listRowBackground(VaultColors.surface)
+        }
     }
-
-    /// Muted while unverified so it reads as "action available", not "error" —
-    /// forwarding still works until the server enforces verification.
-    @ViewBuilder private func statusText(_ inbox: ForwardingInbox) -> some View {
+    @ViewBuilder private func statusLabel(_ inbox: ForwardingInbox) -> some View {
         switch inbox.verificationStatus {
         case .verified:
-            Text("Verified").themedForeground(.success)
+            Label { Text("Verified").vaultType(.subhead).themedForeground(.successBody) }
+                icon: { VaultIcon(Icons.checkCircle).themedForeground(.successBody) }
         case .pending:
-            Text("Awaiting confirmation").themedForeground(.warning)
+            Label { Text("Awaiting confirmation").vaultType(.subhead).themedForeground(.warningBody) }
+                icon: { VaultIcon(Icons.clock).themedForeground(.warningBody) }
         case .unverified, .revoked:
-            Text("Not verified").themedForeground(.secondary)
+            Label { Text("Not verified").vaultType(.subhead).themedForeground(.secondaryBody) }
+                icon: { VaultIcon(Icons.mail).themedForeground(.secondaryBody) }
         }
     }
 }

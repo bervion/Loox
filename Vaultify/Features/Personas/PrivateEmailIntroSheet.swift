@@ -18,7 +18,8 @@ struct PrivateEmailIntroSheet: View {
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
-    @State private var verification = ForwardingInboxVerification()
+    @State private var verificationScope: UUID?
+    private var verification: ForwardingInboxVerification { env.destinationVerification.verification }
 
     /// Re-read from the vault every render. The value handed in is a snapshot,
     /// so sending or confirming from this sheet would leave the card describing
@@ -84,6 +85,13 @@ struct PrivateEmailIntroSheet: View {
             // The first signed relay call in a fresh vault is this sheet's
             // "Send confirmation email", so it must offer the reset too.
             .relayOutcomeAlert(verification, relay: env.relay)
+        }
+        .onAppear {
+            if let inbox { verificationScope = env.destinationVerification.register([inbox.id], priority: true) }
+        }
+        .onDisappear {
+            if let verificationScope { env.destinationVerification.unregister(verificationScope) }
+            verificationScope = nil
         }
         .platformPresentationDetents([.large])
         .presentationDragIndicator(.hidden)

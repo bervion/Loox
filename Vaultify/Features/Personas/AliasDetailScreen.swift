@@ -1,242 +1,271 @@
 import SwiftUI
 
-/// Detail + management for one email alias: its address, what it forwards to
-/// (editable → re-rotates on the backend), where it's bound, and the destructive
-/// actions (disable, delete). Reads live from the repository so a status change
-/// reflects immediately.
 struct AliasDetailScreen: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
     let aliasID: String
-
     @State private var busy = false
+    @State private var copied = false
     @State private var errorTitle = ""
     @State private var errorMessage: String?
     @State private var errorOffersReset = false
     @State private var confirmDelete = false
     @State private var confirmPause = false
-    @State private var editingDestination = false
-    @State private var destinationDraft = ""
     @State private var editingLabel = false
     @State private var labelDraft = ""
+    @State private var showingLoginPicker = false
+    @State private var verificationToken: UUID?
 
-    /// Live alias (nil once deleted — the screen then pops).
-    private var alias: EmailAlias? { env.repository.aliases.first { $0.id == aliasID } }
-    private var persona: Persona? {
-        alias.flatMap { a in env.repository.personas.first { $0.id == a.personaId } }
+    private var alias: EmailAlias? {
+        env.repository.aliases.first { $0.id == aliasID && $0.personaId == env.repository.activePersona?.id }
     }
+    private var persona: Persona? { env.repository.activePersona }
     private var gate: PrivateEmailGate { PrivateEmailGate(env) }
+    private var visibleInboxIDs: Set<String> {
+        guard let alias else { return [] }
+        var ids = Set<String>()
+        if let id = alias.forwardingInboxID { ids.insert(id) }
+        if let persona, let inbox = env.repository.defaultInbox(for: persona) { ids.insert(inbox.id) }
+        for inbox in env.repository.forwardingInboxes where inbox.email == alias.forwardingTarget { ids.insert(inbox.id) }
+        return ids
+    }
 
     var body: some View {
         Group {
+            if let alias { content(alias) }
+            else { Color.clear.onAppear { dismiss() } }
+        }
+        .navigationTitle(Text("Private address"))
+        .platformNavigationBarTitleDisplayMode(.inline)
+        .toolbar {
             if let alias {
-                content(alias)
-            } else {
-                Color.clear.onAppear { dismiss() }
+                ToolbarItem(placement: .platformPrimaryAction) {
+                    Menu {
+                        Button { labelDraft = alias.label ?? ""; editingLabel = true } label: {
+                            Label { Text("Edit label") } icon: { VaultIcon(Icons.edit) }
+                        }
+                        Button { showingLoginPicker = true } label: {
+                            Label { Text("Link a login") } icon: { VaultIcon(Icons.add) }
+                        }.disabled(alias.resolvedAddress == nil)
+                        if alias.status == .active {
+                            Button { confirmPause = true } label: {
+                                Label { Text("Pause forwarding") } icon: { VaultIcon(Icons.hide) }
+                            }.disabled(busy || !gate.allows(.revoke))
+                        }
+                        Button(role: .destructive) { confirmDelete = true } label: {
+                            Label { Text("Delete permanently") } icon: { VaultIcon(Icons.trash) }
+                        }.disabled(busy || !gate.allows(.delete))
+                    } label: {
+                        VaultIcon(Icons.moreHorizontal, size: Metric.iconUtility)
+                            .frame(width: Metric.hitMin, height: Metric.hitMin)
+                    }.accessibilityLabel(Text("Manage address"))
+                }
             }
         }
-        .navigationTitle(Text("Private Email"))
-        .platformNavigationBarTitleDisplayMode(.inline)
-        // Title follows the failure, so a consent gate or a maintenance window
-        // is not announced as a connection problem.
         .relayFailureAlert(title: errorTitle, message: errorMessage, isPresented: errorBinding,
                            offersReset: errorOffersReset) { resetPrivateEmail() }
-    }
-
-    @ViewBuilder private func content(_ alias: EmailAlias) -> some View {
-        let address = AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                                           relayDomain: alias.emailDomain)
-        List {
-            // Same banner as the Private Email root: this address stays fully
-            // readable, only the relay actions below change.
-            PrivateEmailBannerSection()
-
-            Section("Address") {
-                Button {
-                    env.clipboard.copy(address, label: appString("private email"), sensitive: false)
-                } label: {
-                    HStack {
-                        Text(verbatim: address).themedForeground(.primary)
-                        Spacer()
-                        VaultIcon(Icons.copy, size: 16).themedForeground(.iconSecondary)
-                    }
-                }
-                LabeledContent { Text(verbatim: statusLabel(alias.status)) } label: { Text("Status") }
-                if let domain = alias.boundDomain, !domain.isEmpty {
-                    LabeledContent { Text(verbatim: domain) } label: { Text("Website") }
-                }
-                Button {
-                    labelDraft = alias.label ?? ""
-                    editingLabel = true
-                } label: {
-                    LabeledContent { Text(verbatim: alias.label ?? appString("None")) } label: { Text("Label") }
-                }
-            }
-            .listRowBackground(VaultColors.surface)
-
-            Section {
-                // Masked in overview; the full address appears only when editing.
-                LabeledContent { Text(verbatim: alias.forwardingTarget.map(EmailMask.masked) ?? appString("None")) }
-                    label: { Text("Forwards to") }
-                // Per-alias inbox pin — offered once there's a choice to make.
-                if env.repository.forwardingInboxes.count > 1 {
-                    Menu {
-                        ForEach(env.repository.forwardingInboxes) { inbox in
-                            Button { pick(inbox, for: alias) } label: {
-                                Text(verbatim: inboxTitle(inbox))
-                            }
-                        }
-                    } label: {
-                        LabeledContent { Text(verbatim: currentInboxTitle(alias)) }
-                            label: { Text("Forwarding inbox") }
-                    }
-                }
-                Button {
-                    destinationDraft = alias.forwardingTarget ?? (persona.flatMap { env.repository.destinationEmail(for: $0) } ?? "")
-                    editingDestination = true
-                } label: { Text("Change forwarding address") }
-                NavigationLink { ForwardingInboxScreen() } label: { Text("Forwarding inboxes") }
-            } footer: {
-                Text("Replies from your inbox may reveal your real email address.")
-            }
-            .listRowBackground(VaultColors.surface)
-
-            Section {
-                if alias.status == .reserved {
-                    // Reserved means a prior activation didn't reach the relay — retry.
-                    Button { activate(alias) } label: {
-                        Label { Text("Activate") } icon: { VaultIcon(Icons.checkCircle) }
-                    }
-                }
-                if alias.status != .disabled {
-                    // Pause is reversible later (relay keeps the row) — not destructive.
-                    Button { confirmPause = true } label: {
-                        Label { Text("Pause forwarding") } icon: { VaultIcon(Icons.hide) }
-                    }
-                }
-                Button(role: .destructive) { confirmDelete = true } label: {
-                    Label { Text("Delete permanently") } icon: { VaultIcon(Icons.trash) }
-                }
-            }
-            .listRowBackground(VaultColors.surface)
-        }
-        .disabled(busy)
         .alert("Edit label", isPresented: $editingLabel) {
             TextField("Label", text: $labelDraft)
             Button("Cancel", role: .cancel) {}
-            Button("Save") { saveLabel(alias) }
-        }
-        .alert("Change forwarding address", isPresented: $editingDestination) {
-            TextField("Email", text: $destinationDraft)
-                .platformKeyboardType(.emailAddress).platformAutocapitalization(.never)
-            Button("Cancel", role: .cancel) {}
-            Button("Save") { changeDestination() }
-        } message: {
-            Text("Mail to your aliases will forward here. Changing it re-points every alias of this identity.")
+            Button("Save") { saveLabel() }
         }
         .confirmationDialog("Pause forwarding?", isPresented: $confirmPause, titleVisibility: .visible) {
-            Button("Pause forwarding") { Haptics.tap(); run { try await env.relay.disable(alias) } }
+            Button("Pause forwarding") {
+                guard let alias else { return }
+                Haptics.tap()
+                run { try await env.relay.disable(alias) }
+            }
         } message: {
-            Text("New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later.")
+            Text("This pauses mail for every service using this address. Linked vault items stay unchanged.")
         }
         .confirmationDialog("Delete this private address permanently?", isPresented: $confirmDelete,
                             titleVisibility: .visible) {
             Button("Delete permanently", role: .destructive) {
+                guard let alias else { return }
                 Haptics.error()
                 run { try await env.relay.delete(alias) }
             }
         } message: {
-            Text(verbatim: address + "\n")
-                + Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
+            Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
+        }
+        .sheet(isPresented: $showingLoginPicker) { AliasLoginPickerSheet(aliasID: aliasID) }
+        .onAppear { verificationToken = env.destinationVerification.register(visibleInboxIDs, priority: true) }
+        .onChange(of: visibleInboxIDs) { _, ids in
+            if let verificationToken { env.destinationVerification.update(verificationToken, inboxIDs: ids) }
+        }
+        .onChange(of: env.repository.activePersona?.id) { _, _ in dismiss() }
+        .onDisappear {
+            copied = false
+            if let verificationToken { env.destinationVerification.unregister(verificationToken) }
+            verificationToken = nil
+        }
+        .task(id: copied) {
+            if copied {
+                try? await Task.sleep(for: .seconds(2))
+                if !Task.isCancelled { copied = false }
+            }
         }
     }
 
-    private func statusLabel(_ status: AliasStatus) -> String {
-        switch status {
-        case .active:   return appString("Forwarding active")
-        case .reserved: return appString("Tap to activate")
-        case .disabled: return appString("Forwarding paused")
-        default:        return appString("Draft")
+    private func content(_ alias: EmailAlias) -> some View {
+        List {
+            PrivateEmailBannerSection()
+            Section {
+                VStack(alignment: .leading, spacing: Space.s3) {
+                    if let label = alias.label, !label.isEmpty {
+                        Text(verbatim: label).vaultType(.headline).themedForeground(.secondaryBody)
+                    }
+                    Text(verbatim: alias.resolvedAddress ?? appString("Domain unavailable"))
+                        .vaultType(.section).themedForeground(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(verbatim: PrivateEmailStatusPresentation.label(alias)).vaultType(.subhead)
+                        .themedForeground(PrivateEmailStatusPresentation.role(alias))
+                    if let address = alias.resolvedAddress {
+                        if alias.status == .reserved || alias.status == .draft {
+                            Button { run { try await env.relay.activate(alias) } } label: {
+                                Text(alias.backendMinted ? "Finish setup" : "Activate address")
+                                    .frame(maxWidth: .infinity)
+                                    .prominentButtonLoading(busy, tint: Color.platformBackground)
+                            }.buttonStyle(.themedProminent)
+                                .disabled(busy || !gate.allows(alias.backendMinted ? .mutate : .create))
+                        } else if alias.status == .paused || alias.status == .disabled {
+                            Button { run { try await env.relay.activate(alias) } } label: {
+                                Text("Resume forwarding").frame(maxWidth: .infinity)
+                                    .prominentButtonLoading(busy, tint: Color.platformBackground)
+                            }.buttonStyle(.themedProminent).disabled(busy || !gate.allows(.mutate))
+                        } else {
+                            Button { copy(address) } label: {
+                                Label { Text(copied ? "Copied" : "Copy address") } icon: { CopyMorphIcon(copied: copied) }
+                                    .frame(maxWidth: .infinity)
+                            }.buttonStyle(.themedProminent)
+                        }
+                    } else {
+                        Text("This domain is not available locally. Connect to refresh its signed mapping.")
+                            .vaultType(.footnote).themedForeground(.secondaryBody)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }.padding(.vertical, Space.s2)
+            }.listRowBackground(VaultColors.surface)
+
+            Section {
+                NavigationLink { AliasLinkedServicesScreen(personaID: alias.personaId, aliasID: alias.id) } label: {
+                    HStack(spacing: Space.s3) {
+                        VaultIcon(Icons.globe, size: Metric.iconInline).themedForeground(.iconSecondary)
+                        Text("Linked services").vaultType(.body)
+                        Spacer(minLength: Space.s2)
+                        Text(verbatim: String(env.repository.linkedServices(for: alias.personaId, aliasID: alias.id).count))
+                            .vaultType(.subhead).themedForeground(.secondaryBody)
+                    }.frame(minHeight: Metric.hitMin)
+                }
+                if let website = alias.boundDomain, !website.isEmpty {
+                    PrivateEmailFieldValue(label: "Website", value: website)
+                }
+            }.listRowBackground(VaultColors.surface)
+
+            Section("Receiving mail") {
+                if let checkpoint = alias.forwardingTarget, alias.backendMinted {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("Last confirmed destination").vaultType(.footnote).themedForeground(.secondaryBody)
+                        PrivateEmailRecipientValue(email: checkpoint)
+                    }
+                    if let inbox = env.repository.forwardingInboxes.first(where: { $0.email == checkpoint }) {
+                        NavigationLink { ForwardingInboxDetailScreen(inboxID: inbox.id) } label: { Text("Inbox details") }
+                    }
+                } else {
+                    Text("Not forwarding yet").vaultType(.body).themedForeground(.secondaryBody)
+                }
+                if let desired = env.repository.resolvedDestination(for: alias),
+                   !alias.backendMinted || desired != alias.forwardingTarget {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("Selected inbox").vaultType(.footnote).themedForeground(.secondaryBody)
+                        PrivateEmailRecipientValue(email: desired)
+                        if alias.backendMinted {
+                            Text("Forwarding update pending").vaultType(.footnote).themedForeground(.warningBody)
+                        }
+                    }
+                }
+                if alias.backendMinted,
+                   let desiredInbox = desiredInbox(alias), desiredInbox.email != alias.forwardingTarget {
+                    Button("Apply inbox change") { run { try await env.relay.setInbox(desiredInbox, for: alias) } }
+                        .disabled(busy || !gate.allows(.mutate))
+                }
+                Menu {
+                    ForEach(availableInboxes(alias)) { inbox in
+                        Button { run { try await env.relay.setInbox(inbox, for: alias) } } label: {
+                            Text(verbatim: inbox.label.flatMap { $0.isEmpty ? nil : $0 } ?? EmailMask.masked(inbox.email))
+                        }
+                    }
+                } label: {
+                    Label { Text("Choose receiving inbox") } icon: { VaultIcon(Icons.mail) }
+                }.disabled(busy || !gate.allows(.mutate) || availableInboxes(alias).isEmpty)
+                NavigationLink { ForwardingInboxScreen() } label: { Text("Manage forwarding inboxes") }
+            }.listRowBackground(VaultColors.surface)
+
+            PrivateEmailReceiveOnlySection(hasActionableNotice: gate.bannerState != .available)
+        }.themedFormBackground()
+    }
+
+    private func desiredInbox(_ alias: EmailAlias) -> ForwardingInbox? {
+        if let id = alias.forwardingInboxID { return env.repository.inbox(id: id) }
+        return persona.flatMap { env.repository.defaultInbox(for: $0) }
+    }
+
+    private func availableInboxes(_ alias: EmailAlias) -> [ForwardingInbox] {
+        env.repository.forwardingInboxes.filter { $0.source == .manual || $0.personaId == alias.personaId || $0.isDefault }
+    }
+
+    private func copy(_ address: String) {
+        env.clipboard.copy(address, label: appString("private email"), sensitive: false)
+        copied = true
+    }
+
+    private func saveLabel() {
+        guard var live = alias else { return }
+        let label = labelDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        live.label = label.isEmpty ? nil : label
+        do { try env.repository.updateAlias(live) }
+        catch {
+            errorTitle = appString("Couldn’t update the address")
+            errorMessage = appString("The address changed. Open it again and retry.")
+            Haptics.error()
         }
-    }
-
-    private func inboxTitle(_ inbox: ForwardingInbox) -> String {
-        if let label = inbox.label, !label.isEmpty { return label }
-        return EmailMask.masked(inbox.email)
-    }
-
-    /// The inbox this alias currently resolves to (pin, else persona default).
-    private func currentInboxTitle(_ alias: EmailAlias) -> String {
-        if let id = alias.forwardingInboxID, let pinned = env.repository.inbox(id: id) {
-            return inboxTitle(pinned)
-        }
-        if let persona, let fallback = env.repository.defaultInbox(for: persona) {
-            return inboxTitle(fallback)
-        }
-        return appString("None")
-    }
-
-    /// Activating a reserved alias is a growth mutation, so it must not reach
-    /// the relay for a feature the user switched off — the same guard the
-    /// aliases list applies to the identical row action.
-    private func activate(_ alias: EmailAlias) {
-        if gate.isTurnedOffByUser {
-            errorTitle = appString("Private Email is off")
-            errorMessage = appString("Private Email is turned off in Settings.")
-            return
-        }
-        run { try await env.relay.activate(alias) }
-    }
-
-    private func pick(_ inbox: ForwardingInbox, for alias: EmailAlias) {
-        run { try await env.relay.setInbox(inbox, for: alias) }
-    }
-
-    private func saveLabel(_ alias: EmailAlias) {
-        var updated = alias
-        let trimmed = labelDraft.trimmingCharacters(in: .whitespaces)
-        updated.label = trimmed.isEmpty ? nil : trimmed
-        try? env.repository.updateAlias(updated)
-    }
-
-    private func changeDestination() {
-        let email = destinationDraft.trimmingCharacters(in: .whitespaces)
-        guard !email.isEmpty, let persona else { return }
-        env.repository.setDestinationEmail(email, for: persona)   // update the real email
-        run { try await env.relay.updateDestination(for: persona, to: email) }  // re-rotate aliases
     }
 
     private func run(_ operation: @escaping () async throws -> Void) {
+        guard !busy, let personaID = alias?.personaId else { return }
         busy = true
-        Task {
+        Task { @MainActor in
             defer { busy = false }
             do { try await operation() }
+            catch is CancellationError { }
+            catch let failure as VaultRepository.AliasLinkFailure {
+                guard env.repository.activePersona?.id == personaID else { return }
+                errorTitle = appString("Check the linked login"); errorMessage = failure.userMessage
+                errorOffersReset = false
+                Haptics.error()
+            }
             catch let failure as RelayService.Failure {
-                errorTitle = failure.userTitle
-                errorMessage = failure.userMessage
+                guard env.repository.activePersona?.id == personaID else { return }
+                errorTitle = failure.userTitle; errorMessage = failure.userMessage
                 errorOffersReset = failure.offersPrivateEmailReset
                 Haptics.error()
             } catch {
-                errorTitle = appString("Couldn’t reach the relay")
-                errorMessage = appString("Check your connection and iCloud, then try again.")
+                guard env.repository.activePersona?.id == personaID else { return }
+                errorTitle = appString("Couldn’t update the address")
+                errorMessage = appString("Check your connection and retry. This address is kept for you.")
                 Haptics.error()
             }
         }
     }
 
     private var errorBinding: Binding<Bool> {
-        Binding(get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil; errorOffersReset = false } })
+        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil; errorOffersReset = false } })
     }
 
-    /// The failure alert's deliberate recovery: reset Private Email when this
-    /// vault can't open its key, then report the result in the same alert.
     private func resetPrivateEmail() {
         Task {
             let result = await PrivateEmailReset.run(using: env.relay)
-            errorOffersReset = result.offersReset
-            errorTitle = result.title
-            errorMessage = result.message
+            errorTitle = result.title; errorMessage = result.message; errorOffersReset = result.offersReset
         }
     }
 }

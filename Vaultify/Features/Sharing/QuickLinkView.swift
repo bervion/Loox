@@ -6,6 +6,7 @@ import SwiftUI
 /// fragment. Also manages this item's active links (device-local revoke).
 struct QuickLinkView: View {
     let itemID: String
+    var ownerPersonaID: String? = nil
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
 
@@ -29,7 +30,10 @@ struct QuickLinkView: View {
     @State private var revokeError: String?
     @State private var paywallContext: LooxPaywallContext?
 
-    private var item: VaultItem? { env.repository.item(id: itemID) }
+    private var item: VaultItem? {
+        if let ownerPersonaID, env.repository.activePersona?.id != ownerPersonaID { return nil }
+        return env.repository.memberOwnedItems.first { $0.id == itemID && !$0.isTrashed && !$0.isUnsupportedSchema }
+    }
 
     var body: some View {
         content
@@ -42,6 +46,8 @@ struct QuickLinkView: View {
             .alert(Text(verbatim: revokeError ?? ""), isPresented: revokeErrorBinding) {
                 Button("OK", role: .cancel) {}
             }
+            .onChange(of: env.repository.activePersona?.id) { _, _ in dismiss() }
+            .onChange(of: env.session.state) { _, state in if state != .unlocked { dismiss() } }
     }
 
     private var revokeErrorBinding: Binding<Bool> {
@@ -238,7 +244,10 @@ struct QuickLinkView: View {
     private func create() async {
         // Re-entrancy guard: a double-tap queues two MainActor tasks; the
         // second must not mint a second link.
-        guard case .config = step, let item else { return }
+        guard case .config = step, let item,
+              env.session.state == .unlocked,
+              env.capabilities.availability(.shareLink, operation: .create) == .available else { return }
+        let personaID = env.repository.activePersona?.id
         step = .creating
         do {
             let link = try await env.looxLinks.createLink(
@@ -246,6 +255,8 @@ struct QuickLinkView: View {
                 expirySeconds: oneTime ? LooxLinkConfig.oneTimeFallbackExpirySeconds
                                        : expiry.seconds,
                 oneTime: oneTime)
+            guard env.session.state == .unlocked, env.repository.activePersona?.id == personaID,
+                  self.item != nil else { return }
             step = .result(link)
         } catch {
             step = .failed(SharingErrorMessage.text(for: error))
@@ -253,6 +264,8 @@ struct QuickLinkView: View {
     }
 
     private func revoke(_ record: LooxLinkRecord) async {
+        guard item != nil, env.session.state == .unlocked,
+              env.looxLinks.records.records.contains(where: { $0.shareId == record.shareId }) else { return }
         do {
             try await env.looxLinks.revoke(record)
         } catch {

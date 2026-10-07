@@ -11,13 +11,8 @@ import Foundation
     /// staging registry can't steer a production install (or vice versa).
     /// The fetch URL follows: each env serves its own signed document, and a
     /// cross-served one fails `wrongEnvironment` regardless of its signature.
-    #if DEBUG
-    static let primaryURL = URL(string: "https://config-staging.looxpassword.com/v1/domain-registry")!
-    nonisolated static let expectedEnv = "staging"
-    #else
-    static let primaryURL = URL(string: "https://config.looxpassword.com/v1/domain-registry")!
-    nonisolated static let expectedEnv = "production"
-    #endif
+    nonisolated static let primaryURL = URL(string: "https://config.looxpassword.com/v1/domain-registry")!
+    nonisolated static let expectedEnv = RelayConfig.environment
 
     /// Bumped on every applied registry. The trusted set itself lives in the
     /// nonisolated `AuxiliaryDomainRegistry` (model code reads it lock-free);
@@ -27,12 +22,19 @@ import Foundation
 
     @ObservationIgnored private let trustedKeys: [String: Data]
     @ObservationIgnored private let controlStore: SignedControlPlaneStore
+    @ObservationIgnored private let registryURL: URL
+    @ObservationIgnored private let environment: String
+    @ObservationIgnored var onApplied: (() -> Void)?
 
     init(trustedKeys: [String: Data] = CapabilityManifestVerifier.bundledTrustedKeys,
-         defaults: UserDefaults = .standard) {
+         defaults: UserDefaults = .standard,
+         registryURL: URL = DomainRegistryClient.primaryURL,
+         environment: String = DomainRegistryClient.expectedEnv) {
         self.trustedKeys = trustedKeys
+        self.registryURL = registryURL
+        self.environment = environment
         self.controlStore = SignedControlPlaneStore(
-            family: .domainRegistry, env: Self.expectedEnv,
+            family: .domainRegistry, env: environment,
             legacyVersionKey: "domain_registry_highest_version",
             legacyCacheKey: "domain_registry_v1", defaults: defaults)
     }
@@ -45,20 +47,21 @@ import Foundation
     func applyCached(now: Date = .now) {
         guard let cached = controlStore.currentBytes else { return }
         guard let document = try? DomainRegistryVerifier.verify(
-            documentData: cached, trustedKeys: trustedKeys, expectedEnv: Self.expectedEnv,
+            documentData: cached, trustedKeys: trustedKeys, expectedEnv: environment,
             now: now, highestAcceptedVersion: 0) else {   // rollback-vs-self is meaningless
             controlStore.dropBytesKeepingHighWater()
             return
         }
         controlStore.backfillCanonicalHashIfMissing(canonicalBytes: document.transcript)
-        AuxiliaryDomainRegistry.applyRemote(document.descriptors)
+        AuxiliaryDomainRegistry.applyRemote(document.descriptors, signedEnvelope: cached)
         appliedRevision += 1
+        onApplied?()
     }
 
     @discardableResult
     func refresh(now: Date = .now) async -> Bool {
         guard !trustedKeys.isEmpty else { return false }
-        var request = URLRequest(url: Self.primaryURL)
+        var request = URLRequest(url: registryURL)
         request.timeoutInterval = 15
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200 else { return false }
@@ -71,13 +74,14 @@ import Foundation
     @discardableResult
     func accept(documentData: Data, now: Date = .now) -> Bool {
         guard let document = try? DomainRegistryVerifier.verify(
-            documentData: documentData, trustedKeys: trustedKeys, expectedEnv: Self.expectedEnv,
+            documentData: documentData, trustedKeys: trustedKeys, expectedEnv: environment,
             now: now, highestAcceptedVersion: controlStore.highestVersion) else { return false }
         guard controlStore.reconcile(incomingVersion: document.registryVersion,
                                      canonicalBytes: document.transcript,
                                      signedBytes: documentData, now: now) == .accepted else { return false }
-        AuxiliaryDomainRegistry.applyRemote(document.descriptors)
+        AuxiliaryDomainRegistry.applyRemote(document.descriptors, signedEnvelope: documentData)
         appliedRevision += 1
+        onApplied?()
         return true
     }
 }

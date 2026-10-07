@@ -20,7 +20,7 @@ struct PrivateEmailMatch: Equatable {
         guard kind == .email || kind == .username, !value.isEmpty,
               let persona = repository.activePersona else { return nil }
         guard let alias = repository.aliases(forPersona: persona.id).first(where: {
-            "\($0.localPart)@\($0.emailDomain)".caseInsensitiveCompare(value) == .orderedSame
+            $0.resolvedAddress?.caseInsensitiveCompare(value) == .orderedSame
         }) else { return nil }
         let destination = repository.resolvedDestination(for: alias)
         let verified = destination.flatMap { dest in

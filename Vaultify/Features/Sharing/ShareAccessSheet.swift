@@ -8,6 +8,7 @@ import SwiftUI
 /// Fail-closed at the door: no iCloud account or no notification permission →
 /// the flow never starts (ADR-2).
 struct ShareAccessSheet: View {
+    enum Entry { case choose, approvalOnly }
     let itemID: String
     /// Resume entry (from the Notifications "Shares you sent" list): open
     /// straight into the approval config with this recipient pre-filled, so a
@@ -15,6 +16,10 @@ struct ShareAccessSheet: View {
     /// re-choosing the path or retyping the email. Create Share reuses the
     /// existing zone (matched by recipient), so no duplicate share is minted.
     var resumeEmail: String? = nil
+    /// Family deliberately enters the Approval Mode ceremony. A fake resume
+    /// address must never be used to skip the generic share-path chooser.
+    var entry: Entry = .choose
+    var ownerPersonaID: String? = nil
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
 
@@ -57,8 +62,14 @@ struct ShareAccessSheet: View {
     @State private var pollExhausted = false
     /// One-shot guard so the resume entry seeds the config exactly once.
     @State private var didAutoResume = false
+    @State private var enteredPersonaID: String?
 
-    private var item: VaultItem? { env.repository.item(id: itemID) }
+    private var item: VaultItem? { env.repository.memberOwnedItems.first { $0.id == itemID } }
+    private var scopeIsValid: Bool {
+        env.session.state == .unlocked
+            && env.repository.memberCanUseItem(itemID, personaID: ownerPersonaID ?? enteredPersonaID,
+                                               needsSnapshotFields: false)
+    }
 
     /// This item's passkeys (matched by relying party, same rule AND same
     /// source the detail screen uses). Reads the repository's already-decrypted
@@ -118,12 +129,16 @@ struct ShareAccessSheet: View {
             await pollForProfile(zoneName: zoneName)
         }
         .onAppear {
-            guard !didAutoResume, let email = resumeEmail else { return }
+            guard !didAutoResume else { return }
             didAutoResume = true
-            recipientEmail = email
+            enteredPersonaID = ownerPersonaID ?? env.repository.activePersona?.id
+            if let email = resumeEmail { recipientEmail = email }
+            guard resumeEmail != nil || entry == .approvalOnly else { return }
             step = .checking
             Task { await enter() }
         }
+        .onChange(of: env.repository.activePersona?.id) { _, _ in dismiss() }
+        .onChange(of: env.session.state) { _, state in if state != .unlocked { dismiss() } }
         .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
                              message: "You need an internet connection to revoke access. The share stays active until then.")
         .animation(Motion.standard, value: revokeTarget?.id)
@@ -131,6 +146,7 @@ struct ShareAccessSheet: View {
     }
 
     private func revoke(_ share: ItemShareRecord) async {
+        guard scopeIsValid, env.sharingStore.shares.contains(where: { $0.id == share.id }) else { return }
         do {
             try await env.approvalShare.revoke(zoneName: share.zoneName,
                                                inviteRecordName: share.inviteRecordName)
@@ -225,10 +241,12 @@ struct ShareAccessSheet: View {
     }
 
     private func enter() async {
+        guard scopeIsValid else { step = .failed(appString("This item is no longer available in this profile.")); return }
         if let blocker = await ApprovalPrerequisites.check() {
             step = .blocked(blocker)
             return
         }
+        guard scopeIsValid else { return }
         // Resuming: replay the scope the owner already chose. It is frozen on
         // the record at create time precisely so this sheet never asks twice —
         // and `allowMultipleDevices` MUST come from the record, because the
@@ -266,7 +284,10 @@ struct ShareAccessSheet: View {
     private func createShare() async {
         // Re-entrancy guard: a double-tapped button queues two MainActor
         // tasks; the second must not mint a second zone (review M2).
-        guard case .config = step else { return }
+        guard case .config = step, scopeIsValid else { return }
+        let authorizedCapabilities = capabilities
+        let authorizedDeviceScope = allowMultipleDevices
+        let authorizedRecipient = normalizedEmail
         step = .creating
         pollExhausted = false
         do {
@@ -278,15 +299,26 @@ struct ShareAccessSheet: View {
             // is found on the first poll tick and the share completes at once.
             let existingZoneName = SpaceShareZoneDedupe.existingZoneName(
                 recipientShares: env.sharingStore.shares(forRecipient: normalizedEmail),
-                activePersonaItemIds: Set(env.repository.activePersonaItems.map(\.id)))
+                activePersonaItemIds: Set(env.repository.memberOwnedItems.map(\.id)))
             // Carried separately: the invite artifacts to supersede belong to
             // THIS item's unfinished attempt, not to the shared zone.
             let pending = env.sharingStore.shares(forItem: itemID).first {
                 !$0.fingerprintConfirmed && $0.recipientLabel == normalizedEmail
             }
             let setup = try await env.approvalShare.createShare(
-                recipientEmail: normalizedEmail,
+                recipientEmail: authorizedRecipient,
                 existingZoneName: existingZoneName ?? pending?.zoneName)
+            // Keep the already-authorized pending attempt under its original
+            // item if a profile switch interrupts the network call. No grant
+            // values are published until the live ownership gate passes.
+            if !env.sharingStore.shares.contains(where: { $0.itemId == itemID && $0.zoneName == setup.zoneID.zoneName }) {
+                env.sharingStore.upsert(ItemShareRecord(
+                    itemId: itemID, zoneName: setup.zoneID.zoneName,
+                    recipientLabel: authorizedRecipient, grantId: nil,
+                    createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000), fingerprintConfirmed: false,
+                    plannedCapabilities: authorizedCapabilities, plannedAllowMultipleDevices: authorizedDeviceScope))
+            }
+            guard scopeIsValid else { return }
             // Pretty invite link (invite.looxpassword.com) — opens the app
             // directly on the recipient's phone instead of Safari/iCloud.
             // Fall back to the raw CKShare URL if minting fails (offline).
@@ -328,8 +360,9 @@ struct ShareAccessSheet: View {
                 createdAtUnixMs: Int64(Date().timeIntervalSince1970 * 1000),
                 fingerprintConfirmed: false, inviteRecordName: inviteRecordName,
                 dropRecordName: dropRecordName,
-                plannedCapabilities: capabilities,
-                plannedAllowMultipleDevices: allowMultipleDevices))
+                plannedCapabilities: authorizedCapabilities,
+                plannedAllowMultipleDevices: authorizedDeviceScope))
+            guard scopeIsValid else { return }
             step = .waiting(zoneID: setup.zoneID, shareURL: inviteURL,
                             rawShareURL: setup.shareURL)
         } catch {
@@ -417,6 +450,7 @@ struct ShareAccessSheet: View {
     /// from the record, so this publishes straight through to `.done`.
     private func activateCurrentShare(zoneName: String,
                                       profile: ShareActivationService.ParticipantProfile) async {
+        guard scopeIsValid else { return }
         guard let record = env.sharingStore.shares(forItem: itemID)
             .first(where: { $0.zoneName == zoneName }) else { return }
         step = .publishing
@@ -425,6 +459,7 @@ struct ShareAccessSheet: View {
 
     /// Resume entry where the profile already landed: fetch it, then publish.
     private func activate(record: ItemShareRecord) async {
+        guard scopeIsValid, record.itemId == itemID else { return }
         step = .publishing
         await apply(await env.shareActivation.activate(record: record))
     }
@@ -517,7 +552,7 @@ struct ShareAccessSheet: View {
     /// exactly the friction the picker exists to remove. Excludes anyone
     /// already on this item.
     private var suggestedRecipients: [String] {
-        let personaItemIds = Set(env.repository.activePersonaItems.map(\.id))
+        let personaItemIds = Set(env.repository.memberOwnedItems.map(\.id))
         let alreadyOnThisItem = Set(env.sharingStore.shares(forItem: itemID).map(\.recipientLabel))
         let labels = env.sharingStore.shares
             .filter { personaItemIds.contains($0.itemId) }

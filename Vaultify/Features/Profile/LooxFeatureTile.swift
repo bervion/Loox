@@ -2,9 +2,9 @@ import SwiftUI
 
 /// One gray tile inside a Loox hub section card (the iCloud+ "Saved to iCloud"
 /// tile idiom): a solid-tint icon badge, the feature title, and a short totals
-/// line with an optional live service-status dot. Tiles sit INSIDE a white
-/// section card, so they carry the fixed systemGray6-class fill themselves and
-/// no elevation of their own. Either pushes a destination or performs an
+/// line with an optional live service-status dot. Tiles sit inside a grouped
+/// section card on a live semantic fill with no elevation of their own.
+/// Either pushes a destination or performs an
 /// action (e.g. switching to the Watchtower tab).
 struct LooxFeatureTile<Destination: View>: View {
     @Environment(AppEnvironment.self) private var env
@@ -75,7 +75,7 @@ struct LooxFeatureTile<Destination: View>: View {
                         .vaultType(.subhead)
                         .fontWeight(.semibold)
                         .hidden()
-                    Text(title)
+                    Text(title.inAppLocalized)
                         .vaultType(.subhead)
                         .fontWeight(.semibold)
                         .themedForeground()
@@ -89,9 +89,9 @@ struct LooxFeatureTile<Destination: View>: View {
                 }
                 Text(verbatim: metric)
                     .vaultType(.footnote)
-                    .themedForeground(.secondary)
+                    .themedForeground(.secondaryBody)
                     .monospacedDigit()
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             // The dot sits INSIDE the indent column so the metric text always
             // starts flush with the title — and keeps its full width (the dot
@@ -100,21 +100,18 @@ struct LooxFeatureTile<Destination: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.s3)
-        .background(Self.tileFill, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .frame(minHeight: Metric.hitMin)
+        .background(Color(rgb: env.theme.active.surfacePressed))
+        .vaultCornerRadius(Radius.concentric(outer: Radius.lg, inset: Space.s4))
         .contentShape(.rect)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(title))
+        .accessibilityLabel(Text(title.inAppLocalized))
         .accessibilityValue(accessibilityValueText)
     }
 
-    /// Fixed systemGray6-class inner-tile pair (iCloud+ storage cards) — the
-    /// same documented fixed-tile class as the paywall's plan cards; a themed
-    /// role would repaint the grid on accent changes.
-    private static var tileFill: Color { VaultColors.dynamic(light: 0xF2F2F7, dark: 0x2C2C2E) }
-
     private var accessibilityValueText: Text {
         if let status {
-            return Text(verbatim: metric) + Text(verbatim: ", ") + Text(status.accessibilityLabel)
+            return Text(verbatim: metric) + Text(verbatim: ", ") + Text(status.accessibilityLabel.inAppLocalized)
         }
         return Text(verbatim: metric)
     }

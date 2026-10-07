@@ -5,6 +5,11 @@ import UserNotifications
 /// Decrypts vault records into an in-memory cache on unlock and performs CRUD,
 /// re-sealing payloads under the Vault Key. The cache is cleared on lock.
 @MainActor @Observable final class VaultRepository {
+    #if DEBUG
+    /// Test-only failure injection for the single atomic alias/item save.
+    @ObservationIgnored var aliasRelationSaveOverride: (() throws -> Void)?
+    @ObservationIgnored var itemUpdateCommitObserver: ((VaultItem, Date?) -> Void)?
+    #endif
     // Internal (not private) so the `+Folders` extension in a sibling file can
     // reach the store/session; the item seal/decrypt helpers stay private.
     let store: VaultStore
@@ -494,11 +499,20 @@ import UserNotifications
         try store.context.save()
         reload()
         noteLocalMutation()
+        didCommitItemUpdate(updated, passwordChangedAt: record.passwordChangedAt)
+    }
+
+    /// Ordinary item updates and atomic alias edits share the same post-save
+    /// effects, including cancellation/rescheduling of rotation reminders.
+    func didCommitItemUpdate(_ item: VaultItem, passwordChangedAt: Date?) {
+        #if DEBUG
+        itemUpdateCommitObserver?(item, passwordChangedAt)
+        #endif
         AnalyticsEngine.shared.log(.itemUpdated(item.category))
         if externalSideEffectsEnabled,
            SettingsStore.isRotationRemindersEnabled() {
             RotationNotificationService.shared.schedule(
-                item: updated, passwordChangedAt: record.passwordChangedAt)
+                item: item, passwordChangedAt: passwordChangedAt)
         }
     }
 

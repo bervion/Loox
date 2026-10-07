@@ -11,11 +11,9 @@ struct AffectedAccountsScreen: View {
     /// (login item, alias address) pairs for the active persona.
     private var affected: [(item: VaultItem, address: String)] {
         guard let persona = env.repository.activePersona else { return [] }
-        return env.repository.aliases(forPersona: persona.id).compactMap { alias in
-            guard let itemId = alias.boundItemId,
-                  let item = env.repository.item(id: itemId) else { return nil }
-            return (item, AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                                               relayDomain: alias.emailDomain))
+        return env.repository.linkedServices(for: persona.id).compactMap { link in
+            guard let item = env.repository.items(for: persona).first(where: { $0.id == link.itemID }) else { return nil }
+            return (item, link.address)
         }
     }
 
@@ -24,21 +22,28 @@ struct AffectedAccountsScreen: View {
             if affected.isEmpty {
                 Section {
                     Text("No accounts here use a private address.")
-                        .themedForeground(.secondary)
+                        .themedForeground(.secondaryBody)
                 }
                 .listRowBackground(VaultColors.surface)
             } else {
                 Section {
                     ForEach(affected, id: \.item.id) { entry in
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: Space.s1) {
                             Text(verbatim: entry.item.title).vaultType(.body).themedForeground(.primary)
-                            Text(verbatim: entry.address).vaultType(.caption).themedForeground(.secondary)
+                            Text(verbatim: entry.address).vaultType(.caption).themedForeground(.secondaryBody)
                         }
                     }
                 } footer: {
-                    Text("Update these accounts to a different email so you keep receiving password resets and important mail.")
+                    Text("Update these accounts to a different email so you keep receiving password resets and important mail.").themedForeground(.secondaryBody)
                 }
                 .listRowBackground(VaultColors.surface)
+            }
+            if let persona = env.repository.activePersona {
+                Section {
+                    NavigationLink { AliasLinkedServicesScreen(personaID: persona.id) } label: {
+                        Text("Review saved logins")
+                    }
+                }.listRowBackground(VaultColors.surface)
             }
         }
         .navigationTitle(Text("Affected accounts"))

@@ -23,6 +23,19 @@ nonisolated extension AppTheme {
 
     // MARK: Text
     var textDisabled: UInt32 { placeholderText }
+    /// Normal-sized explanatory and status text on content surfaces. Opt-in
+    /// roles keep the existing control/icon palette while meeting the body
+    /// text contrast floor on cards, grouped canvas and pressed Member tiles.
+    var secondaryBodyText: UInt32 { bodyTextColor(secondaryText) }
+    var successBodyText: UInt32 { bodyTextColor(success) }
+    var warningBodyText: UInt32 { bodyTextColor(warning) }
+
+    private func bodyTextColor(_ color: UInt32) -> UInt32 {
+        [background, secondaryBackground, groupedBackground, elevatedBackground,
+         controlBackground, surfacePressed].reduce(color) {
+            RGBMath.ensureContrast($0, on: $1, floor: 4.5)
+        }
+    }
 
     // MARK: Accent
     /// Low-emphasis accent surface (banners, soft chips, secondary buttons).

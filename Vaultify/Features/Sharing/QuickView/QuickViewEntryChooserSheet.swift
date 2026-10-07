@@ -6,6 +6,7 @@ import SwiftUI
 struct QuickViewEntryChooserSheet: View {
     let itemID: String
     let defaultSelectedFieldIDs: Set<String>
+    var ownerPersonaID: String? = nil
 
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
@@ -62,14 +63,27 @@ struct QuickViewEntryChooserSheet: View {
         .tutorialHost(env.tutorial, flowIDs: ["quick-view"])
         .task { env.tutorial.startIfNeeded(.quickView) }
         .onDisappear { env.tutorial.cancelPendingStart() }
+        .onChange(of: env.repository.activePersona?.id) { _, _ in flow?.cancel(); flow = nil; dismiss() }
+        .onChange(of: env.session.state) { _, state in
+            if state != .unlocked { flow?.cancel(); flow = nil; dismiss() }
+        }
     }
 
     private func startFlow(code: String) {
+        let personaID = ownerPersonaID ?? env.repository.activePersona?.id
+        guard env.session.state == .unlocked,
+              env.repository.memberCanUseItem(itemID, personaID: personaID, needsSnapshotFields: true),
+              QuickViewExposureProvider.entryVisible(manifestExposure: env.capabilities.quickViewExposure),
+              env.capabilities.availability(.quickView, operation: .create) == .available else {
+            dismiss()
+            return
+        }
         let model = QuickViewApprovalFlowModel(
             itemID: itemID, defaultSelectedFieldIDs: defaultSelectedFieldIDs,
             vaultSession: env.session,
             repository: env.repository, history: env.quickViewHistory,
-            capabilities: env.capabilities, signerKeyset: env.quickViewSignerKeyset)
+            capabilities: env.capabilities, signerKeyset: env.quickViewSignerKeyset,
+            ownerPersonaID: personaID)
         flow = model
         Task { await model.resolve(code: code) }
     }

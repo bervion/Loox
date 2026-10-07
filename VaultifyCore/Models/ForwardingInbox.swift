@@ -38,6 +38,8 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
     /// enforces it) to route forwarding by id instead of raw email.
     var relayDestinationID: String?
     var verificationStatus: DestinationVerificationStatus
+    /// Changes whenever the exact email or destination identity changes, including A to B to A.
+    var verificationGeneration: UInt64
     var sortIndex: Int
     var createdAt: Date
     var updatedAt: Date
@@ -50,6 +52,7 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
          isDefault: Bool = false,
          relayDestinationID: String? = nil,
          verificationStatus: DestinationVerificationStatus = .unverified,
+         verificationGeneration: UInt64 = 0,
          sortIndex: Int = 0,
          createdAt: Date = .now,
          updatedAt: Date = .now) {
@@ -61,6 +64,7 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
         self.isDefault = isDefault
         self.relayDestinationID = relayDestinationID
         self.verificationStatus = verificationStatus
+        self.verificationGeneration = verificationGeneration
         self.sortIndex = sortIndex
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -70,7 +74,8 @@ nonisolated struct ForwardingInbox: Identifiable, Equatable, Sendable {
         ForwardingInboxSecret(email: email, label: label, source: source,
                               personaId: personaId, isDefault: isDefault,
                               relayDestinationID: relayDestinationID,
-                              verificationStatus: verificationStatus)
+                              verificationStatus: verificationStatus,
+                              verificationGeneration: verificationGeneration)
     }
 }
 
@@ -86,12 +91,14 @@ nonisolated struct ForwardingInboxSecret: Codable, Sendable {
     var isDefault: Bool
     var relayDestinationID: String?
     var verificationStatus: DestinationVerificationStatus
+    var verificationGeneration: UInt64
 
     init(email: String, label: String? = nil,
          source: ForwardingInboxSource = .manual,
          personaId: String? = nil, isDefault: Bool = false,
          relayDestinationID: String? = nil,
-         verificationStatus: DestinationVerificationStatus = .unverified) {
+         verificationStatus: DestinationVerificationStatus = .unverified,
+         verificationGeneration: UInt64 = 0) {
         self.email = email
         self.label = label
         self.source = source
@@ -99,6 +106,7 @@ nonisolated struct ForwardingInboxSecret: Codable, Sendable {
         self.isDefault = isDefault
         self.relayDestinationID = relayDestinationID
         self.verificationStatus = verificationStatus
+        self.verificationGeneration = verificationGeneration
     }
 
     init(from decoder: any Decoder) throws {
@@ -109,6 +117,7 @@ nonisolated struct ForwardingInboxSecret: Codable, Sendable {
         personaId = try c.decodeIfPresent(String.self, forKey: .personaId)
         isDefault = try c.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
         relayDestinationID = try c.decodeIfPresent(String.self, forKey: .relayDestinationID)
+        verificationGeneration = try c.decodeIfPresent(UInt64.self, forKey: .verificationGeneration) ?? 0
         verificationStatus = try c.decodeIfPresent(DestinationVerificationStatus.self,
                                                    forKey: .verificationStatus) ?? .unverified
     }

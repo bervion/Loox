@@ -17,6 +17,7 @@ struct LoginEditorSections: View {
     var onProtectedDeleteBlocked: () -> Void = {}
     /// Lets a locked Extra-Protection row re-raise the editor's unlock prompt.
     var onRequestExtraProtectionUnlock: () -> Void = {}
+    var onAliasDetached: () -> Void = {}
     @Environment(AppEnvironment.self) private var env
     @State private var selectedPasskey: PasskeyInfo?
     /// The website row just created via "Add Website" — it claims keyboard focus
@@ -25,6 +26,7 @@ struct LoginEditorSections: View {
     /// Present the alias's management screen (pause/delete live there, not in
     /// the editor — the editor only ever attaches/detaches a field).
     @State private var showManageAlias = false
+    @State private var aliasToDetach: DynamicField?
 
     /// Field kinds shown in the Credentials section, in template order.
     private let credentialKinds: Set<FieldKind> = [.username, .email, .password, .totp]
@@ -63,6 +65,19 @@ struct LoginEditorSections: View {
             }
         }
         .listRowBackground(VaultColors.surface)
+        .confirmationDialog("Unlink this service?", isPresented: Binding(
+            get: { aliasToDetach != nil }, set: { if !$0 { aliasToDetach = nil } }), titleVisibility: .visible) {
+            Button("Unlink", role: .destructive) {
+                if let field = aliasToDetach,
+                   !ExtraProtectionDelete.blocks([field], level2Key: env.session.level2Key?.bytes) {
+                    draft.fields.removeAll { $0.id == field.id }
+                    onAliasDetached()
+                }
+                aliasToDetach = nil
+            }
+        } message: {
+            Text("This removes the private email from this vault item. Forwarding and the service account stay unchanged.")
+        }
         .sheet(item: $selectedPasskey) { PasskeyDetailSheet(passkey: $0) }
         .sheet(isPresented: $showManageAlias) {
             if let attached = attachedPrivateEmail {
@@ -88,7 +103,8 @@ struct LoginEditorSections: View {
     /// a paused alias still shows the PRIVATE treatment instead of silently
     /// reverting to a plain-email look.
     private func privateEmailMatch(for field: DynamicField) -> PrivateEmailMatch? {
-        guard field.kind == .email || field.kind == .username else { return nil }
+        guard field.kind == .email, field.label == AliasWriteback.privateEmailLabel,
+              let canonical = try? AliasWriteback.readableField(on: draft), canonical.id == field.id else { return nil }
         return PrivateEmailMatch.resolve(kind: field.kind, value: field.value, repository: env.repository)
     }
 
@@ -110,13 +126,9 @@ struct LoginEditorSections: View {
         // mono line at a size that fits whole, forwards-to underneath.
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: Space.s2) {
-                TextField("Label", text: Binding(
-                    get: { appLabel(field.wrappedValue.label) },
-                    set: { field.wrappedValue.label = $0 }
-                ))
-                .vaultType(.caption)
-                .themedForeground(.secondary)
-                .platformAutocapitalization(.words)
+                Text("Private email")
+                    .vaultType(.caption)
+                    .themedForeground(.secondary)
 
                 Spacer(minLength: Space.s2)
                 PrivateEmailBadge()
@@ -126,19 +138,17 @@ struct LoginEditorSections: View {
                 Text(verbatim: field.wrappedValue.value)
                     .vaultType(.subhead)
                     .themedForeground()
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
                 Spacer(minLength: Space.s2)
                 Button {
                     // Detach only: the alias itself is untouched (INV kept alive) —
                     // pause/delete lives in Private Email management, not here.
-                    field.wrappedValue.value = ""
-                    Haptics.tap()
+                    aliasToDetach = field.wrappedValue
                 } label: {
                     VaultIcon(Icons.close, size: 12)
                         .themedForeground(.secondary)
-                        .padding(6)
-                        .background(VaultColors.fill, in: Circle())
+                        .frame(minWidth: Metric.hitMin, minHeight: Metric.hitMin)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Detach private email"))
@@ -155,42 +165,11 @@ struct LoginEditorSections: View {
     /// pill next to a bare text link) — both single-line so they sit side by
     /// side even at SE width.
     private func privateEmailActionsRow(attached: (field: DynamicField, match: PrivateEmailMatch)) -> some View {
-        HStack(spacing: Space.s2) {
-            if let destination = attached.match.destination {
-                Button {
-                    if let idx = draft.fields.firstIndex(where: { $0.id == attached.field.id }) {
-                        draft.fields[idx].value = destination
-                    }
-                    Haptics.tap()
-                } label: {
-                    HStack(spacing: 5) {
-                        VaultIcon(Icons.person, size: 12)
-                        Text("Use real email instead").vaultType(.footnote)
-                    }
-                    .themedForeground()
-                    .lineLimit(1)
-                    .fixedSize()
-                    .padding(.horizontal, Space.s3)
-                    .padding(.vertical, Space.s2)
-                    .background(VaultColors.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
-                }
-                .buttonStyle(.plain)
-            }
-            Button { showManageAlias = true } label: {
-                Text("Manage alias…")
-                    .vaultType(.footnote).themedForeground(.accent)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .padding(.horizontal, Space.s3)
-                    .padding(.vertical, Space.s2)
-                    .background(VaultColors.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(VaultColors.separatorColor, lineWidth: 0.5))
-            }
-            .buttonStyle(.plain)
-            Spacer(minLength: 0)
+        Button { showManageAlias = true } label: {
+            Label { Text("Manage private email") } icon: { VaultIcon(Icons.mail) }
+                .frame(maxWidth: .infinity, minHeight: Metric.hitMin, alignment: .leading)
         }
-        .padding(.vertical, 2)
+        .buttonStyle(.themedCompact)
         .listRowSeparator(.hidden)
     }
 
@@ -199,7 +178,7 @@ struct LoginEditorSections: View {
     /// exactly as the hand-rolled box it replaces did.
     private var privateEmailInfoNote: some View {
         VaultInfoBanner(.info, icon: Icons.info,
-                        text: "Switching to your real email keeps the alias alive. Pause or delete it in Private Email.")
+                        text: "Unlinking keeps this address receiving mail. Manage forwarding in Private Email.")
             .listRowSeparator(.hidden)
     }
 

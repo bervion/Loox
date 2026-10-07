@@ -13,6 +13,8 @@ nonisolated struct UITestConfiguration: Equatable, Sendable {
         /// lock: the test drives Settings "Lock Now" itself and then verifies
         /// the slide-to-unlock requirement survives a kill and relaunch.
         case vaultPanicRestart = "vault-panic-restart"
+        /// Local, synthetic private-email associations. No relay or mail calls.
+        case privateEmailMemberUX = "private-email-member-ux"
     }
 
     let fixture: Fixture?

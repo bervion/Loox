@@ -55,6 +55,11 @@ import Foundation
     private let vaultSession: VaultSession
     private let repository: VaultRepository
     private let history: QuickViewHistoryStore
+    private let ownerPersonaID: String?
+    private var generation = 0
+    #if DEBUG
+    var resolveOverride: ((String) async throws -> QuickViewAPIClient.ResolvedSession)?
+    #endif
     /// Optional-capability breaker sink (INV-CAP-03: one per service, never
     /// shared) — weak + optional so tests without a `CapabilityStore` run
     /// unchanged; an outage here never touches the core vault.
@@ -68,7 +73,8 @@ import Foundation
     init(itemID: String, defaultSelectedFieldIDs: Set<String>, vaultSession: VaultSession,
         repository: VaultRepository,
         history: QuickViewHistoryStore, api: QuickViewAPIClient = QuickViewAPIClient(),
-        capabilities: CapabilityStore? = nil, signerKeyset: QuickViewSignerKeysetClient? = nil) {
+        capabilities: CapabilityStore? = nil, signerKeyset: QuickViewSignerKeysetClient? = nil,
+        ownerPersonaID: String? = nil) {
         self.itemID = itemID
         self.selectedFieldIDs = defaultSelectedFieldIDs
         self.vaultSession = vaultSession
@@ -77,9 +83,23 @@ import Foundation
         self.api = api
         self.capabilities = capabilities
         self.signerKeyset = signerKeyset
+        self.ownerPersonaID = ownerPersonaID ?? repository.activePersona?.id
     }
 
     private var genericErrorMessage: String { appString("Start again in the browser.") }
+
+    private var scopeIsValid: Bool {
+        vaultSession.state == .unlocked
+            && repository.memberCanUseItem(itemID, personaID: ownerPersonaID, needsSnapshotFields: true)
+            && (capabilities == nil || (capabilities?.requestPolicyAllows(.quickView, operation: .create) == true
+                && QuickViewExposureProvider.entryVisible(manifestExposure: capabilities?.quickViewExposure)))
+    }
+
+    private func mayContinue(_ attempt: Int) -> Bool {
+        guard generation == attempt else { return false }
+        guard scopeIsValid else { state = .error(genericErrorMessage); return false }
+        return true
+    }
 
     /// Classify an API failure for the capability store: verified operator
     /// state persists; infra failures feed the breaker; everything else means
@@ -103,16 +123,32 @@ import Foundation
     /// has no digest to check. Either way the server resolves the extracted
     /// code as an opaque locator.
     func resolve(code: String) async {
+        guard scopeIsValid else { state = .error(genericErrorMessage); return }
+        generation += 1
+        let attempt = generation
         state = .resolving
         let qr = QuickViewQRCode.parse(code)
         let locator = qr?.humanCode ?? code
-        guard capabilities?.allowRequest(.quickView) ?? true else {
+        let store = capabilities
+        let admission = store?.admitRequest(.quickView)
+        guard store == nil || admission != nil else {
             state = .error(genericErrorMessage)
             return
         }
+        var outcome = CapabilityStore.RemoteStatusOutcome.cancelled
+        defer { if let admission { store?.finishRequest(admission, outcome: outcome) } }
         do {
-            let resolved = try await api.resolve(code: locator)
-            capabilities?.noteSuccess(.quickView)
+            let resolved: QuickViewAPIClient.ResolvedSession
+            #if DEBUG
+            if let resolveOverride { resolved = try await resolveOverride(locator) }
+            else { resolved = try await api.resolve(code: locator) }
+            #else
+            resolved = try await api.resolve(code: locator)
+            #endif
+            outcome = .responded
+            guard !Task.isCancelled else { return }
+            guard generation == attempt else { return }
+            guard scopeIsValid else { state = .error(genericErrorMessage); return }
             let encHash = Data(SHA256.hash(data: resolved.browserEncPublicKey))
             let sigHash = Data(SHA256.hash(data: resolved.browserSigPublicKey))
             let envelope = try QuickViewSessionEnvelopeVerifier.verify(
@@ -149,7 +185,19 @@ import Foundation
                 await api.bindAdvisory(sessionID: envelope.sessionID, assertion: assertion)
             }
         } catch {
-            note(error)
+            if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
+                outcome = .cancelled
+                return
+            }
+            switch error {
+            case QuickViewAPIError.capability(let mode, let retryAfter):
+                outcome = .operatorSignal(.init(mode: mode, retryAfter: retryAfter))
+            case QuickViewAPIError.server(let status, _) where (502...504).contains(status):
+                outcome = .infrastructureFailure
+            case is URLError: outcome = .infrastructureFailure
+            default: outcome = .responded
+            }
+            guard generation == attempt, scopeIsValid else { return }
             state = .error(genericErrorMessage)
         }
     }
@@ -157,11 +205,14 @@ import Foundation
     /// SAS mismatch — hard abort, no "continue anyway" exists in the UI that
     /// calls this.
     func abortSASMismatch() {
+        generation += 1
         history.record(itemID: itemID, result: .cancelled)
         state = .idle
     }
 
     func cancel() {
+        generation += 1
+        guard state != .idle, state != .done else { return }
         history.record(itemID: itemID, result: .cancelled)
         state = .idle
     }
@@ -170,7 +221,9 @@ import Foundation
     /// compose → seal → upload.
     func approve() async {
         guard case .verified(let session) = state else { return }
+        guard scopeIsValid else { state = .error(genericErrorMessage); return }
         state = .approving
+        let attempt = generation
         do {
             guard repository.item(id: itemID) != nil else {
                 state = .error(genericErrorMessage)
@@ -178,7 +231,8 @@ import Foundation
             }
             try await vaultSession.requireBiometrics(
                 reason: appString("Approve sending fields to your browser"))
-            guard let freshItem = repository.item(id: itemID) else {
+            guard generation == attempt else { return }
+            guard scopeIsValid, let freshItem = repository.item(id: itemID) else {
                 state = .error(genericErrorMessage)
                 return
             }
@@ -186,6 +240,8 @@ import Foundation
                 item: freshItem, selectedFieldIDs: selectedFieldIDs,
                 includeCurrentTOTP: includeCurrentTOTP,
                 sessionExpiresAtUnixMs: session.expiresAtUnixMs)
+            guard generation == attempt else { return }
+            guard scopeIsValid else { state = .error(genericErrorMessage); return }
 
             // 32 random bytes — NOT a UUID string: the AAD transcript binds
             // `approval_id` as raw bytes (frozen vector), never UTF-8.
@@ -207,6 +263,7 @@ import Foundation
             let assertion = await QuickViewAttestation.assertUpload(
                 api: api, sessionID: session.sessionID, sessionIDBytes: session.sessionIDBytes,
                 uploadBody: uploadBody)
+            guard mayContinue(attempt) else { return }
             // The server rejects an assertion-less /payload (fail-closed,
             // INV-QV-24) — a naked upload is a guaranteed 401 that burns the
             // session attempt. Fail here with the same user-facing message,
@@ -231,9 +288,11 @@ import Foundation
                 guard await LooxEntitlementClientHooks.refreshHandler?() == true else {
                     throw QuickViewAPIError.server(status: 409, code: "entitlement_refresh_required")
                 }
+                guard mayContinue(attempt) else { return }
                 let retryAssertion = await QuickViewAttestation.assertUpload(
                     api: api, sessionID: session.sessionID, sessionIDBytes: session.sessionIDBytes,
                     uploadBody: uploadBody)
+                guard mayContinue(attempt) else { return }
                 // Same fail-closed rule as the first attempt.
                 if QuickViewConfig.assertionRequired, retryAssertion == nil {
                     throw QuickViewAPIError.unauthorized
@@ -244,17 +303,20 @@ import Foundation
                     aad: aadBytes,
                     assertion: retryAssertion)
             }
+            guard generation == attempt else { return }
             capabilities?.noteSuccess(.quickView)
 
             history.record(itemID: itemID, result: .completed)
             state = .done
         } catch let error where BiometricAuth.classify(error) == .cancelled {
+            guard generation == attempt else { return }
             // `classify` also reads the "Enter Password" fallback as a dismissal,
             // which the hand-rolled LAError check here used to miss and record
             // as a failure.
             history.record(itemID: itemID, result: .cancelled)
             state = .idle
         } catch {
+            guard generation == attempt else { return }
             // Composer/network/crypto errors all read the same calm, generic
             // way — never a state-specific branch (plan.md failure discipline).
             note(error)

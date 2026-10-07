@@ -1,330 +1,155 @@
 import SwiftUI
 
-/// Manage the active persona's email aliases against the LIVE receive-only
-/// relay. A persona has one stable alias plus any number of per-site aliases.
-/// Creating an alias reserves it locally then activates it on the relay; an
-/// activation that fails (offline, no iCloud) leaves it reserved with a
-/// tap-to-activate affordance — local state never lies about what's live.
+/// The addresses are the protagonist; linked Login records and receiving
+/// settings have their own destinations and remain usable offline.
 struct PersonaAliasesScreen: View {
     @Environment(AppEnvironment.self) private var env
-    @State private var showingPerSiteEditor = false
-    @State private var busyAliasID: String?
-    @State private var errorTitle = ""
-    @State private var errorMessage: String?
-    @State private var errorOffersReset = false
-    @State private var missingEmail = false
-    @State private var pendingPause: EmailAlias?
-    @State private var pendingDelete: EmailAlias?
-    @State private var verificationInboxID: String?
+    @State private var showingEditor = false
+    @State private var createdAliasID: String?
     @State private var defaultDomainID = PrivateEmailDomainDefault.domainID
+    @State private var verificationInboxID: String?
+    @State private var verificationToken: UUID?
     @State private var paywallContext: LooxPaywallContext?
 
     private var persona: Persona? { env.repository.activePersona }
     private var gate: PrivateEmailGate { PrivateEmailGate(env) }
+    private var visibleInboxIDs: Set<String> {
+        guard let persona else { return [] }
+        var ids = Set(env.repository.defaultInbox(for: persona).map { [$0.id] } ?? [])
+        for alias in env.repository.aliases(forPersona: persona.id) {
+            if let id = alias.forwardingInboxID { ids.insert(id) }
+            for inbox in env.repository.forwardingInboxes where inbox.email == alias.forwardingTarget {
+                ids.insert(inbox.id)
+            }
+        }
+        return ids
+    }
 
     var body: some View {
         List {
-            // Contextual capability state (offline ≠ outage ≠ maintenance ≠
-            // disabled ≠ retired). Local records below stay visible in EVERY
-            // state — only network-dependent actions gate.
             PrivateEmailBannerSection()
+            if let persona {
+                addressSection(persona, tier: .perSite, title: "Addresses for services")
+                addressSection(persona, tier: .persona, title: "Addresses for many places")
+                Section {
+                    NavigationLink { AliasLinkedServicesScreen(personaID: persona.id) } label: {
+                        HStack(spacing: Space.s3) {
+                            VaultIcon(Icons.globe, size: Metric.iconInline).themedForeground(.iconSecondary)
+                            Text("Linked services").vaultType(.body).themedForeground(.primary)
+                            Spacer(minLength: Space.s2)
+                            Text(verbatim: String(env.repository.linkedServices(for: persona.id).count))
+                                .vaultType(.subhead).themedForeground(.secondaryBody)
+                        }.frame(minHeight: Metric.hitMin)
+                    }
+                }.listRowBackground(VaultColors.surface)
+                if gate.allows(.create) && !AuxiliaryDomainRegistry.creatableEmailDomains.isEmpty {
+                    Section {
+                        Button { guardQuota { showingEditor = true } } label: {
+                            Label { Text("Create private email") } icon: { VaultIcon(Icons.add, size: Metric.iconInline) }
+                                .frame(maxWidth: .infinity)
+                        }.buttonStyle(.themedProminent)
+                    }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+                }
+                receivingSection(persona)
+            }
+
+            let _ = env.domainRegistry.appliedRevision
+            if gate.allows(.create) {
+                AliasDomainPickerSection(domainID: $defaultDomainID, footer: "New private addresses use this domain.")
+                    .listRowBackground(VaultColors.surface)
+            }
+            if gate.bannerState == .available, let inbox = gate.unverifiedDestination {
+                Section {
+                    VaultInfoBanner(.warning, title: "Confirm your inbox",
+                        verbatimText: appString("Confirm \(EmailMask.masked(inbox.email)) to receive forwarded mail."),
+                        actionLabel: "Confirm email", action: { verificationInboxID = inbox.id })
+                        .subtle().inList()
+                }
+            }
+            PrivateEmailReceiveOnlySection(hasActionableNotice: gate.bannerState != .available || gate.unverifiedDestination != nil)
             if case .retired = gate.bannerState {
                 Section {
                     NavigationLink { AffectedAccountsScreen() } label: {
                         Label { Text("Review affected accounts") } icon: { VaultIcon(Icons.archive) }
                     }
-                }
-                .listRowBackground(VaultColors.surface)
-            }
-
-            Section {
-                VStack(spacing: Space.s3) {
-                    verificationBanner
-                    receiveOnlyBanner
-                }
-                // Keep the List section mask outside the modest banner corners.
-                .padding(.vertical, Space.s3)
-            }
-            .listRowBackground(Color.clear)
-            // Full row width: with the default list insets the banner's own
-            // rounded background rendered narrower than every card below it.
-            .listRowInsets(EdgeInsets())
-
-            // PROTAGONIST FIRST (DNA #1): the user comes here for their
-            // addresses and whether each one is forwarding — the plumbing
-            // (destination inbox, default domain) is configuration and reads
-            // below the address lists, not above them.
-            if let persona {
-                personaAliasSection(persona)
-                perSiteSection(persona)
-            }
-
-            // Where mail lands — masked overview; full addresses live inside.
-            Section("Delivery") {
-                NavigationLink { ForwardingInboxScreen() } label: {
-                    if let persona, let dest = env.repository.newAliasDestination(for: persona) {
-                        LabeledContent { Text(verbatim: EmailMask.masked(dest)) }
-                            label: { Text("Forwarding to") }
-                    } else {
-                        Text("Forwarding inboxes")
-                    }
-                }
-            }
-            .listRowBackground(VaultColors.surface)
-
-            // Default mail domain for every create flow that doesn't ask
-            // (reusable-address creation, editor prefill, item-editor quick
-            // action). Reading appliedRevision re-renders this screen when a
-            // registry lands AFTER first render — otherwise the picker would
-            // stay invisible until the next launch.
-            let _ = env.domainRegistry.appliedRevision
-            // Hidden with the create affordances: a picker that says "New
-            // private addresses use this domain" while nothing can be created
-            // contradicts the banner above it.
-            if canCreate {
-                AliasDomainPickerSection(domainID: $defaultDomainID,
-                                         footer: "New private addresses use this domain.")
-                    .listRowBackground(VaultColors.surface)
+                }.listRowBackground(VaultColors.surface)
             }
         }
+        .themedFormBackground()
         .navigationTitle(Text("Private Email"))
-        .navigationDestination(item: $verificationInboxID) { inboxID in
-            ForwardingInboxDetailScreen(inboxID: inboxID)
-        }
-        // Non-blocking, contextual — never at app startup (INV-CAP-02).
+        .navigationDestination(item: $verificationInboxID) { ForwardingInboxDetailScreen(inboxID: $0) }
+        .navigationDestination(item: $createdAliasID) { AliasDetailScreen(aliasID: $0) }
         .task {
             await gate.refresh()
-            // A pushed screen, so the root host covers it — no local host needed.
             env.tutorial.startIfNeeded(.privateEmail)
         }
-        // A tour asked for but not yet shown must not pop over another screen.
-        .onDisappear { env.tutorial.cancelPendingStart() }
-        .sheet(isPresented: $showingPerSiteEditor) {
-            if let persona { AliasEditorSheet(persona: persona, onCreated: { activate($0) }) }
+        .onAppear { verificationToken = env.destinationVerification.register(visibleInboxIDs) }
+        .onChange(of: visibleInboxIDs) { _, ids in
+            if let verificationToken { env.destinationVerification.update(verificationToken, inboxIDs: ids) }
         }
-        // Pause is reversible later (relay keeps the row) — calm confirmation, not destructive.
-        .confirmationDialog("Pause forwarding?", isPresented: pauseBinding,
-                            titleVisibility: .visible, presenting: pendingPause) { alias in
-            Button("Pause forwarding") { Haptics.tap(); disableAlias(alias) }
-        } message: { _ in
-            Text("New messages sent to this address will no longer reach your inbox. You can turn forwarding back on later.")
+        .onChange(of: env.repository.activePersona?.id) { _, _ in
+            createdAliasID = nil; verificationInboxID = nil; showingEditor = false
         }
-        // Permanent delete: address can never be restored or re-issued (backend tombstone).
-        .confirmationDialog("Delete this private address permanently?", isPresented: deleteBinding,
-                            titleVisibility: .visible, presenting: pendingDelete) { alias in
-            Button("Delete permanently", role: .destructive) { Haptics.error(); remove(alias) }
-        } message: { _ in
-            Text("This address will stop forwarding and can never be restored or issued to anyone else. Accounts still using this address may no longer be able to send you password resets or important mail.")
+        .onDisappear {
+            env.tutorial.cancelPendingStart()
+            if let verificationToken { env.destinationVerification.unregister(verificationToken) }
+            verificationToken = nil
         }
-        // Title follows the failure: a consent gate and an outage are different
-        // problems with different fixes, and a shared heading hid that.
-        .relayFailureAlert(title: errorTitle, message: errorMessage, isPresented: errorBinding,
-                           offersReset: errorOffersReset) { resetPrivateEmail() }
-        .alert(Text("Add an email first"), isPresented: $missingEmail) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Add an email to this identity’s profile. That’s where your aliases forward to.")
+        .sheet(isPresented: $showingEditor) {
+            if let persona { AliasEditorSheet(persona: persona, onCreated: { createdAliasID = $0.id }) }
         }
         .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
     }
 
-    /// Over-quota upsell gate (§5.3) for BOTH create flows. Retained = active
-    /// + paused across the whole vault — the quota follows the subscription
-    /// identity, not the persona (§3.2). Pausing/deleting/detail never gates.
+    private func addressSection(_ persona: Persona, tier: AliasTier, title: LocalizedStringKey) -> some View {
+        let aliases = env.repository.aliases(forPersona: persona.id).filter { $0.tier == tier }
+        return Section {
+            if aliases.isEmpty {
+                Text(tier == .perSite ? "Give each service its own address." : "Keep one address for several services.")
+                    .vaultType(.subhead).themedForeground(.secondaryBody)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(aliases) { alias in
+                NavigationLink { AliasDetailScreen(aliasID: alias.id) } label: {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text(verbatim: alias.resolvedAddress ?? appString("Domain unavailable"))
+                            .vaultType(.body).themedForeground(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let label = alias.label ?? alias.boundDomain, !label.isEmpty {
+                            Text(verbatim: label).vaultType(.caption).themedForeground(.secondaryBody)
+                        }
+                        Text(verbatim: PrivateEmailStatusPresentation.label(alias))
+                            .vaultType(.caption).themedForeground(PrivateEmailStatusPresentation.role(alias))
+                    }.frame(minHeight: Metric.hitMin, alignment: .leading)
+                }
+            }
+        } header: { Text(title) }
+        .listRowBackground(VaultColors.surface)
+    }
+
+    private func receivingSection(_ persona: Persona) -> some View {
+        Section("Receiving mail") {
+            if let inbox = env.repository.defaultInbox(for: persona) {
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Text("For new addresses").vaultType(.footnote).themedForeground(.secondaryBody)
+                    PrivateEmailRecipientValue(email: inbox.email)
+                }
+                NavigationLink { ForwardingInboxDetailScreen(inboxID: inbox.id) } label: {
+                    Text("Inbox details")
+                }
+            } else {
+                NavigationLink { ForwardingInboxScreen() } label: { Text("Add a forwarding inbox") }
+            }
+            NavigationLink { ForwardingInboxScreen() } label: { Text("Manage forwarding inboxes") }
+        }.listRowBackground(VaultColors.surface)
+    }
+
     private func guardQuota(_ proceed: () -> Void) {
         guard env.entitlements.purchasesEnabled else { return proceed() }
         let retained = env.repository.aliases.filter { $0.status == .active || $0.status == .paused }.count
         if case .needsUpgrade = LooxGate.canCreateAlias(tier: env.entitlements.tier, retained: retained) {
             paywallContext = .aliasLimit
-        } else {
-            proceed()
-        }
-    }
-
-    /// Explicit action avoids the List disclosure chevron beside a banner.
-    @ViewBuilder private var verificationBanner: some View {
-        if let inbox = gate.unverifiedDestination {
-            VaultInfoBanner(
-                .warning, icon: Icons.alert,
-                title: "Confirm your inbox",
-                verbatimText: appString("Confirm \(EmailMask.masked(inbox.email)) to receive forwarded mail."),
-                actionLabel: "Confirm email",
-                action: { verificationInboxID = inbox.id })
-                .subtle()
-        }
-    }
-
-    /// Neutral context has less visual weight than the outstanding prerequisite.
-    private var receiveOnlyBanner: some View {
-        VaultInfoBanner(.info, icon: Icons.info,
-                        title: "For incoming mail only",
-                        text: "Replying from your inbox may reveal your real email.")
-            .subtle()
-    }
-
-    /// Create affordances render only while creation can actually run — a
-    /// visible button that silently swallows the tap (the old `guardEmail`
-    /// early-return) reads as a broken screen. The banner above the list
-    /// explains WHY creation is gone in every non-available state.
-    private var canCreate: Bool { gate.allows(.create) }
-
-    @ViewBuilder private func personaAliasSection(_ persona: Persona) -> some View {
-        Section("Reusable addresses") {
-            ForEach(env.repository.reusableAliases(forPersona: persona.id)) { alias in
-                aliasRow(alias, subtitle: alias.label ?? persona.displayName)
-            }
-            if canCreate {
-                Button {
-                    guardQuota { guardEmail(persona) { createReusable(persona) } }
-                } label: {
-                    Label { Text("Create reusable address") } icon: { VaultIcon(Icons.addCircle) }
-                }
-            }
-        }
-        .listRowBackground(VaultColors.surface)
-    }
-
-    @ViewBuilder private func perSiteSection(_ persona: Persona) -> some View {
-        let perSite = env.repository.aliases(forPersona: persona.id).filter { $0.tier == .perSite }
-        Section("Site-specific addresses") {
-            ForEach(perSite) { alias in
-                aliasRow(alias, subtitle: alias.boundDomain)
-            }
-            if canCreate {
-                Button { guardQuota { guardEmail(persona) { showingPerSiteEditor = true } } } label: {
-                    Label { Text("Add site-specific address") } icon: { VaultIcon(Icons.addCircle) }
-                }
-            }
-        }
-        .listRowBackground(VaultColors.surface)
-    }
-
-    private func aliasRow(_ alias: EmailAlias, subtitle: String?) -> some View {
-        // Keep the selected domain visible; the status below indicates forwarding readiness.
-        let address = AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                                           relayDomain: alias.emailDomain)
-        return NavigationLink {
-            AliasDetailScreen(aliasID: alias.id)
-        } label: {
-            // The ADDRESS is the row's payload — it renders whole (an inline
-            // trailing status squeezed long addresses into a 2-line wrap mid-
-            // word); the forwarding status reads as its own line underneath.
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: address).vaultType(.body).themedForeground(.primary)
-                    if let subtitle, !subtitle.isEmpty {
-                        Text(verbatim: subtitle).vaultType(.caption).themedForeground(.secondary)
-                    }
-                    Text(verbatim: statusLabel(alias.status)).vaultType(.caption)
-                        .themedForeground(alias.status == .active ? .accent : .secondary)
-                }
-                Spacer()
-                if busyAliasID == alias.id {
-                    ProgressView()
-                }
-            }
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) { pendingDelete = alias } label: {
-                Label { Text("Delete") } icon: { VaultIcon(Icons.trash) }
-            }
-            if alias.status != .disabled {
-                Button { pendingPause = alias } label: {
-                    Label { Text("Pause") } icon: { VaultIcon(Icons.hide) }
-                }
-            }
-        }
-    }
-
-    private func createReusable(_ persona: Persona) {
-        if let id = try? env.repository.createPersonaAlias(for: persona,
-                                                           label: nil,
-                                                           domainID: PrivateEmailDomainDefault.domainID),
-           let created = env.repository.aliases.first(where: { $0.id == id }) {
-            activate(created)
-        }
-    }
-
-    /// Aliases forward to a real inbox — require one (default inbox or profile
-    /// email) before creating. Creation also gates on capability availability
-    /// (the banner above explains why when it's blocked).
-    private func guardEmail(_ persona: Persona, _ create: () -> Void) {
-        guard canCreate else { return }
-        if env.repository.newAliasDestination(for: persona) == nil { missingEmail = true }
-        else { create() }
-    }
-
-    private func statusLabel(_ status: AliasStatus) -> String {
-        switch status {
-        case .active:   return appString("Forwarding active")
-        case .reserved: return appString("Tap to activate")
-        case .disabled: return appString("Forwarding paused")
-        default:        return appString("Draft")
-        }
-    }
-
-    // MARK: Relay calls (busy + error surfaced; local state only changes on success)
-
-    private func activate(_ alias: EmailAlias) {
-        // "Tap to activate" on a reserved alias is a growth mutation: with the
-        // feature off in Settings it must not reach the relay (the create
-        // buttons already hide; this row action is the remaining path).
-        if gate.isTurnedOffByUser {
-            errorTitle = appString("Private Email is off")
-            errorMessage = appString("Private Email is turned off in Settings.")
-            return
-        }
-        run(alias) { try await env.relay.activate(alias) }
-    }
-
-    private func disableAlias(_ alias: EmailAlias) {
-        run(alias) { try await env.relay.disable(alias) }
-    }
-
-    private func remove(_ alias: EmailAlias) {
-        run(alias) { try await env.relay.delete(alias) }
-    }
-
-    private func run(_ alias: EmailAlias, _ operation: @escaping () async throws -> Void) {
-        busyAliasID = alias.id
-        Task {
-            defer { busyAliasID = nil }
-            do { try await operation() }
-            catch let failure as RelayService.Failure {
-                errorTitle = failure.userTitle
-                errorMessage = failure.userMessage
-                errorOffersReset = failure.offersPrivateEmailReset
-                Haptics.error()
-            } catch {
-                errorTitle = appString("Couldn’t reach the relay")
-                errorMessage = appString("Check your connection and iCloud, then try again.")
-                Haptics.error()
-            }
-        }
-    }
-
-    private var errorBinding: Binding<Bool> {
-        Binding(get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil; errorOffersReset = false } })
-    }
-
-    /// The failure alert's deliberate recovery: reset Private Email when this
-    /// vault can't open its key, then report the result in the same alert.
-    private func resetPrivateEmail() {
-        Task {
-            let result = await PrivateEmailReset.run(using: env.relay)
-            errorOffersReset = result.offersReset
-            errorTitle = result.title
-            errorMessage = result.message
-        }
-    }
-
-    private var pauseBinding: Binding<Bool> {
-        Binding(get: { pendingPause != nil }, set: { if !$0 { pendingPause = nil } })
-    }
-
-    private var deleteBinding: Binding<Bool> {
-        Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })
+        } else { proceed() }
     }
 }
 
@@ -382,6 +207,9 @@ struct PrivateEmailGate {
     /// refresh stays unconditional — it is how the app learns the OPERATOR
     /// state, and it is deduped and backoff-aware.
     func refresh() async {
+        #if DEBUG
+        guard !env.uiTestConfiguration.isEnabled, !CloudSyncService.isHostingUnitTests else { return }
+        #endif
         if !isTurnedOffByUser {
             await CapabilityHealthProbe.probe(.privateEmail, store: env.capabilities)
         }

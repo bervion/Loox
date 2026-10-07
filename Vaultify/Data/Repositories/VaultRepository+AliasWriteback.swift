@@ -9,18 +9,18 @@ import Foundation
 extension VaultRepository {
 
     func attachAliasToProfile(_ alias: EmailAlias, persona: Persona) {
-        guard let card = profileItem(for: persona) else { return }
-        try? update(AliasWriteback.upsertPrivateEmail(on: card, address: aliasAddress(alias)))
+        guard let card = profileItem(for: persona), let address = alias.resolvedAddress else { return }
+        try? update(AliasWriteback.upsertPrivateEmail(on: card, address: address))
     }
 
-    func attachAliasToLogin(_ alias: EmailAlias) {
-        guard let itemId = alias.boundItemId, let login = item(id: itemId) else { return }
-        try? update(AliasWriteback.upsertPrivateEmail(on: login, address: aliasAddress(alias)))
-    }
-
-    private func aliasAddress(_ alias: EmailAlias) -> String {
-        AliasAddress.display(localPart: alias.localPart, status: alias.status,
-                             relayDomain: alias.emailDomain)
+    /// Automatic activation writeback is valid only for the original primary
+    /// relation. A late network reply must not restore an explicitly unlinked field.
+    func attachAliasToLogin(_ alias: EmailAlias, expectedRelationRevision: UInt64) throws {
+        guard let live = aliases.first(where: { $0.id == alias.id }),
+              live.relationRevision == expectedRelationRevision,
+              live.boundItemId == alias.boundItemId, let itemID = live.boundItemId else { return }
+        try linkAliasToLogin(aliasID: live.id, itemID: itemID,
+                             expectedAliasRevision: expectedRelationRevision)
     }
 
     /// Set the persona's REAL email (its aliases' forwarding destination) on the

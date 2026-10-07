@@ -13,6 +13,8 @@ nonisolated enum RelayConfig {
     /// environment-scoped, so app installs must not switch their API backend.
     static let apiBaseURL = URL(string: "https://api-relay.looxpassword.com")!
     static let stagingAPIBaseURL = URL(string: "https://api-relay-staging.looxpassword.com")!
+    /// Shared vault relay records are bound to production on Debug and Release.
+    static let environment = "production"
     /// The alias mail domain: an alias is `<local-part>@relay.looxpassword.com`.
     static let emailDomain = "relay.looxpassword.com"
 

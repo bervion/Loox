@@ -117,6 +117,7 @@ nonisolated struct CapabilityCircuitBreaker: Sendable, Equatable {
     private(set) var window: [Bool] = []
     /// Consecutive open cycles — drives 30s → 60s → 2m → 5m escalation.
     private(set) var openCycles: Int = 0
+    private(set) var probeGeneration: UInt64 = 0
 
     private static let openDurations: [TimeInterval] = [30, 60, 120, 300]
 
@@ -128,9 +129,17 @@ nonisolated struct CapabilityCircuitBreaker: Sendable, Equatable {
         case .open(let until):
             guard now >= until else { return false }
             phase = .halfOpen
+            probeGeneration &+= 1
             return true
         case .halfOpen: return false
         }
+    }
+
+    /// A lifecycle cancellation is neither a service success nor a failure.
+    /// Only the admitted probe's token can release that half-open slot.
+    mutating func cancelProbe(generation: UInt64, now: Date = .now) {
+        guard phase == .halfOpen, probeGeneration == generation else { return }
+        phase = .open(until: now)
     }
 
     mutating func recordSuccess() {

@@ -7,7 +7,6 @@ import SwiftUI
 /// addresses" (resumable: re-runs finish exactly the stragglers).
 struct ForwardingInboxScreen: View {
     @Environment(AppEnvironment.self) private var env
-    @Environment(\.scenePhase) private var scenePhase
 
     @State private var addingInbox = false
     @State private var newEmail = ""
@@ -19,7 +18,14 @@ struct ForwardingInboxScreen: View {
     @State private var errorMessage: String?
     @State private var errorOffersReset = false
     @State private var pendingDeleteInbox: ForwardingInbox?
-    @State private var verification = ForwardingInboxVerification()
+    @State private var verificationScope: UUID?
+    private var verification: ForwardingInboxVerification { env.destinationVerification.verification }
+
+    private var visibleInboxes: [ForwardingInbox] {
+        env.repository.forwardingInboxes.filter {
+            $0.source == .manual || $0.personaId == env.repository.activePersona?.id
+        }
+    }
 
     private var gate: PrivateEmailGate { PrivateEmailGate(env) }
 
@@ -31,7 +37,7 @@ struct ForwardingInboxScreen: View {
             PrivateEmailBannerSection()
 
             Section {
-                ForEach(env.repository.forwardingInboxes) { inbox in
+                ForEach(visibleInboxes) { inbox in
                     inboxRow(inbox)
                 }
                 if gate.allows(.create) {
@@ -40,7 +46,7 @@ struct ForwardingInboxScreen: View {
                     }
                 }
             } footer: {
-                Text("New addresses will forward here. Existing addresses keep their inbox until you update them.")
+                Text("New addresses will forward here. Existing addresses keep their inbox until you update them.").themedForeground(.secondaryBody)
             }
             .listRowBackground(VaultColors.surface)
 
@@ -70,38 +76,15 @@ struct ForwardingInboxScreen: View {
         } message: { _ in
             Text("You can add it again later if you need to.")
         }
-        // Auto-advance pending → verified: the user confirms on the web, so the
-        // app must poll the result itself rather than wait for a manual tap.
-        .task(id: pollTrigger) { await pollPendingVerifications() }
-    }
-
-    /// Restarts the poll when the scene wakes OR the capability becomes usable
-    /// again, so turning Private Email back on resumes verification without
-    /// leaving this screen.
-    private struct PollTrigger: Equatable {
-        let phase: ScenePhase
-        let enabled: Bool
-    }
-
-    private var pollTrigger: PollTrigger {
-        PollTrigger(phase: scenePhase, enabled: gate.allows(.mutate))
-    }
-
-    /// Poll the read-only status endpoint (~8s) while any inbox is pending and
-    /// the screen is active; stops when nothing is pending or the view goes away
-    /// (the task is cancelled on disappear / scene change). A 404 is an id/config
-    /// issue, not "pending", so it's swallowed here rather than resetting state.
-    private func pollPendingVerifications() async {
-        // No background chatter with the relay for a feature that can't act:
-        // switched off in Settings, offline, or in an operator-blocked mode.
-        guard scenePhase == .active, gate.allows(.mutate) else { return }
-        while !Task.isCancelled {
-            let pending = env.repository.forwardingInboxes.filter {
-                $0.verificationStatus == .pending && $0.relayDestinationID != nil
-            }
-            guard !pending.isEmpty else { return }
-            for inbox in pending { _ = try? await env.relay.refreshDestinationStatus(inbox) }
-            try? await Task.sleep(for: .seconds(8))
+        .onAppear {
+            verificationScope = env.destinationVerification.register(Set(visibleInboxes.map(\.id)))
+        }
+        .onChange(of: visibleInboxes.map(\.id)) { _, ids in
+            if let verificationScope { env.destinationVerification.update(verificationScope, inboxIDs: Set(ids)) }
+        }
+        .onDisappear {
+            if let verificationScope { env.destinationVerification.unregister(verificationScope) }
+            verificationScope = nil
         }
     }
 
@@ -119,7 +102,7 @@ struct ForwardingInboxScreen: View {
                     HStack(spacing: Space.s3) {
                         ProgressView()
                         Text("\(rotationDone) of \(rotationTotal)")
-                            .vaultType(.subhead).themedForeground(.secondary)
+                            .vaultType(.subhead).themedForeground(.secondaryBody)
                     }
                 } else {
                     Button { reconcile() } label: {
@@ -127,7 +110,7 @@ struct ForwardingInboxScreen: View {
                     }
                 }
             } footer: {
-                Text("Keep Loox open until the update finishes. You can safely retry; finished addresses aren’t repeated.")
+                Text("Keep Loox open until the update finishes. You can safely retry; finished addresses aren’t repeated.").themedForeground(.secondaryBody)
             }
             .listRowBackground(VaultColors.surface)
         }
@@ -138,19 +121,20 @@ struct ForwardingInboxScreen: View {
         // only through a long-press context menu, which nothing advertised.
         // The context menu and swipe stay as shortcuts.
         NavigationLink { ForwardingInboxDetailScreen(inboxID: inbox.id) } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: EmailMask.masked(inbox.email))
-                        .vaultType(.body).themedForeground(.primary)
-                    Text(verbatim: subtitle(inbox))
-                        .vaultType(.caption).themedForeground(.secondary)
-                }
-                Spacer()
-                verificationChip(inbox)
-                if inbox.isDefault {
-                    Text("Default").vaultType(.caption).themedForeground(.accentText)
+            VStack(alignment: .leading, spacing: Space.s2) {
+                Text(verbatim: EmailMask.masked(inbox.email))
+                    .vaultType(.body).themedForeground(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(verbatim: subtitle(inbox))
+                    .vaultType(.caption).themedForeground(.secondaryBody)
+                HStack(spacing: Space.s3) {
+                    verificationChip(inbox)
+                    if inbox.isDefault {
+                        Text("Default").vaultType(.caption).themedForeground(.accentText)
+                    }
                 }
             }
+            .padding(.vertical, Space.s1)
         }
         .contentShape(Rectangle())
         .contextMenu {
@@ -181,11 +165,11 @@ struct ForwardingInboxScreen: View {
     @ViewBuilder private func verificationChip(_ inbox: ForwardingInbox) -> some View {
         switch inbox.verificationStatus {
         case .verified:
-            Text("Verified").vaultType(.caption).themedForeground(.success)
+            Text("Verified").vaultType(.caption).themedForeground(.successBody)
         case .pending:
-            Text("Awaiting confirmation").vaultType(.caption).themedForeground(.warning)
+            Text("Awaiting confirmation").vaultType(.caption).themedForeground(.warningBody)
         case .unverified, .revoked:
-            Text("Not verified").vaultType(.caption).themedForeground(.secondary)
+            Text("Not verified").vaultType(.caption).themedForeground(.secondaryBody)
         }
     }
 
@@ -195,7 +179,7 @@ struct ForwardingInboxScreen: View {
     /// flight and the send is withheld for as long as the relay asked; the
     /// detail screen behind the row is where the state is legible.
     @ViewBuilder private func verificationMenuItems(_ inbox: ForwardingInbox) -> some View {
-        if gate.allows(.mutate) {
+        if gate.allows(.mutate) || env.capabilities.canRefreshDestinationStatus {
             let waiting = verification.resendWait(for: inbox)
             switch inbox.verificationStatus {
             case .verified:
@@ -206,12 +190,14 @@ struct ForwardingInboxScreen: View {
                 } label: {
                     Label { Text("Check verification") } icon: { VaultIcon(Icons.checkCircle) }
                 }
-                .disabled(verification.isBusy(inbox))
-                resendButton(inbox, title: "Resend email",
-                             icon: Icons.refresh, waiting: waiting)
+                .disabled(verification.isBusy(inbox) || !env.capabilities.canRefreshDestinationStatus)
+                if gate.allows(.mutate) {
+                    resendButton(inbox, title: "Resend email", icon: Icons.refresh, waiting: waiting)
+                }
             case .unverified, .revoked:
-                resendButton(inbox, title: "Confirm email",
-                             icon: Icons.checkCircle, waiting: waiting)
+                if gate.allows(.mutate) {
+                    resendButton(inbox, title: "Confirm email", icon: Icons.checkCircle, waiting: waiting)
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ import SwiftUI
 enum ThemeRole {
     // Text
     case primary, secondary, tertiary, disabled
+    case secondaryBody, successBody, warningBody
     // Icons (Design System icon roles)
     case iconPrimary, iconSecondary, iconDisabled
     // Accent + status. `accent` is the raw brand hue (icons, rings, strokes);
@@ -52,6 +53,9 @@ extension AppTheme {
         switch role {
         case .primary: return Color(rgb: primaryText)
         case .secondary: return Color(rgb: secondaryText)
+        case .secondaryBody: return Color(rgb: secondaryBodyText)
+        case .successBody: return Color(rgb: successBodyText)
+        case .warningBody: return Color(rgb: warningBodyText)
         case .tertiary: return Color(rgb: tertiaryText)
         case .disabled: return Color(rgb: textDisabled)
         case .iconPrimary: return Color(rgb: iconPrimary)

@@ -1,4 +1,5 @@
 import Foundation
+import CloudKit
 import os
 
 /// Orchestrates relay alias lifecycle against the live backend: resolves the
@@ -75,113 +76,182 @@ import os
     /// owning persona's real email, mark it active, and write the address back
     /// onto the profile/login. Resumable: a retry after a mint resumes at
     /// rotateDestination rather than re-minting.
+    private var busyAliases: Set<String> = []
+    private var aliasWaiters: [String: [CheckedContinuation<Void, Never>]] = [:]
+
+    /// A single alias cannot be minted/rotated/deleted by two overlapping tasks.
+    /// Waiting callers resolve live state after acquisition, never their old row.
+    private func withAliasOperation(_ id: String, operation: () async throws -> Void) async throws {
+        if busyAliases.contains(id) {
+            await withCheckedContinuation { continuation in
+                aliasWaiters[id, default: []].append(continuation)
+            }
+        } else { busyAliases.insert(id) }
+        defer {
+            if var waiting = aliasWaiters[id], !waiting.isEmpty {
+                let first = waiting.removeFirst()
+                aliasWaiters[id] = waiting.isEmpty ? nil : waiting
+                first.resume()
+            } else { busyAliases.remove(id) }
+        }
+        try Task.checkCancellation()
+        try await operation()
+    }
+
+    private func liveAlias(_ snapshot: EmailAlias) throws -> EmailAlias {
+        guard session.vaultKey != nil else { throw Failure.vaultLocked }
+        guard let live = repository.aliases.first(where: { $0.id == snapshot.id }),
+              live.personaId == snapshot.personaId, live.localPart == snapshot.localPart,
+              live.relayDomainID == snapshot.relayDomainID else { throw Failure.rejected("alias_changed") }
+        return live
+    }
+
     func activate(_ alias: EmailAlias) async throws {
-        guard let persona = repository.personas.first(where: { $0.id == alias.personaId }) else {
-            throw Failure.rejected("no_persona")
-        }
-        // Explicit per-alias inbox wins; else the persona's default inbox; else
-        // the profile email (pre-inbox vaults).
-        guard let destination = repository.resolvedDestination(for: alias) else {
-            throw Failure.missingDestination
-        }
-
-        var current = alias
-        if !current.backendMinted {
-            current = try await mint(current)      // createAlias (+ collision re-mint)
-            try repository.markMinted(current)
-            current = repository.aliases.first { $0.id == current.id } ?? current
-        }
-
-        try await send(kind: .rotateDestination, aliasID: current.localPart,
-                       domainID: Self.wireDomainID(current), destination: destination,
-                       path: "/v1/relay/aliases/\(current.localPart)/destination")
-
-        var activated = current
-        activated.forwardingTarget = destination
-        try repository.updateAlias(activated)
-        if let refreshed = repository.aliases.first(where: { $0.id == activated.id }) {
-            try repository.setAliasStatus(refreshed, to: .active)
-        }
-        // Write-back is non-fatal — the backend state is already correct.
-        if let live = repository.aliases.first(where: { $0.id == activated.id }) {
+        try await withAliasOperation(alias.id) {
+            var current = try self.liveAlias(alias)
+            guard let persona = self.repository.personas.first(where: { $0.id == current.personaId }) else {
+                throw Failure.rejected("no_persona")
+            }
+            guard let destination = self.repository.resolvedDestination(for: current) else {
+                throw Failure.missingDestination
+            }
+            let relationRevision = current.relationRevision
+            if !current.backendMinted {
+                current = try await self.mint(current)
+                current = try self.liveAlias(current)
+                // Persist an acknowledged mint before honoring cancellation:
+                // retry must route this namespace instead of creating another.
+                try self.repository.markMinted(current)
+                current = try self.liveAlias(current)
+                try Task.checkCancellation()
+            }
+            if current.backendMinted && (current.status == .paused || current.status == .disabled) {
+                // Route while the backend is still paused, then resume the exact
+                // owned namespace. rotateDestination does not itself reactivate.
+                try await self.send(kind: .rotateDestination, aliasID: current.localPart,
+                                    domainID: Self.wireDomainID(current), destination: destination,
+                                    path: "/v1/relay/aliases/\(current.localPart)/destination")
+                try Task.checkCancellation()
+                var routed = try self.liveAlias(current)
+                routed.forwardingTarget = destination
+                try self.repository.updateAlias(routed)
+                current = try self.liveAlias(current)
+                // createAlias is idempotent for an owned paused namespace. This
+                // is a resume, so aliasExists must never trigger collision remint.
+                try await self.send(kind: .createAlias, aliasID: current.localPart,
+                                    domainID: current.relayDomainID,
+                                    path: "/v1/relay/aliases")
+                var resumed = try self.liveAlias(current)
+                resumed.status = .active
+                resumed.disabledAt = nil
+                try self.repository.updateAlias(resumed)
+                try Task.checkCancellation()
+            } else if current.status != .active || current.forwardingTarget != destination {
+                try await self.send(kind: .rotateDestination, aliasID: current.localPart,
+                                    domainID: Self.wireDomainID(current), destination: destination,
+                                    path: "/v1/relay/aliases/\(current.localPart)/destination")
+                var live = try self.liveAlias(current)
+                live.forwardingTarget = destination
+                live.status = .active
+                live.disabledAt = nil
+                try self.repository.updateAlias(live)
+                try Task.checkCancellation()
+            }
+            let live = try self.liveAlias(current)
             switch live.tier {
-            case .persona: repository.attachAliasToProfile(live, persona: persona)
-            case .perSite: repository.attachAliasToLogin(live)
+            case .persona: self.repository.attachAliasToProfile(live, persona: persona)
+            case .perSite:
+                // Field conflict/protection is surfaced as local recovery after
+                // routing succeeds, never overwritten or reported as a mail outage.
+                do { try self.repository.attachAliasToLogin(live, expectedRelationRevision: relationRevision) }
+                catch let failure as VaultRepository.AliasLinkFailure { throw failure }
             }
         }
     }
 
-    /// Change a persona's real email: re-point every one of its aliases that the
-    /// backend knows about to the new destination — EXCEPT aliases pinned to a
-    /// different explicit inbox (their destination is their own choice).
-    /// Sequential + idempotent — a retry finishes any that didn't rotate.
     func updateDestination(for persona: Persona, to email: String) async throws {
         let profileInboxID = repository.forwardingInboxes.first {
             $0.source == .personaProfile && $0.personaId == persona.id
         }?.id
         for alias in repository.aliases(forPersona: persona.id) where alias.backendMinted {
             if let pinned = alias.forwardingInboxID, pinned != profileInboxID { continue }
-            try await send(kind: .rotateDestination, aliasID: alias.localPart,
-                           domainID: Self.wireDomainID(alias), destination: email,
-                           path: "/v1/relay/aliases/\(alias.localPart)/destination")
-            var updated = alias
-            updated.forwardingTarget = email
-            try repository.updateAlias(updated)
+            try await withAliasOperation(alias.id) {
+                let current = try self.liveAlias(alias)
+                // A pin/default edited while this caller waited owns the next target.
+                guard self.repository.resolvedDestination(for: current) == email else { return }
+                try await self.send(kind: .rotateDestination, aliasID: current.localPart,
+                                    domainID: Self.wireDomainID(current), destination: email,
+                                    path: "/v1/relay/aliases/\(current.localPart)/destination")
+                try Task.checkCancellation()
+                var live = try self.liveAlias(current)
+                live.forwardingTarget = email
+                try self.repository.updateAlias(live)
+            }
         }
     }
 
-    /// Pin an alias to an inbox, then rotate it on the backend. The pin persists
-    /// FIRST (durable intent): if the rotate fails, the alias lands in
-    /// `aliasesNeedingRotation` and the next reconcile finishes the job.
     func setInbox(_ inbox: ForwardingInbox, for alias: EmailAlias) async throws {
-        var pinned = alias
-        pinned.forwardingInboxID = inbox.id
-        try repository.updateAlias(pinned)
-        guard alias.backendMinted else { return }
-        try await send(kind: .rotateDestination, aliasID: alias.localPart,
-                       domainID: Self.wireDomainID(alias), destination: inbox.email,
-                       path: "/v1/relay/aliases/\(alias.localPart)/destination")
-        if var live = repository.aliases.first(where: { $0.id == alias.id }) {
+        try await withAliasOperation(alias.id) {
+            var current = try self.liveAlias(alias)
+            guard let liveInbox = self.repository.inbox(id: inbox.id), liveInbox.email == inbox.email else {
+                throw Failure.rejected("destination_changed")
+            }
+            current.forwardingInboxID = inbox.id
+            try self.repository.updateAlias(current)
+            guard current.backendMinted else { return }
+            try await self.send(kind: .rotateDestination, aliasID: current.localPart,
+                                domainID: Self.wireDomainID(current), destination: inbox.email,
+                                path: "/v1/relay/aliases/\(current.localPart)/destination")
+            try Task.checkCancellation()
+            var live = try self.liveAlias(current)
             live.forwardingTarget = inbox.email
-            try repository.updateAlias(live)
+            try self.repository.updateAlias(live)
         }
     }
 
-    /// Rotate every alias whose resolved destination drifted from the backend
-    /// (default-inbox change, inbox email edit…). Sequential; `forwardingTarget`
-    /// checkpoints after each success, so an interruption resumes exactly the
-    /// stragglers. NOT atomic — progress is surfaced, never pretended away.
     func reconcileDestinations(progress: ((Int, Int) -> Void)? = nil) async throws {
         let pending = repository.aliasesNeedingRotation
         for (index, alias) in pending.enumerated() {
-            guard let want = repository.resolvedDestination(for: alias) else { continue }
-            try await send(kind: .rotateDestination, aliasID: alias.localPart,
-                           domainID: Self.wireDomainID(alias), destination: want,
-                           path: "/v1/relay/aliases/\(alias.localPart)/destination")
-            if var live = repository.aliases.first(where: { $0.id == alias.id }) {
+            try await withAliasOperation(alias.id) {
+                let current = try self.liveAlias(alias)
+                guard let want = self.repository.resolvedDestination(for: current),
+                      want != current.forwardingTarget else { return }
+                try await self.send(kind: .rotateDestination, aliasID: current.localPart,
+                                    domainID: Self.wireDomainID(current), destination: want,
+                                    path: "/v1/relay/aliases/\(current.localPart)/destination")
+                try Task.checkCancellation()
+                var live = try self.liveAlias(current)
                 live.forwardingTarget = want
-                try repository.updateAlias(live)
+                try self.repository.updateAlias(live)
             }
             progress?(index + 1, pending.count)
         }
     }
 
     func disable(_ alias: EmailAlias) async throws {
-        if alias.backendMinted || alias.status == .active {
-            try await send(kind: .disableAlias, aliasID: alias.localPart,
-                           domainID: Self.wireDomainID(alias),
-                           path: "/v1/relay/aliases/\(alias.localPart)/disable")
+        try await withAliasOperation(alias.id) {
+            let current = try self.liveAlias(alias)
+            if current.backendMinted || current.status == .active {
+                try await self.send(kind: .disableAlias, aliasID: current.localPart,
+                                    domainID: Self.wireDomainID(current),
+                                    path: "/v1/relay/aliases/\(current.localPart)/disable")
+            }
+            try Task.checkCancellation()
+            try self.repository.setAliasStatus(self.liveAlias(current), to: .disabled)
         }
-        try repository.setAliasStatus(alias, to: .disabled)
     }
 
     func delete(_ alias: EmailAlias) async throws {
-        if alias.backendMinted || alias.status == .active {
-            try await send(kind: .deleteAlias, aliasID: alias.localPart,
-                           domainID: Self.wireDomainID(alias),
-                           path: "/v1/relay/aliases/\(alias.localPart)", method: "DELETE")
+        try await withAliasOperation(alias.id) {
+            let current = try self.liveAlias(alias)
+            if current.backendMinted || current.status == .active {
+                try await self.send(kind: .deleteAlias, aliasID: current.localPart,
+                                    domainID: Self.wireDomainID(current),
+                                    path: "/v1/relay/aliases/\(current.localPart)", method: "DELETE")
+            }
+            try Task.checkCancellation()
+            try self.repository.deleteAlias(self.liveAlias(current))
         }
-        try repository.deleteAlias(alias)
     }
 
     /// Disable every alias of this principal — the Erase-Vault teardown step. MUST
@@ -213,6 +283,7 @@ import os
             return try await RelayAttestation.assertion(forCommandTranscript: transcript,
                                                         baseURL: RelayConfig.apiBaseURL)
         } catch {
+            if Self.isCancellation(error) { throw CancellationError() }
             let detail = error as NSError
             RelayDiagnostics.record("stage=attestation phase=failed errorDomain=\(detail.domain) code=\(detail.code)")
             Self.log.error("App Attest failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
@@ -233,28 +304,25 @@ import os
     /// Returns the backend state so the UI can show the resend countdown.
     @discardableResult
     func beginDestinationVerification(_ inbox: ForwardingInbox) async throws -> RelayAPIClient.DestinationState {
+        guard let vaultKey = session.vaultKey?.bytes else { throw Failure.vaultLocked }
         let data = try await send(kind: .beginDestinationVerification, aliasID: nil,
                                   destination: inbox.email, path: "/v1/relay/destinations")
+        try Task.checkCancellation()
+        guard session.vaultKey?.bytes == vaultKey else { throw CancellationError() }
         let state = try decodeDestinationState(data)
-        try persistVerification(inbox, state: state)
+        try repository.applyDestinationState(state, snapshot: inbox, allowDestinationChange: true)
         return state
     }
 
-    /// Poll a begun inbox's verification (read-only, budget-free). No-op if it
-    /// was never begun. Persists any status change so the UI reflects `verified`.
     @discardableResult
     func refreshDestinationStatus(_ inbox: ForwardingInbox) async throws -> RelayAPIClient.DestinationState? {
+        guard let vaultKey = session.vaultKey?.bytes else { throw Failure.vaultLocked }
         guard let id = inbox.relayDestinationID else { return nil }
         let state = try await RelayAPIClient.destinationStatus(id: id)
-        try persistVerification(inbox, state: state)
+        try Task.checkCancellation()
+        guard session.vaultKey?.bytes == vaultKey else { throw CancellationError() }
+        try repository.applyDestinationState(state, snapshot: inbox, allowDestinationChange: false)
         return state
-    }
-
-    private func persistVerification(_ inbox: ForwardingInbox, state: RelayAPIClient.DestinationState) throws {
-        guard var live = repository.forwardingInboxes.first(where: { $0.id == inbox.id }) else { return }
-        live.relayDestinationID = state.destinationId
-        live.verificationStatus = DestinationVerificationStatus(rawValue: state.status) ?? .pending
-        try repository.updateInbox(live)
     }
 
     private func decodeDestinationState(_ data: Data) throws -> RelayAPIClient.DestinationState {
@@ -293,9 +361,10 @@ import os
                                path: "/v1/relay/aliases")
                 return current
             } catch RelayAPIClient.Failure.aliasExists {
-                current.localPart = AliasAddress.randomLocalPart()
-                try repository.updateAlias(current)
-                current = repository.aliases.first { $0.id == current.id } ?? current
+                var live = try liveAlias(current)
+                live.localPart = AliasAddress.randomLocalPart()
+                try repository.updateAlias(live)
+                current = live
             }
         }
         throw Failure.rejected("alias_exists")
@@ -316,28 +385,112 @@ import os
             ? nil : alias.relayDomainID
     }
 
+    private static func isCancellation(_ error: any Error) -> Bool {
+        Task.isCancelled || error is CancellationError
+            || (error as? URLError)?.code == .cancelled
+            || (error as? CKError)?.code == .operationCancelled
+    }
+
+    #if DEBUG
+    struct CommandRequest: Equatable {
+        let kind: RelayCommandKind
+        let aliasID: String?
+        let domainID: String?
+        let destination: String?
+        let path: String
+        let method: String
+    }
+    var commandOverride: ((CommandRequest) async throws -> Data)?
+    var principalOverride: (([UInt8]) async throws -> RelayPrincipalIdentity)?
+    var assertionOverride: ((Data) async throws -> RelayAttestation.Assertion?)?
+    var requestDateOverride: (() -> Date)?
+    #endif
+
     @discardableResult
     private func send(kind: RelayCommandKind, aliasID: String?, domainID: String? = nil,
-                      destination: String? = nil,
-                      path: String, method: String = "POST") async throws -> Data {
-        guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
-        // Circuit breaker: during a confirmed outage, don't burn signed requests.
-        guard capabilities?.allowRequest(.privateEmail) ?? true else {
-            throw Failure.capabilityBlocked(.active, retryAfter: nil)   // renders as "temporarily unavailable"
+                      destination: String? = nil, path: String, method: String = "POST") async throws -> Data {
+        guard let key = session.vaultKey?.bytes else { throw Failure.vaultLocked }
+        try Task.checkCancellation()
+        let now: Date
+        #if DEBUG
+        now = requestDateOverride?() ?? .now
+        #else
+        now = .now
+        #endif
+        let capabilityStore = capabilities
+        let admission: UUID?
+        if let capabilityStore {
+            guard let token = capabilityStore.admitRelayCommand(now: now) else {
+                throw Failure.capabilityBlocked(.active, retryAfter: nil)
+            }
+            admission = token
+        } else { admission = nil }
+        var outcome: CapabilityStore.RemoteStatusOutcome = .cancelled
+        defer {
+            if let admission { capabilityStore?.finishRelayCommand(admission, outcome: outcome) }
         }
+        do {
+            #if DEBUG
+            if let commandOverride {
+                let request = CommandRequest(kind: kind, aliasID: aliasID, domainID: domainID,
+                                             destination: destination, path: path, method: method)
+                let response = try await commandOverride(request)
+                guard session.vaultKey?.bytes == key else { throw CancellationError() }
+                outcome = .responded
+                return response
+            }
+            #endif
+            return try await sendAdmitted(kind: kind, aliasID: aliasID, domainID: domainID,
+                destination: destination, path: path, method: method, report: { outcome = $0 })
+        } catch {
+            if Self.isCancellation(error) {
+                outcome = .cancelled
+                throw CancellationError()
+            }
+            // A local escrow/attestation failure leaves the relay outcome
+            // unknown; the admitted half-open probe is released by default.
+            #if DEBUG
+            if let failure = error as? RelayAPIClient.Failure {
+                switch failure {
+                case .transport, .server(500...599): outcome = .infrastructureFailure
+                case .capability(let mode, let retry): outcome = .operatorSignal(.init(mode: mode, retryAfter: retry))
+                default: outcome = .responded
+                }
+            }
+            #endif
+            throw error
+        }
+    }
+
+    @discardableResult
+    private func sendAdmitted(kind: RelayCommandKind, aliasID: String?, domainID: String? = nil,
+                              destination: String? = nil, path: String, method: String = "POST",
+                              report: (CapabilityStore.RemoteStatusOutcome) -> Void) async throws -> Data {
+        guard let vaultKey = session.vaultKey else { throw Failure.vaultLocked }
         let effectiveDestination = try routedDestination(kind: kind, destination: destination)
         var attempt = 0
         while true {
+            try Task.checkCancellation()
+            guard session.vaultKey?.bytes == vaultKey.bytes else { throw CancellationError() }
             attempt += 1
             RelayDiagnostics.record("stage=command phase=begin kind=\(kind.rawValue) attempt=\(attempt)")
             let principal: RelayPrincipalIdentity
-            do { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
-            catch {
+            do {
+                #if DEBUG
+                if let principalOverride { principal = try await principalOverride(vaultKey.bytes) }
+                else { principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes) }
+                #else
+                principal = try await escrow.ensurePrincipal(vaultKey: vaultKey.bytes)
+                #endif
+            } catch {
+                if Self.isCancellation(error) { throw CancellationError() }
                 let detail = error as NSError
                 RelayDiagnostics.record("stage=escrow phase=failed errorDomain=\(detail.domain) code=\(detail.code)")
                 Self.log.error("Principal escrow failed: domain=\(detail.domain, privacy: .public) code=\(detail.code)")
                 throw Failure.principalFailure(for: error)
             }
+            try Task.checkCancellation()
+            guard session.vaultKey?.bytes == vaultKey.bytes else { throw CancellationError() }
             // Publish the wire identity (std-b64 WITH padding — the exact
             // `principal_id` string the server hashes) for entitlement
             // binding requests; the attach flow reads it lazily.
@@ -353,7 +506,15 @@ import os
             let signed = try RelayCommandCanonical.signV2(command, using: principal)
             let genesisKey = RelayAPIClient.genesisPublicKey(for: principal, kind: kind)
             RelayDiagnostics.record("stage=command phase=signed kind=\(kind.rawValue) epoch=\(principal.epoch) commandVersion=2 genesisKey=\(genesisKey != nil)")
-            let attest = try await relayAssertion(forTranscript: signed.transcript)
+            let attest: RelayAttestation.Assertion?
+            #if DEBUG
+            if let assertionOverride { attest = try await assertionOverride(signed.transcript) }
+            else { attest = try await relayAssertion(forTranscript: signed.transcript) }
+            #else
+            attest = try await relayAssertion(forTranscript: signed.transcript)
+            #endif
+            try Task.checkCancellation()
+            guard session.vaultKey?.bytes == vaultKey.bytes else { throw CancellationError() }
 
             do {
                 let responseData = try await RelayAPIClient.send(
@@ -361,13 +522,18 @@ import os
                     genesisPublicKey: genesisKey,
                     attestKeyId: attest?.keyId, assertionB64: attest?.assertionB64,
                     path: path, method: method)
-                capabilities?.noteSuccess(.privateEmail)
+                // A successful signed mutation may already have changed backend
+                // state. Return its acknowledgment so the caller checkpoints it.
+                // Read-only/destination callers perform their own cancellation CAS.
+                guard session.vaultKey?.bytes == vaultKey.bytes else { throw CancellationError() }
+                report(.responded)
                 RelayDiagnostics.record("stage=command phase=succeeded kind=\(kind.rawValue) attempt=\(attempt)")
                 return responseData
             } catch let failure as RelayAPIClient.Failure {
+                try Task.checkCancellation()
                 Self.log.error("Relay command failed: kind=\(kind.rawValue) failure=\(String(describing: failure), privacy: .public)")
                 if case .aliasExists = failure {
-                    capabilities?.noteServiceResponded(.privateEmail)
+                    report(.responded)
                     throw failure  // mint's retry loop handles it
                 }
                 if case .entitlementRefreshRequired = failure {
@@ -375,7 +541,7 @@ import os
                     // re-attach once, then loop — the nonce was consumed, so
                     // the retry MUST re-sign with a fresh nonce, which this
                     // outer loop already does. Not a user-facing error.
-                    capabilities?.noteServiceResponded(.privateEmail)
+                    report(.responded)
                     guard attempt < 3,
                           await LooxEntitlementClientHooks.refreshHandler?() == true else {
                         throw Failure.rejected("entitlement_refresh_required")
@@ -384,7 +550,7 @@ import os
                 }
                 if case .capability(let mode, let retryAfter) = failure {
                     // Verified operator state — persist it; the service is UP.
-                    capabilities?.noteOperatorSignal(.privateEmail, .init(mode: mode, retryAfter: retryAfter))
+                    report(.operatorSignal(.init(mode: mode, retryAfter: retryAfter)))
                     throw Failure.capabilityBlocked(mode, retryAfter: retryAfter)
                 }
                 switch RelayRetryPolicy.action(for: failure, attempt: attempt) {
@@ -401,14 +567,14 @@ import os
                     _ = try? await escrow.refreshFromCloud(vaultKey: vaultKey.bytes)
                     continue
                 case .fail("network"):
-                    capabilities?.noteInfrastructureFailure(.privateEmail)
+                    report(.infrastructureFailure)
                     throw Failure.network
                 case .fail(let reason):
                     // Plain 502/503/504 (no capability code) = infrastructure.
                     if reason.hasPrefix("server_5") {
-                        capabilities?.noteInfrastructureFailure(.privateEmail)
+                        report(.infrastructureFailure)
                     } else {
-                        capabilities?.noteServiceResponded(.privateEmail)
+                        report(.responded)
                     }
                     throw Failure.rejected(reason)
                 }

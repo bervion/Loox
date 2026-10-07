@@ -71,7 +71,7 @@ struct VaultShellBehaviors: ViewModifier {
             // down mid-edit. Both shells apply this modifier, so the draft lands in
             // whichever layout comes up next.
             .sheet(item: $uiState.restoredDraft) { draft in
-                ItemEditorScreen(target: draft.isNew ? .draft(draft.item) : .edit(draft.item))
+                ItemEditorScreen(target: .restored(draft))
             }
             // Quick actions the SHELL owns (see `UIStateStore.QuickSheet`), so a
             // layout swap re-presents them instead of dropping them with the

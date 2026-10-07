@@ -34,7 +34,7 @@ extension LooxLinkEnvelope {
     /// key material (protected multiline — SSH private keys, recovery codes:
     /// a one-shot link has no recipient identity and no revocation of the
     /// copy, so key material is absolutely denied here), and empty values.
-    static func shareableFields(of item: VaultItem) -> [DynamicField] {
+    nonisolated static func shareableFields(of item: VaultItem) -> [DynamicField] {
         item.fields.filter {
             ItemCapabilityResolver.capabilities(for: $0, in: item).quickShare
         }

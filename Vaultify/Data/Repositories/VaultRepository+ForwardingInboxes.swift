@@ -25,6 +25,7 @@ extension VaultRepository {
                                isDefault: secret.isDefault,
                                relayDestinationID: secret.relayDestinationID,
                                verificationStatus: secret.verificationStatus,
+                               verificationGeneration: secret.verificationGeneration,
                                sortIndex: record.sortIndex,
                                createdAt: record.createdAt,
                                updatedAt: record.updatedAt)
@@ -91,6 +92,9 @@ extension VaultRepository {
                 guard existing.email != email else { continue }
                 var updated = existing
                 updated.email = email
+                updated.relayDestinationID = nil
+                updated.verificationStatus = .unverified
+                updated.verificationGeneration &+= 1
                 try? persistInbox(updated, key: key)
             } else {
                 let inbox = ForwardingInbox(email: email, source: .personaProfile,
@@ -126,7 +130,17 @@ extension VaultRepository {
 
     func updateInbox(_ inbox: ForwardingInbox) throws {
         guard let key = session.vaultKey else { throw AuthError.locked }
-        try persistInbox(inbox, key: key)
+        guard let live = self.inbox(id: inbox.id) else { return }
+        var updated = inbox
+        if live.email != updated.email {
+            updated.relayDestinationID = nil
+            updated.verificationStatus = .unverified
+            updated.verificationGeneration = live.verificationGeneration &+ 1
+        } else if live.relayDestinationID != updated.relayDestinationID {
+            updated.verificationGeneration = live.verificationGeneration &+ 1
+        }
+        guard updated != live else { return }
+        try persistInbox(updated, key: key)
         reload()
         noteLocalMutation()
     }
@@ -135,12 +149,13 @@ extension VaultRepository {
     /// every other inbox — at most one default).
     func setDefaultInbox(_ inbox: ForwardingInbox) throws {
         guard let key = session.vaultKey else { throw AuthError.locked }
+        guard var updated = self.inbox(id: inbox.id) else { return }
+        guard !updated.isDefault else { return }
         for other in forwardingInboxes where other.isDefault && other.id != inbox.id {
             var cleared = other
             cleared.isDefault = false
             try persistInbox(cleared, key: key)
         }
-        var updated = inbox
         updated.isDefault = true
         try persistInbox(updated, key: key)
         reload()
@@ -160,6 +175,35 @@ extension VaultRepository {
         try store.context.save()
         reload()
         noteLocalMutation()
+    }
+
+    /// Apply only a response for the exact identity the request read. The
+    /// generation closes the A to B to A race. Delayed pending never downgrades
+    /// verified for the same backend destination, and unchanged status is a
+    /// true no-op (no re-seal, dirty bit, timestamp, reload or sync event).
+    @discardableResult
+    func applyDestinationState(_ state: RelayAPIClient.DestinationState,
+                               snapshot: ForwardingInbox,
+                               allowDestinationChange: Bool) throws -> Bool {
+        guard session.vaultKey != nil else { throw AuthError.locked }
+        guard let status = DestinationVerificationStatus(rawValue: state.status),
+              status != .unverified, !state.destinationId.isEmpty else {
+            throw RelayService.Failure.rejected("bad_server_data")
+        }
+        guard var live = inbox(id: snapshot.id),
+              live.email == snapshot.email,
+              live.verificationGeneration == snapshot.verificationGeneration,
+              live.relayDestinationID == snapshot.relayDestinationID else { return false }
+        guard allowDestinationChange || state.destinationId == snapshot.relayDestinationID else {
+            throw RelayService.Failure.rejected("bad_server_data")
+        }
+        if live.relayDestinationID == state.destinationId,
+           live.verificationStatus == .verified, status == .pending { return false }
+        guard live.relayDestinationID != state.destinationId || live.verificationStatus != status else { return false }
+        live.relayDestinationID = state.destinationId
+        live.verificationStatus = status
+        try updateInbox(live)
+        return true
     }
 
     // MARK: Internals

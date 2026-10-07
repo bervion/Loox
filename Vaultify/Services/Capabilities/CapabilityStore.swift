@@ -83,6 +83,83 @@ import Foundation
         breakers[id]?.allowRequest(now: now) ?? true
     }
 
+    /// Check action policy independently of transient health. Request admission
+    /// still owns the breaker, including its one recovery probe after cooldown.
+    func requestPolicyAllows(_ id: CapabilityID, operation: CapabilityOperation) -> Bool {
+        CapabilityResolver.availability(userPreference: userPreference(id),
+                                        mode: modes[id] ?? .active,
+                                        health: .unknown,
+                                        connectivity: connectivity,
+                                        breakerOpen: false,
+                                        retryAfter: retryAfters[id],
+                                        operationDisabled: disabledOperations[id]?.contains(operation) ?? false,
+                                        operation: operation) == .available
+    }
+
+    /// Remote destination-status reads are separate from local `.read`.
+    /// Maintenance and disabled still permit bounded ownership checks; signed
+    /// read overrides, retirement, user opt-out and offline remain authoritative.
+    var canRefreshDestinationStatus: Bool {
+        userPreference(.privateEmail)
+            && modes[.privateEmail] != .retired
+            && connectivity != .offline
+            && !(disabledOperations[.privateEmail]?.contains(.read) ?? false)
+    }
+
+    enum RemoteStatusOutcome {
+        case responded
+        case infrastructureFailure
+        case operatorSignal(OperatorSignal)
+        case cancelled
+    }
+    private struct RequestAdmission {
+        let capability: CapabilityID
+        let probeGeneration: UInt64?
+    }
+    private var requestAdmissions: [UUID: RequestAdmission] = [:]
+
+    /// Tokenized breaker admission is independent of operation policy. A
+    /// caller must validate its own action policy before making a request.
+    func admitRequest(_ id: CapabilityID, now: Date = .now) -> UUID? {
+        guard allowRequest(id, now: now) else { return nil }
+        let token = UUID()
+        let breaker = breakers[id]
+        requestAdmissions[token] = RequestAdmission(capability: id,
+            probeGeneration: breaker?.phase == .halfOpen ? breaker?.probeGeneration : nil)
+        return token
+    }
+
+    func admitRelayCommand(now: Date = .now) -> UUID? { admitRequest(.privateEmail, now: now) }
+
+    func finishRelayCommand(_ token: UUID, outcome: RemoteStatusOutcome, now: Date = .now) {
+        finishRequest(token, outcome: outcome, now: now)
+    }
+
+    func admitDestinationStatus(now: Date = .now) -> UUID? {
+        guard canRefreshDestinationStatus else { return nil }
+        return admitRequest(.privateEmail, now: now)
+    }
+
+    /// Terminal exactly once, including lifecycle cancellation. A successful
+    /// GET reports reachability without reopening operator-blocked mutations.
+    func finishDestinationStatus(_ token: UUID, outcome: RemoteStatusOutcome, now: Date = .now) {
+        finishRequest(token, outcome: outcome, now: now)
+    }
+
+    func finishRequest(_ token: UUID, outcome: RemoteStatusOutcome, now: Date = .now) {
+        guard let admission = requestAdmissions.removeValue(forKey: token) else { return }
+        let id = admission.capability
+        switch outcome {
+        case .responded: noteServiceResponded(id)
+        case .infrastructureFailure: noteInfrastructureFailure(id, now: now)
+        case .operatorSignal(let signal):
+            noteServiceResponded(id)
+            noteOperatorSignal(id, signal)
+        case .cancelled:
+            if let probe = admission.probeGeneration { breakers[id]?.cancelProbe(generation: probe, now: now) }
+        }
+    }
+
     // MARK: Outcome reporting (the ONLY inputs that move state)
 
     func noteSuccess(_ id: CapabilityID) {

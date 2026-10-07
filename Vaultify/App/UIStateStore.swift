@@ -14,6 +14,13 @@ import SwiftUI
     struct DraftState: Codable, Identifiable, Equatable {
         var item: VaultItem
         var isNew: Bool
+        var aliasID: String? = nil
+        var aliasPersonaID: String? = nil
+        var aliasRelationRevision: UInt64? = nil
+        /// Sealed alongside the edited draft. CAS must compare the vault with
+        /// the original relation, not with the user's unsaved link/unlink edits.
+        var originalItem: VaultItem? = nil
+        var editorBaseline: VaultItem { originalItem ?? item }
         var id: String { item.id }
     }
 

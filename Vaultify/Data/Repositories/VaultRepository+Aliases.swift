@@ -27,6 +27,9 @@ extension VaultRepository {
                           disabledAt: secret.disabledAt,
                           backendMinted: secret.backendMinted,
                           relayDomainID: secret.relayDomainID,
+                          relayHostnameSnapshot: secret.relayHostnameSnapshot,
+                          relayDomainMappingProof: secret.relayDomainMappingProof,
+                          relationRevision: secret.relationRevision,
                           sortIndex: record.sortIndex,
                           createdAt: record.createdAt,
                           updatedAt: record.updatedAt)
@@ -58,15 +61,27 @@ extension VaultRepository {
     }
 
     func aliases(forItem itemId: String) -> [EmailAlias] {
-        aliases.filter { $0.boundItemId == itemId }
+        guard let persona = activePersona,
+              let login = items(for: persona).first(where: { $0.id == itemId }),
+              let readable = try? AliasWriteback.readableField(on: login) else {
+            // No field is a valid legacy state; protected/duplicate fields
+            // cannot authorize a relation lookup.
+            guard let persona = activePersona,
+                  let login = items(for: persona).first(where: { $0.id == itemId }),
+                  AliasWriteback.canonicalFields(on: login).isEmpty else { return [] }
+            return aliases(forPersona: persona.id).filter { $0.boundItemId == itemId }
+        }
+        return aliases(forPersona: persona.id).filter { $0.resolvedAddress == readable.value }
     }
 
     /// Reuse suggestions for a login context, scoped to the ACTIVE persona
     /// (INV-PE01: another persona's addresses are excluded, not down-ranked).
     func aliasSuggestions(forItem itemId: String?, host: String?) -> [EmailAlias] {
         guard let active = activePersona else { return [] }
+        if let itemId, !items(for: active).contains(where: { $0.id == itemId }) { return [] }
         return AliasSuggestion.ranked(aliases: aliases(forPersona: active.id),
                                       itemID: itemId, host: host,
-                                      flag: RelayFeature.activeAliasesEnabled)
+                                      flag: RelayFeature.activeAliasesEnabled,
+                                      canonicalAddress: itemId.flatMap { item(id: $0)?.privateEmailValue })
     }
 }

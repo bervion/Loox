@@ -11,6 +11,7 @@ import SwiftUI
 /// looked identical to tapping it once. Everything that prevents that lives
 /// here, in one place, so the two screens cannot drift apart again.
 @MainActor @Observable final class ForwardingInboxVerification {
+    nonisolated deinit {}
     enum Activity: Equatable {
         case sending
         case checking
@@ -43,6 +44,14 @@ import SwiftUI
     /// which is why there is no `deinit` to cancel it from (a `@MainActor` class
     /// cannot touch its own isolated state there).
     private var countdown: Task<Void, Never>?
+    weak var coordinator: DestinationVerificationCoordinator?
+
+    func clearSensitiveState() {
+        countdown?.cancel(); countdown = nil
+        outcome = nil
+        busyInboxID = nil; activity = nil
+        // Server cooldown survives a local lock and never authorizes resends.
+    }
 
     func isBusy(_ inbox: ForwardingInbox) -> Bool { busyInboxID == inbox.id }
 
@@ -68,13 +77,17 @@ import SwiftUI
         activity = .sending
         defer { busyInboxID = nil; activity = nil }
         do {
-            let state = try await relay.beginDestinationVerification(inbox)
+            let state: RelayAPIClient.DestinationState
+            if let coordinator { state = try await coordinator.begin(inbox) }
+            else { state = try await relay.beginDestinationVerification(inbox) }
+            try Task.checkCancellation()
             startCooldown(inbox, seconds: state.resendAfterSeconds ?? Self.fallbackResendCooldown)
             Haptics.success()
             outcome = Outcome(
                 title: appString("Check your inbox"),
                 body: appString("We sent a confirmation link to \(EmailMask.masked(inbox.email)). Open it to finish setting up this forwarding address."))
         } catch {
+            if error is CancellationError || Task.isCancelled { return }
             report(error)
         }
     }
@@ -87,7 +100,10 @@ import SwiftUI
         activity = .checking
         defer { busyInboxID = nil; activity = nil }
         do {
-            let state = try await relay.refreshDestinationStatus(inbox)
+            let state: RelayAPIClient.DestinationState?
+            if let coordinator { state = try await coordinator.refreshNow(inbox) }
+            else { state = try await relay.refreshDestinationStatus(inbox) }
+            try Task.checkCancellation()
             let status = state.flatMap { DestinationVerificationStatus(rawValue: $0.status) }
             if status == .verified {
                 Haptics.success()
@@ -102,6 +118,7 @@ import SwiftUI
                     body: appString("Open the confirmation link we emailed to \(EmailMask.masked(inbox.email)), then check again."))
             }
         } catch {
+            if error is CancellationError || Task.isCancelled { return }
             report(error)
         }
     }
@@ -116,7 +133,10 @@ import SwiftUI
 
     private func report(_ error: Error) {
         Haptics.error()
-        if let failure = error as? RelayService.Failure {
+        if case DestinationVerificationCoordinator.Failure.throttled(let seconds) = error {
+            outcome = Outcome(title: appString("Check again later"),
+                              body: appString("Try checking again in \(seconds)s."))
+        } else if let failure = error as? RelayService.Failure {
             outcome = Outcome(title: failure.userTitle, body: failure.userMessage,
                               offersReset: failure.offersPrivateEmailReset)
         } else {
@@ -127,11 +147,15 @@ import SwiftUI
 
     private func startCooldown(_ inbox: ForwardingInbox, seconds: Int) {
         resendAvailableAt[inbox.id] = Date().addingTimeInterval(TimeInterval(max(0, seconds)))
-        guard countdown == nil else { return }
+        resumeCountdown()
+    }
+
+    func resumeCountdown() {
+        guard countdown == nil, resendAvailableAt.values.contains(where: { $0 > Date() }) else { return }
         countdown = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
-                guard let self else { return }
+                guard !Task.isCancelled, let self else { return }
                 countdownTick &+= 1
                 // Stop ticking once every cooldown has run out — the countdown
                 // exists to redraw labels, not to keep a timer alive forever.

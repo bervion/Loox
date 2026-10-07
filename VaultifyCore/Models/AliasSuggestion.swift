@@ -20,11 +20,12 @@ nonisolated enum AliasSuggestion {
     /// Reuse priority: exact item binding → same-service domain → reusable
     /// persona addresses. Only live (active) aliases are usable as an address;
     /// gone entirely while the relay flag is off.
-    static func ranked(aliases: [EmailAlias], itemID: String?, host: String?, flag: Bool) -> [EmailAlias] {
+    static func ranked(aliases: [EmailAlias], itemID: String?, host: String?, flag: Bool, canonicalAddress: String? = nil) -> [EmailAlias] {
         guard flag else { return [] }
         var exact: [EmailAlias] = [], domain: [EmailAlias] = [], reusable: [EmailAlias] = []
-        for alias in aliases where alias.status == .active {
-            if let itemID, alias.boundItemId == itemID {
+        for alias in aliases where alias.status == .active && alias.resolvedAddress != nil {
+            if (canonicalAddress != nil && alias.resolvedAddress == canonicalAddress)
+                || (itemID != nil && alias.boundItemId == itemID) {
                 exact.append(alias)
             } else if let host, let bound = alias.boundDomain, relatedHosts(bound, host) {
                 domain.append(alias)
