@@ -1,1 +1,1 @@
-Improved Private Email inbox setup and recovery when device verification needs to be renewed. Includes a fix for accessing your vault after reinstalling the app.
+Private Email now lists linked saved services. Unlinking preserves your saved login and forwarding. View the full receiving email, get verification updates, and create an address before saving a login. Loox Member has dedicated Links, Browser and Family screens with clearer layouts and text. loox.pw remains unavailable.

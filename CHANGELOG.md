@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.57.0] - 2026-10-08
+
+### Added
+- overhaul private email and member experiences
+
+### Fixed
+- preserve Tuist lockfile links during generation
+
+### Improved
+- skip verbose simulator diagnostics for unit checks
+- run unit tests without snapshot and UI targets
+
+### Changed
+- document private email and member acceptance
+- cover relay safety and native member flows
+
+
 ## [1.56.6] - 2026-10-07
 
 ### Fixed
