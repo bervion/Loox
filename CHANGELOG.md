@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.57.1] - 2026-10-08
+
+### Fixed
+- align rounded cards, lighten fill and shorten link counts
+
+### Changed
+- record tile layout and theme verification
+
+
 ## [1.57.0] - 2026-10-08
 
 ### Added

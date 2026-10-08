@@ -1,1 +1,1 @@
-Email riêng tư có danh sách dịch vụ đã liên kết và thao tác hủy liên kết, giữ nguyên mục đăng nhập và chuyển tiếp thư. Xem đầy đủ email nhận, cập nhật trạng thái xác minh và tạo địa chỉ trước khi lưu mục đăng nhập. Liên kết chia sẻ, Gửi đến trình duyệt và Gia đình có màn riêng, bố cục và chữ rõ hơn. loox.pw chưa khả dụng.
+Card trên màn Thành viên Loox được căn đều, nền nhẹ và góc bo tròn hơn. Số liên kết chia sẻ hiển thị ngắn gọn, dễ đọc.

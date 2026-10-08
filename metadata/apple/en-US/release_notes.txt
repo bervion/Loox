@@ -1,1 +1,1 @@
-Private Email now lists linked saved services. Unlinking preserves your saved login and forwarding. View the full receiving email, get verification updates, and create an address before saving a login. Loox Member has dedicated Links, Browser and Family screens with clearer layouts and text. loox.pw remains unavailable.
+Cards on the Loox Member screen now stay aligned, with lighter backgrounds and rounded corners. Sharing link counts are shorter and easier to read.
