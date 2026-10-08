@@ -472,9 +472,9 @@ let project = Project(
         // Additive dev-only scheme: same app, but the run action loads the local
         // StoreKit configuration (Loox.storekit) so subscription purchases are
         // testable in the simulator without App Store Connect. `make check` uses
-        // the auto-generated "Vaultify" scheme for its compile check; CI and
-        // `make test` drive the shared "Vaultify-Quality" scheme, which is the
-        // one that carries the test targets. The .storekit file is scheme
+        // the auto-generated "Vaultify" scheme for its compile check. Unit
+        // tests use "Vaultify-UnitTests"; snapshot and UI tests retain the
+        // complete "Vaultify-Quality" scheme. The .storekit file is scheme
         // metadata only — it is deliberately NOT a bundle resource.
         .scheme(
             name: "Vaultify-StoreKit",
@@ -485,6 +485,13 @@ let project = Project(
                 executable: "Vaultify",
                 options: .options(storeKitConfigurationPath: "Loox.storekit")
             )
+        ),
+        .scheme(
+            name: "Vaultify-UnitTests",
+            shared: true,
+            buildAction: .buildAction(targets: ["Vaultify"]),
+            testAction: .targets(["VaultifyTests"]),
+            runAction: .runAction(executable: "Vaultify")
         ),
         .scheme(
             name: "Vaultify-Quality",

@@ -12,12 +12,23 @@ DERIVED_DATA="$3"
 RESULT_BUNDLE="$4"
 
 case "$TEST_TARGET" in
-  VaultifyTests|VaultifySnapshotTests|VaultifyUITests) ;;
+  VaultifyTests) TEST_SCHEME="Vaultify-UnitTests" ;;
+  VaultifySnapshotTests|VaultifyUITests) TEST_SCHEME="Vaultify-Quality" ;;
   *)
     echo "Unsupported test target: $TEST_TARGET" >&2
     exit 64
     ;;
 esac
+
+# CI restores only package source directories here. Xcode still resolves the
+# pinned graph and compiles this candidate; no compiled products are restored.
+XCODE_ARGUMENTS=(-workspace Vaultify.xcworkspace)
+if [[ -n "${VAULTIFY_SOURCE_PACKAGES_DIR:-}" ]]; then
+  XCODE_ARGUMENTS+=(
+    -clonedSourcePackagesDirPath "$VAULTIFY_SOURCE_PACKAGES_DIR"
+    -onlyUsePackageVersionsFromResolvedFile
+  )
+fi
 
 # Persistent-runner hygiene: a cancelled run leaves its result bundle behind in
 # RUNNER_TEMP, and xcodebuild refuses to write over an existing one.
@@ -30,8 +41,8 @@ rm -rf "$RESULT_BUNDLE" "$RESULT_BUNDLE.summary.json"
 # (AppAttestKeyStoreTests) cannot pass.
 set +e
 xcodebuild \
-  -workspace Vaultify.xcworkspace \
-  -scheme Vaultify-Quality \
+  "${XCODE_ARGUMENTS[@]}" \
+  -scheme "$TEST_SCHEME" \
   -configuration Debug \
   -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
   -derivedDataPath "$DERIVED_DATA" \
@@ -50,4 +61,3 @@ if [[ -d "$RESULT_BUNDLE" ]]; then
 fi
 
 exit "$TEST_STATUS"
-

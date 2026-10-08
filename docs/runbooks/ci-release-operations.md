@@ -17,11 +17,11 @@ them were ever committed. Treat any gate not listed below as absent, not as pend
 Since 2026-09-28 the macOS jobs of both workflows run on GitHub's `macos-26` (arm64) image,
 because the self-hosted Mac mini is offline. What differs while this lasts:
 
-- Every job starts on a fresh VM. mise and Bundler are cached by their actions, but Swift
-  packages and DerivedData are not, so a CI run takes far longer than the ~6 minutes on
-  the Mac mini.
+- Every job starts on a fresh VM. mise and Bundler are cached by their actions; unit
+  CI also caches Swift package sources as described below. DerivedData and compiled
+  products stay fresh. No elapsed-time saving has been measured for the source cache.
 - A red run leaves only its log and the uploaded summary JSON; the `.xcresult` bundle goes
-  with the VM. Reproduce a failure locally with `make test`.
+  with the VM. Reproduce a unit failure locally with `make test TEST_TARGETS=VaultifyTests`.
 - The repository is private, so every job is billed: macOS minutes cost about ten times
   Linux minutes and drain the plan's included minutes fast. When jobs sit queued or never
   start, check Settings → Billing (included minutes, spending limit).
@@ -42,17 +42,30 @@ job and its 50-minute evidence wait are fine on either runner and can stay.
 
 | Job name | Host | Purpose |
 |---|---|---|
-| Unit tests | self-hosted `vaultify-ci` | `VaultifyTests` (XCTest + Swift Testing) via `scripts/ci/run-xcode-suite.sh` |
+| Unit tests | self-hosted `vaultify-ci` (temporarily `macos-26`) | `VaultifyTests` (XCTest + Swift Testing), scheme `Vaultify-UnitTests`, via `scripts/ci/run-xcode-suite.sh` |
 
 It creates a throwaway simulator, runs the suite, uploads
-`unit-test-receipt-<attempt>` (the `.xcresult` plus its `summary.json`), and deletes the
+`unit-test-receipt-<attempt>` (summary JSON only), and deletes the
 simulator. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
 cancelled jobs, because the runner is persistent.
 
-Snapshot and critical-UI jobs are **deliberately not** in CI. They were removed in
-`1d64d656` because they tripled the wall time of every run on the single self-hosted
-runner. `Vaultify-Quality` still carries all three test targets, so run them locally with
-`make test` before tagging.
+The dedicated `Vaultify-UnitTests` scheme carries only `VaultifyTests`; its hosted app
+and embedded extensions still compile. Snapshot and critical-UI suites are not part
+of CI or the release test gate. `Vaultify-Quality` retains all three test targets for
+optional local checks: `make test` still selects all three by default, or use
+`make test TEST_TARGETS=VaultifySnapshotTests` / `make test TEST_TARGETS=VaultifyUITests`.
+
+Unit CI caches only `$RUNNER_TEMP/vaultify-spm/repositories` and `checkouts`. Its exact
+key binds the source cache to OS/architecture, selected Xcode, `.package.resolved`,
+`.mise.toml` and toolchain pins, with no fallback key. Cache misses or cache-service
+failures do not bypass dependency resolution or tests. Binary artifacts, workspace
+state, generated projects and compiled products are not cached, so binary-package
+downloads, compilation and simulator setup still occur.
+
+`scripts/ci/prepare-project.sh` validates each exact remote manifest version against
+the tracked `.package.resolved`, then copies that lock into the generated workspace.
+Both CI and signed releases use this preparation. With the CI source-cache path,
+the suite runner passes `-onlyUsePackageVersionsFromResolvedFile` to Xcode.
 
 Pull-request CI is secret-free by design. Candidate code executes on the runner host, so
 `vaultify-ci` must stay a separate runner instance from `vaultify-release`, must never hold
@@ -101,8 +114,10 @@ export DEVELOPER_DIR="$(scripts/ci/select-xcode.sh | tail -n 1)"
 udid="$(scripts/ci/create-simulator.sh | tail -n 1)"
 ```
 
-`make test` does exactly this, runs `Vaultify-Quality` against that UDID, then deletes the
-simulator. `make check` is a compile check only, so it uses a generic destination.
+`make test TEST_TARGETS=VaultifyTests` selects the same toolchain and fresh simulator,
+runs `Vaultify-UnitTests`, then deletes the simulator. Optional default `make test`
+runs units plus snapshot/UI targets, with a fresh simulator per target and
+`Vaultify-Quality` for the latter two. `make check` uses a generic compile destination.
 
 Snapshot references are recorded at a pinned `displayScale` (see
 `VaultifySnapshotTests/SnapshotEnvironment.swift`), so they are valid on any device. They
@@ -147,8 +162,8 @@ Before creating a release tag:
 1. merge only after a green PR run and owner review;
 2. confirm the candidate commit on `main` has a green `ci.yml` run — that same run is what
    the release job re-checks, so a red or missing one blocks the tag;
-3. run `make test` locally on the pinned toolchain and confirm unit, snapshot and UI targets
-   are green; CI does not cover snapshot or UI;
+3. run `make test TEST_TARGETS=VaultifyTests` locally on the pinned toolchain; snapshot/UI
+   checks remain optional separate local work for this unit-only release path;
 4. complete non-empty release notes (`docs/releases/TEMPLATE.md`) and the localized
    `metadata/apple/*/release_notes.txt` that `make notes` generates;
 5. confirm the worktree is clean and the candidate commit is on `main`;

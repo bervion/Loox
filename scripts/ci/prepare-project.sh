@@ -9,6 +9,31 @@ if [[ "$ACTUAL_TUIST_VERSION" != "$EXPECTED_TUIST_VERSION" ]]; then
   exit 1
 fi
 
+# The generated workspace is ignored, so its lockfile otherwise disappears on
+# every fresh runner. Use the tracked lock for both unit CI and signed releases,
+# and reject a manifest bump whose matching lock update was forgotten.
+/usr/bin/python3 - <<'PY'
+import json, re
+from pathlib import Path
+
+manifest = Path("Project.swift").read_text()
+dependencies = re.findall(
+    r'\.remote\(\s*url:\s*"([^"]+)"\s*,\s*requirement:\s*\.exact\("([^"]+)"\)\s*\)',
+    manifest,
+)
+if len(dependencies) != len(re.findall(r'\.remote\(', manifest)):
+    raise SystemExit("CI lock validation requires exact remote package versions in Project.swift")
+
+def normalized(url):
+    return url.rstrip("/").removesuffix(".git")
+
+pins = {normalized(pin["location"]): pin["state"]
+        for pin in json.loads(Path(".package.resolved").read_text())["pins"]}
+for url, version in dependencies:
+    if pins.get(normalized(url), {}).get("version") != version:
+        raise SystemExit("Update .package.resolved to match %s %s in Project.swift" % (url, version))
+PY
+
 # The app icon is an Icon Composer `.icon` bundle. Tuist (to keep it as a
 # resource) and actool (to compile it) both resolve that type through Launch
 # Services, and only Icon Composer.app, nested in Xcode, declares it. An Xcode
@@ -38,6 +63,9 @@ NO_COLOR=1 tuist generate --no-open 2>&1 | tee "$GENERATE_LOG"
 if [[ "$CREATED_TUIST_DIRECTORY" == "1" ]]; then
   rmdir Tuist
 fi
+
+mkdir -p Vaultify.xcworkspace/xcshareddata/swiftpm
+cp .package.resolved Vaultify.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Tuist drops a declared path it cannot resolve with nothing but a warning, and
 # the build then fails far from the cause: a dropped `vaultify.icon` surfaces as

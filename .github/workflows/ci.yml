@@ -37,6 +37,19 @@ jobs:
       - name: Install pinned toolchain
         uses: jdx/mise-action@c53b9236f0b3370f31520f8b142f141256d839c6 # v3.6.0
 
+      # Cache immutable dependency sources only. Binary artifacts, workspace
+      # state, generated projects and compiled app/test products stay fresh.
+      # Exact keys bind sources to the lock and the selected Xcode/toolchain;
+      # there is no fallback to a different dependency graph.
+      - name: Restore Swift package sources
+        continue-on-error: true
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ${{ runner.temp }}/vaultify-spm/repositories
+            ${{ runner.temp }}/vaultify-spm/checkouts
+          key: swiftpm-source-v1-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.SELECTED_XCODE_VERSION }}-${{ hashFiles('.package.resolved', '.mise.toml', 'scripts/ci/toolchain-pin.sh') }}
+
       - name: Generate project
         run: scripts/ci/prepare-project.sh
 
@@ -51,7 +64,9 @@ jobs:
       - name: Create isolated simulator
         run: scripts/ci/create-simulator.sh
 
-      - name: Run XCTest and Swift Testing suite
+      - name: Run basic unit suite
+        env:
+          VAULTIFY_SOURCE_PACKAGES_DIR: ${{ runner.temp }}/vaultify-spm
         run: |
           scripts/ci/run-xcode-suite.sh \
             VaultifyTests \

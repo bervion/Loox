@@ -187,6 +187,7 @@ make version     # show current version / build / last tag
 make changelog   # commits since last tag
 make notes       # preview AI release notes without committing
 make check       # local compile check (app + AutoFill extension)
+make test TEST_TARGETS=VaultifyTests  # local unit scope used by CI/release
 make submit-ios  # submit the latest TestFlight build to App Store review
 ```
 
@@ -237,12 +238,23 @@ building a throwaway one — the opposite of what a shared runner needs.
 
 ## How it works
 
-- `.github/workflows/ci.yml` — on push to `main` / PRs: compiles the app scheme
-  (builds the embedded AutoFill extension too), no signing. Fast feedback.
-- `.github/workflows/release-ios.yml` — on tag `v*`: `bundle install` → `fastlane build_and_upload`.
+- `.github/workflows/ci.yml` — on push to `main` / PRs: runs `VaultifyTests` (XCTest +
+  Swift Testing) through `Vaultify-UnitTests`, with ad-hoc signing for hosted Keychain tests.
+  Snapshot/UI tests are optional local checks through `Vaultify-Quality`; `make test`
+  still selects all three targets by default.
+- `.github/workflows/release-ios.yml` — on tag `v*`: requires successful unit CI on the
+  exact tag SHA, then `bundle install` → `fastlane build_and_upload`. The signed archive
+  continues to use the app's `Vaultify` scheme.
 - `fastlane/Fastfile` `build_and_upload`: `setup_ci` (temp keychain) → `match` (readonly,
   app + AutoFill ext + Safari ext) → force Manual signing per target → `build_app`
   (app-store export with all three profiles) → `upload_to_testflight`.
+
+`scripts/ci/prepare-project.sh` validates exact manifest package versions against the
+tracked `.package.resolved` and seeds the generated workspace's lockfile for both CI
+and signed releases. Unit CI caches only Swift package repositories/checkouts, keyed
+to the lock and selected toolchain. It still compiles the candidate and creates a fresh
+simulator; binary-package downloads are not cached. Timing savings have not been measured.
+Detailed test scope and release boundaries are in the [CI runbook](runbooks/ci-release-operations.md).
 
 The build number is whatever is committed in `Project.swift` at the tagged commit, so it is
 unique and increasing for every upload (each `make release`/`make beta`/`make hotfix` bumps it).

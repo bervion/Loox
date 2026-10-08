@@ -75,7 +75,7 @@ VaultifySafari/            # Safari web extension (identity/card fill, signup as
 ├── DevFixtures/           #   local fixture pages + node harnesses for the pure JS layers
 fastlane/                  # Fastfile, Appfile, Matchfile
 scripts/                   # release.sh, release-beta.sh, generate-release-notes.sh
-.github/workflows/         # ci.yml (compile check), release-ios.yml (TestFlight)
+.github/workflows/         # ci.yml (unit tests), release-ios.yml (TestFlight)
 docs/                      # codebase-summary.md, deployment-guide.md
 ```
 
@@ -89,8 +89,16 @@ docs/                      # codebase-summary.md, deployment-guide.md
 4. **Change project config** (settings, capabilities, dependencies) → edit `Project.swift`,
    then `tuist generate`. Use `tuist edit` for manifest autocomplete.
 5. **Compile check** (app + extension): `make check`
-6. **Commit** `Project.swift` + source — **never** the generated project. Use
+6. **Unit tests** (the CI/release test scope): `make test TEST_TARGETS=VaultifyTests`.
+   The runner uses **Vaultify-UnitTests**. Optional full local checks: `make test`;
+   snapshot/UI targets use **Vaultify-Quality** and are not run by CI.
+7. **Commit** `Project.swift` + source — **never** the generated project. Use
    [conventional commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `chore:` …).
+
+CI caches Swift package repository/checkouts only. Project preparation checks the
+tracked `.package.resolved` against manifest versions and copies it into the generated
+workspace for CI and releases. Compilation, simulator setup and binary-package downloads
+still occur; no duration reduction is assumed. See the [CI runbook](docs/runbooks/ci-release-operations.md).
 
 For Private Email, generate with `make gen`, open `Vaultify.xcworkspace`, and run the
 **Vaultify** scheme in **Debug** on a physical iPhone signed into iCloud. The app's
