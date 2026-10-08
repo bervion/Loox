@@ -98,11 +98,11 @@ struct LooxFeatureTile<Destination: View>: View {
             // stealing text room truncated "0 trong 30 ngày").
             .padding(.leading, badgeWidth + Space.s2 - (status != nil ? 6 + Space.s2 : 0))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(Space.s3)
         .frame(minHeight: Metric.hitMin)
-        .background(Color(rgb: env.theme.active.surfacePressed))
-        .vaultCornerRadius(Radius.concentric(outer: Radius.lg, inset: Space.s4))
+        .background(Color(rgb: env.theme.active.surfaceInset))
+        .vaultCornerRadius(Radius.md)
         .contentShape(.rect)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(title.inAppLocalized))
