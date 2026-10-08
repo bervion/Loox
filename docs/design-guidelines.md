@@ -78,7 +78,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Secrets/codes | `Font.vaultCode(_:weight:)` — SF text with tabular digits | `DesignSystem/Typography.swift` |
 | Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
 | Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
-| Semantic palette (derived) | `surfaceFloatingSolid/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
+| Semantic palette (derived) | `surfaceFloatingSolid/surfaceInset/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
 | Card / divider / form bg | `ThemedCard`, `.themedCard()`, `ThemedDivider`, `.appBackground()`, `.themedFormBackground()` | `DesignSystem/Components/ThemedComponents.swift` |
 | Buttons | `.buttonStyle(.themedProminent/.themedTinted/.themedDestructive)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
 | Compact inline buttons (row-adjacent, not full-width) | `.buttonStyle(.themedCompact/.themedCompactProminent)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
@@ -153,6 +153,7 @@ Required semantic tokens:
 | `surfaceElevated` | Raised cards, sheets, menus |
 | `surfaceFloating` | Translucent floating controls when allowed |
 | `surfaceFloatingSolid` | Solid fallback for floating controls |
+| `surfaceInset` | Resting fill for tiles nested inside a card: `secondaryBackground` in light themes, `controlBackground` in dark themes |
 | `surfacePressed` | Pressed/hover/touch state |
 | `textPrimary` | Main readable text |
 | `textSecondary` | Supporting readable text |
@@ -513,6 +514,17 @@ Notices (banners):
     a red fill under white text looks right and measures 3.48:1; deepening it keeps 6.2:1. Both
     are `Radius.sm` rounded rects at `Metric.controlSmall`.
 - Toolbar overflow ("…") is chrome, not an accent action: render it at `.iconPrimary`.
+
+### Equal-height inset tile grids
+
+Use `surfaceInset` for the resting tile fill; reserve `surfacePressed` for an actual
+interaction state. Small Member grids use `EqualHeightTileLayout`: measure content at
+the actual column width, then give every tile in a multi-column section the tallest
+intrinsic height across the entire grid, including all six Member tiles. Accessibility
+Dynamic Type uses one column with each tile's natural height. Titles and metrics wrap;
+do not impose a fixed tile height, truncate text or shrink labels to force alignment.
+Member inset tiles use `Radius.md` (14pt), an owner-requested softer shape within the
+`Radius.lg` section shell and an intentional exception to concentric child rounding.
 
 ## Home Screen Notes From Current Screenshot
 
