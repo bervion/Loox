@@ -433,11 +433,19 @@ separates synthetic native evidence from physical and production checks.
 | Family | With two iCloud accounts/devices, exercise item and Space invitation, acceptance, ceremony, use, update and revoke. Approval Mode on with vault-item sync off must work. |
 | Upgrade/offline | Existing aliases retain their suffix. A valid historical signed mapping resolves an issued nonlegacy alias; an unknown/unproved mapping remains unavailable for copy. |
 
-`loox.pw` activation is a separate operational gate. The captured production registry
-v14 contains `email-pw=createDisabled`; unavailable signed entries can now be shown in
-the app with a readiness explanation. This native change neither enables creation nor
-changes server routing/defaults. A registry that has not been accepted still uses the
-bundled fallback, which contains the legacy domain only.
+On 2026-10-08, the missing production `loox.pw -> email-pw` ingress mapping was
+provisioned by migration 0008. The owner confirmed fresh legacy-alias and apex
+operational-inbox receipts, then D1 and signed production registry v15 were both
+changed to `active`. Existing primary choices and issued suffixes were preserved.
+Normal new-alias creation and mail receipt still require the physical app check.
+
+The registry transport must bypass the OS HTTP cache on an explicit refresh.
+Before the refresh fix, `refreshNow()` could accept cached v14 again for an hour
+and the picker still showed "not open for new addresses" after v15 publication.
+The picker now requests refresh on entry and pull-to-refresh through the existing
+coordinator. Signature, environment, signed expiry and anti-rollback checks remain
+mandatory; this does not enable an unverified domain. A registry that has not been
+accepted still uses the bundled legacy-only fallback.
 
 Before enabling `email-pw`, obtain read-only access to the correct live D1 configuration,
 verify namespace and ingress routing, and prove actual production-apex delivery to a

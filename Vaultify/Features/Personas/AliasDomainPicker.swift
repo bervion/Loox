@@ -90,5 +90,14 @@ private struct AliasDomainPickerScreen: View {
         .themedFormBackground()
         .navigationTitle(Text("Email Domain"))
         .platformNavigationBarTitleDisplayMode(.inline)
+        .task { await refreshDomains() }
+        .refreshable { await refreshDomains() }
+    }
+
+    private func refreshDomains() async {
+        #if DEBUG
+        guard !env.uiTestConfiguration.isEnabled, !CloudSyncService.isHostingUnitTests else { return }
+        #endif
+        await env.controlPlaneRefresher.refreshNow()
     }
 }
