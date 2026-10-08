@@ -24,15 +24,18 @@ import Foundation
     @ObservationIgnored private let controlStore: SignedControlPlaneStore
     @ObservationIgnored private let registryURL: URL
     @ObservationIgnored private let environment: String
+    @ObservationIgnored private let session: URLSession
     @ObservationIgnored var onApplied: (() -> Void)?
 
     init(trustedKeys: [String: Data] = CapabilityManifestVerifier.bundledTrustedKeys,
          defaults: UserDefaults = .standard,
          registryURL: URL = DomainRegistryClient.primaryURL,
-         environment: String = DomainRegistryClient.expectedEnv) {
+         environment: String = DomainRegistryClient.expectedEnv,
+         session: URLSession = .shared) {
         self.trustedKeys = trustedKeys
         self.registryURL = registryURL
         self.environment = environment
+        self.session = session
         self.controlStore = SignedControlPlaneStore(
             family: .domainRegistry, env: environment,
             legacyVersionKey: "domain_registry_highest_version",
@@ -61,9 +64,12 @@ import Foundation
     @discardableResult
     func refresh(now: Date = .now) async -> Bool {
         guard !trustedKeys.isEmpty else { return false }
-        var request = URLRequest(url: registryURL)
+        // The signed store is our offline fallback. An explicit refresh must
+        // reach the control plane rather than reuse an HTTP-cached lifecycle.
+        var request = URLRequest(url: registryURL, cachePolicy: .reloadIgnoringLocalCacheData)
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.timeoutInterval = 15
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
+        guard let (data, response) = try? await session.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200 else { return false }
         guard accept(documentData: data, now: now) else { return false }
         controlStore.markRefreshSuccess(now: now)
