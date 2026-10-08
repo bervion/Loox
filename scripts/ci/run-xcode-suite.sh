@@ -23,6 +23,11 @@ esac
 # CI restores only package source directories here. Xcode still resolves the
 # pinned graph and compiles this candidate; no compiled products are restored.
 XCODE_ARGUMENTS=(-workspace Vaultify.xcworkspace)
+if [[ "$TEST_TARGET" == "VaultifyTests" ]]; then
+  # Basic unit results remain in xcresult. Verbose simulator diagnostics can
+  # add several minutes after the test host has already finished.
+  XCODE_ARGUMENTS+=(-collect-test-diagnostics never)
+fi
 if [[ -n "${VAULTIFY_SOURCE_PACKAGES_DIR:-}" ]]; then
   XCODE_ARGUMENTS+=(
     -clonedSourcePackagesDirPath "$VAULTIFY_SOURCE_PACKAGES_DIR"

@@ -48,6 +48,7 @@ It creates a throwaway simulator, runs the suite, uploads
 `unit-test-receipt-<attempt>` (summary JSON only), and deletes the
 simulator. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
 cancelled jobs, because the runner is persistent.
+For `VaultifyTests`, `-collect-test-diagnostics never` disables verbose Simulator diagnostics (`sysdiagnose`); stdout, `.xcresult` summary and test exit code remain unchanged. CI timing impact has not been measured.
 
 The dedicated `Vaultify-UnitTests` scheme carries only `VaultifyTests`; its hosted app
 and embedded extensions still compile. Snapshot and critical-UI suites are not part
