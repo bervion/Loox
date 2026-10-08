@@ -1,1 +1,1 @@
-Card trên màn Thành viên Loox được căn đều, nền nhẹ và góc bo tròn hơn. Số liên kết chia sẻ hiển thị ngắn gọn, dễ đọc.
+Email riêng tư tự cập nhật danh sách tên miền khi mở màn chọn, giúp hiển thị đúng các tên miền vừa được kích hoạt như loox.pw.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.57.2] - 2026-10-08
+
+### Fixed
+- refresh private email domain choices (#219)
+
+
 ## [1.57.1] - 2026-10-08
 
 ### Fixed
