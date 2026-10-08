@@ -65,7 +65,11 @@ if [[ "$CREATED_TUIST_DIRECTORY" == "1" ]]; then
 fi
 
 mkdir -p Vaultify.xcworkspace/xcshareddata/swiftpm
-cp .package.resolved Vaultify.xcworkspace/xcshareddata/swiftpm/Package.resolved
+# A fresh Tuist workspace can already link this path to the tracked lock.
+# BSD cp rejects copying a file onto itself, including symlinks and hardlinks.
+if [[ ! .package.resolved -ef Vaultify.xcworkspace/xcshareddata/swiftpm/Package.resolved ]]; then
+  cp .package.resolved Vaultify.xcworkspace/xcshareddata/swiftpm/Package.resolved
+fi
 
 # Tuist drops a declared path it cannot resolve with nothing but a warning, and
 # the build then fails far from the cause: a dropped `vaultify.icon` surfaces as
