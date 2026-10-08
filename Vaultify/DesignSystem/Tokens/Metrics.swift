@@ -38,6 +38,10 @@ nonisolated enum Metric {
     static let avatarRow: CGFloat = 36
     /// The oversized circular avatar an empty state centres on.
     static let avatarHero: CGFloat = 92
+
+    /// Regular-width Member tiles retain their approved adaptive grid range.
+    static let memberTileMinWidth: CGFloat = 200
+    static let memberTileMaxWidth: CGFloat = 400
 }
 
 /// Floating icon-only tab bar layout (Design System: Threads-style minimal bar).

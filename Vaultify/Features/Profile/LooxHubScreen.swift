@@ -245,7 +245,7 @@ struct LooxHubScreen: View {
             }
             LooxFeatureTile(title: "Share Links", icon: Icons.share, tint: SettingsBadgeTint.green,
                             metric: serviceMetric(.shareLink,
-                                                  appString("\(profileLinkCount) links on this device")),
+                                                  appString("\(profileLinkCount) links")),
                             status: serviceStatus(.shareLink)) {
                 ShareLinksScreen()
             }
@@ -383,9 +383,8 @@ struct LooxHubScreen: View {
     // MARK: Section chrome (white card wrapping a gray tile grid)
 
     /// iCloud+ section idiom: an elevated WHITE card that carries its own
-    /// header row (title + optional trailing action) and a two-column grid of
-    /// gray tiles inside — the tiles' fixed systemGray6 fill reads against the
-    /// card, not the screen background.
+    /// header row (title + optional trailing action) and a grid of equally tall
+    /// inset tiles. Their semantic idle surface reads against the parent card.
     private struct LooxHubSectionCard<Tiles: View>: View {
         @Environment(AppEnvironment.self) private var env
         @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -398,11 +397,11 @@ struct LooxHubScreen: View {
         /// Compact keeps the approved two-up iPhone grid — an adaptive minimum
         /// sized for iPad collapsed to ONE stacked column on phone widths.
         /// Regular stays adaptive (3-4 across a wide detail pane).
-        private var columns: [GridItem] {
-            if dynamicTypeSize.isAccessibilitySize { return [GridItem(.flexible())] }
+        private var columns: EqualHeightTileLayout.Columns {
+            if dynamicTypeSize.isAccessibilitySize { return .fixed(1) }
             return horizontalSizeClass == .regular
-                ? [GridItem(.adaptive(minimum: 200, maximum: 400), spacing: Space.s3)]
-                : [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())]
+                ? .adaptive(minimum: Metric.memberTileMinWidth, maximum: Metric.memberTileMaxWidth)
+                : .fixed(2)
         }
 
         var body: some View {
@@ -423,7 +422,7 @@ struct LooxHubScreen: View {
                         .buttonStyle(.plain)
                     }
                 }
-                LazyVGrid(columns: columns, spacing: Space.s3) {
+                EqualHeightTileLayout(columns: columns, spacing: Space.s3) {
                     tiles
                 }
             }

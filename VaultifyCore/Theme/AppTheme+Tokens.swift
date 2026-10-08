@@ -10,6 +10,9 @@ nonisolated extension AppTheme {
     var surfaceBase: UInt32 { elevatedBackground }
     /// Raised cards, sheets, menus.
     var surfaceElevated: UInt32 { elevatedBackground }
+    /// Quiet idle surface for tiles nested inside a card. The dark control
+    /// surface stays distinct from its parent without applying a pressed tint.
+    var surfaceInset: UInt32 { isDark ? controlBackground : secondaryBackground }
     /// Solid fallback for the floating control layer (tab bar, toolbars) when Liquid
     /// Glass / translucency is unavailable or Reduce Transparency is on.
     var surfaceFloatingSolid: UInt32 { barBackground }
@@ -25,7 +28,7 @@ nonisolated extension AppTheme {
     var textDisabled: UInt32 { placeholderText }
     /// Normal-sized explanatory and status text on content surfaces. Opt-in
     /// roles keep the existing control/icon palette while meeting the body
-    /// text contrast floor on cards, grouped canvas and pressed Member tiles.
+    /// text contrast floor on cards, grouped canvas, inset tiles and pressed controls.
     var secondaryBodyText: UInt32 { bodyTextColor(secondaryText) }
     var successBodyText: UInt32 { bodyTextColor(success) }
     var warningBodyText: UInt32 { bodyTextColor(warning) }
