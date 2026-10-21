@@ -419,7 +419,7 @@ loads, which is easy to misread as a missing deploy.
 The 2026-10-07 native UI changes are separate from the previously released
 **1.56.6 (95)** attestation fixes. They have not bumped the app version or uploaded a new
 candidate. Follow the existing release boundary after validating the final source tree.
-The [implementation report](../plans/261007-1825-loox-member-and-private-email-ux-overhaul/reports/implementation-progress.md)
+The internal implementation report
 separates synthetic native evidence from physical and production checks.
 
 | Check | Required observable result |

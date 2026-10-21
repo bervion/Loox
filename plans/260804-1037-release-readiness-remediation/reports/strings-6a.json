@@ -1,5 +1,0 @@
-{
-  "lane": "6A — iPad adaptive UX",
-  "note": "No new user-facing strings. The lane's changes are lifecycle and presentation only (editor draft hand-back across a size-class flip, sidebar search clearing, search entry ordering, navigation-bar chrome gate). One user-visible copy consequence uses an existing catalog key: a resumed unsaved draft now counts as unsaved work, so closing it raises the existing 'Discard changes?' confirmation instead of dismissing silently.",
-  "keys": []
-}

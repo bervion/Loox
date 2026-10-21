@@ -1,5 +1,0 @@
-[shell_environment_policy]
-inherit = "core"
-
-[shell_environment_policy.set]
-GH_CONFIG_DIR = "/Users/bervion/.config/gh-bervion"

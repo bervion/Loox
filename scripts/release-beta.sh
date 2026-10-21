@@ -47,4 +47,4 @@ git push origin main
 git push origin "$TAG"
 
 success "Beta $TAG pushed!"
-echo "  GitHub Actions → TestFlight: https://github.com/bervion/Vaultify/actions"
+echo "  GitHub Actions → TestFlight: https://github.com/bervion/Loox/actions"
