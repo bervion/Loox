@@ -67,7 +67,7 @@ No account. No vault server. Your vault is encrypted on your device and stays th
 - iPhone, iPad and Mac. English, Vietnamese and Japanese with an in-app language switch.
 - Day and Night appearance with seven accent colors, Dynamic Type, Reduce Motion and VoiceOver support.
 
-The vault, AutoFill, passkeys and 2FA codes work without an account. The network features above have usage limits.
+The vault, AutoFill, passkeys and 2FA codes work without an account.
 
 ## Security model
 
@@ -85,9 +85,9 @@ No request carries your master password or a decrypted vault.
 
 | Data | When | Where |
 |---|---|---|
-| Encrypted vault items, plus the Vault Key wrapped by your recovery key (useless without the Emergency Kit) | Only if you turn on iCloud sync (off by default) | Your iCloud private database |
+| Encrypted vault items, the device name, and the Vault Key wrapped by your recovery key (useless without the Emergency Kit) | Only if you turn on iCloud sync (off by default) | Your iCloud private database |
 | Fields you share | Only when you share | iCloud (Approval Mode) or the Quick Link service, encrypted on device before upload |
-| Private Email addresses and forwarding | Only if you use Private Email | Loox relay service |
+| Private Email addresses and forwarding, plus a sealed relay identity | Only if you use Private Email (even with iCloud sync off) | Loox relay service; the sealed identity in your iCloud private database |
 | The first 5 characters of each password's SHA-1 hash (k-anonymity) | While "Check for known breaches" is on (on by default) and a Watchtower audit runs, including the automatic one when you open Watchtower | Have I Been Pwned |
 | Website domains | While "Show website icons" is on (on by default) | Google favicon service |
 | Signed configuration (feature switches, Private Email domains, Quick View signer keys); the request carries no vault data | On unlock and when the app returns to the foreground | Loox config service, with an iCloud public database mirror as fallback |
