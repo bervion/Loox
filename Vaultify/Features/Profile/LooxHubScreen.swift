@@ -17,6 +17,7 @@ struct LooxHubScreen: View {
     /// tab-switching actions must pop back to root first or the switch happens
     /// invisibly underneath (see `AppNavigator.push`).
     @Environment(AppNavigator.self) private var navigator: AppNavigator?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var confirmApprovalOff = false
 
     private var tier: LooxTier { env.entitlements.tier }
@@ -105,15 +106,31 @@ struct LooxHubScreen: View {
 
     /// White card row summarizing every quota: a thin bar at the HIGHEST
     /// utilization across the countable quotas, pushing the per-quota detail.
+    /// At accessibility sizes the fixed-width bar would squeeze the label into
+    /// one word per line, so the bar moves under it at full width.
     private var quotaCard: some View {
         ProfileGroupCard {
             NavigationLink { LooxQuotaScreen() } label: {
-                HStack(spacing: Space.s3) {
-                    Text("Plan limits").vaultType(.body).themedForeground()
-                    Spacer(minLength: Space.s3)
-                    LooxQuotaBar(fraction: maxQuotaFraction)
-                        .frame(width: 96)
-                    VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
+                Group {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            HStack(spacing: Space.s3) {
+                                quotaLabel
+                                Spacer(minLength: Space.s3)
+                                quotaChevron
+                            }
+                            LooxQuotaBar(fraction: maxQuotaFraction)
+                        }
+                        .padding(.vertical, Space.s3)
+                    } else {
+                        HStack(spacing: Space.s3) {
+                            quotaLabel
+                            Spacer(minLength: Space.s3)
+                            LooxQuotaBar(fraction: maxQuotaFraction)
+                                .frame(width: 96)
+                            quotaChevron
+                        }
+                    }
                 }
                 .padding(.horizontal, Space.s4)
                 .frame(minHeight: Metric.rowHeight)
@@ -121,6 +138,14 @@ struct LooxHubScreen: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private var quotaLabel: some View {
+        Text("Plan limits").vaultType(.body).themedForeground()
+    }
+
+    private var quotaChevron: some View {
+        VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
     }
 
     /// The most-consumed quota drives the summary bar — "how close am I to

@@ -10,19 +10,26 @@ import SwiftUI
 /// Every row opens `LooxPaywallScreen`, which itself branches on entitlement.
 struct LooxHubPlanSection: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showPaywall = false
 
     private var entitlements: LooxEntitlementStore { env.entitlements }
+
+    /// Accessibility text sizes stack the plan row, so its labels start at the
+    /// card edge like the action row below; the divider follows them there.
+    private var divider: some View {
+        ProfileRowDivider(leadingInset: dynamicTypeSize.isAccessibilitySize ? Space.s4 : nil)
+    }
 
     var body: some View {
         ProfileGroupCard {
             if entitlements.isSubscriber {
                 planRow(tier: entitlements.paidTier, freeUntil: nil)
-                ProfileRowDivider()
+                divider
                 actionRow("Manage plan", showsTile: false)
             } else if let endsAt = entitlements.complimentaryEndsAt {
                 planRow(tier: LooxComplimentaryGrant.tier, freeUntil: endsAt)
-                ProfileRowDivider()
+                divider
                 actionRow("Upgrade to Loox Max", showsTile: false)
             } else {
                 actionRow("Upgrade to Loox Max", showsTile: true)
@@ -35,26 +42,50 @@ struct LooxHubPlanSection: View {
 
     /// "Your plan" + tier name. The complimentary end date sits UNDER the
     /// label, not beside the tier, so the longest localized date (VI) wraps in
-    /// its own column instead of squeezing the tier name.
+    /// its own column instead of squeezing the tier name. At accessibility
+    /// sizes the middle column would be a few words wide, so the tile and tier
+    /// share the top line and the labels take the full card width below
+    /// (owner 261021).
     private func planRow(tier: LooxTier, freeUntil: Date?) -> some View {
-        HStack(spacing: Space.s3) {
-            ProfileRowTile(style: .brandMark)
-            VStack(alignment: .leading, spacing: Space.s1) {
-                Text("Your plan").vaultType(.body).themedForeground()
-                if let freeUntil {
-                    Text("Free until \(LooxTrialCopy.endDate(freeUntil))")
-                        .vaultType(.footnote)
-                        .themedForeground(.secondaryBody)
-                        .fixedSize(horizontal: false, vertical: true)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    HStack(spacing: Space.s3) {
+                        ProfileRowTile(style: .brandMark)
+                        Spacer(minLength: Space.s2)
+                        tierName(tier)
+                    }
+                    planLabels(freeUntil: freeUntil)
+                }
+            } else {
+                HStack(spacing: Space.s3) {
+                    ProfileRowTile(style: .brandMark)
+                    planLabels(freeUntil: freeUntil)
+                    Spacer(minLength: Space.s2)
+                    tierName(tier)
                 }
             }
-            Spacer(minLength: Space.s2)
-            Text(verbatim: tier.displayName).vaultType(.subhead).themedForeground(.secondaryBody)
         }
         .padding(.horizontal, Space.s4)
         .padding(.vertical, Space.s2)
         .frame(minHeight: Metric.rowHeight)
         .accessibilityElement(children: .combine)
+    }
+
+    private func planLabels(freeUntil: Date?) -> some View {
+        VStack(alignment: .leading, spacing: Space.s1) {
+            Text("Your plan").vaultType(.body).themedForeground()
+            if let freeUntil {
+                Text("Free until \(LooxTrialCopy.endDate(freeUntil))")
+                    .vaultType(.footnote)
+                    .themedForeground(.secondaryBody)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func tierName(_ tier: LooxTier) -> some View {
+        Text(verbatim: tier.displayName).vaultType(.subhead).themedForeground(.secondaryBody)
     }
 
     /// One tappable row into the paywall. The brand tile leads the card only

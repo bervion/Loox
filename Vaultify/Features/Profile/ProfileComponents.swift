@@ -246,12 +246,14 @@ struct ProfileNavRow<Destination: View>: View {
 /// Leading-inset hairline between two Profile rows (aligns under the title, past the tile).
 struct ProfileRowDivider: View {
     @Environment(AppEnvironment.self) private var env
+    /// nil = the default inset, aligned with the text after a row tile.
+    var leadingInset: CGFloat? = nil
 
     var body: some View {
         Rectangle()
             .fill(Color(rgb: env.theme.active.separator))
             .frame(height: 0.5)
-            .padding(.leading, Space.s4 + Metric.badgeTile + Space.s3)
+            .padding(.leading, leadingInset ?? Space.s4 + Metric.badgeTile + Space.s3)
     }
 }
 
