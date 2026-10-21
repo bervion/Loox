@@ -167,10 +167,7 @@ struct VaultifyApp: App {
                     // that died before its own cleanup ran.
                     ExportTempFiles.purge()
                     if let url = PendingInviteLink.url { handleInviteLink(url) }
-                    AnalyticsEngine.shared.refreshUserProperties(
-                        tier: env.entitlements.tier,
-                        language: env.settings.preferredLanguage,
-                        iCloudSyncEnabled: env.settings.iCloudSyncEnabled)
+                    env.refreshAnalyticsUserProperties()
                     CrashReporter.shared.set(.appLanguage(env.settings.preferredLanguage))
                     CrashReporter.shared.set(.iCloudSync(enabled: env.settings.iCloudSyncEnabled))
                 }

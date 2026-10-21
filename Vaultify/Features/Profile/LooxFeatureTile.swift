@@ -118,9 +118,9 @@ struct LooxFeatureTile<Destination: View>: View {
 }
 
 /// Thin quota bar in the iCloud+ storage idiom: a 4pt track with the used
-/// fraction filled accent; the fill warms to warning near the cap and to
-/// destructive when the quota is exhausted, so "almost out" is visible without
-/// reading a number. Used by the hub's Plan-limits row and the quota screen.
+/// fraction filled accent; the fill warms to warning from 90% up to and
+/// INCLUDING the cap, and turns destructive only past it. Being exactly at the
+/// cap is a full plan, not an error (a downgrade can leave usage above it). Used by the hub's Plan-limits row and the quota screen.
 struct LooxQuotaBar: View {
     let fraction: Double
     @Environment(AppEnvironment.self) private var env
@@ -145,7 +145,7 @@ struct LooxQuotaBar: View {
 
     private var fillColor: Color {
         let theme = env.theme.active
-        if fraction >= 1 { return theme.color(.destructive) }
+        if fraction > 1 { return theme.color(.destructive) }
         if fraction >= 0.9 { return theme.color(.warning) }
         return theme.color(.accent)
     }

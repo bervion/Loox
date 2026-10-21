@@ -19,7 +19,7 @@ nonisolated enum RelayAPIClient {
         case rateLimited           // 429 — user-attributable budget; honor Retry-After, never an operator state
         /// 429 quota_exceeded — the COMMERCIAL tier quota (entitlement
         /// contract §4), distinct from the abuse budget above; maps to the
-        /// upsell paywall once purchases are live.
+        /// upsell paywall (purchases are live since 2026-10-21).
         case quotaExceeded
         /// 409 entitlement_refresh_required — the lease died with an account
         /// state change; re-attach and re-sign (fresh nonce), never a user error.

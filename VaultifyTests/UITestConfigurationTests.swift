@@ -127,7 +127,6 @@ struct UITestConfigurationTests {
             "control_plane_migration_v1.capability_manifest.staging.done",
             "control_plane_migration_v1.domain_registry.staging.done",
             "control_plane_migration_v1.quick_view_signer_keyset.staging.done",
-            "debug.looxPurchasesEnabled",
             "debug.looxTierOverride",
         ]
         let originals = Dictionary(uniqueKeysWithValues: protectedKeys.map {

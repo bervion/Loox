@@ -16,13 +16,6 @@ struct ProfileScreen: View {
     private var persona: Persona? { env.repository.activePersona }
     private var identity: VaultItem? { env.repository.activeProfileItem }
 
-    /// The membership row exists for subscribers (their plan + quotas) and for
-    /// Free users only where the store is live (the §5.3 upgrade entry). Free
-    /// with purchases dark → no subscription surface anywhere in Profile.
-    private var showsMembershipRow: Bool {
-        env.entitlements.tier > .free || env.entitlements.purchasesEnabled
-    }
-
     /// Name under the avatar: the identity's Full Name when set, else the persona name.
     private var displayName: String {
         if let full = identity?.fields.first(where: { $0.label == "Full Name" })?.value, !full.isEmpty {
@@ -52,19 +45,15 @@ struct ProfileScreen: View {
 
                 // Section 2 — "badge" rows: colored/brand art on a white tile + hairline border.
                 ProfileGroupCard {
-                    // Membership row only when there is a membership story to tell:
-                    // a paid tier, or a storefront where Free can upgrade. With
-                    // purchases dark and no plan, Profile shows no subscription
-                    // surface at all (owner request 260723).
-                    if showsMembershipRow {
-                        // Row title follows the CURRENT tier — "Loox" / "Loox+" /
-                        // "Loox" + MAX badge lockup (owner request 260716),
-                        // matching the membership screen's header behind it.
-                        ProfileNavRow(titleView: LooxTierLabel(tier: env.entitlements.tier,
-                                                               badgeHeight: 15, brandWeight: nil),
-                                      tile: .brandMark) { LooxHubScreen() }
-                        ProfileRowDivider()
-                    }
+                    // Membership row: always shown now that commerce is live
+                    // (owner 261021). Its title follows the EFFECTIVE tier —
+                    // "Loox" / "Loox+" / "Loox" + MAX badge lockup (owner request
+                    // 260716), so complimentary Loox+ reads "Loox+" — matching
+                    // the membership screen's header behind it.
+                    ProfileNavRow(titleView: LooxTierLabel(tier: env.entitlements.tier,
+                                                           badgeHeight: 15, brandWeight: nil),
+                                  tile: .brandMark) { LooxHubScreen() }
+                    ProfileRowDivider()
                     // "fa_users" — FontAwesome6 Duotone "users" glyph (imported into
                     // Assets.xcassets mirroring the DeviceIcons import, see DeviceIcons.swift),
                     // tinted green on the section-2 white tile (260715 owner request).

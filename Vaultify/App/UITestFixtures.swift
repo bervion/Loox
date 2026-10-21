@@ -9,6 +9,12 @@ enum UITestFixtures {
     static let itemID = "ui-test-login"
     static let initialTitle = "Acme Login"
     static let editedTitle = "Acme Production"
+    /// Complimentary Loox+ start injected under test isolation (in-memory,
+    /// never the Keychain). Fixed so snapshots are deterministic: noon UTC
+    /// (2026-09-21), so the "Free until" end (2028-10-10 12:00 UTC) renders
+    /// the same calendar day from UTC-11 to UTC+11. `LooxComplimentaryGrantTests`
+    /// fails before the grant expires.
+    static let complimentaryStart = Date(timeIntervalSince1970: 1_789_992_000)
 
     static func install(
         _ configuration: UITestConfiguration,

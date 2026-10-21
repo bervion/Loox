@@ -58,7 +58,7 @@ final class AnalyticsEventTests: XCTestCase {
     }
 
     func testUserPropertyNamesWithinGA4Limits() {
-        for property in [AnalyticsUserProperty.subscriptionTier, .appLanguage, .icloudSync] {
+        for property in [AnalyticsUserProperty.subscriptionTier, .complimentaryPlus, .appLanguage, .icloudSync] {
             XCTAssertTrue(AnalyticsPolicy.isValidIdentifier(
                 property.rawValue, limit: AnalyticsPolicy.userPropertyNameLimit),
                 "user property '\(property.rawValue)' breaks GA4 naming limits")

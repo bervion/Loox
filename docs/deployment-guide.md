@@ -88,6 +88,21 @@ alias fails with a generic error while the server never sees a request.
 ### 2. App Store Connect — create the app record
 App Store Connect → Apps → **＋** → New App. Platform iOS, bundle id `com.bervion.vaultify`. The app must exist before TestFlight accepts a build.
 
+### 2b. Subscriptions (App Store Connect)
+Subscriptions and introductory offers are configured in App Store Connect only. `fastlane deliver` and `make submit-ios` cannot attach in-app purchases, so attach them in the ASC UI. State as of 2026-10-21:
+
+| Item | Setting |
+|---|---|
+| Subscription group | **Loox Membership**, id `22241495`, 4 products: `com.bervion.vaultify.subscription.{max,plus}.{annual,monthly}` |
+| Max Annual, Max Monthly | 1-year free-trial introductory offer, 175 territories, starts 2026-10-21, no end date. Replaces the former 7-day Max Annual offer |
+| Plus Annual, Plus Monthly | No introductory offer. Loox+ complimentary access is in-app, not an Apple offer |
+| Availability | All 175 territories. Annual: 1 Year Upfront. Monthly with 12-month commitment: intentionally not configured |
+| Localizations | EN, VI, JA |
+| App Store Server Notifications V2 | Production: `https://entitlement.looxpassword.com/v1/apple/notifications`. Sandbox: `https://entitlement-staging.looxpassword.com/v1/apple/notifications` |
+| App Privacy | **Purchases → Purchase History**, linked to the user (attach binds the subscription account to the relay principal). Mirrored in `Vaultify/Resources/PrivacyInfo.xcprivacy` |
+
+- All four products were **Prepare for Submission** on 2026-10-21. Each must reach Ready to Submit (a review screenshot of the paywall per product) and be attached to the next app version on first submission (Apple's first-subscription rule).
+
 ### 3. Private certificates repo (match storage)
 Create an **empty private** GitHub repo `bervion/vaultify-ios-certificates`, then seed it from your Mac (has Xcode + the signing account):
 

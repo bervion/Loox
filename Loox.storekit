@@ -40,7 +40,7 @@
           "introductoryOffer" : {
             "internalID" : "6746100011",
             "paymentMode" : "free",
-            "subscriptionPeriod" : "P1W"
+            "subscriptionPeriod" : "P1Y"
           },
           "localizations" : [
             {
@@ -76,7 +76,11 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6746100002",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "6746100012",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1Y"
+          },
           "localizations" : [
             {
               "description" : "Full security workflow, sharing and services",

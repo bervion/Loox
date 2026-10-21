@@ -82,21 +82,21 @@ final class LooxMembershipTests: XCTestCase {
 
     // MARK: Commerce switches
 
-    func testProductionPurchasesStayOffUntilTheLaunchGatesAreGreen() {
-        // Deliberate tripwire. Flipping this constant means the whole §5.6 gate
-        // list in phase-05-membership-launch.md is green — live policy pages
-        // with counsel sign-off, submittable products, purchase and restore
-        // proven on a signed TestFlight build, the attach E2E recorded, backend
-        // modes observed, real-device matrix passed. Updating this test is the
-        // moment to confirm that, not a formality.
-        XCTAssertFalse(LooxMembership.launchEnabled)
+    func testProductionPurchasesAreLive() {
+        // Deliberate tripwire. Commerce went live by owner decision 2026-10-21.
+        // Remaining §5.6 items are tracked in phase-05-membership-launch.md
+        // (policy pages, submittable products, purchase and restore on a signed
+        // TestFlight build, attach E2E, backend modes, real-device matrix).
+        // Flipping it back off is just as deliberate: update this test only
+        // after re-reading that list.
+        XCTAssertTrue(LooxMembership.launchEnabled)
     }
 
     func testBetaPreviewSwitchCanDarkenEveryCommerceSurface() {
-        // On for this submission so App Review can evaluate the four attached
-        // subscriptions. The value that matters is that the switch exists:
-        // with it off, `LooxEntitlementStore` never resolves the environment
-        // and no purchase surface can open.
+        // With launch live this switch changes nothing; it matters only if
+        // launch is ever turned back off. The value that matters is that the
+        // switch exists: with it off, `LooxEntitlementStore` never resolves
+        // the environment and no beta purchase surface can open.
         XCTAssertTrue(LooxMembership.betaPreviewEnabled)
     }
 }

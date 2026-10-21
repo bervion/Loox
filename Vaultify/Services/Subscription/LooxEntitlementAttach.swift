@@ -2,9 +2,10 @@ import Foundation
 import CryptoKit
 
 /// Client side of the Loox Entitlement attach contract (BE handoff 260716,
-/// `X-Loox-Entitlement-Contract: 1`). Everything here is DORMANT plumbing for
-/// B3: the backend runs `ENTITLEMENT_MODE=off`, purchases stay dark for App
-/// Store users, and no UI consumes these results yet.
+/// `X-Loox-Entitlement-Contract: 1`). Commerce is live (owner decision
+/// 2026-10-21). The complimentary Loox+ grant is never attached. Enforcement
+/// is decided server-side by `ENTITLEMENT_MODE`, and no UI consumes these
+/// results yet.
 nonisolated enum LooxEntitlementConfig {
     /// Worker per build, mirroring `LooxLinkConfig`: dev talks to staging
     /// (Sandbox data lives there), Release talks to production — TestFlight's
