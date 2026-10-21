@@ -158,7 +158,7 @@ VaultifyTests/           Unit tests and crypto test vectors
 VaultifySnapshotTests/   Snapshot tests
 VaultifyUITests/         UI tests
 Design System/           Design tokens, components and iOS UI kit reference
-docs/                    Architecture, design guidelines, deployment and runbooks
+docs/                    Architecture, design guidelines, deployment, runbooks and the wiki source (docs/wiki/)
 scripts/ fastlane/       CI helpers and release automation
 ```
 

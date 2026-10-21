@@ -1,0 +1,1 @@
+Loox Password Manager — [App Store](https://apps.apple.com/us/app/loox-password-manager/id6779973474) · [looxpassword.com](https://looxpassword.com) · [Source](https://github.com/bervion/Loox) · Licensed under [GPL-3.0](https://github.com/bervion/Loox/blob/main/LICENSE) (name, logo and some icon assets excluded) · Security reports: support@looxpassword.com
