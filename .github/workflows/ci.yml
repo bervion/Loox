@@ -79,14 +79,6 @@ jobs:
       - name: Select pinned Xcode
         run: scripts/ci/select-xcode.sh
 
-      # Boots in the background through toolchain install and project
-      # generation, which mostly wait on the network; "Wait for simulator"
-      # below blocks until it is up, before compilation starts.
-      - name: Create isolated simulator
-        env:
-          SIMULATOR_BOOT_ASYNC: '1'
-        run: scripts/ci/create-simulator.sh
-
       - name: Install pinned toolchain
         uses: jdx/mise-action@c53b9236f0b3370f31520f8b142f141256d839c6 # v3.6.0
 
@@ -118,11 +110,12 @@ jobs:
       - name: Check privacy manifests
         run: scripts/ci/check-privacy-manifests.sh
 
-      # A device still settling from its first boot while the suite compiles
-      # makes the test app's first launch take minutes on a 3-core runner, so
-      # compilation starts only once the boot has finished.
-      - name: Wait for simulator
-        run: scripts/ci/wait-for-simulator.sh
+      # Boots synchronously. The first boot is minutes of disk-bound data
+      # migration, and on the 3-core hosted runner overlapping it with any
+      # other step slowed that step by as much as the boot saved (measured,
+      # see the runbook), so it runs on its own.
+      - name: Create isolated simulator
+        run: scripts/ci/create-simulator.sh
 
       - name: Run basic unit suite
         env:

@@ -66,17 +66,19 @@ files), and a classifier failure counts as "run". Run the workflow by hand from 
 Actions tab (`workflow_dispatch`) to force the suite; a manual run has its own concurrency
 group, so it never cancels a push run.
 
-**Unit tests** creates a throwaway simulator right after selecting Xcode and boots it in
-the background (`SIMULATOR_BOOT_ASYNC=1`), so the first boot's data migration (3 to 4
-minutes on a fresh hosted VM) overlaps the toolchain install and project generation,
-which mostly wait on the network. `wait-for-simulator.sh` then blocks until the boot has
-finished (10-minute limit) before `run-xcode-suite.sh` compiles and tests in one
-`xcodebuild test` with the index store off. It uploads `unit-test-receipt-<attempt>`
-(summary JSON only) and deletes the simulator. The job times out after 35 minutes.
+**Unit tests** creates a throwaway simulator, boots it synchronously, runs the suite in one
+`xcodebuild test` with the index store off, uploads `unit-test-receipt-<attempt>`
+(summary JSON only), and deletes the simulator. The job times out after 35 minutes.
 
-Do not move the boot into the compile: measured on the 3-core hosted runner (run 739), a
-device that finishes booting during compilation made the test app's first launch take
-7 minutes instead of under 1, and the job got slower overall. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
+Do not overlap the simulator's first boot with other steps. It is 3 to 4 minutes of
+mostly disk-bound data migration, and on the 3-core hosted runner it slows whatever runs
+beside it by about as much as it saves. Measured on 2026-10-21 against the sequential
+flow (20m13s and 22m00s):
+
+| Experiment | Effect | Job |
+|---|---|---|
+| Boot during compilation (run 739) | the test app's first launch took 7 minutes instead of under 1 | 24m22s |
+| Boot during toolchain install and project generation (run 740) | toolchain install 10s → 117s, generation 104s → 255s | 21m40s | `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
 cancelled jobs, because the runner is persistent.
 For `VaultifyTests`, `-collect-test-diagnostics never` disables verbose Simulator diagnostics (`sysdiagnose`); stdout, `.xcresult` summary and test exit code remain unchanged. CI timing impact has not been measured.
 
