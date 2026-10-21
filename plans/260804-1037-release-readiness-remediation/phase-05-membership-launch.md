@@ -7,6 +7,8 @@ day one. The flip is **gated, not scheduled**: it happens only after a **signed 
 build** passes purchase and restore end to end together with the backend. If that is not
 green before the tag, the release ships with the flag off.
 
+**Superseded 2026-10-21 by owner decision:** commerce is live (`launchEnabled = true`). §5.4 records the offers and the complimentary Loox+ grant; §5.6 records the status of the remaining gates.
+
 So this phase now has two halves:
 
 - **In scope for this release** — everything the reviewer and the four attached products
@@ -35,7 +37,7 @@ backend must "reach its B5 gate" is superseded by its own parenthetical on the n
 | B1 worker + reducer | DONE | `attach.ts:4-6` statuses-check before any grant; `webhook.ts` ASSN v2 verify→inbox→reducer; `migrations/0001` 10 tables append-only; 19 reducer tests green; real Apple ASSN TEST verified on staging |
 | B2 RPC + grants/leases | PARTIAL | All code shipped and deployed (three named entrypoints, 22 quota/bind SQL tests green), but every worker runs `ENTITLEMENT_MODE=off` — never flipped to `shadow`. Coverage counters and Quick View staging `ASSERTION_MODE=required` still owed |
 | B3 dormant client | DONE (code) / PARTIAL (gate) | Merged to iOS main at `04eb9f1a`, shipped v1.35.0 plus on-device fixes `2ac419e1`, `541c8739`. The coverage measurement has never run; the legacy-cohort snapshot has no recorded evidence |
-| B4 purchases ON | **NOT STARTED** | `launchEnabled = false`; purchases open only in beta env via `betaPurchaseAccess` |
+| B4 purchases ON | **Flipped 2026-10-21** (client) | `launchEnabled = true` by owner decision. Backend stays `off`/`shadow` until observed (§5.6) |
 | B5 enforcement canary | NOT STARTED | Mode `off` everywhere; C7 App Attest ladder for `/attach` pending |
 | B6 wind-down | NOT STARTED | Separate migration + job, after B5 |
 
@@ -100,8 +102,8 @@ mirrored in `Loox.storekit`. Subscription group **"Loox Membership", id `2224149
 
 | Product ID | Reference name | Period | StoreKit price (USD tier) | Intro offer |
 |---|---|---|---|---|
-| `com.bervion.vaultify.subscription.max.annual` | Loox Max Annual | P1Y | 34.99 | **yes** — 7-day free trial |
-| `com.bervion.vaultify.subscription.max.monthly` | Loox Max Monthly | P1M | 4.99 | no |
+| `com.bervion.vaultify.subscription.max.annual` | Loox Max Annual | P1Y | 34.99 | **yes** — 1-year free trial (from 2026-10-21) |
+| `com.bervion.vaultify.subscription.max.monthly` | Loox Max Monthly | P1M | 4.99 | **yes** — 1-year free trial (from 2026-10-21) |
 | `com.bervion.vaultify.subscription.plus.annual` | Loox Plus Annual | P1Y | 19.99 | no |
 | `com.bervion.vaultify.subscription.plus.monthly` | Loox Plus Monthly | P1M | 2.99 | no |
 
@@ -110,18 +112,29 @@ Phase 5's checklist row on VN pricing records the values the owner kept
 (Max Annual 349k, Max Monthly 49k, Plus Annual 199k, Plus Monthly 29k) against Apple's
 comparable-price suggestions. Verify the live ASC values rather than trusting either file.
 
-Group "Loox Membership" `22241495` exists with all four products and EN/VI metadata; intro
-offer (7-day trial on Max Annual) and 16-day billing grace are configured.
+Group "Loox Membership" `22241495` exists with all four products. Owner-reported status on
+2026-10-21:
 
+- EN, VI and JA localizations are in place. All four products are priced in 175 territories.
+- Max Annual and Max Monthly carry a **1-year free-trial intro offer** (175 territories, starts
+  2026-10-21, no end date). It replaces the former 7-day offer. Plus products carry none.
+- Annual availability is "1 Year Upfront". Monthly with a 12-month commitment is intentionally
+  not configured. A 16-day billing grace was configured earlier.
+- App Store Server Notifications V2 URLs are configured (Production and Sandbox).
+- All four products are still **Prepare for Submission**.
+
+Full ASC checklist: `docs/deployment-guide.md` §2b.
+
+- **Complimentary Loox+ (not an Apple product).** Every install gets Loox+ quotas free for
+  750 days from the first launch of the version that ships it. It is an in-app grant,
+  device-local and never sent to the backend, because Apple's longest trial is 1 year.
+  Owner decision 2026-10-21.
 - Upload the review screenshot to **each** of the four products. Run the
-  `Vaultify-StoreKit` scheme, flip Settings → Debug → "Purchase Surfaces" ON (no code flip
-  needed), then Profile → Loox → Upgrade to Loox Max, capture on a 6.7" simulator.
-  **TestFlight only loads products in "Ready to Submit" or later**, so this gates TestFlight
-  testing too, not just submission.
+  `Vaultify-StoreKit` scheme (purchase surfaces are on with `launchEnabled`; the DEBUG
+  "Purchase Surfaces" toggle was removed), then Profile → Loox → Upgrade to Loox Max,
+  capture on a 6.7" simulator. **TestFlight only loads products in "Ready to Submit" or
+  later**, so this gates TestFlight testing too, not just submission.
 - Submit the subscriptions **with** the new app version (first-subscription rule).
-- Confirm current product state in ASC. Repo evidence is ambiguous — the checklist says
-  screenshots pending, but on-device sandbox purchases succeeded on 2026-07-17, which
-  suggests they may already be past "Missing Metadata". **Verify, do not assume.**
 
 ### 5.5 — Phase-05 QA rows still unchecked
 
@@ -130,23 +143,36 @@ offer (7-day trial on Max Annual) and 16-day billing grace are configured.
 - A backend outage renders as an outage, never as a downgrade to Free (§2.7).
 - Free still surfaces every Critical/High Watchtower finding.
 
-### 5.6 — Flip the flag — GATED, NOT PART OF THIS SUBMISSION
+### 5.6 — Flip the flag — flipped 2026-10-21 (owner decision); gates still open
 
-`VaultifyCore/Subscription/LooxMembership.swift:17` stays `false` for this release.
+`launchEnabled` is `true` in `VaultifyCore/Subscription/LooxMembership.swift` by owner
+decision 2026-10-21.
 
-Do not flip until **all** of these are true:
+**Status 2026-10-21.** Evidence on record: App Store Server Notifications V2 URLs configured
+(Production and Sandbox); all four products priced in 175 territories; Max Annual and Max
+Monthly 1-year intro offers configured. None of this closes a box below on its own. The
+products are still Prepare for Submission, and production `ENTITLEMENT_MODE` has not been
+observed. Boxes stay unticked until evidenced.
 
-- [ ] Terms and Privacy live, without placeholders, counsel signed off
-- [ ] Four products in a submittable state in ASC with review screenshots
+Waiver, not a §5.6 box (see §5.1): outgoing-recipient seats (`LooxGate.canAddOutgoingRecipient`)
+and `fullThemes` have no call sites and are ungated. The Loox quota screen hides its Sharing
+row. **Owner to confirm.**
+
+Remaining gates:
+
+- [ ] Terms and Privacy live, without placeholders, counsel signed off. **Pending:** counsel sign-off
+- [ ] Four products in a submittable state in ASC with review screenshots. **Pending:** still Prepare for Submission on 2026-10-21
 - [ ] Purchase and restore pass end to end on a **signed TestFlight build**, with the
-      backend in the loop, and the run is recorded in `reports/`
-- [ ] §8.2 attach E2E recorded (5.3)
-- [ ] Backend modes settled and observed, not assumed
-- [ ] Real-device matrix green
+      backend in the loop, and the run is recorded in `reports/`. **Pending**
+- [ ] §8.2 attach E2E recorded (5.3). **Pending**
+- [ ] Backend modes settled and observed, not assumed. **Pending:** production `ENTITLEMENT_MODE`
+      must be observed as `off` or `shadow` before submission; under `enforce`, every
+      complimentary user (who sends no lease) would move to Free
+- [ ] Real-device matrix green. **Pending**
 
-`LooxMembership.swift:19-20` already states the policy-pages precondition. Selling
-auto-renewing subscriptions under placeholder terms is legal exposure independent of App
-Review, which is a second reason this flip trails the submission rather than riding it.
+The policy-pages precondition is stated in `LooxMembership.swift`. Selling auto-renewing
+subscriptions under placeholder terms is legal exposure independent of App Review, so the
+Terms and Privacy box stays open until counsel signs off.
 
 ### 5.7 — After launch, not before
 
@@ -163,5 +189,5 @@ proposal itself.
 - [ ] Four products Ready to Submit with review screenshots, attached to the version
 - [ ] Sandbox purchase, restore, upgrade, downgrade and cancel all pass on a real device
 - [ ] Outage ≠ downgrade verified
-- [ ] `launchEnabled` remains `false` in the submitted build (revised decision, 2026-08-04)
-- [ ] The §5.6 gate list is tracked and unticked, so nobody flips the flag by habit
+- [ ] `launchEnabled` is `true` in the submitted build (owner decision 2026-10-21, supersedes the 2026-08-04 hold). **Pending:** set in the working tree, not yet in a submitted build
+- [ ] Remaining §5.6 gates closed with evidence. **Pending**
