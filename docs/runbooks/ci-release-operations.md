@@ -38,15 +38,35 @@ job and its 50-minute evidence wait are fine on either runner and can stay.
 
 ## Pull-request and main CI
 
-`ci.yml` runs one job.
+`ci.yml` runs two jobs.
 
 | Job name | Host | Purpose |
 |---|---|---|
+| Plan | `ubuntu-latest` | `scripts/ci/plan-unit-tests.sh` decides whether the macOS suite must run |
 | Unit tests | self-hosted `vaultify-ci` (temporarily `macos-26`) | `VaultifyTests` (XCTest + Swift Testing), scheme `Vaultify-UnitTests`, via `scripts/ci/run-xcode-suite.sh` |
 
-It creates a throwaway simulator, runs the suite, uploads
-`unit-test-receipt-<attempt>` (summary JSON only), and deletes the
-simulator. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
+**Plan** skips the macOS job when it cannot learn anything new, because macOS minutes are
+the expensive part of CI:
+
+- a draft pull request (CI runs once it is marked ready for review);
+- a change that touches only `*.md`, `docs/`, `App Store Screenshots/`, `Design System/`,
+  `metadata/`, `specs/`, `fastlane/`, `quality/maestro/`, issue templates, `LICENSE`,
+  `.gitignore`, the Gemfiles or `release-ios.yml` (`VaultifyTests` never compiles or
+  reads them);
+- a push to `main` that is the merge commit of a pull request, which was already tested
+  on its head commit.
+
+Release commits (`chore(release):`, `chore(beta):`) always run the suite, and so does
+anything the script cannot classify (unknown event, API error, a push of 300 or more
+files). A skipped **Unit tests** job still satisfies a required status check. Run the
+workflow by hand from the Actions tab (`workflow_dispatch`) to force the suite.
+
+**Unit tests** creates a throwaway simulator shut down (`SIMULATOR_DEFER_BOOT=1`), then
+`run-xcode-suite.sh` boots it in the background while `build-for-testing` compiles
+(index store off), waits for the boot, runs `test-without-building`, uploads
+`unit-test-receipt-<attempt>` (summary JSON only), and deletes the simulator. A fresh
+device's first boot spends minutes in data migration; overlapping it with compilation
+removes that wait. The job times out after 30 minutes. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
 cancelled jobs, because the runner is persistent.
 For `VaultifyTests`, `-collect-test-diagnostics never` disables verbose Simulator diagnostics (`sysdiagnose`); stdout, `.xcresult` summary and test exit code remain unchanged. CI timing impact has not been measured.
 
@@ -67,6 +87,10 @@ downloads, compilation and simulator setup still occur.
 the tracked `.package.resolved`, then copies that lock into the generated workspace.
 Both CI and signed releases use this preparation. With the CI source-cache path,
 the suite runner passes `-onlyUsePackageVersionsFromResolvedFile` to Xcode.
+`tuist generate` resolves packages too; in CI, `Tuist.swift` points that resolution at the
+same `$RUNNER_TEMP/vaultify-spm` directory (`TUIST_CI_SOURCE_PACKAGES_DIR`), so the graph
+is cloned and checked out once per run instead of twice. Without the variable (local
+development, releases) Tuist resolves into Xcode's default location.
 
 Pull-request CI is secret-free by design. Candidate code executes on the runner host, so
 `vaultify-ci` must stay a separate runner instance from `vaultify-release`, must never hold
@@ -141,8 +165,10 @@ and upload to TestFlight** job is attached to the `production-ios-release` envir
 starts only after that job succeeds, and runs checks 3 to 6. In order:
 
 1. the tagged commit is reachable from `origin/main`;
-2. **the exact tag SHA has a completed, successful `ci.yml` run** — evidence is bound to the
-   commit, so a green run on a later `main` commit does not qualify;
+2. **the exact tag SHA has a completed, successful `ci.yml` run whose `Unit tests` job
+   succeeded** — evidence is bound to the commit, so a green run on a later `main` commit
+   does not qualify, and a run whose Plan job skipped the suite does not count either
+   (release commits always run it);
 3. the tag matches `MARKETING_VERSION` (`vX.Y.Z` or `vX.Y.Z-beta.*`);
 4. `LOOX_LINK_PROD_TOKEN` is configured;
 5. project generation succeeds with the pinned toolchain;

@@ -6,6 +6,9 @@ on:
     tags-ignore: ['v*']
   pull_request:
     branches: [main]
+    # ready_for_review: draft PRs are skipped, so run once a PR leaves draft.
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,12 +21,50 @@ env:
   CI: '1'
 
 jobs:
+  # A few seconds on Linux decide whether the macOS suite is worth its minutes:
+  # drafts, documentation-only changes and pushes that merge an already-tested
+  # PR skip it. A skipped "Unit tests" still satisfies a required status check.
+  # release-ios.yml accepts only a run whose "Unit tests" job succeeded, and
+  # release commits always run it.
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      unit: ${{ steps.plan.outputs.unit }}
+    steps:
+      - name: Checkout CI scripts
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/ci
+
+      - name: Decide whether the unit suite must run
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          HEAD_SHA: ${{ github.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+        run: scripts/ci/plan-unit-tests.sh
+
   unit-tests:
     name: Unit tests
+    needs: plan
+    if: needs.plan.outputs.unit == 'true'
     # TEMPORARY: GitHub-hosted while the self-hosted Mac mini is offline. Restore
     # `[self-hosted, macOS, ARM64, vaultify-ci]` when it is back (see the runbook).
     runs-on: macos-26
-    timeout-minutes: 45
+    # A green hosted run takes about 15 minutes; the ceiling stops a hung
+    # simulator from burning billed macOS minutes for long.
+    timeout-minutes: 30
     steps:
       - name: Checkout candidate
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -50,7 +91,11 @@ jobs:
             ${{ runner.temp }}/vaultify-spm/checkouts
           key: swiftpm-source-v1-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.SELECTED_XCODE_VERSION }}-${{ hashFiles('.package.resolved', '.mise.toml', 'scripts/ci/toolchain-pin.sh') }}
 
+      # Tuist.swift passes this directory to Tuist's package resolution, the
+      # same one the suite uses, so the graph resolves once per run.
       - name: Generate project
+        env:
+          TUIST_CI_SOURCE_PACKAGES_DIR: ${{ runner.temp }}/vaultify-spm
         run: scripts/ci/prepare-project.sh
 
       # Required-reason API declarations. VaultifyCore/** is globbed into four
@@ -61,7 +106,10 @@ jobs:
       - name: Check privacy manifests
         run: scripts/ci/check-privacy-manifests.sh
 
+      # Created shut down; the suite boots it while compiling.
       - name: Create isolated simulator
+        env:
+          SIMULATOR_DEFER_BOOT: '1'
         run: scripts/ci/create-simulator.sh
 
       - name: Run basic unit suite

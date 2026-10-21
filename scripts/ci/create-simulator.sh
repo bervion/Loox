@@ -138,10 +138,15 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
   } >> "$GITHUB_ENV"
 fi
 
+# SIMULATOR_DEFER_BOOT=1 leaves the device shut down: run-xcode-suite.sh then
+# boots it while the suite compiles, instead of idling through the first
+# boot's data migration (several minutes on a fresh hosted runner) up front.
 # Boot chatter goes to stderr so stdout stays exactly one line: the UDID a
 # caller (Makefile, workflow step) substitutes straight into -destination.
-xcrun simctl boot "$SIMULATOR_UDID" >&2
-xcrun simctl bootstatus "$SIMULATOR_UDID" -b >&2
+if [[ "${SIMULATOR_DEFER_BOOT:-0}" != "1" ]]; then
+  xcrun simctl boot "$SIMULATOR_UDID" >&2
+  xcrun simctl bootstatus "$SIMULATOR_UDID" -b >&2
+fi
 
 trap - ERR
 
