@@ -351,7 +351,17 @@ import SwiftUI
             settings: settings, session: session, escrow: participantEscrow,
             inbox: inviteInbox, links: inviteLinks)
         inviteInboxCoordinator.history = notificationHistory
-        self.entitlements = LooxEntitlementStore(defaults: settingsDefaults)
+        #if DEBUG
+        // Test isolation never touches the real Keychain grant; the fixed
+        // start shows the complimentary Loox+ state real users see first.
+        let complimentaryStore: LooxComplimentaryGrantStore = testIsolationEnabled
+            ? .inMemory(start: UITestFixtures.complimentaryStart)
+            : .keychain
+        #else
+        let complimentaryStore = LooxComplimentaryGrantStore.keychain
+        #endif
+        self.entitlements = LooxEntitlementStore(
+            defaults: settingsDefaults, complimentaryStore: complimentaryStore)
         // All stored properties are set — safe to wire the capability sinks
         // (weak refs; one independent breaker per service, INV-CAP-03).
         domainRegistry.onApplied = { [weak repository, weak session] in
@@ -376,8 +386,15 @@ import SwiftUI
         }
         // StoreKit transaction listener must run from launch so purchases,
         // renewals and refunds land without a restart.
+        entitlements.onTierInputsChanged = { [weak self] in
+            self?.refreshAnalyticsUserProperties()
+        }
         if !testIsolationEnabled {
             entitlements.start()
+        } else {
+            // No StoreKit listener under isolation, but the (in-memory) grant
+            // still resolves so the effective tier matches a real install.
+            entitlements.resolveComplimentary()
         }
         // B3 seams: service clients pull lease/grant payloads and the
         // refresh-required recovery from the coordinator; every verified
@@ -393,13 +410,7 @@ import SwiftUI
             Task { await entitlementCoordinator.attachNow() }
             // The tier user property follows VERIFIED transactions (purchase,
             // renewal, refund, restore) — the same signal that grants the tier.
-            Task { @MainActor in
-                guard let self else { return }
-                AnalyticsEngine.shared.refreshUserProperties(
-                    tier: self.entitlements.tier,
-                    language: self.settings.preferredLanguage,
-                    iCloudSyncEnabled: self.settings.iCloudSyncEnabled)
-            }
+            Task { @MainActor in self?.refreshAnalyticsUserProperties() }
         }
         #if DEBUG
         if uiTestConfiguration.isEnabled {
@@ -419,6 +430,16 @@ import SwiftUI
             }
         }
         #endif
+    }
+
+    /// The single writer of the standing analytics user properties. `tier` is
+    /// the PAID tier; complimentary Loox+ is its own property.
+    func refreshAnalyticsUserProperties() {
+        AnalyticsEngine.shared.refreshUserProperties(
+            tier: entitlements.storeTier,
+            complimentaryPlus: entitlements.complimentaryEndsAt != nil,
+            language: settings.preferredLanguage,
+            iCloudSyncEnabled: settings.iCloudSyncEnabled)
     }
 
     /// Sync with iCloud if enabled, then refresh the decrypted cache. Routed through
@@ -578,6 +599,8 @@ import SwiftUI
     /// teardown has reported, and a remote sign-out (which must never tear down
     /// remote state — the vault lives on elsewhere).
     private func eraseLocalState(retainingLinkRecords retained: [LooxLinkRecord]) {
+        // The complimentary Loox+ start (Keychain) is deliberately kept: erasing
+        // the vault must not hand the device a fresh 750 days.
         sharingStore.wipe()
         // A quick link outlives the vault by up to its expiry, and its revoke
         // token is the ONLY credential that can kill it — deleting the token

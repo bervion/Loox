@@ -5,11 +5,12 @@ import SwiftUI
 /// the membership includes, and the app-wide Approval Mode toggle. Reached from
 /// Profile → "Loox".
 ///
-/// The header title is the TIER display name ("Loox" / "Loox+" / "Loox Max"),
-/// so the screen doubles as the free hub and the subscriber overview. Usage
+/// The header title is the EFFECTIVE tier's display name ("Loox" / "Loox+" /
+/// "Loox Max"), so a complimentary Loox+ user sees "Loox+" while the seal and
+/// the plan card (`LooxHubPlanSection`) follow the PAID tier only. Usage
 /// numbers are device-local, display-only counts (the backend counter becomes
-/// the enforcement authority once the entitlement service exists); quota
-/// denominators appear only once purchases launch (`LooxMembership`).
+/// the enforcement authority once the entitlement service enforces); quota
+/// denominators follow `purchasesEnabled` (`LooxMembership`).
 struct LooxHubScreen: View {
     @Environment(AppEnvironment.self) private var env
     /// Profile/hub live on a full-screen navigator push COVERING the TabView —
@@ -17,7 +18,6 @@ struct LooxHubScreen: View {
     /// invisibly underneath (see `AppNavigator.push`).
     @Environment(AppNavigator.self) private var navigator: AppNavigator?
     @State private var confirmApprovalOff = false
-    @State private var showPaywall = false
 
     private var tier: LooxTier { env.entitlements.tier }
     private var quotas: LooxQuotas { tier.quotas }
@@ -26,7 +26,7 @@ struct LooxHubScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s6) {
                 header
-                if env.entitlements.purchasesEnabled { planSection }
+                if env.entitlements.purchasesEnabled { LooxHubPlanSection() }
                 if showsQuotas {
                     VStack(alignment: .leading, spacing: Space.s2) {
                         quotaCard
@@ -57,54 +57,6 @@ struct LooxHubScreen: View {
         } message: {
             Text("Logins you already shared stay shared. New approval requests and invites pause until you turn this back on.")
         }
-        .sheet(isPresented: $showPaywall) {
-            NavigationStack { LooxPaywallScreen(context: .profile) }
-        }
-    }
-
-    // MARK: Plan (dark until purchases launch — see `LooxMembership`)
-
-    /// Free: one calm upgrade entry (the §5.3 Profile "Gói Loox" discovery
-    /// point). Paid: current plan + the management entry. Both land on
-    /// `LooxPaywallScreen`, which itself branches on entitlement.
-    @ViewBuilder private var planSection: some View {
-        ProfileGroupCard {
-            if tier == .free {
-                Button { showPaywall = true } label: {
-                    HStack(spacing: Space.s3) {
-                        ProfileRowTile(style: .brandMark)
-                        Text("Upgrade to Loox Max").vaultType(.body).themedForeground()
-                        Spacer(minLength: Space.s2)
-                        VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
-                    }
-                    .padding(.horizontal, Space.s4)
-                    .frame(minHeight: Metric.rowHeight)
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-            } else {
-                HStack(spacing: Space.s3) {
-                    ProfileRowTile(style: .brandMark)
-                    Text("Your plan").vaultType(.body).themedForeground()
-                    Spacer(minLength: Space.s2)
-                    Text(verbatim: tier.displayName).vaultType(.subhead).themedForeground(.secondaryBody)
-                }
-                .padding(.horizontal, Space.s4)
-                .frame(minHeight: Metric.rowHeight)
-                ProfileRowDivider()
-                Button { showPaywall = true } label: {
-                    HStack(spacing: Space.s3) {
-                        Text("Manage plan").vaultType(.body).themedForeground()
-                        Spacer(minLength: Space.s2)
-                        VaultIcon(Icons.chevronRight, size: 14).themedForeground(.tertiary)
-                    }
-                    .padding(.horizontal, Space.s4)
-                    .frame(minHeight: Metric.rowHeight)
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-            }
-        }
     }
 
     // MARK: Header (tier title + member name | seal)
@@ -126,10 +78,11 @@ struct LooxHubScreen: View {
                     .minimumScaleFactor(0.7)
             }
             Spacer(minLength: Space.s3)
-            // Subscriber stamp — paid tiers only (owner 260716); Free keeps a
-            // clean title-only header.
-            if tier > .free {
-                LooxMemberSeal(tier: tier)
+            // Subscriber stamp — paid tiers only (owner 260716). The in-app
+            // complimentary Loox+ is not a subscription, so it keeps the
+            // clean title-only header like Free.
+            if env.entitlements.isSubscriber {
+                LooxMemberSeal(tier: env.entitlements.paidTier)
             }
         }
         .padding(.top, Space.s2)
@@ -180,7 +133,8 @@ struct LooxHubScreen: View {
         add(retainedAliasCount, quotas.retainedAliases)
         add(linkCreates30d, quotas.linkCreates30d)
         add(quickViewCompletions30d, quotas.quickViewApprovals30d)
-        add(outgoingRecipientCount, quotas.outgoingRecipients)
+        // No sharing-seat gate exists yet (§5.1 waiver), so seats never drive
+        // the bar: a cap nothing enforces would read as a limit already hit.
         add(env.repository.personas.count, quotas.personas)
         return fractions.max() ?? 0
     }
@@ -352,12 +306,6 @@ struct LooxHubScreen: View {
     private var quickViewCompletions30d: Int {
         let cutoff = Date.now.addingTimeInterval(-Self.rolling30d)
         return env.quickViewHistory.rows.filter { $0.result == .completed && $0.timestamp >= cutoff }.count
-    }
-
-    /// Distinct people with an ACTIVE outgoing share — more items to the same
-    /// person never consume another seat.
-    private var outgoingRecipientCount: Int {
-        Set(env.sharingStore.shares.filter { $0.status == .active }.map(\.recipientLabel)).count
     }
 
     // MARK: Metric copy

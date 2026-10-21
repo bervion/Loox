@@ -10,18 +10,20 @@ import StoreKit
 /// and the §5.2 disclosures render as text below the cards.
 ///
 /// Max Annual is the protagonist (§5.1): Max card first and preselected,
-/// Yearly preselected, one filled primary action.
+/// Yearly preselected, one filled primary action. Every product whose intro
+/// offer is a free trial (both Max products: 1 year) shows the trial pill, CTA
+/// and disclosure; the billed price always sits right under the trial CTA (3.1.2).
 struct LooxAcquisitionPaywallView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     let context: LooxPaywallContext
 
     private enum LoadState { case loading, ready, failed }
 
     @State private var loadState: LoadState = .loading
     @State private var products: [String: Product] = [:]
-    @State private var trialDays: Int?
+    /// Product ID → intro free-trial period, for products that carry one.
+    @State private var trialPeriods: [String: Product.SubscriptionPeriod] = [:]
     @State private var trialEligible = false
     @State private var selectedTier: LooxTier = .max
     @State private var yearly = true
@@ -93,6 +95,12 @@ struct LooxAcquisitionPaywallView: View {
                 .vaultType(.screenTitle)
                 .themedForeground()
                 .multilineTextAlignment(.center)
+            if let endsAt = env.entitlements.complimentaryEndsAt {
+                Text(verbatim: appString("You have Loox+ free until \(LooxTrialCopy.endDate(endsAt))"))
+                    .vaultType(.subhead)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             // The three benefits follow the SELECTED plan (quota-driven), so
             // switching cards immediately shows what Loox+ vs Max differ in.
             VStack(alignment: .leading, spacing: Space.s3) {
@@ -244,8 +252,8 @@ struct LooxAcquisitionPaywallView: View {
                         .vaultType(.footnote)
                         .themedForeground(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    if tier == .max, yearly, trialEligible, let trialDays {
-                        trialPill(days: trialDays)
+                    if let period = trialPeriod(for: product) {
+                        LooxTrialPill(period: period)
                     }
                 }
                 Spacer(minLength: Space.s2)
@@ -286,27 +294,6 @@ struct LooxAcquisitionPaywallView: View {
     /// read too dark against this screen's plain background (owner 260716).
     private static let cardFill = VaultColors.dynamic(light: 0xF2F2F7, dark: 0x1C1C1E)
 
-    /// Trial pill on Max-identity liquid glass (the pill only exists on the
-    /// Max card) — solid identity fill below iOS 26 or under Reduce
-    /// Transparency; the on-tint label follows the identity convention.
-    @ViewBuilder private func trialPill(days: Int) -> some View {
-        let label = Text("\(days) days free")
-            .vaultType(.caption)
-            .fontWeight(.semibold)
-            .foregroundStyle(LooxMaxTint.onTint)
-            .padding(.horizontal, Space.s3)
-            .padding(.vertical, 4)
-        #if compiler(>=6.2)
-        if #available(iOS 26, macOS 26, *), !reduceTransparency {
-            label.glassEffect(.regular.tint(LooxMaxTint.pillTint), in: Capsule())
-        } else {
-            label.background(LooxMaxTint.pillTint, in: Capsule())
-        }
-        #else
-        label.background(LooxMaxTint.pillTint, in: Capsule())
-        #endif
-    }
-
     private var failedState: some View {
         VStack(spacing: Space.s3) {
             Text("Couldn't load plans. Check your connection and try again.")
@@ -333,6 +320,14 @@ struct LooxAcquisitionPaywallView: View {
                 .disabled(purchasing || restoring || product(for: selectedTier) == nil)
                 .accessibilityLabel(Text(verbatim: ctaTitle))
 
+            if let ctaNote {
+                Text(verbatim: ctaNote)
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             LooxGlassButton(title: "Restore Purchases", busy: restoring) {
                 Task { await restore() }
             }
@@ -349,8 +344,8 @@ struct LooxAcquisitionPaywallView: View {
     @ViewBuilder private var ctaLabel: some View {
         if purchasing {
             ProgressView().tint(LooxPlanTint.onFill(selectedTier))
-        } else if isTrialSelection, let trialDays {
-            Text("Try free for \(trialDays) days")
+        } else if selectedTrial != nil {
+            Text(verbatim: ctaTitle)
         } else if selectedTier == .max {
             // Sentence-tight lockup: word gap only, compact glow-free badge —
             // the floating chip read disconnected from the label.
@@ -365,13 +360,36 @@ struct LooxAcquisitionPaywallView: View {
 
     /// Plain-text mirror of the CTA for assistive tech.
     private var ctaTitle: String {
-        if isTrialSelection, let trialDays {
-            return appString("Try free for \(trialDays) days")
+        if let selectedTrial {
+            return appString("Try free for \(LooxTrialCopy.length(selectedTrial))")
         }
         return appString("Subscribe to \(selectedTier.displayName)")
     }
 
-    private var isTrialSelection: Bool { selectedTier == .max && yearly && trialEligible }
+    /// One line between the CTA and Restore. The two cases never overlap:
+    /// Loox+ has no trial. A trial shows what is billed after it (3.1.2); a
+    /// complimentary Loox+ user picking Loox+ learns billing starts today,
+    /// so nobody buys what they already have free.
+    private var ctaNote: String? {
+        guard let product = product(for: selectedTier) else { return nil }
+        if trialPeriod(for: product) != nil {
+            return yearly
+                ? appString("Then \(product.displayPrice) each year.")
+                : appString("Then \(product.displayPrice) each month.")
+        }
+        if selectedTier == .plus, let endsAt = env.entitlements.complimentaryEndsAt {
+            return appString("You already have Loox+ free until \(LooxTrialCopy.endDate(endsAt)). Subscribing starts billing today.")
+        }
+        return nil
+    }
+
+    /// The free-trial period this user can redeem on `product`, if any.
+    private func trialPeriod(for product: Product?) -> Product.SubscriptionPeriod? {
+        guard trialEligible, let product else { return nil }
+        return trialPeriods[product.id]
+    }
+
+    private var selectedTrial: Product.SubscriptionPeriod? { trialPeriod(for: product(for: selectedTier)) }
 
     // MARK: Data
 
@@ -390,8 +408,11 @@ struct LooxAcquisitionPaywallView: View {
     }
 
     private func disclosureText(_ product: Product) -> String {
-        if isTrialSelection, let trialDays {
-            return appString("First \(trialDays) days free, then \(product.displayPrice) each year. Auto-renews until canceled. Cancel anytime in Settings.")
+        if let trial = trialPeriod(for: product) {
+            let length = LooxTrialCopy.length(trial)
+            return yearly
+                ? appString("Free for \(length), then \(product.displayPrice) each year. Auto-renews until canceled. Cancel anytime in Settings.")
+                : appString("Free for \(length), then \(product.displayPrice) each month. Auto-renews until canceled. Cancel anytime in Settings.")
         }
         return yearly
             ? appString("Auto-renews at \(product.displayPrice) each year until canceled. Cancel anytime in Settings.")
@@ -409,11 +430,24 @@ struct LooxAcquisitionPaywallView: View {
                 return
             }
             products = Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
-            if let annual = products[LooxProductID.maxAnnual] {
-                if let offer = annual.subscription?.introductoryOffer, offer.paymentMode == .freeTrial {
-                    trialDays = Self.days(of: offer.period)
-                    trialEligible = await annual.subscription?.isEligibleForIntroOffer ?? false
+            // Built locally and assigned once, and eligibility reset when no
+            // product has a trial: `load()` reruns on every storefront change,
+            // so nothing may survive from the previous answer. Eligibility is
+            // per subscription group, so any trial product answers it; never
+            // the local .storekit group ID.
+            var periods: [String: Product.SubscriptionPeriod] = [:]
+            for product in loaded {
+                if let offer = product.subscription?.introductoryOffer, offer.paymentMode == .freeTrial {
+                    periods[product.id] = offer.period
                 }
+            }
+            trialPeriods = periods
+            if let trialProduct = loaded.first(where: { periods[$0.id] != nil }) {
+                trialEligible = await trialProduct.subscription?.isEligibleForIntroOffer ?? false
+            } else {
+                trialEligible = false
+            }
+            if let annual = products[LooxProductID.maxAnnual] {
                 if let plusMonthly = products[LooxProductID.plusMonthly] {
                     comparison = LooxPriceMath.compare(maxAnnual: annual.price,
                                                        plusMonthly: plusMonthly.price)
@@ -422,16 +456,6 @@ struct LooxAcquisitionPaywallView: View {
             loadState = .ready
         } catch {
             loadState = .failed
-        }
-    }
-
-    private static func days(of period: Product.SubscriptionPeriod) -> Int {
-        switch period.unit {
-        case .day: return period.value
-        case .week: return period.value * 7
-        case .month: return period.value * 30
-        case .year: return period.value * 365
-        @unknown default: return period.value
         }
     }
 
@@ -463,10 +487,10 @@ struct LooxAcquisitionPaywallView: View {
                 await env.entitlements.refreshNow()
                 await transaction.finish()
                 // Attach trigger (1): purchase success → backend learns the
-                // subscription (dormant plumbing). Fire-and-forget — a slow
-                // or waking backend must never hold the paid-and-confirmed
-                // moment hostage (it blocked the success haptic + dismiss
-                // for up to a minute on-device).
+                // subscription. Fire-and-forget — a slow or waking backend
+                // must never hold the paid-and-confirmed moment hostage (it
+                // blocked the success haptic + dismiss for up to a minute
+                // on-device).
                 Task { await env.entitlementCoordinator.attachNow() }
                 Haptics.success()
                 dismiss()
@@ -494,7 +518,9 @@ struct LooxAcquisitionPaywallView: View {
             return
         }
         await env.entitlements.refreshNow()
-        if env.entitlements.tier > .free {
+        // `isSubscriber`, not `tier`: complimentary Loox+ is not a purchase,
+        // so it must never report a successful restore.
+        if env.entitlements.isSubscriber {
             // Attach trigger (2): restore on this device — the coordinator
             // adopts the appAccountToken from the verified transaction, so
             // every install converges on the purchase's identity.

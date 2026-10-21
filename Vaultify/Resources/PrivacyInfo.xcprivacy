@@ -2,14 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <!-- App-level privacy manifest (ships at the app bundle root via the
-     Vaultify/Resources glob). Declares the app's OWN collection, which is two
+     Vaultify/Resources glob). Declares the app's OWN collection, which is three
      things and nothing else: anonymous GA4 usage events (product interaction,
-     analytics purpose) and Crashlytics crash diagnostics (crash data plus other
-     diagnostic data, app-functionality purpose). Both are opt-out in
-     Settings, under separate toggles. Nothing here is linked to identity —
-     `CrashReporter` deliberately exposes no `setUserID`, and the crash payload
-     carries only the typed `CrashReportKey` catalog — so Linked stays false;
-     keeping that true is a code constraint, not just a declaration. The
+     analytics purpose), Crashlytics crash diagnostics (crash data plus other
+     diagnostic data, app-functionality purpose), and purchase history (the
+     verified transaction is attached to the Loox entitlement service, and the
+     purchase events carry the product id to GA4). GA4 and Crashlytics are
+     opt-out in Settings, under separate toggles, and are NOT linked to
+     identity: `CrashReporter` deliberately exposes no `setUserID`, and the
+     crash payload carries only the typed `CrashReportKey` catalog, so their
+     Linked stays false; keeping that true is a code constraint, not just a
+     declaration. Purchase history IS linked: attach binds the subscription
+     account to the relay principal, which the relay ties to the user's
+     forwarding inbox. The
      Firebase SDK bundles carry their own manifests; Apple aggregates them into
      the App Privacy label suggestion — except GoogleAppMeasurement, which is a
      static xcframework with no manifest, so its device-id collection is
@@ -26,6 +31,19 @@
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeProductInteraction</string>

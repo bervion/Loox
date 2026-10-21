@@ -27,10 +27,10 @@ struct LooxQuotaScreen: View {
                     quotaRow(icon: Icons.scanCode, tint: SettingsBadgeTint.indigo,
                              title: "Send to Browser", used: quickViewCompletions30d,
                              cap: quotas.quickViewApprovals30d)
-                    ProfileRowDivider()
-                    quotaRow(icon: Icons.organization, tint: SettingsBadgeTint.orange,
-                             title: "Sharing", used: outgoingRecipientCount,
-                             cap: quotas.outgoingRecipients)
+                    // No Sharing row: no sharing-seat gate exists yet
+                    // (phase-05 §5.1 waiver), and a cap nothing enforces would
+                    // promise a limit the app never applies. Restore the row
+                    // with the gate, using `quotas.outgoingRecipients`.
                     ProfileRowDivider()
                     quotaRow(icon: Icons.person, tint: SettingsBadgeTint.blue,
                              title: "Profiles", used: env.repository.personas.count,
@@ -88,9 +88,5 @@ struct LooxQuotaScreen: View {
     private var quickViewCompletions30d: Int {
         let cutoff = Date.now.addingTimeInterval(-Self.rolling30d)
         return env.quickViewHistory.rows.filter { $0.result == .completed && $0.timestamp >= cutoff }.count
-    }
-
-    private var outgoingRecipientCount: Int {
-        Set(env.sharingStore.shares.filter { $0.status == .active }.map(\.recipientLabel)).count
     }
 }

@@ -187,6 +187,9 @@ struct RootView: View {
         switch phase {
         case .active:
             obscured = false
+            // Day 750 may have passed while backgrounded, or a locked launch
+            // could not read the grant. Outside the unlocked block on purpose.
+            env.entitlements.resolveComplimentary()
             // Belt to the window observer's braces: whatever attached or
             // changed while inactive, the forced appearance is consistent the
             // moment the app is frontmost again.

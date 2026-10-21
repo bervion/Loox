@@ -3,8 +3,10 @@ import SwiftUI
 /// Circular subscriber seal for the membership screen header, in the spirit of
 /// the iCloud+ stamp: the brand symbol with "NGƯỜI ĐĂNG KÝ • LOOX •" (localized)
 /// curved around it in the HEAVY primary label color — no chip behind it, the
-/// ring sits directly on the screen. Shown to SUBSCRIBERS only (the caller
-/// gates on tier); purely decorative and hidden from assistive tech.
+/// ring sits directly on the screen. Shown to SUBSCRIBERS only: the caller
+/// gates on `LooxEntitlementStore.isSubscriber` and passes `paidTier`, so the
+/// in-app complimentary Loox+ never earns the stamp. Purely decorative and
+/// hidden from assistive tech.
 ///
 /// On first appear the ring radiates outward from the logo once (scale + fade
 /// + a slight unfurl), echoing the brand reveal animation; Reduce Motion skips

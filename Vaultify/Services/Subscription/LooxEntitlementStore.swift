@@ -6,18 +6,18 @@ import StoreKit
 /// environment names only — never receipts or transaction payloads.
 private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category: "subscription")
 
-/// Client-side source of truth for the user's Loox tier: verified StoreKit 2
-/// transactions, projected into an observable value the UI and gates read.
-/// Nothing else (CloudKit flags, UserDefaults, UI state) may decide tier.
+/// Client-side source of truth for the user's Loox tier, from exactly two
+/// inputs: verified StoreKit 2 transactions (`storeTier`) and the device-local
+/// complimentary Loox+ floor (`LooxComplimentaryGrant`). Nothing else
+/// (CloudKit flags, UserDefaults, UI state) may decide tier, and `storeTier`
+/// alone answers "is this user paying" (`paidTier` / `isSubscriber`). The
+/// grant never reaches the backend: attach and payload stay StoreKit-only.
 ///
 /// Lifecycle (proposal §7.5): prime from `Transaction.currentEntitlements` at
 /// launch, then follow `Transaction.updates` for the whole process lifetime so
 /// purchases, renewals, upgrades, refunds and Ask-to-Buy resolutions land
 /// without a restart. Only `.verified` results count; a transaction is finished
-/// strictly AFTER the local entitlement is recomputed. The backend hand-off
-/// (`appAccountToken` + entitlement API, proposal §7.3–7.4) is a later,
-/// out-of-repo phase — when it exists, the durable enqueue happens between
-/// those two steps.
+/// strictly AFTER the local entitlement is recomputed.
 ///
 /// Entitlement state must never touch vault data — this store only ever
 /// changes what the UI offers, never what the vault contains.
@@ -30,51 +30,60 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     /// from it — including down to Free after a real expiry — is always safe.
     private(set) var storeTier: LooxTier = .free
 
-    /// The effective tier the app renders and gates on.
-    var tier: LooxTier {
+    /// The tier the user PAYS for: the DEBUG override, otherwise `storeTier`.
+    /// Drives "Your plan", the member seal and paywall routing.
+    var paidTier: LooxTier {
         #if DEBUG
         if let debugTierOverride { return debugTierOverride }
         #endif
         return storeTier
     }
 
-    /// Whether purchase surfaces render (paywall, plan section, gate sheets).
-    /// True once the real launch flag flips — and early in beta environments
-    /// (TestFlight, App Review) so sandbox purchases are testable end-to-end
-    /// before launch, which `LooxMembership.betaPreviewEnabled` can switch off
-    /// to ship a submission with no commerce surface at all. App Store builds
-    /// stay dark until `LooxMembership.launchEnabled`. DEBUG builds use the
-    /// explicit dev toggle instead (see `debugPurchasesEnabled`).
-    var purchasesEnabled: Bool {
+    /// A verified StoreKit plan (the Apple Max trial included). Complimentary
+    /// Loox+ is not a subscription: Restore, "Manage plan" and the seal key
+    /// off this, never off `tier`.
+    var isSubscriber: Bool { paidTier > .free }
+
+    /// The effective tier the app renders and gates on: the DEBUG override,
+    /// otherwise the higher of `storeTier` and the active complimentary grant.
+    var tier: LooxTier {
         #if DEBUG
-        return LooxMembership.launchEnabled || debugPurchasesEnabled
-        #else
-        // Both halves, deliberately: `start()` already skips the environment
-        // probe when the preview switch is off, and re-checking it here means
-        // the switch darkens commerce no matter how `betaPurchaseAccess` was set.
-        return LooxMembership.launchEnabled || (LooxMembership.betaPreviewEnabled && betaPurchaseAccess)
+        if let debugTierOverride { return debugTierOverride }
         #endif
+        return complimentaryActive ? Swift.max(storeTier, LooxComplimentaryGrant.tier) : storeTier
+    }
+
+    /// The grant's end date, only while the grant is what gives the user
+    /// Loox+ ("Free until" copy, the Loox+ billing note, analytics).
+    var complimentaryEndsAt: Date? {
+        guard complimentaryActive, !isSubscriber, tier == LooxComplimentaryGrant.tier else { return nil }
+        return complimentaryGrant?.endsAt
+    }
+
+    /// The last resolved grant (kept across a locked-Keychain resolve).
+    private(set) var complimentaryGrant: LooxComplimentaryGrant?
+    /// `complimentaryGrant.isActive` at the last resolve. Cached so getters
+    /// never read `Date.now`; `resolveComplimentary` refreshes it on launch
+    /// and every foreground.
+    private(set) var complimentaryActive = false
+    /// nil = never touch the Keychain (previews, hosted tests).
+    @ObservationIgnored private let complimentaryStore: LooxComplimentaryGrantStore?
+
+    /// Whether purchase surfaces render (paywall, plan section, gate sheets).
+    /// Commerce is live (owner 261021), so this is `launchEnabled`. The beta
+    /// path (TestFlight, App Review) only matters if launch is ever switched
+    /// back off; `LooxMembership.betaPreviewEnabled` darkens it too.
+    var purchasesEnabled: Bool {
+        LooxMembership.launchEnabled || (LooxMembership.betaPreviewEnabled && betaPurchaseAccess)
     }
 
     /// `AppTransaction.environment != .production` — the supported signal for
     /// TestFlight/App Review (`.sandbox`). Resolved once at start on RELEASE
-    /// builds straight from `AppTransaction.shared` (store-distributed
-    /// installs answer from the store record; anything without store context
-    /// throws and stays false — dark is the safe default). Never resolved at
-    /// all while `LooxMembership.betaPreviewEnabled` is off.
+    /// builds, and only while `launchEnabled` is off and
+    /// `LooxMembership.betaPreviewEnabled` is on (store-distributed installs
+    /// answer from the store record; anything without store context throws
+    /// and stays false — dark is the safe default).
     private(set) var betaPurchaseAccess = false
-
-    #if DEBUG
-    /// DEBUG builds never consult AppTransaction — a dev install without a
-    /// receipt could trigger an App Store sign-in prompt at launch. Purchase
-    /// surfaces open via this explicit toggle (Settings → Debug) instead,
-    /// e.g. for paywall preview under the Vaultify-StoreKit scheme. Default
-    /// OFF so daily dev behavior stays byte-identical.
-    var debugPurchasesEnabled: Bool = false {
-        didSet { defaults.set(debugPurchasesEnabled, forKey: Self.debugPurchasesKey) }
-    }
-    private static let debugPurchasesKey = "debug.looxPurchasesEnabled"
-    #endif
 
     #if DEBUG
     /// Dev/simulator override so tier-dependent UI is testable without App
@@ -95,27 +104,35 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
     /// restore) — the entitlement coordinator hangs its attach trigger here.
     @ObservationIgnored var onVerifiedTransactionUpdate: (() -> Void)?
 
+    /// Fired when an analytics input changes: `storeTier`, `complimentaryActive`,
+    /// and once after the first StoreKit refresh (so a subscriber is never
+    /// reported as free from the pre-refresh launch value).
+    @ObservationIgnored var onTierInputsChanged: (() -> Void)?
+    @ObservationIgnored private var didFirstRefresh = false
+
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard,
+         complimentaryStore: LooxComplimentaryGrantStore? = .keychain) {
         self.defaults = defaults
+        self.complimentaryStore = complimentaryStore
         #if DEBUG
         if defaults.object(forKey: Self.debugOverrideKey) != nil {
             debugTierOverride = LooxTier(rawValue: defaults.integer(forKey: Self.debugOverrideKey))
         }
-        debugPurchasesEnabled = defaults.bool(forKey: Self.debugPurchasesKey)
         #endif
     }
 
     /// Prime the tier and keep following transaction updates. Idempotent;
     /// called once from the composition root at launch.
     func start() {
+        // Synchronous and first, so the first frame already shows Loox+.
+        resolveComplimentary()
         guard updatesTask == nil else { return }
         #if !DEBUG
-        // With the preview switch off the environment is never probed: no
-        // AppTransaction request, nothing to log, nothing that could open a
-        // purchase surface.
-        if LooxMembership.betaPreviewEnabled {
+        // Live commerce, or the preview switch off: the environment is never
+        // probed (no AppTransaction request, nothing to log).
+        if !LooxMembership.launchEnabled, LooxMembership.betaPreviewEnabled {
             Task { [weak self] in await self?.resolveBetaPurchaseAccess() }
         }
         #endif
@@ -140,10 +157,47 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
         await refresh()
     }
 
+    /// Re-read the grant (launch, every foreground). A nil resolve (locked
+    /// device: the Keychain read throws) keeps the cached grant and only
+    /// re-checks its expiry, so day 750 passing while locked still lands.
+    func resolveComplimentary(now: Date = .now) {
+        guard let complimentaryStore else { return }
+        if let grant = complimentaryStore.resolve(now: now), grant != complimentaryGrant {
+            complimentaryGrant = grant
+        }
+        setComplimentaryActive(complimentaryGrant?.isActive(at: now) ?? false)
+    }
+
+    private func setComplimentaryActive(_ active: Bool) {
+        guard active != complimentaryActive else { return }
+        complimentaryActive = active
+        onTierInputsChanged?()
+    }
+
+    private func setStoreTier(_ tier: LooxTier) {
+        guard tier != storeTier else { return }
+        storeTier = tier
+        onTierInputsChanged?()
+    }
+
+    #if DEBUG
+    /// Settings → Debug: rewrite the REAL grant item, then re-resolve. nil
+    /// deletes it and clears the cache WITHOUT re-resolving, so the absent
+    /// state is visible until the next foreground mints a fresh start.
+    func debugSetComplimentaryStart(_ start: Date?) {
+        complimentaryStore?.debugOverwrite(start: start)
+        guard start != nil else {
+            complimentaryGrant = nil
+            return setComplimentaryActive(false)
+        }
+        resolveComplimentary()
+    }
+    #endif
+
     #if !DEBUG
     /// TestFlight/App Review detection, layered — any ONE signal opens beta
-    /// purchase surfaces; none marks production, so App Store installs stay
-    /// dark until `LooxMembership.launchEnabled`:
+    /// purchase surfaces; none marks production. Only consulted while
+    /// `LooxMembership.launchEnabled` is off:
     /// 1. The receipt URL NAME, synchronous and offline-safe: sandbox
     ///    (TestFlight) installs point at "sandboxReceipt" even when the
     ///    legacy receipt FILE is absent — the original fileExists pre-check
@@ -188,7 +242,7 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
         let tier = LooxProductID.resolveTier(from: [transaction.productID])
         if tier > storeTier {
             subscriptionLog.log("tier from in-hand transaction: \(String(describing: tier), privacy: .public)")
-            storeTier = tier
+            setStoreTier(tier)
             lastInHandApplyAt = .now
         }
     }
@@ -211,8 +265,15 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
         // expiry/refund downgrades still land: those reads carry the OTHER
         // still-live entitlements, and a fully-expired account converges on
         // the next launch/foreground refresh once the purchase session ended.
+        let before = storeTier
         if resolved >= storeTier || applyGuardExpired {
-            storeTier = resolved
+            setStoreTier(resolved)
+        }
+        // `setStoreTier` already reported a change; the first refresh reports
+        // regardless, replacing the pre-refresh launch value.
+        if !didFirstRefresh {
+            didFirstRefresh = true
+            if storeTier == before { onTierInputsChanged?() }
         }
     }
 

@@ -6,6 +6,7 @@ import SwiftUI
 /// a user property is attached to EVERY event, so nothing identifying belongs here.
 nonisolated enum AnalyticsUserProperty: String {
     case subscriptionTier = "subscription_tier"
+    case complimentaryPlus = "complimentary_plus"
     case appLanguage = "app_language"
     case icloudSync = "icloud_sync"
 }
@@ -96,14 +97,18 @@ nonisolated enum AnalyticsUserProperty: String {
     }
 
     /// The standing user-property set, one place. Call at launch and whenever a
-    /// constituent changes (purchase, language switch, sync toggle).
-    func refreshUserProperties(tier: LooxTier, language: String, iCloudSyncEnabled: Bool) {
+    /// constituent changes (purchase, grant, language switch, sync toggle).
+    /// `tier` is the PAID tier (`storeTier`; the Apple Max trial reports `max`),
+    /// never the effective one: complimentary Loox+ is its own on/off property.
+    func refreshUserProperties(tier: LooxTier, complimentaryPlus: Bool,
+                               language: String, iCloudSyncEnabled: Bool) {
         let tierName: String = switch tier {
         case .free: "free"
         case .plus: "plus"
         case .max: "max"
         }
         setUserProperty(.subscriptionTier, tierName)
+        setUserProperty(.complimentaryPlus, complimentaryPlus ? "on" : "off")
         setUserProperty(.appLanguage, language)
         setUserProperty(.icloudSync, iCloudSyncEnabled ? "on" : "off")
     }

@@ -39,16 +39,17 @@ enum LooxPaywallContext: String, Identifiable {
 /// existing subscriber never sees the acquisition pitch (§5.3); they get the
 /// current plan summary with Change plan and Manage subscription instead.
 ///
-/// Dark until purchases are enabled (`LooxEntitlementStore.purchasesEnabled`:
-/// the launch flag, or a beta environment — TestFlight/App Review) — no entry
-/// point renders it for App Store users before the §12 gates pass.
+/// Routing reads `isSubscriber` (a verified StoreKit plan), never the effective
+/// `tier`: a user on complimentary Loox+ pays nothing, so they get the
+/// acquisition paywall (owner 261021). Purchases are live
+/// (`LooxEntitlementStore.purchasesEnabled`).
 struct LooxPaywallScreen: View {
     @Environment(AppEnvironment.self) private var env
     var context: LooxPaywallContext = .profile
 
     var body: some View {
         Group {
-            if env.entitlements.tier > .free {
+            if env.entitlements.isSubscriber {
                 LooxCurrentPlanView()
                     .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
             } else {
@@ -68,6 +69,9 @@ struct LooxPaywallScreen: View {
 struct LooxCurrentPlanView: View {
     @Environment(AppEnvironment.self) private var env
     @State private var periodEnd: Date?
+    /// The latest period is an Apple intro free trial (the 1-year Loox Max
+    /// offer), so its end is when billing starts, not a renewal.
+    @State private var periodEndIsTrial = false
     @State private var showManageSheet = false
     @State private var showChangePlan = false
 
@@ -79,7 +83,7 @@ struct LooxCurrentPlanView: View {
                         ProfileRowTile(style: .brandMark)
                         Text("Your plan").vaultType(.body).themedForeground()
                         Spacer(minLength: Space.s2)
-                        LooxTierLabel(tier: env.entitlements.tier, badgeHeight: 15)
+                        LooxTierLabel(tier: env.entitlements.paidTier, badgeHeight: 15)
                             .vaultType(.subhead).themedForeground(.secondary)
                     }
                     .padding(.horizontal, Space.s4)
@@ -87,7 +91,8 @@ struct LooxCurrentPlanView: View {
                     if let periodEnd {
                         ProfileRowDivider()
                         HStack {
-                            Text("Current period ends \(periodEnd.formatted(date: .abbreviated, time: .omitted))")
+                            let end = LooxTrialCopy.endDate(periodEnd)
+                            Text(periodEndIsTrial ? "Free trial ends \(end)" : "Current period ends \(end)")
                                 .vaultType(.subhead).themedForeground(.secondary)
                             Spacer()
                         }
@@ -156,17 +161,22 @@ struct LooxCurrentPlanView: View {
 
     /// The end of the current paid period from the verified entitlement —
     /// factual whether or not auto-renew is on (renew vs expire is Apple's
-    /// sheet's job to explain).
+    /// sheet's job to explain). `Transaction.offer` is iOS 17.2+, inside the
+    /// 17.3 floor.
     private func loadPeriodEnd() async {
         var latest: Date?
+        var latestIsTrial = false
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result,
                   transaction.revocationDate == nil,
                   LooxProductID.tier(for: transaction.productID) != nil else { continue }
             if let expiry = transaction.expirationDate, expiry > (latest ?? .distantPast) {
                 latest = expiry
+                latestIsTrial = transaction.offer?.type == .introductory
+                    && transaction.offer?.paymentMode == .freeTrial
             }
         }
         periodEnd = latest
+        periodEndIsTrial = latestIsTrial
     }
 }

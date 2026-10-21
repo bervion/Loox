@@ -58,6 +58,26 @@ nonisolated enum KeychainStore {
         return true
     }
 
+    /// Add-only write: creates the item and returns `false` when it already
+    /// exists — it NEVER replaces one. For write-once values (the complimentary
+    /// grant start) where a racing writer or a wrong "absent" read must not
+    /// overwrite what is stored; the add-or-update `set` would.
+    static func add(_ data: Data, account: String, accessGroup: String? = nil) throws -> Bool {
+        var attributes: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecUseDataProtectionKeychain as String: true,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            kSecValueData as String: data,
+        ]
+        if let accessGroup { attributes[kSecAttrAccessGroup as String] = accessGroup }
+        let status = SecItemAdd(attributes as CFDictionary, nil)
+        if status == errSecDuplicateItem { return false }
+        guard status == errSecSuccess else { throw Failure.unexpectedStatus(status) }
+        return true
+    }
+
     static func get(account: String, accessGroup: String? = nil) throws -> Data? {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

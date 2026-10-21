@@ -52,12 +52,14 @@ nonisolated enum RelayPrincipalWireIdentity {
     nonisolated(unsafe) static var currentB64: String?
 }
 
-/// B3 attach orchestration (dormant): owns the grant/lease state, runs the
-/// four attach triggers from the handoff (§2) with single-flight + backoff,
-/// and feeds the client hooks. Nothing here surfaces UI — purchases stay dark
-/// for App Store users and the backend enforces nothing yet
-/// (`ENTITLEMENT_MODE=off`); this exists so coverage telemetry and the
-/// grant/lease plumbing are already true when enforcement turns on.
+/// B3 attach orchestration: owns the grant/lease state, runs the four attach
+/// triggers from the handoff (§2) with single-flight + backoff, and feeds the
+/// client hooks. Nothing here surfaces UI. Commerce is live (owner decision
+/// 2026-10-21). Attach runs only for verified StoreKit transactions; the
+/// device-local complimentary Loox+ grant is never attached or sent. Backend
+/// enforcement is set server-side by `ENTITLEMENT_MODE`; this exists so
+/// coverage telemetry and the grant/lease plumbing are already true when
+/// enforcement turns on.
 @MainActor @Observable final class LooxEntitlementCoordinator {
 
     // Deallocation must not hop to the main actor.
