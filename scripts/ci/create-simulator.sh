@@ -138,12 +138,30 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
   } >> "$GITHUB_ENV"
 fi
 
-# SIMULATOR_DEFER_BOOT=1 leaves the device shut down: run-xcode-suite.sh then
-# boots it while the suite compiles, instead of idling through the first
-# boot's data migration (several minutes on a fresh hosted runner) up front.
+# SIMULATOR_BOOT_ASYNC=1 (CI) boots in the background and returns at once, so
+# the first boot's data migration (several minutes on a fresh hosted runner)
+# overlaps project generation, which mostly waits on the network. The boot
+# must still finish before compilation starts: a device that settles while the
+# suite compiles makes the test app's first launch take minutes on a 3-core
+# runner. wait-for-simulator.sh blocks on the status file written here.
 # Boot chatter goes to stderr so stdout stays exactly one line: the UDID a
 # caller (Makefile, workflow step) substitutes straight into -destination.
-if [[ "${SIMULATOR_DEFER_BOOT:-0}" != "1" ]]; then
+if [[ "${SIMULATOR_BOOT_ASYNC:-0}" == "1" ]]; then
+  BOOT_STATUS_FILE="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/vaultify-simulator-boot.status"
+  BOOT_LOG_FILE="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/vaultify-simulator-boot.log"
+  rm -f "$BOOT_STATUS_FILE"
+  if [[ -n "${GITHUB_ENV:-}" ]]; then
+    {
+      echo "SIMULATOR_BOOT_STATUS_FILE=$BOOT_STATUS_FILE"
+      echo "SIMULATOR_BOOT_LOG_FILE=$BOOT_LOG_FILE"
+    } >> "$GITHUB_ENV"
+  fi
+  nohup /bin/bash -c '
+    status=0
+    xcrun simctl boot "$1" && xcrun simctl bootstatus "$1" -b || status=$?
+    echo "$status" > "$2"
+  ' boot "$SIMULATOR_UDID" "$BOOT_STATUS_FILE" > "$BOOT_LOG_FILE" 2>&1 &
+else
   xcrun simctl boot "$SIMULATOR_UDID" >&2
   xcrun simctl bootstatus "$SIMULATOR_UDID" -b >&2
 fi

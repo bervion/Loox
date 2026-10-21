@@ -66,12 +66,17 @@ files), and a classifier failure counts as "run". Run the workflow by hand from 
 Actions tab (`workflow_dispatch`) to force the suite; a manual run has its own concurrency
 group, so it never cancels a push run.
 
-**Unit tests** creates a throwaway simulator shut down (`SIMULATOR_DEFER_BOOT=1`), then
-`run-xcode-suite.sh` boots it in the background while `build-for-testing` compiles
-(index store off), waits for the boot, runs `test-without-building`, uploads
-`unit-test-receipt-<attempt>` (summary JSON only), and deletes the simulator. A fresh
-device's first boot spends minutes in data migration; overlapping it with compilation
-removes that wait. The job times out after 30 minutes. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
+**Unit tests** creates a throwaway simulator right after selecting Xcode and boots it in
+the background (`SIMULATOR_BOOT_ASYNC=1`), so the first boot's data migration (3 to 4
+minutes on a fresh hosted VM) overlaps the toolchain install and project generation,
+which mostly wait on the network. `wait-for-simulator.sh` then blocks until the boot has
+finished (10-minute limit) before `run-xcode-suite.sh` compiles and tests in one
+`xcodebuild test` with the index store off. It uploads `unit-test-receipt-<attempt>`
+(summary JSON only) and deletes the simulator. The job times out after 35 minutes.
+
+Do not move the boot into the compile: measured on the 3-core hosted runner (run 739), a
+device that finishes booting during compilation made the test app's first launch take
+7 minutes instead of under 1, and the job got slower overall. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
 cancelled jobs, because the runner is persistent.
 For `VaultifyTests`, `-collect-test-diagnostics never` disables verbose Simulator diagnostics (`sysdiagnose`); stdout, `.xcresult` summary and test exit code remain unchanged. CI timing impact has not been measured.
 

@@ -65,9 +65,10 @@ jobs:
     # TEMPORARY: GitHub-hosted while the self-hosted Mac mini is offline. Restore
     # `[self-hosted, macOS, ARM64, vaultify-ci]` when it is back (see the runbook).
     runs-on: macos-26
-    # A green hosted run takes about 15 minutes; the ceiling stops a hung
-    # simulator from burning billed macOS minutes for long.
-    timeout-minutes: 30
+    # A green hosted run takes about 20 minutes; the ceiling leaves room for a
+    # cold package cache while stopping a hung simulator from burning billed
+    # macOS minutes for long.
+    timeout-minutes: 35
     steps:
       - name: Checkout candidate
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -77,6 +78,14 @@ jobs:
 
       - name: Select pinned Xcode
         run: scripts/ci/select-xcode.sh
+
+      # Boots in the background through toolchain install and project
+      # generation, which mostly wait on the network; "Wait for simulator"
+      # below blocks until it is up, before compilation starts.
+      - name: Create isolated simulator
+        env:
+          SIMULATOR_BOOT_ASYNC: '1'
+        run: scripts/ci/create-simulator.sh
 
       - name: Install pinned toolchain
         uses: jdx/mise-action@c53b9236f0b3370f31520f8b142f141256d839c6 # v3.6.0
@@ -109,11 +118,11 @@ jobs:
       - name: Check privacy manifests
         run: scripts/ci/check-privacy-manifests.sh
 
-      # Created shut down; the suite boots it while compiling.
-      - name: Create isolated simulator
-        env:
-          SIMULATOR_DEFER_BOOT: '1'
-        run: scripts/ci/create-simulator.sh
+      # A device still settling from its first boot while the suite compiles
+      # makes the test app's first launch take minutes on a 3-core runner, so
+      # compilation starts only once the boot has finished.
+      - name: Wait for simulator
+        run: scripts/ci/wait-for-simulator.sh
 
       - name: Run basic unit suite
         env:
