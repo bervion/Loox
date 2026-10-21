@@ -9,10 +9,8 @@ import pathlib
 import re
 
 HERE = pathlib.Path(__file__).parent
-DECK = pathlib.Path("/Users/pham.nhu.chinh/Developer/Personal/Vaultify/App Store Screenshots")
-ICONS = pathlib.Path(
-    "/Users/pham.nhu.chinh/Developer/Personal/Vaultify/Vaultify/Assets.xcassets/PolarisIcons"
-)
+DECK = HERE.resolve().parent
+ICONS = DECK.parent / "Vaultify" / "Assets.xcassets" / "PolarisIcons"
 
 INK = "#0F0F0F"
 MUTED = "rgba(15,15,15,0.55)"

@@ -101,7 +101,7 @@ Subscriptions and introductory offers are configured in App Store Connect only. 
 | App Store Server Notifications V2 | Production: `https://entitlement.looxpassword.com/v1/apple/notifications`. Sandbox: `https://entitlement-staging.looxpassword.com/v1/apple/notifications` |
 | App Privacy | **Purchases → Purchase History**, linked to the user (attach binds the subscription account to the relay principal). Mirrored in `Vaultify/Resources/PrivacyInfo.xcprivacy` |
 
-- All four products were **Prepare for Submission** on 2026-10-21. Each must reach Ready to Submit (review screenshot, see `plans/260804-1037-release-readiness-remediation/phase-05-membership-launch.md` §5.4) and be attached to the next app version on first submission (Apple's first-subscription rule).
+- All four products were **Prepare for Submission** on 2026-10-21. Each must reach Ready to Submit (a review screenshot of the paywall per product) and be attached to the next app version on first submission (Apple's first-subscription rule).
 
 ### 3. Private certificates repo (match storage)
 Create an **empty private** GitHub repo `bervion/vaultify-ios-certificates`, then seed it from your Mac (has Xcode + the signing account):
@@ -434,7 +434,7 @@ loads, which is easy to misread as a missing deploy.
 The 2026-10-07 native UI changes are separate from the previously released
 **1.56.6 (95)** attestation fixes. They have not bumped the app version or uploaded a new
 candidate. Follow the existing release boundary after validating the final source tree.
-The [implementation report](../plans/261007-1825-loox-member-and-private-email-ux-overhaul/reports/implementation-progress.md)
+The internal implementation report
 separates synthetic native evidence from physical and production checks.
 
 | Check | Required observable result |

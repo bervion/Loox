@@ -310,7 +310,7 @@ Sheet Form; title = tên category. 3 mode: tạo mới / sửa / khôi phục dr
 - **Forwarding inboxes**: list hộp thư nhận (email che + chip xác minh: "Verified" xanh / "Awaiting confirmation" vàng / "Not verified") + tag "Default"; menu Check verification / Resend / Set as default / Delete; section **rotation** khi cần cập nhật alias hàng loạt (progress "x of y").
 - **Inbox detail**: mở có chủ đích trong vault unlocked để đọc/copy email local đầy đủ, có Ẩn/Hiện. Background/lock/exit conceal tức thời; foreground không tự reveal lại. Coordinator chung refresh pending visible, chỉ ghi verified từ server cho đúng email/destination/generation.
 - **Domain picker**: accepted signed registry hiển thị cả domain chưa cho tạo với readiness reason; current `loox.pw` chưa được native patch bật. Aliases đã mint giữ suffix; unknown nonlegacy không được copy nhầm domain legacy.
-- Lỗi local field/ownership, CloudKit, App Attest và mạng giữ nguyên nguyên nhân/recovery phù hợp. Native/device acceptance xem [implementation report](../plans/261007-1825-loox-member-and-private-email-ux-overhaul/reports/implementation-progress.md).
+- Lỗi local field/ownership, CloudKit, App Attest và mạng giữ nguyên nguyên nhân/recovery phù hợp. Native/device acceptance xem implementation report nội bộ.
 
 ### 12.4 Capability banner (component dùng chung cho tính năng online)
 Banner bo tròn accent nhạt (KHÔNG đỏ — đỏ dành cho destructive): **Offline** ("No Internet Connection…") / **Temporarily unavailable** (+ nút Try Again) / **Maintenance** / **Currently unavailable** (operator tắt) / **No longer available** (retired). Available/user-off → không render banner.

@@ -57,7 +57,7 @@ hotfix:
 
 push:
 	git push origin main
-	@echo "✓ Pushed. CI: https://github.com/bervion/Vaultify/actions"
+	@echo "✓ Pushed. CI: https://github.com/bervion/Loox/actions"
 
 # ── Project generation (Tuist) ──
 gen:

@@ -1,8 +1,0 @@
-{
-  "agent": "6B",
-  "keys": [],
-  "notes": [
-    "No NEW user-facing strings. The 9 'Untitled' fallbacks were switched from a raw Swift String literal to appString(\"Untitled\"); that key already exists in Localizable.xcstrings with vi ('Chưa có tiêu đề') and ja ('無題'), so nothing needs merging. Verified by VaultifyTests/AccessibilityDNAGuardTests.testUntitledKeysShipVietnameseAndJapanese.",
-    "The catalog key 'Reduce Motion' (vi 'Giảm chuyển động', ja '視差効果を減らす') is now UNUSED: the dead app-level toggle in AppearanceSettingsView was deleted. Leaving the entry in the catalog is harmless. Do not delete it in this wave unless a catalog-pruning pass runs, and only after confirming no other screen adopts it."
-  ]
-}
