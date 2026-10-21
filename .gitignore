@@ -48,18 +48,30 @@ vendor/bundle/
 *.mobileprovision
 *.cer
 fastlane/api_key.json
+# Local release secrets (App Store Connect key, match password)
+fastlane/.env*
 
-# Claude Code local tooling (agents, hooks, rules, skills, settings) — machine
-# specific, not shared. Keep only the shared review/planner memory versioned.
-.claude/*
-!.claude/agent-memory/
+# Derived data of scripts/release-local.sh
+.release-dd/
+
+# AI agent tooling and personal agent instructions — machine specific, not
+# shared. CLAUDE.md stays versioned as the repo's contributor conventions.
+.claude/
+.codex/
 .agentkit/
 .agents/
-.release-dd/
+.goclaw/
+kits
+/AGENTS.md
+
+# Internal planning, reports and journals — kept locally, not published
+/plans/
+/docs/journals/
+
+# Design reference uploads (third-party screenshots, not redistributable)
+/App Store Screenshots/uploads/
+/App Store Screenshots/.thumbnail
+/Design System/uploads/
 
 # Compiled Python caches from the local quality tooling.
 __pycache__/
-
-kits
-# Local release secrets (App Store Connect key, match password) — never commit
-fastlane/.env*

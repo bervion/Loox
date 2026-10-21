@@ -9,7 +9,7 @@ import base64
 import pathlib
 import subprocess
 
-DECK = pathlib.Path("/Users/pham.nhu.chinh/Developer/Personal/Vaultify/App Store Screenshots")
+DECK = pathlib.Path(__file__).resolve().parent.parent
 SHOTS = DECK / "shots"
 WORK = pathlib.Path("/tmp/loox-shot-work")
 WORK.mkdir(exist_ok=True)
