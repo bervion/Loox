@@ -64,11 +64,12 @@ fastlane/.env*
 kits
 /AGENTS.md
 
-# Internal planning, reports and journals — kept locally, not published
+# Internal planning, reports and journals — kept on maintainers' machines,
+# not tracked from here on (older commits still contain them)
 /plans/
 /docs/journals/
 
-# Design reference uploads (third-party screenshots, not redistributable)
+# Design reference uploads (third-party screenshots, not tracked)
 /App Store Screenshots/uploads/
 /App Store Screenshots/.thumbnail
 /Design System/uploads/

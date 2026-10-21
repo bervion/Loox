@@ -14,11 +14,11 @@ Loox stores people's passwords, passkeys and recovery material, so security repo
 
 **Do not open a public issue, discussion or pull request for a vulnerability.**
 
-Report it privately through GitHub: open the repository's **Security** tab and choose **Report a vulnerability**. If that is not available to you, email **support@looxpassword.com** with the subject `Security report`.
+Report it privately by email to **support@looxpassword.com** with the subject `Security report`. When the repository's **Security** tab offers **Report a vulnerability**, you can use GitHub's private reporting instead.
 
 Please include:
 
-- the affected component (app, AutoFill extension, Safari extension, Mac app, or a Loox service such as Loox Link, Quick View or Private Email) and the version or commit
+- the affected component (app, AutoFill extension, Safari extension, Mac app, or a Loox service such as Quick Link, Quick View or Private Email) and the version or commit
 - the impact and the steps to reproduce, ideally with a proof of concept
 - your device, OS version and any non-default settings that matter
 
@@ -36,7 +36,7 @@ In scope:
 - vault encryption, key derivation and key wrapping (`VaultifyCore/Crypto`, `VaultifyCore/CArgon2`)
 - unlock, biometric and recovery flows, including the AutoFill and Safari extensions
 - anything that lets data leave the device in a way the [privacy table in the README](README.md#what-leaves-your-device) does not describe
-- sharing, Loox Link, Quick View and Private Email, on the client and the service side
+- sharing, Quick Link, Quick View and Private Email, on the client and the service side
 
 Out of scope:
 

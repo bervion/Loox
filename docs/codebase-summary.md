@@ -310,4 +310,4 @@ captures. Code review closed all nine source findings; representative native rev
 the observed accessibility3 truncations. These results and signed generic-device Debug
 compilation do not establish physical App Attest/mail or a new TestFlight release.
 Exact receipts and remaining physical/device/mail/Family/full runtime matrix gates live in
-the [implementation progress report](../plans/261007-1825-loox-member-and-private-email-ux-overhaul/reports/implementation-progress.md).
+the internal implementation progress report.

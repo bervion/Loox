@@ -6,7 +6,7 @@
 
 **A private, offline password and passkey manager for iPhone, iPad and Mac.**
 
-No account. No vault server. Your vault is encrypted on your device and leaves it only when you say so.
+No account. No vault server. Your vault is encrypted on your device and stays there unless you choose to sync or share it.
 
 <a href="https://apps.apple.com/us/app/loox-password-manager/id6779973474"><img src="https://tools.applemarketingtools.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="54"></a>
 
@@ -67,7 +67,7 @@ No account. No vault server. Your vault is encrypted on your device and leaves i
 - iPhone, iPad and Mac. English, Vietnamese and Japanese with an in-app language switch.
 - Day and Night appearance with seven accent colors, Dynamic Type, Reduce Motion and VoiceOver support.
 
-The vault, AutoFill, passkeys and 2FA codes work without an account. Optional Loox membership tiers raise the limits of the network features above.
+The vault, AutoFill, passkeys and 2FA codes work without an account. The network features above have usage limits.
 
 ## Security model
 
@@ -81,14 +81,19 @@ The vault, AutoFill, passkeys and 2FA codes work without an account. Optional Lo
 
 ### What leaves your device
 
+No request carries your master password or a decrypted vault.
+
 | Data | When | Where |
 |---|---|---|
-| Encrypted vault items | Only if you turn on iCloud sync (off by default) | Your iCloud private database |
-| Fields you share | Only when you share | iCloud (Approval Mode) or Loox Link, encrypted on device before upload |
+| Encrypted vault items, plus the Vault Key wrapped by your recovery key (useless without the Emergency Kit) | Only if you turn on iCloud sync (off by default) | Your iCloud private database |
+| Fields you share | Only when you share | iCloud (Approval Mode) or the Quick Link service, encrypted on device before upload |
 | Private Email addresses and forwarding | Only if you use Private Email | Loox relay service |
-| Website domains | While "Show website icons" is on | Google favicon service |
-| Usage analytics: item types, count buckets, setting states (never names, values, websites or search terms) | Unless turned off in Settings | Google Analytics for Firebase, app only, no IDFA |
-| Crash reports | Unless turned off in Settings | Firebase Crashlytics, app only |
+| The first 5 characters of each password's SHA-1 hash (k-anonymity) | While "Check for known breaches" is on (on by default) and a Watchtower audit runs, including the automatic one when you open Watchtower | Have I Been Pwned |
+| Website domains | While "Show website icons" is on (on by default) | Google favicon service |
+| Signed configuration (feature switches, Private Email domains, Quick View signer keys); the request carries no vault data | On unlock and when the app returns to the foreground | Loox config service, with an iCloud public database mirror as fallback |
+| Usage analytics: item types, count buckets, setting states (never names, values, websites or search terms) | Only if you turn on "Share anonymous usage statistics" (off by default) | Google Analytics for Firebase, app only, no IDFA |
+| Crash reports | Unless you turn off "Send crash diagnostics" | Firebase Crashlytics, app only |
+| Subscription transaction | Only if you buy a Loox membership | Loox entitlement service |
 
 The AutoFill and Safari extensions link no analytics or crash reporting SDK. Found a vulnerability? See [SECURITY.md](SECURITY.md).
 
@@ -110,6 +115,7 @@ The AutoFill and Safari extensions link no analytics or crash reporting SDK. Fou
 
 - macOS with **Xcode 26.5 or later** (the CI minimum lives in [`scripts/ci/toolchain-pin.sh`](scripts/ci/toolchain-pin.sh))
 - [mise](https://mise.jdx.dev), which installs the Tuist version pinned in [`.mise.toml`](.mise.toml)
+- For `make test`: an iOS 26.5 or newer Simulator runtime with the iPhone 17 Pro device type (the suite creates a throwaway simulator from it)
 - Deployment targets: iOS / iPadOS 17.3, macOS 15
 
 ### Generate and run
@@ -121,11 +127,11 @@ mise install
 mise exec -- tuist generate
 ```
 
-Tuist opens `Vaultify.xcworkspace`. Pick the **Vaultify** scheme and run it on an iOS Simulator; no signing is needed there.
+Tuist opens `Vaultify.xcworkspace`. Pick the **Vaultify** scheme and run it on an iOS Simulator. If Xcode reports that the team is unavailable, set `DEVELOPMENT_TEAM` in `Project.swift` to your own team and generate again.
 
 The Xcode project and workspace are generated and gitignored. After adding, removing or renaming a source file, or editing `Project.swift`, run `mise exec -- tuist generate` again.
 
-To run on a device, change `DEVELOPMENT_TEAM` and the bundle identifiers in `Project.swift` to your own. The App Group, AutoFill Credential Provider and iCloud capabilities are tied to the bundle IDs.
+To run on a device, set `DEVELOPMENT_TEAM` and the bundle identifiers in `Project.swift` to your own, then replace the App Group (`group.com.bervion.vaultify`) and iCloud container (`iCloud.com.bervion.vaultify`) everywhere they appear: the `*.entitlements` files, the privacy manifests and the shared, sync and sharing configuration. `git grep -l -e group.com.bervion.vaultify -e iCloud.com.bervion.vaultify` lists them. Those capabilities must exist for your bundle IDs in your developer account.
 
 ### Checks
 
