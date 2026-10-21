@@ -14,7 +14,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # A manual run gets its own group so it never cancels a push run on main,
+  # such as the one a release commit needs as evidence.
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || (github.event_name == 'workflow_dispatch' && github.run_id) || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -22,8 +24,8 @@ env:
 
 jobs:
   # A few seconds on Linux decide whether the macOS suite is worth its minutes:
-  # drafts, documentation-only changes and pushes that merge an already-tested
-  # PR skip it. A skipped "Unit tests" still satisfies a required status check.
+  # drafts, documentation-only changes and pushes that merge a PR whose head
+  # had the same tree and passed the suite skip it. A skipped "Unit tests" still satisfies a required status check.
   # release-ios.yml accepts only a run whose "Unit tests" job succeeded, and
   # release commits always run it.
   plan:
@@ -31,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      checks: read
       contents: read
       pull-requests: read
     outputs:

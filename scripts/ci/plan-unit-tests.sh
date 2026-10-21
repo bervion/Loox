@@ -4,7 +4,8 @@
 # CI, so the suite is skipped only when it cannot learn anything new:
 #   - a draft pull request (it runs once the PR is marked ready for review)
 #   - a change that touches only paths the unit suite never compiles or reads
-#   - a push to main that is the merge of a pull request, already tested there
+#   - a push to main that merges a pull request whose head had the same tree
+#     and passed the suite
 # Release commits always run: release-ios.yml requires this run's unit job.
 # Anything unexpected (unknown event, API failure, truncated file list) runs.
 #
@@ -23,11 +24,14 @@ decide() {
   exit 0
 }
 
-# Reads changed paths on stdin. Succeeds (and prints the first relevant path)
-# when at least one path can affect VaultifyTests; an empty list counts as
-# relevant. VaultifyTests only compiles and reads the app, core, extension and
-# test sources, so documentation, design references, store metadata and
-# release tooling cannot change its result.
+# Reads changed paths on stdin. Exits 0 (printing the first relevant path)
+# when at least one path can affect VaultifyTests, and 3 when none can; an
+# empty list counts as relevant. VaultifyTests only compiles and reads the app,
+# core, extension and test sources (the #filePath readers are
+# AccessibilityDNAGuardTests, PrivacyClaimHonestyTests, IconCatalogTests and
+# OnboardingSyncConsentTests), so documentation, design references, store
+# metadata and release tooling cannot change its result. Update this list if a
+# test starts reading one of these paths.
 touches_unit_suite() {
   /usr/bin/env python3 -c '
 import sys
@@ -49,16 +53,18 @@ for path in paths:
     if not (path.endswith(".md") or path in IGNORED_FILES or path.startswith(IGNORED_PREFIXES)):
         print(path)
         sys.exit(0)
-sys.exit(1)
+sys.exit(3)
 '
 }
 
 check_paths() {
-  local files="$1" first
-  if first="$(printf '%s\n' "$files" | touches_unit_suite)"; then
-    decide true "changes $first"
-  fi
-  decide false "only documentation, design or release-tooling paths changed"
+  local files="$1" first status=0
+  first="$(printf '%s\n' "$files" | touches_unit_suite)" || status=$?
+  case "$status" in
+    0) decide true "changes $first" ;;
+    3) decide false "only documentation, design or release-tooling paths changed" ;;
+    *) decide true "path classifier failed (exit $status)" ;;
+  esac
 }
 
 case "${EVENT_NAME:-}" in
@@ -82,11 +88,22 @@ case "${EVENT_NAME:-}" in
         ;;
     esac
 
-    merged_pr="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA/pulls" \
-      --jq "[.[] | select(.merged_at != null and .merge_commit_sha == \"$HEAD_SHA\") | .number][0] // empty")" ||
+    # A merge is skipped only when main now holds exactly the tree the PR's
+    # head had and the unit suite passed on that head. A PR merged red, or
+    # whose base moved on, yields a tree nobody tested, so it falls through.
+    merged="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA/pulls" \
+      --jq "[.[] | select(.merged_at != null and .merge_commit_sha == \"$HEAD_SHA\") | \"\(.number) \(.head.sha)\"][0] // empty")" ||
       decide true "could not look up the pull request for $HEAD_SHA"
-    if [[ -n "$merged_pr" ]]; then
-      decide false "merge of pull request #$merged_pr, already tested there"
+    if [[ -n "$merged" ]]; then
+      merged_pr="${merged%% *}"
+      pr_head="${merged##* }"
+      head_tree="$(gh api "repos/$REPOSITORY/git/commits/$HEAD_SHA" --jq .tree.sha)" || head_tree=""
+      pr_tree="$(gh api "repos/$REPOSITORY/git/commits/$pr_head" --jq .tree.sha)" || pr_tree=""
+      passed="$(gh api "repos/$REPOSITORY/commits/$pr_head/check-runs?check_name=Unit%20tests" \
+        --jq '[.check_runs[] | select(.conclusion == "success")] | length')" || passed=0
+      if [[ -n "$head_tree" && "$head_tree" == "$pr_tree" && "$passed" != "0" ]]; then
+        decide false "merge of pull request #$merged_pr: same tree as $pr_head, where the suite passed"
+      fi
     fi
 
     if [[ -z "${BEFORE_SHA:-}" || "$BEFORE_SHA" =~ ^0+$ ]]; then

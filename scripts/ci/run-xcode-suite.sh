@@ -25,6 +25,7 @@ esac
 XCODE_ARGUMENTS=(
   -workspace Vaultify.xcworkspace
   -scheme "$TEST_SCHEME"
+  -configuration Debug
   -destination "platform=iOS Simulator,id=$SIMULATOR_UDID"
   -derivedDataPath "$DERIVED_DATA"
 )
@@ -51,7 +52,8 @@ rm -rf "$RESULT_BUNDLE" "$RESULT_BUNDLE.summary.json"
 BOOT_LOG="$(mktemp)"
 xcrun simctl bootstatus "$SIMULATOR_UDID" -b > "$BOOT_LOG" 2>&1 &
 BOOT_PID=$!
-trap 'kill "$BOOT_PID" 2>/dev/null || true; rm -f "$BOOT_LOG"' EXIT
+# If compilation fails, stop the half-booted device so cleanup can delete it.
+trap '[[ -n "$BOOT_PID" ]] && kill "$BOOT_PID" 2>/dev/null && xcrun simctl shutdown "$SIMULATOR_UDID" >/dev/null 2>&1; rm -f "$BOOT_LOG"' EXIT
 
 # Ad-hoc signing, the same flags release-local.sh tests with. It needs no
 # certificate or secret, but it embeds the app's entitlements: an unsigned
@@ -62,7 +64,6 @@ trap 'kill "$BOOT_PID" 2>/dev/null || true; rm -f "$BOOT_LOG"' EXIT
 set +e
 xcodebuild \
   "${XCODE_ARGUMENTS[@]}" \
-  -configuration Debug \
   CODE_SIGN_IDENTITY="-" \
   CODE_SIGNING_REQUIRED=YES \
   COMPILER_INDEX_STORE_ENABLE=NO \
@@ -71,7 +72,10 @@ TEST_STATUS=$?
 set -e
 
 if [[ "$TEST_STATUS" == "0" ]]; then
-  if ! wait "$BOOT_PID"; then
+  BOOT_STATUS=0
+  wait "$BOOT_PID" || BOOT_STATUS=$?
+  BOOT_PID=""  # reaped: the EXIT trap must not signal a reused PID
+  if [[ "$BOOT_STATUS" != "0" ]]; then
     echo "Simulator $SIMULATOR_UDID did not finish booting:" >&2
     cat "$BOOT_LOG" >&2
     exit 1

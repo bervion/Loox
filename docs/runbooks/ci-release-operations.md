@@ -51,15 +51,20 @@ the expensive part of CI:
 - a draft pull request (CI runs once it is marked ready for review);
 - a change that touches only `*.md`, `docs/`, `App Store Screenshots/`, `Design System/`,
   `metadata/`, `specs/`, `fastlane/`, `quality/maestro/`, issue templates, `LICENSE`,
-  `.gitignore`, the Gemfiles or `release-ios.yml` (`VaultifyTests` never compiles or
-  reads them);
-- a push to `main` that is the merge commit of a pull request, which was already tested
-  on its head commit.
+  `.gitignore`, the Gemfiles, `release-ios.yml` or `.github/actionlint.yaml`
+  (`VaultifyTests` never compiles or reads them);
+- a push to `main` that merges a pull request when `main` now has exactly the tree of
+  the PR's head commit and `Unit tests` passed on that head. A PR merged red, or one whose
+  base moved on, falls through to the path check above.
+
+Without branch protection nothing stops merging a red PR, so consider requiring the
+`Unit tests` check on `main` (a skipped check still counts as passing).
 
 Release commits (`chore(release):`, `chore(beta):`) always run the suite, and so does
 anything the script cannot classify (unknown event, API error, a push of 300 or more
-files). A skipped **Unit tests** job still satisfies a required status check. Run the
-workflow by hand from the Actions tab (`workflow_dispatch`) to force the suite.
+files), and a classifier failure counts as "run". Run the workflow by hand from the
+Actions tab (`workflow_dispatch`) to force the suite; a manual run has its own concurrency
+group, so it never cancels a push run.
 
 **Unit tests** creates a throwaway simulator shut down (`SIMULATOR_DEFER_BOOT=1`), then
 `run-xcode-suite.sh` boots it in the background while `build-for-testing` compiles
@@ -229,6 +234,11 @@ not execute the app on iOS 17.3.
 - **"No successful ci.yml run for `<sha>`":** the tagged commit was never validated. Do not
   move the tag. Push the commit to a branch, let CI run it, then tag a commit that has a
   green receipt.
+- **"run N skipped the unit suite":** the tag is on a commit whose Plan job skipped the
+  suite (only release commits are guaranteed to run it). While that commit is still the
+  tip of `main`, run CI from the Actions tab (Run workflow on `main`), then re-run the
+  release job. Otherwise release through `make release` / `make beta`, which always
+  create a release commit.
 - **Tag is not reachable from main:** do not move the tag. Merge a reviewed fix to `main`
   and create a new version tag.
 - **Tag/version mismatch:** fix `MARKETING_VERSION` through the normal release process and

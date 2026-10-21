@@ -10,6 +10,9 @@ let ciSourcePackagesDir = Environment.ciSourcePackagesDir.getString(default: "")
 let tuist = Tuist(
     project: .tuist(
         generationOptions: .options(
+            // Matches Tuist's default without a Tuist.swift: no extra
+            // "Generate Project" scheme in the workspace.
+            includeGenerateScheme: false,
             additionalPackageResolutionArguments: ciSourcePackagesDir.isEmpty
                 ? []
                 : ["-clonedSourcePackagesDirPath", ciSourcePackagesDir]
