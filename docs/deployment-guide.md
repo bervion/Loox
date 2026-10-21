@@ -240,6 +240,8 @@ building a throwaway one — the opposite of what a shared runner needs.
 
 - `.github/workflows/ci.yml` — on push to `main` / PRs: runs `VaultifyTests` (XCTest +
   Swift Testing) through `Vaultify-UnitTests`, with ad-hoc signing for hosted Keychain tests.
+  A Linux `Plan` job skips the macOS suite for drafts, documentation-only changes and
+  merges of already-tested PRs; release commits always run it (see the CI runbook).
   Snapshot/UI tests are optional local checks through `Vaultify-Quality`; `make test`
   still selects all three targets by default.
 - `.github/workflows/release-ios.yml` — on tag `v*`: requires successful unit CI on the

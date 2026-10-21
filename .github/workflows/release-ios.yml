@@ -21,7 +21,7 @@ env:
   # How long to wait for that run to finish. `make release` pushes the commit
   # and the tag together, so this workflow routinely starts while ci.yml is
   # still queued. The unit suite takes about 6 minutes on the self-hosted
-  # runner, but a cold GitHub-hosted run can use most of ci.yml's 45-minute
+  # runner, but a cold GitHub-hosted run can use most of ci.yml's 30-minute
   # timeout plus queue time. 50 minutes covers both; the wait runs on a Linux
   # runner, so the ceiling is cheap, and a genuinely stuck run still ends here.
   RELEASE_EVIDENCE_TIMEOUT_SECONDS: '3000'
@@ -83,7 +83,7 @@ jobs:
 
             verdict="$(printf '%s' "$response" \
               | HEAD_SHA="$GITHUB_SHA" WORKFLOW="$REQUIRED_WORKFLOW" ATTEMPT="$attempt" /usr/bin/python3 -c '
-          import json, os, sys
+          import json, os, sys, urllib.error, urllib.request
 
           runs = [r for r in json.load(sys.stdin).get("workflow_runs", [])
                   if r.get("head_sha") == os.environ["HEAD_SHA"]]
@@ -92,9 +92,38 @@ jobs:
           def state(r):
               return (r.get("status"), r.get("conclusion"))
 
-          if any(state(r) == ("completed", "success") for r in runs):
-              run = next(r for r in runs if state(r) == ("completed", "success"))
-              print("GREEN %s run %s" % (workflow, run.get("run_number")))
+          # ci.yml skips its macOS job for changes that cannot affect the
+          # suite, and such a run still concludes "success". Evidence is the
+          # "Unit tests" job itself succeeding, not the run as a whole.
+          def unit_job_passed(run):
+              request = urllib.request.Request(
+                  "%s/repos/%s/actions/runs/%s/jobs?per_page=100"
+                  % (os.environ["GITHUB_API_URL"], os.environ["GITHUB_REPOSITORY"], run["id"]),
+                  headers={"Authorization": "Bearer " + os.environ["GH_API_TOKEN"],
+                           "Accept": "application/vnd.github+json",
+                           "X-GitHub-Api-Version": "2022-11-28"})
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      jobs = json.load(response).get("jobs", [])
+              except (urllib.error.URLError, OSError, ValueError) as error:
+                  print("PENDING jobs of run %s unreadable (%s)"
+                        % (run.get("run_number"), type(error).__name__))
+                  sys.exit(0)
+              return any(j.get("name") == "Unit tests" and j.get("conclusion") == "success"
+                         for j in jobs)
+
+          green = [r for r in runs if state(r) == ("completed", "success")]
+          tested = [r for r in green if unit_job_passed(r)]
+          if tested:
+              print("GREEN %s run %s" % (workflow, tested[0].get("run_number")))
+              sys.exit(0)
+
+          if green and all(r.get("status") == "completed" for r in runs):
+              print("RED " + " ".join("run %s skipped the unit suite" % r.get("run_number")
+                                      for r in green)
+                    + " (only release commits are guaranteed to run it; while this"
+                    + " commit is the tip of main, run CI by hand from the Actions tab,"
+                    + " then re-run this job)")
               sys.exit(0)
 
           if runs and all(r.get("status") == "completed" for r in runs) \

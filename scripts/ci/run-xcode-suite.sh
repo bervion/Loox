@@ -43,7 +43,8 @@ rm -rf "$RESULT_BUNDLE" "$RESULT_BUNDLE.summary.json"
 # certificate or secret, but it embeds the app's entitlements: an unsigned
 # build has none, so every data-protection Keychain call fails with
 # errSecMissingEntitlement (-34018) and the Keychain-backed suites
-# (AppAttestKeyStoreTests) cannot pass.
+# (AppAttestKeyStoreTests) cannot pass. The index store only serves Xcode's
+# editor features, so test runs skip writing it.
 set +e
 xcodebuild \
   "${XCODE_ARGUMENTS[@]}" \
@@ -55,6 +56,7 @@ xcodebuild \
   -only-testing:"$TEST_TARGET" \
   CODE_SIGN_IDENTITY="-" \
   CODE_SIGNING_REQUIRED=YES \
+  COMPILER_INDEX_STORE_ENABLE=NO \
   test
 TEST_STATUS=$?
 set -e

@@ -38,15 +38,47 @@ job and its 50-minute evidence wait are fine on either runner and can stay.
 
 ## Pull-request and main CI
 
-`ci.yml` runs one job.
+`ci.yml` runs two jobs.
 
 | Job name | Host | Purpose |
 |---|---|---|
+| Plan | `ubuntu-latest` | `scripts/ci/plan-unit-tests.sh` decides whether the macOS suite must run |
 | Unit tests | self-hosted `vaultify-ci` (temporarily `macos-26`) | `VaultifyTests` (XCTest + Swift Testing), scheme `Vaultify-UnitTests`, via `scripts/ci/run-xcode-suite.sh` |
 
-It creates a throwaway simulator, runs the suite, uploads
-`unit-test-receipt-<attempt>` (summary JSON only), and deletes the
-simulator. `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
+**Plan** skips the macOS job when it cannot learn anything new, because macOS minutes are
+the expensive part of CI:
+
+- a draft pull request (CI runs once it is marked ready for review);
+- a change that touches only `*.md`, `docs/`, `App Store Screenshots/`, `Design System/`,
+  `metadata/`, `specs/`, `fastlane/`, `quality/maestro/`, issue templates, `LICENSE`,
+  `.gitignore`, the Gemfiles, `release-ios.yml` or `.github/actionlint.yaml`
+  (`VaultifyTests` never compiles or reads them);
+- a push to `main` that merges a pull request when `main` now has exactly the tree of
+  the PR's head commit and `Unit tests` passed on that head. A PR merged red, or one whose
+  base moved on, falls through to the path check above.
+
+Without branch protection nothing stops merging a red PR, so consider requiring the
+`Unit tests` check on `main` (a skipped check still counts as passing).
+
+Release commits (`chore(release):`, `chore(beta):`) always run the suite, and so does
+anything the script cannot classify (unknown event, API error, a push of 300 or more
+files), and a classifier failure counts as "run". Run the workflow by hand from the
+Actions tab (`workflow_dispatch`) to force the suite; a manual run has its own concurrency
+group, so it never cancels a push run.
+
+**Unit tests** creates a throwaway simulator, boots it synchronously, runs the suite in one
+`xcodebuild test` with the index store off, uploads `unit-test-receipt-<attempt>`
+(summary JSON only), and deletes the simulator. The job times out after 35 minutes.
+
+Do not overlap the simulator's first boot with other steps. It is 3 to 4 minutes of
+mostly disk-bound data migration, and on the 3-core hosted runner it slows whatever runs
+beside it by about as much as it saves. Measured on 2026-10-21 against the sequential
+flow (20m13s and 22m00s):
+
+| Experiment | Effect | Job |
+|---|---|---|
+| Boot during compilation (run 739) | the test app's first launch took 7 minutes instead of under 1 | 24m22s |
+| Boot during toolchain install and project generation (run 740) | toolchain install 10s → 117s, generation 104s → 255s | 21m40s | `create-simulator.sh` also sweeps orphan `Vaultify Quality *` devices left by
 cancelled jobs, because the runner is persistent.
 For `VaultifyTests`, `-collect-test-diagnostics never` disables verbose Simulator diagnostics (`sysdiagnose`); stdout, `.xcresult` summary and test exit code remain unchanged. CI timing impact has not been measured.
 
@@ -67,6 +99,10 @@ downloads, compilation and simulator setup still occur.
 the tracked `.package.resolved`, then copies that lock into the generated workspace.
 Both CI and signed releases use this preparation. With the CI source-cache path,
 the suite runner passes `-onlyUsePackageVersionsFromResolvedFile` to Xcode.
+`tuist generate` resolves packages too; in CI, `Tuist.swift` points that resolution at the
+same `$RUNNER_TEMP/vaultify-spm` directory (`TUIST_CI_SOURCE_PACKAGES_DIR`), so the graph
+is cloned and checked out once per run instead of twice. Without the variable (local
+development, releases) Tuist resolves into Xcode's default location.
 
 Pull-request CI is secret-free by design. Candidate code executes on the runner host, so
 `vaultify-ci` must stay a separate runner instance from `vaultify-release`, must never hold
@@ -141,8 +177,10 @@ and upload to TestFlight** job is attached to the `production-ios-release` envir
 starts only after that job succeeds, and runs checks 3 to 6. In order:
 
 1. the tagged commit is reachable from `origin/main`;
-2. **the exact tag SHA has a completed, successful `ci.yml` run** — evidence is bound to the
-   commit, so a green run on a later `main` commit does not qualify;
+2. **the exact tag SHA has a completed, successful `ci.yml` run whose `Unit tests` job
+   succeeded** — evidence is bound to the commit, so a green run on a later `main` commit
+   does not qualify, and a run whose Plan job skipped the suite does not count either
+   (release commits always run it);
 3. the tag matches `MARKETING_VERSION` (`vX.Y.Z` or `vX.Y.Z-beta.*`);
 4. `LOOX_LINK_PROD_TOKEN` is configured;
 5. project generation succeeds with the pinned toolchain;
@@ -203,6 +241,11 @@ not execute the app on iOS 17.3.
 - **"No successful ci.yml run for `<sha>`":** the tagged commit was never validated. Do not
   move the tag. Push the commit to a branch, let CI run it, then tag a commit that has a
   green receipt.
+- **"run N skipped the unit suite":** the tag is on a commit whose Plan job skipped the
+  suite (only release commits are guaranteed to run it). While that commit is still the
+  tip of `main`, run CI from the Actions tab (Run workflow on `main`), then re-run the
+  release job. Otherwise release through `make release` / `make beta`, which always
+  create a release commit.
 - **Tag is not reachable from main:** do not move the tag. Merge a reviewed fix to `main`
   and create a new version tag.
 - **Tag/version mismatch:** fix `MARKETING_VERSION` through the normal release process and
