@@ -604,6 +604,29 @@ import Foundation
         _ = try await database.modifyRecords(saving: [], deleting: ids)
     }
 
+    /// Delete every grant covering `itemId` in this zone, with each one's
+    /// display and field records — the share-details sheet's per-item revoke.
+    /// Matched by the `itemId` decoded from the grant record (never a record
+    /// name, INV-FAM-01) and never by a remembered grant id: every republish
+    /// mints a new id, so a stored one goes stale and revoking it deleted
+    /// nothing while the owner was told the item was no longer shared.
+    func revokeGrants(forItemId itemId: String, zoneID: CKRecordZone.ID) async throws {
+        let ids = try await supersededGrantRecordIDs(itemId: itemId, zoneID: zoneID)
+        guard !ids.isEmpty else { return }
+        // Not atomic: the footprint names a display record that may not
+        // exist (legacy grants), and one missing record must not fail the
+        // whole revoke.
+        let result = try await database.modifyRecords(saving: [], deleting: ids,
+                                                      atomically: false)
+        // A per-record failure does not throw on its own. Surface it, except
+        // a record that is already gone, which is the outcome asked for.
+        for (_, outcome) in result.deleteResults {
+            if case .failure(let error) = outcome, (error as? CKError)?.code != .unknownItem {
+                throw error
+            }
+        }
+    }
+
     /// Every record currently in the zone (owner's private DB) — the shared
     /// scan behind `fetchAllGrants`, `revokeGrant`, and
     /// `supersededGrantRecordIDs`. Stateless (nil cursor): every caller needs

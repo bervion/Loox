@@ -1025,16 +1025,23 @@ struct ItemEditorScreen: View {
             let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
             for share in active {
                 let zoneID = CKRecordZone.ID(zoneName: share.zoneName)
-                try? await env.approvalShare.republishDisplayEnvelope(
+                let displaySent = (try? await env.approvalShare.republishDisplayEnvelope(
                     itemId: share.itemId,
                     title: title, websiteHost: host, displayFields: displayFields,
                     zoneID: zoneID, nowUnixMs: nowUnixMs,
-                    displayCategory: displayCategory)
+                    displayCategory: displayCategory)) != nil
                 // Edited values follow to the recipient near-realtime (their
                 // shared-db push triggers a projection refresh).
-                try? await env.approvalShare.republishSharedValues(
+                let valuesSent = (try? await env.approvalShare.republishSharedValues(
                     itemId: share.itemId, values: currentValues,
-                    zoneID: zoneID, nowUnixMs: nowUnixMs)
+                    zoneID: zoneID, nowUnixMs: nowUnixMs)) != nil
+                // Only a complete delivery counts. A failed one leaves the
+                // edit "unsent" so the share-details sheet offers Apply.
+                if displaySent, valuesSent,
+                   var record = env.sharingStore.shares.first(where: { $0.id == share.id }) {
+                    record.lastSentAtUnixMs = nowUnixMs
+                    env.sharingStore.upsert(record)
+                }
             }
         }
     }

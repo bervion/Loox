@@ -58,6 +58,16 @@ nonisolated enum FieldCapability: Codable, Sendable, Equatable {
         }
     }
 
+    /// The v2 hand-over modes (TOTP seed, passkey key): delivered material the
+    /// owner cannot pull back (INV-08), so picking one always goes through the
+    /// hand-over confirmation first.
+    var isHandOver: Bool {
+        switch self {
+        case .totp(.shared), .passkey(.shared): return true
+        default: return false
+        }
+    }
+
     /// Grants something (any non-none mode) — drives the owner sheet's
     /// "at least one capability" gate across all three kinds.
     var grantsAnything: Bool {

@@ -42,13 +42,12 @@ struct ShareAccessSheet: View {
 
     @State private var step: Step = .choose
     @State private var recipientEmail = ""
-    @State private var capabilities: [String: FieldCapability] = [:]
+    /// Per-field selection. Hand-over modes (TOTP seed / passkey key) park in
+    /// the draft until the irreversibility confirmation (INV-08) is accepted.
+    @State private var draft = ShareCapabilityDraft(published: [:])
     /// Device scope (P03b): OFF = single-device — values sealed exclusively
     /// to the recipient's first-enrolled device key (crypto-enforced, INV-04).
     @State private var allowMultipleDevices = true
-    /// Hand-over selection (TOTP seed / passkey key) awaiting the
-    /// irreversibility confirmation (INV-08). Applied only on confirm.
-    @State private var pendingHandOver: (id: String, capability: FieldCapability)?
     /// Share pending the destructive revoke confirmation.
     @State private var revokeTarget: ItemShareRecord?
     /// Realtime-action offline notice (revoking is only true once iCloud says so).
@@ -84,7 +83,7 @@ struct ShareAccessSheet: View {
     }
 
     private var hasGrantedCapability: Bool {
-        capabilities.values.contains { $0.grantsAnything }
+        draft.selection.values.contains { $0.grantsAnything }
     }
 
     private var normalizedEmail: String {
@@ -116,7 +115,8 @@ struct ShareAccessSheet: View {
     }
 
     var body: some View {
-        VaultSheetScaffold(title: sheetTitle, trailing: { toolbarTrailing }) {
+        VaultSheetScaffold(title: sheetTitle, leading: { toolbarLeading },
+                           trailing: { toolbarTrailing }) {
             content
         }
         // Hosted here, not at the root: a sheet draws above the root overlay,
@@ -142,7 +142,7 @@ struct ShareAccessSheet: View {
         .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
                              message: "You need an internet connection to revoke access. The share stays active until then.")
         .animation(Motion.standard, value: revokeTarget?.id)
-        .animation(Motion.standard, value: pendingHandOver?.id)
+        .animation(Motion.standard, value: draft.pendingHandOver)
     }
 
     private func revoke(_ share: ItemShareRecord) async {
@@ -167,6 +167,12 @@ struct ShareAccessSheet: View {
         case .quickLink: "Quick Link"
         default: "Share Access"
         }
+    }
+
+    /// The hand-over step carries its own Cancel. A second one up here would
+    /// close the whole sheet instead of backing out of the step.
+    @ViewBuilder private var toolbarLeading: some View {
+        if draft.pendingHandOver == nil { SheetDismissButton() }
     }
 
     /// Low-frequency manual escape hatch for the waiting step, demoted off the
@@ -198,7 +204,16 @@ struct ShareAccessSheet: View {
         case .blocked(let blocker):
             blockedView(blocker)
         case .config:
-            configForm
+            if let pending = draft.pendingHandOver {
+                // Nothing is sent yet: confirming only records the choice,
+                // which Create share then publishes with the rest.
+                ShareHandOverConfirmView(kind: .init(slot: pending.slot),
+                                         onConfirm: { draft.confirmHandOver() },
+                                         onCancel: { draft.cancelHandOver() })
+                    .transition(.opacity)
+            } else {
+                configForm
+            }
         case .creating, .publishing:
             VStack(spacing: Space.s4) {
                 ProgressView()
@@ -253,7 +268,7 @@ struct ShareAccessSheet: View {
         // in-memory default is the more permissive one and would silently widen
         // a single-device share.
         if let record = resumingRecord, let planned = record.plannedCapabilities {
-            if capabilities.isEmpty { capabilities = planned }
+            if draft.selection.isEmpty { draft = ShareCapabilityDraft(published: planned) }
             allowMultipleDevices = record.plannedAllowMultipleDevices ?? true
             // The recipient's key has already landed: there is nothing left for
             // the owner to decide, so finish instead of showing the form again.
@@ -262,15 +277,16 @@ struct ShareAccessSheet: View {
                 return
             }
         }
-        if capabilities.isEmpty, let item {
+        if draft.selection.isEmpty, let item {
             // Least exposure by default: everything Off until the owner opts in.
+            var seeded: [String: FieldCapability] = [:]
             for field in item.fields {
-                capabilities[field.id] = field.kind == .totp ? .totp(.none) : .value(.none)
+                seeded[field.id] = .off(for: field)
             }
             for passkey in itemPasskeys {
-                capabilities[PasskeySlot.slotId(credentialID: passkey.credentialID)]
-                    = .passkey(.none)
+                seeded[PasskeySlot.slotId(credentialID: passkey.credentialID)] = .passkey(.none)
             }
+            draft = ShareCapabilityDraft(published: seeded)
         }
         if let item {
             let allPks = env.repository.passkeys
@@ -285,7 +301,7 @@ struct ShareAccessSheet: View {
         // Re-entrancy guard: a double-tapped button queues two MainActor
         // tasks; the second must not mint a second zone (review M2).
         guard case .config = step, scopeIsValid else { return }
-        let authorizedCapabilities = capabilities
+        let authorizedCapabilities = draft.selection
         let authorizedDeviceScope = allowMultipleDevices
         let authorizedRecipient = normalizedEmail
         step = .creating
@@ -602,30 +618,15 @@ struct ShareAccessSheet: View {
             if let item {
                 Section {
                     ForEach(item.fields) { field in
-                        FieldCapabilityRow(field: field, item: item, capability: binding(for: field),
-                                           requestHandOver: { proposed in
-                                               pendingHandOver = (field.id, proposed)
-                                           })
+                        FieldCapabilityRow(field: field, item: item,
+                                           capability: draft.capability(for: field.id) ?? .off(for: field),
+                                           onSelect: { draft.select($0, for: field.id) })
                     }
                     ForEach(itemPasskeys) { passkey in
+                        let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
                         PasskeyCapabilityRow(passkey: passkey,
-                                             capability: passkeyBinding(for: passkey),
-                                             requestHandOver: { proposed in
-                                                 pendingHandOver = (PasskeySlot.slotId(
-                                                     credentialID: passkey.credentialID), proposed)
-                                             })
-                    }
-                    // Hand-over confirmation (INV-08): the one honest moment to say
-                    // a delivered secret is not revocable by us.
-                    if let pending = pendingHandOver {
-                        InlineConfirm(
-                            message: "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a secret already handed over can't be pulled back. To truly revoke it, change it at the website.",
-                            confirmTitle: "Hand over: can't be taken back",
-                            onCancel: { pendingHandOver = nil },
-                            onConfirm: {
-                                capabilities[pending.id] = pending.capability
-                                pendingHandOver = nil
-                            })
+                                             capability: draft.capability(for: slot) ?? .passkey(.none),
+                                             onSelect: { draft.select($0, for: slot) })
                     }
                 } header: {
                     Text("What they can use")
@@ -710,18 +711,6 @@ struct ShareAccessSheet: View {
         case .readyForCeremony: "Ready to confirm"
         case .active: "Active"
         }
-    }
-
-    private func binding(for field: DynamicField) -> Binding<FieldCapability> {
-        Binding(
-            get: { capabilities[field.id] ?? (field.kind == .totp ? .totp(.none) : .value(.none)) },
-            set: { capabilities[field.id] = $0 })
-    }
-
-    private func passkeyBinding(for passkey: PasskeyInfo) -> Binding<FieldCapability> {
-        let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
-        return Binding(get: { capabilities[slot] ?? .passkey(.none) },
-                       set: { capabilities[slot] = $0 })
     }
 
     /// Design 10f: the owner is never made to watch a spinner here — the
