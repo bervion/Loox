@@ -17,7 +17,9 @@ enum ThemeRole {
     // reads white; `accentText` is the same hue guarded to 4.5:1 on tinted
     // surfaces (links, tinted-button labels).
     case accent, accentFill, accentText, accentSoft, onAccent
-    case destructive, onDestructive, success, warning
+    // `destructiveFill` + `onDestructive` are the filled destructive pair
+    // (white label on a red control); `destructive` stays the raw hue.
+    case destructive, destructiveFill, onDestructive, success, warning
 }
 
 extension RotationTone {
@@ -67,6 +69,7 @@ extension AppTheme {
         case .accentSoft: return Color(rgb: accentSoft)
         case .onAccent: return Color(rgb: accentForeground)
         case .destructive: return Color(rgb: destructive)
+        case .destructiveFill: return Color(rgb: destructiveFill)
         case .onDestructive: return Color(rgb: onDestructive)
         case .success: return Color(rgb: success)
         case .warning: return Color(rgb: warning)

@@ -78,7 +78,7 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Secrets/codes | `Font.vaultCode(_:weight:)` — SF text with tabular digits | `DesignSystem/Typography.swift` |
 | Semantic foreground | `.themedForeground(role)` / `theme.color(role)` (`ThemeRole`) | `DesignSystem/Components/ThemedComponents.swift` |
 | Semantic palette (stored) | `AppTheme` fields via `Color(rgb: theme.<token>)` | `VaultifyCore/Theme/AppTheme.swift` |
-| Semantic palette (derived) | `surfaceFloatingSolid/surfaceInset/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
+| Semantic palette (derived) | `surfaceFloatingSolid/surfaceInset/surfacePressed/accentSoft/accentText/accentPress/icon*/textDisabled/*Soft/destructiveFill/onDestructive/separatorOpaque` | `VaultifyCore/Theme/AppTheme+Tokens.swift` |
 | Card / divider / form bg | `ThemedCard`, `.themedCard()`, `ThemedDivider`, `.appBackground()`, `.themedFormBackground()` | `DesignSystem/Components/ThemedComponents.swift` |
 | Buttons | `.buttonStyle(.themedProminent/.themedTinted/.themedDestructive)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
 | Compact inline buttons (row-adjacent, not full-width) | `.buttonStyle(.themedCompact/.themedCompactProminent)` | `DesignSystem/Components/ThemedButtonStyles.swift` |
@@ -86,7 +86,9 @@ The four layers map to concrete Swift symbols. **Use a token — never a magic n
 | Icons | `PolarisIcon(Icons.<name>, size: Metric.icon*)` | `DesignSystem/PolarisIcon.swift` |
 
 `ThemeRole` values: `primary, secondary, tertiary, disabled, iconPrimary, iconSecondary, iconDisabled,
-accent, accentText, accentSoft, onAccent, destructive, onDestructive, success, warning`. Derived tokens are computed
+accent, accentFill, accentText, accentSoft, onAccent, destructive, destructiveFill, onDestructive, success, warning`.
+A filled destructive control paints `destructiveFill` (the red darkened just enough for a white label to clear
+4.5:1) under an `onDestructive` label; raw `destructive` is for text, icons and strokes. Derived tokens are computed
 on `AppTheme` so **every** builtin and custom theme gets them without touching constructors.
 
 ### Concentricity (nested corner radii)
@@ -485,7 +487,7 @@ Buttons:
 
 - Primary action uses `accent` and `onAccent`.
 - Secondary action uses surface + textPrimary.
-- Destructive action uses semantic destructive tokens.
+- Destructive action uses semantic destructive tokens: `destructiveFill` + `onDestructive` (white label).
 - Icon-only buttons require labels for accessibility.
 
 Notices (banners):

@@ -79,7 +79,16 @@ nonisolated extension AppTheme {
     var separatorOpaque: UInt32 { border }
 
     // MARK: Status — on-color + soft surface pairs
-    var onDestructive: UInt32 { RGBMath.onColor(destructive) }
+    /// The destructive hue as a FILLED CONTROL's background, paired with
+    /// `onDestructive`: darkened by the minimum that lets a white label clear
+    /// 4.5:1 (normal-text AA, so it holds under Increase Contrast as well).
+    /// The raw hue is tuned to sit on surfaces; under a label it measured
+    /// 2.8 to 3.9:1 against white, and the max-contrast answer was BLACK text
+    /// on a red button. Same budgeted darkening as the error banner fill, so
+    /// the two reds match. Keep raw `destructive` for text, icons and strokes.
+    var destructiveFill: UInt32 { RGBMath.controlFill(destructive, floor: 4.5, maxDarken: 0.25) }
+    /// Label on `destructiveFill`: white wherever it clears the control floor.
+    var onDestructive: UInt32 { RGBMath.onAccent(destructiveFill) }
     var onSuccess: UInt32 { RGBMath.onColor(success) }
     var onWarning: UInt32 { RGBMath.onColor(warning) }
     var destructiveSoft: UInt32 { RGBMath.blend(destructive, background, isDark ? 0.82 : 0.90) }

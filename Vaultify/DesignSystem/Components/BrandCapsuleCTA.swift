@@ -12,20 +12,25 @@ struct BrandCapsuleCTA: View {
     var title: LocalizedStringKey = "Continue"
     var enabled: Bool = true
     var busy: Bool = false
+    /// Paints the destructive pair instead of the accent, for a step whose one
+    /// action cannot be undone (a hand-over).
+    var destructive: Bool = false
     let action: () -> Void
 
     @Environment(\.appTheme) private var theme
 
     var body: some View {
+        let fill = destructive ? theme.destructiveFill : theme.accentFill
+        let label = destructive ? theme.onDestructive : theme.accentForeground
         Button(action: action) {
             Text(title)
                 .vaultType(.body).fontWeight(.medium)
-                .foregroundStyle(Color(rgb: enabled ? theme.accentForeground : theme.textDisabled))
+                .foregroundStyle(Color(rgb: enabled ? label : theme.textDisabled))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Space.s4)
-                .background(Color(rgb: enabled ? theme.accentFill : theme.controlBackground),
+                .background(Color(rgb: enabled ? fill : theme.controlBackground),
                             in: Capsule())
-                .prominentButtonLoading(busy, tint: Color(rgb: theme.accentForeground))
+                .prominentButtonLoading(busy, tint: Color(rgb: label))
         }
         .buttonStyle(SolidCapsuleButtonStyle())
         .disabled(!enabled || busy)

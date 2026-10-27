@@ -78,7 +78,7 @@ struct HomeHeaderBar: View {
                                             // WCAG-derived on-color for the destructive-tinted badge.
                                             .foregroundStyle(Color(rgb: env.theme.active.onDestructive))
                                             .frame(minWidth: 16, minHeight: 16)
-                                            .background(env.theme.active.color(.destructive), in: Circle())
+                                            .background(env.theme.active.color(.destructiveFill), in: Circle())
                                             .offset(x: -4, y: 6)
                                     }
                                 }
