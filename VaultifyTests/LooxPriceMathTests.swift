@@ -41,4 +41,40 @@ final class LooxPriceMathTests: XCTestCase {
         XCTAssertEqual(LooxPriceMath.compare(maxAnnual: 0, plusMonthly: Decimal(string: "2.99")!), .notComparable)
         XCTAssertEqual(LooxPriceMath.compare(maxAnnual: Decimal(string: "34.99")!, plusMonthly: 0), .notComparable)
     }
+
+    // MARK: Per-month format follows displayPrice
+
+    private let annual = Decimal(string: "34.99")!
+    private let usInUS = Decimal.FormatStyle.Currency(code: "USD", locale: Locale(identifier: "en_US"))
+    private let usInVietnam = Decimal.FormatStyle.Currency(code: "USD", locale: Locale(identifier: "vi_VN"))
+
+    func testPicksTheStyleThatReproducesDisplayPrice() throws {
+        // Device report: displayPrice "34,99 US$" (vi_VN) above "2.92 $".
+        let displayPrice = annual.formatted(usInVietnam)
+        let style = LooxPriceMath.currencyStyle(reproducing: displayPrice, price: annual,
+                                                from: [usInUS, usInVietnam])
+        XCTAssertEqual(style, usInVietnam)
+        let perMonth = LooxPriceMath.perMonth(annual: annual).formatted(try XCTUnwrap(style))
+        XCTAssertEqual(perMonth, Decimal(string: "2.92")!.formatted(usInVietnam))
+        XCTAssertTrue(perMonth.contains(","), "per-month uses the same decimal separator: \(perMonth)")
+    }
+
+    func testFirstMatchingCandidateWins() {
+        let displayPrice = annual.formatted(usInUS)
+        XCTAssertEqual(LooxPriceMath.currencyStyle(reproducing: displayPrice, price: annual,
+                                                   from: [usInUS, usInVietnam]), usInUS)
+    }
+
+    func testNoBreakSpacesCompareAsPlainSpaces() {
+        let plain = annual.formatted(usInVietnam)
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+            .replacingOccurrences(of: "\u{202F}", with: " ")
+        XCTAssertEqual(LooxPriceMath.currencyStyle(reproducing: plain, price: annual,
+                                                   from: [usInVietnam]), usInVietnam)
+    }
+
+    func testNoCandidateMatchReturnsNil() {
+        XCTAssertNil(LooxPriceMath.currencyStyle(reproducing: "34,99 €", price: annual,
+                                                 from: [usInUS, usInVietnam]))
+    }
 }
