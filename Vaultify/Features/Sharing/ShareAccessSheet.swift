@@ -45,6 +45,8 @@ struct ShareAccessSheet: View {
     /// Per-field selection. Hand-over modes (TOTP seed / passkey key) park in
     /// the draft until the irreversibility confirmation (INV-08) is accepted.
     @State private var draft = ShareCapabilityDraft(published: [:])
+    /// The hand-over alert (INV-08) is up.
+    @State private var confirmHandOver = false
     /// Device scope (P03b): OFF = single-device — values sealed exclusively
     /// to the recipient's first-enrolled device key (crypto-enforced, INV-04).
     @State private var allowMultipleDevices = true
@@ -115,8 +117,7 @@ struct ShareAccessSheet: View {
     }
 
     var body: some View {
-        VaultSheetScaffold(title: sheetTitle, leading: { toolbarLeading },
-                           trailing: { toolbarTrailing }) {
+        VaultSheetScaffold(title: sheetTitle, trailing: { toolbarTrailing }) {
             content
         }
         // Hosted here, not at the root: a sheet draws above the root overlay,
@@ -142,7 +143,6 @@ struct ShareAccessSheet: View {
         .offlineActionNotice(isPresented: $showRevokeOfflineNotice,
                              message: "You need an internet connection to revoke access. The share stays active until then.")
         .animation(Motion.standard, value: revokeTarget?.id)
-        .animation(Motion.standard, value: draft.pendingHandOver)
     }
 
     private func revoke(_ share: ItemShareRecord) async {
@@ -167,12 +167,6 @@ struct ShareAccessSheet: View {
         case .quickLink: "Quick Link"
         default: "Share Access"
         }
-    }
-
-    /// The hand-over step carries its own Cancel. A second one up here would
-    /// close the whole sheet instead of backing out of the step.
-    @ViewBuilder private var toolbarLeading: some View {
-        if draft.pendingHandOver == nil { SheetDismissButton() }
     }
 
     /// Low-frequency manual escape hatch for the waiting step, demoted off the
@@ -204,16 +198,7 @@ struct ShareAccessSheet: View {
         case .blocked(let blocker):
             blockedView(blocker)
         case .config:
-            if let pending = draft.pendingHandOver {
-                // Nothing is sent yet: confirming only records the choice,
-                // which Create share then publishes with the rest.
-                ShareHandOverConfirmView(kind: .init(slot: pending.slot),
-                                         onConfirm: { draft.confirmHandOver() },
-                                         onCancel: { draft.cancelHandOver() })
-                    .transition(.opacity)
-            } else {
-                configForm
-            }
+            configForm
         case .creating, .publishing:
             VStack(spacing: Space.s4) {
                 ProgressView()
@@ -620,13 +605,13 @@ struct ShareAccessSheet: View {
                     ForEach(item.fields) { field in
                         FieldCapabilityRow(field: field, item: item,
                                            capability: draft.capability(for: field.id) ?? .off(for: field),
-                                           onSelect: { draft.select($0, for: field.id) })
+                                           onSelect: { select($0, for: field.id) })
                     }
                     ForEach(itemPasskeys) { passkey in
                         let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
                         PasskeyCapabilityRow(passkey: passkey,
                                              capability: draft.capability(for: slot) ?? .passkey(.none),
-                                             onSelect: { draft.select($0, for: slot) })
+                                             onSelect: { select($0, for: slot) })
                     }
                 } header: {
                     Text("What they can use")
@@ -700,6 +685,18 @@ struct ShareAccessSheet: View {
                 .listRowBackground(Color.clear)
             }
         }
+        // Nothing is sent yet: confirming only records the choice, which
+        // Create share then publishes with the rest.
+        .shareHandOverConfirmation(
+            isPresented: $confirmHandOver, pending: draft.pendingHandOver,
+            onConfirm: { draft.confirmHandOver() },
+            onCancel: { draft.cancelHandOver() })
+    }
+
+    /// Every row's mode change. A hand-over parks in the draft and asks first.
+    private func select(_ capability: FieldCapability, for slot: String) {
+        draft.select(capability, for: slot)
+        if draft.pendingHandOver != nil { confirmHandOver = true }
     }
 
     /// Owner-facing lifecycle label for the "Shared with" row. Distinguishes an

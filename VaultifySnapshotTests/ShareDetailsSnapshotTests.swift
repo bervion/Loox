@@ -4,45 +4,17 @@ import UIKit
 import XCTest
 @testable import Vaultify
 
-/// The share-details sheet and its hand-over confirmation step.
+/// The share-details sheet, kept as render receipts (xcresult attachments) for
+/// visual review across languages, appearances and contrast.
 ///
 /// The live sheet needs iCloud and a second account to reach (its editor is
 /// seeded from the recipient's grant), so the editor is rendered from a seeded
-/// draft instead. The confirmation step is pinned as pixel baselines with the
-/// exact copy it ships; the full sheet is kept as render receipts (xcresult
-/// attachments) for visual review across languages, appearances and contrast.
+/// draft instead. The hand-over confirmation is the system alert, which a
+/// snapshot cannot capture.
 @MainActor
 final class ShareDetailsSnapshotTests: XCTestCase {
 
     private static let itemID = "snapshot-share-details"
-
-    // MARK: Hand-over confirmation (baselines)
-
-    func testHandOverSecretConfirm() throws {
-        try assertStep(ShareHandOverConfirmView(kind: .secret, onConfirm: {}, onCancel: {}),
-                       language: "en", named: "secret-confirm-en")
-    }
-
-    /// Vietnamese is the longest locale, and this is the fullest variant: the
-    /// passkey copy plus the line about other pending edits.
-    func testHandOverPasskeyConfirmWithOtherChanges() throws {
-        try assertStep(ShareHandOverConfirmView(kind: .passkey, appliesOtherChanges: true,
-                                                onConfirm: {}, onCancel: {}),
-                       language: "vi", named: "passkey-confirm-other-changes-vi")
-    }
-
-    func testHandOverDone() throws {
-        try assertStep(ShareHandOverConfirmView(kind: .secret, phase: .done,
-                                                onConfirm: {}, onCancel: {}),
-                       language: "vi", named: "secret-done-vi")
-    }
-
-    func testHandOverFailed() throws {
-        try assertStep(ShareHandOverConfirmView(
-            kind: .secret, phase: .failed("No connection. Check your network and try again."),
-            onConfirm: {}, onCancel: {}),
-                       language: "en", named: "secret-failed-en")
-    }
 
     // MARK: Full sheet (render receipts)
 
@@ -67,12 +39,6 @@ final class ShareDetailsSnapshotTests: XCTestCase {
                             environment: environment, language: language, dark: dark,
                             highContrast: contrast, name: "sheet-\(name)")
                 }
-                capture(VaultSheetScaffold(title: "Share Details", leading: { EmptyView() },
-                                           trailing: { EmptyView() }) {
-                            ShareHandOverConfirmView(kind: .secret, onConfirm: {}, onCancel: {})
-                        },
-                        environment: environment, language: language, dark: dark,
-                        highContrast: contrast, name: "hand-over-confirm")
             }
         }
     }
@@ -101,25 +67,6 @@ final class ShareDetailsSnapshotTests: XCTestCase {
         environment.settings.preferredLanguage = language
         environment.theme.markAppearanceChosen()
         environment.theme.update { $0.theme = .builtin(dark ? .night : .day); $0.autoNight = .off }
-    }
-
-    private func assertStep(_ step: ShareHandOverConfirmView, language: String, named name: String,
-                            file: StaticString = #filePath, testName: String = #function,
-                            line: UInt = #line) throws {
-        let environment = try makeSnapshotEnvironment()
-        let oldLanguage = environment.settings.preferredLanguage
-        let oldTheme = environment.theme.settings
-        defer {
-            environment.settings.preferredLanguage = oldLanguage
-            environment.theme.update { $0 = oldTheme }
-        }
-        applyAppearance(environment, language: language, dark: false)
-        let subject = step
-            .frame(width: 390, height: 760)
-            .background(Color(rgb: environment.theme.active.groupedBackground))
-            .modifier(VaultRootEnvironment(env: environment))
-        assertSnapshot(of: subject, as: .scaledImage(width: 390, height: 760), named: name,
-                       file: file, testName: testName, line: line)
     }
 
     private func capture(_ view: some View, environment: AppEnvironment, language: String,

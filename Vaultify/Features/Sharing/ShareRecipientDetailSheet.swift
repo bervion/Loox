@@ -13,12 +13,6 @@ import SwiftUI
 /// first: it re-seals current values with the grant. Two buttons for one job
 /// only made owners guess which one their change needed.
 struct ShareRecipientDetailSheet: View {
-    /// A hand-over the owner is confirming, publishing, or reading the result of.
-    private struct HandOverStep: Equatable {
-        let kind: ShareHandOverConfirmView.Kind
-        var phase: ShareHandOverConfirmView.Phase = .confirm
-    }
-
     let share: ItemShareRecord
     @Environment(AppEnvironment.self) private var env
     @Environment(\.dismiss) private var dismiss
@@ -36,8 +30,10 @@ struct ShareRecipientDetailSheet: View {
     /// Device scope of the LIVE grant — preserved on republish so a capability
     /// edit never silently downgrades single-device to multi.
     @State private var editingDeviceScope: DeviceScope = .multi
-    /// Non-nil while the hand-over step owns the sheet (INV-08).
-    @State private var handOver: HandOverStep?
+    /// The hand-over alert (INV-08) is up.
+    @State private var confirmHandOver = false
+    /// A confirmed hand-over failed to publish; the pick stays parked for a retry.
+    @State private var handOverError: String?
     /// The live grant could not be read (offline, throttled). Distinct from
     /// "still loading" so the sheet never implies the share grants nothing.
     @State private var grantUnavailable = false
@@ -77,19 +73,8 @@ struct ShareRecipientDetailSheet: View {
     private var hasPendingChanges: Bool { draft?.hasChanges == true || hasUnsentItemEdits }
 
     var body: some View {
-        VaultSheetScaffold(title: "Share Details", leading: { leadingToolbar },
-                           trailing: { trailingToolbar }) {
-            if let handOver {
-                ShareHandOverConfirmView(
-                    kind: handOver.kind, phase: handOver.phase,
-                    appliesOtherChanges: draft?.hasChangesBesideHandOver == true,
-                    onConfirm: { Task { await publish(confirmingHandOver: true) } },
-                    onCancel: cancelHandOver,
-                    onDone: { self.handOver = nil })
-                    .transition(.opacity)
-            } else {
-                form
-            }
+        VaultSheetScaffold(title: "Share Details", trailing: { trailingToolbar }) {
+            form
         }
         // Mid-publish the sheet must stay up to report how it ended.
         .interactiveDismissDisabled(busy)
@@ -101,24 +86,19 @@ struct ShareRecipientDetailSheet: View {
             Text(verbatim: errorMessage ?? "")
         }
         .animation(Motion.standard, value: confirmRevoke)
-        .animation(Motion.standard, value: handOver)
     }
 
     // MARK: Toolbar
 
-    /// The hand-over step carries its own Cancel. A second one up here would
-    /// close the whole sheet instead of backing out of the step.
-    @ViewBuilder private var leadingToolbar: some View {
-        if handOver == nil { SheetDismissButton() }
-    }
-
+    /// Apply, or the spinner while a publish (Apply or a confirmed hand-over)
+    /// is in flight.
     @ViewBuilder private var trailingToolbar: some View {
-        if handOver == nil, liveShare.fingerprintConfirmed, draft != nil {
+        if liveShare.fingerprintConfirmed, draft != nil {
             if busy {
                 ProgressView()
             } else {
                 Button {
-                    Task { await publish(confirmingHandOver: false) }
+                    Task { await apply() }
                 } label: {
                     Text("Apply").fontWeight(.semibold)
                 }
@@ -144,6 +124,17 @@ struct ShareRecipientDetailSheet: View {
         // A pick made while a publish is in flight would be overwritten when
         // it lands, and a revoke racing it could be undone by it.
         .disabled(busy)
+        .shareHandOverConfirmation(
+            isPresented: $confirmHandOver, pending: draft?.pendingHandOver,
+            onConfirm: { Task { await handOver() } },
+            onCancel: { draft?.cancelHandOver() })
+        .alert("Couldn't hand over", isPresented: Binding(
+            get: { handOverError != nil }, set: { if !$0 { handOverError = nil } })) {
+            Button("Try again") { Task { await handOver() } }
+            Button("Cancel", role: .cancel) { draft?.cancelHandOver() }
+        } message: {
+            Text(verbatim: handOverError ?? "")
+        }
     }
 
     private var infoSection: some View {
@@ -274,18 +265,10 @@ struct ShareRecipientDetailSheet: View {
 
     // MARK: Actions
 
-    /// Every row's mode change. A hand-over parks in the draft and the
-    /// confirmation step takes over the sheet.
+    /// Every row's mode change. A hand-over parks in the draft and asks first.
     private func select(_ capability: FieldCapability, for slot: String) {
         draft?.select(capability, for: slot)
-        if let pending = draft?.pendingHandOver {
-            handOver = HandOverStep(kind: .init(slot: pending.slot))
-        }
-    }
-
-    private func cancelHandOver() {
-        draft?.cancelHandOver()
-        handOver = nil
+        if draft?.pendingHandOver != nil { confirmHandOver = true }
     }
 
     /// Seed the capability editor from the LIVE grant (never a local guess).
@@ -318,59 +301,72 @@ struct ShareRecipientDetailSheet: View {
         draft = ShareCapabilityDraft(published: seeded)
     }
 
-    /// Republish the grant with the on-screen selection (epoch bump). The same
-    /// publish re-seals the item's CURRENT values and display metadata, so it
-    /// also delivers edits a manual-update share is waiting for. Removed
-    /// fields' blobs are deleted server-side; the recipient's projection and
-    /// AutoFill cache follow on their next push-driven refresh.
-    private func publish(confirmingHandOver: Bool) async {
-        guard !busy, let item, let grant = loadedGrant, let draft else { return }
-        // Only ever report "handed over" for a hand-over that is still pending.
-        if confirmingHandOver, draft.pendingHandOver == nil {
-            handOver = nil
-            return
+    /// Commit every pending pick, and the item's current content with them.
+    private func apply() async {
+        guard let draft else { return }
+        do {
+            if try await publish(draft.selection) {
+                statusNote = appString("Access updated.")
+            }
+        } catch {
+            errorMessage = SharingErrorMessage.text(for: error)
         }
-        let capabilities = confirmingHandOver ? draft.selectionConfirmingHandOver : draft.selection
+    }
+
+    /// A confirmed hand-over publishes at once, on its own: the grant as it
+    /// stands plus the hand-over. Other picks stay unsaved for Apply. The
+    /// row's mode ("Secret handed over") and the status line say it landed;
+    /// a failure asks again with the system alert.
+    private func handOver() async {
+        guard let pending = draft?.pendingHandOver,
+              let capabilities = draft?.publishedConfirmingHandOver else { return }
+        do {
+            if try await publish(capabilities) {
+                statusNote = PasskeySlot.isPasskeySlot(pending.slot)
+                    ? appString("Key handed over") : appString("Secret handed over")
+            }
+        } catch {
+            handOverError = SharingErrorMessage.text(for: error)
+        }
+    }
+
+    /// Republish the grant with `capabilities` (epoch bump). The same publish
+    /// re-seals the item's CURRENT values and display metadata, so it also
+    /// delivers edits a manual-update share is waiting for. Removed fields'
+    /// blobs are deleted server-side; the recipient's projection and AutoFill
+    /// cache follow on their next push-driven refresh. Returns false when
+    /// there was nothing to publish against (no live grant yet, or busy).
+    private func publish(_ capabilities: [String: FieldCapability]) async throws -> Bool {
+        guard !busy, let item, let grant = loadedGrant else { return false }
         busy = true
         defer { busy = false }
-        if confirmingHandOver { handOver?.phase = .working }
-        do {
-            let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
-            // Re-seal to the recipient's CURRENT identity/devices. The shared
-            // composer assembles fields + passkeys + device scope exactly like
-            // the create ceremony and preserves this share's device scope — the
-            // edit path can no longer drop passkeys or widen single→multi.
-            let profile = try await env.approvalShare.fetchParticipantProfile(zoneID: zoneID)
-            let published = try await SharedGrantComposer.publish(
-                service: env.approvalShare, store: env.store, item: item,
-                capabilities: capabilities, itemPasskeys: itemPasskeys,
-                vaultKey: env.session.vaultKey,
-                profile: SharedGrantComposer.RecipientProfile(
-                    participantPubKey: profile.participantPubKey,
-                    deviceSigningKeys: profile.deviceSigningKeys,
-                    deviceHPKEDirectory: profile.deviceHPKEDirectory),
-                deviceScope: editingDeviceScope, epoch: grant.epoch + 1,
-                zoneID: zoneID, nowUnixMs: nowUnixMs)
-            loadedGrant = published
-            self.draft?.didPublish(capabilities)
-            // The publish minted a new grant id and superseded the old grant,
-            // and it delivered the item's current content. Skipped when the
-            // share was removed meanwhile, so it is never written back.
-            if var updated = env.sharingStore.shares.first(where: { $0.id == share.id }) {
-                updated.grantId = published.id
-                updated.lastSentAtUnixMs = published.createdAtUnixMs
-                env.sharingStore.upsert(updated)
-            }
-            statusNote = appString("Access updated.")
-            if confirmingHandOver { handOver?.phase = .done }
-        } catch {
-            let message = SharingErrorMessage.text(for: error)
-            if confirmingHandOver {
-                handOver?.phase = .failed(message)
-            } else {
-                errorMessage = message
-            }
+        let nowUnixMs = Int64(Date().timeIntervalSince1970 * 1000)
+        // Re-seal to the recipient's CURRENT identity/devices. The shared
+        // composer assembles fields + passkeys + device scope exactly like
+        // the create ceremony and preserves this share's device scope — the
+        // edit path can no longer drop passkeys or widen single→multi.
+        let profile = try await env.approvalShare.fetchParticipantProfile(zoneID: zoneID)
+        let published = try await SharedGrantComposer.publish(
+            service: env.approvalShare, store: env.store, item: item,
+            capabilities: capabilities, itemPasskeys: itemPasskeys,
+            vaultKey: env.session.vaultKey,
+            profile: SharedGrantComposer.RecipientProfile(
+                participantPubKey: profile.participantPubKey,
+                deviceSigningKeys: profile.deviceSigningKeys,
+                deviceHPKEDirectory: profile.deviceHPKEDirectory),
+            deviceScope: editingDeviceScope, epoch: grant.epoch + 1,
+            zoneID: zoneID, nowUnixMs: nowUnixMs)
+        loadedGrant = published
+        draft?.didPublish(capabilities)
+        // The publish minted a new grant id and superseded the old grant,
+        // and it delivered the item's current content. Skipped when the
+        // share was removed meanwhile, so it is never written back.
+        if var updated = env.sharingStore.shares.first(where: { $0.id == share.id }) {
+            updated.grantId = published.id
+            updated.lastSentAtUnixMs = published.createdAtUnixMs
+            env.sharingStore.upsert(updated)
         }
+        return true
     }
 
     /// Whether this share is the only thing left in its zone. A zone holds one

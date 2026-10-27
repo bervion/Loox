@@ -47,15 +47,16 @@ final class ShareCapabilityDraftTests: XCTestCase {
                        ShareCapabilityDraft.HandOver(slot: totpID, capability: .totp(.shared)))
         XCTAssertEqual(draft.capability(for: totpID), .totp(.askEachTime),
                        "a hand-over never applies before it is confirmed")
-        XCTAssertFalse(draft.hasChangesBesideHandOver)
 
-        draft.confirmHandOver()
+        // Confirmed: the republished grant carries the seed again.
+        let confirmed = draft.publishedConfirmingHandOver
+        XCTAssertEqual(confirmed[totpID], .totp(.shared))
+        let values = SharedGrantComposer.sharedFieldValues(item: item, capabilities: confirmed)
+        XCTAssertEqual(values[totpID], Data(seed.utf8))
+        draft.didPublish(confirmed)
         XCTAssertNil(draft.pendingHandOver)
         XCTAssertEqual(draft.capability(for: totpID), .totp(.shared))
-        XCTAssertTrue(draft.hasChanges)
-        // The republished grant carries the seed again.
-        let values = SharedGrantComposer.sharedFieldValues(item: item, capabilities: draft.selection)
-        XCTAssertEqual(values[totpID], Data(seed.utf8))
+        XCTAssertFalse(draft.hasChanges)
     }
 
     func testPasskeyHandOverRoundTrip() {
@@ -102,15 +103,31 @@ final class ShareCapabilityDraftTests: XCTestCase {
         XCTAssertFalse(draft.hasChanges)
     }
 
-    func testConfirmingAHandOverReportsOtherPendingEdits() {
+    /// On a live share a confirmed hand-over publishes at once, and only
+    /// itself: an unapplied pick elsewhere is neither sent nor lost.
+    func testConfirmedHandOverPublishesOnlyItselfAndKeepsOtherEdits() {
         var draft = ShareCapabilityDraft(published: [
             passwordID: .value(.none), totpID: .totp(.askEachTime),
         ])
         draft.select(.value(.shared), for: passwordID)
         draft.select(.totp(.shared), for: totpID)
-        XCTAssertTrue(draft.hasChangesBesideHandOver)
-        XCTAssertEqual(draft.selectionConfirmingHandOver,
-                       [passwordID: .value(.shared), totpID: .totp(.shared)])
+        let confirmed = draft.publishedConfirmingHandOver
+        XCTAssertEqual(confirmed, [passwordID: .value(.none), totpID: .totp(.shared)])
+
+        draft.didPublish(confirmed)
+        XCTAssertEqual(draft.capability(for: totpID), .totp(.shared))
+        XCTAssertEqual(draft.capability(for: passwordID), .value(.shared), "the unapplied pick survives")
+        XCTAssertTrue(draft.hasChanges, "and still waits for Apply")
+    }
+
+    /// The create flow sends nothing until the share exists: confirming only
+    /// takes the hand-over into the selection.
+    func testCreateFlowConfirmationOnlyRecordsTheChoice() {
+        var draft = ShareCapabilityDraft(published: [totpID: .totp(.none)])
+        draft.select(.totp(.shared), for: totpID)
+        draft.confirmHandOver()
+        XCTAssertEqual(draft.selection, [totpID: .totp(.shared)])
+        XCTAssertEqual(draft.published, [totpID: .totp(.none)])
     }
 
     /// An edit after the last delivery is unsent whatever the update mode:

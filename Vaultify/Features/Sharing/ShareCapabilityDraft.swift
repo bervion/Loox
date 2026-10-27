@@ -30,17 +30,12 @@ nonisolated struct ShareCapabilityDraft: Equatable, Sendable {
 
     var hasChanges: Bool { selection != published }
 
-    /// Whether anything besides the pending hand-over differs from the grant.
-    /// Confirming a hand-over publishes those edits along with it.
-    var hasChangesBesideHandOver: Bool {
-        guard let slot = pendingHandOver?.slot else { return hasChanges }
-        return selection.filter { $0.key != slot } != published.filter { $0.key != slot }
-    }
-
-    /// The selection with the pending hand-over applied: what confirming publishes.
-    var selectionConfirmingHandOver: [String: FieldCapability] {
-        guard let pendingHandOver else { return selection }
-        var next = selection
+    /// What a confirmed hand-over publishes on a live share: the grant as it
+    /// stands plus the hand-over alone. Other picks stay unsaved for Apply, so
+    /// confirming a hand-over never sends edits the owner has not applied.
+    var publishedConfirmingHandOver: [String: FieldCapability] {
+        guard let pendingHandOver else { return published }
+        var next = published
         next[pendingHandOver.slot] = pendingHandOver.capability
         return next
     }
@@ -60,17 +55,24 @@ nonisolated struct ShareCapabilityDraft: Equatable, Sendable {
         }
     }
 
+    /// Takes the hand-over into the selection (the create flow, where nothing
+    /// is sent until the share is created).
     mutating func confirmHandOver() {
-        selection = selectionConfirmingHandOver
+        if let pendingHandOver { selection[pendingHandOver.slot] = pendingHandOver.capability }
         pendingHandOver = nil
     }
 
     mutating func cancelHandOver() { pendingHandOver = nil }
 
     /// The grant now carries `capabilities`, so they become the new baseline.
+    /// A slot the owner had not touched (or the hand-over just confirmed)
+    /// follows the grant; a pick still differing from it stays unsaved.
     mutating func didPublish(_ capabilities: [String: FieldCapability]) {
+        for (slot, capability) in capabilities
+        where selection[slot] == published[slot] || slot == pendingHandOver?.slot {
+            selection[slot] = capability
+        }
         published = capabilities
-        selection = capabilities
         pendingHandOver = nil
     }
 

@@ -8,8 +8,7 @@ import XCTest
 /// at runtime here — the Approval-Mode confirmations need iCloud and a second
 /// device to reach — so the component itself is pinned instead, with the exact
 /// copy each site passes. The two hand-over confirmations have since moved to
-/// their own sheet step (`ShareHandOverConfirmView`, pinned in
-/// `ShareDetailsSnapshotTests`).
+/// the system alert (`shareHandOverConfirmation`).
 @MainActor
 final class InlineConfirmSnapshotTests: XCTestCase {
 

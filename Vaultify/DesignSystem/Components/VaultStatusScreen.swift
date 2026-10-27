@@ -40,16 +40,13 @@ struct VaultStatusScreen<Feature: View>: View {
         let title: LocalizedStringKey
         var enabled: Bool = true
         var busy: Bool = false
-        /// Primary only: the destructive pair, for an action that can't be undone.
-        var destructive: Bool = false
         let action: () -> Void
 
         init(title: LocalizedStringKey, enabled: Bool = true, busy: Bool = false,
-             destructive: Bool = false, action: @escaping () -> Void) {
+             action: @escaping () -> Void) {
             self.title = title
             self.enabled = enabled
             self.busy = busy
-            self.destructive = destructive
             self.action = action
         }
     }
@@ -154,8 +151,7 @@ struct VaultStatusScreen<Feature: View>: View {
             VStack(spacing: Space.s2) {
                 if let primary {
                     BrandCapsuleCTA(title: primary.title, enabled: primary.enabled,
-                                    busy: primary.busy, destructive: primary.destructive,
-                                    action: primary.action)
+                                    busy: primary.busy, action: primary.action)
                 }
                 if let secondary {
                     Button(action: secondary.action) {

@@ -395,11 +395,13 @@ thay đổi chưa gửi: đổi quyền, hoặc item đã sửa sau lần publis
 - **Một nút Apply thay cho hai.** "Send update now" (re-seal giá trị hiện tại) và "Apply changes"
   (publish lại grant) trước đây cùng một việc: publish grant đã re-seal giá trị hiện tại kèm theo.
   Apply đi qua `SharedGrantComposer` nên giữ đúng device scope và blob passkey đã giao.
-- **Giao hẳn (hand over) có bước xác nhận riêng** (`ShareHandOverConfirmView`, chiếm cả sheet):
-  hậu quả, nút đỏ "Hand over", rồi trạng thái đang giao / đã giao / lỗi + thử lại. Không dùng
-  dialog hệ thống vì dialog mở từ trong sheet làm mất state (xem `InlineConfirm`). Mọi lựa chọn chế
-  độ đi qua `ShareCapabilityDraft.select`, nên không còn hàng nào "nuốt" lựa chọn giao hẳn (lỗi cũ:
-  giao hẳn → hỏi mỗi lần → giao hẳn lại không có tác dụng với TOTP).
+- **Giao hẳn (hand over) xác nhận bằng alert hệ thống** (`shareHandOverConfirmation`, gắn vào Form
+  của sheet, không gắn vào hàng): nói rõ nghĩa, không hoàn tác được, cách chặn họ sau này; nút
+  "Hand over" (destructive) + Cancel. Xác nhận là publish ngay, chỉ riêng mục giao hẳn (các lựa
+  chọn khác vẫn chờ Apply): toolbar hiện spinner, hàng đổi thành "Secret handed over" + dòng trạng
+  thái; lỗi → alert "Couldn't hand over" có Try again. Mọi lựa chọn chế độ đi qua
+  `ShareCapabilityDraft.select`, nên không còn hàng nào "nuốt" lựa chọn giao hẳn (lỗi cũ: giao hẳn
+  → hỏi mỗi lần → giao hẳn lại không có tác dụng với TOTP).
 - Đọc bản ghi share **sống** từ `SharingStore` (không dùng bản chụp lúc mở sheet): công tắc tự cập
   nhật phản hồi ngay, và Apply lưu `grantId` mới.
 
