@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.58.0] - 2026-10-27
+
+### Added
+- launch commerce with 750-day complimentary Loox+ and 1-year Max trial (#220)
+
+### Fixed
+- hand over works again, system confirmation, one Apply, white-on-red Stop sharing (#223)
+
+### Improved
+- run only the unit suite that matters, faster (#222)
+
+### Changed
+- prepare the repository for public release (#221)
+
+
 ## [1.57.2] - 2026-10-08
 
 ### Fixed
