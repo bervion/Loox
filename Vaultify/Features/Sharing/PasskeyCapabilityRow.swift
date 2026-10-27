@@ -2,12 +2,13 @@ import SwiftUI
 
 /// One passkey slot in the share-config sheet (capability v2): rpId +
 /// user name, and a three-mode menu. `askEachTime` keeps the private key on
-/// the owner's device (INV-07); hand-over routes through the parent's
-/// irreversibility warning like TOTP seeds (INV-08).
+/// the owner's device (INV-07); hand-over goes through the same confirmation
+/// as TOTP seeds (INV-08), decided by `ShareCapabilityDraft`.
 struct PasskeyCapabilityRow: View {
     let passkey: PasskeyInfo
-    @Binding var capability: FieldCapability
-    var requestHandOver: (FieldCapability) -> Void = { _ in }
+    let capability: FieldCapability
+    /// Every mode the owner picks (see `FieldCapabilityRow.onSelect`).
+    let onSelect: (FieldCapability) -> Void
 
     var body: some View {
         HStack(spacing: Space.s3) {
@@ -23,9 +24,9 @@ struct PasskeyCapabilityRow: View {
             }
             Spacer()
             Menu {
-                Button { capability = .passkey(.none) } label: { Text("Off") }
-                Button { capability = .passkey(.askEachTime) } label: { Text("Ask each time") }
-                Button { requestHandOver(.passkey(.shared)) } label: {
+                Button { onSelect(.passkey(.none)) } label: { Text("Off") }
+                Button { onSelect(.passkey(.askEachTime)) } label: { Text("Ask each time") }
+                Button { onSelect(.passkey(.shared)) } label: {
                     Label { Text("Hand over key…") } icon: { VaultIcon(Icons.alert) }
                 }
             } label: {

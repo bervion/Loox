@@ -87,6 +87,12 @@ nonisolated struct ItemShareRecord: Codable, Identifiable, Sendable {
     /// deliberately scoped to a SINGLE device silently resumed as multi-device
     /// — the resumed default was strictly more permissive than what they chose.
     var plannedAllowMultipleDevices: Bool? = nil
+    /// When this device last delivered the item's current content to this
+    /// recipient: a grant publish, or an edit-time push that succeeded. It is
+    /// what the share-details sheet's Apply compares edits against, so an
+    /// edit whose automatic push failed (offline) still reads as unsent.
+    /// nil = nothing recorded yet (the live grant's creation time stands in).
+    var lastSentAtUnixMs: Int64? = nil
 
     var isAutoUpdate: Bool { autoUpdate ?? true }
 

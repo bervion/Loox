@@ -12,10 +12,12 @@ struct FieldCapabilityRow: View {
     /// The owning item, when the sheet has it — enables full resolver policy
     /// (template + role). Without it the kind-shape policy still applies.
     var item: VaultItem? = nil
-    @Binding var capability: FieldCapability
-    /// Hand-over modes (TOTP seed) never write directly: the parent shows the
-    /// irreversibility warning (INV-08) and applies the capability on confirm.
-    var requestHandOver: (FieldCapability) -> Void = { _ in }
+    let capability: FieldCapability
+    /// Every mode the owner picks, hand-over included. Required on purpose: it
+    /// used to be an optional hand-over hook with a no-op default, so a sheet
+    /// that forgot to pass it compiled fine and silently dropped "Hand over".
+    /// `ShareCapabilityDraft` decides which picks need the INV-08 confirmation.
+    let onSelect: (FieldCapability) -> Void
 
     /// Central policy, not a local denylist: key material (protected multiline —
     /// SSH private keys, recovery codes) is not offerable in v1 alongside the
@@ -57,9 +59,9 @@ struct FieldCapabilityRow: View {
                     // Three modes need a real menu (V6's "binary → Toggle"
                     // rule no longer applies to TOTP since seed hand-over).
                     Menu {
-                        Button { capability = .totp(.none) } label: { Text("Off") }
-                        Button { capability = .totp(.askEachTime) } label: { Text("Ask each time") }
-                        Button { requestHandOver(.totp(.shared)) } label: {
+                        Button { onSelect(.totp(.none)) } label: { Text("Off") }
+                        Button { onSelect(.totp(.askEachTime)) } label: { Text("Ask each time") }
+                        Button { onSelect(.totp(.shared)) } label: {
                             Label { Text("Hand over secret…") } icon: { VaultIcon(Icons.alert) }
                         }
                     } label: {
@@ -112,9 +114,9 @@ struct FieldCapabilityRow: View {
             },
             set: { enabled in
                 switch capability {
-                case .totp: capability = .totp(enabled ? .askEachTime : .none)
-                case .value: capability = .value(enabled ? .shared : .none)
-                case .passkey: capability = .passkey(enabled ? .askEachTime : .none)
+                case .totp: onSelect(.totp(enabled ? .askEachTime : .none))
+                case .value: onSelect(.value(enabled ? .shared : .none))
+                case .passkey: onSelect(.passkey(enabled ? .askEachTime : .none))
                 }
             })
     }

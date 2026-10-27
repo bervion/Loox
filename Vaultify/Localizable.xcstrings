@@ -861,6 +861,38 @@
         }
       }
     },
+    "Apply" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "適用"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áp dụng"
+          }
+        }
+      }
+    },
+    "Couldn't hand over" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "譲り渡せませんでした"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể giao"
+          }
+        }
+      }
+    },
     "Free for %@, then %@ each month. Auto-renews until canceled. Cancel anytime in Settings." : {
       "comment" : "Subscription disclosure for a monthly plan with a free trial. Arguments: offer length, then the monthly price.",
       "localizations" : {
@@ -929,6 +961,22 @@
         }
       }
     },
+    "Hand over" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "譲り渡す"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giao hẳn"
+          }
+        }
+      }
+    },
     "Then %@ each month." : {
       "comment" : "Billing note under the free-trial button. The argument is the monthly price.",
       "localizations" : {
@@ -963,6 +1011,38 @@
         }
       }
     },
+    "They get their own copy and can use it without asking you. This can't be undone. Stopping sharing later only stops future updates. To lock them out later, delete this passkey at the website." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相手は自分用のコピーを受け取り、あなたに確認せずに使えるようになります。この操作は取り消せません。後で共有をやめても、止まるのは今後の更新だけです。後で使えなくするには、そのサイトでこのパスキーを削除してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Họ nhận một bản riêng và dùng được mà không cần hỏi bạn. Không thể hoàn tác. Ngừng chia sẻ sau này chỉ chặn các cập nhật tiếp theo. Muốn chặn họ sau này, hãy xóa passkey này tại trang web."
+          }
+        }
+      }
+    },
+    "They get their own copy and can use it without asking you. This can't be undone. Stopping sharing later only stops future updates. To lock them out later, set up two-factor again at the website." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相手は自分用のコピーを受け取り、あなたに確認せずに使えるようになります。この操作は取り消せません。後で共有をやめても、止まるのは今後の更新だけです。後で使えなくするには、そのサイトで2段階認証を設定し直してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Họ nhận một bản riêng và dùng được mà không cần hỏi bạn. Không thể hoàn tác. Ngừng chia sẻ sau này chỉ chặn các cập nhật tiếp theo. Muốn chặn họ sau này, hãy thiết lập lại xác thực hai lớp tại trang web."
+          }
+        }
+      }
+    },
     "Try free for %@" : {
       "comment" : "Paywall button for a plan with a free trial. The argument is the offer length.",
       "localizations" : {
@@ -976,6 +1056,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dùng thử miễn phí %@"
+          }
+        }
+      }
+    },
+    "When automatic updates are off, your edits reach this person only when you tap Apply." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動更新をオフにすると、あなたの編集内容は「適用」をタップしたときだけ相手に届きます。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khi tắt tự động cập nhật, người này chỉ nhận được thay đổi của bạn khi bạn bấm \"Áp dụng\"."
           }
         }
       }
@@ -1010,6 +1106,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bạn đang dùng Loox+ miễn phí đến %@"
+          }
+        }
+      }
+    },
+    "Your latest edits haven't reached them yet. Tap Apply to send them." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最新の編集内容はまだ相手に届いていません。「適用」をタップすると送信されます。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Họ chưa nhận được các chỉnh sửa mới nhất của bạn. Bấm \"Áp dụng\" để gửi."
           }
         }
       }
@@ -3385,22 +3497,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khâu xác minh ứng dụng của Apple thất bại trên thiết bị này. Vui lòng báo lại cho chúng tôi."
-          }
-        }
-      }
-    },
-    "Apply changes" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "変更を適用"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Áp dụng thay đổi"
           }
         }
       }
@@ -11983,7 +12079,6 @@
       }
     },
     "Hand over this passkey?" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12006,7 +12101,6 @@
       }
     },
     "Hand over this secret?" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -12018,22 +12112,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giao hẳn khóa bí mật này?"
-          }
-        }
-      }
-    },
-    "Hand over: can't be taken back" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "譲り渡し: 取り消せません"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Giao hẳn: không thể rút lại"
           }
         }
       }
@@ -23960,22 +24038,6 @@
         }
       }
     },
-    "Send update now" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今すぐ更新を送る"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gửi cập nhật ngay"
-          }
-        }
-      }
-    },
     "Send via Messages" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -28755,44 +28817,6 @@
         }
       }
     },
-    "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a key already handed over can't be pulled back." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a key already handed over can't be pulled back."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "相手は自分のデバイスで、あなたに尋ねることなく使えるようになります。後から取り消しても止まるのは更新だけで、譲り渡した鍵は取り戻せません。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Họ sẽ dùng được ngay trên máy của họ mà không cần hỏi bạn. Thu hồi sau này chỉ chặn cập nhật; khóa đã giao thì không thể lấy lại."
-          }
-        }
-      }
-    },
-    "They'll be able to use it without asking you, on their own device. Revoking later only stops updates; a secret already handed over can't be pulled back. To truly revoke it, change it at the website." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "相手は自分のデバイスで、あなたに尋ねることなく使えるようになります。後から取り消しても止まるのは更新だけで、譲り渡した秘密は取り戻せません。本当に無効にするには、そのサイトで変更してください。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Họ sẽ dùng được mà không cần hỏi bạn, ngay trên thiết bị của họ. Thu hồi sau này chỉ chặn cập nhật; bí mật đã giao thì không rút lại được. Muốn thu hồi thật sự, hãy đổi nó tại trang web."
-          }
-        }
-      }
-    },
     "They've accepted. Their device finishes automatically the next time they open Loox and unlock. This can take a moment." : {
       "localizations" : {
         "en" : {
@@ -31536,22 +31560,6 @@
         }
       }
     },
-    "Update sent." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更新を送信しました。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã gửi cập nhật."
-          }
-        }
-      }
-    },
     "Update these accounts to a different email so you keep receiving password resets and important mail." : {
       "localizations" : {
         "ja" : {
@@ -32980,22 +32988,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Khi có lượt đăng nhập cần phê duyệt, chủ sở hữu phải đang mở Loox để phản hồi."
-          }
-        }
-      }
-    },
-    "When automatic updates are off, your edits reach this person only when you tap Send Update Now." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自動更新をオフにすると、あなたの編集内容は「今すぐ更新を送る」をタップしたときだけ相手に届きます。"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Khi tắt tự động cập nhật, người này chỉ nhận được thay đổi của bạn khi bạn bấm \"Gửi cập nhật ngay\"."
           }
         }
       }

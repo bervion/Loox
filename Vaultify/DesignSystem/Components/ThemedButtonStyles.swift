@@ -86,7 +86,7 @@ struct ThemedTintedButtonStyle: ButtonStyle {
     }
 }
 
-/// Destructive (red) filled button.
+/// Destructive (red) filled button: white label on `destructiveFill`.
 struct ThemedDestructiveButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { StyledButton(configuration: configuration) }
 
@@ -97,8 +97,9 @@ struct ThemedDestructiveButtonStyle: ButtonStyle {
         var body: some View {
             let theme = env.theme.active
             // Opaque muted fill when disabled (blend toward background), never `.opacity`.
-            let bg = isEnabled ? theme.destructive : RGBMath.blend(theme.destructive, theme.background, 0.55)
-            let fg = isEnabled ? RGBMath.onColor(theme.destructive) : RGBMath.blend(RGBMath.onColor(theme.destructive), bg, 0.4)
+            let bg = isEnabled ? theme.destructiveFill
+                : RGBMath.blend(theme.destructiveFill, theme.background, 0.55)
+            let fg = isEnabled ? theme.onDestructive : RGBMath.blend(theme.onDestructive, bg, 0.4)
             // Same label-driven pill geometry as the prominent style (see above).
             configuration.label
                 .vaultType(.body)

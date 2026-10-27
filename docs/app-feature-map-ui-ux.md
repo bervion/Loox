@@ -387,14 +387,30 @@ sự đã so mã. So mã an toàn còn lại dạng **tuỳ chọn, không chặ
 - *Finished*: approved → "Code sent" (tự đóng 1.5s) / rejected → "Request rejected". *Failed* → thông điệp + Close. Không đóng được sheet khi đang xử lý.
 
 ### 13.5 Quản lý người nhận (Share Details sheet)
-Info (**Item** kèm icon category + Recipient/Status/ngày) + chế độ cập nhật ("Update automatically"
-+ "Send update now") + chỉnh quyền trên grant sống (+ "Apply changes") + **Stop sharing this item**.
+Info (**Item** kèm icon category + Recipient/Status/ngày) + chỉnh quyền trên grant sống ("What they
+can use") + chế độ cập nhật ("Update automatically") + **Stop sharing this item** (nút đỏ chữ trắng,
+`destructiveFill` + `onDestructive`). Một nút **Apply** duy nhất trên toolbar (phải), chỉ bật khi có
+thay đổi chưa gửi: đổi quyền, hoặc item đã sửa sau lần publish cuối mà "Update automatically" đang tắt.
+
+- **Một nút Apply thay cho hai.** "Send update now" (re-seal giá trị hiện tại) và "Apply changes"
+  (publish lại grant) trước đây cùng một việc: publish grant đã re-seal giá trị hiện tại kèm theo.
+  Apply đi qua `SharedGrantComposer` nên giữ đúng device scope và blob passkey đã giao.
+- **Giao hẳn (hand over) xác nhận bằng alert hệ thống** (`shareHandOverConfirmation`, gắn vào Form
+  của sheet, không gắn vào hàng): nói rõ nghĩa, không hoàn tác được, cách chặn họ sau này; nút
+  "Hand over" (destructive) + Cancel. Xác nhận là publish ngay, chỉ riêng mục giao hẳn (các lựa
+  chọn khác vẫn chờ Apply): toolbar hiện spinner, hàng đổi thành "Secret handed over" + dòng trạng
+  thái; lỗi → alert "Couldn't hand over" có Try again. Mọi lựa chọn chế độ đi qua
+  `ShareCapabilityDraft.select`, nên không còn hàng nào "nuốt" lựa chọn giao hẳn (lỗi cũ: giao hẳn
+  → hỏi mỗi lần → giao hẳn lại không có tác dụng với TOTP).
+- Đọc bản ghi share **sống** từ `SharingStore` (không dùng bản chụp lúc mở sheet): công tắc tự cập
+  nhật phản hồi ngay, và Apply lưu `grantId` mới.
 
 - Sheet **nêu tên mục**: nó mở được từ cả một MỤC lẫn một NGƯỜI, và khi mở từ Family thì trước đây
   không có gì trên màn nói đang cấu hình mục nào.
 - **Thu hồi theo từng mục**: trước đây gọi `revoke(zoneName:)` = xoá cả zone, nên thu hồi 1 mục
   kéo theo **mọi mục khác** đã chia sẻ với người đó, trong khi dialog chỉ nói họ hết xin được mã.
-  Nay dùng `revokeGrant` + `remove(zoneName:itemId:)`, chỉ xoá zone khi đó là mục cuối cùng.
+  Nay dùng `revokeGrants(forItemId:)` (theo item, không theo `grantId` đã lưu: mỗi lần Apply sinh grant
+  mới nên id cũ có thể không còn) + `remove(zoneName:itemId:)`, chỉ xoá zone khi đó là mục cuối cùng.
 - Không đọc được grant sống (offline/throttle) → banner cảnh báo, thay vì sheet trông như share
   chẳng cấp quyền gì với mỗi nút Revoke.
 

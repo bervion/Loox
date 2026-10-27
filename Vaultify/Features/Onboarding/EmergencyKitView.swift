@@ -256,7 +256,7 @@ struct EmergencyKitView: View {
             if status == .uploading {
                 ProgressView().controlSize(.small)
             } else if selected, status.failureReason != nil {
-                Circle().fill(Color(rgb: theme.destructive))
+                Circle().fill(Color(rgb: theme.destructiveFill))
                 VaultIcon(Icons.close, size: side * 0.6)
                     .foregroundStyle(theme.color(.onDestructive))
             } else if selected {

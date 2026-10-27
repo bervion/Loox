@@ -122,6 +122,19 @@ final class ThemeEngineTests: XCTestCase {
         XCTAssertLessThan(RGBMath.contrastRatio(theme.accentFill, theme.accent), 1.05)
     }
 
+    /// "Stop sharing this item" printed BLACK on red: the raw destructive hues
+    /// measure 2.8 to 3.9:1 against white, so the max-contrast pick was black.
+    /// The filled pair now carries white at normal-text AA in every theme, which
+    /// also covers Increase Contrast (the app does not swap palettes for it).
+    func testDestructiveFillCarriesAWhiteLabelAtNormalTextAA() {
+        for theme in BuiltinTheme.allCases {
+            let palette = BuiltinThemes.palette(theme)
+            XCTAssertEqual(palette.onDestructive, 0xFFFFFF, "\(theme) destructive label is not white")
+            XCTAssertGreaterThanOrEqual(
+                RGBMath.contrastRatio(palette.onDestructive, palette.destructiveFill), 4.5, "\(theme)")
+        }
+    }
+
     /// A genuinely light accent cannot carry white without losing its identity
     /// — the white "mono" accent would have to become gray. Those keep black
     /// text on the untouched hue instead.

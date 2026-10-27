@@ -75,6 +75,22 @@ enum SharedGrantComposer {
         return (display, shared)
     }
 
+    /// Field plaintext the grant seals: every field whose capability ships
+    /// its value (shared values and the TOTP seed hand-over). The central
+    /// share policy is enforced at this producer boundary too, so even a stale
+    /// capability naming a non-shareable field (key material, Level-2) never
+    /// serializes its value.
+    nonisolated static func sharedFieldValues(
+        item: VaultItem, capabilities: [String: FieldCapability]
+    ) -> [String: Data] {
+        Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
+            guard capabilities[field.id]?.isSharedValue == true,
+                  ItemCapabilityResolver.capabilities(for: field, in: item).approvalShare
+            else { return nil }
+            return (field.id, Data(field.value.utf8))
+        })
+    }
+
     // MARK: Publish
 
     /// Assemble every `publishGrant` argument identically for create + edit,
@@ -95,16 +111,7 @@ enum SharedGrantComposer {
         zoneID: CKRecordZone.ID,
         nowUnixMs: Int64
     ) async throws -> AccessGrant {
-        var sharedValues: [String: Data] = Dictionary(uniqueKeysWithValues:
-            item.fields.compactMap { field in
-                guard capabilities[field.id]?.isSharedValue == true,
-                      // Policy enforced at the producer boundary too: even a
-                      // stale capability naming a non-shareable field (key
-                      // material, Level-2) must not serialize its value.
-                      ItemCapabilityResolver.capabilities(for: field, in: item).approvalShare
-                else { return nil }
-                return (field.id, Data(field.value.utf8))
-            })
+        var sharedValues = sharedFieldValues(item: item, capabilities: capabilities)
         var displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []
         // Every slot the grant opens (any non-none passkey mode) must
         // materialize its artifacts below — a slot named by the signed grant
