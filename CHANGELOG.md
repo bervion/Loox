@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.59.0] - 2026-10-28
+
+### Added
+- open the Loox hub from vaultify://membership (#229)
+- full-screen editor, quieter private email row, system discard alert (#226)
+- add "Always show code" 2FA sharing mode (#227)
+
+### Fixed
+- add English plural forms for item and count labels (#231)
+- seal item-edit republish per device and keep passkeys (#228)
+- keep a Max subscriber on Max after a relaunch (#225)
+- format the per-month price like the charged price (#224)
+
+### Changed
+- dark screenshot deck with real captures in EN, VI and JA (#230)
+
+
 ## [1.58.0] - 2026-10-27
 
 ### Added

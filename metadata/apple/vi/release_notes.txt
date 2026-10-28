@@ -1,1 +1,1 @@
-Phiên bản 1.58.0: Cải thiện hiệu suất và sửa lỗi.
+Phiên bản 1.59.0: Cải thiện hiệu suất và sửa lỗi.
