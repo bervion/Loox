@@ -1,4 +1,22 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
+
+/// How `platformEditorCover` presents. Keyed on the device idiom, not the size
+/// class: the idiom never changes while the app runs, so neither does the
+/// modifier it picks, and a presented editor is never swapped for another
+/// presentation mid-edit. (A size-class flip remounts the whole shell anyway,
+/// and the editor hands its draft over to the next one.)
+enum PlatformEditorPresentation {
+    static var isFullScreen: Bool {
+        #if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .phone
+        #else
+        false
+        #endif
+    }
+}
 
 /// Cross-platform navigation / toolbar / list chrome. The iOS forms
 /// (`navigationBarTitleDisplayMode`, `.topBarTrailing`, `.insetGrouped`,
@@ -52,6 +70,25 @@ extension View {
         return fullScreenCover(item: item, onDismiss: onDismiss, content: content)
         #else
         return sheet(item: item, onDismiss: onDismiss, content: content)
+        #endif
+    }
+
+    /// A long, focused editing flow (the item editor): full screen on iPhone,
+    /// a sheet on iPad (the centred form sheet a large canvas reads best in) and
+    /// on macOS. See `PlatformEditorPresentation`.
+    @ViewBuilder
+    func platformEditorCover<Item: Identifiable, Content: View>(
+        item: Binding<Item?>,
+        @ViewBuilder content: @escaping (Item) -> Content
+    ) -> some View {
+        #if os(iOS)
+        if PlatformEditorPresentation.isFullScreen {
+            fullScreenCover(item: item, content: content)
+        } else {
+            sheet(item: item, content: content)
+        }
+        #else
+        sheet(item: item, content: content)
         #endif
     }
 

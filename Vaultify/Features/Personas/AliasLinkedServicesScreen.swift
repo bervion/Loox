@@ -268,7 +268,7 @@ struct AliasLoginPickerSheet: View {
                 }.listRowBackground(VaultColors.surface)
             }.themedFormBackground()
         }
-        .sheet(item: $editorTarget) { target in ItemEditorScreen(target: target) }
+        .platformEditorCover(item: $editorTarget) { target in ItemEditorScreen(target: target) }
         .sheet(isPresented: $showingRepairLogin) {
             if let id = repairLoginID {
                 NavigationStack {

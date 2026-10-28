@@ -41,7 +41,7 @@ struct PaymentCardsScreen: View {
         .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle("Payment")
         .platformNavigationBarTitleDisplayMode(.inline)
-        .sheet(item: $editing) { ItemEditorScreen(target: $0) }
+        .platformEditorCover(item: $editing) { ItemEditorScreen(target: $0) }
     }
 
     private func cardRow(_ card: VaultItem) -> some View {

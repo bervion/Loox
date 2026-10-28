@@ -43,6 +43,6 @@ struct PersonalInformationScreen: View {
         .background(Color(rgb: env.theme.active.groupedBackground).ignoresSafeArea())
         .navigationTitle("Personal Information")
         .platformNavigationBarTitleDisplayMode(.inline)
-        .sheet(item: $editing) { ItemEditorScreen(target: $0) }
+        .platformEditorCover(item: $editing) { ItemEditorScreen(target: $0) }
     }
 }

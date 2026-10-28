@@ -19,13 +19,14 @@ struct LoginEditorSections: View {
     var onRequestExtraProtectionUnlock: () -> Void = {}
     var onAliasDetached: () -> Void = {}
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    /// The status dot grows with its caption label, so it stays readable at
+    /// accessibility text sizes instead of shrinking to a speck beside them.
+    @ScaledMetric(relativeTo: .caption) private var statusDotSize: CGFloat = 8
     @State private var selectedPasskey: PasskeyInfo?
     /// The website row just created via "Add Website" — it claims keyboard focus
     /// on appear so typing continues there, not in the previously focused field.
     @State private var addedWebsiteFieldId: String?
-    /// Present the alias's management screen (pause/delete live there, not in
-    /// the editor — the editor only ever attaches/detaches a field).
-    @State private var showManageAlias = false
     @State private var aliasToDetach: DynamicField?
 
     /// Field kinds shown in the Credentials section, in template order.
@@ -41,7 +42,7 @@ struct LoginEditorSections: View {
     // MARK: Credentials
 
     private var credentialsSection: some View {
-        Section("Credentials") {
+        Section {
             ForEach(credentialFields) { field in
                 if let match = privateEmailMatch(for: field) {
                     attachedPrivateEmailRow(field: fieldBinding(field), match: match)
@@ -59,14 +60,22 @@ struct LoginEditorSections: View {
                 Button { selectedPasskey = passkey } label: { passkeyRow(passkey) }
                     .buttonStyle(.plain)
             }
-            if let attached = attachedPrivateEmail {
-                privateEmailActionsRow(attached: attached)
-                privateEmailInfoNote
+        } header: {
+            Text("Credentials")
+        } footer: {
+            // What the × leaves behind, in the quiet footnote voice under the
+            // card. Pause/delete live in Private Email, which this names; the
+            // editor only ever attaches or detaches the field.
+            if attachedPrivateEmail != nil {
+                Text("Unlinking keeps this address receiving mail. Manage forwarding in Private Email.")
             }
         }
         .listRowBackground(VaultColors.surface)
-        .confirmationDialog("Unlink this service?", isPresented: Binding(
-            get: { aliasToDetach != nil }, set: { if !$0 { aliasToDetach = nil } }), titleVisibility: .visible) {
+        // The system alert, like the editor's discard confirmation: an action
+        // sheet here is a small popover anchored to the × on iOS 26.
+        .alert("Unlink this service?", isPresented: Binding(
+            get: { aliasToDetach != nil }, set: { if !$0 { aliasToDetach = nil } })) {
+            Button("Cancel", role: .cancel) { aliasToDetach = nil }
             Button("Unlink", role: .destructive) {
                 if let field = aliasToDetach,
                    !ExtraProtectionDelete.blocks([field], level2Key: env.session.level2Key?.bytes) {
@@ -79,28 +88,13 @@ struct LoginEditorSections: View {
             Text("This removes the private email from this vault item. Forwarding and the service account stay unchanged.")
         }
         .sheet(item: $selectedPasskey) { PasskeyDetailSheet(passkey: $0) }
-        .sheet(isPresented: $showManageAlias) {
-            if let attached = attachedPrivateEmail {
-                // `AliasDetailScreen` is normally a NavigationLink push target (its
-                // back button comes free); presented here as a sheet root instead, so
-                // it needs its own explicit close action.
-                NavigationStack {
-                    AliasDetailScreen(aliasID: attached.match.alias.id)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Close") { showManageAlias = false }
-                            }
-                        }
-                }
-            }
-        }
     }
 
     // MARK: Private email recognition (attached alias)
 
     /// Whether `field` (email/username) currently holds one of the active
     /// persona's aliases (INV-R03) — regardless of the alias's live status, so
-    /// a paused alias still shows the PRIVATE treatment instead of silently
+    /// a paused alias still shows the private-email row instead of silently
     /// reverting to a plain-email look.
     private func privateEmailMatch(for field: DynamicField) -> PrivateEmailMatch? {
         guard field.kind == .email, field.label == AliasWriteback.privateEmailLabel,
@@ -117,22 +111,29 @@ struct LoginEditorSections: View {
         return nil
     }
 
-    /// The attached-alias row: badge + mono value + a small detach (×) button,
-    /// with the forwards-to line underneath — mirrors Item Detail's recognition
-    /// treatment but adds the editor-only detach affordance.
+    /// The attached-alias row: label + status dot, the address with a small
+    /// detach (×) button, and where its mail goes underneath. Same rhythm as
+    /// `EditorFieldRow` (caption label, value, 6pt apart) so it reads as one
+    /// more field in the card rather than a feature panel.
     private func attachedPrivateEmailRow(field: Binding<DynamicField>, match: PrivateEmailMatch) -> some View {
-        // Mockup layout: badge sits on the LABEL row (convention 1 — "next to the
-        // label", never squeezing the value), the alias gets its own full-width
-        // mono line at a size that fits whole, forwards-to underneath.
         VStack(alignment: .leading, spacing: 6) {
+            // The dot carries the alias state (green while it forwards). It is
+            // said in words for VoiceOver, and shown in words too when the user
+            // asked iOS not to rely on colour alone.
             HStack(spacing: Space.s2) {
                 Text("Private email")
                     .vaultType(.caption)
                     .themedForeground(.secondary)
-
-                Spacer(minLength: Space.s2)
-                PrivateEmailBadge()
+                StatusDot(role: match.statusRole, size: statusDotSize)
+                if differentiateWithoutColor {
+                    Text(verbatim: match.statusLabel)
+                        .vaultType(.caption)
+                        .themedForeground(.secondary)
+                }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Private email"))
+            .accessibilityValue(Text(verbatim: match.statusLabel))
 
             HStack(spacing: Space.s2) {
                 Text(verbatim: field.wrappedValue.value)
@@ -154,32 +155,26 @@ struct LoginEditorSections: View {
                 .accessibilityLabel(Text("Detach private email"))
             }
 
-            PrivateEmailForwardsToLine(match: match)
+            if let destination = match.destination {
+                forwardsToLine(destination)
+            }
         }
         .padding(.vertical, 2)
     }
 
-    /// Below-card chip row: swap back to the real destination email in one tap,
-    /// or jump to Private Email management (pause/delete live there).
-    /// Two chips of the SAME visual rank (mockup: a matched pill pair, never a
-    /// pill next to a bare text link) — both single-line so they sit side by
-    /// side even at SE width.
-    private func privateEmailActionsRow(attached: (field: DynamicField, match: PrivateEmailMatch)) -> some View {
-        Button { showManageAlias = true } label: {
-            Label { Text("Manage private email") } icon: { VaultIcon(Icons.mail) }
-                .frame(maxWidth: .infinity, minHeight: Metric.hitMin, alignment: .leading)
-        }
-        .buttonStyle(.themedCompact)
-        .listRowSeparator(.hidden)
-    }
-
-    /// The app's one tinted inline notice surface. It keeps the row's default
-    /// insets (unlike `.inList()`), so the banner sits INSIDE this section's card
-    /// exactly as the hand-rolled box it replaces did.
-    private var privateEmailInfoNote: some View {
-        VaultInfoBanner(.info, icon: Icons.info,
-                        text: "Unlinking keeps this address receiving mail. Manage forwarding in Private Email.")
-            .listRowSeparator(.hidden)
+    /// "Forwards to {destination}" as one caption that wraps instead of
+    /// truncating: the destination is the part worth reading, so it keeps its
+    /// tail on an SE and at accessibility text sizes. The label stays secondary
+    /// and the address takes the primary text colour.
+    private func forwardsToLine(_ destination: String) -> some View {
+        let theme = env.theme.active
+        var label = AttributedString(appString("Forwards to") + " ")
+        label.foregroundColor = theme.color(.secondary)
+        var address = AttributedString(destination)
+        address.foregroundColor = theme.color(.primary)
+        return Text(label + address)
+            .vaultType(.caption)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: Websites (multi)

@@ -112,7 +112,7 @@ struct VaultSidebarView: View {
         // Quick Actions (see the state block above). Same flows Home's grid drives.
         .task { recomputeWatchtowerCount() }
         .onChange(of: env.repository.items.count) { recomputeWatchtowerCount() }
-        .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+        .platformEditorCover(item: $editorTarget) { ItemEditorScreen(target: $0) }
         // Item-type picker → present the editor once it finishes dismissing.
         .sheet(isPresented: $showItemTypePicker, onDismiss: {
             if let target = pendingNewTarget {

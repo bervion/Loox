@@ -72,7 +72,7 @@ struct ItemsScreen: View {
             .platformHiddenNavigationBar()
             .vaultNavigationDestinations()
             .sheet(isPresented: $creatingSpace) { FolderEditorSheet(folder: nil) }
-            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+            .platformEditorCover(item: $editorTarget) { ItemEditorScreen(target: $0) }
         }
     }
 

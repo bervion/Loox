@@ -45,7 +45,7 @@ struct AuditFixQueueScreen: View {
         .themedFormBackground()
         .navigationTitle(Text("Fix issues"))
         .platformNavigationBarTitleDisplayMode(.inline)
-        .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+        .platformEditorCover(item: $editorTarget) { ItemEditorScreen(target: $0) }
         .confirmationDialog(Text("Stop reminders for this finding"),
                             isPresented: $showDismissOptions, titleVisibility: .visible) {
             dismissActions

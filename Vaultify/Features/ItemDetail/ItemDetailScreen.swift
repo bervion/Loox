@@ -21,6 +21,9 @@ struct ItemDetailScreen: View {
     /// `@State`. That silently reset multi-step flows mid-ceremony — a share
     /// sheet could jump back to its first screen, and a revoke confirmation
     /// could lose the view that owned its action before it ran.
+    ///
+    /// On iPhone the two editor routes present as a full-screen cover; it reads
+    /// the same route (`routeBinding`), so the screen still shows one at a time.
     private enum SheetRoute: Identifiable {
         case editor(EditorTarget)
         /// Attention banner's "Update password": the editor opens with the
@@ -53,6 +56,63 @@ struct ItemDetailScreen: View {
     }
 
     @State private var sheetRoute: SheetRoute?
+    /// This screen left the window only because its full-screen editor covers
+    /// it (iPhone). Its disappear/appear pair is then part of the same visit.
+    @State private var coveredByEditor = false
+
+    /// Whether `route` takes the full-screen editor cover instead of the sheet
+    /// host: the editor routes, on iPhone (`PlatformEditorPresentation`).
+    private func presentsFullScreen(_ route: SheetRoute) -> Bool {
+        guard PlatformEditorPresentation.isFullScreen else { return false }
+        switch route {
+        case .editor, .passwordUpdate: return true
+        default: return false
+        }
+    }
+
+    /// The part of `sheetRoute` one host presents. A host clears the route only
+    /// while it still owns it, so its dismissal never cancels a route the other
+    /// host has just taken.
+    private func routeBinding(fullScreen: Bool) -> Binding<SheetRoute?> {
+        Binding(
+            get: { sheetRoute.flatMap { presentsFullScreen($0) == fullScreen ? $0 : nil } },
+            set: { newValue in
+                if let newValue {
+                    sheetRoute = newValue
+                } else if let current = sheetRoute, presentsFullScreen(current) == fullScreen {
+                    sheetRoute = nil
+                }
+            })
+    }
+
+    @ViewBuilder private func sheetContent(_ route: SheetRoute) -> some View {
+        switch route {
+        case .editor(let target):
+            ItemEditorScreen(target: target)
+        case .passwordUpdate(let target):
+            ItemEditorScreen(target: .edit(target), autoOpenPasswordGenerator: true)
+        case .locatedIn:
+            LocatedInSheet(itemID: itemID)
+        case .shareAccess:
+            ShareAccessSheet(itemID: itemID)
+        case .quickViewChooser:
+            if let item {
+                QuickViewEntryChooserSheet(
+                    itemID: itemID,
+                    defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
+            }
+        case .verify:
+            SafetyCodeVerifySheet(itemID: itemID) { decision in
+                env.sharedItems.recordVerification(decision, forItem: itemID,
+                                                   vaultKey: env.session.vaultKey?.bytes)
+                sheetRoute = nil
+            }
+        case .recipientDetail(let share):
+            ShareRecipientDetailSheet(share: share)
+        case .resumeShare(let share):
+            ShareResumeStepperSheet(share: share)
+        }
+    }
     @State private var confirmTrash = false
     @State private var confirmDelete = false
     @State private var showLastIdentityBlock = false
@@ -338,35 +398,13 @@ struct ItemDetailScreen: View {
                 }
             }
         }
-        // ONE presentation host for the whole screen — see `SheetRoute`.
-        .sheet(item: $sheetRoute) { route in
-            switch route {
-            case .editor(let target):
-                ItemEditorScreen(target: target)
-            case .passwordUpdate(let target):
-                ItemEditorScreen(target: .edit(target), autoOpenPasswordGenerator: true)
-            case .locatedIn:
-                LocatedInSheet(itemID: itemID)
-            case .shareAccess:
-                ShareAccessSheet(itemID: itemID)
-            case .quickViewChooser:
-                if let item {
-                    QuickViewEntryChooserSheet(
-                        itemID: itemID,
-                        defaultSelectedFieldIDs: LooxLinkEnvelope.defaultSelectedFieldIDs(of: item))
-                }
-            case .verify:
-                SafetyCodeVerifySheet(itemID: itemID) { decision in
-                    env.sharedItems.recordVerification(decision, forItem: itemID,
-                                                       vaultKey: env.session.vaultKey?.bytes)
-                    sheetRoute = nil
-                }
-            case .recipientDetail(let share):
-                ShareRecipientDetailSheet(share: share)
-            case .resumeShare(let share):
-                ShareResumeStepperSheet(share: share)
-            }
-        }
+        // ONE `.sheet` host for the whole screen — see `SheetRoute`. On iPhone
+        // the editor routes present full screen instead: a cover, not a second
+        // sheet, driven by the same `sheetRoute`, so there is still one route.
+        .sheet(item: routeBinding(fullScreen: false)) { sheetContent($0) }
+        #if os(iOS)
+        .fullScreenCover(item: routeBinding(fullScreen: true)) { sheetContent($0) }
+        #endif
         .alert("Can't send to a browser", isPresented: quickViewBlockedAlert) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -407,7 +445,13 @@ struct ItemDetailScreen: View {
             safetyCode = await env.sharedItems.safetyCode(forItem: itemID, vaultKey: vaultKey)
         }
         .onAppear {
-            if let item { AnalyticsEngine.shared.log(.itemViewed(item.category)) }
+            // Coming back from this screen's own full-screen editor is the same
+            // visit, not a new view of the item.
+            if coveredByEditor {
+                coveredByEditor = false
+            } else if let item {
+                AnalyticsEngine.shared.log(.itemViewed(item.category))
+            }
             // Owned items only: a shared projection has no audit findings of ours,
             // and the guard skips opening the sealed report for nothing.
             if item?.sharedOrigin == nil {
@@ -416,9 +460,17 @@ struct ItemDetailScreen: View {
         }
         // The Extra Password unlock is scoped to THIS visit: leaving the item
         // reseals every level2 field, so coming back always asks again. Sheets
-        // presented over the screen (protect, reveal, editor) don't trigger
-        // this — only actually navigating away does.
-        .onDisappear { env.session.clearLevel2Key() }
+        // presented over the screen (protect, reveal) don't trigger this. The
+        // iPhone editor is a full-screen cover, which DOES take this screen off
+        // the window: that is still the same visit, and clearing here would
+        // relock the fields the editor just opened unlocked.
+        .onDisappear {
+            if let sheetRoute, presentsFullScreen(sheetRoute) {
+                coveredByEditor = true
+            } else {
+                env.session.clearLevel2Key()
+            }
+        }
     }
 
     /// Gate before the confirm dialog: leaving is only real once iCloud says
