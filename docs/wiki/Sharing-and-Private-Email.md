@@ -3,8 +3,8 @@
 The vault, AutoFill, passkeys and one-time codes work with no network at all. The four features on this page are optional and do use the network. Each one encrypts on the device before anything is uploaded, and each is described below with exactly what is sent where.
 
 <p>
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-share.png" width="180" alt="Share sheet">&nbsp;
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/ipad-share.png" width="360" alt="Share sheet on iPad">
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-share-fields.png" width="180" alt="Quick Link field picker">&nbsp;
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-private-email.png" width="180" alt="Private Email addresses">
 </p>
 
 ## Approval Mode (share with another Loox user)

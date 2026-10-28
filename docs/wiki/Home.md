@@ -7,10 +7,10 @@ Loox is a private, offline password and passkey manager for iPhone, iPad and Mac
 - **Source code:** https://github.com/bervion/Loox
 
 <p>
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-home.png" width="180" alt="Home screen with quick actions and one-time codes">&nbsp;
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-vault.png" width="180" alt="Vault list">&nbsp;
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-codes.png" width="180" alt="Two-factor codes">&nbsp;
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-watchtower.png" width="180" alt="Security score">
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-home.png" width="180" alt="Home screen with quick actions and one-time codes">&nbsp;
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-vault.png" width="180" alt="Vault list">&nbsp;
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-codes.png" width="180" alt="Two-factor codes">&nbsp;
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-watchtower.png" width="180" alt="Security score">
 </p>
 
 ## Using Loox

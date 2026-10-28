@@ -26,10 +26,10 @@ No account. No vault server. Your vault is encrypted on your device and stays th
 
 <br>
 
-<img src="App%20Store%20Screenshots/shots/iphone-home.png" width="200" alt="Home screen with Quick Actions and authenticator codes">&nbsp;
-<img src="App%20Store%20Screenshots/shots/iphone-detail.png" width="200" alt="Login detail with password strength and one-time code">&nbsp;
-<img src="App%20Store%20Screenshots/shots/iphone-codes.png" width="200" alt="2FA codes list">&nbsp;
-<img src="App%20Store%20Screenshots/shots/iphone-watchtower.png" width="200" alt="Watchtower security score">
+<img src="App%20Store%20Screenshots/shots/en/iphone-home.png" width="200" alt="Home screen with Quick Actions and authenticator codes">&nbsp;
+<img src="App%20Store%20Screenshots/shots/en/iphone-detail.png" width="200" alt="Login detail with password strength and one-time code">&nbsp;
+<img src="App%20Store%20Screenshots/shots/en/iphone-codes.png" width="200" alt="2FA codes list">&nbsp;
+<img src="App%20Store%20Screenshots/shots/en/iphone-watchtower.png" width="200" alt="Watchtower security score">
 
 </div>
 

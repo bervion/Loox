@@ -622,10 +622,10 @@ index 0000000..f39d95f
 +</html>
 diff --git a/scripts/store-shots/capture.sh b/scripts/store-shots/capture.sh
 new file mode 100755
-index 0000000..0bc0ea1
+index 0000000..3ff9da3
 --- /dev/null
 +++ b/scripts/store-shots/capture.sh
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,74 @@
 +#!/bin/zsh
 +# Capture App Store screenshots from the `screenshots` UI-test fixture.
 +#
@@ -651,33 +651,42 @@ index 0000000..0bc0ea1
 +LANG_=$1; DEV=$2; UDID=$3; shift 3
 +DD=${DERIVED_DATA:-/tmp/loox-capture-dd}
 +OUT="${OUT_ROOT:-$ROOT}/App Store Screenshots/shots"
-+SIG=${TMPDIR:-/tmp}/loox-shots-$DEV
++SIG=${TMPDIR:-/tmp}/loox-shots-$UDID
 +MIN_FREE_KB=${MIN_FREE_KB:-1572864}
 +PKGS=()
 +[ -n "${SOURCE_PACKAGES:-}" ] && PKGS=(-clonedSourcePackagesDirPath "$SOURCE_PACKAGES"
 +  -onlyUsePackageVersionsFromResolvedFile -skipPackageUpdates)
++# Run one device at a time: both share $DD, and a first run compiles into it.
++XPID= DAEMON=
++trap 'touch "$SIG/STOP" 2>/dev/null; kill $XPID $DAEMON 2>/dev/null' EXIT INT TERM
 +
-+# Runs "$@" in the background and stops it if free disk drops below MIN_FREE_KB.
++# Runs "$@" in the background and stops it if free disk drops below MIN_FREE_KB
++# (escalating to SIGKILL if it does not stop).
 +guarded() {
 +  "$@" &
-+  local pid=$!
-+  while kill -0 $pid 2>/dev/null; do
-+    if [ "$(df -k /System/Volumes/Data | awk 'NR==2{print $4}')" -lt "$MIN_FREE_KB" ]; then
-+      echo "low disk, stopping xcodebuild" >&2; kill $pid
++  XPID=$!
++  local free tries=0
++  while kill -0 $XPID 2>/dev/null; do
++    free=$(df -k "${DD:h}" | awk 'NR==2{print $4}')
++    if [[ $free == <-> ]] && (( free < MIN_FREE_KB )); then
++      echo "low disk (${free} KB), stopping xcodebuild" >&2
++      (( ++tries > 3 )) && kill -9 $XPID 2>/dev/null || kill $XPID 2>/dev/null
 +    fi
 +    sleep 3
 +  done
-+  wait $pid
++  wait $XPID
 +}
 +
++xctestrun() { local found=("$DD"/*/Products/*.xctestrun(N)); print -r -- "${found[1]-}"; }
++
 +cd "$ROOT"
-+XTR=$(ls "$DD"/*/Products/*.xctestrun(N) | head -1)
++XTR=$(xctestrun)
 +if [ -z "$XTR" ]; then
 +  guarded xcodebuild build-for-testing -workspace Vaultify.xcworkspace -scheme Vaultify-Shots \
 +    -configuration Debug -destination id=$UDID -derivedDataPath "$DD" "${PKGS[@]}" \
 +    COMPILER_INDEX_STORE_ENABLE=NO GCC_GENERATE_DEBUGGING_SYMBOLS=NO DEBUG_INFORMATION_FORMAT=dwarf \
 +    SWIFT_COMPILATION_MODE=wholemodule ENABLE_DEBUG_DYLIB=NO || exit 1
-+  XTR=$(ls "$DD"/*/Products/*.xctestrun(N) | head -1)
++  XTR=$(xctestrun)
 +  [ -z "$XTR" ] && { echo "no .xctestrun produced" >&2; exit 2; }
 +fi
 +
@@ -685,34 +694,39 @@ index 0000000..0bc0ea1
 +xcrun simctl ui $UDID appearance light
 +xcrun simctl status_bar $UDID override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 \
 +  --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
-+"$HERE/shot-daemon.sh" "$SIG" $UDID "$OUT" $DEV &
++"$HERE/shot-daemon.sh" "$SIG" $UDID "$OUT" $DEV $$ &
 +DAEMON=$!
 +ONLY=("$@"); [ ${#ONLY[@]} -eq 0 ] && ONLY=(-only-testing:VaultifyUITests/StoreScreenshotsUITests)
 +TEST_RUNNER_SHOT_LANG=$LANG_ TEST_RUNNER_SHOT_SIGNAL_DIR=$SIG \
 +  guarded xcodebuild test-without-building -xctestrun "$XTR" -destination id=$UDID "${ONLY[@]}"
-+RC=$?
-+touch "$SIG/STOP"; sleep 1; kill $DAEMON 2>/dev/null
-+exit $RC
++exit $?                                    # the EXIT trap stops the daemon
 diff --git a/scripts/store-shots/shot-daemon.sh b/scripts/store-shots/shot-daemon.sh
 new file mode 100755
-index 0000000..760f84a
+index 0000000..7e22629
 --- /dev/null
 +++ b/scripts/store-shots/shot-daemon.sh
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,24 @@
 +#!/bin/zsh
-+# Usage: shot-daemon.sh <signal-dir> <udid> <out-root> <device>
-+# The UI test writes <lang>__<slug>.ready; we capture full-res with simctl and answer .done.
-+SIG=$1; UDID=$2; OUT=$3; DEV=$4
-+mkdir -p $SIG
-+while true; do
-+  for f in $SIG/*.ready(N); do
++# Usage: shot-daemon.sh <signal-dir> <udid> <out-root> <device> <parent-pid>
++# The UI test writes <lang>__<slug>.ready; we save a full-resolution simctl
++# screenshot and answer .done. A failed screenshot gets no .done, so the test
++# times out instead of keeping the previous run's file. Exits on STOP or when
++# capture.sh is gone, so a stale daemon never answers a later run.
++SIG=$1; UDID=$2; OUT=$3; DEV=$4; PARENT=$5
++mkdir -p "$SIG"
++while kill -0 $PARENT 2>/dev/null; do
++  for f in "$SIG"/*.ready(N); do
 +    base=${f:t:r}; lang=${base%%__*}; slug=${base#*__}
 +    mkdir -p "$OUT/$lang"
 +    dest="$OUT/$lang/$DEV-$slug.png"
-+    xcrun simctl io $UDID screenshot --type=png "$dest" >/dev/null 2>&1
-+    echo "captured $dest $(sips -g pixelWidth -g pixelHeight "$dest" 2>/dev/null | awk '/pixel/{printf "%s ", $2}')"
-+    rm -f $f; touch $SIG/$base.done
++    rm -f $f
++    if xcrun simctl io $UDID screenshot --type=png "$dest.part" >/dev/null 2>&1 && mv -f "$dest.part" "$dest"; then
++      echo "captured $dest $(sips -g pixelWidth -g pixelHeight "$dest" 2>/dev/null | awk '/pixel/{printf "%s ", $2}')"
++      touch "$SIG/$base.done"
++    else
++      rm -f "$dest.part"; echo "FAILED to capture $dest" >&2
++    fi
 +  done
-+  [ -f $SIG/STOP ] && exit 0
++  [ -f "$SIG/STOP" ] && exit 0
 +  sleep 0.3
 +done

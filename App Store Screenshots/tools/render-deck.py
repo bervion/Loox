@@ -7,7 +7,9 @@ screenshots it with headless Google Chrome at the exact App Store size
 (iPhone 6.9" 1320x2868, iPad 13" 2064x2752), flattens it to RGB (App Store
 rejects alpha) and saves export/<lang>/<device>-NN-<slug>.png, plus one
 contact sheet per locale for review. Captures come from shots/<lang>/, falling
-back to shots/en/ so a locale without its own captures still renders.
+back (with a warning) to shots/en/ so a locale without its own captures still
+renders. A frame with no capture renders a "capture pending" slot and the run
+exits 1, so a placeholder can never pass for an upload-ready set.
 """
 import argparse
 import concurrent.futures as futures
@@ -16,6 +18,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
 import tempfile
 
 from PIL import Image, ImageDraw
@@ -52,29 +55,47 @@ def backgrounds(work):
 
 
 def capture(shots, lang, kind, slug):
+    """(file URI or None, warning or None) for one frame's app capture.
+
+    A capture must be the device's exact native size: anything else would be
+    cropped silently by object-fit, so it is treated as missing."""
+    d = layout.DEVICES[kind]
     for folder in (lang, "en"):
         path = shots / folder / f"{kind}-{slug}.png"
-        if path.exists():
-            return path.as_uri()
-    return None
+        if not path.exists():
+            continue
+        with Image.open(path) as img:
+            if img.size != (d["w"], d["h"]):
+                return None, f"{path.relative_to(shots)} is {img.size}, expected {(d['w'], d['h'])}"
+        note = f"{lang}: using shots/en/{path.name}" if folder != lang else None
+        return path.as_uri(), note
+    return None, f"capture pending: shots/{lang}/{kind}-{slug}.png"
+
+
+CHROME_FLAGS = ["--headless=new", "--hide-scrollbars", "--disable-gpu", "--no-first-run",
+                "--no-default-browser-check", "--use-mock-keychain", "--disable-extensions",
+                "--disable-sync", "--disable-background-networking", "--disable-component-update",
+                "--force-color-profile=srgb", "--force-device-scale-factor=1", "--virtual-time-budget=4000"]
 
 
 def chrome_shot(page, png, w, h, profile, attempts=3):
-    """Headless Chrome screenshot; the throwaway profile is deleted right after
-    (each one is tens of MB and this disk is often nearly full)."""
+    """Headless Chrome screenshot, retried on a failure or a hang. The throwaway
+    profile is deleted right after (this disk is often nearly full)."""
     for attempt in range(1, attempts + 1):
+        error = None
         try:
-            run = subprocess.run([CHROME, "--headless=new", "--hide-scrollbars", "--disable-gpu",
-                                  "--no-first-run", "--no-default-browser-check", f"--user-data-dir={profile}",
-                                  "--force-device-scale-factor=1", f"--window-size={w},{h}",
-                                  "--virtual-time-budget=4000", f"--screenshot={png}", page.as_uri()],
+            run = subprocess.run([CHROME, *CHROME_FLAGS, f"--user-data-dir={profile}", f"--window-size={w},{h}",
+                                  f"--screenshot={png}", page.as_uri()],
                                  capture_output=True, text=True, timeout=120)
+            if run.returncode == 0 and png.exists():
+                return
+            error = f"exit {run.returncode}: {run.stderr[-600:]}"
+        except subprocess.TimeoutExpired:
+            error = "timed out after 120 s"
         finally:
             shutil.rmtree(profile, ignore_errors=True)
-        if run.returncode == 0 and png.exists():
-            return
         if attempt == attempts:
-            raise RuntimeError(f"Chrome failed on {page.name} (exit {run.returncode}): {run.stderr[-600:]}")
+            raise RuntimeError(f"Chrome failed on {page.name} ({error})")
 
 
 def render_one(job):
@@ -123,35 +144,43 @@ def main():
     args = ap.parse_args()
 
     strings = json.loads((DECK / "loox-strings.json").read_text())
-    langs = args.lang.split(",") if args.lang else strings["order"]
-    kinds = args.device.split(",")
+    langs = list(dict.fromkeys(args.lang.split(",") if args.lang else strings["order"]))
+    kinds = list(dict.fromkeys(args.device.split(",")))
 
     with tempfile.TemporaryDirectory(prefix="loox-deck-") as tmp:
         work = pathlib.Path(tmp)
         bg = backgrounds(work)
-        jobs, per_lang = [], {lang: [] for lang in langs}
+        jobs, per_lang, pending = [], {lang: [] for lang in langs}, []
         for lang in langs:
             loc = strings[lang]
             (EXPORT / lang).mkdir(parents=True, exist_ok=True)
             for kind in kinds:
+                # Stale frames (renamed or dropped) must not linger in the upload folder.
+                for old in (EXPORT / lang).glob(f"{kind}-*.png"):
+                    old.unlink()
                 d = layout.DEVICES[kind]
                 for i, (slug, shot) in enumerate(layout.FRAMES, 1):
                     name = f"{kind}-{i:02d}-{slug}"
+                    uri, note = capture(args.shots, lang, kind, shot)
+                    if note:
+                        print("  " + note)
+                    if not uri:
+                        pending.append(f"{lang}/{name}")
                     page = work / f"{lang}-{name}.html"
                     page.write_text(layout.frame_html(kind, slug, loc["frames"][slug], loc["type"], lang,
-                                                      loc["features"], capture(args.shots, lang, kind, shot), bg[kind]))
+                                                      loc["features"], uri, bg[kind]))
                     final = EXPORT / lang / f"{name}.png"
                     jobs.append((page, work / f"{lang}-{name}.raw.png", final, d["w"], d["h"],
                                  work / f"profile-{lang}-{name}"))
                     per_lang[lang].append(final)
-                    if not capture(args.shots, lang, kind, shot):
-                        print(f"  capture pending: shots/{lang}/{kind}-{shot}.png")
         # One throwaway Chrome profile per page, so parallel runs never share a lock.
         with futures.ThreadPoolExecutor(max_workers=4) as pool:
             for done in pool.map(render_one, jobs):
                 print("wrote", done.relative_to(DECK))
     for lang in langs:
         print("sheet", contact_sheet(lang, per_lang[lang]).relative_to(DECK))
+    if pending:
+        sys.exit(f"NOT upload-ready, {len(pending)} frame(s) show a placeholder: {', '.join(pending)}")
 
 
 if __name__ == "__main__":

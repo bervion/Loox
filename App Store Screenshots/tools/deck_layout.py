@@ -136,6 +136,7 @@ def text_block(kind, copy, t):
 def feature_grid(kind, labels, t):
     """Last frame: the app's own glyphs against their feature names."""
     d = DEVICES[kind]
+    assert len(labels) == len(FEATURE_ICONS), f"{len(labels)} feature labels for {len(FEATURE_ICONS)} icons"
     font = round(50 * t["scale"])                # CJK labels are one long word: shrink, never break
     if d["grid_cols"] == 2:
         tile, glyph, gap, top = 112, 60, "44px 40px", 640
