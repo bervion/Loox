@@ -861,6 +861,28 @@
         }
       }
     },
+    "Always show code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Always show code"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コードを常に表示"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luôn hiện mã"
+          }
+        }
+      }
+    },
     "Apply" : {
       "localizations" : {
         "ja" : {
@@ -1039,6 +1061,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Họ nhận một bản riêng và dùng được mà không cần hỏi bạn. Không thể hoàn tác. Ngừng chia sẻ sau này chỉ chặn các cập nhật tiếp theo. Muốn chặn họ sau này, hãy thiết lập lại xác thực hai lớp tại trang web."
+          }
+        }
+      }
+    },
+    "They see the current code at any time. Loox never shows them the secret, and removes it from their device when you change this option or stop sharing. They need the latest version of Loox." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They see the current code at any time. Loox never shows them the secret, and removes it from their device when you change this option or stop sharing. They need the latest version of Loox."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相手はいつでも現在のコードを見られます。Looxが相手に秘密を表示することはなく、この設定を変更するか共有を停止すると相手のデバイスから削除されます。最新バージョンのLooxが必要です。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Họ luôn xem được mã hiện tại. Loox không bao giờ hiện khóa bí mật cho họ, và sẽ xóa khóa khỏi máy họ khi bạn đổi tùy chọn này hoặc dừng chia sẻ. Họ cần dùng phiên bản Loox mới nhất."
           }
         }
       }
@@ -25274,24 +25318,24 @@
         }
       }
     },
-    "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use. The secret never leaves your vault." : {
+    "Shared values are visible to them and can't be taken back later. With \"Ask each time\", every code needs your approval and the secret never leaves your vault." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use. The secret never leaves your vault."
+            "value" : "Shared values are visible to them and can't be taken back later. With \"Ask each time\", every code needs your approval and the secret never leaves your vault."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "共有した値は相手に見えるようになり、後から取り消せません。「毎回確認」のコードは使うたびにあなたの承認が必要です。秘密そのものが保管庫を出ることはありません。"
+            "value" : "共有した値は相手に見えるようになり、後から取り消せません。「毎回確認」では、コードを使うたびにあなたの承認が必要で、秘密そのものが保管庫を出ることはありません。"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Giá trị được chia sẻ sẽ hiển thị với họ và không thể thu hồi sau này. Mã \"Hỏi mỗi lần\" cần bạn phê duyệt cho từng lần dùng. Bí mật không bao giờ rời kho của bạn."
+            "value" : "Giá trị được chia sẻ sẽ hiển thị với họ và không thể thu hồi sau này. Với \"Hỏi mỗi lần\", mỗi mã cần bạn phê duyệt và bí mật không bao giờ rời kho của bạn."
           }
         }
       }

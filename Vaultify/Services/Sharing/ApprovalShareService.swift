@@ -354,12 +354,19 @@ import Foundation
             records.append(ApprovalRecordMapping.sharedFieldRecord(
                 sealedBlob: sealed, grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
         }
-        guard !records.isEmpty else { return }
         // Old blobs are superseded ciphertext for THIS grant — replace
         // atomically, scoped to `grant.id` so a sibling grant's fields in
         // the same zone are never touched (INV-FAM-01), same pattern as
-        // publishGrant's stale cleanup.
-        let staleBlobIDs = try await sharedFieldRecordIDs(grantId: grant.id, zoneID: zoneID)
+        // publishGrant's stale cleanup. Item-field blobs only: `values` never
+        // carries a passkey slot, so deleting those would drop a handed-over
+        // passkey on every edit.
+        //
+        // No early return when nothing is re-saved: a field the owner deleted
+        // (or emptied) must leave the recipient too. A code-only 2FA secret
+        // that was the grant's one shared value used to stay behind forever.
+        let staleBlobIDs = try await sharedFieldRecordIDs(grantId: grant.id, zoneID: zoneID,
+                                                          where: Self.isItemFieldBlob)
+        guard !records.isEmpty || !staleBlobIDs.isEmpty else { return }
         let saved = try await database.modifyRecords(saving: records, deleting: staleBlobIDs,
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
@@ -550,11 +557,12 @@ import Foundation
     /// in `publishGrant` — matches by `recordType` only, same as pre-A1,
     /// since a legacy zone holds at most one grant and "all" and "this
     /// grant's" are the same set there.
-    private func sharedFieldRecordIDs(grantId: String?, zoneID: CKRecordZone.ID) async throws -> [CKRecord.ID] {
+    private func sharedFieldRecordIDs(grantId: String?, zoneID: CKRecordZone.ID,
+                                      where include: (CKRecord) -> Bool = { _ in true }) async throws -> [CKRecord.ID] {
         var ids: [CKRecord.ID] = []
         // Stateless: cleanup must see the CURRENT record set every time.
         try await ZoneDeltaFetch.pull(database: database, zoneID: zoneID, cursor: nil) { record in
-            guard record.recordType == ApprovalConfig.sharedFieldRecordType else { return }
+            guard record.recordType == ApprovalConfig.sharedFieldRecordType, include(record) else { return }
             if let grantId {
                 guard let field = ApprovalRecordMapping.sharedField(from: record),
                       field.grantId == grantId else { return }
@@ -562,6 +570,14 @@ import Foundation
             ids.append(record.recordID)
         }
         return ids
+    }
+
+    /// Pure (unit-tested): a shared-field blob that carries an ITEM field's
+    /// value, the only kind `republishSharedValues` rewrites. Passkey
+    /// hand-over blobs share the record type under `passkey::` slot ids.
+    nonisolated static func isItemFieldBlob(_ record: CKRecord) -> Bool {
+        guard let field = ApprovalRecordMapping.sharedField(from: record) else { return false }
+        return !PasskeySlot.isPasskeySlot(field.fieldId)
     }
 
     // MARK: Family Space-share support (Project A, phase A3)

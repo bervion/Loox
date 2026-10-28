@@ -268,13 +268,12 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
                     try ApprovalRecipientService.pinOwnerKey(
                         firstGrant.ownerSigningPubKey, zoneID: zoneID)
                 }
-            } catch let error as CKError
-                where error.code == .zoneNotFound || error.code == .userDeletedZone {
+            } catch where !Self.keepsZoneItems(afterGrantFetchError: error) {
                 continue // Revoked/left — every item in this zone stops existing.
             } catch {
-                // Transient (offline, throttle) or not-yet-granted: keep
-                // every item this zone previously projected so the list
-                // doesn't flicker empty mid-refresh.
+                // Transient (offline, throttle): keep every item this zone
+                // previously projected so the list doesn't flicker empty
+                // mid-refresh.
                 for existing in items where existing.sharedOrigin?.zoneName == zoneID.zoneName
                     && existing.sharedOrigin?.ownerName == zoneID.ownerName {
                     built.append(existing)
@@ -355,6 +354,25 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
         persistSnapshot(vaultKey: vaultKey)
     }
 
+    /// Pure (unit-tested): whether a failed grant fetch for a zone keeps the
+    /// items that zone projected before. Only a transient failure does.
+    ///
+    /// A deleted zone and a zone that answered with no live grant are both
+    /// authoritative: nothing is shared there any more. The second one is the
+    /// per-item "Stop sharing" in a zone this device still lists (the owner
+    /// deletes the grant, display and field records but keeps the zone), and
+    /// an expired or unverifiable grant. Keeping those items kept their
+    /// delivered values on this device, including a code-only 2FA secret that
+    /// must leave when its grant does.
+    static func keepsZoneItems(afterGrantFetchError error: any Error) -> Bool {
+        if let error = error as? CKError,
+           error.code == .zoneNotFound || error.code == .userDeletedZone {
+            return false
+        }
+        if case ApprovalRecipientService.Failure.grantMissing = error { return false }
+        return true
+    }
+
     /// Flattened AutoFill cache entries for the CURRENT projection state.
     /// Zones with no recorded trust decision are withheld: anyone who knows
     /// your iCloud address can push a share at you, and QuickType offering an
@@ -409,13 +427,16 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
     }
 
     /// Flattens a projected item + its grant into the AutoFill cache shape.
-    private static func cacheEntry(item: VaultItem, grant: AccessGrant,
+    /// Internal (not private) so tests can pin what reaches the extension.
+    static func cacheEntry(item: VaultItem, grant: AccessGrant,
                                    passkeys: [SharedPasskeyEntry]?) -> SharedCredentialEntry? {
         // Tier-0 items must not leak title/username into the extension list.
         guard let origin = item.sharedOrigin, origin.deviceAuthorized else { return nil }
         let totpFieldId = grant.capabilities.first { $0.value.isAskEachTimeTOTP }?.key
         // Hand-over TOTP: the seed is an ordinary shared field value on the
         // projected item — surface it so the extension can generate codes.
+        // Exact match on purpose: a code-only (`alwaysShowCode`) seed never
+        // enters the AutoFill cache, so it lives in one less place to purge.
         let sharedTOTPSecret = grant.capabilities
             .first { $0.value == .totp(.shared) }
             .flatMap { pair in item.fields.first { $0.id == pair.key }?.value }
@@ -462,14 +483,23 @@ nonisolated struct SharedPasskeyDisplay: Identifiable, Sendable {
             // renders visible, password masked, AutoFill kinds correct);
             // unknown/missing meta fails CLOSED into a masked secret.
             let meta = display?.fields?[fieldId]
-            let kind = meta.flatMap { FieldKind(rawValue: $0.kind) } ?? .password
+            // A TOTP capability in the SIGNED grant names a 2FA secret, whatever
+            // the unsigned envelope says. It always projects as a protected
+            // `.totp` field: the row then shows only the live code (no Reveal),
+            // and the secret stays out of `searchText`. A missing or wrong kind
+            // would otherwise render the secret as a revealable password, and
+            // an owner who unprotected the field would make it searchable.
+            let isTOTPSecret: Bool
+            if case .totp? = grant.capabilities[fieldId] { isTOTPSecret = true } else { isTOTPSecret = false }
+            let kind = isTOTPSecret
+                ? .totp : meta.flatMap { FieldKind(rawValue: $0.kind) } ?? .password
             let label = meta?.label.isEmpty == false ? meta!.label : appString("Shared value")
             // Owner's masking policy survives projection. Pre-policy envelopes
             // (protected == nil) fall back to the kind's own default, which is
             // exactly how those grants rendered historically — and the unknown
             // -kind `.password` fallback above keeps that path masked.
             fields.append(DynamicField(id: fieldId, label: label, kind: kind, value: value,
-                                       protected: meta?.protected))
+                                       protected: isTOTPSecret ? true : meta?.protected))
         }
         // Detail-screen field order (dictionary order is random): identity
         // first, then secrets, extras, website last.

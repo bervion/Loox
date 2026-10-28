@@ -42,7 +42,7 @@ struct DetailFieldRow: View {
     }
 
     private var copyValue: String {
-        if field.kind == .totp { return TOTPGenerator.code(forStoredValue: field.value) ?? field.value }
+        if field.kind == .totp { return Self.totpCopyValue(storedValue: field.value, readOnly: readOnly) }
         // Defensive: storage is written digits-only by `CardNumberFieldEditor`, but a
         // legacy value (typed before this feature existed) could still hold spaces.
         if isCardNumber { return PaymentCard.digitsOnly(field.value) }
@@ -371,8 +371,18 @@ struct DetailFieldRow: View {
         }
     }
 
+    /// Pure (unit-tested): what Copy and Large Type carry for a 2FA field.
+    /// Normally the current code. When no code can be made, the owner's own
+    /// item falls back to the stored value, so a malformed secret can still
+    /// be copied out to fix it. A read-only row (a share) gets nothing: there
+    /// the stored value is the owner's secret, which a code-only share must
+    /// never let out of Loox.
+    nonisolated static func totpCopyValue(storedValue: String, readOnly: Bool) -> String {
+        TOTPGenerator.code(forStoredValue: storedValue) ?? (readOnly ? "" : storedValue)
+    }
+
     private func copy() {
-        guard !copied, !field.value.isEmpty else { return }
+        guard !copied, !field.value.isEmpty, !copyValue.isEmpty else { return }
         authorizeThen {
             env.clipboard.copy(copyValue, label: field.label, sensitive: isSecret || field.kind == .totp)
             onUsed()

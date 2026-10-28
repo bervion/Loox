@@ -172,6 +172,16 @@ final class ApprovalKernelTests: XCTestCase {
                                                        nowUnixMs: nowMs, nonceStore: store)
         XCTAssertEqual(failure, .capabilityNotGranted)
 
+        // Neither can a code-only TOTP field: the recipient makes its own codes.
+        let codeOnly = try makeGrant(owner: owner, requesterKey: requester.publicKeyRaw,
+                                     participant: .generate(),
+                                     capabilities: ["totp-1": .totp(.alwaysShowCode)])
+        failure = await ApprovalVerifier.verifyRequest(request, grant: codeOnly,
+                                                         trustedOwnerSigningKeys: [owner.publicKeyRaw],
+                                                         currentEpoch: 1,
+                                                       nowUnixMs: nowMs, nonceStore: store)
+        XCTAssertEqual(failure, .capabilityNotGranted)
+
         // Nonce authority unreachable → fail closed, not approve.
         store.failNext = true
         failure = await ApprovalVerifier.verifyRequest(request, grant: grant,
