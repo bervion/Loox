@@ -177,6 +177,32 @@ final class LooxComplimentaryEntitlementTests: XCTestCase {
         XCTAssertEqual(store.tier, .free)
     }
 
+    // MARK: Paid tier refresh (owner report 261028: Max read back as Loox+)
+
+    func testGroupStatusGrantsOnlyWhileSubscribedOrInGrace() {
+        XCTAssertTrue(LooxEntitlementStore.statusGrantsAccess(.subscribed))
+        XCTAssertTrue(LooxEntitlementStore.statusGrantsAccess(.inGracePeriod))
+        XCTAssertFalse(LooxEntitlementStore.statusGrantsAccess(.inBillingRetryPeriod))
+        XCTAssertFalse(LooxEntitlementStore.statusGrantsAccess(.expired))
+        XCTAssertFalse(LooxEntitlementStore.statusGrantsAccess(.revoked))
+    }
+
+    func testMaxFromEitherSourceWinsOverAStalePlus() {
+        // An upgraded Plus transaction can still sit in currentEntitlements
+        // while the group status already reports Max.
+        XCTAssertEqual(LooxProductID.resolveTier(from: [LooxProductID.plusMonthly, LooxProductID.maxAnnual]), .max)
+    }
+
+    func testForegroundRefreshIsANoOpBeforeStart() {
+        // Isolated stores never start, so the foreground hook must not reach
+        // StoreKit or move the tier.
+        let store = makeStore(.inMemory(start: anchor))
+        store.resolveComplimentary(now: date(days: 1))
+        store.refreshOnForeground()
+        XCTAssertEqual(store.storeTier, .free)
+        XCTAssertEqual(store.tier, .plus)
+    }
+
     func testTierInputsChangedFiresOnlyOnChange() {
         let store = makeStore(.inMemory(start: anchor))
         var fired = 0
