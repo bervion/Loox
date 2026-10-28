@@ -72,6 +72,8 @@ kits
 # Design reference uploads (third-party screenshots, not tracked)
 /App Store Screenshots/uploads/
 /App Store Screenshots/.thumbnail
+# Upload-ready renders: regenerate with App Store Screenshots/tools/render-deck.py
+/App Store Screenshots/export/
 /Design System/uploads/
 
 # Compiled Python caches from the local quality tooling.
