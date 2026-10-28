@@ -28405,6 +28405,22 @@
         }
       }
     },
+    "Their approved device changed. Open the share and apply it again." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "承認済みのデバイスが変わりました。共有を開いて、もう一度適用してください。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị đã được duyệt của họ đã thay đổi. Hãy mở mục chia sẻ và áp dụng lại."
+          }
+        }
+      }
+    },
     "Their device has not finished setting up yet." : {
       "localizations" : {
         "ja" : {

@@ -1,5 +1,4 @@
 import CloudKit
-import CryptoKit
 import Foundation
 
 /// Owner-side (A) transport for Approval Mode: per-recipient opaque zone +
@@ -18,6 +17,11 @@ import Foundation
         /// per-device key directory (pre-P03a app) — sealing to the legacy
         /// synced key would silently void the single-device promise (INV-04).
         case recipientNeedsUpdate
+        /// A single-device grant's approved device is gone from the
+        /// recipient's directory, or its key changed. Nothing can be sealed
+        /// to it until the owner shares again (a fresh publish binds the
+        /// current device).
+        case approvedDeviceUnavailable
 
         var errorDescription: String? {
             switch self {
@@ -33,8 +37,18 @@ import Foundation
                 return appString("The request couldn't be verified.")
             case .recipientNeedsUpdate:
                 return appString("Single-device sharing needs the recipient to update Loox first.")
+            case .approvedDeviceUnavailable:
+                return appString("Their approved device changed. Open the share and apply it again.")
             }
         }
+    }
+
+    /// The owner's passkeys (the unlocked repository's list). The item-edit
+    /// republish rebuilds the envelope's passkey metadata from it.
+    private let ownerPasskeys: @MainActor () -> [PasskeyInfo]
+
+    init(ownerPasskeys: @escaping @MainActor () -> [PasskeyInfo]) {
+        self.ownerPasskeys = ownerPasskeys
     }
 
     private lazy var container = CKContainer(identifier: ApprovalConfig.containerID)
@@ -221,10 +235,7 @@ import Foundation
         if deviceScope == .single {
             guard !allowedDevices.isEmpty else { throw Failure.recipientNeedsUpdate }
         }
-        let bindings = allowedDevices.map {
-            DeviceKeyBinding(deviceKeyID: $0.deviceKeyID,
-                             hpkePublicKeyHash: Data(SHA256.hash(data: $0.hpkePublicKey)))
-        }
+        let bindings = allowedDevices.map(\.binding)
         var grant = AccessGrant(
             id: ApprovalConfig.opaqueName(), itemId: itemId,
             recipientId: ApprovalConfig.opaqueName(),
@@ -236,6 +247,12 @@ import Foundation
             deviceScope: deviceScope,
             allowedDeviceKeyBindings: deviceScope == .single ? bindings : [])
         grant.ownerSignature = try identity.signature(for: grant.signingBody())
+        // The bindings above come from `allowedDevices`, so every one of them
+        // resolves; the guard only keeps a single-device grant from ever
+        // falling back to the participant key.
+        guard let target = GrantSealTarget.resolve(grant: grant, directory: allowedDevices) else {
+            throw Failure.recipientNeedsUpdate
+        }
 
         var records: [CKRecord] = [ApprovalRecordMapping.grantRecord(grant, zoneID: zoneID)]
         // Presentation metadata rides in its OWN encrypted envelope — never
@@ -247,41 +264,14 @@ import Foundation
                                             fields: displayFields)
         display.category = displayCategory
         display.passkeys = displayPasskeys.isEmpty ? nil : displayPasskeys
-        if grant.allowedDeviceKeyBindings.isEmpty {
-            records.append(ApprovalRecordMapping.displayEnvelopeRecord(
-                sealedBlob: try display.sealed(toParticipantPubKey: participantPubKey,
-                                               grantId: grant.id),
-                grantId: grant.id, zoneID: zoneID))
-        } else {
-            var envelopes: [String: Data] = [:]
-            for device in allowedDevices {
-                envelopes[device.deviceKeyID.hexString] = try display.sealedForDevice(
-                    toDevicePubKey: device.hpkePublicKey,
-                    deviceKeyID: device.deviceKeyID, grantId: grant.id)
-            }
-            records.append(ApprovalRecordMapping.displayEnvelopeRecord(
-                sealedBlob: try PerDeviceSealedBlob(envelopes: envelopes).encoded(),
-                grantId: grant.id, zoneID: zoneID))
-        }
+        records.append(ApprovalRecordMapping.displayEnvelopeRecord(
+            sealedBlob: try target.sealDisplay(display, grantId: grant.id),
+            grantId: grant.id, zoneID: zoneID))
         for (fieldId, plaintext) in sharedValues {
             guard capabilities[fieldId]?.isSharedValue == true else { continue }
-            let sealed: Data
-            if grant.allowedDeviceKeyBindings.isEmpty {
-                sealed = try ApprovalSeal.sealSharedField(plaintext,
-                                                          toParticipantPubKey: participantPubKey,
-                                                          grantId: grant.id, fieldId: fieldId)
-            } else {
-                var envelopes: [String: Data] = [:]
-                for device in allowedDevices {
-                    envelopes[device.deviceKeyID.hexString] = try ApprovalSeal.sealSharedFieldForDevice(
-                        plaintext, toDevicePubKey: device.hpkePublicKey,
-                        deviceKeyID: device.deviceKeyID,
-                        grantId: grant.id, fieldId: fieldId)
-                }
-                sealed = try PerDeviceSealedBlob(envelopes: envelopes).encoded()
-            }
             records.append(ApprovalRecordMapping.sharedFieldRecord(
-                sealedBlob: sealed, grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
+                sealedBlob: try target.sealField(plaintext, grantId: grant.id, fieldId: fieldId),
+                grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
         }
         // Flag OFF (default, legacy): a zone holds at most ONE grant, so
         // clean-replacing EVERY `ApprovalSharedField` blob in the zone is
@@ -317,42 +307,76 @@ import Foundation
     /// display envelope with a bumped revision — presentation metadata has
     /// its own lifecycle, the signed grant is untouched (U2). Revision is
     /// second-granular monotonic so recipients drop out-of-order updates.
+    /// Sealed the way `publishGrant` sealed the grant (per device for a
+    /// single-device share), and it keeps the grant's passkeys: the reseal
+    /// REPLACES the envelope, so leaving them out hid every shared passkey.
     func republishDisplayEnvelope(itemId: String, title: String, websiteHost: String?,
                                   displayFields: [String: SharedDisplayEnvelope.FieldMeta],
                                   zoneID: CKRecordZone.ID, nowUnixMs: Int64,
                                   displayCategory: String? = nil) async throws {
+        // Read before the first await: an auto-lock while the grant fetch is
+        // in flight clears the repository and would fail a valid save.
+        let passkeys = ownerPasskeys()
         let grant = try await fetchGrantFresh(zoneID: zoneID, forItemId: itemId,
                                               nowUnixMs: nowUnixMs)
-        var display = SharedDisplayEnvelope(title: title, websiteHost: websiteHost,
-                                            updatedAtUnixMs: nowUnixMs,
-                                            revision: UInt32(clamping: nowUnixMs / 1000),
-                                            fields: displayFields)
-        display.category = displayCategory
+        guard let display = Self.republishedDisplayEnvelope(
+            grant: grant, title: title, websiteHost: websiteHost,
+            displayFields: displayFields, category: displayCategory,
+            ownerPasskeys: passkeys, nowUnixMs: nowUnixMs) else {
+            // The editor swallows this, and the share then reads as unsent.
+            // Applying the share again from its details drops a deleted passkey.
+            ShareDiagnostics.log("OWNER", "republishDisplayEnvelope: a granted passkey is missing")
+            throw SharedGrantComposer.ComposeError.passkeyMaterialUnavailable
+        }
+        let target = try await sealTarget(for: grant, zoneID: zoneID)
         let record = ApprovalRecordMapping.displayEnvelopeRecord(
-            sealedBlob: try display.sealed(toParticipantPubKey: grant.participantPubKey,
-                                           grantId: grant.id),
+            sealedBlob: try target.sealDisplay(display, grantId: grant.id),
             grantId: grant.id, zoneID: zoneID)
         let saved = try await database.modifyRecords(saving: [record], deleting: [],
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
     }
 
+    /// Pure (unit-tested): the display envelope an item-edit republish seals
+    /// for `grant`, with the same contents `SharedGrantComposer.publish`
+    /// writes. Field metadata covers only what the grant grants (the editor
+    /// hands over every shareable field), and passkey metadata covers every
+    /// granted slot. nil when a granted passkey is missing from
+    /// `ownerPasskeys`: the caller then keeps the envelope already published.
+    nonisolated static func republishedDisplayEnvelope(
+        grant: AccessGrant, title: String, websiteHost: String?,
+        displayFields: [String: SharedDisplayEnvelope.FieldMeta], category: String?,
+        ownerPasskeys: [PasskeyInfo], nowUnixMs: Int64
+    ) -> SharedDisplayEnvelope? {
+        guard let passkeys = SharedGrantComposer.displayPasskeys(
+            capabilities: grant.capabilities, passkeys: ownerPasskeys) else { return nil }
+        var display = SharedDisplayEnvelope(
+            title: title, websiteHost: websiteHost, updatedAtUnixMs: nowUnixMs,
+            revision: UInt32(clamping: nowUnixMs / 1000),
+            fields: displayFields.filter {
+                SharedGrantComposer.carriesDisplayMeta(grant.capabilities[$0.key])
+            })
+        display.category = category
+        display.passkeys = passkeys.isEmpty ? nil : passkeys
+        return display
+    }
+
     /// Owner edited the item: re-seal the CURRENT values of every `shared`
     /// field so the recipient's projection follows edits near-realtime (the
     /// shared-db silent push triggers their refresh). Authorization is
-    /// untouched — same grant, same capabilities, fresh ciphertext.
+    /// untouched — same grant, same capabilities, fresh ciphertext, sealed
+    /// per device for a single-device share like `publishGrant` does.
     func republishSharedValues(itemId: String, values: [String: Data],
                                zoneID: CKRecordZone.ID, nowUnixMs: Int64) async throws {
         let grant = try await fetchGrantFresh(zoneID: zoneID, forItemId: itemId,
                                               nowUnixMs: nowUnixMs)
+        let target = try await sealTarget(for: grant, zoneID: zoneID)
         var records: [CKRecord] = []
         for (fieldId, plaintext) in values
         where grant.capabilities[fieldId]?.isSharedValue == true {
-            let sealed = try ApprovalSeal.sealSharedField(
-                plaintext, toParticipantPubKey: grant.participantPubKey,
-                grantId: grant.id, fieldId: fieldId)
             records.append(ApprovalRecordMapping.sharedFieldRecord(
-                sealedBlob: sealed, grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
+                sealedBlob: try target.sealField(plaintext, grantId: grant.id, fieldId: fieldId),
+                grantId: grant.id, fieldId: fieldId, zoneID: zoneID))
         }
         // Old blobs are superseded ciphertext for THIS grant — replace
         // atomically, scoped to `grant.id` so a sibling grant's fields in
@@ -370,6 +394,19 @@ import Foundation
         let saved = try await database.modifyRecords(saving: records, deleting: staleBlobIDs,
                                                      savePolicy: .allKeys)
         for (_, result) in saved.saveResults { _ = try result.get() }
+    }
+
+    /// Where a LIVE grant's republished ciphertext goes: the participant key,
+    /// or the recipient's CURRENT device directory narrowed to the grant's
+    /// signed bindings. Only a single-device grant pays for the profile fetch.
+    private func sealTarget(for grant: AccessGrant,
+                            zoneID: CKRecordZone.ID) async throws -> GrantSealTarget {
+        let directory = grant.allowedDeviceKeyBindings.isEmpty ? []
+            : try await fetchParticipantProfile(zoneID: zoneID).deviceHPKEDirectory
+        guard let target = GrantSealTarget.resolve(grant: grant, directory: directory) else {
+            throw Failure.approvedDeviceUnavailable
+        }
+        return target
     }
 
     // MARK: Inbound requests
