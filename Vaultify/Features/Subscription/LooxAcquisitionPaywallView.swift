@@ -403,8 +403,14 @@ struct LooxAcquisitionPaywallView: View {
         }
     }
 
+    /// Formatted like `displayPrice` (system locale first, which is what
+    /// StoreKit uses for it), never in a second currency format on one card.
     private func perMonthDisplay(_ product: Product) -> String {
-        LooxPriceMath.perMonth(annual: product.price).formatted(product.priceFormatStyle)
+        let style = product.priceFormatStyle
+        let candidates = [style.locale(.autoupdatingCurrent), style, style.locale(appResourceLocale)]
+        let matching = LooxPriceMath.currencyStyle(reproducing: product.displayPrice,
+                                                   price: product.price, from: candidates)
+        return LooxPriceMath.perMonth(annual: product.price).formatted(matching ?? candidates[0])
     }
 
     private func disclosureText(_ product: Product) -> String {

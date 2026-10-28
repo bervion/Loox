@@ -19,6 +19,23 @@ nonisolated enum LooxPriceMath {
         annual / 12
     }
 
+    /// The first candidate style that formats `price` exactly as StoreKit's
+    /// `displayPrice`, so a derived figure (the per-month equivalent) reads in
+    /// the same format as the charged price above it. `Product.priceFormatStyle`
+    /// can carry another locale than the one StoreKit used for `displayPrice`
+    /// (seen on device: "34,99 US$" above "about 2.92 $ a month"). Spaces are
+    /// compared loosely: formatters differ in which no-break space they emit.
+    static func currencyStyle(reproducing displayPrice: String, price: Decimal,
+                              from candidates: [Decimal.FormatStyle.Currency]) -> Decimal.FormatStyle.Currency? {
+        let target = loosenedSpaces(displayPrice)
+        return candidates.first { loosenedSpaces(price.formatted($0)) == target }
+    }
+
+    private static func loosenedSpaces(_ text: String) -> String {
+        text.replacingOccurrences(of: "\u{00A0}", with: " ")
+            .replacingOccurrences(of: "\u{202F}", with: " ")
+    }
+
     /// Thresholds: "cheaper" needs a real margin (≤ 95% of the monthly price);
     /// "approximately equal" tolerates rounding up to +2%. Anything above
     /// renders no claim at all.
