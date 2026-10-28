@@ -1,12 +1,11 @@
 import SwiftUI
 
 /// One field row in the share-config sheet: kind icon + label + a
-/// kind-constrained capability SWITCH (V1.2 decision V6: both capability
-/// kinds are binary, so a Toggle — popups are reserved for genuinely
-/// multi-option controls). The mapping can only ever produce what the type
-/// system allows (user-locked decision 2): TOTP → none/askEachTime; value
-/// fields → none/shared. Extra-protected (Level-2) and attachment fields
-/// render disabled — they are not shareable.
+/// kind-constrained capability control. Value fields are binary, so a Toggle
+/// (V1.2 decision V6); TOTP has four modes, so a menu (off, ask each time,
+/// always show code, hand over). The mapping can only ever produce what the
+/// type system allows (user-locked decision 2). Extra-protected (Level-2) and
+/// attachment fields render disabled — they are not shareable.
 struct FieldCapabilityRow: View {
     let field: DynamicField
     /// The owning item, when the sheet has it — enables full resolver policy
@@ -33,6 +32,24 @@ struct FieldCapabilityRow: View {
     }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            controlRow
+            if shareable, capability == .totp(.alwaysShowCode) {
+                // The mode's whole promise, full width under the row (beside
+                // the menu it would wrap into a sliver): what they see, what
+                // stays hidden, when it leaves their device, and the version it
+                // needs (older apps fail closed on the new mode).
+                Text("They see the current code at any time. Loox never shows them the secret, and removes it from their device when you change this option or stop sharing. They need the latest version of Loox.")
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, Metric.iconInline + Space.s3)
+            }
+        }
+        .opacity(shareable ? 1 : 0.5)
+    }
+
+    private var controlRow: some View {
         HStack(spacing: Space.s3) {
             VaultIcon(field.kind.iconAsset, size: Metric.iconInline)
                 .themedForeground(.iconSecondary)
@@ -56,11 +73,12 @@ struct FieldCapabilityRow: View {
             Spacer()
             if shareable {
                 if isTOTP {
-                    // Three modes need a real menu (V6's "binary → Toggle"
+                    // Several modes need a real menu (V6's "binary → Toggle"
                     // rule no longer applies to TOTP since seed hand-over).
                     Menu {
                         Button { onSelect(.totp(.none)) } label: { Text("Off") }
                         Button { onSelect(.totp(.askEachTime)) } label: { Text("Ask each time") }
+                        Button { onSelect(.totp(.alwaysShowCode)) } label: { Text("Always show code") }
                         Button { onSelect(.totp(.shared)) } label: {
                             Label { Text("Hand over secret…") } icon: { VaultIcon(Icons.alert) }
                         }
@@ -78,7 +96,6 @@ struct FieldCapabilityRow: View {
             }
         }
         .frame(minHeight: Metric.hitMin)
-        .opacity(shareable ? 1 : 0.5)
     }
 
     private var notShareableReason: LocalizedStringKey {
@@ -95,6 +112,7 @@ struct FieldCapabilityRow: View {
     private var totpModeTitle: LocalizedStringKey {
         switch capability {
         case .totp(.askEachTime): "Ask each time"
+        case .totp(.alwaysShowCode): "Always show code"
         case .totp(.shared): "Secret handed over"
         default: "Off"
         }

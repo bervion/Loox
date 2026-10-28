@@ -93,13 +93,29 @@ import Foundation
                 await env.sharedItems.refresh(vaultKey: key)
             }
         case .unavailable:
-            // Live fetch SUCCEEDED but id/epoch drifted → our projection is
-            // stale; refresh so the next gate pass verifies the new grant.
-            if case .success = live, let key = env.session.vaultKey?.bytes {
+            // Live fetch SUCCEEDED but id/epoch drifted, or the zone answered
+            // without our grant (the owner changed the share, which mints a
+            // new grant, or stopped sharing this one item): our projection is
+            // stale. Refresh so the next gate pass verifies the new grant, and
+            // so values the grant no longer carries (a code-only 2FA secret)
+            // leave this device now rather than on some later refresh.
+            if Self.projectionIsStale(live), let key = env.session.vaultKey?.bytes {
                 await env.sharedItems.refresh(vaultKey: key)
             }
         default:
             break
+        }
+    }
+
+    /// Pure (unit-tested): an unavailable outcome whose cause says the
+    /// projection itself is out of date, not that the check could not run.
+    static func projectionIsStale(
+        _ live: Result<(id: String, epoch: UInt32), any Error>) -> Bool {
+        switch live {
+        case .success: return true
+        case .failure(let error):
+            if case ApprovalRecipientService.Failure.grantMissing = error { return true }
+            return false
         }
     }
 

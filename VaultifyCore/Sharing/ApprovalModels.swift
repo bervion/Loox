@@ -10,14 +10,24 @@ import Foundation
 
 // MARK: - Capabilities (per-field, type-constrained)
 
-/// TOTP fields: `none`, `askEachTime`, or `shared` (seed hand-over).
+/// TOTP fields: `none`, `askEachTime`, `shared` (seed hand-over), or
+/// `alwaysShowCode`.
 /// `shared` is a CONSCIOUS reversal of ADR-1 (user decision 260705): it is
 /// only offered behind an explicit warning modal, encodes as wire v2, and a
 /// delivered seed is not cryptographically revocable (INV-08).
+/// `alwaysShowCode` (owner decision 261028) ships the seed the same sealed way
+/// so the recipient's device makes the live code itself, with no request to
+/// approve, but the recipient app never displays, copies, exports or caches it
+/// for AutoFill, and drops it on the next sync once the grant stops carrying
+/// this mode (mode change or revoke). Like every shared value, the code shows
+/// only behind the online grant check (`SharedAccessAuthorizer`). The seed IS on their device: this is a UI and lifecycle promise,
+/// not a cryptographic one, so a compromised device can still extract it.
+/// Encodes as wire v2; older apps fail closed on the unknown raw value.
 nonisolated enum TOTPFieldCapability: UInt8, Codable, Sendable {
     case none = 0
     case askEachTime = 1
     case shared = 2
+    case alwaysShowCode = 3
 }
 
 /// Passkey slots (wire v2 only): `askEachTime` = the owner signs the
@@ -50,10 +60,11 @@ nonisolated enum FieldCapability: Codable, Sendable, Equatable {
     }
 
     /// Capabilities whose plaintext ships in a sealed shared blob: classic
-    /// shared values AND the v2 hand-over modes (TOTP seed, passkey key).
+    /// shared values, the v2 hand-over modes (TOTP seed, passkey key) and the
+    /// code-only TOTP mode (the seed rides sealed; the recipient UI hides it).
     var isSharedValue: Bool {
         switch self {
-        case .value(.shared), .totp(.shared), .passkey(.shared): return true
+        case .value(.shared), .totp(.shared), .totp(.alwaysShowCode), .passkey(.shared): return true
         default: return false
         }
     }
@@ -82,7 +93,7 @@ nonisolated enum FieldCapability: Codable, Sendable, Equatable {
     var requiresWireV2: Bool {
         switch self {
         case .passkey: return true
-        case .totp(.shared): return true
+        case .totp(.shared), .totp(.alwaysShowCode): return true
         default: return false
         }
     }

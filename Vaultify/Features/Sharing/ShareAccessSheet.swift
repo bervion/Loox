@@ -616,7 +616,7 @@ struct ShareAccessSheet: View {
                 } header: {
                     Text("What they can use")
                 } footer: {
-                    Text("Shared values are visible to them and can't be taken back later. \"Ask each time\" codes need your approval for every use. The secret never leaves your vault.")
+                    Text("Shared values are visible to them and can't be taken back later. With \"Ask each time\", every code needs your approval and the secret never leaves your vault.")
                 }
                 .listRowBackground(VaultColors.surface)
 
