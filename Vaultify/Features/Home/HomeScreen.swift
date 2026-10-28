@@ -279,11 +279,11 @@ struct HomeScreen: View {
             }
             // New items inherit the Space currently selected on Home (nil = All Spaces →
             // editor falls back to the primary Space).
-            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
+            .platformEditorCover(item: $editorTarget) { ItemEditorScreen(target: $0, preselectedFolderId: selectedFolderId) }
             // Anchored at the stable root, NOT inside attentionSection: fixing the
             // password drops that row (and can empty the whole section) mid-dismiss,
             // which would strand the sheet binding.
-            .sheet(item: $passwordUpdateTarget) {
+            .platformEditorCover(item: $passwordUpdateTarget) {
                 ItemEditorScreen(target: .edit($0),
                                  preselectedFolderId: selectedFolderId,
                                  autoOpenPasswordGenerator: true)

@@ -3,7 +3,8 @@ import SwiftUI
 import Foundation
 
 /// Create or edit an item: title + dynamic fields (add/remove/reorder, change
-/// kind, toggle protection, generate passwords). Presented as a sheet.
+/// kind, toggle protection, generate passwords). Presented full screen on
+/// iPhone and as a sheet on iPad and Mac (`platformEditorCover`).
 struct ItemEditorScreen: View {
     let target: EditorTarget
     /// Space to preselect for a new item (the caller's current Space context, e.g. the
@@ -370,12 +371,20 @@ struct ItemEditorScreen: View {
                 }
             }
             .interactiveDismissDisabled(hasChanges)
-            .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+            // The system alert, centred, with a way back. It replaced an action
+            // sheet that iOS 26 anchors to the X as a small popover, easy to read
+            // past. Attached to the Form, not the toolbar button, so it outlives
+            // whatever raised it (see `InlineConfirm`).
+            .alert("Discard changes?", isPresented: $confirmDiscard) {
                 Button("Discard", role: .destructive) {
+                    Haptics.error()
                     userClosedEditor = true
                     discardStagedAttachments()
                     dismiss()
                 }
+                Button("Keep editing", role: .cancel) {}
+            } message: {
+                Text("Your changes will not be saved.")
             }
             // Dismissible on purpose: declining leaves the protected fields
             // locked and the rest of the item fully editable.

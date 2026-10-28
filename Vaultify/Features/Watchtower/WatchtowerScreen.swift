@@ -164,7 +164,7 @@ struct WatchtowerScreen: View {
                              fallback: Color(rgb: env.theme.active.groupedBackground))
             .platformHiddenNavigationBar()
             .sheet(item: $paywallContext) { context in NavigationStack { LooxPaywallScreen(context: context) } }
-            .sheet(item: $editorTarget) { ItemEditorScreen(target: $0) }
+            .platformEditorCover(item: $editorTarget) { ItemEditorScreen(target: $0) }
             .sheet(isPresented: $showItemTypePicker, onDismiss: {
                 if let target = pendingNewTarget {
                     pendingNewTarget = nil

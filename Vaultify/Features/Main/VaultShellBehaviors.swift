@@ -52,7 +52,7 @@ struct VaultShellBehaviors: ViewModifier {
             // request outlives a shell teardown (it lives on `env`), so both sheets would
             // otherwise fire at once — one pristine, one with the user's typed values —
             // and SwiftUI would drop whichever lost the race.
-            .sheet(item: Binding(get: { pendingTOTPImportUnlessHandedBack },
+            .platformEditorCover(item: Binding(get: { pendingTOTPImportUnlessHandedBack },
                                  set: { env.pendingTOTPImport = $0 })) { item in
                 ItemEditorScreen(target: .draft(item))
             }
@@ -70,7 +70,7 @@ struct VaultShellBehaviors: ViewModifier {
             // previous launch, or handed back when a size-class flip tore this shell
             // down mid-edit. Both shells apply this modifier, so the draft lands in
             // whichever layout comes up next.
-            .sheet(item: $uiState.restoredDraft) { draft in
+            .platformEditorCover(item: $uiState.restoredDraft) { draft in
                 ItemEditorScreen(target: .restored(draft))
             }
             // Quick actions the SHELL owns (see `UIStateStore.QuickSheet`), so a

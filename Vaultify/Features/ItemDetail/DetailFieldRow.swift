@@ -95,7 +95,7 @@ struct DetailFieldRow: View {
                 // forwards-to destination shown on this line. Transparent (not
                 // removed) during the flash so the row height never jumps.
                 if let match {
-                    PrivateEmailForwardsToLine(match: match, showsStatusText: false)
+                    PrivateEmailForwardsToLine(match: match)
                         .opacity(copied ? 0 : 1)
                 }
             }

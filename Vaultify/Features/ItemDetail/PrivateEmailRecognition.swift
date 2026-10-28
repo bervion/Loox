@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Resolves whether a login field's value is one of the ACTIVE persona's email
 /// aliases, and if so its forwarding destination + verification state. The
-/// single recognition point for the "PRIVATE" convention (badge + mono +
-/// forwards-to line) shared by Item Detail and the Editor. Persona-scoped
+/// single recognition point for the private-email treatment shared by Item
+/// Detail (badge + forwards-to line) and the Editor (status dot). Persona-scoped
 /// (INV-R03): only ever looks at the active persona's own aliases. NOT
 /// `nonisolated` — `VaultRepository` is MainActor-isolated (project default),
 /// and this resolver only ever runs synchronously from SwiftUI view bodies.
@@ -27,6 +27,25 @@ struct PrivateEmailMatch: Equatable {
             repository.forwardingInboxes.first { $0.email.caseInsensitiveCompare(dest) == .orderedSame }
         }?.verificationStatus == .verified
         return PrivateEmailMatch(alias: alias, destination: destination, verified: verified)
+    }
+
+    /// The alias's forwarding state as a dot colour. Green only while it
+    /// forwards to a verified inbox, so a paused alias never reads as live.
+    var statusRole: ThemeRole {
+        switch alias.status {
+        case .active: return verified ? .success : .warning
+        case .paused, .disabled: return .warning
+        case .draft, .reserved: return .secondary
+        }
+    }
+
+    /// `statusRole` in words: what VoiceOver reads for the status dot.
+    var statusLabel: String {
+        switch alias.status {
+        case .active: return verified ? appString("Active") : appString("Pending verification")
+        case .paused, .disabled: return appString("Paused")
+        case .draft, .reserved: return appString("Not yet active")
+        }
     }
 }
 
@@ -52,17 +71,12 @@ struct PrivateEmailBadge: View {
     }
 }
 
-/// "FORWARDS TO {real email}" secondary line with a status dot. Paused/draft
-/// states render a muted dot (the live "Active" + verified-green case is the
-/// only one the mockup drew; this generalizes it to every alias status so a
-/// paused alias never renders as if it were still forwarding).
+/// Item Detail's "FORWARDS TO {real email}" secondary line with a status dot.
+/// Paused/draft states render a muted dot (`PrivateEmailMatch.statusRole`), so
+/// a paused alias never renders as if it were still forwarding.
 struct PrivateEmailForwardsToLine: View {
     let match: PrivateEmailMatch
     var onAccentBackground = false
-    /// Detail keeps the line minimal (dot only — the dot color already carries
-    /// the state); the editor spells the status out since that's where the
-    /// user manages the alias.
-    var showsStatusText = true
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
@@ -82,30 +96,12 @@ struct PrivateEmailForwardsToLine: View {
                     .lineLimit(1).truncationMode(.tail)
                     .layoutPriority(-1)
             }
-            Circle().fill(dotColor(theme)).frame(width: 6, height: 6)
-                .accessibilityLabel(Text(verbatim: statusText))
-            if showsStatusText {
-                Text(statusText).vaultType(.caption)
-                    .lineLimit(1).fixedSize()
-            }
+            // Not `StatusDot`: that one is hidden from VoiceOver, and here the
+            // dot is the only place the state is said.
+            Circle().fill(theme.color(match.statusRole)).frame(width: 6, height: 6)
+                .accessibilityLabel(Text(verbatim: match.statusLabel))
             Spacer(minLength: 0)
         }
         .foregroundStyle(onAccentBackground ? theme.color(.onAccent).opacity(0.85) : theme.color(.secondary))
-    }
-
-    private var statusText: String {
-        switch match.alias.status {
-        case .active:   return match.verified ? appString("Active") : appString("Pending verification")
-        case .paused, .disabled: return appString("Paused")
-        case .draft, .reserved:  return appString("Not yet active")
-        }
-    }
-
-    private func dotColor(_ theme: AppTheme) -> Color {
-        switch match.alias.status {
-        case .active: return match.verified ? theme.color(.success) : theme.color(.warning)
-        case .paused, .disabled: return theme.color(.warning)
-        case .draft, .reserved: return theme.color(.secondary)
-        }
     }
 }

@@ -18,14 +18,25 @@ enum VaultStatusKind {
 
 /// Small colored dot conveying a `VaultStatusKind` next to a row title.
 struct StatusDot: View {
-    let kind: VaultStatusKind
+    let role: ThemeRole
     var size: CGFloat = 8
+
+    init(kind: VaultStatusKind, size: CGFloat = 8) {
+        self.init(role: kind.role, size: size)
+    }
+
+    /// A state scale of its own (a private email alias reads "not yet live"
+    /// as `secondary`, not `disabled`).
+    init(role: ThemeRole, size: CGFloat = 8) {
+        self.role = role
+        self.size = size
+    }
 
     @Environment(AppEnvironment.self) private var env
 
     var body: some View {
         Circle()
-            .fill(env.theme.active.color(kind.role))
+            .fill(env.theme.active.color(role))
             .frame(width: size, height: size)
             .accessibilityHidden(true)
     }
