@@ -190,6 +190,9 @@ struct RootView: View {
             // Day 750 may have passed while backgrounded, or a locked launch
             // could not read the grant. Outside the unlocked block on purpose.
             env.entitlements.resolveComplimentary()
+            // Same for the paid tier: a launch read may have missed the
+            // subscription (local StoreKit state, no network needed).
+            env.entitlements.refreshOnForeground()
             // Belt to the window observer's braces: whatever attached or
             // changed while inactive, the forced appearance is consistent the
             // moment the app is frontmost again.

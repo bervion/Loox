@@ -247,9 +247,22 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
         }
     }
 
-    /// Recompute the tier from the verified current entitlements (highest wins,
-    /// `LooxProductID.resolveTier`). Unverified results and revoked
-    /// transactions never grant anything.
+    /// Re-read StoreKit when the app comes back to the foreground. A launch
+    /// read can come back without a live subscription (the process may start
+    /// before the user opens it), and nothing else would correct it until a
+    /// transaction update arrives: a Max subscriber then rendered as the
+    /// complimentary Loox+ on every relaunch (owner report 261028). No-op until
+    /// `start()` ran, so isolated tests never touch StoreKit.
+    func refreshOnForeground() {
+        guard updatesTask != nil else { return }
+        Task { await refresh() }
+    }
+
+    /// Recompute the tier from two verified sources (highest wins,
+    /// `LooxProductID.resolveTier`): `Transaction.currentEntitlements`, and
+    /// the subscription group's renewal status, which reports the group's
+    /// latest transaction (the Max one after an upgrade) with its live state.
+    /// Unverified results and revoked transactions never grant anything.
     private func refresh() async {
         var productIDs: [String] = []
         for await result in Transaction.currentEntitlements {
@@ -257,8 +270,10 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
                   transaction.revocationDate == nil else { continue }
             productIDs.append(transaction.productID)
         }
+        let entitlementCount = productIDs.count
+        productIDs += await Self.groupStatusProductIDs()
         let resolved = LooxProductID.resolveTier(from: productIDs)
-        subscriptionLog.log("refresh: \(productIDs.count, privacy: .public) entitlements → \(String(describing: resolved), privacy: .public)")
+        subscriptionLog.log("refresh: \(entitlementCount, privacy: .public) entitlements, \(productIDs.count - entitlementCount, privacy: .public) group status → \(String(describing: resolved), privacy: .public)")
         // A just-purchased transaction can trail `currentEntitlements` for a
         // beat (sandbox especially) — an empty read must not stomp the tier
         // `applyVerified` just granted from the in-hand verified result. Real
@@ -275,6 +290,26 @@ private let subscriptionLog = Logger(subsystem: "com.bervion.vaultify", category
             didFirstRefresh = true
             if storeTier == before { onTierInputsChanged?() }
         }
+    }
+
+    /// Product IDs of the Loox Membership group whose renewal status still
+    /// grants access. Empty when the status call fails (offline with no cache),
+    /// leaving `currentEntitlements` as the only source, as before.
+    private static func groupStatusProductIDs() async -> [String] {
+        guard let statuses = try? await Product.SubscriptionInfo.status(for: LooxProductID.subscriptionGroupID)
+        else { return [] }
+        return statuses.compactMap { status in
+            guard statusGrantsAccess(status.state),
+                  case .verified(let transaction) = status.transaction,
+                  transaction.revocationDate == nil else { return nil }
+            return transaction.productID
+        }
+    }
+
+    /// Subscribed and billing grace keep access; billing retry without grace,
+    /// expired and revoked do not (Apple's renewal-state semantics).
+    nonisolated static func statusGrantsAccess(_ state: Product.SubscriptionInfo.RenewalState) -> Bool {
+        state == .subscribed || state == .inGracePeriod
     }
 
     /// True once no in-hand grant is recent enough to protect (60s window).
