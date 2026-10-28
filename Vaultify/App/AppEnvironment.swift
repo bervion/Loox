@@ -313,7 +313,7 @@ import SwiftUI
             session: session,
             fileURL: isolatedFileRoot?.appending(path: "ui-state.enc")
         )
-        let approvalShare = ApprovalShareService()
+        let approvalShare = ApprovalShareService(ownerPasskeys: { repository.passkeys })
         self.approvalShare = approvalShare
         self.approvalCoordinator = ApprovalCoordinator(
             settings: settings,

@@ -75,6 +75,45 @@ enum SharedGrantComposer {
         return (display, shared)
     }
 
+    /// Passkey display metadata for every slot a LIVE grant opens, from the
+    /// owner's passkey list. For the item-edit republish, which has no vault
+    /// key: `PasskeyInfo` carries every public field the envelope needs. nil
+    /// when a granted slot has no passkey behind it. Resealing the envelope
+    /// without that slot would drop the passkey on the recipient, so the
+    /// caller keeps the envelope already published instead.
+    nonisolated static func displayPasskeys(
+        capabilities: [String: FieldCapability], passkeys: [PasskeyInfo]
+    ) -> [SharedDisplayEnvelope.PasskeyMeta]? {
+        let granted = grantedPasskeySlots(capabilities)
+        let metas = passkeys.compactMap { passkey -> SharedDisplayEnvelope.PasskeyMeta? in
+            let slot = PasskeySlot.slotId(credentialID: passkey.credentialID)
+            guard granted.contains(slot) else { return nil }
+            return SharedDisplayEnvelope.PasskeyMeta(
+                slotId: slot, relyingParty: passkey.relyingParty,
+                userName: passkey.userName, userHandle: passkey.userHandle,
+                credentialID: passkey.credentialID, flags: passkey.flags)
+        }
+        return Set(metas.map(\.slotId)) == granted ? metas : nil
+    }
+
+    /// Every passkey slot the grant opens (any non-none mode). Each one must
+    /// have its artifacts behind it: a slot named by the signed grant with
+    /// nothing behind it renders as "nothing arrived" on the recipient, with
+    /// no error anywhere.
+    nonisolated static func grantedPasskeySlots(_ capabilities: [String: FieldCapability]) -> Set<String> {
+        Set(capabilities.compactMap { slot, capability -> String? in
+            guard case .passkey = capability, capability.grantsAnything else { return nil }
+            return slot
+        })
+    }
+
+    /// Whether a field's display metadata rides the envelope: a value the
+    /// grant ships, or an ask-each-time code the recipient requests. Every
+    /// other field stays out, label included.
+    nonisolated static func carriesDisplayMeta(_ capability: FieldCapability?) -> Bool {
+        capability?.isSharedValue == true || capability?.isAskEachTimeTOTP == true
+    }
+
     /// Field plaintext the grant seals: every field whose capability ships
     /// its value (shared values and the TOTP seed hand-over). The central
     /// share policy is enforced at this producer boundary too, so even a stale
@@ -113,14 +152,7 @@ enum SharedGrantComposer {
     ) async throws -> AccessGrant {
         var sharedValues = sharedFieldValues(item: item, capabilities: capabilities)
         var displayPasskeys: [SharedDisplayEnvelope.PasskeyMeta] = []
-        // Every slot the grant opens (any non-none passkey mode) must
-        // materialize its artifacts below — a slot named by the signed grant
-        // with nothing behind it renders as "nothing arrived" on the
-        // recipient, with no error anywhere.
-        let grantedPasskeySlots = Set(capabilities.compactMap { slot, capability -> String? in
-            guard case .passkey = capability, capability.grantsAnything else { return nil }
-            return slot
-        })
+        let grantedSlots = grantedPasskeySlots(capabilities)
         if let vaultKey {
             let vault = PasskeyVault(store: store)
             let secretsBySlot: [(slot: String, secret: PasskeySecret)] = itemPasskeys.compactMap { pk in
@@ -128,23 +160,22 @@ enum SharedGrantComposer {
                 else { return nil }
                 return (PasskeySlot.slotId(credentialID: pk.credentialID), secret)
             }
-            let unresolved = grantedPasskeySlots.subtracting(secretsBySlot.map(\.slot))
+            let unresolved = grantedSlots.subtracting(secretsBySlot.map(\.slot))
             guard unresolved.isEmpty else { throw ComposeError.passkeyMaterialUnavailable }
             let artifacts = passkeyArtifacts(secretsBySlot: secretsBySlot, capabilities: capabilities)
             displayPasskeys = artifacts.display
             for (slot, blob) in artifacts.shared { sharedValues[slot] = blob }
             // Hand-over additionally needs its sealed key blob (a failed
             // secret encode would otherwise be skipped silently).
-            for slot in grantedPasskeySlots
+            for slot in grantedSlots
             where capabilities[slot]?.isSharedValue == true && sharedValues[slot] == nil {
                 throw ComposeError.passkeyMaterialUnavailable
             }
-        } else if !grantedPasskeySlots.isEmpty {
+        } else if !grantedSlots.isEmpty {
             throw ComposeError.passkeyMaterialUnavailable
         }
         let displayFields = Dictionary(uniqueKeysWithValues: item.fields.compactMap { field in
-            capabilities[field.id]?.isSharedValue == true
-                || capabilities[field.id]?.isAskEachTimeTOTP == true
+            carriesDisplayMeta(capabilities[field.id])
                 ? (field.id, SharedDisplayEnvelope.FieldMeta(label: field.label,
                                                              kind: field.kind.rawValue,
                                                              protected: field.protected))
