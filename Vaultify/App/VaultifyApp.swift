@@ -145,6 +145,9 @@ struct VaultifyApp: App {
                         // AutoFill's "Request code" hand-off (no CloudKit entitlement there) —
                         // presented once unlocked (see VaultShellBehaviors).
                         env.pendingSharedItemDeepLinkID = itemID
+                    } else if LooxMembershipDeepLink.matches(url) {
+                        // The Loox Membership In-App Event's deep link.
+                        env.pendingMembershipDeepLink = true
                     }
                 }
                 // Universal Link: share-invite (invite.looxpassword.com/i/<token>#k=…).
