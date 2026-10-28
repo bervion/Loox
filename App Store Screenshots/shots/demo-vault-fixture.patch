@@ -1,171 +1,732 @@
+diff --git a/Project.swift b/Project.swift
+index 343bf13..aa84cc0 100644
+--- a/Project.swift
++++ b/Project.swift
+@@ -459,7 +459,7 @@ let project = Project(
+         ),
+         .target(
+             name: "VaultifyUITests",
+-            destinations: [.iPhone],
++            destinations: [.iPhone, .iPad],
+             product: .uiTests,
+             bundleId: "com.bervion.vaultify.ui-tests",
+             deploymentTargets: .iOS("17.3"),
+@@ -493,6 +493,14 @@ let project = Project(
+             testAction: .targets(["VaultifyTests"]),
+             runAction: .runAction(executable: "Vaultify")
+         ),
++        // Throwaway: drives StoreScreenshotsUITests only (App Store captures).
++        .scheme(
++            name: "Vaultify-Shots",
++            shared: true,
++            buildAction: .buildAction(targets: ["Vaultify"]),
++            testAction: .targets(["VaultifyUITests"]),
++            runAction: .runAction(executable: "Vaultify")
++        ),
+         .scheme(
+             name: "Vaultify-Quality",
+             shared: true,
+diff --git a/Vaultify/App/AppEnvironment.swift b/Vaultify/App/AppEnvironment.swift
+index c4d2fb9..a267af3 100644
+--- a/Vaultify/App/AppEnvironment.swift
++++ b/Vaultify/App/AppEnvironment.swift
+@@ -265,9 +265,16 @@ import SwiftUI
+         self.relay = RelayService(repository: repository, session: session)
+         // Capability state: never consulted by the Core Vault (INV-CAP-01);
+         // built from locals (two-phase init), wired into services at the end.
++        #if DEBUG
++        // Throwaway (App Store screenshots): the demo vault reads as online so
++        // network-backed features show their normal state, not an offline banner.
++        let reachabilityInitiallySatisfied = uiTestConfiguration.fixture == .screenshots
++        #else
++        let reachabilityInitiallySatisfied = false
++        #endif
+         let reachability = NetworkReachabilityMonitor(
+             monitoringEnabled: !testIsolationEnabled,
+-            initialSatisfied: false
++            initialSatisfied: reachabilityInitiallySatisfied
+         )
+         self.reachability = reachability
+         let capabilities = CapabilityStore(reachability: reachability, defaults: settingsDefaults)
 diff --git a/Vaultify/App/UITestConfiguration.swift b/Vaultify/App/UITestConfiguration.swift
-index 95c526c..3ab4a77 100644
+index e2baa68..b2c1d90 100644
 --- a/Vaultify/App/UITestConfiguration.swift
 +++ b/Vaultify/App/UITestConfiguration.swift
-@@ -13,6 +13,8 @@ nonisolated struct UITestConfiguration: Equatable, Sendable {
-         /// lock: the test drives Settings "Lock Now" itself and then verifies
-         /// the slide-to-unlock requirement survives a kill and relaunch.
+@@ -15,6 +15,8 @@ nonisolated struct UITestConfiguration: Equatable, Sendable {
          case vaultPanicRestart = "vault-panic-restart"
-+        /// Curated demo vault used to shoot App Store screenshots.
+         /// Local, synthetic private-email associations. No relay or mail calls.
+         case privateEmailMemberUX = "private-email-member-ux"
++        /// Throwaway: curated demo vault used to shoot App Store screenshots.
 +        case screenshots = "screenshots"
      }
  
      let fixture: Fixture?
 diff --git a/Vaultify/App/UITestFixtures.swift b/Vaultify/App/UITestFixtures.swift
-index aefa5de..727bfcb 100644
+index 3f92242..2d0a789 100644
 --- a/Vaultify/App/UITestFixtures.swift
 +++ b/Vaultify/App/UITestFixtures.swift
-@@ -15,6 +15,10 @@ enum UITestFixtures {
-         store: VaultStore,
+@@ -22,6 +22,10 @@ enum UITestFixtures {
          repository: VaultRepository
      ) throws {
+         guard configuration.fixture != nil else { return }
 +        if configuration.fixture == .screenshots {
 +            try installScreenshotVault(store: store, repository: repository)
 +            return
 +        }
-         guard configuration.fixture == .vaultEditSaveRelock || configuration.fixture == .vaultPanicRestart else { return }
          guard let key = repository.session.vaultKey else { throw AuthError.locked }
  
-@@ -73,5 +77,142 @@ enum UITestFixtures {
-             try repository.add(item)
-         }
-     }
+         let fixedDate = Date(timeIntervalSince1970: 1_704_067_200)
+diff --git a/Vaultify/App/UITestScreenshotFixture.swift b/Vaultify/App/UITestScreenshotFixture.swift
+new file mode 100644
+index 0000000..4a3eb05
+--- /dev/null
++++ b/Vaultify/App/UITestScreenshotFixture.swift
+@@ -0,0 +1,246 @@
++#if DEBUG
++import Foundation
++import CryptoKit
++import SwiftData
 +
-+    // MARK: - Screenshot vault
++/// Throwaway: a believable demo vault for App Store screenshots. Two Spaces,
++/// verification codes on the accounts that really have them, a deliberate
++/// weak / reused pair so Watchtower reports something true, and private email
++/// addresses linked to two logins. Every value is synthetic, every domain is a
++/// reserved example domain, and user content follows `-ui-test-language`.
++extension UITestFixtures {
++    private struct ShotCopy {
++        let personal, work, user, holder, fullName: String
++        let titles: [String: String]
++        let note, workNote: String
++        let aliasLabel: String
++        let mailNote, recoveryLabel, workProfile: String
++        let mailTags: [String]
++    }
 +
-+    /// A believable vault for App Store screenshots: two Spaces, verification
-+    /// codes on the accounts that really have them, and a deliberate weak /
-+    /// reused pair so Watchtower has something true to report. Every value is
-+    /// synthetic and every domain is a reserved example domain.
-+    private static func installScreenshotVault(
-+        store: VaultStore,
-+        repository: VaultRepository
-+    ) throws {
++    private static func shotCopy(_ language: String) -> ShotCopy {
++        switch language {
++        case "vi":
++            return ShotCopy(
++                personal: "Hằng ngày", work: "Công việc", user: "an.nguyen", holder: "NGUYEN VAN AN", fullName: "Nguyễn Văn An",
++                titles: ["mail": "Thư cá nhân", "cloud": "Lưu trữ đám mây", "bank": "Ngân hàng",
++                         "shopping": "Mua sắm", "streaming": "Xem phim", "code": "Kho mã nguồn",
++                         "design": "Công cụ thiết kế", "chat": "Chat nhóm", "card": "Thẻ ghi nợ", "workCard": "Thẻ công ty", "workNote": "Mã cửa văn phòng",
++                         "note": "Wi-Fi ở nhà"],
++                note: "Mạng: Home-5G\nMạng khách đổi mật khẩu mỗi Chủ nhật.",
++                workNote: "Cửa chính 4821\nThẻ khách nhận ở quầy lễ tân.",
++                aliasLabel: "Đăng ký bản tin",
++                mailNote: "Hộp thư cá nhân chính.\nĐã bật đăng nhập hai bước và passkey.",
++                recoveryLabel: "Email khôi phục", workProfile: "Hồ sơ công việc",
++                mailTags: ["cá nhân", "email"])
++        case "ja":
++            return ShotCopy(
++                personal: "日常", work: "仕事", user: "haruka.sato", holder: "HARUKA SATO", fullName: "佐藤 遥",
++                titles: ["mail": "メール", "cloud": "クラウドストレージ", "bank": "銀行",
++                         "shopping": "ショッピング", "streaming": "動画配信", "code": "コード管理",
++                         "design": "デザインツール", "chat": "チームチャット", "card": "デビットカード", "workCard": "法人カード", "workNote": "オフィスの入館コード",
++                         "note": "自宅のWi-Fi"],
++                note: "ネットワーク: Home-5G\nゲスト用は毎週日曜に変更",
++                workNote: "正面入口 4821\n来客用カードは受付で受け取り",
++                aliasLabel: "ニュースレター",
++                mailNote: "個人用のメイン受信箱。\n2段階認証とパスキーを設定済み。",
++                recoveryLabel: "復旧用メール", workProfile: "仕事用プロフィール",
++                mailTags: ["個人", "メール"])
++        default:
++            return ShotCopy(
++                personal: "Everyday", work: "Work", user: "alex.morgan", holder: "ALEX MORGAN", fullName: "Alex Morgan",
++                titles: ["mail": "Personal Mail", "cloud": "Cloud Drive", "bank": "Bank",
++                         "shopping": "Shopping", "streaming": "Streaming", "code": "Code Hosting",
++                         "design": "Design Tool", "chat": "Team Chat", "card": "Debit Card", "workCard": "Company Card", "workNote": "Office door code",
++                         "note": "Wi-Fi at home"],
++                note: "Network: Home-5G\nGuest network changes every Sunday.",
++                workNote: "Front door 4821\nVisitor badges at reception.",
++                aliasLabel: "Newsletters",
++                mailNote: "Main personal inbox.\nTwo-step sign-in and a passkey are set up.",
++                recoveryLabel: "Recovery email", workProfile: "Work profile",
++                mailTags: ["personal", "email"])
++        }
++    }
++
++    private static func templated(_ kind: ItemKindID, _ role: FieldRoleID, _ value: String) -> DynamicField {
++        guard let template = ItemTemplateRegistry.definition(for: kind),
++              let section = template.sections.first(where: { $0.fields.contains { $0.roleID == role } }),
++              let descriptor = section.fields.first(where: { $0.roleID == role }) else {
++            preconditionFailure("Unknown template role")
++        }
++        var field = descriptor.makeField(sectionID: section.id)
++        field.value = value
++        return field
++    }
++
++    static func installScreenshotVault(store: VaultStore, repository: VaultRepository) throws {
 +        guard let key = repository.session.vaultKey else { throw AuthError.locked }
 +        repository.reload()
 +        if repository.items.contains(where: { $0.id == "shot-mail" }) { return }
 +
-+        // Anchored to the shooting date so the list's month headers read as recent.
++        let copy = shotCopy(AppEnvironment.languageRequestedByTest ?? "en")
++        let email = copy.user + "@example.com"
 +        let now = Date.now
 +        let day: TimeInterval = 86_400
 +
-+        let spaces: [(String, String, String, FolderColor)] = [
-+            ("shot-space-personal", "Personal", "dt_user", .blue),
-+            ("shot-space-work", "Work", "dt_briefcase", .purple),
-+        ]
-+        for (index, space) in spaces.enumerated() {
-+            let folder = Folder(
-+                id: space.0,
-+                name: space.1,
-+                iconAsset: space.2,
-+                color: space.3,
-+                sortIndex: index,
-+                createdAt: now,
-+                updatedAt: now,
-+                personaId: repository.activePersona?.id
-+            )
-+            store.context.insert(
-+                FolderRecord(
-+                    id: folder.id,
-+                    sealed: try repository.sealFolder(folder, key: key),
-+                    iconAsset: folder.iconAsset,
-+                    colorRaw: folder.color.rawValue,
-+                    sortIndex: folder.sortIndex,
-+                    createdAt: folder.createdAt,
-+                    updatedAt: folder.updatedAt
-+                )
-+            )
++        for (index, space) in [("shot-space-personal", copy.personal, "dt_user", FolderColor.blue),
++                               ("shot-space-work", copy.work, "dt_briefcase", FolderColor.purple)].enumerated() {
++            let folder = Folder(id: space.0, name: space.1, iconAsset: space.2, color: space.3,
++                                sortIndex: index, createdAt: now, updatedAt: now,
++                                personaId: repository.activePersona?.id)
++            store.context.insert(FolderRecord(id: folder.id, sealed: try repository.sealFolder(folder, key: key),
++                                              iconAsset: folder.iconAsset, colorRaw: folder.color.rawValue,
++                                              sortIndex: folder.sortIndex, createdAt: folder.createdAt,
++                                              updatedAt: folder.updatedAt))
 +        }
 +        try store.context.save()
 +        repository.reload()
 +
-+        // (id, title, space, user, password, site, base32 TOTP secret, favourite, age in days, icon)
-+        let logins: [(String, String, String, String, String, String, String?, Bool, Double, String)] = [
-+            ("shot-mail", "Personal Mail", "shot-space-personal", "an.nguyen@example.com",
-+             "7Rk-Wq2f-Tdb9-Xm4L", "mail.example.com", "JBSWY3DPEHPK3PXP", true, 12, "dt_envelope"),
-+            ("shot-cloud", "Cloud Drive", "shot-space-personal", "an.nguyen@example.com",
-+             "Zt6-Pl9v-Hs3k-Qw8N", "drive.example.com", "KRSXG5CTMVRXEZLU", true, 34, "dt_cloud"),
-+            ("shot-bank", "Bank", "shot-space-personal", "an.nguyen",
-+             "Fj2-Nx7c-Ryd4-Vb6M", "bank.example.com", nil, false, 58, "dt_bank"),
-+            ("shot-shopping", "Shopping", "shot-space-personal", "an.nguyen@example.com",
-+             "summer2019", "shop.example.com", nil, false, 620, "dt_cart"),
-+            ("shot-streaming", "Streaming", "shot-space-personal", "an.nguyen@example.com",
-+             "summer2019", "watch.example.net", nil, false, 480, "dt_film"),
-+            ("shot-code", "Code Hosting", "shot-space-work", "annguyen",
-+             "Cq4-Mz8t-Kwe2-Lp5R", "code.example.org", "MFRGGZDFMZTWQ2LK", true, 21, "dt_code"),
-+            ("shot-design", "Design Tool", "shot-space-work", "an.nguyen@example.com",
-+             "Dv9-Hb3s-Xqn6-Ytu1", "design.example.com", "GEZDGNBVGY3TQOJQGEZA", false, 40, "dt_palette"),
-+            ("shot-chat", "Team Chat", "shot-space-work", "an.nguyen@example.com",
-+             "Wm5-Ldx7-Pcv2-Bzr8", "chat.example.com", "NB2W45DFOIZDUMJA", false, 15, "dt_comments"),
++        // (slug, space, user, password, site, base32 TOTP secret, favourite, age in days, icon)
++        let logins: [(String, String, String, String, String, String?, Bool, Double, String)] = [
++            ("mail", "shot-space-personal", email, "7Rk-Wq2f-Tdb9-Xm4L", "mail.example.com",
++             "JBSWY3DPEHPK3PXP", true, 12, "dt_envelope"),
++            ("cloud", "shot-space-personal", email, "Zt6-Pl9v-Hs3k-Qw8N", "drive.example.com",
++             "KRSXG5CTMVRXEZLU", true, 34, "dt_cloud"),
++            ("bank", "shot-space-personal", copy.user, "Fj2-Nx7c-Ryd4-Vb6M", "bank.example.com",
++             nil, false, 58, "dt_bank"),
++            ("shopping", "shot-space-personal", email, "summer2019", "shop.example.com",
++             nil, false, 620, "dt_cart"),
++            ("streaming", "shot-space-personal", email, "summer2019", "watch.example.net",
++             nil, false, 480, "dt_film"),
++            ("code", "shot-space-work", copy.user, "Cq4-Mz8t-Kwe2-Lp5R", "code.example.org",
++             "MFRGGZDFMZTWQ2LK", true, 21, "dt_code"),
++            ("design", "shot-space-work", email, "Dv9-Hb3s-Xqn6-Ytu1", "design.example.com",
++             "GEZDGNBVGY3TQOJQGEZA", false, 40, "dt_palette"),
++            ("chat", "shot-space-work", email, "Wm5-Ldx7-Pcv2-Bzr8", "chat.example.com",
++             "NB2W45DFOIZDUMJA", false, 15, "dt_comments"),
 +        ]
 +
 +        try AnalyticsEngine.shared.runSuppressed {
++            // The profile card the Home header and Private Email read from.
++            var profile = VaultItem(id: "shot-profile", category: .identity, title: copy.fullName,
++                                    folderId: "shot-space-personal",
++                                    fields: [templated(.personalIdentity, .fullName, copy.fullName),
++                                             templated(.personalIdentity, .identityEmail, email)],
++                                    isDefaultIdentity: true, createdAt: now - 20 * day, updatedAt: now - 20 * day)
++            profile.semantics = ItemTemplateRegistry.definition(for: .personalIdentity)?.newItemSemantics
++            try repository.add(profile)
++
 +            for (offset, login) in logins.enumerated() {
-+                var fields: [DynamicField] = [
-+                    DynamicField(id: "\(login.0)-user", label: "Username", kind: .username, value: login.3),
-+                    DynamicField(id: "\(login.0)-pass", label: "Password", kind: .password, value: login.4),
-+                    DynamicField(id: "\(login.0)-url", label: "Website", kind: .url, value: login.5),
-+                ]
-+                if let secret = login.6 {
-+                    fields.append(
-+                        DynamicField(id: "\(login.0)-totp", label: "One-time code", kind: .totp, value: secret)
-+                    )
++                var fields = [templated(.login, .username, login.2),
++                              templated(.login, .password, login.3),
++                              templated(.login, .website, "https://" + login.4)]
++                if let secret = login.5 { fields.append(templated(.login, .totp, secret)) }
++                if login.0 == "mail" {
++                    // A fuller detail screen: second website, recovery email, notes, tags.
++                    fields.insert(templated(.login, .website, "https://webmail.example.com"), at: 3)
++                    fields.append(DynamicField(id: "shot-mail-recovery", label: copy.recoveryLabel,
++                                               kind: .email, value: copy.user + "@example.net"))
++                    fields.append(DynamicField(id: "shot-mail-notes", label: "Notes", kind: .multiline,
++                                               value: copy.mailNote))
 +                }
-+                let created = now - login.8 * day
-+                try repository.add(
-+                    VaultItem(
-+                        id: login.0,
-+                        category: .login,
-+                        title: login.1,
-+                        folderId: login.2,
-+                        fields: fields,
-+                        favorite: login.7,
-+                        iconAsset: login.9,
-+                        lastUsedAt: now - Double(offset) * 3_600,
-+                        useCount: 40 - offset * 3,
-+                        rotateDays: login.0 == "shot-bank" ? 90 : 0,
-+                        passwordChangedAt: created,
-+                        createdAt: created,
-+                        updatedAt: created
-+                    )
-+                )
++                let created = now - login.7 * day
++                var item = VaultItem(id: "shot-" + login.0, category: .login, title: copy.titles[login.0] ?? login.0,
++                                     folderId: login.1, fields: fields, favorite: login.6, iconAsset: login.8,
++                                     lastUsedAt: now - Double(offset) * 3_600, useCount: 40 - offset * 3,
++                                     rotateDays: login.0 == "bank" ? 90 : 0, passwordChangedAt: created,
++                                     createdAt: created, updatedAt: created)
++                item.semantics = ItemTemplateRegistry.definition(for: .login)?.newItemSemantics
++                if login.0 == "mail" { item.tags = copy.mailTags }
++                try repository.add(item)
 +            }
 +
-+            try repository.add(
-+                VaultItem(
-+                    id: "shot-card",
-+                    category: .card,
-+                    title: "Everyday Card",
-+                    folderId: "shot-space-personal",
-+                    fields: [
-+                        DynamicField(id: "shot-card-holder", label: "Cardholder", kind: .text, value: "AN NGUYEN"),
-+                        DynamicField(id: "shot-card-number", label: "Number", kind: .number, value: "4111 1111 1111 1111"),
-+                        DynamicField(id: "shot-card-exp", label: "Expires", kind: .text, value: "09/29"),
-+                        DynamicField(id: "shot-card-cvv", label: "Security code", kind: .password, value: "123"),
-+                    ],
-+                    iconAsset: "dt_credit_card",
-+                    createdAt: now - 90 * day,
-+                    updatedAt: now - 90 * day
-+                )
-+            )
++            // A second profile card so every type tile counts in plural.
++            var workProfile = VaultItem(id: "shot-work-profile", category: .identity, title: copy.workProfile,
++                                        folderId: "shot-space-work",
++                                        fields: [templated(.personalIdentity, .fullName, copy.fullName),
++                                                 templated(.personalIdentity, .identityEmail,
++                                                           copy.user + "@work.example.com")],
++                                        createdAt: now - 30 * day, updatedAt: now - 30 * day)
++            workProfile.semantics = ItemTemplateRegistry.definition(for: .personalIdentity)?.newItemSemantics
++            try repository.add(workProfile)
 +
-+            try repository.add(
-+                VaultItem(
-+                    id: "shot-note",
-+                    category: .note,
-+                    title: "Wi-Fi at home",
-+                    folderId: "shot-space-personal",
-+                    fields: [
-+                        DynamicField(id: "shot-note-body", label: "Note", kind: .multiline,
-+                                     value: "Network: Nguyen-5G\nGuest network resets every Sunday.")
-+                    ],
-+                    iconAsset: "dt_wifi",
-+                    createdAt: now - 150 * day,
-+                    updatedAt: now - 150 * day
-+                )
-+            )
++            var card = VaultItem(id: "shot-card", category: .card, title: copy.titles["card"] ?? "Card",
++                                 folderId: "shot-space-personal",
++                                 fields: [templated(.paymentCard, .cardHolder, copy.holder),
++                                          templated(.paymentCard, .cardNumber, "7012 3456 7890 1232"),
++                                          templated(.paymentCard, .cardExpiry, "09/29"),
++                                          templated(.paymentCard, .cardSecurityCode, "123")],
++                                 iconAsset: "dt_credit_card", createdAt: now - 90 * day, updatedAt: now - 90 * day)
++            card.semantics = ItemTemplateRegistry.definition(for: .paymentCard)?.newItemSemantics
++            try repository.add(card)
++
++            var note = VaultItem(id: "shot-note", category: .note, title: copy.titles["note"] ?? "Note",
++                                 folderId: "shot-space-personal",
++                                 fields: [templated(.secureNote, .noteBody, copy.note)],
++                                 iconAsset: "dt_wifi", createdAt: now - 150 * day, updatedAt: now - 150 * day)
++            note.semantics = ItemTemplateRegistry.definition(for: .secureNote)?.newItemSemantics
++            try repository.add(note)
++
++            var workCard = VaultItem(id: "shot-work-card", category: .card, title: copy.titles["workCard"] ?? "Card",
++                                     folderId: "shot-space-work",
++                                     fields: [templated(.paymentCard, .cardHolder, copy.holder),
++                                              templated(.paymentCard, .cardNumber, "7012 9876 5432 1040"),
++                                              templated(.paymentCard, .cardExpiry, "03/28"),
++                                              templated(.paymentCard, .cardSecurityCode, "456")],
++                                     iconAsset: "dt_credit_card", createdAt: now - 70 * day, updatedAt: now - 70 * day)
++            workCard.semantics = ItemTemplateRegistry.definition(for: .paymentCard)?.newItemSemantics
++            try repository.add(workCard)
++
++            var workNote = VaultItem(id: "shot-work-note", category: .note, title: copy.titles["workNote"] ?? "Note",
++                                     folderId: "shot-space-work",
++                                     fields: [templated(.secureNote, .noteBody, copy.workNote)],
++                                     createdAt: now - 45 * day, updatedAt: now - 45 * day)
++            workNote.semantics = ItemTemplateRegistry.definition(for: .secureNote)?.newItemSemantics
++            try repository.add(workNote)
++        }
++        // Synthetic passkeys (fresh P-256 keys, never registered anywhere) so
++        // the login detail shows its passkey row and the hub counts read plural.
++        let passkeys = PasskeyVault(store: store)
++        for (index, rp) in ["mail.example.com", "code.example.org"].enumerated() {
++            let secret = PasskeySecret(relyingParty: rp, userName: index == 0 ? email : copy.user,
++                                       userHandle: Data((0..<16).map { _ in UInt8.random(in: 0...255) }),
++                                       credentialID: Data((0..<16).map { _ in UInt8.random(in: 0...255) }),
++                                       privateKeyRaw: P256.Signing.PrivateKey().rawRepresentation,
++                                       counter: 0, createdAt: now - Double(20 + index * 15) * day, flags: 0x1D)
++            _ = try passkeys.save(secret, key: key)
++        }
++        repository.reload()
++        try installScreenshotPrivateEmail(store: store, repository: repository, inboxEmail: email,
++                                          personaLabel: copy.aliasLabel)
++    }
++
++    /// Issued addresses and a verified destination are local records only:
++    /// no relay or mail call is made.
++    private static func installScreenshotPrivateEmail(store: VaultStore, repository: VaultRepository,
++                                                      inboxEmail: String, personaLabel: String) throws {
++        guard let key = repository.session.vaultKey, let persona = repository.activePersona else { throw AuthError.locked }
++        let created = Date.now - 30 * 86_400
++        let inbox = ForwardingInbox(id: "shot-inbox", email: inboxEmail, label: nil, isDefault: true,
++                                    relayDestinationID: "synthetic-destination", verificationStatus: .verified,
++                                    createdAt: created, updatedAt: created)
++        store.context.insert(ForwardingInboxRecord(id: inbox.id, sealed: try repository.sealInbox(inbox, key: key),
++                                                   sortIndex: 0, createdAt: created, updatedAt: created))
++        // (id, tier, local part, label, linked login)
++        let aliases: [(String, AliasTier, String, String?, String?)] = [
++            ("shot-alias-shop", .perSite, "k7m2x9qf", nil, "shot-shopping"),
++            ("shot-alias-watch", .perSite, "p4tz8wna", nil, "shot-streaming"),
++            ("shot-alias-news", .persona, "river.lantern.42", personaLabel, nil),
++        ]
++        for (index, entry) in aliases.enumerated() {
++            let alias = EmailAlias(id: entry.0, personaId: persona.id, tier: entry.1, localPart: entry.2,
++                                   label: entry.3, status: .active, forwardingInboxID: inbox.id,
++                                   forwardingTarget: inboxEmail, backendMinted: true, sortIndex: index,
++                                   createdAt: created, updatedAt: created)
++            store.context.insert(EmailAliasRecord(id: alias.id, sealed: try repository.sealAlias(alias, key: key),
++                                                  sortIndex: alias.sortIndex, createdAt: created, updatedAt: created))
++        }
++        try store.context.save()
++        repository.reload()
++        for entry in aliases {
++            if let itemID = entry.4 { try repository.linkAliasToLogin(aliasID: entry.0, itemID: itemID) }
 +        }
 +        repository.reload()
 +    }
++}
++#endif
+diff --git a/Vaultify/Features/Home/HomeScreen.swift b/Vaultify/Features/Home/HomeScreen.swift
+index 076acf6..a355aa2 100644
+--- a/Vaultify/Features/Home/HomeScreen.swift
++++ b/Vaultify/Features/Home/HomeScreen.swift
+@@ -521,6 +521,7 @@ struct HomeScreen: View {
+         .buttonStyle(.plain)
+         .accessibilityElement(children: .combine)
+         .accessibilityLabel(Text(verbatim: "\(PersonaDisplay.name(env)), \(personaSubtitle)"))
++        .accessibilityIdentifier("home.profile")
+     }
+ 
+     /// 44pt circular avatar — extracted to `PersonaAvatarView`, shared with the
+diff --git a/Vaultify/Features/ItemDetail/ItemDetailScreen.swift b/Vaultify/Features/ItemDetail/ItemDetailScreen.swift
+index 03f2b99..1baef57 100644
+--- a/Vaultify/Features/ItemDetail/ItemDetailScreen.swift
++++ b/Vaultify/Features/ItemDetail/ItemDetailScreen.swift
+@@ -314,6 +314,7 @@ struct ItemDetailScreen: View {
+                         Button { sheetRoute = .shareAccess } label: {
+                             VaultIcon(Icons.share, size: Metric.iconInline)
+                         }
++                        .accessibilityIdentifier("item.detail.share")
+                     }
+                 }
+                 ToolbarItem(placement: .platformPrimaryAction) {
+diff --git a/Vaultify/Features/Main/VaultSidebarList.swift b/Vaultify/Features/Main/VaultSidebarList.swift
+index aa3c427..27d0fb7 100644
+--- a/Vaultify/Features/Main/VaultSidebarList.swift
++++ b/Vaultify/Features/Main/VaultSidebarList.swift
+@@ -63,6 +63,7 @@ struct VaultSidebarList: View {
+                     // to show. `.badge(0)` renders nothing, so a clean vault stays quiet.
+                     .badge(tab == .watchtower ? watchtowerIssueCount : 0)
+                     .tag(UIStateStore.SidebarSelection.section(tab))
++                    .accessibilityIdentifier("sidebar.tab.\(tab)")
+                     .tutorialAnchorIfPresent(tab == .watchtower ? TutorialAnchorID.homeSecurity : nil)
+                 }
+             } header: {
+@@ -98,6 +99,7 @@ struct VaultSidebarList: View {
+                             SettingsIconBadge(icon: folder.displayIcon, tint: folder.color.tint)
+                         }
+                         .tag(UIStateStore.SidebarSelection.space(folder.id))
++                        .accessibilityIdentifier("sidebar.space.\(folder.id)")
+                     }
+                 } header: {
+                     Text(LocalizedStringResource("Spaces").inAppLocalized)
+diff --git a/Vaultify/Features/Main/VaultSidebarProfileCard.swift b/Vaultify/Features/Main/VaultSidebarProfileCard.swift
+index 28ba95b..b02914f 100644
+--- a/Vaultify/Features/Main/VaultSidebarProfileCard.swift
++++ b/Vaultify/Features/Main/VaultSidebarProfileCard.swift
+@@ -39,6 +39,7 @@ struct VaultSidebarProfileCard: View {
+         .accessibilityElement(children: .combine)
+         .accessibilityLabel(Text(verbatim: "\(PersonaDisplay.name(env)), \(PersonaDisplay.subtitle(env))"))
+         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
++        .accessibilityIdentifier("sidebar.profile")
+     }
  }
- #endif
+ 
+diff --git a/VaultifyUITests/StoreScreenshotsUITests.swift b/VaultifyUITests/StoreScreenshotsUITests.swift
+new file mode 100644
+index 0000000..e4f7acd
+--- /dev/null
++++ b/VaultifyUITests/StoreScreenshotsUITests.swift
+@@ -0,0 +1,182 @@
++import XCTest
++
++/// Throwaway: walks the `screenshots` fixture to each App Store screen and
++/// pauses there while a host script takes a full-resolution
++/// `xcrun simctl io screenshot`. Handshake: this test writes
++/// `<SHOT_SIGNAL_DIR>/<lang>__<slug>.ready` and waits for `.done`.
++/// Inputs (passed as TEST_RUNNER_<name>): SHOT_LANG (en|vi|ja), SHOT_SIGNAL_DIR.
++final class StoreScreenshotsUITests: XCTestCase {
++    private let app = XCUIApplication()
++    private let env = ProcessInfo.processInfo.environment
++    private var lang: String { env["SHOT_LANG"] ?? "en" }
++    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
++
++    /// Catalog values (Localizable.xcstrings) and fixture names per language.
++    private var text: [String: String] {
++        switch lang {
++        case "vi": return ["privateEmail": "Email riêng tư", "viewAll": "Xem tất cả", "space": "Hằng ngày",
++                           "name": "Nguyễn Văn An"]
++        case "ja": return ["privateEmail": "プライベートメール", "viewAll": "すべて表示", "space": "日常",
++                           "name": "佐藤 遥"]
++        default: return ["privateEmail": "Private Email", "viewAll": "View All", "space": "Everyday",
++                         "name": "Alex Morgan"]
++        }
++    }
++
++    override func setUpWithError() throws {
++        continueAfterFailure = false
++        let locale = ["en": "en_US", "vi": "vi_VN", "ja": "ja_JP"][lang] ?? "en_US"
++        app.launchArguments = ["-ui-testing", "-ui-test-fixture", "screenshots", "-ui-test-language", lang,
++                               "-AppleLanguages", "(\(lang))", "-AppleLocale", locale]
++        app.launch()
++        XCTAssertTrue(element(isPad ? "sidebar.profile" : "home.profile").waitForExistence(timeout: 30))
++        sleep(2)
++    }
++
++    func test01Home() {
++        waitForFreshCodes()
++        shot("home")
++    }
++
++    func test02Detail() {
++        openItem("shot-mail")
++        waitForFreshCodes()
++        shot("detail")
++    }
++
++    func test03ShareFields() {
++        openItem("shot-cloud")
++        tapID("item.detail.share")
++        // First chooser row is Quick Link.
++        let quickLink = app.collectionViews.buttons.firstMatch
++        XCTAssertTrue(quickLink.waitForExistence(timeout: 8))
++        quickLink.tap()
++        let website = app.switches.element(boundBy: 2)
++        XCTAssertTrue(website.waitForExistence(timeout: 8))
++        website.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
++        shot("share-fields")
++    }
++
++    func test04PrivateEmail() {
++        openMembership()
++        let tile = app.staticTexts[text["privateEmail"]!].firstMatch
++        scrollUntilHittable(tile)
++        tile.tap()
++        sleep(1)
++        shot("private-email")
++    }
++
++    func test05Watchtower() {
++        selectSection(2, pad: "sidebar.tab.watchtower")
++        dismissSystemAlert()
++        sleep(2)
++        dismissSystemAlert()
++        shot("watchtower", settle: 3)
++    }
++
++    func test06Membership() {
++        openMembership()
++        shot("membership")
++    }
++
++    func test07Vault() {
++        if isPad {
++            tapID("sidebar.space.shot-space-personal")
++        } else {
++            selectSection(1, pad: "")
++            let space = app.staticTexts[text["space"]!].firstMatch
++            XCTAssertTrue(space.waitForExistence(timeout: 8))
++            space.tap()
++        }
++        shot("vault")
++    }
++
++    func test08Codes() {
++        let viewAll = app.buttons[text["viewAll"]!].firstMatch
++        XCTAssertTrue(viewAll.waitForExistence(timeout: 8))
++        viewAll.tap()
++        waitForFreshCodes()
++        shot("codes")
++    }
++
++    // MARK: - Navigation
++
++    private func openItem(_ id: String) {
++        let row = app.descendants(matching: .any)
++            .matching(NSPredicate(format: "identifier BEGINSWITH %@", "vault.item.\(id).")).firstMatch
++        XCTAssertTrue(row.waitForExistence(timeout: 8), "Missing row \(id)")
++        scrollUntilHittable(row)
++        row.tap()
++        XCTAssertTrue(element("item.detail.share").waitForExistence(timeout: 8))
++        sleep(1)
++    }
++
++    private func openMembership() {
++        tapID(isPad ? "sidebar.profile" : "home.profile")
++        let hubRow = app.staticTexts["Loox+"].firstMatch
++        XCTAssertTrue(hubRow.waitForExistence(timeout: 8))
++        hubRow.tap()
++        sleep(2)
++    }
++
++    /// iPhone: the tab bar item at `index`. iPad: the sidebar row `pad`.
++    private func selectSection(_ index: Int, pad: String) {
++        if isPad { tapID(pad); return }
++        let tab = app.tabBars.buttons.element(boundBy: index)
++        XCTAssertTrue(tab.waitForExistence(timeout: 8))
++        tab.tap()
++        sleep(1)
++    }
++
++    private func dismissSystemAlert() {
++        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
++        let alert = springboard.alerts.firstMatch
++        if alert.waitForExistence(timeout: 3) {
++            alert.buttons.element(boundBy: 0).tap()
++            sleep(1)
++        }
++    }
++
++    // MARK: - Helpers
++
++    private func element(_ identifier: String) -> XCUIElement {
++        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
++    }
++
++    private func tapID(_ identifier: String, timeout: TimeInterval = 8) {
++        let target = element(identifier)
++        XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing \(identifier)")
++        // Sidebar row icons carry the identifier but report "not hittable"
++        // inside their List cell; a coordinate tap lands on the row itself.
++        target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
++        sleep(1)
++    }
++
++    private func scrollUntilHittable(_ target: XCUIElement) {
++        for _ in 0..<8 where !(target.exists && target.isHittable) {
++            app.swipeUp(velocity: .slow)
++        }
++        XCTAssertTrue(target.isHittable, "Could not reach \(target)")
++    }
++
++    /// One-time codes turn amber/red near the end of their 30 s window; shoot
++    /// in the first half so every code ring reads calm.
++    private func waitForFreshCodes() {
++        while Int(Date().timeIntervalSince1970) % 30 > 12 { Thread.sleep(forTimeInterval: 0.5) }
++    }
++
++    /// Hands the current frame to the host and waits until it was captured.
++    private func shot(_ slug: String, settle: UInt32 = 2) {
++        sleep(settle)
++        guard let dir = env["SHOT_SIGNAL_DIR"] else { return }
++        let base = URL(fileURLWithPath: dir).appendingPathComponent("\(lang)__\(slug)")
++        let done = base.appendingPathExtension("done")
++        try? FileManager.default.removeItem(at: done)
++        FileManager.default.createFile(atPath: base.appendingPathExtension("ready").path, contents: Data())
++        let deadline = Date().addingTimeInterval(60)
++        while !FileManager.default.fileExists(atPath: done.path), Date() < deadline {
++            Thread.sleep(forTimeInterval: 0.3)
++        }
++        XCTAssertTrue(FileManager.default.fileExists(atPath: done.path), "Host never captured \(slug)")
++    }
++}
+diff --git a/scripts/store-shots/autofill-sign-in-page.html b/scripts/store-shots/autofill-sign-in-page.html
+new file mode 100644
+index 0000000..f39d95f
+--- /dev/null
++++ b/scripts/store-shots/autofill-sign-in-page.html
+@@ -0,0 +1,42 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Example Mail</title>
++<style>
++  :root { color-scheme: light; }
++  body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f4f5f8; color: #1c1d21; }
++  main { max-width: 420px; margin: 0 auto; padding: 8px 24px; }
++  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
++  .mark { width: 40px; height: 40px; border-radius: 11px; background: #2f6fde; display: grid; place-items: center; }
++  .brand span { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
++  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
++  p { margin: 0 0 20px; color: #6b6e78; font-size: 16px; }
++  label { display: block; font-size: 15px; font-weight: 600; margin: 0 0 6px; }
++  input { width: 100%; box-sizing: border-box; font-size: 17px; padding: 13px 16px; border: 1px solid #d6d8e0; border-radius: 12px; background: #fff; margin-bottom: 14px; }
++  button { width: 100%; font-size: 17px; font-weight: 600; padding: 14px; border: 0; border-radius: 12px; background: #2f6fde; color: #fff; margin-top: 4px; }
++</style>
++</head>
++<body>
++<main>
++  <div class="brand">
++    <div class="mark">
++      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
++        <rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>
++      </svg>
++    </div>
++    <span>Example Mail</span>
++  </div>
++  <h1>Sign in</h1>
++  <p>Continue to your inbox.</p>
++  <form method="post" action="#" onsubmit="return false">
++    <label for="email">Email</label>
++    <input id="email" name="email" type="email" autocomplete="username" placeholder="name@example.com">
++    <label for="password">Password</label>
++    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Password">
++    <button type="submit">Sign in</button>
++  </form>
++</main>
++</body>
++</html>
+diff --git a/scripts/store-shots/capture.sh b/scripts/store-shots/capture.sh
+new file mode 100755
+index 0000000..3ff9da3
+--- /dev/null
++++ b/scripts/store-shots/capture.sh
+@@ -0,0 +1,74 @@
++#!/bin/zsh
++# Capture App Store screenshots from the `screenshots` UI-test fixture.
++#
++# Setup (never commit it): apply "App Store Screenshots/shots/demo-vault-fixture.patch"
++# to a scratch checkout of origin/main, then `mise exec -- tuist generate --no-open`.
++#
++#   scripts/store-shots/capture.sh <lang:en|vi|ja> <device:iphone|ipad> <simulator-udid> [-only-testing:...]
++#
++# Devices: iPhone 17 Pro Max (1320x2868) and iPad Pro 13-inch (2064x2752), booted.
++# The first run compiles the Vaultify-Shots scheme once; later runs reuse its
++# .xctestrun, so each locale costs a test run, not a recompile. The UI test pauses
++# on every screen (<lang>__<slug>.ready) while shot-daemon.sh saves a full-resolution
++# `simctl io` screenshot to "<OUT_ROOT>/App Store Screenshots/shots/<lang>/<device>-<slug>.png".
++# AutoFill is shot by hand: a normal launch, Loox on in AutoFill & Passwords, and
++# autofill-sign-in-page.html served with `python3 -m http.server 8080`.
++#
++# Env: OUT_ROOT (default: this checkout), DERIVED_DATA (default /tmp/loox-capture-dd),
++#      SOURCE_PACKAGES (an existing SourcePackages dir to reuse instead of cloning),
++#      MIN_FREE_KB (xcodebuild is stopped below this much free disk, default 1.5 GB).
++set -u
++HERE=${0:A:h}
++ROOT=$(git -C "$HERE" rev-parse --show-toplevel)
++LANG_=$1; DEV=$2; UDID=$3; shift 3
++DD=${DERIVED_DATA:-/tmp/loox-capture-dd}
++OUT="${OUT_ROOT:-$ROOT}/App Store Screenshots/shots"
++SIG=${TMPDIR:-/tmp}/loox-shots-$UDID
++MIN_FREE_KB=${MIN_FREE_KB:-1572864}
++PKGS=()
++[ -n "${SOURCE_PACKAGES:-}" ] && PKGS=(-clonedSourcePackagesDirPath "$SOURCE_PACKAGES"
++  -onlyUsePackageVersionsFromResolvedFile -skipPackageUpdates)
++# Run one device at a time: both share $DD, and a first run compiles into it.
++XPID= DAEMON=
++trap 'touch "$SIG/STOP" 2>/dev/null; kill $XPID $DAEMON 2>/dev/null' EXIT INT TERM
++
++# Runs "$@" in the background and stops it if free disk drops below MIN_FREE_KB
++# (escalating to SIGKILL if it does not stop).
++guarded() {
++  "$@" &
++  XPID=$!
++  local free tries=0
++  while kill -0 $XPID 2>/dev/null; do
++    free=$(df -k "${DD:h}" | awk 'NR==2{print $4}')
++    if [[ $free == <-> ]] && (( free < MIN_FREE_KB )); then
++      echo "low disk (${free} KB), stopping xcodebuild" >&2
++      (( ++tries > 3 )) && kill -9 $XPID 2>/dev/null || kill $XPID 2>/dev/null
++    fi
++    sleep 3
++  done
++  wait $XPID
++}
++
++xctestrun() { local found=("$DD"/*/Products/*.xctestrun(N)); print -r -- "${found[1]-}"; }
++
++cd "$ROOT"
++XTR=$(xctestrun)
++if [ -z "$XTR" ]; then
++  guarded xcodebuild build-for-testing -workspace Vaultify.xcworkspace -scheme Vaultify-Shots \
++    -configuration Debug -destination id=$UDID -derivedDataPath "$DD" "${PKGS[@]}" \
++    COMPILER_INDEX_STORE_ENABLE=NO GCC_GENERATE_DEBUGGING_SYMBOLS=NO DEBUG_INFORMATION_FORMAT=dwarf \
++    SWIFT_COMPILATION_MODE=wholemodule ENABLE_DEBUG_DYLIB=NO || exit 1
++  XTR=$(xctestrun)
++  [ -z "$XTR" ] && { echo "no .xctestrun produced" >&2; exit 2; }
++fi
++
++rm -rf "$SIG"; mkdir -p "$SIG"
++xcrun simctl ui $UDID appearance light
++xcrun simctl status_bar $UDID override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 \
++  --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
++"$HERE/shot-daemon.sh" "$SIG" $UDID "$OUT" $DEV $$ &
++DAEMON=$!
++ONLY=("$@"); [ ${#ONLY[@]} -eq 0 ] && ONLY=(-only-testing:VaultifyUITests/StoreScreenshotsUITests)
++TEST_RUNNER_SHOT_LANG=$LANG_ TEST_RUNNER_SHOT_SIGNAL_DIR=$SIG \
++  guarded xcodebuild test-without-building -xctestrun "$XTR" -destination id=$UDID "${ONLY[@]}"
++exit $?                                    # the EXIT trap stops the daemon
+diff --git a/scripts/store-shots/shot-daemon.sh b/scripts/store-shots/shot-daemon.sh
+new file mode 100755
+index 0000000..7e22629
+--- /dev/null
++++ b/scripts/store-shots/shot-daemon.sh
+@@ -0,0 +1,24 @@
++#!/bin/zsh
++# Usage: shot-daemon.sh <signal-dir> <udid> <out-root> <device> <parent-pid>
++# The UI test writes <lang>__<slug>.ready; we save a full-resolution simctl
++# screenshot and answer .done. A failed screenshot gets no .done, so the test
++# times out instead of keeping the previous run's file. Exits on STOP or when
++# capture.sh is gone, so a stale daemon never answers a later run.
++SIG=$1; UDID=$2; OUT=$3; DEV=$4; PARENT=$5
++mkdir -p "$SIG"
++while kill -0 $PARENT 2>/dev/null; do
++  for f in "$SIG"/*.ready(N); do
++    base=${f:t:r}; lang=${base%%__*}; slug=${base#*__}
++    mkdir -p "$OUT/$lang"
++    dest="$OUT/$lang/$DEV-$slug.png"
++    rm -f $f
++    if xcrun simctl io $UDID screenshot --type=png "$dest.part" >/dev/null 2>&1 && mv -f "$dest.part" "$dest"; then
++      echo "captured $dest $(sips -g pixelWidth -g pixelHeight "$dest" 2>/dev/null | awk '/pixel/{printf "%s ", $2}')"
++      touch "$SIG/$base.done"
++    else
++      rm -f "$dest.part"; echo "FAILED to capture $dest" >&2
++    fi
++  done
++  [ -f "$SIG/STOP" ] && exit 0
++  sleep 0.3
++done

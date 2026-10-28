@@ -69,9 +69,9 @@ Loox stores logins, passkeys, two-factor (TOTP) codes, cards, identities, notes,
 - **Security (Watchtower):** the Security tab scores the vault and lists weak, reused and old passwords, missing two-factor opportunities and, if enabled, passwords found in known breaches. See [[Privacy and Data]] for what the breach check sends.
 
 <p>
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-generator.png" width="180" alt="Password generator">&nbsp;
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-detail.png" width="180" alt="Login detail">&nbsp;
-<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/iphone-weak-item.png" width="180" alt="Weak password warning">
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-codes.png" width="180" alt="Two-factor codes">&nbsp;
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-detail.png" width="180" alt="Login detail">&nbsp;
+<img src="https://raw.githubusercontent.com/bervion/Loox/main/App%20Store%20Screenshots/shots/en/iphone-watchtower.png" width="180" alt="Watchtower security score">
 </p>
 
 ## Spaces and Profiles

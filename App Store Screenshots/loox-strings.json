@@ -1,0 +1,52 @@
+{
+  "_comment": "Loox App Store screenshots: all user-visible copy. Frame keys match FRAMES in tools/deck_layout.py, so reordering frames never swaps copy. \n forces a headline line break; *word* paints the brand gradient. Copy rules: no '!', no em dash, no middle dot. The 750-day claim must match LooxComplimentaryGrant.durationDays. type: headline size multiplier, letter-spacing, line-height per script.",
+  "order": ["en", "vi", "ja"],
+
+  "en": {
+    "label": "English",
+    "type": { "scale": 1, "track": "-0.025em", "lh": 1.04 },
+    "frames": {
+      "hero": { "eyebrow": "Passwords, passkeys, 2FA codes", "h": "One *private*\nvault.", "sub": "Encrypted on your device. No account needed." },
+      "autofill": { "eyebrow": "AutoFill", "h": "Sign in with\n*one tap*.", "sub": "Loox fills your logins in apps and Safari." },
+      "codes": { "eyebrow": "2FA codes", "h": "2FA codes,\n*built in*.", "sub": "Every code sits next to its password. No second app needed." },
+      "private-email": { "eyebrow": "Private Email", "h": "Hide your\n*real email*.", "sub": "Sign up with a private address that forwards to your inbox." },
+      "share": { "eyebrow": "Sharing", "h": "Share only\n*what you pick*.", "sub": "Choose the fields, send a link that expires, stay in control." },
+      "watchtower": { "eyebrow": "Watchtower", "h": "Fix weak\npasswords *fast*.", "sub": "Watchtower finds weak, reused and breached passwords." },
+      "membership": { "eyebrow": "Membership", "h": "*Loox+* free\nfor 750 days.", "sub": "Starts the day you open Loox. No card needed." },
+      "features": { "eyebrow": "", "h": "Everything in\n*one vault*.", "sub": "" }
+    },
+    "features": ["AutoFill", "Passkeys", "2FA codes", "Watchtower", "Private email", "Expiring links", "Approval sharing", "Separate identities"]
+  },
+
+  "vi": {
+    "label": "Tiếng Việt",
+    "type": { "scale": 0.9, "track": "-0.03em", "lh": 1.12 },
+    "frames": {
+      "hero": { "eyebrow": "Mật khẩu, passkey, mã 2FA", "h": "Tất cả trong\n*một kho riêng*.", "sub": "Mã hóa ngay trên máy của bạn. Không cần tài khoản." },
+      "autofill": { "eyebrow": "Tự động điền", "h": "Đăng nhập\n*chỉ một chạm*.", "sub": "Loox tự điền thông tin đăng nhập trong ứng dụng và Safari." },
+      "codes": { "eyebrow": "Mã xác minh", "h": "Mã 2FA ngay\n*cạnh mật khẩu*.", "sub": "Mỗi mã nằm cùng mục với mật khẩu. Không cần thêm ứng dụng." },
+      "private-email": { "eyebrow": "Email riêng tư", "h": "Giấu email\n*thật của bạn*.", "sub": "Đăng ký bằng địa chỉ riêng tư, thư vẫn về hộp thư của bạn." },
+      "share": { "eyebrow": "Chia sẻ", "h": "Chỉ chia sẻ\n*phần bạn chọn*.", "sub": "Chọn từng trường, gửi liên kết tự hết hạn, vẫn giữ toàn quyền." },
+      "watchtower": { "eyebrow": "Giám sát", "h": "Sửa nhanh\n*mật khẩu yếu*.", "sub": "Giám sát tìm mật khẩu yếu, bị dùng lại hoặc đã bị rò rỉ." },
+      "membership": { "eyebrow": "Gói thành viên", "h": "*Loox+* miễn phí\n750 ngày.", "sub": "Bắt đầu từ ngày bạn mở Loox. Không cần thẻ." },
+      "features": { "eyebrow": "", "h": "Mọi thứ trong\n*một kho*.", "sub": "" }
+    },
+    "features": ["Tự động điền", "Passkey", "Mã xác minh", "Giám sát", "Email riêng tư", "Liên kết tự hết hạn", "Chế độ phê duyệt", "Danh tính riêng"]
+  },
+
+  "ja": {
+    "label": "日本語",
+    "type": { "scale": 0.8, "track": "0em", "lh": 1.28 },
+    "frames": {
+      "hero": { "eyebrow": "パスワード、パスキー、2FA コード", "h": "*あなただけ*の\n保管庫。", "sub": "端末上で暗号化。アカウント登録は不要です。" },
+      "autofill": { "eyebrow": "自動入力", "h": "*ワンタップ*で\nサインイン。", "sub": "アプリでも Safari でも、Loox がログイン情報を入力します。" },
+      "codes": { "eyebrow": "2FA コード", "h": "2FA コードは\n*パスワードの隣*に。", "sub": "コードはパスワードと同じ項目に。別のアプリは要りません。" },
+      "private-email": { "eyebrow": "プライベートメール", "h": "本当のメールは\n*隠したまま*。", "sub": "登録にはプライベートアドレスを。メールはいつもの受信箱に届きます。" },
+      "share": { "eyebrow": "共有", "h": "*選んだ項目*\nだけを共有。", "sub": "項目を選んで、期限付きリンクで送信。主導権はあなたに。" },
+      "watchtower": { "eyebrow": "見張り", "h": "弱いパスワードを\n*すぐに修正*。", "sub": "弱い、使い回し、漏洩したパスワードを見つけます。" },
+      "membership": { "eyebrow": "メンバーシップ", "h": "*Loox+* が\n750日間無料。", "sub": "Loox を初めて開いた日から。カード登録は不要です。" },
+      "features": { "eyebrow": "", "h": "必要な機能を\n*ひとつに*。", "sub": "" }
+    },
+    "features": ["自動入力", "パスキー", "2FA コード", "見張り", "プライベートメール", "期限付きリンク", "承認モード", "プロフィール分離"]
+  }
+}
