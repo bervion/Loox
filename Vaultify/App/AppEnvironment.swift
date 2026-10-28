@@ -116,6 +116,10 @@ import SwiftUI
     /// (`vaultify://shared-item/<id>`, see `SharedItemDeepLink`). Presented as a
     /// detail sheet once the vault is unlocked; cleared when the sheet dismisses.
     var pendingSharedItemDeepLinkID: String?
+    /// `vaultify://membership` (see `LooxMembershipDeepLink`, the In-App Event
+    /// link) arrived. The Loox hub is presented once the vault is unlocked;
+    /// cleared when the sheet dismisses.
+    var pendingMembershipDeepLink = false
 
     #if DEBUG
     /// Opt back INTO the guided tours under test isolation. Isolated launches

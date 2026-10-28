@@ -66,6 +66,21 @@ struct VaultShellBehaviors: ViewModifier {
                     NavigationStack { ItemDetailScreen(itemID: itemID) }
                 }
             }
+            // `vaultify://membership` (the Loox Membership In-App Event): the hub
+            // the Profile row pushes, as a sheet so it works from any tab.
+            .sheet(isPresented: Binding(
+                get: { env.pendingMembershipDeepLink },
+                set: { if !$0 { env.pendingMembershipDeepLink = false } })
+            ) {
+                NavigationStack {
+                    LooxHubScreen()
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") { env.pendingMembershipDeepLink = false }
+                            }
+                        }
+                }
+            }
             // Re-present an unsaved editor draft that lost its host: recovered from a
             // previous launch, or handed back when a size-class flip tore this shell
             // down mid-edit. Both shells apply this modifier, so the draft lands in

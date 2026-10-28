@@ -99,4 +99,26 @@ final class LooxMembershipTests: XCTestCase {
         // the environment and no beta purchase surface can open.
         XCTAssertTrue(LooxMembership.betaPreviewEnabled)
     }
+
+    // MARK: In-App Event deep link
+
+    func testMembershipDeepLinkIsTheURLRegisteredInAppStoreConnect() {
+        // Pasted into the "Loox Membership launch" In-App Event; changing it
+        // breaks the live event's link.
+        XCTAssertEqual(LooxMembershipDeepLink.url.absoluteString, "vaultify://membership")
+        XCTAssertTrue(LooxMembershipDeepLink.matches(LooxMembershipDeepLink.url))
+    }
+
+    func testMembershipDeepLinkToleratesSlashQueryAndCase() throws {
+        for raw in ["vaultify://membership/", "vaultify://membership?source=event", "VAULTIFY://Membership"] {
+            XCTAssertTrue(LooxMembershipDeepLink.matches(try XCTUnwrap(URL(string: raw))), raw)
+        }
+    }
+
+    func testOtherLinksAreNotTheMembershipLink() throws {
+        for raw in ["vaultify://shared-item/abc", "vaultify://membership/extra", "https://membership",
+                    "otpauth://totp/x?secret=ABC", "loox://membership"] {
+            XCTAssertFalse(LooxMembershipDeepLink.matches(try XCTUnwrap(URL(string: raw))), raw)
+        }
+    }
 }
