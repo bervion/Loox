@@ -44,8 +44,9 @@ for arg in "$@"; do
   esac
 done
 
-# `setup_ci` builds a throwaway keychain — right on a shared runner, wrong on a
-# developer Mac that already holds the signing identity. Unset before any lane runs.
+# With CI set, `build_and_upload` demands the workflow's job-scoped keychain — right
+# on a runner, wrong on a developer Mac that already holds the signing identity.
+# Unset before any lane runs.
 unset CI
 
 # ── Secrets ──
