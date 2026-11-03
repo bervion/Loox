@@ -218,6 +218,9 @@ jobs:
           ruby-version: '3.4'
           bundler-cache: true
 
+      - name: Create signing keychain
+        run: scripts/ci/signing-keychain.sh create
+
       - name: Sign and upload
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
@@ -226,3 +229,9 @@ jobs:
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: bundle exec fastlane build_and_upload
+
+      # Also after a failed lane or a cancelled job: the runner shares its macOS user
+      # with other jobs and with every app on the machine.
+      - name: Delete signing keychain
+        if: always()
+        run: scripts/ci/signing-keychain.sh delete

@@ -262,9 +262,11 @@ building a throwaway one — the opposite of what a shared runner needs.
 - `.github/workflows/release-ios.yml` — on tag `v*`: requires successful unit CI on the
   exact tag SHA, then `bundle install` → `fastlane build_and_upload`. The signed archive
   continues to use the app's `Vaultify` scheme.
-- `fastlane/Fastfile` `build_and_upload`: `setup_ci` (temp keychain) → `match` (readonly,
-  app + AutoFill ext + Safari ext) → force Manual signing per target → `build_app`
-  (app-store export with all three profiles) → `upload_to_testflight`.
+- `scripts/ci/signing-keychain.sh` creates a job-scoped keychain before the lane and deletes
+  it afterwards, also after a failed lane or a cancelled job.
+- `fastlane/Fastfile` `build_and_upload`: `match` (readonly, app + AutoFill ext + Safari ext,
+  into the job keychain) → force Manual signing per target → `build_app` (app-store export
+  with all three profiles) → `upload_to_testflight`.
 
 `scripts/ci/prepare-project.sh` validates exact manifest package versions against the
 tracked `.package.resolved` and seeds the generated workspace's lockfile for both CI
@@ -286,8 +288,11 @@ unique and increasing for every upload (each `make release`/`make beta`/`make ho
   the base64 of `user:PAT` and confirm the PAT can read the certs repo.
 - **`Invalid App Store Connect API key`** → `APP_STORE_CONNECT_API_KEY` must be the full `.p8`
   text including the `-----BEGIN/END PRIVATE KEY-----` lines.
-- **`errSecInternalComponent` while codesigning** → ensure `setup_ci` runs (it does when `CI=true`,
-  which GitHub Actions sets automatically).
+- **`errSecInternalComponent` while codesigning** → ensure the `Create signing keychain` step ran
+  before the lane and exported `MATCH_KEYCHAIN_NAME` and `MATCH_KEYCHAIN_PASSWORD`.
+- **Apps on the runner Mac stall on a keychain password prompt** → check `security default-keychain`.
+  It must stay `login.keychain-db`; do not add `setup_ci` back to the lane (see the
+  [CI runbook](runbooks/ci-release-operations.md#release-boundary)).
 - **Build rejected: duplicate build number** → re-run after another bump (`make beta`); TestFlight
   requires a strictly increasing `CFBundleVersion` per marketing version.
 - **TestFlight upload: "no app record"** → create the app in App Store Connect (step 2).

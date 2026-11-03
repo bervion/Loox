@@ -187,6 +187,14 @@ starts only after that job succeeds, and runs checks 3 to 6. In order:
 6. fastlane retrieves signing material, uploads dSYMs to Crashlytics, and uploads to
    TestFlight.
 
+Signing material goes into a job-scoped keychain from `scripts/ci/signing-keychain.sh`, not
+fastlane's `setup_ci`. Runners share one macOS user with each other and with every app on
+the machine, and `setup_ci` leaves its fixed-name keychain as that user's default, so apps
+save credentials into it and stall on a password prompt once it locks. The job keychain
+never becomes the default, lives in `$RUNNER_TEMP`, and joins the search list only for the
+length of the job. Concurrent jobs on the same user therefore cannot delete each other's
+keychain, but for that time each can read the other's signing key.
+
 The current private repository plan does not provide enforceable environment required
 reviewers: the API request to add that protection returned HTTP 422. The environment name
 must not be described as human approval enforcement. The fallback is an immutable release
