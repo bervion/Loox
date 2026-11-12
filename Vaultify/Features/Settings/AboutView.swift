@@ -24,6 +24,7 @@ struct AboutView: View {
                 promises
                 signature
                 protectionCard
+                plansCard
                 privacyCard
                 footer
             }
@@ -39,7 +40,7 @@ struct AboutView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            BrandLogoMark(size: 22, shadowRadius: 0, shadowY: 0)
+            BrandLockup(height: 44)
             VStack(alignment: .leading, spacing: 0) {
                 Text("Your passwords guard everything.")
                     .vaultType(.largeTitle)
@@ -172,6 +173,90 @@ struct AboutView: View {
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .themedCard(padding: 0)
+        }
+    }
+
+    // MARK: Loox plans
+
+    /// What each tier includes, read from the frozen `LooxQuotas` table so the
+    /// About page can never drift from the paywall or the gates. Prices are
+    /// deliberately absent: they are App Store, per-storefront values that only
+    /// the purchase sheet can state correctly.
+    private var plansCard: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("Loox plans")
+                .vaultType(.sectionLabel)
+                .themedForeground(.secondary)
+                .padding(.leading, Space.s1)
+            VStack(alignment: .leading, spacing: Space.s4) {
+                Text("Your vault, passkeys and AutoFill are free on every plan. A plan adds connected services and room to share.")
+                    .vaultType(.footnote)
+                    .themedForeground(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(LooxTier.allCases, id: \.self) { tier in
+                    Divider()
+                    planSummary(tier)
+                }
+            }
+            .padding(Space.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .themedCard(padding: 0)
+        }
+    }
+
+    private func planSummary(_ tier: LooxTier) -> some View {
+        let quotas = tier.quotas
+        return VStack(alignment: .leading, spacing: Space.s2) {
+            Text(verbatim: tier.displayName)
+                .vaultType(.headline)
+                .themedForeground(tier == .free ? .primary : .accentText)
+            Text(planTagline(tier))
+                .vaultType(.caption)
+                .themedForeground(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: Space.s1) {
+                planFact(Icons.person, profilesFact(quotas))
+                planFact(Icons.mail, appString("\(quotas.retainedAliases) private addresses"))
+                planFact(Icons.share, appString("\(quotas.linkCreates30d) share links every 30 days"))
+                planFact(Icons.organization, sharingFact(quotas))
+                planFact(Icons.watchtower, quotas.fullWatchtower
+                         ? appString("Full protection")
+                         : appString("Critical and high alerts"))
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func planTagline(_ tier: LooxTier) -> LocalizedStringKey {
+        switch tier {
+        case .free: return "Everything you need to keep your secrets safe."
+        case .plus: return "Keeps your digital life maintained."
+        case .max: return "The full product, for your whole world."
+        }
+    }
+
+    private func profilesFact(_ quotas: LooxQuotas) -> String {
+        guard let cap = quotas.personas else { return appString("Profiles without a cap") }
+        return appString("\(cap) profiles")
+    }
+
+    private func sharingFact(_ quotas: LooxQuotas) -> String {
+        switch quotas.outgoingRecipients {
+        case 0: return appString("Receive shared items")
+        case 1: return appString("Share with one trusted person")
+        default: return appString("Secure sharing with up to \(quotas.outgoingRecipients) people")
+        }
+    }
+
+    private func planFact(_ icon: String, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+            VaultIcon(icon, size: 16)
+                .themedForeground(.iconSecondary)
+                .frame(width: 20)
+            Text(verbatim: text)
+                .vaultType(.subhead)
+                .themedForeground(.primary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

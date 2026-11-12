@@ -805,6 +805,76 @@
         }
       }
     },
+    "%lld private addresses" : {
+      "comment" : "About: plan fact, private email alias count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld private address"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld private addresses"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライベートアドレス %lld 件"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld địa chỉ riêng tư"
+          }
+        }
+      }
+    },
+    "%lld profiles" : {
+      "comment" : "About: plan fact, profile count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld profile"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld profiles"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロフィール %lld 件"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld hồ sơ"
+          }
+        }
+      }
+    },
     "%lld share a password" : {
       "comment" : "Watchtower category subtitle: count of items sharing a password.",
       "extractionState" : "stale",
@@ -819,6 +889,41 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld mục dùng chung mật khẩu"
+          }
+        }
+      }
+    },
+    "%lld share links every 30 days" : {
+      "comment" : "About: plan fact, Loox Link creations per rolling 30 days.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld share link every 30 days"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld share links every 30 days"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 日ごとに共有リンク %lld 件"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld liên kết chia sẻ mỗi 30 ngày"
           }
         }
       }
@@ -997,6 +1102,40 @@
         }
       }
     },
+    "Critical and high alerts" : {
+      "comment" : "About: plan fact, free Watchtower keeps critical and high findings.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重大および高レベルの警告"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cảnh báo nghiêm trọng và mức cao"
+          }
+        }
+      }
+    },
+    "Everything you need to keep your secrets safe." : {
+      "comment" : "About: Loox (free) plan tagline.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秘密を安全に守るために必要なものがすべて揃っています。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mọi thứ bạn cần để giữ an toàn bí mật của mình."
+          }
+        }
+      }
+    },
     "Free for %@, then %@ each month. Auto-renews until canceled. Cancel anytime in Settings." : {
       "comment" : "Subscription disclosure for a monthly plan with a free trial. Arguments: offer length, then the monthly price.",
       "localizations" : {
@@ -1077,6 +1216,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giao hẳn"
+          }
+        }
+      }
+    },
+    "Keeps your digital life maintained." : {
+      "comment" : "About: Loox+ plan tagline.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デジタルライフを常に整えます。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ cuộc sống số của bạn luôn được chăm chút."
+          }
+        }
+      }
+    },
+    "Loox plans" : {
+      "comment" : "About: membership plans section label.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loox のプラン"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các gói Loox"
+          }
+        }
+      }
+    },
+    "Receive shared items" : {
+      "comment" : "About: plan fact, free tier can only receive shares.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有されたアイテムを受け取る"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhận mục được chia sẻ"
+          }
+        }
+      }
+    },
+    "The full product, for your whole world." : {
+      "comment" : "About: Loox Max plan tagline.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべての機能を、あなたの世界全体に。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trọn vẹn sản phẩm, cho cả thế giới của bạn."
           }
         }
       }
@@ -1248,6 +1455,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Họ chưa nhận được các chỉnh sửa mới nhất của bạn. Bấm \"Áp dụng\" để gửi."
+          }
+        }
+      }
+    },
+    "Your vault, passkeys and AutoFill are free on every plan. A plan adds connected services and room to share." : {
+      "comment" : "About: plans section intro.",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保管庫、パスキー、自動入力はどのプランでも無料です。プランでは連携サービスと共有の枠が増えます。"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kho mật khẩu, passkey và Tự động điền đều miễn phí ở mọi gói. Gói trả phí bổ sung các dịch vụ kết nối và thêm chỗ để chia sẻ."
           }
         }
       }
