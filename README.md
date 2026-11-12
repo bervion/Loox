@@ -8,7 +8,7 @@
 
 No account. No vault server. Your vault is encrypted on your device and stays there unless you choose to sync or share it.
 
-<a href="https://apps.apple.com/us/app/loox-password-manager/id6779973474"><img src="https://tools.applemarketingtools.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="54"></a>
+<a href="https://apps.apple.com/us/app/loox-password-manager/id6779973474"><img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" height="54"></a>
 
 [![CI](https://github.com/bervion/Loox/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bervion/Loox/actions/workflows/ci.yml)
 [![App Store](https://img.shields.io/itunes/v/6779973474?label=App%20Store&logo=apple&logoColor=white&color=0D96F6)](https://apps.apple.com/us/app/loox-password-manager/id6779973474)
