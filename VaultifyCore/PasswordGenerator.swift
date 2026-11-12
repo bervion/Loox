@@ -1,6 +1,8 @@
 import Foundation
 
-/// Loads the bundled EFF large diceware wordlist (7776 words ≈ 12.9 bits/word).
+/// Loads the bundled diceware wordlist, derived from the EFF large list: 7772
+/// unique lowercase, letters-only words (≈ 12.9 bits/word). Letters-only matters:
+/// a word can never contain the passphrase separator or the appended number.
 nonisolated enum DicewareWordList {
     static let words: [String] = {
         guard let url = Bundle.main.url(forResource: "eff_large_wordlist", withExtension: "txt"),
@@ -39,16 +41,47 @@ nonisolated enum PasswordGenerator {
     private static let digitsFull = "0123456789"
     private static let symbols = "!@#$%^&*()-_=+[]{};:,.?"
 
+    /// A random password of exactly `options.length` characters.
+    ///
+    /// Every enabled character class appears at least once whenever the length
+    /// allows it. Drawing every position from the merged pool alone left a
+    /// default 20-character password without a digit about 12% of the time, and
+    /// sites with composition rules reject those. The guaranteed characters are
+    /// then shuffled into random positions, so they carry no positional pattern.
     static func generate(_ options: PasswordOptions) -> String {
-        var pool = ""
-        if options.lowercase { pool += options.avoidAmbiguous ? lower : lowerFull }
-        if options.uppercase { pool += options.avoidAmbiguous ? upper : upperFull }
-        if options.digits { pool += options.avoidAmbiguous ? digitsSafe : digitsFull }
-        if options.symbols { pool += symbols }
-        let chars = Array(pool.isEmpty ? lowerFull : pool)
         guard options.length > 0 else { return "" }
-        let result = (0..<options.length).map { _ in chars[CryptoRandom.int(upperBound: chars.count)] }
+        let classes = characterClasses(options).map(Array.init)
+        let pool = classes.flatMap { $0 }
+        var result = classes.prefix(options.length).map(randomElement)
+        while result.count < options.length {
+            result.append(randomElement(pool))
+        }
+        shuffle(&result)
         return String(result)
+    }
+
+    /// The enabled character classes, in a fixed order. Never empty: with every
+    /// class switched off the generator falls back to lowercase letters.
+    static func characterClasses(_ options: PasswordOptions) -> [String] {
+        var classes: [String] = []
+        if options.lowercase { classes.append(options.avoidAmbiguous ? lower : lowerFull) }
+        if options.uppercase { classes.append(options.avoidAmbiguous ? upper : upperFull) }
+        if options.digits { classes.append(options.avoidAmbiguous ? digitsSafe : digitsFull) }
+        if options.symbols { classes.append(symbols) }
+        return classes.isEmpty ? [lowerFull] : classes
+    }
+
+    private static func randomElement(_ chars: [Character]) -> Character {
+        chars[CryptoRandom.int(upperBound: chars.count)]
+    }
+
+    /// Fisher-Yates over `CryptoRandom`, so every random draw in this file goes
+    /// through the same audited source.
+    private static func shuffle(_ chars: inout [Character]) {
+        guard chars.count > 1 else { return }
+        for i in stride(from: chars.count - 1, to: 0, by: -1) {
+            chars.swapAt(i, CryptoRandom.int(upperBound: i + 1))
+        }
     }
 
     static func pin(_ options: PinOptions) -> String {
